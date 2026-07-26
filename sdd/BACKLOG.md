@@ -106,6 +106,61 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Docs & Discoverability
 
+- [ ] **BUG-236 — Custom-backend guide states Store-layer policy as backend invariants**
+  spec: 003 · effort: M · audience: user.site, library.maintainer
+  Found by an independent guide walkthrough using `S3Boto3Backend` (PR #932
+  validation). Step 5 claims `""`/`"."` are root aliases and `is_file("")`
+  is always `False`; Step 8 claims root cannot be deleted. At the backend
+  layer the repo's own conformance-passing S3 backend contradicts all
+  three: `is_file("")` raises `BackendUnavailable` (botocore rejects the
+  empty key, and `Store` passes `""` through), `"."` is normalized by
+  `Store`, not backends, and backend-level `delete_folder("",
+  recursive=True)` empties the bucket. The conformance suite tests none of
+  these (no `is_file("")` / `exists("")` cases). Needs a layer-attribution
+  pass: decide per invariant whether it is a backend obligation (then spec
+  it in 003 and add conformance cases) or Store policy (then move it out of
+  the backend-implementation steps) — a spec decision, not just prose.
+
+- [ ] **BUG-237 — Standalone-testing checklist unachievable for flat-namespace backends**
+  spec: — · effort: S · audience: user.site
+  Same walkthrough: 3 of 21 tests written per the guide's "Standalone
+  backend testing" section fail against `S3Boto3Backend` — the wrong-type
+  rows ("file path to `get_folder_info`, directory path to `read` raises
+  `InvalidPath`") raise `NotFound` on flat-namespace backends, and the
+  `is_file("")` row inherits the BUG-236 problem. The guide's own
+  flat-namespace section explains why, but the checklist carries no
+  carve-out. Add flat-NS qualifiers mirroring the conformance suite's
+  `_skip_flat_namespace` gating; coordinate the `is_file("")` row with
+  BUG-236's resolution.
+
+- [ ] **BK-321 — Document the Registry's constructor-kwarg transformations in the custom-backend guide**
+  spec: — · effort: S · audience: user.site, user.api
+  A guide-only backend breaks under `Registry`: YAML options with
+  credential-style names (`key`, `secret`, `password`, `account_key`,
+  `sas_token`, `connection_string`, `client_secret`,
+  `client_certificate`) arrive wrapped in `Secret`, and a `retry:` block
+  injects a `retry=` kwarg the constructor must accept
+  (`_registry.py` adds `kwargs["retry"]`). Step 13 says only "parameter
+  names must match your `__init__` signature exactly". Document both
+  (accept `str | Secret`, call `.reveal()`; accept `retry: RetryPolicy |
+  None`), with `S3Boto3Backend.__init__` as the reference shape.
+
+- [ ] **BK-322 — Custom-backend guide: missing Backend-contract topics a real backend needed**
+  spec: 003 · effort: M · audience: user.site
+  The walkthrough found three contract areas the guide never mentions,
+  all of which `S3Boto3Backend` demonstrably needed: (1) the
+  `close_is_terminal` posture ClassVar plus use-after-close behavior
+  (drives `test_close_posture.py`, which the guide's own topic table
+  lists); (2) stream-time error mapping for `LAZY_READ` backends — the
+  "cardinal rule" covers call-time exceptions only, but lazy streams
+  surface native errors during `stream.read()` and `test_streaming.py`
+  enforces no-leak there; (3) the file-as-directory-component rules and
+  the `reject_write_under_file_ancestor` opt-in with its
+  `strict_only` fixture variant and the `_MODULE_FOR` map (its absence
+  silently drops ~25 conformance cells — the checklist stays green).
+  One item because all three are "contract topics the guide omits";
+  split if any grows.
+
 - [ ] **ID-225 — Evaluate migrating the docs stack from Material for MkDocs to Zensical**
   spec: — · effort: L · audience: user.site, library.maintainer, contributor.tooling
   Our docs foundation is entering maintenance mode as its authors converge on a

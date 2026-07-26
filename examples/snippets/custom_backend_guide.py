@@ -192,9 +192,16 @@ class RedisBackend(Backend):
 
     def _has_children(self, path: str) -> bool:
         """Check if any keys exist under this path prefix."""
+        # SCAN may return an empty page with a nonzero cursor, so loop
+        # until a key shows up or the cursor wraps to 0.
         pattern = f"{self._prefix}file:{path}/*"
-        cursor, keys = self._client.scan(cursor=0, match=pattern, count=1)
-        return bool(keys)
+        cursor = 0
+        while True:
+            cursor, keys = self._client.scan(cursor=cursor, match=pattern, count=100)
+            if keys:
+                return True
+            if cursor == 0:
+                return False
 
     # --8<-- [end:step5-existence]
 
@@ -474,6 +481,11 @@ class RedisBackend(Backend):
             if not data:
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
 
+            # src == dst is a data-preserving no-op (Backend contract) —
+            # after the source check, so a missing source still raises NotFound.
+            if src == dst:
+                return
+
             # Check destination
             if not overwrite and self._client.exists(self._key(dst)):
                 raise AlreadyExists(
@@ -502,6 +514,9 @@ class RedisBackend(Backend):
             data = self._client.hgetall(self._key(src))
             if not data:
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
+
+            if src == dst:
+                return  # Data-preserving no-op, same as move()
 
             if not overwrite and self._client.exists(self._key(dst)):
                 raise AlreadyExists(
@@ -598,7 +613,8 @@ def _demo_extensions(store: Store) -> None:
     # Caching
     fast = cache(store, ttl=300)
 
-    # Batch operations
+    # Batch operations (a.txt and c.txt were written in earlier steps;
+    # missing sources don't raise — they land in results.failed)
     results = batch_copy(store, [("a.txt", "b.txt"), ("c.txt", "d.txt")])
     # --8<-- [end:step14-extensions]
 
@@ -614,8 +630,8 @@ def _demo_partial_capabilities() -> None:
         CAPABILITIES: ClassVar[CapabilitySet] = CapabilitySet(
             {
                 Capability.READ,
-                Capability.LIST,
                 Capability.METADATA,
+                Capability.LAZY_READ,
             }
         )
 
@@ -768,8 +784,11 @@ def demo() -> None:
     assert not store.is_file("")
     assert store.is_folder("")
 
-    # Partial capabilities snippet is valid
-    partial = CapabilitySet({Capability.READ, Capability.LIST, Capability.METADATA})
+    # Partial capabilities snippet matches the real ReadOnlyHttpBackend set
+    from remote_store.backends._http import ReadOnlyHttpBackend
+
+    partial = CapabilitySet({Capability.READ, Capability.METADATA, Capability.LAZY_READ})
+    assert set(partial) == set(ReadOnlyHttpBackend.CAPABILITIES)
     assert Capability.WRITE not in partial
 
     print("All custom backend guide snippets passed.")

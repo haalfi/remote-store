@@ -202,14 +202,20 @@ class _FakeRedisModule:
 
 
 @pytest.fixture
-def guide_redis_store(monkeypatch: pytest.MonkeyPatch):
-    """The guide's RedisBackend wrapped in Store, backed by the fake client."""
+def guide_redis_backend(monkeypatch: pytest.MonkeyPatch):
+    """The guide's RedisBackend, backed by the fake client."""
     import examples.snippets.custom_backend_guide as cbg
-    from remote_store import Store
 
     monkeypatch.setattr(cbg, "redis", _FakeRedisModule)
-    backend = cbg.RedisBackend(url="redis://localhost:6379/0", prefix="rs:")
-    return Store(backend=backend)
+    return cbg.RedisBackend(url="redis://localhost:6379/0", prefix="rs:")
+
+
+@pytest.fixture
+def guide_redis_store(guide_redis_backend):
+    """The guide's RedisBackend wrapped in Store."""
+    from remote_store import Store
+
+    return Store(backend=guide_redis_backend)
 
 
 class TestCustomBackendGuideSnippets:
@@ -321,6 +327,32 @@ class TestCustomBackendGuideSnippets:
         folder = store.get_folder_info("agg")
         assert folder.file_count == 2
         assert folder.total_size == 5
+
+    @pytest.mark.spec("ID-057")
+    def test_backend_self_op_preserves_data(self, guide_redis_backend) -> None:
+        """The ABC requires move/copy with src == dst to be a data-preserving no-op.
+
+        Backend-level on purpose: Store short-circuits self-ops before the
+        backend runs, but the conformance suite calls ``backend.move`` /
+        ``backend.copy`` directly, and the guide's registration example
+        declares ``self_op_supported = true`` — so the tutorial backend
+        must satisfy the contract at this layer.
+        """
+        backend = guide_redis_backend
+        from remote_store import NotFound
+
+        for overwrite in (False, True):
+            backend.write("self.txt", b"data", overwrite=True)
+            backend.move("self.txt", "self.txt", overwrite=overwrite)
+            assert backend.read_bytes("self.txt") == b"data"
+            backend.copy("self.txt", "self.txt", overwrite=overwrite)
+            assert backend.read_bytes("self.txt") == b"data"
+
+        backend.delete("self.txt")
+        with pytest.raises(NotFound, match="not found"):
+            backend.move("ghost.txt", "ghost.txt")
+        with pytest.raises(NotFound, match="not found"):
+            backend.copy("ghost.txt", "ghost.txt")
 
     @pytest.mark.spec("ID-057")
     def test_store_root_invariants(self, guide_redis_store) -> None:

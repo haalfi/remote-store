@@ -17,7 +17,7 @@ co_shipped_items:
   - BK-320
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: reproduce
     name: Reproduce

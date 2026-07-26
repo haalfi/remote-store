@@ -227,6 +227,18 @@ returns the stream as-is.
 --8<-- "examples/snippets/custom_backend_guide.py:step11-move-copy"
 ```
 
+**Contract rules the code above implements:**
+
+- **`src == dst` is a data-preserving no-op** — never a delete-after-write on
+  the same key. Place the no-op return *after* the source check so a missing
+  source still raises `NotFound`.
+- **Precondition order matters:** a missing source raises `NotFound` before
+  the destination is checked for `AlreadyExists`.
+- Empty source or destination paths raise `InvalidPath`.
+
+The conformance suite verifies the no-op rule whenever your registration
+declares `self_op_supported = true` (see the registration steps below).
+
 ---
 
 ## Step 12: Lifecycle methods
@@ -297,7 +309,8 @@ it doesn't need the `GLOB` capability.
 ## Partial-capability backends
 
 Not every backend supports every operation. The HTTP backend, for example,
-is read-only:
+is read-only — this is the shipped `ReadOnlyHttpBackend`'s actual capability
+set (note there is no `LIST`: plain HTTP has no directory listing):
 
 ```python
 --8<-- "examples/snippets/custom_backend_guide.py:partial-capabilities"
@@ -441,9 +454,33 @@ Per-fixture overrides of `flat_namespace` / `self_op_supported` merge on top
 of the family defaults — that is how the Azurite emulator (flat) and live
 ADLS Gen2 (HNS) share one `azure` family yet disagree.
 
+The example values illustrate the declaration shape; Redis itself has no
+exact member in the closed `transport` and `container` enums (pick the
+nearest transport; a service CI cannot start via `container` is one you
+provision and skip on absence — see step 3). The enum semantics are
+documented authoritatively in the two TOML files' header comments.
+
 **3. Add a factory module `tests/backends/fixtures/redis.py`:**
 
+The factory is called fresh for **every test**, and the suite runs no
+cleanup unless you provide one. That gives it four obligations beyond
+constructing the backend:
+
+- **Skip when infrastructure is absent** — factories run at test setup, so a
+  `pytest.skip` there is how a fixture self-excludes on machines without the
+  service or the optional dependency.
+- **Provision the namespace it hands out** — create the bucket/database/
+  container the backend points at; the suite assumes writable storage.
+- **Isolate per call** — a unique prefix or bucket per invocation, or
+  earlier tests' leftovers show up as baffling `AlreadyExists` /
+  orphan-artifact failures that look like backend bugs.
+- **Provide `cleanup=`** to close the backend after each test.
+
 ```python
+import uuid
+
+import pytest
+
 from remote_store.backends._redis import RedisBackend
 from tests.backends.fixtures._loader import load_fixture
 from tests.backends.fixtures.registry import BackendFixture, register
@@ -452,14 +489,25 @@ _meta = load_fixture("redis")
 
 
 def _factory() -> RedisBackend:
-    return RedisBackend(url="redis://localhost:6379/0", prefix="test:")
+    try:
+        import redis  # noqa: F401
+    except ImportError:
+        pytest.skip("redis-py not installed")
+    # Unique prefix per call = per-test isolation. Redis needs no
+    # provisioning (keys spring into existence); a bucket-based backend
+    # would create its bucket here.
+    return RedisBackend(url="redis://localhost:6379/0", prefix=f"test-{uuid.uuid4().hex[:8]}:")
+
+
+def _cleanup(backend: RedisBackend) -> None:
+    backend.close()
 
 
 register(
     BackendFixture(
         factory=_factory,
         capabilities=frozenset(RedisBackend.CAPABILITIES),
-        cleanup=None,
+        cleanup=_cleanup,
         **_meta.to_kwargs(),
     )
 )
@@ -476,11 +524,17 @@ fixtures:
 pytest tests/backends/conformance/ -k redis
 ```
 
+Expect one or two loud, self-explanatory prompts on the first run: a few
+conformance lanes classify backend families by name (the atomic-move and
+seekable declaration sets in `test_identity.py`, the health-probe module
+list) and their failure messages name the exact edit to make.
+
 If your backend requires an external service (like S3, SFTP, or Azurite),
-add a session-scoped server fixture in `tests/backends/conftest.py`
-following the existing `moto_server` / `sftp_server` / `azurite_server`
-pattern; it publishes endpoints into `INFRA`, which your factory reads at
-call time.
+add a session-scoped server fixture in `tests/conftest.py` (where
+`moto_server` / `sftp_server` / `azurite_server` live), publish its endpoint
+via `_populate_infra` in `tests/backends/conftest.py` plus a field on
+`InfraState` in `tests/backends/fixtures/_state.py`, and read `INFRA` from
+your factory at call time.
 
 ---
 
@@ -564,10 +618,22 @@ Before a backend is considered conformant, verify:
 
 | Level | What | Command |
 |---|---|---|
-| **Conformance** | All `tests/backends/conformance/` tests pass or self-skip (declared capability missing) | `pytest tests/backends/conformance/ -k <backend-name>` |
-| **Extended** | All `@pytest.mark.extended_conformance` cases pass or self-skip | `pytest -m extended_conformance -k <backend-name>` |
+| **Conformance** | All `tests/backends/conformance/` tests pass or self-skip (declared capability missing) | `pytest tests/backends/conformance/ -k <fixture-name>` |
+| **Extended** | All `@pytest.mark.extended_conformance` cases pass or self-skip | `pytest -m extended_conformance -k <fixture-name>` |
 | **Error mapping** | Every native exception maps to a `remote_store` error — nothing leaks | Error mapping checklist above |
 | **Repr safety** | `repr(backend)` does not expose secrets | `pytest tests/backends/conformance/test_identity.py -k test_repr_masks_secrets` |
+
+Two pitfalls in reading these results:
+
+- **The `-k` token is the fixture/family name** (underscores, e.g.
+  `s3_boto3`), not the backend's `name` property — a hyphenated `name` like
+  `"s3-boto3"` never matches any test id, so `-k` with it silently selects
+  nothing.
+- **Green is only meaningful if your fixture actually ran.** Confirm your
+  fixture id appears in the parametrized test ids (`pytest --collect-only -q
+  ... | grep <fixture-name>`). A handful of passes with thousands
+  deselected, or exit code 5 ("no tests ran"), means the registration never
+  loaded — not that everything self-skipped.
 
 Skips are expected and acceptable when a backend doesn't declare the relevant
 capability. Failures (not skips) in either suite are blocking.

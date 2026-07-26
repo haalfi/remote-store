@@ -16,9 +16,14 @@ audience:
   - contributor.tooling
 co_shipped_items:
   - BUG-235
+discovery_followups:
+  - BUG-236
+  - BUG-237
+  - BK-321
+  - BK-322
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -91,4 +96,27 @@ phases:
         section: "Ripple-check table / Store or Backend ABC"
         read_type: verify
         extract: "ABC-to-guide drift now mechanically gated instead of adding a checklist row"
+        outcome: ok
+  - id: validate
+    name: Walkthrough validation
+    steps:
+      - file: src/remote_store/backends/_s3_boto3.py
+        section: "(full)"
+        read_type: reference
+        extract: "Non-published backend used as fresh-eyes material for two independent guide walkthroughs (author + contributor lens)"
+        outcome: ok
+      - file: src/remote_store/backends/_memory.py
+        section: "move (src == dst)"
+        read_type: gate
+        extract: "Reference self-op shape: verify source exists, then no-op"
+        outcome: ok
+      - file: tests/backends/conformance/test_atomic.py
+        section: "TestMoveCopySelfOperation"
+        read_type: gate
+        extract: "Self-op must preserve data for both overwrite values; missing src raises NotFound"
+        outcome: ok
+      - file: tests/backends/fixtures/s3_boto3_moto.py
+        section: "(full)"
+        read_type: gate
+        extract: "Real factory obligations (skip, provision, per-call isolation, cleanup) the guide's example must teach"
         outcome: ok
