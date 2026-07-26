@@ -1508,13 +1508,22 @@ class TestCloseDrainsPendingTasks:
     def test_close_drain_timeout_logs_warning_with_hanging_task(self, caplog: pytest.LogCaptureFixture) -> None:
         adapter, _ = _make_memory_adapter()
         started = threading.Event()
+        # Held by the test frame on purpose: it anchors the pending task's
+        # reference chain (event -> waiter future -> task callback). With an
+        # inline `asyncio.Event().wait()` the whole chain is an unreferenced
+        # cycle — asyncio's task registry is a WeakSet, so a GC pass destroys
+        # the pending task mid-test ("Task was destroyed but it is pending!"),
+        # close() then sees a quiet loop, and the timeout warning never fires
+        # (BUG-239: flaked on CI under xdist allocation pressure).
+        release = asyncio.Event()
 
         async def _hang() -> None:
             started.set()
-            await asyncio.Event().wait()  # never returns
+            await release.wait()  # never set -- hangs until reaped
 
         asyncio.run_coroutine_threadsafe(_hang(), adapter._loop)  # internal: private loop
         assert started.wait(timeout=2.0), "background task never started"
+        gc.collect()  # deterministically exercise the GC pass that flaked on CI
 
         with caplog.at_level(logging.WARNING, logger="remote_store._async_to_sync_adapter"):
             adapter.close(timeout=0.2)

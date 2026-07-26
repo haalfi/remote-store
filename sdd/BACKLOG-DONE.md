@@ -8,7 +8,21 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
-- [x] **BK-320 — Custom-backend guide: registry-era conformance section + drift gate**
+- [x] **BUG-239 — Adapter drain-timeout test flaked on CI: pending task GC'd out of the WeakSet task registry**
+  spec: — · effort: S · audience: infra.test
+  `test_close_drain_timeout_logs_warning_with_hanging_task` failed twice on
+  CI 3.10 (PR #932) with "Task was destroyed but it is pending!". Root
+  cause, reproduced deterministically with one `gc.collect()`: the test
+  discarded its `run_coroutine_threadsafe` future and the hanging task's
+  entire reference chain (task → frame → inline `asyncio.Event()` → waiter
+  future → task callback) was an unanchored garbage cycle. `asyncio`'s
+  task registry is a WeakSet, so a cycle-collector pass destroyed the
+  pending task mid-test; `AsyncBackendSyncAdapter.close()` then saw a
+  quiet loop and legitimately skipped the timeout warning the test
+  asserts. Fix: anchor the event in the test frame (event → waiter →
+  task is then strongly reachable) and force `gc.collect()` in the test
+  so the once-flaky path is exercised deterministically. Adapter code is
+  correct; test-only fix.
   spec: — · effort: S · audience: user.site, contributor.tooling
   Follow-up to the BUG-235 audit. The guide's "Registering in the
   conformance fixture" section still described the pre-spec-048 mechanism
