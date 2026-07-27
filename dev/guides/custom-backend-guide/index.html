@@ -3293,10 +3293,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#capability-gating-with-_require" class="md-nav__link">
+  <a href="#capability-gating" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Capability gating with _require()
+        Capability gating
       
     </span>
   </a>
@@ -11002,10 +11002,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#capability-gating-with-_require" class="md-nav__link">
+  <a href="#capability-gating" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Capability gating with _require()
+        Capability gating
       
     </span>
   </a>
@@ -11342,10 +11342,10 @@ don't need to handle it.</p>
 <p><code>_REDIS_CAPABILITIES</code> is assigned to the class-level <code>CAPABILITIES</code> attribute in Step 3.
 Tooling and conformance tests read <code>YourBackend.CAPABILITIES</code> without instantiating the class,
 so the constant must be a class attribute — not computed in <code>__init__</code>.</p>
-<p>Three capabilities added in v0.23.0 are worth declaring when they apply:</p>
+<p>Three further capabilities are worth declaring when they apply:</p>
 <ul>
 <li><strong><code>USER_METADATA</code></strong> — declare this when your backend stores the <code>metadata=</code> mapping passed to <code>write()</code> and <code>write_atomic()</code>. Without it, <code>Store</code> raises <code>CapabilityNotSupported</code> if the caller passes non-empty metadata.</li>
-<li><strong><code>WRITE_RESULT_NATIVE</code></strong> — declare this when your backend populates <code>WriteResult</code> fields beyond the two mandatory ones (<code>path</code> and <code>size</code>). See the <a href="../../reference/api/models/">WriteResult reference</a> for the full field list.</li>
+<li><strong><code>WRITE_RESULT_NATIVE</code></strong> — declare this when your <code>write*()</code> methods fill the rich <code>WriteResult</code> fields directly from the backend's own write response (<code>source == "native"</code>). The criterion is provenance, not field count — which fields land depends on what the response carries, and a native backend may fill none (SFTP declares the flag yet its write response has no metadata). Without the flag, results carry <code>path</code>, <code>size</code>, and <code>source == "basic"</code>. See the <a href="../../reference/api/models/">WriteResult reference</a> for the full field list.</li>
 <li><strong><code>LAZY_READ</code></strong> — declare this when <code>read()</code> fetches data lazily from the remote source. A <code>BytesIO</code> return does not qualify — data is already materialized.</li>
 </ul>
 <p>The Redis example declares neither <code>USER_METADATA</code> nor <code>WRITE_RESULT_NATIVE</code> (it stores raw bytes without a metadata column and returns only <code>path</code> and <code>size</code> at write time).</p>
@@ -11452,9 +11452,19 @@ traceback for debugging.</p>
 <a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a>
 <a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a><span class="k">def</span><span class="w"> </span><span class="nf">_has_children</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if any keys exist under this path prefix.&quot;&quot;&quot;</span>
-<a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a>    <span class="n">pattern</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span><span class="si">}</span><span class="s2">file:</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">/*&quot;</span>
-<a id="__codelineno-5-28" name="__codelineno-5-28" href="#__codelineno-5-28"></a>    <span class="n">cursor</span><span class="p">,</span> <span class="n">keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="n">cursor</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="n">pattern</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
-<a id="__codelineno-5-29" name="__codelineno-5-29" href="#__codelineno-5-29"></a>    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span>
+<a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a>    <span class="c1"># SCAN may return an empty page with a nonzero cursor, so loop</span>
+<a id="__codelineno-5-28" name="__codelineno-5-28" href="#__codelineno-5-28"></a>    <span class="c1"># until a key shows up or the cursor wraps to 0. Note the cost:</span>
+<a id="__codelineno-5-29" name="__codelineno-5-29" href="#__codelineno-5-29"></a>    <span class="c1"># SCAN+MATCH walks the whole keyspace on a miss, so a production</span>
+<a id="__codelineno-5-30" name="__codelineno-5-30" href="#__codelineno-5-30"></a>    <span class="c1"># backend should keep a secondary index (e.g. a per-prefix set)</span>
+<a id="__codelineno-5-31" name="__codelineno-5-31" href="#__codelineno-5-31"></a>    <span class="c1"># instead of scanning per existence check.</span>
+<a id="__codelineno-5-32" name="__codelineno-5-32" href="#__codelineno-5-32"></a>    <span class="n">pattern</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span><span class="si">}</span><span class="s2">file:</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">/*&quot;</span>
+<a id="__codelineno-5-33" name="__codelineno-5-33" href="#__codelineno-5-33"></a>    <span class="n">cursor</span> <span class="o">=</span> <span class="mi">0</span>
+<a id="__codelineno-5-34" name="__codelineno-5-34" href="#__codelineno-5-34"></a>    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+<a id="__codelineno-5-35" name="__codelineno-5-35" href="#__codelineno-5-35"></a>        <span class="n">cursor</span><span class="p">,</span> <span class="n">keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="n">cursor</span><span class="o">=</span><span class="n">cursor</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="n">pattern</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<a id="__codelineno-5-36" name="__codelineno-5-36" href="#__codelineno-5-36"></a>        <span class="k">if</span> <span class="n">keys</span><span class="p">:</span>
+<a id="__codelineno-5-37" name="__codelineno-5-37" href="#__codelineno-5-37"></a>            <span class="k">return</span> <span class="kc">True</span>
+<a id="__codelineno-5-38" name="__codelineno-5-38" href="#__codelineno-5-38"></a>        <span class="k">if</span> <span class="n">cursor</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-5-39" name="__codelineno-5-39" href="#__codelineno-5-39"></a>            <span class="k">return</span> <span class="kc">False</span>
 </code></pre></div>
 <p><strong>Key invariants:</strong></p>
 <ul>
@@ -11462,6 +11472,15 @@ traceback for debugging.</p>
 <li><code>""</code> and <code>"."</code> are root aliases. Root always exists and is always a folder.</li>
 <li><code>is_file("")</code> is always <code>False</code>. <code>is_folder("")</code> is always <code>True</code>.</li>
 </ul>
+<p>A layer note on the alias rules: <code>Store</code> normalizes <code>"."</code> to <code>""</code> before
+your backend runs, so your backend never sees <code>"."</code> through <code>Store</code> — an
+unscoped store's root arrives as <code>""</code>, and a scoped store prepends its
+<code>root_path</code>, so root arrives as that prefix instead. The rule to follow:
+implement the root invariants in terms of <code>""</code>, and treat <code>"."</code> handling
+as optional defense for direct backend callers — the tutorial guards
+both, which is the safe shape. The precise backend-layer obligations live
+in the
+<a href="../../explanation/design/specs/003-backend-adapter-contract/">Backend Adapter Contract</a>.</p>
 <hr />
 <h2 id="step-6-reading">Step 6: Reading<a class="headerlink" href="#step-6-reading" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BinaryIO</span><span class="p">:</span>
@@ -11564,7 +11583,7 @@ returns the stream as-is.</p>
 <ul>
 <li><code>content</code> is <code>bytes | BinaryIO</code>. Normalize with <code>content if isinstance(content, bytes) else content.read()</code>.</li>
 <li><strong>Both <code>write()</code> and <code>write_atomic()</code> accept <code>metadata: Mapping[str, str] | None = None</code>.</strong> If your backend declares <code>USER_METADATA</code>, persist the mapping alongside the file. If it doesn't, ignore the argument — <code>Store</code> rejects non-empty metadata before reaching your implementation.</li>
-<li><strong>Both methods must return <a href="../../reference/api/models/"><code>WriteResult</code></a>.</strong> Construct it with at minimum <code>path=RemotePath(path)</code> and <code>size=len(raw)</code>. If your backend can populate richer fields, declare <code>WRITE_RESULT_NATIVE</code> and include them. The Redis example returns the two-field minimum.</li>
+<li><strong>Both methods must return <a href="../../reference/api/models/"><code>WriteResult</code></a>.</strong> Construct it with at minimum <code>path=RemotePath(path)</code> and <code>size=len(raw)</code>. If your backend can populate richer fields, declare <code>WRITE_RESULT_NATIVE</code> and include them. The Redis example constructs just the two required fields.</li>
 <li><strong>Write creates parent folders implicitly</strong> — in Redis, there's nothing to create, but filesystem-based backends must <code>mkdir -p</code>.</li>
 <li>Re-raise your own errors (<code>AlreadyExists</code>, <code>InvalidPath</code>) before the catch-all <code>RedisError</code> handler.</li>
 <li>Even though Store gates <code>write_atomic()</code> via capabilities, implement the methods anyway (they're abstract). Raise <code>CapabilityNotSupported</code> as a safety net.</li>
@@ -11623,75 +11642,105 @@ returns the stream as-is.</p>
 <li><code>delete()</code> targets files. <code>delete_folder()</code> targets folders.</li>
 <li><code>missing_ok=True</code> suppresses <code>NotFound</code>.</li>
 <li><code>delete_folder(recursive=False)</code> raises <code>DirectoryNotEmpty</code> if the folder has contents.</li>
-<li>You cannot delete root (<code>""</code> or <code>"."</code>).</li>
+<li>You cannot delete root (<code>""</code> or <code>"."</code>) — <code>Store</code> rejects it before your
+  backend runs, so users never reach you with a root delete; the tutorial
+  backend also guards it locally, which is the safer shape.</li>
 </ul>
 <hr />
 <h2 id="step-9-listing">Step 9: Listing<a class="headerlink" href="#step-9-listing" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">list_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">recursive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FileInfo</span><span class="p">]:</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>        <span class="k">for</span> <span class="n">file_path</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iter_file_paths_under</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>            <span class="c1"># If not recursive, only yield immediate children</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>            <span class="k">if</span> <span class="ow">not</span> <span class="n">recursive</span><span class="p">:</span>
-<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>                <span class="n">rel</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">/&quot;</span> <span class="k">if</span> <span class="n">path</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
-<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>                <span class="k">if</span> <span class="s2">&quot;/&quot;</span> <span class="ow">in</span> <span class="n">rel</span><span class="p">:</span>
-<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>                    <span class="k">continue</span>  <span class="c1"># Skip nested files</span>
-<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>
-<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>            <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_file_info</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
-<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>            <span class="k">if</span> <span class="n">info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>                <span class="k">yield</span> <span class="n">info</span>
-<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>    <span class="k">except</span> <span class="n">redis</span><span class="o">.</span><span class="n">RedisError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_map_error</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
-<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>
-<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="k">def</span><span class="w"> </span><span class="nf">list_folders</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FolderEntry</span><span class="p">]:</span>
-<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>    <span class="n">seen</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
-<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a>    <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a>        <span class="k">for</span> <span class="n">file_path</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iter_file_paths_under</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
-<a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a>            <span class="c1"># Extract the immediate subfolder name</span>
-<a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a>            <span class="n">prefix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">/&quot;</span> <span class="k">if</span> <span class="n">path</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
-<a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a>            <span class="n">rel</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
-<a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a>            <span class="k">if</span> <span class="s2">&quot;/&quot;</span> <span class="ow">in</span> <span class="n">rel</span><span class="p">:</span>
-<a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a>                <span class="n">folder_name</span> <span class="o">=</span> <span class="n">rel</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
-<a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a>                <span class="k">if</span> <span class="n">folder_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
-<a id="__codelineno-9-26" name="__codelineno-9-26" href="#__codelineno-9-26"></a>                    <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">folder_name</span><span class="p">)</span>
-<a id="__codelineno-9-27" name="__codelineno-9-27" href="#__codelineno-9-27"></a>                    <span class="n">folder_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="n">folder_name</span><span class="si">}</span><span class="s2">&quot;</span>
-<a id="__codelineno-9-28" name="__codelineno-9-28" href="#__codelineno-9-28"></a>                    <span class="k">yield</span> <span class="n">FolderEntry</span><span class="p">(</span>
-<a id="__codelineno-9-29" name="__codelineno-9-29" href="#__codelineno-9-29"></a>                        <span class="n">path</span><span class="o">=</span><span class="n">RemotePath</span><span class="p">(</span><span class="n">folder_path</span><span class="p">),</span>
-<a id="__codelineno-9-30" name="__codelineno-9-30" href="#__codelineno-9-30"></a>                        <span class="n">name</span><span class="o">=</span><span class="n">folder_name</span><span class="p">,</span>
-<a id="__codelineno-9-31" name="__codelineno-9-31" href="#__codelineno-9-31"></a>                    <span class="p">)</span>
-<a id="__codelineno-9-32" name="__codelineno-9-32" href="#__codelineno-9-32"></a>    <span class="k">except</span> <span class="n">redis</span><span class="o">.</span><span class="n">RedisError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-<a id="__codelineno-9-33" name="__codelineno-9-33" href="#__codelineno-9-33"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_map_error</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
-<a id="__codelineno-9-34" name="__codelineno-9-34" href="#__codelineno-9-34"></a>
-<a id="__codelineno-9-35" name="__codelineno-9-35" href="#__codelineno-9-35"></a><span class="k">def</span><span class="w"> </span><span class="nf">_iter_file_paths_under</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
-<a id="__codelineno-9-36" name="__codelineno-9-36" href="#__codelineno-9-36"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Scan Redis for all file keys under a path prefix.&quot;&quot;&quot;</span>
-<a id="__codelineno-9-37" name="__codelineno-9-37" href="#__codelineno-9-37"></a>    <span class="k">if</span> <span class="n">path</span> <span class="ow">and</span> <span class="n">path</span> <span class="o">!=</span> <span class="s2">&quot;.&quot;</span><span class="p">:</span>
-<a id="__codelineno-9-38" name="__codelineno-9-38" href="#__codelineno-9-38"></a>        <span class="n">pattern</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span><span class="si">}</span><span class="s2">file:</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">/*&quot;</span>
-<a id="__codelineno-9-39" name="__codelineno-9-39" href="#__codelineno-9-39"></a>    <span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-9-40" name="__codelineno-9-40" href="#__codelineno-9-40"></a>        <span class="n">pattern</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_file_keys_pattern</span><span class="p">()</span>
-<a id="__codelineno-9-41" name="__codelineno-9-41" href="#__codelineno-9-41"></a>
-<a id="__codelineno-9-42" name="__codelineno-9-42" href="#__codelineno-9-42"></a>    <span class="n">cursor</span> <span class="o">=</span> <span class="mi">0</span>
-<a id="__codelineno-9-43" name="__codelineno-9-43" href="#__codelineno-9-43"></a>    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-<a id="__codelineno-9-44" name="__codelineno-9-44" href="#__codelineno-9-44"></a>        <span class="n">cursor</span><span class="p">,</span> <span class="n">keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="n">cursor</span><span class="o">=</span><span class="n">cursor</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="n">pattern</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
-<a id="__codelineno-9-45" name="__codelineno-9-45" href="#__codelineno-9-45"></a>        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
-<a id="__codelineno-9-46" name="__codelineno-9-46" href="#__codelineno-9-46"></a>            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path_from_key</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-<a id="__codelineno-9-47" name="__codelineno-9-47" href="#__codelineno-9-47"></a>        <span class="k">if</span> <span class="n">cursor</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-<a id="__codelineno-9-48" name="__codelineno-9-48" href="#__codelineno-9-48"></a>            <span class="k">break</span>
-<a id="__codelineno-9-49" name="__codelineno-9-49" href="#__codelineno-9-49"></a>
-<a id="__codelineno-9-50" name="__codelineno-9-50" href="#__codelineno-9-50"></a><span class="k">def</span><span class="w"> </span><span class="nf">_build_file_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FileInfo</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-9-51" name="__codelineno-9-51" href="#__codelineno-9-51"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a FileInfo from Redis hash fields.&quot;&quot;&quot;</span>
-<a id="__codelineno-9-52" name="__codelineno-9-52" href="#__codelineno-9-52"></a>    <span class="n">fields</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">hgetall</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
-<a id="__codelineno-9-53" name="__codelineno-9-53" href="#__codelineno-9-53"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">fields</span><span class="p">:</span>
-<a id="__codelineno-9-54" name="__codelineno-9-54" href="#__codelineno-9-54"></a>        <span class="k">return</span> <span class="kc">None</span>
-<a id="__codelineno-9-55" name="__codelineno-9-55" href="#__codelineno-9-55"></a>    <span class="k">return</span> <span class="n">FileInfo</span><span class="p">(</span>
-<a id="__codelineno-9-56" name="__codelineno-9-56" href="#__codelineno-9-56"></a>        <span class="n">path</span><span class="o">=</span><span class="n">RemotePath</span><span class="p">(</span><span class="n">path</span><span class="p">),</span>
-<a id="__codelineno-9-57" name="__codelineno-9-57" href="#__codelineno-9-57"></a>        <span class="n">name</span><span class="o">=</span><span class="n">path</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
-<a id="__codelineno-9-58" name="__codelineno-9-58" href="#__codelineno-9-58"></a>        <span class="n">size</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">fields</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;size&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;0&quot;</span><span class="p">)),</span>
-<a id="__codelineno-9-59" name="__codelineno-9-59" href="#__codelineno-9-59"></a>        <span class="n">modified_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="sa">b</span><span class="s2">&quot;modified_at&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">()),</span>
-<a id="__codelineno-9-60" name="__codelineno-9-60" href="#__codelineno-9-60"></a>    <span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">list_files</span><span class="p">(</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    <span class="bp">self</span><span class="p">,</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">recursive</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">max_depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FileInfo</span><span class="p">]:</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="c1"># The conformance suite calls backends directly and asserts the</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="c1"># depth boundary on what *you* return, so honor max_depth here.</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="c1"># recursive and max_depth are independent filters: recursive=False</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>    <span class="c1"># always wins (immediate children only), and max_depth prunes</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>    <span class="c1"># recursive listings.</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>    <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>        <span class="k">for</span> <span class="n">file_path</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iter_file_paths_under</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>            <span class="n">rel</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">/&quot;</span> <span class="k">if</span> <span class="n">path</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>            <span class="n">depth</span> <span class="o">=</span> <span class="n">rel</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>  <span class="c1"># 0 = directly in `path`</span>
+<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>            <span class="k">if</span> <span class="ow">not</span> <span class="n">recursive</span> <span class="ow">and</span> <span class="n">depth</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a>                <span class="k">continue</span>  <span class="c1"># Skip nested files</span>
+<a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a>            <span class="k">if</span> <span class="n">max_depth</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">depth</span> <span class="o">&gt;</span> <span class="n">max_depth</span><span class="p">:</span>
+<a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a>                <span class="k">continue</span>  <span class="c1"># Prune below the requested depth</span>
+<a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a>
+<a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a>            <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_file_info</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+<a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a>            <span class="k">if</span> <span class="n">info</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a>                <span class="k">yield</span> <span class="n">info</span>
+<a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a>    <span class="k">except</span> <span class="n">redis</span><span class="o">.</span><span class="n">RedisError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+<a id="__codelineno-9-26" name="__codelineno-9-26" href="#__codelineno-9-26"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_map_error</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+<a id="__codelineno-9-27" name="__codelineno-9-27" href="#__codelineno-9-27"></a>
+<a id="__codelineno-9-28" name="__codelineno-9-28" href="#__codelineno-9-28"></a><span class="k">def</span><span class="w"> </span><span class="nf">list_folders</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">FolderEntry</span><span class="p">]:</span>
+<a id="__codelineno-9-29" name="__codelineno-9-29" href="#__codelineno-9-29"></a>    <span class="n">seen</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+<a id="__codelineno-9-30" name="__codelineno-9-30" href="#__codelineno-9-30"></a>    <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-9-31" name="__codelineno-9-31" href="#__codelineno-9-31"></a>        <span class="k">for</span> <span class="n">file_path</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_iter_file_paths_under</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+<a id="__codelineno-9-32" name="__codelineno-9-32" href="#__codelineno-9-32"></a>            <span class="c1"># Extract the immediate subfolder name</span>
+<a id="__codelineno-9-33" name="__codelineno-9-33" href="#__codelineno-9-33"></a>            <span class="n">prefix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">/&quot;</span> <span class="k">if</span> <span class="n">path</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span>
+<a id="__codelineno-9-34" name="__codelineno-9-34" href="#__codelineno-9-34"></a>            <span class="n">rel</span> <span class="o">=</span> <span class="n">file_path</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+<a id="__codelineno-9-35" name="__codelineno-9-35" href="#__codelineno-9-35"></a>            <span class="k">if</span> <span class="s2">&quot;/&quot;</span> <span class="ow">in</span> <span class="n">rel</span><span class="p">:</span>
+<a id="__codelineno-9-36" name="__codelineno-9-36" href="#__codelineno-9-36"></a>                <span class="n">folder_name</span> <span class="o">=</span> <span class="n">rel</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-9-37" name="__codelineno-9-37" href="#__codelineno-9-37"></a>                <span class="k">if</span> <span class="n">folder_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+<a id="__codelineno-9-38" name="__codelineno-9-38" href="#__codelineno-9-38"></a>                    <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">folder_name</span><span class="p">)</span>
+<a id="__codelineno-9-39" name="__codelineno-9-39" href="#__codelineno-9-39"></a>                    <span class="n">folder_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">prefix</span><span class="si">}{</span><span class="n">folder_name</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-9-40" name="__codelineno-9-40" href="#__codelineno-9-40"></a>                    <span class="k">yield</span> <span class="n">FolderEntry</span><span class="p">(</span>
+<a id="__codelineno-9-41" name="__codelineno-9-41" href="#__codelineno-9-41"></a>                        <span class="n">path</span><span class="o">=</span><span class="n">RemotePath</span><span class="p">(</span><span class="n">folder_path</span><span class="p">),</span>
+<a id="__codelineno-9-42" name="__codelineno-9-42" href="#__codelineno-9-42"></a>                        <span class="n">name</span><span class="o">=</span><span class="n">folder_name</span><span class="p">,</span>
+<a id="__codelineno-9-43" name="__codelineno-9-43" href="#__codelineno-9-43"></a>                    <span class="p">)</span>
+<a id="__codelineno-9-44" name="__codelineno-9-44" href="#__codelineno-9-44"></a>    <span class="k">except</span> <span class="n">redis</span><span class="o">.</span><span class="n">RedisError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+<a id="__codelineno-9-45" name="__codelineno-9-45" href="#__codelineno-9-45"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_map_error</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
+<a id="__codelineno-9-46" name="__codelineno-9-46" href="#__codelineno-9-46"></a>
+<a id="__codelineno-9-47" name="__codelineno-9-47" href="#__codelineno-9-47"></a><span class="k">def</span><span class="w"> </span><span class="nf">_iter_file_paths_under</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<a id="__codelineno-9-48" name="__codelineno-9-48" href="#__codelineno-9-48"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Scan Redis for all file keys under a path prefix.&quot;&quot;&quot;</span>
+<a id="__codelineno-9-49" name="__codelineno-9-49" href="#__codelineno-9-49"></a>    <span class="k">if</span> <span class="n">path</span> <span class="ow">and</span> <span class="n">path</span> <span class="o">!=</span> <span class="s2">&quot;.&quot;</span><span class="p">:</span>
+<a id="__codelineno-9-50" name="__codelineno-9-50" href="#__codelineno-9-50"></a>        <span class="n">pattern</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span><span class="si">}</span><span class="s2">file:</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">/*&quot;</span>
+<a id="__codelineno-9-51" name="__codelineno-9-51" href="#__codelineno-9-51"></a>    <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-9-52" name="__codelineno-9-52" href="#__codelineno-9-52"></a>        <span class="n">pattern</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_all_file_keys_pattern</span><span class="p">()</span>
+<a id="__codelineno-9-53" name="__codelineno-9-53" href="#__codelineno-9-53"></a>
+<a id="__codelineno-9-54" name="__codelineno-9-54" href="#__codelineno-9-54"></a>    <span class="n">cursor</span> <span class="o">=</span> <span class="mi">0</span>
+<a id="__codelineno-9-55" name="__codelineno-9-55" href="#__codelineno-9-55"></a>    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+<a id="__codelineno-9-56" name="__codelineno-9-56" href="#__codelineno-9-56"></a>        <span class="n">cursor</span><span class="p">,</span> <span class="n">keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">scan</span><span class="p">(</span><span class="n">cursor</span><span class="o">=</span><span class="n">cursor</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="n">pattern</span><span class="p">,</span> <span class="n">count</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<a id="__codelineno-9-57" name="__codelineno-9-57" href="#__codelineno-9-57"></a>        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+<a id="__codelineno-9-58" name="__codelineno-9-58" href="#__codelineno-9-58"></a>            <span class="k">yield</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path_from_key</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+<a id="__codelineno-9-59" name="__codelineno-9-59" href="#__codelineno-9-59"></a>        <span class="k">if</span> <span class="n">cursor</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-9-60" name="__codelineno-9-60" href="#__codelineno-9-60"></a>            <span class="k">break</span>
+<a id="__codelineno-9-61" name="__codelineno-9-61" href="#__codelineno-9-61"></a>
+<a id="__codelineno-9-62" name="__codelineno-9-62" href="#__codelineno-9-62"></a><span class="k">def</span><span class="w"> </span><span class="nf">_build_file_info</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FileInfo</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-9-63" name="__codelineno-9-63" href="#__codelineno-9-63"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Build a FileInfo from Redis hash fields.&quot;&quot;&quot;</span>
+<a id="__codelineno-9-64" name="__codelineno-9-64" href="#__codelineno-9-64"></a>    <span class="n">fields</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">hgetall</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+<a id="__codelineno-9-65" name="__codelineno-9-65" href="#__codelineno-9-65"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">fields</span><span class="p">:</span>
+<a id="__codelineno-9-66" name="__codelineno-9-66" href="#__codelineno-9-66"></a>        <span class="k">return</span> <span class="kc">None</span>
+<a id="__codelineno-9-67" name="__codelineno-9-67" href="#__codelineno-9-67"></a>    <span class="k">return</span> <span class="n">FileInfo</span><span class="p">(</span>
+<a id="__codelineno-9-68" name="__codelineno-9-68" href="#__codelineno-9-68"></a>        <span class="n">path</span><span class="o">=</span><span class="n">RemotePath</span><span class="p">(</span><span class="n">path</span><span class="p">),</span>
+<a id="__codelineno-9-69" name="__codelineno-9-69" href="#__codelineno-9-69"></a>        <span class="n">name</span><span class="o">=</span><span class="n">path</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span>
+<a id="__codelineno-9-70" name="__codelineno-9-70" href="#__codelineno-9-70"></a>        <span class="n">size</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">fields</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;size&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;0&quot;</span><span class="p">)),</span>
+<a id="__codelineno-9-71" name="__codelineno-9-71" href="#__codelineno-9-71"></a>        <span class="n">modified_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="sa">b</span><span class="s2">&quot;modified_at&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">()),</span>
+<a id="__codelineno-9-72" name="__codelineno-9-72" href="#__codelineno-9-72"></a>    <span class="p">)</span>
 </code></pre></div>
 <p><strong>Key rules:</strong></p>
 <ul>
 <li><code>list_files(path="")</code> lists from root.</li>
 <li><code>recursive=False</code> (default) yields only immediate children.</li>
+<li><strong>Honor <code>max_depth</code>.</strong> <code>Store</code> always passes it, and the conformance
+  suite calls your backend directly and asserts the depth boundary on what
+  <em>you</em> return — a backend that ignores the value fails those tests, even
+  though <code>Store</code> additionally applies client-side depth filtering for its
+  own callers. Treat <code>recursive</code> and <code>max_depth</code> as independent filters,
+  exactly as the code above does: at the backend layer <code>recursive=False</code>
+  wins (immediate children only, whatever <code>max_depth</code> says), and
+  <code>max_depth</code> prunes recursive listings to the requested depth. <code>Store</code>
+  never sends you a <em>conflicting</em> combination — when callers set
+  <code>max_depth</code>, its facade derives <code>recursive</code> from it, and <code>max_depth=0</code>
+  arrives as <code>recursive=False</code>, where both rules agree — so the
+  backend-layer precedence is observable only in direct calls, which is
+  how the conformance suite calls you. The tutorial follows the formal
+  backend contract here; where older spec prose differs, the
+  <a href="../../explanation/design/specs/003-backend-adapter-contract/">Backend Adapter Contract</a>
+  and the conformance suite are the operative authorities.</li>
 <li><code>list_folders()</code> is always non-recursive — only immediate subfolders.</li>
 <li>Non-existent paths yield nothing (no exception).</li>
 <li><a href="../../reference/api/models/"><code>FileInfo</code></a><code>.path</code> must be a <a href="../../reference/api/models/"><code>RemotePath</code></a>.</li>
@@ -11755,50 +11804,72 @@ returns the stream as-is.</p>
 <a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
 <a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>            <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Source not found: </span><span class="si">{</span><span class="n">src</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">src</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 <a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>
-<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>        <span class="c1"># Check destination</span>
-<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">overwrite</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">(</span><span class="n">dst</span><span class="p">)):</span>
-<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a>            <span class="k">raise</span> <span class="n">AlreadyExists</span><span class="p">(</span>
-<a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a>                <span class="sa">f</span><span class="s2">&quot;Destination already exists: </span><span class="si">{</span><span class="n">dst</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a>                <span class="n">path</span><span class="o">=</span><span class="n">dst</span><span class="p">,</span>
-<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a>                <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-<a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a>            <span class="p">)</span>
-<a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a>
-<a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a>        <span class="c1"># Atomic: write destination then delete source</span>
-<a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a>        <span class="n">pipe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">pipeline</span><span class="p">()</span>
-<a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a>        <span class="n">pipe</span><span class="o">.</span><span class="n">hset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">(</span><span class="n">dst</span><span class="p">),</span> <span class="n">mapping</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
-<a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a>        <span class="n">pipe</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">(</span><span class="n">src</span><span class="p">))</span>
-<a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a>        <span class="n">pipe</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
-<a id="__codelineno-11-26" name="__codelineno-11-26" href="#__codelineno-11-26"></a>    <span class="k">except</span> <span class="p">(</span><span class="n">NotFound</span><span class="p">,</span> <span class="n">AlreadyExists</span><span class="p">,</span> <span class="n">InvalidPath</span><span class="p">):</span>
-<a id="__codelineno-11-27" name="__codelineno-11-27" href="#__codelineno-11-27"></a>        <span class="k">raise</span>
-<a id="__codelineno-11-28" name="__codelineno-11-28" href="#__codelineno-11-28"></a>    <span class="k">except</span> <span class="n">redis</span><span class="o">.</span><span class="n">RedisError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-<a id="__codelineno-11-29" name="__codelineno-11-29" href="#__codelineno-11-29"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_map_error</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">src</span><span class="p">)</span>
-<a id="__codelineno-11-30" name="__codelineno-11-30" href="#__codelineno-11-30"></a>
-<a id="__codelineno-11-31" name="__codelineno-11-31" href="#__codelineno-11-31"></a><span class="k">def</span><span class="w"> </span><span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-11-32" name="__codelineno-11-32" href="#__codelineno-11-32"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">src</span> <span class="ow">or</span> <span class="n">src</span> <span class="o">==</span> <span class="s2">&quot;.&quot;</span><span class="p">:</span>
-<a id="__codelineno-11-33" name="__codelineno-11-33" href="#__codelineno-11-33"></a>        <span class="k">raise</span> <span class="n">InvalidPath</span><span class="p">(</span><span class="s2">&quot;Source path must not be empty&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">src</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-<a id="__codelineno-11-34" name="__codelineno-11-34" href="#__codelineno-11-34"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">dst</span> <span class="ow">or</span> <span class="n">dst</span> <span class="o">==</span> <span class="s2">&quot;.&quot;</span><span class="p">:</span>
-<a id="__codelineno-11-35" name="__codelineno-11-35" href="#__codelineno-11-35"></a>        <span class="k">raise</span> <span class="n">InvalidPath</span><span class="p">(</span><span class="s2">&quot;Destination path must not be empty&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">dst</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-<a id="__codelineno-11-36" name="__codelineno-11-36" href="#__codelineno-11-36"></a>
-<a id="__codelineno-11-37" name="__codelineno-11-37" href="#__codelineno-11-37"></a>    <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-11-38" name="__codelineno-11-38" href="#__codelineno-11-38"></a>        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">hgetall</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">(</span><span class="n">src</span><span class="p">))</span>
-<a id="__codelineno-11-39" name="__codelineno-11-39" href="#__codelineno-11-39"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
-<a id="__codelineno-11-40" name="__codelineno-11-40" href="#__codelineno-11-40"></a>            <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Source not found: </span><span class="si">{</span><span class="n">src</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">src</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>        <span class="c1"># src == dst is a data-preserving no-op (Backend contract) —</span>
+<a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>        <span class="c1"># after the source check, so a missing source still raises NotFound.</span>
+<a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a>        <span class="k">if</span> <span class="n">src</span> <span class="o">==</span> <span class="n">dst</span><span class="p">:</span>
+<a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a>            <span class="k">return</span>
+<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a>
+<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a>        <span class="c1"># Check destination</span>
+<a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">overwrite</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">(</span><span class="n">dst</span><span class="p">)):</span>
+<a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a>            <span class="k">raise</span> <span class="n">AlreadyExists</span><span class="p">(</span>
+<a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a>                <span class="sa">f</span><span class="s2">&quot;Destination already exists: </span><span class="si">{</span><span class="n">dst</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a>                <span class="n">path</span><span class="o">=</span><span class="n">dst</span><span class="p">,</span>
+<a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a>                <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+<a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a>            <span class="p">)</span>
+<a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a>
+<a id="__codelineno-11-26" name="__codelineno-11-26" href="#__codelineno-11-26"></a>        <span class="c1"># Atomic: write destination then delete source</span>
+<a id="__codelineno-11-27" name="__codelineno-11-27" href="#__codelineno-11-27"></a>        <span class="n">pipe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">pipeline</span><span class="p">()</span>
+<a id="__codelineno-11-28" name="__codelineno-11-28" href="#__codelineno-11-28"></a>        <span class="n">pipe</span><span class="o">.</span><span class="n">hset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">(</span><span class="n">dst</span><span class="p">),</span> <span class="n">mapping</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+<a id="__codelineno-11-29" name="__codelineno-11-29" href="#__codelineno-11-29"></a>        <span class="n">pipe</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">(</span><span class="n">src</span><span class="p">))</span>
+<a id="__codelineno-11-30" name="__codelineno-11-30" href="#__codelineno-11-30"></a>        <span class="n">pipe</span><span class="o">.</span><span class="n">execute</span><span class="p">()</span>
+<a id="__codelineno-11-31" name="__codelineno-11-31" href="#__codelineno-11-31"></a>    <span class="k">except</span> <span class="p">(</span><span class="n">NotFound</span><span class="p">,</span> <span class="n">AlreadyExists</span><span class="p">,</span> <span class="n">InvalidPath</span><span class="p">):</span>
+<a id="__codelineno-11-32" name="__codelineno-11-32" href="#__codelineno-11-32"></a>        <span class="k">raise</span>
+<a id="__codelineno-11-33" name="__codelineno-11-33" href="#__codelineno-11-33"></a>    <span class="k">except</span> <span class="n">redis</span><span class="o">.</span><span class="n">RedisError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+<a id="__codelineno-11-34" name="__codelineno-11-34" href="#__codelineno-11-34"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_map_error</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">src</span><span class="p">)</span>
+<a id="__codelineno-11-35" name="__codelineno-11-35" href="#__codelineno-11-35"></a>
+<a id="__codelineno-11-36" name="__codelineno-11-36" href="#__codelineno-11-36"></a><span class="k">def</span><span class="w"> </span><span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dst</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-11-37" name="__codelineno-11-37" href="#__codelineno-11-37"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">src</span> <span class="ow">or</span> <span class="n">src</span> <span class="o">==</span> <span class="s2">&quot;.&quot;</span><span class="p">:</span>
+<a id="__codelineno-11-38" name="__codelineno-11-38" href="#__codelineno-11-38"></a>        <span class="k">raise</span> <span class="n">InvalidPath</span><span class="p">(</span><span class="s2">&quot;Source path must not be empty&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">src</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<a id="__codelineno-11-39" name="__codelineno-11-39" href="#__codelineno-11-39"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">dst</span> <span class="ow">or</span> <span class="n">dst</span> <span class="o">==</span> <span class="s2">&quot;.&quot;</span><span class="p">:</span>
+<a id="__codelineno-11-40" name="__codelineno-11-40" href="#__codelineno-11-40"></a>        <span class="k">raise</span> <span class="n">InvalidPath</span><span class="p">(</span><span class="s2">&quot;Destination path must not be empty&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">dst</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 <a id="__codelineno-11-41" name="__codelineno-11-41" href="#__codelineno-11-41"></a>
-<a id="__codelineno-11-42" name="__codelineno-11-42" href="#__codelineno-11-42"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">overwrite</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">(</span><span class="n">dst</span><span class="p">)):</span>
-<a id="__codelineno-11-43" name="__codelineno-11-43" href="#__codelineno-11-43"></a>            <span class="k">raise</span> <span class="n">AlreadyExists</span><span class="p">(</span>
-<a id="__codelineno-11-44" name="__codelineno-11-44" href="#__codelineno-11-44"></a>                <span class="sa">f</span><span class="s2">&quot;Destination already exists: </span><span class="si">{</span><span class="n">dst</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
-<a id="__codelineno-11-45" name="__codelineno-11-45" href="#__codelineno-11-45"></a>                <span class="n">path</span><span class="o">=</span><span class="n">dst</span><span class="p">,</span>
-<a id="__codelineno-11-46" name="__codelineno-11-46" href="#__codelineno-11-46"></a>                <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
-<a id="__codelineno-11-47" name="__codelineno-11-47" href="#__codelineno-11-47"></a>            <span class="p">)</span>
-<a id="__codelineno-11-48" name="__codelineno-11-48" href="#__codelineno-11-48"></a>
-<a id="__codelineno-11-49" name="__codelineno-11-49" href="#__codelineno-11-49"></a>        <span class="c1"># Update modified_at for the copy</span>
-<a id="__codelineno-11-50" name="__codelineno-11-50" href="#__codelineno-11-50"></a>        <span class="n">data</span><span class="p">[</span><span class="sa">b</span><span class="s2">&quot;modified_at&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
-<a id="__codelineno-11-51" name="__codelineno-11-51" href="#__codelineno-11-51"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">hset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">(</span><span class="n">dst</span><span class="p">),</span> <span class="n">mapping</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
-<a id="__codelineno-11-52" name="__codelineno-11-52" href="#__codelineno-11-52"></a>    <span class="k">except</span> <span class="p">(</span><span class="n">NotFound</span><span class="p">,</span> <span class="n">AlreadyExists</span><span class="p">,</span> <span class="n">InvalidPath</span><span class="p">):</span>
-<a id="__codelineno-11-53" name="__codelineno-11-53" href="#__codelineno-11-53"></a>        <span class="k">raise</span>
-<a id="__codelineno-11-54" name="__codelineno-11-54" href="#__codelineno-11-54"></a>    <span class="k">except</span> <span class="n">redis</span><span class="o">.</span><span class="n">RedisError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
-<a id="__codelineno-11-55" name="__codelineno-11-55" href="#__codelineno-11-55"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_map_error</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">src</span><span class="p">)</span>
+<a id="__codelineno-11-42" name="__codelineno-11-42" href="#__codelineno-11-42"></a>    <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-11-43" name="__codelineno-11-43" href="#__codelineno-11-43"></a>        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">hgetall</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">(</span><span class="n">src</span><span class="p">))</span>
+<a id="__codelineno-11-44" name="__codelineno-11-44" href="#__codelineno-11-44"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+<a id="__codelineno-11-45" name="__codelineno-11-45" href="#__codelineno-11-45"></a>            <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Source not found: </span><span class="si">{</span><span class="n">src</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">src</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<a id="__codelineno-11-46" name="__codelineno-11-46" href="#__codelineno-11-46"></a>
+<a id="__codelineno-11-47" name="__codelineno-11-47" href="#__codelineno-11-47"></a>        <span class="k">if</span> <span class="n">src</span> <span class="o">==</span> <span class="n">dst</span><span class="p">:</span>
+<a id="__codelineno-11-48" name="__codelineno-11-48" href="#__codelineno-11-48"></a>            <span class="k">return</span>  <span class="c1"># Data-preserving no-op, same as move()</span>
+<a id="__codelineno-11-49" name="__codelineno-11-49" href="#__codelineno-11-49"></a>
+<a id="__codelineno-11-50" name="__codelineno-11-50" href="#__codelineno-11-50"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">overwrite</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">(</span><span class="n">dst</span><span class="p">)):</span>
+<a id="__codelineno-11-51" name="__codelineno-11-51" href="#__codelineno-11-51"></a>            <span class="k">raise</span> <span class="n">AlreadyExists</span><span class="p">(</span>
+<a id="__codelineno-11-52" name="__codelineno-11-52" href="#__codelineno-11-52"></a>                <span class="sa">f</span><span class="s2">&quot;Destination already exists: </span><span class="si">{</span><span class="n">dst</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-53" name="__codelineno-11-53" href="#__codelineno-11-53"></a>                <span class="n">path</span><span class="o">=</span><span class="n">dst</span><span class="p">,</span>
+<a id="__codelineno-11-54" name="__codelineno-11-54" href="#__codelineno-11-54"></a>                <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+<a id="__codelineno-11-55" name="__codelineno-11-55" href="#__codelineno-11-55"></a>            <span class="p">)</span>
+<a id="__codelineno-11-56" name="__codelineno-11-56" href="#__codelineno-11-56"></a>
+<a id="__codelineno-11-57" name="__codelineno-11-57" href="#__codelineno-11-57"></a>        <span class="c1"># Update modified_at for the copy</span>
+<a id="__codelineno-11-58" name="__codelineno-11-58" href="#__codelineno-11-58"></a>        <span class="n">data</span><span class="p">[</span><span class="sa">b</span><span class="s2">&quot;modified_at&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
+<a id="__codelineno-11-59" name="__codelineno-11-59" href="#__codelineno-11-59"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">hset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">(</span><span class="n">dst</span><span class="p">),</span> <span class="n">mapping</span><span class="o">=</span><span class="n">data</span><span class="p">)</span>
+<a id="__codelineno-11-60" name="__codelineno-11-60" href="#__codelineno-11-60"></a>    <span class="k">except</span> <span class="p">(</span><span class="n">NotFound</span><span class="p">,</span> <span class="n">AlreadyExists</span><span class="p">,</span> <span class="n">InvalidPath</span><span class="p">):</span>
+<a id="__codelineno-11-61" name="__codelineno-11-61" href="#__codelineno-11-61"></a>        <span class="k">raise</span>
+<a id="__codelineno-11-62" name="__codelineno-11-62" href="#__codelineno-11-62"></a>    <span class="k">except</span> <span class="n">redis</span><span class="o">.</span><span class="n">RedisError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+<a id="__codelineno-11-63" name="__codelineno-11-63" href="#__codelineno-11-63"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_map_error</span><span class="p">(</span><span class="n">exc</span><span class="p">,</span> <span class="n">src</span><span class="p">)</span>
 </code></pre></div>
+<p><strong>Rules the code above implements:</strong></p>
+<ul>
+<li><strong><code>src == dst</code> is a data-preserving no-op</strong> — never a delete-after-write on
+  the same key. Place the no-op return <em>after</em> the source check so a missing
+  source still raises <code>NotFound</code>. (Contract rule.)</li>
+<li><strong>Precondition order matters:</strong> a missing source raises <code>NotFound</code> before
+  the destination is checked for <code>AlreadyExists</code>. (Contract rule.)</li>
+<li>Empty source or destination paths raise <code>InvalidPath</code> — today a
+  <code>Store</code>-enforced convention that shipped backends (and this tutorial)
+  also guard defensively; promoting it to a formal backend-contract clause
+  is tracked spec work.</li>
+</ul>
+<p>The conformance suite verifies the no-op rule for backends that declare
+<code>self_op_supported</code> (a registration fact covered later in this guide).</p>
 <hr />
 <h2 id="step-12-lifecycle-methods">Step 12: Lifecycle methods<a class="headerlink" href="#step-12-lifecycle-methods" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">check_health</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -11821,6 +11892,11 @@ returns the stream as-is.</p>
 <p><code>check_health()</code> should be the <strong>cheapest possible read-only operation</strong>.
 Redis <code>PING</code> is ideal. For S3 it's a <code>HEAD</code> on the bucket. For a database
 it's <code>SELECT 1</code>.</p>
+<p>One declarative flag rides along with <code>close()</code>: the
+<code>close_is_terminal: ClassVar[bool]</code> class attribute (default <code>False</code>,
+meaning the backend stays usable after <code>close()</code>). Declare <code>True</code> when
+use-after-close must fail — the close-posture conformance lane tests
+whichever posture you declare, so an undeclared terminal backend fails it.</p>
 <hr />
 <h2 id="step-13-register-and-use">Step 13: Register and use<a class="headerlink" href="#step-13-register-and-use" title="Permanent link">&para;</a></h2>
 <h3 id="direct-instantiation">Direct instantiation<a class="headerlink" href="#direct-instantiation" title="Permanent link">&para;</a></h3>
@@ -11837,14 +11913,19 @@ it's <code>SELECT 1</code>.</p>
 <a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">info</span><span class="o">.</span><span class="n">size</span><span class="si">}</span><span class="s2"> bytes&quot;</span><span class="p">)</span>
 </code></pre></div>
 <h3 id="via-registry-yaml-config">Via Registry (YAML config)<a class="headerlink" href="#via-registry-yaml-config" title="Permanent link">&para;</a></h3>
-<p>Register your backend type before creating a <a href="../../reference/api/registry/"><code>Registry</code></a>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Registry</span><span class="p">,</span> <span class="n">RegistryConfig</span><span class="p">,</span> <span class="n">register_backend</span>
-<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="n">register_backend</span><span class="p">(</span><span class="s2">&quot;redis&quot;</span><span class="p">,</span> <span class="n">RedisBackend</span><span class="p">)</span>
-<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>
-<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_yaml</span><span class="p">(</span><span class="s2">&quot;stores.yaml&quot;</span><span class="p">)</span>
-<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="n">registry</span> <span class="o">=</span> <span class="n">Registry</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="n">store</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;cache&quot;</span><span class="p">)</span>
+<p>Register your backend type before creating a <a href="../../reference/api/registry/"><code>Registry</code></a>.
+YAML loading lives in the <code>remote_store.ext.yaml</code> extension and requires the
+<code>yaml</code> extra (<code>pip install "remote-store[yaml]"</code>):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Registry</span><span class="p">,</span> <span class="n">register_backend</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.yaml</span><span class="w"> </span><span class="kn">import</span> <span class="n">from_yaml</span>  <span class="c1"># needs: pip install &quot;remote-store[yaml]&quot;</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="n">register_backend</span><span class="p">(</span><span class="s2">&quot;redis&quot;</span><span class="p">,</span> <span class="n">RedisBackend</span><span class="p">)</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="n">config</span> <span class="o">=</span> <span class="n">from_yaml</span><span class="p">(</span><span class="s2">&quot;stores.yaml&quot;</span><span class="p">)</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="k">with</span> <span class="n">Registry</span><span class="p">(</span><span class="n">config</span><span class="p">)</span> <span class="k">as</span> <span class="n">registry</span><span class="p">:</span>  <span class="c1"># closes instantiated backends on exit</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>    <span class="n">store</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;cache&quot;</span><span class="p">)</span>
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;from-registry&quot;</span><span class="p">)</span>
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>    <span class="n">data</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># stores.yaml</span>
 <a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="nt">backends</span><span class="p">:</span>
@@ -11861,22 +11942,36 @@ it's <code>SELECT 1</code>.</p>
 </code></pre></div>
 <p>The <code>options</code> dict is unpacked as <code>**kwargs</code> to your constructor. Parameter
 names in YAML must match your <code>__init__</code> signature exactly.</p>
+<p>One ownership note: stores from <code>registry.get_store()</code> do not own their
+backend, so <code>store.close()</code> is a no-op on them — the registry closes the
+backends it instantiated. Call <code>registry.close()</code> when done, or use
+<code>Registry</code> as a context manager (<code>with Registry(config) as registry:</code>).</p>
 <hr />
 <h2 id="step-14-extensions-work-automatically">Step 14: Extensions work automatically<a class="headerlink" href="#step-14-extensions-work-automatically" title="Permanent link">&para;</a></h2>
 <p>Because your backend implements the <code>Backend</code> contract, every remote-store
 extension works out of the box:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.batch</span><span class="w"> </span><span class="kn">import</span> <span class="n">batch_copy</span>
 <a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.cache</span><span class="w"> </span><span class="kn">import</span> <span class="n">cache</span>
-<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.observe</span><span class="w"> </span><span class="kn">import</span> <span class="n">observe</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.observe</span><span class="w"> </span><span class="kn">import</span> <span class="n">StoreEvent</span><span class="p">,</span> <span class="n">observe</span>
 <a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>
-<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="c1"># Observability</span>
-<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="n">observed</span> <span class="o">=</span> <span class="n">observe</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">hooks</span><span class="o">=</span><span class="p">[</span><span class="n">my_logging_hook</span><span class="p">])</span>
-<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>
-<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="c1"># Caching</span>
-<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="n">fast</span> <span class="o">=</span> <span class="n">cache</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
-<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>
-<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a><span class="c1"># Batch operations</span>
-<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a><span class="n">results</span> <span class="o">=</span> <span class="n">batch_copy</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="p">[(</span><span class="s2">&quot;a.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;b.txt&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;c.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;d.txt&quot;</span><span class="p">)])</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="n">events</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">my_logging_hook</span><span class="p">(</span><span class="n">event</span><span class="p">:</span> <span class="n">StoreEvent</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>    <span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>
+<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a><span class="c1"># Observability — my_logging_hook fires after every operation</span>
+<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a><span class="c1"># that goes through the observed wrapper</span>
+<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a><span class="n">observed</span> <span class="o">=</span> <span class="n">observe</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">on_any</span><span class="o">=</span><span class="n">my_logging_hook</span><span class="p">)</span>
+<a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a><span class="n">observed</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;a.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;alpha&quot;</span><span class="p">)</span>
+<a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a><span class="n">observed</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;c.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;gamma&quot;</span><span class="p">)</span>
+<a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a>
+<a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a><span class="c1"># Caching (layered on the observed store: one pipeline, no siblings)</span>
+<a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a><span class="n">fast</span> <span class="o">=</span> <span class="n">cache</span><span class="p">(</span><span class="n">observed</span><span class="p">,</span> <span class="n">ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+<a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a><span class="n">fast</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;a.txt&quot;</span><span class="p">)</span>  <span class="c1"># first touch — cache miss</span>
+<a id="__codelineno-16-19" name="__codelineno-16-19" href="#__codelineno-16-19"></a><span class="n">fast</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;a.txt&quot;</span><span class="p">)</span>  <span class="c1"># within the TTL — served from the cache</span>
+<a id="__codelineno-16-20" name="__codelineno-16-20" href="#__codelineno-16-20"></a>
+<a id="__codelineno-16-21" name="__codelineno-16-21" href="#__codelineno-16-21"></a><span class="c1"># Batch operations</span>
+<a id="__codelineno-16-22" name="__codelineno-16-22" href="#__codelineno-16-22"></a><span class="n">results</span> <span class="o">=</span> <span class="n">batch_copy</span><span class="p">(</span><span class="n">observed</span><span class="p">,</span> <span class="p">[(</span><span class="s2">&quot;a.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;b.txt&quot;</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;c.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;d.txt&quot;</span><span class="p">)])</span>
 </code></pre></div>
 <p>Extensions that require specific capabilities will check at runtime. For
 example, <code>ext.glob.glob_files()</code> works with any <code>LIST</code>-capable backend —
@@ -11884,13 +11979,14 @@ it doesn't need the <code>GLOB</code> capability.</p>
 <hr />
 <h2 id="partial-capability-backends">Partial-capability backends<a class="headerlink" href="#partial-capability-backends" title="Permanent link">&para;</a></h2>
 <p>Not every backend supports every operation. The HTTP backend, for example,
-is read-only:</p>
+is read-only — this is the shipped <code>ReadOnlyHttpBackend</code>'s actual capability
+set (note there is no <code>LIST</code>: plain HTTP has no directory listing):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">_ReadOnlyBackend</span><span class="p">(</span><span class="n">Backend</span><span class="p">):</span>  <span class="c1"># type: ignore[abstract]</span>
 <a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>    <span class="n">CAPABILITIES</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="n">CapabilitySet</span><span class="p">]</span> <span class="o">=</span> <span class="n">CapabilitySet</span><span class="p">(</span>
 <a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>        <span class="p">{</span>
 <a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>            <span class="n">Capability</span><span class="o">.</span><span class="n">READ</span><span class="p">,</span>
-<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>            <span class="n">Capability</span><span class="o">.</span><span class="n">LIST</span><span class="p">,</span>
-<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>            <span class="n">Capability</span><span class="o">.</span><span class="n">METADATA</span><span class="p">,</span>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>            <span class="n">Capability</span><span class="o">.</span><span class="n">METADATA</span><span class="p">,</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>            <span class="n">Capability</span><span class="o">.</span><span class="n">LAZY_READ</span><span class="p">,</span>
 <a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>        <span class="p">}</span>
 <a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>    <span class="p">)</span>
 <a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>
@@ -12022,8 +12118,28 @@ fixture — every registered backend runs the full suite automatically.</p>
 <td><code>check_health()</code> contract — error mapping never leaks native SDK exceptions</td>
 <td><code>pytest tests/backends/conformance/test_check_health.py</code></td>
 </tr>
+<tr>
+<td><a href="https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_health_probe_declared.py"><code>test_health_probe_declared.py</code></a></td>
+<td>Structural: every backend overrides <code>check_health()</code> or declares an exemption (presence only; probe behavior is verified per-backend)</td>
+<td><code>pytest tests/backends/conformance/test_health_probe_declared.py</code></td>
+</tr>
+<tr>
+<td><a href="https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_concurrency.py"><code>test_concurrency.py</code></a></td>
+<td>Posture-gated concurrency lane — each fixture tested against its declared <code>concurrency</code> posture</td>
+<td><code>pytest tests/backends/conformance/test_concurrency.py</code></td>
+</tr>
+<tr>
+<td><a href="https://github.com/haalfi/remote-store/blob/master/tests/backends/conformance/test_close_posture.py"><code>test_close_posture.py</code></a></td>
+<td>Posture-gated <code>close()</code> lane — reusable vs. terminal after close</td>
+<td><code>pytest tests/backends/conformance/test_close_posture.py</code></td>
+</tr>
 </tbody>
 </table>
+<p>The directory also carries infrastructure lanes (sync-adapter conformance,
+large-payload guard, xfail guard, replayed examples) and the async suite
+under <code>aio/</code> — browse
+<a href="https://github.com/haalfi/remote-store/tree/master/tests/backends/conformance">the directory</a>
+for the full inventory.</p>
 <p>Run the whole suite at once with <code>pytest tests/backends/conformance/</code>.</p>
 <p><strong>Extended (Dafny-derived) cases</strong> — error fidelity, precondition ordering,
 depth filtering, move/copy edge semantics, resource cleanup — are not a
@@ -12047,68 +12163,188 @@ what existing backends happen to do."  See <a href="https://github.com/haalfi/re
 <h3 id="registering-in-the-conformance-fixture-contributing-backends">Registering in the conformance fixture (contributing backends)<a class="headerlink" href="#registering-in-the-conformance-fixture-contributing-backends" title="Permanent link">&para;</a></h3>
 <p>If you are contributing a backend to remote-store, this is step 3 of
 <a href="../../explanation/contributing/#adding-a-new-backend">CONTRIBUTING.md § Adding a New Backend</a>.
-Add your backend to
-<a href="https://github.com/haalfi/remote-store/blob/master/tests/backends/conftest.py"><code>tests/backends/conftest.py</code></a>;
-the entire conformance suite then runs against it automatically.</p>
-<p><strong>1. Add an availability guard near the top of <code>conftest.py</code>:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">_redis_available</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>    <span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">redis</span>  <span class="c1"># noqa: F401</span>
-<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>        <span class="k">return</span> <span class="kc">True</span>
-<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
-<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>        <span class="k">return</span> <span class="kc">False</span>
+The test infrastructure is registry-driven. Four steps: declare facts in
+two TOML files, add one small factory module under
+<a href="https://github.com/haalfi/remote-store/tree/master/tests/backends/fixtures"><code>tests/backends/fixtures/</code></a>,
+and classify your family in the by-name conformance lanes (step 4). The
+conformance suite then parametrizes every test over your fixture
+automatically — registration itself needs no conftest edits, though a
+backend that needs an external service still adds a server fixture (see
+the end of this section).</p>
+<p>The TOML and Python blocks below show test-infrastructure files, so they
+are hand-written fences rather than executable snippet regions (the CI
+drift gate validates the TOML values against the fixture loader instead).</p>
+<p><strong>1. Declare the backend family in <code>tests/backends/fixtures/backends.toml</code>:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1"># tests/backends/fixtures/backends.toml</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="k">[backend.redis]</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="n">sources</span><span class="w">           </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;src/remote_store/backends/_redis.py&quot;</span><span class="p">]</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="n">transport</span><span class="w">         </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;fs&quot;</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="n">concurrency</span><span class="w">       </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;thread_safe&quot;</span>
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="n">flat_namespace</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="w">          </span><span class="c1"># true when the backend has no real directory entries</span>
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="n">self_op_supported</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="w">          </span><span class="c1"># move(p, p) / copy(p, p) is a safe no-op</span>
 </code></pre></div>
-<p><strong>2. Add a <code>pytest.param</code> constant:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="n">_redis_param</span> <span class="o">=</span> <span class="n">pytest</span><span class="o">.</span><span class="n">param</span><span class="p">(</span>
-<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>    <span class="s2">&quot;redis&quot;</span><span class="p">,</span>
-<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>    <span class="n">marks</span><span class="o">=</span><span class="n">pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">skipif</span><span class="p">(</span><span class="ow">not</span> <span class="n">_redis_available</span><span class="p">(),</span> <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;redis-py not installed&quot;</span><span class="p">),</span>
-<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="p">)</span>
+<p><code>transport</code>, <code>concurrency</code>, and the fixture's <code>stage</code> / <code>kind</code> /
+<code>container</code> fields below are closed vocabularies; their members and
+semantics are documented authoritatively in the two TOML files' header
+comments, and the loader rejects unknown values. Three things to know
+here: <code>concurrency</code> is deliberately defaultless — a new family must state
+its thread-safety posture or the loader refuses to start; the values are
+declarations of fact, so establish them (is your client library actually
+thread-safe?) rather than copying the example's; and some backends have
+no exact member — Redis fits neither <code>transport</code> nor <code>container</code>
+precisely, so pick the nearest transport (<code>fs</code> here is that
+approximation, not a statement that Redis is a filesystem).</p>
+<p><strong>2. Declare the fixture in <code>tests/backends/fixtures/fixtures.toml</code>:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="c1"># tests/backends/fixtures/fixtures.toml</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="k">[fixture.redis]</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="n">backend</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;redis&quot;</span>
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="n">stage</span><span class="w">     </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span>
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="n">kind</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;real-local&quot;</span>
+<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="n">container</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;none&quot;</span>
+<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a><span class="n">is_async</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="kc">false</span>
 </code></pre></div>
-<p>If your backend requires an external service (like S3, SFTP, or Azurite), add
-a reachability check and a session-scoped server fixture following the existing
-<code>moto_server</code> / <code>sftp_server</code> / <code>azurite_server</code> pattern.</p>
-<p><strong>3. Add it to the <code>backend</code> fixture's <code>params</code> list and <code>elif</code> branch:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span>
-<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>    <span class="n">params</span><span class="o">=</span><span class="p">[</span>
-<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>        <span class="n">_local_param</span><span class="p">,</span>
-<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>        <span class="n">_memory_param</span><span class="p">,</span>
-<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>        <span class="c1"># ... existing params ...</span>
-<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>        <span class="n">_redis_param</span><span class="p">,</span>   <span class="c1"># ← add here</span>
-<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>    <span class="p">]</span>
-<a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a><span class="p">)</span>
-<a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a><span class="k">def</span><span class="w"> </span><span class="nf">backend</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">moto_server</span><span class="p">,</span> <span class="n">sftp_server</span><span class="p">,</span> <span class="n">azurite_server</span><span class="p">,</span> <span class="n">http_server</span><span class="p">):</span>
-<a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a>    <span class="o">...</span>
-<a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a>    <span class="k">elif</span> <span class="n">request</span><span class="o">.</span><span class="n">param</span> <span class="o">==</span> <span class="s2">&quot;redis&quot;</span><span class="p">:</span>
-<a id="__codelineno-22-12" name="__codelineno-22-12" href="#__codelineno-22-12"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends._redis</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisBackend</span>
-<a id="__codelineno-22-13" name="__codelineno-22-13" href="#__codelineno-22-13"></a>        <span class="n">b</span> <span class="o">=</span> <span class="n">RedisBackend</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="s2">&quot;redis://localhost:6379/0&quot;</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;test-</span><span class="si">{</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
-<a id="__codelineno-22-14" name="__codelineno-22-14" href="#__codelineno-22-14"></a>        <span class="k">yield</span> <span class="n">b</span>
-<a id="__codelineno-22-15" name="__codelineno-22-15" href="#__codelineno-22-15"></a>        <span class="n">b</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<p>Per-fixture overrides of <code>flat_namespace</code> / <code>self_op_supported</code> merge on top
+of the family defaults — that is how the Azurite emulator (flat) and live
+ADLS Gen2 (HNS) share one <code>azure</code> family yet disagree.</p>
+<p>Three of these fields deserve extra care — <code>stage</code> and <code>kind</code> drive
+collection, <code>container</code> is about CI provisioning:</p>
+<ul>
+<li><strong><code>stage</code> decides when your fixture participates.</strong> Stage 1 fixtures run
+  everywhere; stage 2–3 fixtures are dropped from parametrization unless
+  the session's stage is high enough. The active stage is auto-detected
+  (stage 2 when a Docker daemon is reachable, stage 1 otherwise) and can be
+  forced with <code>--stage=N</code> or the <code>RS_TEST_STAGE</code> env var. A service-backed
+  fixture like this one belongs in stage 2.</li>
+<li><strong><code>kind = "real-live"</code></strong> (live cloud) fixtures must also carry
+  <code>pytest.mark.live</code> via the registration's <code>marks=</code> — the registry
+  rejects a live fixture without it.</li>
+<li>If CI cannot start your service via <code>container</code> (the enum has no member
+  for it, as with Redis here), provision the service yourself and have the
+  factory skip when it is absent — that is step 3's first obligation.</li>
+</ul>
+<p><strong>3. Add a factory module <code>tests/backends/fixtures/redis.py</code>:</strong></p>
+<p>The module name matches the fixture name by default (that is how it gets
+imported); a differently-named or shared module needs a <code>_MODULE_FOR</code>
+entry — see below. The factory is called fresh for <strong>every test</strong>, and
+the suite runs no cleanup unless you provide one. That gives it four
+obligations beyond constructing the backend:</p>
+<ul>
+<li><strong>Skip when infrastructure is absent</strong> — the optional dependency AND the
+  service itself. Factories run at test setup, so <code>pytest.skip</code> there is
+  how a fixture self-excludes; a missing reachability check turns every
+  test into a <code>BackendUnavailable</code> failure on machines without the daemon.</li>
+<li><strong>Provision the namespace it hands out</strong> — create the bucket/database/
+  container the backend points at; the suite assumes writable storage.</li>
+<li><strong>Isolate per call</strong> — a unique prefix or bucket per invocation, or
+  earlier tests' leftovers show up as baffling <code>AlreadyExists</code> /
+  orphan-artifact failures that look like backend bugs.</li>
+<li><strong>Provide <code>cleanup=</code></strong> to close the backend after each test.</li>
+</ul>
+<p>Keep backend/SDK imports <em>inside</em> the factory functions: <code>_load_all()</code>
+imports every factory module at conftest import time, so a module-level
+<code>import</code> of an optional dependency would break collection for the whole
+<code>tests/backends/</code> tree on machines without it.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">uuid</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tests.backends.fixtures._loader</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_fixture</span>
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="kn">from</span><span class="w"> </span><span class="nn">tests.backends.fixtures.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">BackendFixture</span><span class="p">,</span> <span class="n">register</span>
+<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>
+<a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a><span class="n">_meta</span> <span class="o">=</span> <span class="n">load_fixture</span><span class="p">(</span><span class="s2">&quot;redis&quot;</span><span class="p">)</span>
+<a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a><span class="n">_URL</span> <span class="o">=</span> <span class="s2">&quot;redis://localhost:6379/0&quot;</span>
+<a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a>
+<a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a>
+<a id="__codelineno-22-12" name="__codelineno-22-12" href="#__codelineno-22-12"></a><span class="k">def</span><span class="w"> </span><span class="nf">_factory</span><span class="p">():</span>
+<a id="__codelineno-22-13" name="__codelineno-22-13" href="#__codelineno-22-13"></a>    <span class="n">redis</span> <span class="o">=</span> <span class="n">pytest</span><span class="o">.</span><span class="n">importorskip</span><span class="p">(</span><span class="s2">&quot;redis&quot;</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="s2">&quot;redis-py not installed&quot;</span><span class="p">)</span>
+<a id="__codelineno-22-14" name="__codelineno-22-14" href="#__codelineno-22-14"></a>    <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-22-15" name="__codelineno-22-15" href="#__codelineno-22-15"></a>        <span class="n">redis</span><span class="o">.</span><span class="n">Redis</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span><span class="n">_URL</span><span class="p">)</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>
+<a id="__codelineno-22-16" name="__codelineno-22-16" href="#__codelineno-22-16"></a>    <span class="k">except</span> <span class="n">redis</span><span class="o">.</span><span class="n">RedisError</span><span class="p">:</span>
+<a id="__codelineno-22-17" name="__codelineno-22-17" href="#__codelineno-22-17"></a>        <span class="n">pytest</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="s2">&quot;Redis server not reachable&quot;</span><span class="p">)</span>
+<a id="__codelineno-22-18" name="__codelineno-22-18" href="#__codelineno-22-18"></a>
+<a id="__codelineno-22-19" name="__codelineno-22-19" href="#__codelineno-22-19"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends._redis</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisBackend</span>
+<a id="__codelineno-22-20" name="__codelineno-22-20" href="#__codelineno-22-20"></a>
+<a id="__codelineno-22-21" name="__codelineno-22-21" href="#__codelineno-22-21"></a>    <span class="c1"># Unique prefix per call = per-test isolation. Redis needs no</span>
+<a id="__codelineno-22-22" name="__codelineno-22-22" href="#__codelineno-22-22"></a>    <span class="c1"># provisioning (keys spring into existence); a bucket-based backend</span>
+<a id="__codelineno-22-23" name="__codelineno-22-23" href="#__codelineno-22-23"></a>    <span class="c1"># would create its bucket here.</span>
+<a id="__codelineno-22-24" name="__codelineno-22-24" href="#__codelineno-22-24"></a>    <span class="k">return</span> <span class="n">RedisBackend</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">_URL</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;test-</span><span class="si">{</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">()</span><span class="o">.</span><span class="n">hex</span><span class="p">[:</span><span class="mi">8</span><span class="p">]</span><span class="si">}</span><span class="s2">:&quot;</span><span class="p">)</span>
+<a id="__codelineno-22-25" name="__codelineno-22-25" href="#__codelineno-22-25"></a>
+<a id="__codelineno-22-26" name="__codelineno-22-26" href="#__codelineno-22-26"></a>
+<a id="__codelineno-22-27" name="__codelineno-22-27" href="#__codelineno-22-27"></a><span class="k">def</span><span class="w"> </span><span class="nf">_capabilities</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">frozenset</span><span class="p">:</span>
+<a id="__codelineno-22-28" name="__codelineno-22-28" href="#__codelineno-22-28"></a>    <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-22-29" name="__codelineno-22-29" href="#__codelineno-22-29"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends._redis</span><span class="w"> </span><span class="kn">import</span> <span class="n">RedisBackend</span>
+<a id="__codelineno-22-30" name="__codelineno-22-30" href="#__codelineno-22-30"></a>
+<a id="__codelineno-22-31" name="__codelineno-22-31" href="#__codelineno-22-31"></a>        <span class="k">return</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">RedisBackend</span><span class="o">.</span><span class="n">CAPABILITIES</span><span class="p">)</span>
+<a id="__codelineno-22-32" name="__codelineno-22-32" href="#__codelineno-22-32"></a>    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+<a id="__codelineno-22-33" name="__codelineno-22-33" href="#__codelineno-22-33"></a>        <span class="k">return</span> <span class="nb">frozenset</span><span class="p">()</span>
+<a id="__codelineno-22-34" name="__codelineno-22-34" href="#__codelineno-22-34"></a>
+<a id="__codelineno-22-35" name="__codelineno-22-35" href="#__codelineno-22-35"></a>
+<a id="__codelineno-22-36" name="__codelineno-22-36" href="#__codelineno-22-36"></a><span class="k">def</span><span class="w"> </span><span class="nf">_cleanup</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-22-37" name="__codelineno-22-37" href="#__codelineno-22-37"></a>    <span class="n">backend</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+<a id="__codelineno-22-38" name="__codelineno-22-38" href="#__codelineno-22-38"></a>
+<a id="__codelineno-22-39" name="__codelineno-22-39" href="#__codelineno-22-39"></a>
+<a id="__codelineno-22-40" name="__codelineno-22-40" href="#__codelineno-22-40"></a><span class="n">register</span><span class="p">(</span>
+<a id="__codelineno-22-41" name="__codelineno-22-41" href="#__codelineno-22-41"></a>    <span class="n">BackendFixture</span><span class="p">(</span>
+<a id="__codelineno-22-42" name="__codelineno-22-42" href="#__codelineno-22-42"></a>        <span class="n">factory</span><span class="o">=</span><span class="n">_factory</span><span class="p">,</span>
+<a id="__codelineno-22-43" name="__codelineno-22-43" href="#__codelineno-22-43"></a>        <span class="n">capabilities</span><span class="o">=</span><span class="n">_capabilities</span><span class="p">(),</span>
+<a id="__codelineno-22-44" name="__codelineno-22-44" href="#__codelineno-22-44"></a>        <span class="n">cleanup</span><span class="o">=</span><span class="n">_cleanup</span><span class="p">,</span>
+<a id="__codelineno-22-45" name="__codelineno-22-45" href="#__codelineno-22-45"></a>        <span class="o">**</span><span class="n">_meta</span><span class="o">.</span><span class="n">to_kwargs</span><span class="p">(),</span>
+<a id="__codelineno-22-46" name="__codelineno-22-46" href="#__codelineno-22-46"></a>    <span class="p">)</span>
+<a id="__codelineno-22-47" name="__codelineno-22-47" href="#__codelineno-22-47"></a><span class="p">)</span>
 </code></pre></div>
-<p><code>conftest.py</code> already imports <code>uuid</code> at the top — ensure yours does too if
-you are starting from scratch. Use a unique prefix per test so isolation is
-guaranteed even without a full teardown.</p>
+<p><code>_load_all()</code> walks <code>fixtures.toml</code> and imports the factory module with
+the same name as each fixture — so a fixture whose module is named
+differently (or a second fixture sharing one module) needs an entry in the
+<code>_MODULE_FOR</code> map in <code>tests/backends/fixtures/__init__.py</code>, or collection
+dies with <code>ModuleNotFoundError</code>. The conformance conftest's
+<code>pytest_generate_tests</code> hook then parametrizes every test that takes a
+<code>backend</code> argument (or <code>async_backend</code> for async fixtures) over the
+registered fixtures:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>pytest<span class="w"> </span>tests/backends/conformance/<span class="w"> </span>-k<span class="w"> </span>redis<span class="w"> </span>--stage<span class="o">=</span><span class="m">2</span>
+</code></pre></div>
+<p>Expect this first run to fail in the two <code>test_identity.py</code>
+classification lanes until step 4 below is done.</p>
+<p><strong>4. Classify your family in the by-name conformance lanes.</strong> Two
+<code>test_identity.py</code> declaration sets (atomic-move and seekable) fail loudly
+for any unclassified family — the failure message names the exact edit.
+One lane does NOT prompt: <code>test_health_probe_declared.py</code> discovers
+backends from a hardcoded module import list, and a module missing from it
+is silently not checked — add your backend module there yourself.</p>
+<p>If your backend requires an external service (like S3, SFTP, or Azurite),
+add a session-scoped server fixture in <code>tests/conftest.py</code> (where
+<code>moto_server</code> / <code>sftp_server</code> / <code>azurite_server</code> live), publish its endpoint
+via <code>_populate_infra</code> in <code>tests/backends/conftest.py</code> plus a field on
+<code>InfraState</code> in <code>tests/backends/fixtures/_state.py</code>, and read <code>INFRA</code> from
+your factory at call time.</p>
 <hr />
-<h3 id="capability-gating-with-_require">Capability gating with <code>_require()</code><a class="headerlink" href="#capability-gating-with-_require" title="Permanent link">&para;</a></h3>
-<p>Backends may declare a subset of capabilities. The <code>_require()</code> helper skips a
-test when the backend lacks the needed capability — so a read-only backend
-cleanly skips all write, move, copy, and delete tests without failures:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">_require</span><span class="p">(</span><span class="n">backend</span><span class="p">:</span> <span class="n">Backend</span><span class="p">,</span> <span class="o">*</span><span class="n">caps</span><span class="p">:</span> <span class="n">Capability</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a>    <span class="k">for</span> <span class="n">cap</span> <span class="ow">in</span> <span class="n">caps</span><span class="p">:</span>
-<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">backend</span><span class="o">.</span><span class="n">capabilities</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">cap</span><span class="p">):</span>
-<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>            <span class="n">pytest</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Backend does not support </span><span class="si">{</span><span class="n">cap</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<h3 id="capability-gating">Capability gating<a class="headerlink" href="#capability-gating" title="Permanent link">&para;</a></h3>
+<p>Backends may declare a subset of capabilities, and the suite skips what a
+backend cannot do — a read-only backend cleanly skips all write, move, copy,
+and delete tests without failures. Two mechanisms, in order of preference:</p>
+<p><strong>Class-level filtering</strong> is the primary mechanism: test classes parametrize
+via <code>fixture_params(*caps)</code>, so a backend missing a capability never
+enters those tests at all.</p>
+<p><strong>Runtime fallback</strong> is the <code>_require()</code> helper, for a single test inside a
+coarsely-filtered class that needs a stricter capability than its siblings:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">_require</span><span class="p">(</span><span class="n">backend</span><span class="p">:</span> <span class="n">Backend</span><span class="p">,</span> <span class="o">*</span><span class="n">caps</span><span class="p">:</span> <span class="n">Capability</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>    <span class="k">for</span> <span class="n">cap</span> <span class="ow">in</span> <span class="n">caps</span><span class="p">:</span>
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">backend</span><span class="o">.</span><span class="n">capabilities</span><span class="o">.</span><span class="n">supports</span><span class="p">(</span><span class="n">cap</span><span class="p">):</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>            <span class="n">pytest</span><span class="o">.</span><span class="n">skip</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Backend does not support </span><span class="si">{</span><span class="n">cap</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </code></pre></div>
-<p>Use the same pattern in your own tests:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Capability</span>
-<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
-<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>
-<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_move_preserves_content</span><span class="p">(</span><span class="n">backend</span><span class="p">):</span>
-<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>    <span class="n">_require</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">Capability</span><span class="o">.</span><span class="n">MOVE</span><span class="p">)</span>
-<a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a>    <span class="n">backend</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;src.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;hello&quot;</span><span class="p">)</span>
-<a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a>    <span class="n">backend</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="s2">&quot;src.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;dst.txt&quot;</span><span class="p">)</span>
-<a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>    <span class="k">assert</span> <span class="n">backend</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;dst.txt&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;hello&quot;</span>
+<p>Use the same runtime pattern in your own tests:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Capability</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">test_move_preserves_content</span><span class="p">(</span><span class="n">backend</span><span class="p">):</span>
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a>    <span class="n">_require</span><span class="p">(</span><span class="n">backend</span><span class="p">,</span> <span class="n">Capability</span><span class="o">.</span><span class="n">MOVE</span><span class="p">)</span>
+<a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a>    <span class="n">backend</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;src.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;hello&quot;</span><span class="p">)</span>
+<a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a>    <span class="n">backend</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="s2">&quot;src.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;dst.txt&quot;</span><span class="p">)</span>
+<a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a>    <span class="k">assert</span> <span class="n">backend</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;dst.txt&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;hello&quot;</span>
 </code></pre></div>
-<p>A backend declaring only <code>READ</code> and <code>LIST</code> will skip every <code>WRITE</code>, <code>MOVE</code>,
-<code>COPY</code>, and <code>DELETE</code> test. The suite still passes — skips are not failures.</p>
+<p>A backend declaring only <code>READ</code> and <code>LIST</code> never enters the <code>WRITE</code>,
+<code>MOVE</code>, <code>COPY</code>, and <code>DELETE</code> lanes at all — class-filtered tests are not
+generated for it — and any stricter test inside a coarser class
+self-skips. The suite still passes: absences and skips are not failures.</p>
 <hr />
 <h3 id="flat-namespace-vs-hierarchical-backends">Flat-namespace vs. hierarchical backends<a class="headerlink" href="#flat-namespace-vs-hierarchical-backends" title="Permanent link">&para;</a></h3>
 <p>Backends fall into two models that affect a handful of conformance tests.</p>
@@ -12119,16 +12355,9 @@ Writing a file creates its parent directories; a path can be either a file
 Folders are virtual — inferred from key prefixes. A path <code>a/b/c</code> implies a
 prefix <code>a/b/</code> but no actual directory object exists.</p>
 <p>The conformance suite reads this from the per-backend <code>flat_namespace</code> flag
-declared in <code>tests/backends/fixtures/backends.toml</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="c1"># tests/backends/fixtures/backends.toml</span>
-<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="k">[backend.</span><span class="err">&lt;</span><span class="k">your-backend</span><span class="err">&gt;</span><span class="k">]</span>
-<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="n">transport</span><span class="w">         </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;fs&quot;</span><span class="w">        </span><span class="c1"># http | ssh | fs | memory | sql</span>
-<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a><span class="n">flat_namespace</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span><span class="w">        </span><span class="c1"># set true for flat-namespace backends</span>
-<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a><span class="n">self_op_supported</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
-</code></pre></div>
-<p>A per-fixture override in <code>fixtures.toml</code> is also possible — Azurite (the
-flat emulator) and live ADLS Gen2 (HNS) share <code>backend == "azure"</code> but
-disagree on <code>flat_namespace</code>, so the fixture-level value takes precedence.
+declared in <code>tests/backends/fixtures/backends.toml</code>, with per-fixture
+overrides in <code>fixtures.toml</code> taking precedence (see the registration
+steps above for both files and the Azurite-vs-ADLS example).
 Tests that rely on real directory semantics call <code>_skip_flat_namespace()</code>,
 which reads the resolved flag from the per-fixture record attached by the
 conformance indirect fixture; no identity-set lookup is needed.</p>
@@ -12181,12 +12410,12 @@ full extended suite applies.</p>
 <tr>
 <td><strong>Conformance</strong></td>
 <td>All <code>tests/backends/conformance/</code> tests pass or self-skip (declared capability missing)</td>
-<td><code>pytest tests/backends/conformance/ -k &lt;backend-name&gt;</code></td>
+<td><code>pytest tests/backends/conformance/ -k &lt;fixture-name&gt;</code></td>
 </tr>
 <tr>
 <td><strong>Extended</strong></td>
 <td>All <code>@pytest.mark.extended_conformance</code> cases pass or self-skip</td>
-<td><code>pytest -m extended_conformance -k &lt;backend-name&gt;</code></td>
+<td><code>pytest -m extended_conformance -k &lt;fixture-name&gt;</code></td>
 </tr>
 <tr>
 <td><strong>Error mapping</strong></td>
@@ -12200,6 +12429,23 @@ full extended suite applies.</p>
 </tr>
 </tbody>
 </table>
+<p>Three pitfalls in reading these results:</p>
+<ul>
+<li><strong>Check stage participation first.</strong> A stage-2/3 fixture is silently
+  dropped from parametrization when the session's stage is lower — and the
+  default stage is 1 on machines without a reachable Docker daemon. Pass
+  <code>--stage=2</code> (or set <code>RS_TEST_STAGE</code>) before suspecting your registration.</li>
+<li><strong>The <code>-k</code> token is the fixture/family name</strong> (underscores, e.g.
+  <code>s3_boto3</code>), not the backend's <code>name</code> property — a hyphenated <code>name</code> like
+  <code>"s3-boto3"</code> never matches any test id, so <code>-k</code> with it silently selects
+  nothing.</li>
+<li><strong>Green is only meaningful if your fixture actually ran.</strong> Confirm your
+  fixture id appears in the parametrized test ids (<code>pytest --collect-only -q
+  ... | grep &lt;fixture-name&gt;</code>). A handful of passes with thousands
+  deselected, or exit code 5 ("no tests ran"), means the fixture never
+  participated — stage gating or a failed registration, not universal
+  self-skipping.</li>
+</ul>
 <p>Skips are expected and acceptable when a backend doesn't declare the relevant
 capability. Failures (not skips) in either suite are blocking.</p>
 <hr />
@@ -12232,7 +12478,8 @@ focused tests covering the same categories the conformance suite verifies:</p>
 <h4 id="edge-cases">Edge cases<a class="headerlink" href="#edge-cases" title="Permanent link">&para;</a></h4>
 <ul>
 <li>Empty path (<code>""</code>) and root alias (<code>"."</code>) — root always exists and is always a folder</li>
-<li><code>is_file("")</code> always returns <code>False</code>; <code>exists("")</code> never raises</li>
+<li><code>is_file("")</code> always returns <code>False</code>; <code>exists("")</code> never raises
+  (test these through <code>Store</code> — see the layer note in Step 5)</li>
 <li>Deeply nested paths (<code>"a/b/c/d/e/file.txt"</code>)</li>
 <li>Non-existent paths to <code>list_files</code> / <code>list_folders</code> yield nothing (no exception)</li>
 <li><code>repr(backend)</code> does not expose credentials or secrets</li>
@@ -12380,7 +12627,7 @@ are generally thread-safe, so our example doesn't need explicit locking.</p>
 <td><a href="../../reference/api/errors/"><code>NotFound</code></a>, <a href="../../reference/api/errors/"><code>DirectoryNotEmpty</code></a></td>
 </tr>
 <tr>
-<td><code>list_files(path, recursive)</code></td>
+<td><code>list_files(path, recursive, max_depth)</code></td>
 <td><code>Iterator[</code><a href="../../reference/api/models/"><code>FileInfo</code></a><code>]</code></td>
 <td>—</td>
 </tr>
@@ -12439,6 +12686,10 @@ are generally thread-safe, so our example doesn't need explicit locking.</p>
 <tr>
 <td><code>native_path(path)</code></td>
 <td>Identity function</td>
+</tr>
+<tr>
+<td><code>resolve(path)</code></td>
+<td>Builds a <code>ResolutionPlan</code> from <code>name</code> and <code>native_path()</code>; no I/O. Override to add backend-specific <code>details</code></td>
 </tr>
 <tr>
 <td><code>check_health()</code></td>

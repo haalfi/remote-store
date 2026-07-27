@@ -12450,11 +12450,11 @@ declare this capability.</p>
 )
           –
           <div class="doc-md-description">
-            <p>Optional maximum folder depth to traverse.  When set,
-backends that support native depth limiting prune traversal
-early.  Backends that ignore this parameter still produce
-correct results — the Store applies client-side filtering
-as a safety net.  <code>None</code> (default) defers to <em>recursive</em>.</p>
+            <p>Optional maximum folder depth to traverse.  Backends
+must honor the cutoff natively — the conformance suite
+asserts the depth boundary on the backend's own output
+(<code>Store</code> additionally applies client-side filtering for
+its callers).  <code>None</code> (default) defers to <em>recursive</em>.</p>
           </div>
         </li>
     </ul>
