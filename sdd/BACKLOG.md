@@ -77,18 +77,12 @@ and the highest ID already in this file, then take the next integer. Run
 
 - [ ] **ID-235 — Structural lint for BACKLOG files (entry-header integrity)**
   spec: — · effort: S · audience: contributor.tooling
-  PR #932 round 5: a string-anchored edit swallowed the
-  `- [x] **BK-320 — ...**` header line in `BACKLOG-DONE.md`, gluing that
-  item's metadata and body into the previous entry. Because
-  `gen_backlogid.py` derives `backlogid.json` from entry headers only,
-  the loss also masked a stale `"BK"` value, and the two defects hid each
-  other from `gen-backlogid --check`. A cheap structural lint closes the
-  class: every `spec: · effort: · audience:` metadata line must be
-  immediately preceded by a `- [x] / - [ ] **PREFIX-NNN — ...**` header;
-  headers are unique across BACKLOG.md + BACKLOG-DONE.md; BACKLOG-DONE
-  entries carry `[x]` only. Natural home: extend
-  `scripts/gen_backlogid.py` (it already parses both files) or a sibling
-  check wired into `lint`.
+  A string-anchored edit swallowed an entry header in `BACKLOG-DONE.md`
+  (PR #932), merging two items — and because `gen_backlogid.py` derives
+  IDs from headers, the stale JSON was masked too. Lint the structure:
+  every metadata line follows an entry header, headers unique across both
+  files, BACKLOG-DONE status `[x]` only. Home: extend
+  `scripts/gen_backlogid.py`.
 
 - [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**
   spec: — · effort: L · audience: platform.tooling
@@ -121,109 +115,46 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Docs & Discoverability
 
-- [ ] **BUG-236 — Custom-backend guide states Store-layer policy as backend invariants**
-  spec: 003 · effort: M · audience: user.site, library.maintainer
-  Found by an independent guide walkthrough using `S3Boto3Backend` (PR #932
-  validation). Step 5 claims `""`/`"."` are root aliases and `is_file("")`
-  is always `False`; Step 8 claims root cannot be deleted. At the backend
-  layer the repo's own conformance-passing S3 backend contradicts all
-  three: `is_file("")` raises `BackendUnavailable` (botocore rejects the
-  empty key, and `Store` passes `""` through), `"."` is normalized by
-  `Store`, not backends, and backend-level `delete_folder("",
-  recursive=True)` empties the bucket. The conformance suite tests none of
-  these (no `is_file("")` / `exists("")` cases). Needs a layer-attribution
-  pass: decide per invariant whether it is a backend obligation (then spec
-  it in 003 and add conformance cases) or Store policy (then move it out of
-  the backend-implementation steps) — a spec decision, not just prose.
+- [ ] **BK-324 — Reconcile backend-contract divergences (root/alias, wrong-type errors, depth semantics, empty paths)**
+  spec: 003, 029, 037 · effort: L · audience: library.maintainer, user.site
+  Four facets of one problem, surfaced by PR #932's guide validation:
+  contract prose, the Dafny model, the conformance suite, and shipped
+  backends disagree; the guide currently hedges by deferring to spec 003.
+  Decide each rule once, then align spec prose, model, conformance
+  coverage, docstrings, and backends together:
+  1. Root/alias layer attribution — `Store` normalizes `"."` and rejects
+     root deletes; backend-layer obligations for `""`/`"."` are unspec'd
+     (`is_file("")` raises on the S3 family; no conformance coverage).
+  2. Wrong-type errors — BE-017/BE-021 demand `InvalidPath` regardless of
+     backend; flat-NS backends raise `NotFound`. Spec a flat-NS carve-out
+     or fix the backends.
+  3. Depth semantics — spec 037 prose licenses ignoring `max_depth` while
+     the Dafny model and DEPTH-003 tests require native pruning (037's
+     table is also wrong about S3 and Azure); `recursive=False` +
+     `max_depth` precedence splits the sync model vs ASYNC-014 vs the SQL
+     backends vs the `Store` facade.
+  4. Empty-path `InvalidPath` on move/copy — Store-enforced convention,
+     guarded defensively by every backend, absent from BE-018/BE-019 and
+     untested (mind the Dafny coupling).
+  Evidence trail: PR #932 review threads and `sdd/traces/bk-320-*.yml`.
 
-- [ ] **BUG-237 — Wrong-type error expectations: spec vs flat-NS backends vs guide checklist**
-  spec: 003 · effort: M · audience: user.site, library.maintainer
-  Same walkthrough: 3 of 21 tests written per the guide's "Standalone
-  backend testing" section fail against `S3Boto3Backend` — the wrong-type
-  rows ("file path to `get_folder_info`, directory path to `read` raises
-  `InvalidPath`") raise `NotFound` on flat-namespace backends, and the
-  `is_file("")` row inherits the BUG-236 problem. Spec 003 BE-017/BE-021
-  require `InvalidPath` for wrong-type paths regardless of backend (the
-  only spec'd flat-NS exemption is the file-ancestor rule), so per
-  principle 5 the resolution goes through the spec, not the guide: either
-  amend BE-017/BE-021 with an explicit flat-NS carve-out (then add the
-  matching conformance gating and the guide qualifier), or treat the
-  flat-NS backends as nonconformant and fix them. The guide checklist
-  follows whichever side the spec decision lands on; coordinate the
-  `is_file("")` row with BUG-236.
-
-- [ ] **BUG-238 — `max_depth` contract contradictions: spec 037 + ABC docstring vs DEPTH-003, and recursive-precedence sync vs async**
-  spec: 037 · effort: M · audience: library.maintainer, user.api_docs
-  Surfaced by PR #932's round-3/4 reviews. Two related contradictions.
-  (1) May a backend ignore `list_files(max_depth=)`? Spec 037 and the
-  `Backend.list_files` docstring say yes ("Store applies client-side
-  filtering as a safety net"), but the conformance suite calls backends
-  directly and asserts the depth boundary on the backend's own output
-  (DEPTH-003, matching the Dafny model's native-pruning postcondition,
-  runs by default), so an ignoring backend fails the suite. Every shipped
-  LIST-capable backend prunes natively — including S3 and Azure, both of
-  which spec 037's table claims do not. It is 037's prose/table and the
-  docstring that contradict the formal model, not vice versa.
-  (2) Precedence when `recursive=False` and `max_depth` are both set:
-  the sync Dafny model and sync backend tests say `recursive=False` wins
-  (immediate children only) at the backend layer, while spec 029
-  ASYNC-014 says `max_depth` wins, `SQLBlobBackend`/`SQLQueryBackend`
-  follow the async reading today — violating the sync model — and the
-  sync `Store` facade itself resolves max_depth-wins for its callers
-  (it derives `recursive` from `max_depth` before dispatching, so
-  backends never see the conflicting combination through `Store`).
-  Decide both rules, then align spec 037 prose+table, spec 029, the
-  Store/AsyncStore docstrings, and the SQL backends. The custom-backend
-  guide, the tutorial backend, and the Backend/AsyncBackend `max_depth`
-  docstrings were aligned to the formal model's side (prune natively;
-  backend-layer `recursive=False` wins) in PR #932 and track whichever
-  resolution lands.
-
-- [ ] **BK-321 — Document the Registry's constructor-kwarg transformations in the custom-backend guide**
-  spec: — · effort: S · audience: user.site, user.api
-  A guide-only backend breaks under `Registry`: YAML options with
-  credential-style names (`key`, `secret`, `password`, `account_key`,
-  `sas_token`, `connection_string`, `client_secret`,
-  `client_certificate`) arrive wrapped in `Secret`, and a `retry:` block
-  injects a `retry=` kwarg the constructor must accept
-  (`_registry.py` adds `kwargs["retry"]`). Step 13 says only "parameter
-  names must match your `__init__` signature exactly". Document both
-  (accept `str | Secret`, call `.reveal()`; accept `retry: RetryPolicy |
-  None`), with `S3Boto3Backend.__init__` as the reference shape.
-
-- [ ] **BK-322 — Custom-backend guide: missing Backend-contract topics a real backend needed**
-  spec: 003 · effort: M · audience: user.site
-  The walkthrough found three contract areas the guide never mentions,
-  all of which `S3Boto3Backend` demonstrably needed: (1) the
-  `close_is_terminal` posture ClassVar plus use-after-close behavior
-  (drives `test_close_posture.py`, which the guide's own topic table
-  lists); (2) stream-time error mapping for `LAZY_READ` backends — the
-  "cardinal rule" covers call-time exceptions only, but lazy streams
-  surface native errors during `stream.read()` and `test_streaming.py`
-  enforces no-leak there; (3) the file-as-directory-component rules and
-  the `reject_write_under_file_ancestor` opt-in with its
-  `strict_only` fixture variant and the `_MODULE_FOR` map (its absence
-  silently drops ~25 conformance cells — the checklist stays green).
-  One item because all three are "contract topics the guide omits";
-  split if any grows. The guide walkthrough left three smaller doc gaps
-  to fold in here too: the error-mapping checklist has no row for
-  unclassifiable native errors (reference backends fall back to the base
-  `RemoteStoreError`); Step 4's `from exc` guidance never mentions the
-  deliberate `from None` pattern some backends use to suppress noisy
-  chained tracebacks; and the `SEEKABLE_READ` design note ("network
-  streams don't qualify") contradicts the shipped range-reader backends
-  that declare it.
-
-- [ ] **BK-323 — Spec the empty-path rule for move/copy (BE-018/BE-019) and add a conformance case**
-  spec: 003 · effort: S · audience: library.maintainer
-  PR #932's round-3 review: the guide's Step 11 presents "empty source or
-  destination raises `InvalidPath`" as a contract rule, and the behavior
-  is real and universal (Memory, SQL, HTTP, and the tutorial backend all
-  implement it), but BE-018/BE-019 list no empty-path clause and no
-  conformance test exercises `move("", dst)` / `move(src, "")`. Per
-  principle 5, add the clause to the spec (mind the Dafny coupling —
-  BE-018/BE-019 are Dafny-backed, so the formal model may need the same
-  precondition) plus a conformance case, rather than weakening the guide.
+- [ ] **BK-325 — Custom-backend guide: registry-integration and remaining contract-topic gaps**
+  spec: — · effort: M · audience: user.site
+  Guide content the PR #932 walkthrough showed a real backend needed but
+  the guide never teaches:
+  - Registry integration: credential-named YAML options arrive wrapped in
+    `Secret` (constructors need `str | Secret` and `.reveal()`), and a
+    `retry:` block injects a `retry=` kwarg. Step 13 says only "names
+    must match". Reference shape: `S3Boto3Backend.__init__`.
+  - Stream-time error mapping for `LAZY_READ` backends: the cardinal rule
+    covers call time only; lazy streams surface native errors during
+    `read()` and `test_streaming.py` enforces no-leak there.
+  - The file-ancestor lane: `rejects_write_under_file_ancestor`,
+    `strict_only` fixtures, and their `_MODULE_FOR` wiring are
+    undocumented; skipping them silently drops ~25 conformance cells.
+  - Small fixes: error-mapping checklist lacks a base-`RemoteStoreError`
+    fallback row; `from exc` guidance omits the deliberate `from None`
+    pattern; the `SEEKABLE_READ` note contradicts shipped range-readers.
 
 - [ ] **ID-225 — Evaluate migrating the docs stack from Material for MkDocs to Zensical**
   spec: — · effort: L · audience: user.site, library.maintainer, contributor.tooling

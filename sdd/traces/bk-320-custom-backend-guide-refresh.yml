@@ -18,12 +18,9 @@ co_shipped_items:
   - BUG-235
   - BUG-239
 discovery_followups:
-  - BUG-236
-  - BUG-237
-  - BUG-238
-  - BK-321
-  - BK-322
-  - BK-323
+  - BK-324
+  - BK-325
+  - ID-235
 expected_ripples:
   - sdd/backlogid.json
 review_rounds: 6
@@ -110,7 +107,8 @@ phases:
           Walkthrough agents consumed the guide as their sole instruction
           source; the Step 5/8 root-alias invariants and the standalone
           checklist's wrong-type rows proved wrong against the
-          conformance-passing s3_boto3 backend — spawned BUG-236/BUG-237
+          conformance-passing s3_boto3 backend — spawned the
+          contract-reconciliation item (BK-324)
         outcome: misleading
       - file: src/remote_store/backends/_s3_boto3.py
         section: "(full)"

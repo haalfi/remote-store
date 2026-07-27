@@ -29,7 +29,8 @@ phases:
           Abstract signature carries max_depth keyword; docstring's
           "backends may ignore it" claim was adopted into the Step 9
           bullet but contradicts DEPTH-003 conformance (backends must
-          prune natively) — caught in round-3 review, spawned BUG-238
+          prune natively) — caught in round-3 review, folded into the
+          contract-reconciliation item (BK-324)
         outcome: misleading
       - file: src/remote_store/_store.py
         section: "list_files"
