@@ -22,7 +22,9 @@ what transfers to any multi-artifact process (§ 8).
 **Context:** We maintain many parallel descriptions of one library: Markdown
 specs, Dafny contracts, TLA+ invariants, the implementation, the conformance
 suite, docstrings, guides, `FEATURES.md`, the CHANGELOG, the backlog, and the
-ripple-check. Twenty lint gates plus a preflight family already compare pieces of
+ripple-check. Twenty lint gates plus a preflight family, of which roughly half
+reconcile an artifact *pair* (§ 4b lists eleven) while the rest are single-artifact
+rule checks, already compare pieces of
 that set. BK-324 nevertheless records four descriptions of the backend contract
 disagreeing with each other, undetected by any gate, found by a human writing a
 backend against the guide. This document asks what detection mechanisms exist,
@@ -184,8 +186,8 @@ Property 3 is the important one, and it produces the central finding of this
 research. An earlier draft stated it as "omission is detectable in these two
 disciplines and only in these two", which is **false** and does not survive
 contact with a skeptical reader. Other disciplines have completeness devices: the
-WHO surgical safety checklist, aviation's minimum-equipment and configuration-
-deviation lists, pre-flight checklists, clause inventories in structured
+WHO surgical safety checklist, aviation's minimum-equipment and
+configuration-deviation lists, pre-flight checklists, clause inventories in structured
 contracts. The corrected claim:
 
 > **Omission detection always reduces to maintaining a canonical, enumerable claim
@@ -260,8 +262,8 @@ Three of these deserve detail.
 
 ### E1 is the strongest mechanism either discipline has
 
-LVS-clean is a near-universal foundry prerequisite for tapeout — waiver-with-
-sign-off in practice rather than an unconditional zero. LVS extracts a netlist
+LVS-clean is a near-universal foundry prerequisite for tapeout — waiver-with-sign-off
+in practice rather than an unconditional zero. LVS extracts a netlist
 from the *realization* by tracing connectivity through metal layers and vias, then
 compares it device-by-device and node-by-node against the netlist from the
 *intent*. Unmatched nodes are reported individually for debugging, and device
@@ -475,8 +477,8 @@ our detection coverage, because every gate was green throughout.
 So the split is not a tidy two-and-two. Three facets are prose-shaped, and facet 1
 carries an additional **class B** component: an undetected cross-artifact
 divergence with no prose to say which side is right. That is a second data point
-for § 3's non-composition limit — no pairwise check covers backend-*i*-versus-
-backend-*j* on `is_file("")`, because the conformance suite has no cell for it.
+for § 3's non-composition limit — no pairwise check covers
+backend-*i*-versus-backend-*j* on `is_file("")`, because the conformance suite has no cell for it.
 
 What survives, and it is the finding that matters: **Rule 3 makes the Markdown
 spec authoritative over everything, and spec prose is the only description in the
@@ -491,9 +493,26 @@ that a defect. Both halves were wrong, and the correction sharpens the argument.
 
 The script has **three** failure modes, not two. F2 (`conformance-cites-unknown-spec`)
 and F3 (`dafny-tag-unknown-spec`) are referential integrity, T1. But **F1
-(`dafny-clause-untested`) is the set difference D \ T** — a spec ID carrying a
-verified Dafny postcondition that no conformance marker cites. That is omission
-detection over a derived enumeration: E2, tier T6, not T1.
+(`dafny-clause-untested`) is a set difference** — a spec ID carrying a verified
+Dafny postcondition that no conformance marker cites. That is omission detection
+over a derived enumeration: E2, tier T6, not T1.
+
+**State its bound precisely, since this is the in-repo exemplar §§ 3 and 5 lean
+on.** F1 is not `D \ T` but **`(D ∩ S) \ T`**: the script's own docstring defines
+it as a Dafny-tagged ID *declared in S* that no marker cites. The `S` conjunct is
+load-bearing — a Dafny tag naming an ID absent from the specs falls to F3, identity
+at T1, and never reaches the completeness check. And the difference is taken
+**minus a human-editable suppression set**: `_BASELINE` parks known violations, and
+the docstring says so plainly — "Baseline *growth* is NOT blocked mechanically — a
+new violation can be parked by editing `_BASELINE`. That edit is visible in review
+and is the point where a human must refuse new debt; the check cannot make that
+judgement."
+
+So the honest characterization of our best T6 mechanism is: **a set difference over
+the intersection of two derived enumerations, minus a reviewer-maintained
+allow-list.** That is a category-1 bound, the script states it, and an earlier
+draft of this document omitted it — which inverts the point made two paragraphs
+below about stated bounds being the correct way to hold such a mechanism.
 
 Nor is the residual gap a defect. The script's docstring states its own bound
 explicitly and at length — "**Citation, not assertion.** T records that a marker
@@ -555,10 +574,10 @@ Our declared attribution rules do not cover prose vs Dafny vs conformance.
 
 ### Finding 7: the trace corpus already named the culprits
 
-Across 257 traces we have recorded **166 `misleading` and 19 `unclear`** outcome
-tags, 185 combined. (An earlier draft said 258: the count used `sdd/traces/*.yml`,
-one character looser than `check_traces.py`'s `sdd/traces/[!_]*.yml`, and so
-counted `_schema.yml` as a trace.)
+Across 258 traces we have recorded **167 `misleading` and 20 `unclear`** outcome
+tags, 187 combined. (An earlier draft counted `sdd/traces/*.yml`, one character
+looser than `check_traces.py`'s `sdd/traces/[!_]*.yml`, and so counted
+`_schema.yml` as a trace.)
 
 **Attribution here is structural, not heuristic.** `_schema.yml` makes `file` a
 required property of every step, with `outcome` a sibling and
@@ -566,25 +585,34 @@ required property of every step, with `outcome` a sibling and
 schema. A YAML parse gives exact counts — a point worth making because an
 intermediate draft *softened* these numbers on the strength of a grep-derived
 bound, which was an artifact of the tool rather than a property of the data.
-Table measured on this document's date and not maintained thereafter; step 3
-proposes the generated report that supersedes it:
 
-| Count | Reference |
+**These numbers are exact and already perishable, which is the argument for
+step 3 in miniature.** They were re-measured twice during review: once to correct
+an extraction artifact, and once because a rebase onto `master` pulled in a new
+trace mid-review and moved every total by one. A hand-maintained count of a
+growing corpus is a description that drifts against its source by construction —
+precisely the defect this document is about, committed by this document. Table
+measured at the head of this branch; step 3's generated report supersedes it.
+
+| `misleading` + `unclear` | Reference |
 |---|---|
 | 16 | `sdd/BACKLOG.md` |
 | 8 | `src/remote_store/backends/_sftp.py` |
+| 7 | `sdd/CLAUDE-REFERENCE.md` |
 | 7 | `src/remote_store/backends/_local.py` |
-| 6 | `sdd/CLAUDE-REFERENCE.md` |
 | 6 | `sdd/BACKLOG-DONE.md` |
 | 5 | `CONTRIBUTING.md` |
 | 5 | `src/remote_store/backends/_azure.py` |
 | 4 | `sdd/audits/audit-014-grandfathered-tests-allow-list.md` |
 | 4 | [`sdd/specs/029-async-store-backend-api.md`](../specs/029-async-store-backend-api.md) |
 
+The column is the two tag types **combined**; the sentence above reports them
+separately, and spec 029's four happen to be four `misleading` and zero `unclear`,
+so the two readings coincide there and nowhere else signals which metric is shown.
 Two entries were missing from an earlier version of this table, both dropped at a
 tie by an approximate extraction. Their return changes what it says: with
 `_azure.py` included, **three backend implementations sit in the top seven**, so
-the misleading descriptions cluster in backend code at least as much as in process
+misleading descriptions cluster in backend code at least as much as in process
 docs.
 
 BK-324's header reads `spec: 003, 029, 037`. **Spec 029 carries exactly four
@@ -613,7 +641,7 @@ derived-enumeration set difference, which is the T6 shape:
 
 | Gate | Enumeration it differences |
 |---|---|
-| `check_formal_trace.py` F1 | Dafny-tagged spec IDs \ conformance-cited IDs |
+| `check_formal_trace.py` F1 | (Dafny-tagged ∩ spec-declared) \ conformance-cited, minus the `_BASELINE` allow-list |
 | `check_spec_marks.py` | Declared spec sections \ marker-cited IDs |
 | `check_capability_parity.py` | Set *equality* across three sources, so omission in both directions |
 | `check_docstring_parity.py` | Shared-docstring methods in neither the identical nor the divergent set |
@@ -697,7 +725,7 @@ is undetected, and BK-324 facet 4 is the live instance. Granularity: enumeration
 stops at the identifier, so sub-ID clauses are unreachable by any set difference
 (§ 5 synthesis). Step 2a addresses the first; the second is the harder half.
 
-**G-4. The trace corpus is an unexploited drift detector.** 185 negative-outcome
+**G-4. The trace corpus is an unexploited drift detector.** 187 negative-outcome
 tags, already attributed, never aggregated.
 
 **G-5. No published characteristic-accountability record.** `check_formal_trace.py`
@@ -780,6 +808,16 @@ procedural rather than mechanical: require the derivation source to be stated wh
 a Dafny clause is authored, so a reviewer can see whether the second description
 is genuinely second.
 
+**S9. Set the reconciliation period from the drift rate, not the calendar.**
+Annual, at-milestone and at-admission are conventions inherited from what it used
+to cost to stop and look. When the cost of a check falls, the correct period falls
+with it: continuous integration is a scheduled reconciliation ritual with the
+period driven toward zero, which is the one place software genuinely leads (§ 6).
+Ask of every recurring check what its period would be if it were free, and anchor
+it to the events that can invalidate the artifact rather than to a date — as
+step 6 does. Note the boundary with § 2: cost does not decide what is *detectable*,
+only how often you look.
+
 ---
 
 ## 9. Plan of next steps
@@ -841,13 +879,13 @@ proposition from a dozen entries, and it is what makes "expect the first cut to 
 approximate" concrete. Two consequences the backlog item must settle:
 
 1. **Gate or report?** Step 3 is deliberately a report, not a gate, to avoid the
-   false-positive fatigue that defeats rule checkers. A gate over a several-hundred-
-   site heuristic invites the same objection, and this document does not resolve it.
-2. **Scope beyond the backend package.** Facet 4's *normative* enforcement lives in
-   `RemotePath`'s normalization in `src/remote_store/_path.py`, outside the backend
-   tree; the backends hold defensive duplicates. So a backends-only pass does reach
-   facet 4, but through the duplicates, and would record the behavior one layer from
-   where it is actually enforced. Covering the core modules too is probably right.
+   false-positive fatigue that defeats rule checkers. A gate over a
+   several-hundred-site heuristic invites the same objection, and this document does not resolve it.
+2. **Scope beyond the backend package.** Facet 4's *normative* enforcement lives one
+   layer above the backend tree, in the path-normalization layer; the backends hold
+   defensive duplicates. So a backends-only pass does reach facet 4, but through the
+   duplicates, and would record the behavior one layer from where it is actually
+   enforced. Covering the core modules too is probably right.
 
 **2b. `I ⊆ S` — every Dafny invariant must appear in the spec.** Cheap, because
 `// @spec` tags already exist and `check_formal_trace.py` already parses them: the
@@ -922,9 +960,8 @@ an exception where the ranking is most flattering to the recommendation.
 **Cadence, since "S to define" is otherwise empty.** Proposed: **once per minor
 release, or after any change to the `Backend` ABC or the conformance suite,
 whichever comes first** — the two events that can invalidate the guide. Anchoring
-it to contract change rather than to the calendar follows P7 (set the period from
-the drift rate, not the calendar) and gives the step actual content beyond the
-word "scheduled".
+it to contract change rather than to the calendar follows **S9** and gives the
+step actual content beyond the word "scheduled".
 
 ### Step 7 — Publish the characteristic-accountability record
 **Closes:** G-5 · **Mechanism:** E2 · **Size:** S
@@ -944,10 +981,23 @@ that unenumerated claim spaces are where things hide, so it gets a step rather
 than a shrug.
 
 The fix is this document's own E3: derive the inventory from the `check_*.py`
-docstrings (20 gates today), each of which already states the pair it guards, and
-publish it as a generated surface. That also gives step 7's accountability record
-a natural companion — one enumerates spec coverage, the other enumerates
-*checker* coverage. Cheap, and it closes the one gap this document created.
+docstrings and publish it as a generated surface. That also gives step 7's
+accountability record a natural companion — one enumerates spec coverage, the
+other enumerates *checker* coverage.
+
+**Two complications that belong in the step, not in the implementation surprise.**
+First, **not every gate guards a pair.** A substantial minority are single-artifact
+rule checks — this document's own E4 — whose docstrings state a *rule*, not a pair
+(assertion presence, mock discipline, forbidden RST roles, em dashes in TLA+). A
+derivation over the docstring corpus yields no row for those, so the deliverable is
+a derived inventory of *pair* gates **plus an explicit "rule check, no pair"
+classification**. Second, the `scripts/check_*.py` glob **under-reaches**:
+`scripts/docs/check_links.py` is a genuine cross-artifact gate outside it.
+
+Both mean the step needs either a docstring convention to key on or a curated
+mapping — and a curated mapping is precisely the parallel-artifact-that-drifts
+problem § 2.1 warns about. Naming that up front is the difference between a cheap
+step and a step that quietly recreates the defect it closes.
 
 ### Deferred, with reasons
 
@@ -1022,8 +1072,8 @@ said no efficacy evidence exists in either direction. That is wrong as a reader
 will take it, and two studies exist:
 
 - Rempel & Mäder, *Preventing Defects: The Impact of Requirements Traceability
-  Completeness on Software Quality*, IEEE TSE 43(8), 2017, 777–797. 24 medium-to-
-  large open-source projects; traceability completeness in three of four
+  Completeness on Software Quality*, IEEE TSE 43(8), 2017, 777–797. 24
+  medium-to-large open-source projects; traceability completeness in three of four
   requirements-implementation activities significantly associated with lower
   defect **density**. Observational, not causal.
 - Mäder & Egyed, *Do developers benefit from requirements traceability when
@@ -1097,6 +1147,7 @@ the specification layer.
 Deliberately *not* trimmed: the mechanism catalog, the taxonomy, the tier table and
 the evidence ledger. A document is the SSoT for its own stable core, and these are
 this document's core. Brevity is not the target.
+
 ### Revision note: what review changed
 
 This document went through three rounds of correction before merge, and the
