@@ -8,6 +8,61 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-239 — Adapter drain-timeout test flaked on CI: pending task GC'd out of the WeakSet task registry**
+  spec: — · effort: S · audience: infra.test
+  `test_close_drain_timeout_logs_warning_with_hanging_task` failed twice on
+  CI 3.10 (PR #932) with "Task was destroyed but it is pending!". Root
+  cause, reproduced deterministically with one `gc.collect()`: the test
+  discarded its `run_coroutine_threadsafe` future and the hanging task's
+  entire reference chain (task → frame → inline `asyncio.Event()` → waiter
+  future → task callback) was an unanchored garbage cycle. `asyncio`'s
+  task registry is a WeakSet, so a cycle-collector pass destroyed the
+  pending task mid-test; `AsyncBackendSyncAdapter.close()` then saw a
+  quiet loop and legitimately skipped the timeout warning the test
+  asserts. Fix: anchor the event in the test frame (event → waiter →
+  task is then strongly reachable) and force `gc.collect()` in the test
+  so the once-flaky path is exercised deterministically. Adapter code is
+  correct; test-only fix.
+
+- [x] **BK-320 — Custom-backend guide: registry-era conformance section + drift gate**
+  spec: — · effort: S · audience: user.site, contributor.tooling
+  Follow-up to the BUG-235 audit. The guide's "Registering in the
+  conformance fixture" section still described the pre-spec-048 mechanism
+  (editing `tests/backends/conftest.py` with an availability guard,
+  `pytest.param`, and a params-list `elif`), contradicting
+  CONTRIBUTING.md § Adding a New Backend; its `backends.toml` example
+  omitted the required `concurrency` key. Rewrote the section to the
+  registry procedure (backends.toml + fixtures.toml + factory module,
+  auto-parametrized via `fixture_params`), reframed `_require()` as the
+  runtime fallback behind class-level filtering, added the newer
+  conformance lanes (concurrency, close-posture, health-probe-declared)
+  to the topic table, dropped the wrong "added in v0.23.0" capability
+  anchor, and added the missing `resolve()` optional-override row. Long
+  term correctness is now mechanical: `scripts/check_custom_backend_guide.py`
+  (in `lint` and `docs-gate`) runs five checks — every snippet include
+  resolves (with floor and parity assertions), the abstract-methods table
+  mirrors `Backend.__abstractmethods__` name-for-name with parameter
+  comparison, the optional-overrides table mirrors the public non-abstract
+  `Backend` methods, every conformance file the guide names exists, and
+  the registration section's fenced TOML validates through the fixture
+  loader's own parsers.
+
+- [x] **BUG-235 — Custom-backend guide snippets break at runtime**
+  spec: — · effort: S · audience: user.site
+  A guide-validation audit found three defects a reader following
+  `docs-src/guides/custom-backend-guide.md` would hit: (1) the tutorial
+  `RedisBackend.list_files` omitted `max_depth`, which `Store.list_files`
+  passes unconditionally, so every listing call raised `TypeError`; (2) the
+  Step 13 registry snippet called `RegistryConfig.from_yaml()`, which does
+  not exist (the API is `remote_store.ext.yaml.from_yaml`); (3) the Step 14
+  extensions snippet called `observe(store, hooks=[...])`, but `observe()`
+  has no `hooks` parameter. Root cause: `demo()` exercised only
+  MemoryBackend, so those snippet regions were syntax-checked, never
+  executed. Fix: corrected snippet + guide text, and closed the testing gap
+  in `tests/test_snippets.py` — an ABC signature-drift guard for the
+  tutorial class, a fake-redis Store-level smoke of the tutorial backend,
+  and `demo()` now executes the registry and extensions regions for real.
+
 - [x] **BK-319 — Cut PR CI wall-clock below 5 minutes without dropping guarantees**
   spec: — · effort: L · audience: infra.ci, contributor.tooling, library.maintainer
   The per-PR `ci.yml` gate took ~8–9 min. The old shape ran the full two-pass

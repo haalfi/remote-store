@@ -1,0 +1,88 @@
+id: BUG-235
+title: "Custom-backend guide snippets break at runtime"
+trigger: >
+  A guide-validation audit of docs-src/guides/custom-backend-guide.md found
+  three reader-facing defects: the tutorial RedisBackend.list_files omitted
+  the max_depth parameter that Store.list_files passes unconditionally
+  (TypeError on every listing), the Step 13 snippet called the nonexistent
+  RegistryConfig.from_yaml, and the Step 14 snippet passed a nonexistent
+  hooks= parameter to ext.observe.observe. All three lived in snippet
+  regions that demo() never executed.
+source_items:
+  - BUG-235
+audience:
+  - user.site
+co_shipped_items:
+  - BK-320
+  - BUG-239
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 6
+phases:
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: src/remote_store/_backend.py
+        section: "list_files"
+        read_type: gate
+        extract: >
+          Abstract signature carries max_depth keyword; docstring's
+          "backends may ignore it" claim was adopted into the Step 9
+          bullet but contradicts DEPTH-003 conformance (backends must
+          prune natively) — caught in round-3 review, folded into the
+          contract-reconciliation item (BK-324)
+        outcome: misleading
+      - file: src/remote_store/_store.py
+        section: "list_files"
+        read_type: gate
+        extract: "Store passes max_depth= to backend unconditionally"
+        outcome: ok
+      - file: src/remote_store/ext/yaml.py
+        section: "from_yaml"
+        read_type: gate
+        extract: "YAML loading is ext.yaml.from_yaml, not a RegistryConfig classmethod"
+        outcome: ok
+      - file: src/remote_store/ext/observe.py
+        section: "observe"
+        read_type: gate
+        extract: "observe() takes on_read/on_write/.../on_any/around; no hooks="
+        outcome: ok
+  - id: tests
+    name: Failing tests
+    steps:
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "BACKLOG, CHANGELOG, failing test, fix, commit together"
+        outcome: ok
+      - file: tests/test_snippets.py
+        section: "(full)"
+        read_type: reference
+        extract: "Snippet expectation-test home and per-guide class conventions"
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "(full)"
+        read_type: gate
+        extract: "Assertion depth and mock discipline for the fake-redis client"
+        outcome: ok
+  - id: fix
+    name: Fix
+    steps:
+      - file: examples/snippets/custom_backend_guide.py
+        section: "step9-listing, step13-registry, step14-extensions, demo"
+        read_type: reference
+        extract: "Correct the three regions; demo() now executes registry and extensions regions"
+        outcome: ok
+      - file: docs-src/guides/custom-backend-guide.md
+        section: "Step 9, Step 13, Quick reference"
+        read_type: reference
+        extract: "max_depth bullet and table row; yaml-extra note for from_yaml"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Public method signature"
+        read_type: verify
+        extract: "Guides referencing the changed signature updated alongside snippet"
+        outcome: ok

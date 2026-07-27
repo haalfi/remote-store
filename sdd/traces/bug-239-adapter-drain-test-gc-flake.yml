@@ -1,0 +1,51 @@
+id: BUG-239
+title: "Adapter drain-timeout test flaked on CI: pending task GC'd out of the WeakSet task registry"
+trigger: >
+  PR #932's CI failed twice on the Python 3.10 Stage-1 shard in
+  tests/aio/test_async_to_sync_adapter.py::test_close_drain_timeout_logs_warning_with_hanging_task
+  with "Task was destroyed but it is pending!", while the identical
+  command passed locally on CPython 3.10.18.
+source_items:
+  - BUG-239
+audience:
+  - infra.test
+co_shipped_items:
+  - BUG-235
+  - BK-320
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: tests/aio/test_async_to_sync_adapter.py
+        section: "TestCloseDrainsPendingTasks"
+        read_type: gate
+        extract: "Test discards the run_coroutine_threadsafe future; hanging task's refs form an unanchored cycle"
+        outcome: ok
+      - file: src/remote_store/_async_to_sync_adapter.py
+        section: "close, _snapshot_tasks"
+        read_type: gate
+        extract: "Warning is gated on the drain snapshot; asyncio.all_tasks is a WeakSet view, so a GC'd task reads as a quiet loop"
+        outcome: ok
+      - file: tests/aio/test_async_to_sync_adapter.py
+        section: "gc.collect() repro script"
+        read_type: verify
+        extract: "One forced GC pass destroys the pending task and empties all_tasks — CI failure reproduced deterministically"
+        outcome: ok
+  - id: fix
+    name: Fix
+    steps:
+      - file: tests/aio/test_async_to_sync_adapter.py
+        section: "test_close_drain_timeout_logs_warning_with_hanging_task"
+        read_type: reference
+        extract: "Anchor the event in the test frame; force gc.collect() so the flaky path is deterministic"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Bug fix"
+        read_type: verify
+        extract: "BACKLOG-DONE entry; infra.test audience so no CHANGELOG; failing path reproduced before fix"
+        outcome: ok

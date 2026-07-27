@@ -192,9 +192,19 @@ class RedisBackend(Backend):
 
     def _has_children(self, path: str) -> bool:
         """Check if any keys exist under this path prefix."""
+        # SCAN may return an empty page with a nonzero cursor, so loop
+        # until a key shows up or the cursor wraps to 0. Note the cost:
+        # SCAN+MATCH walks the whole keyspace on a miss, so a production
+        # backend should keep a secondary index (e.g. a per-prefix set)
+        # instead of scanning per existence check.
         pattern = f"{self._prefix}file:{path}/*"
-        cursor, keys = self._client.scan(cursor=0, match=pattern, count=1)
-        return bool(keys)
+        cursor = 0
+        while True:
+            cursor, keys = self._client.scan(cursor=cursor, match=pattern, count=100)
+            if keys:
+                return True
+            if cursor == 0:
+                return False
 
     # --8<-- [end:step5-existence]
 
@@ -346,14 +356,26 @@ class RedisBackend(Backend):
     # -- Step 9: Listing ---------------------------------------------------
 
     # --8<-- [start:step9-listing]
-    def list_files(self, path: str, *, recursive: bool = False) -> Iterator[FileInfo]:
+    def list_files(
+        self,
+        path: str,
+        *,
+        recursive: bool = False,
+        max_depth: int | None = None,
+    ) -> Iterator[FileInfo]:
+        # The conformance suite calls backends directly and asserts the
+        # depth boundary on what *you* return, so honor max_depth here.
+        # recursive and max_depth are independent filters: recursive=False
+        # always wins (immediate children only), and max_depth prunes
+        # recursive listings.
         try:
             for file_path in self._iter_file_paths_under(path):
-                # If not recursive, only yield immediate children
-                if not recursive:
-                    rel = file_path.removeprefix(f"{path}/" if path else "")
-                    if "/" in rel:
-                        continue  # Skip nested files
+                rel = file_path.removeprefix(f"{path}/" if path else "")
+                depth = rel.count("/")  # 0 = directly in `path`
+                if not recursive and depth > 0:
+                    continue  # Skip nested files
+                if max_depth is not None and depth > max_depth:
+                    continue  # Prune below the requested depth
 
                 info = self._build_file_info(file_path)
                 if info is not None:
@@ -466,6 +488,11 @@ class RedisBackend(Backend):
             if not data:
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
 
+            # src == dst is a data-preserving no-op (Backend contract) —
+            # after the source check, so a missing source still raises NotFound.
+            if src == dst:
+                return
+
             # Check destination
             if not overwrite and self._client.exists(self._key(dst)):
                 raise AlreadyExists(
@@ -494,6 +521,9 @@ class RedisBackend(Backend):
             data = self._client.hgetall(self._key(src))
             if not data:
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
+
+            if src == dst:
+                return  # Data-preserving no-op, same as move()
 
             if not overwrite and self._client.exists(self._key(dst)):
                 raise AlreadyExists(
@@ -539,6 +569,9 @@ class RedisBackend(Backend):
 # Step 13-14: Usage examples (exercised with MemoryBackend)
 # ---------------------------------------------------------------------------
 
+if TYPE_CHECKING:
+    from remote_store import Registry, Store
+
 
 def _demo_direct_usage() -> None:
     # --8<-- [start:step13-direct]
@@ -556,43 +589,62 @@ def _demo_direct_usage() -> None:
     # --8<-- [end:step13-direct]
 
 
-def _demo_registry_usage() -> None:
+def _demo_registry_usage() -> bytes:
     # --8<-- [start:step13-registry]
-    from remote_store import Registry, RegistryConfig, register_backend
+    from remote_store import Registry, register_backend
+    from remote_store.ext.yaml import from_yaml  # needs: pip install "remote-store[yaml]"
 
     register_backend("redis", RedisBackend)
 
-    config = RegistryConfig.from_yaml("stores.yaml")
-    registry = Registry(config)
-    store = registry.get_store("cache")
+    config = from_yaml("stores.yaml")
+    with Registry(config) as registry:  # closes instantiated backends on exit
+        store = registry.get_store("cache")
+        store.write("hello.txt", b"from-registry")
+        data = store.read_bytes("hello.txt")
     # --8<-- [end:step13-registry]
+    return data
 
 
-def _demo_extensions() -> None:
+def _demo_extensions(store: Store) -> None:
     # --8<-- [start:step14-extensions]
     from remote_store.ext.batch import batch_copy
     from remote_store.ext.cache import cache
-    from remote_store.ext.observe import observe
+    from remote_store.ext.observe import StoreEvent, observe
 
-    # Observability
-    observed = observe(store, hooks=[my_logging_hook])
+    events = []
 
-    # Caching
-    fast = cache(store, ttl=300)
+    def my_logging_hook(event: StoreEvent) -> None:
+        events.append(event)
+
+    # Observability — my_logging_hook fires after every operation
+    # that goes through the observed wrapper
+    observed = observe(store, on_any=my_logging_hook)
+    observed.write("a.txt", b"alpha")
+    observed.write("c.txt", b"gamma")
+
+    # Caching (layered on the observed store: one pipeline, no siblings)
+    fast = cache(observed, ttl=300)
+    fast.read_bytes("a.txt")  # first touch — cache miss
+    fast.read_bytes("a.txt")  # within the TTL — served from the cache
 
     # Batch operations
-    results = batch_copy(store, [("a.txt", "b.txt"), ("c.txt", "d.txt")])
+    results = batch_copy(observed, [("a.txt", "b.txt"), ("c.txt", "d.txt")])
     # --8<-- [end:step14-extensions]
 
+    assert [e.operation for e in events] == ["write", "write", "read_bytes", "copy", "copy"]
+    assert fast.stats.hits == 1, "cached re-read did not hit"
+    assert fast.read_bytes("b.txt") == store.read_bytes("a.txt")
+    assert results.all_succeeded, "batch_copy reported failures"
 
-def _demo_partial_capabilities() -> None:
+
+def _demo_partial_capabilities() -> type[Backend]:
     # --8<-- [start:partial-capabilities]
     class _ReadOnlyBackend(Backend):  # type: ignore[abstract]
         CAPABILITIES: ClassVar[CapabilitySet] = CapabilitySet(
             {
                 Capability.READ,
-                Capability.LIST,
                 Capability.METADATA,
+                Capability.LAZY_READ,
             }
         )
 
@@ -601,9 +653,10 @@ def _demo_partial_capabilities() -> None:
             return self.CAPABILITIES
 
     # --8<-- [end:partial-capabilities]
+    return _ReadOnlyBackend
 
 
-def _demo_partial_write() -> None:
+def _demo_partial_write():
     # --8<-- [start:partial-write]
     def write(
         self,
@@ -620,9 +673,10 @@ def _demo_partial_write() -> None:
         )
 
     # --8<-- [end:partial-write]
+    return write
 
 
-def _demo_test_examples() -> None:
+def _demo_test_examples() -> dict:
     # --8<-- [start:test-examples]
     import pytest
     from remote_store import AlreadyExists, NotFound, Store
@@ -669,6 +723,17 @@ def _demo_test_examples() -> None:
         assert "src" in folders
 
     # --8<-- [end:test-examples]
+    # Hand the test bodies to the harness (tests/test_snippets.py runs each
+    # against a fresh fake-redis Store, so the region is executed, not just
+    # defined). The pytest fixture cannot be called directly and stays here.
+    return {
+        "test_read_write_roundtrip": test_read_write_roundtrip,
+        "test_write_no_overwrite": test_write_no_overwrite,
+        "test_read_missing": test_read_missing,
+        "test_list_files": test_list_files,
+        "test_list_files_recursive": test_list_files_recursive,
+        "test_list_folders": test_list_folders,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -678,11 +743,11 @@ def _demo_test_examples() -> None:
 
 def demo() -> None:
     """Execute testable snippets using MemoryBackend as a stand-in."""
+    import os
+    import tempfile
+
     from remote_store import Store
     from remote_store.backends import MemoryBackend
-    from remote_store.ext.batch import batch_copy
-    from remote_store.ext.cache import cache
-    from remote_store.ext.observe import observe
 
     # --- Verify RedisBackend class is valid Python (importable) ---
     assert RedisBackend.__name__ == "RedisBackend"
@@ -703,27 +768,75 @@ def demo() -> None:
     assert len(files) == 1
     assert files[0].name == "q1.csv"
 
-    # Step 14: extensions work with any backend
-    observed = observe(store)
-    observed.write("ext-test.txt", b"hello", overwrite=True)
-    assert observed.read_bytes("ext-test.txt") == b"hello"
+    # Step 13: registry pattern — runs the guide region against a
+    # memory-backed stores.yaml (no Redis server in the example runner).
+    # Guarded on the YAML *parser* only, so a broken ext.yaml import path
+    # still fails loudly instead of being swallowed.
+    import importlib.util
 
-    fast = cache(store, ttl=300)
-    fast.write("cached.txt", b"data", overwrite=True)
-    assert fast.read_bytes("cached.txt") == b"data"
+    if importlib.util.find_spec("yaml") or importlib.util.find_spec("ruamel.yaml"):
+        cwd = os.getcwd()
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            try:
+                os.chdir(tmp_dir)
+                with open("stores.yaml", "w", encoding="utf-8") as f:
+                    f.write(
+                        "backends:\n"
+                        "  demo-memory:\n"
+                        "    type: memory\n"
+                        "\n"
+                        "stores:\n"
+                        "  cache:\n"
+                        "    backend: demo-memory\n"
+                        '    root_path: "cache/v2"\n'
+                    )
+                try:
+                    round_trip = _demo_registry_usage()
+                finally:
+                    # The region registers the tutorial class in the process-global
+                    # factory map; restore it so in-process callers (pytest) stay clean.
+                    from remote_store._registry import _BACKEND_FACTORIES
 
-    store.write("a.txt", b"aaa")
-    results = batch_copy(store, [("a.txt", "b.txt")])
-    assert store.read_bytes("b.txt") == b"aaa"
+                    _BACKEND_FACTORIES.pop("redis", None)
+                assert round_trip == b"from-registry"
+            finally:
+                os.chdir(cwd)
+    else:
+        print("Skipping the registry snippet: no YAML parser installed.")
+
+    # Step 14: extensions work with any backend — runs the guide region itself
+    _demo_extensions(store)
+    assert store.read_bytes("b.txt") == b"alpha"
+    assert store.read_bytes("d.txt") == b"gamma"
 
     # Step 5 invariants (via MemoryBackend, same contract)
     assert store.exists("reports/q1.csv")
     assert not store.is_file("")
     assert store.is_folder("")
 
-    # Partial capabilities snippet is valid
-    partial = CapabilitySet({Capability.READ, Capability.LIST, Capability.METADATA})
-    assert Capability.WRITE not in partial
+    # Partial-capability regions: execute their bodies, then check the class
+    # the region actually defines against the real ReadOnlyHttpBackend set.
+    import types
+
+    from remote_store.backends import ReadOnlyHttpBackend
+
+    read_only_cls = _demo_partial_capabilities()
+    assert set(read_only_cls.CAPABILITIES) == set(ReadOnlyHttpBackend.CAPABILITIES)
+    assert Capability.WRITE not in read_only_cls.CAPABILITIES
+    # Run the property body (the class is abstract, so no instance exists).
+    assert read_only_cls.capabilities.fget(read_only_cls) is read_only_cls.CAPABILITIES
+
+    write_fn = _demo_partial_write()
+    try:
+        write_fn(types.SimpleNamespace(name="http"), "x.txt", b"data")
+    except CapabilityNotSupported:
+        pass
+    else:
+        raise AssertionError("partial-write region did not raise CapabilityNotSupported")
+
+    # The test-examples region's bodies run in tests/test_snippets.py against
+    # a fake redis client; here we execute the definitions and count them.
+    assert len(_demo_test_examples()) == 6
 
     print("All custom backend guide snippets passed.")
 

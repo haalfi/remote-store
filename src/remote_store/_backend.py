@@ -314,11 +314,11 @@ class Backend(abc.ABC):
         Args:
             path: Backend-relative folder key, or ``""`` for the root.
             recursive: If ``True``, include files in all subdirectories.
-            max_depth: Optional maximum folder depth to traverse.  When set,
-                backends that support native depth limiting prune traversal
-                early.  Backends that ignore this parameter still produce
-                correct results — the Store applies client-side filtering
-                as a safety net.  ``None`` (default) defers to *recursive*.
+            max_depth: Optional maximum folder depth to traverse.  Backends
+                must honor the cutoff natively — the conformance suite
+                asserts the depth boundary on the backend's own output
+                (``Store`` additionally applies client-side filtering for
+                its callers).  ``None`` (default) defers to *recursive*.
 
         Returns:
             An iterator of ``FileInfo`` objects.

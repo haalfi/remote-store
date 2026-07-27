@@ -1,0 +1,132 @@
+id: BK-320
+title: "Custom-backend guide: registry-era conformance section + drift gate"
+trigger: >
+  The BUG-235 guide-validation audit also surfaced stale, non-breaking
+  content: the guide's conformance-registration section described the
+  pre-spec-048 conftest.py mechanism that no longer exists, its
+  backends.toml example omitted the required concurrency key, the topic
+  table missed newer lanes, a capability version anchor was wrong, and
+  resolve() was absent from the optional-overrides table. No mechanical
+  gate kept the guide in sync with the Backend ABC.
+source_items:
+  - BK-320
+  - BUG-235
+audience:
+  - user.site
+  - contributor.tooling
+co_shipped_items:
+  - BUG-235
+  - BUG-239
+discovery_followups:
+  - BK-324
+  - BK-325
+  - ID-235
+expected_ripples:
+  - sdd/backlogid.json
+review_rounds: 6
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: tests/backends/conftest.py
+        section: "(full)"
+        read_type: gate
+        extract: "Registration is registry-driven (spec 048); no params-list backend fixture"
+        outcome: ok
+      - file: tests/backends/fixtures/__init__.py
+        section: "_load_all"
+        read_type: gate
+        extract: "fixtures.toml drives module import; adding a fixture is a one-step change"
+        outcome: ok
+      - file: tests/backends/fixtures/_loader.py
+        section: "concurrency validation"
+        read_type: gate
+        extract: "concurrency is required per family with no default"
+        outcome: ok
+      - file: tests/backends/fixtures/memory.py
+        section: "(full)"
+        read_type: reference
+        extract: "Factory-module shape for the guide's step 3 example"
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Adding a New Backend"
+        read_type: gate
+        extract: "Step 3 already states the registry procedure the guide contradicted"
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "0.23.0, 0.24.0"
+        read_type: verify
+        extract: "LAZY_READ landed 0.23.0; USER_METADATA and WRITE_RESULT_NATIVE landed 0.24.0"
+        outcome: ok
+  - id: docs
+    name: Rewrite guide
+    steps:
+      - file: docs-src/guides/custom-backend-guide.md
+        section: "Registering in the conformance fixture, Capability gating, topic table, Quick reference"
+        read_type: reference
+        extract: "Registry procedure, _require reframe, new lanes, resolve() row, version anchor dropped"
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "(full)"
+        read_type: reference
+        extract: "Longevity rules favor dropping version-pinned prose from guides"
+        outcome: ok
+  - id: wire
+    name: Drift gate
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Backend order (step 6)"
+        read_type: gate
+        extract: "Extend-a-script-not-a-checklist precedent for the new gate"
+        outcome: ok
+      - file: scripts/check_rst_roles.py
+        section: "(full)"
+        read_type: reference
+        extract: "Check-script shape: main() returning 0/1, stderr violations"
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts]"
+        read_type: reference
+        extract: "Standalone entry + lint + docs-gate wiring, matching check-backend-order"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Store or Backend ABC"
+        read_type: verify
+        extract: "ABC-to-guide drift now mechanically gated instead of adding a checklist row"
+        outcome: ok
+  - id: validate
+    name: Walkthrough validation
+    steps:
+      - file: docs-src/guides/custom-backend-guide.md
+        section: "Step 5, Step 8, Standalone backend testing"
+        read_type: gate
+        extract: >
+          Walkthrough agents consumed the guide as their sole instruction
+          source; the Step 5/8 root-alias invariants and the standalone
+          checklist's wrong-type rows proved wrong against the
+          conformance-passing s3_boto3 backend — spawned the
+          contract-reconciliation item (BK-324)
+        outcome: misleading
+      - file: src/remote_store/backends/_s3_boto3.py
+        section: "(full)"
+        read_type: reference
+        extract: "Non-published backend used as fresh-eyes material for two independent guide walkthroughs (author + contributor lens)"
+        outcome: ok
+      - file: src/remote_store/backends/_memory.py
+        section: "move (src == dst)"
+        read_type: gate
+        extract: "Reference self-op shape: verify source exists, then no-op"
+        outcome: ok
+      - file: tests/backends/conformance/test_atomic.py
+        section: "TestMoveCopySelfOperation"
+        read_type: gate
+        extract: "Self-op must preserve data for both overwrite values; missing src raises NotFound"
+        outcome: ok
+      - file: tests/backends/fixtures/s3_boto3_moto.py
+        section: "(full)"
+        read_type: gate
+        extract: "Real factory obligations (skip, provision, per-call isolation, cleanup) the guide's example must teach"
+        outcome: ok
