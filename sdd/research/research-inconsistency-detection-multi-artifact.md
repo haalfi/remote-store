@@ -371,6 +371,17 @@ The table will drift, and nothing will notice.
 | Ripple-check index ↔ detailed checklist | process | `check_ripple_parity.py` |
 | API doc pages ↔ graph IR | explanation | `check_api_docs.py` |
 | `infra/.env` ↔ `infra/_settings.py` | process | `check_infra_settings.py` |
+| Guide tables ↔ `Backend.__abstractmethods__` and the conformance suite | explanation ↔ realization | `check_custom_backend_guide.py` |
+| Workflow files ↔ `sdd/CI-OPERATIONS.md` prose | process | `check_ci_inventory.py` |
+| Canonical backend order ↔ every enumeration of it | cross-surface | `check_backend_order.py` |
+
+The last three rows are **prose-side gates**, and they matter to § 6 and G-2: each
+binds prose to a mechanically derived enumeration. `check_custom_backend_guide.py`
+requires the guide's abstract-methods table to list exactly
+`Backend.__abstractmethods__`; `check_ci_inventory.py` differences the workflow
+directory against handbook prose; `check_backend_order.py` drives every
+enumeration from one canonical order. They are three working templates for
+derive-and-difference, which is the pattern § 8 step 2a wants.
 
 ---
 
@@ -384,25 +395,47 @@ our detection coverage, because every gate was green throughout.
 
 - Facet 2: prose (BE-017/BE-021) demands `InvalidPath`; flat-NS backends raise `NotFound`. Prose contradicts code.
 - Facet 3: prose in [spec 037](../specs/037-depth-limited-listing.md) licenses ignoring `max_depth` while the Dafny model and DEPTH-003 tests require native pruning; 037's table is also wrong about S3 and Azure. Prose contradicts mechanism, and contradicts itself.
-- Facets 1 and 4: behavior exists and is guarded by every backend, but no prose binds it and no test covers it. Prose absent.
+- Facet 4: empty-path `InvalidPath` on move/copy is Store-enforced and guarded defensively by *every* backend, but absent from BE-018/BE-019 and untested. Prose absent, behavior uniform.
+- Facet 1: backend-layer obligations for `""`/`"."` are unspec'd, and `is_file("")` raises on the S3 family but not elsewhere. Prose absent **and** the backends disagree with each other.
 
-Two facets are prose contradicting a mechanism; two are prose absent where
-behavior exists. **Rule 3 makes the Markdown spec authoritative over everything,
-and the Markdown spec is the only description in the formal layer with no
-mechanical counterpart.** Dafny is verified, TLA+ is model-checked, tests are run,
-backends are conformance-driven. Prose is read. The most authoritative artifact is
-the least checked one.
+So the split is not a tidy two-and-two. Three facets are prose-shaped, and facet 1
+carries an additional **class B** component: an undetected cross-artifact
+divergence with no prose to say which side is right. That is a second data point
+for § 3's non-composition limit — no pairwise check covers backend-*i*-versus-
+backend-*j* on `is_file("")`, because the conformance suite has no cell for it.
 
-### Finding 2: our traceability is T1, and T1 cannot see this
+What survives, and it is the finding that matters: **Rule 3 makes the Markdown
+spec authoritative over everything, and spec prose is the only description in the
+formal layer with no mechanical counterpart.** Dafny is verified, TLA+ is
+model-checked, tests are run, backends are conformance-driven. Spec prose is read.
+The most authoritative artifact is the least checked one.
 
-`check_formal_trace.py` fails on `conformance-cites-unknown-spec` and
-`dafny-tag-unknown-spec`: referential integrity plus a baseline registry. It
-proves a link *exists and resolves*. BK-324 is four descriptions with every link
-present, every gate green, and the *content* disagreeing.
+### Finding 2: our traceability is identifier-keyed, and BK-324's claims are not identifiers
 
-This confirms a general property of traceability as a mechanism: it automates link
-integrity and not link correctness. A link can be present, resolvable, and
-semantically wrong. Traceability is a T1 mechanism sold as a T3 one.
+An earlier draft said `check_formal_trace.py` is referential integrity and called
+that a defect. Both halves were wrong, and the correction sharpens the argument.
+
+The script has **three** failure modes, not two. F2 (`conformance-cites-unknown-spec`)
+and F3 (`dafny-tag-unknown-spec`) are referential integrity, T1. But **F1
+(`dafny-clause-untested`) is the set difference D \ T** — a spec ID carrying a
+verified Dafny postcondition that no conformance marker cites. That is omission
+detection over a derived enumeration: E2, tier T6, not T1.
+
+Nor is the residual gap a defect. The script's docstring states its own bound
+explicitly and at length — "**Citation, not assertion.** T records that a marker
+naming an ID sits on a test; it does not verify the test asserts that clause, or
+that the test is even enabled ... or that the cited ID is the *right* one" — and
+by this document's own honesty finding, a **stated** bound is the correct way to
+hold a category-1 mechanism. Contrast finding 3, which is a genuinely *unstated*
+boundary. Stating a bound is the obligation; meeting it is not.
+
+The accurate finding is therefore narrower and more useful:
+
+> Our traceability runs T1 **plus a bounded T6 completeness check**, over
+> **identifier-granular** claim spaces: spec IDs, capability names, method names,
+> workflow filenames. BK-324's claims are not identifiers. "Backends must raise
+> `InvalidPath` on wrong-type access" is a sub-ID clause inside a section, so
+> nothing enumerates it and no set difference can reach it.
 
 ### Finding 3: the formal layer's decoupling argument has a gap
 
@@ -443,8 +476,13 @@ Our declared attribution rules do not cover prose vs Dafny vs conformance.
 
 ### Finding 7: the trace corpus already named the culprits
 
-Across 258 traces we have recorded **166 `misleading` and 19 `unclear`** outcome
-tags, each attributed to a file. The most-cited, **measured on this document's
+Across 257 traces we have recorded **166 `misleading` and 19 `unclear`** outcome
+tags, each attributed to a file. (An earlier draft said 258: the count used
+`sdd/traces/*.yml`, one character looser than `check_traces.py`'s
+`sdd/traces/[!_]*.yml`, and so counted `_schema.yml` as a trace. Step 3's
+aggregator should reuse that gate's glob rather than re-derive it, or it inherits
+the same off-by-one. A mechanical count miscounted, in a document arguing for
+mechanical counts.) The most-cited, **measured on this document's
 date and not maintained thereafter** — step 3 proposes the generated report that
 becomes the authoritative version of this table, at which point the numbers below
 are superseded rather than merely stale:
@@ -459,10 +497,14 @@ are superseded rather than merely stale:
 | 5 | `CONTRIBUTING.md` |
 | 4 | [`sdd/specs/029-async-store-backend-api.md`](../specs/029-async-store-backend-api.md) |
 
-BK-324's header reads `spec: 003, 029, 037`. **Spec 029 was tagged misleading four
-times before BK-324 was written.** The signal existed, attributed and committed,
-and nothing aggregates it. A description that repeatedly misleads a reader is a
-drift detector with attribution already attached, and we are discarding it.
+BK-324's header reads `spec: 003, 029, 037`. **Spec 029 was tagged misleading
+repeatedly before BK-324 was written.** Treat the per-file counts as approximate:
+attribution here is a heuristic that walks back from each `outcome:` tag to the
+nearest preceding `file:` key, and independent search bounds spec 029's count to
+between two and five rather than confirming four. The imprecision is itself the
+argument for step 3 — the signal exists, attributed and committed, and nothing
+aggregates it reliably. A description that repeatedly misleads a reader is a drift
+detector with attribution already attached, and we are discarding it.
 
 ### Synthesis: the failure is a tier mismatch, not a missing detector
 
@@ -473,18 +515,35 @@ Compressing findings 1 to 7 against § 1's structure, BK-324 decomposes as:
 | Backend-contract claims exist in prose, Dafny, tests and code with no unified identity | **F** — precondition unmet |
 | No enumeration of what the backend contract *claims*, so nothing can be differenced | **E** — and § 2.1's bottleneck |
 | One-line contract prose vs 400-line backends, never comparable | **G** |
+| `is_file("")` diverging across backend families with no cell to compare them (facet 1) | **B** — and a second data point for § 3's non-composition limit |
 | No precedence among prose, Dafny and conformance | **H** |
 
-And the decisive observation: **every mechanism we run sits at T1 to T4. The
-failure lives at T6 and T7.** Our gates are not defective; they are aimed at tiers
-where the problem is not. Adding a twenty-first T1 check would not have moved
-BK-324 by a day.
+An earlier draft concluded here that "every mechanism we run sits at T1 to T4,
+the failure lives at T6 and T7". **That was wrong, and it contradicted § 3 of this
+same document**, which correctly calls `check_spec_marks.py` and
+`check_formal_trace.py` a completeness oracle at T6. Several gates do run a
+derived-enumeration set difference, which is the T6 shape:
 
-So the conclusion is sharper than "the gates are blind":
+| Gate | Enumeration it differences |
+|---|---|
+| `check_formal_trace.py` F1 | Dafny-tagged spec IDs \ conformance-cited IDs |
+| `check_spec_marks.py` | Declared spec sections \ marker-cited IDs |
+| `check_capability_parity.py` | Set *equality* across three sources, so omission in both directions |
+| `check_docstring_parity.py` | Shared-docstring methods in neither the identical nor the divergent set |
+| `check_ci_inventory.py` | Workflow files \ handbook prose |
 
-> We are not missing a detector. We are missing a **canonical claim space** (T6)
-> and an **authority model** (T7). Everything in § 8 either builds one of those two
-> or is a lower-priority patch.
+The decisive observation is therefore not that we lack T6. It is:
+
+> **Our T6 coverage is real but confined to identifier-granular claim spaces** —
+> spec IDs, capability names, method names, workflow filenames. BK-324's claims
+> are sub-ID clauses inside spec sections, so no enumeration reaches them and no
+> set difference can fire. We are missing a **claim space at clause granularity**
+> (T6) and an **authority model** (T7).
+
+That is a sharper diagnosis and it changes § 8's framing materially. Step 2 is not
+building an enumeration discipline from nothing; it is **extending an established
+one down a granularity level**, with five working precedents in-repo. Adding a
+twenty-first *identifier*-keyed check would still not have moved BK-324 by a day.
 
 **A tempting T6 check, and why it is not the one we need.** The obvious relation is
 "every invariant enforced in Dafny must appear in the spec", i.e. `I ⊆ S`. That is
@@ -509,7 +568,10 @@ most projects lack entirely.
 
 **Not ahead, and worth being honest about:**
 
-- **Prose is unchecked** (§ 5, finding 1), and it is authoritative.
+- **Spec prose is unchecked** (§ 5, finding 1), and it is authoritative. Note the
+  qualifier: guide prose, handbook prose and enumeration prose all *do* have
+  mechanical counterparts (§ 4b's last three rows). It is specifically the
+  artifact Rule 3 makes authoritative that has none.
 - **Tolerance thinking is underdeveloped.** Engineering states acceptable deviation
   *in the specification* — LVS compares device properties to a configured
   tolerance; GD&T makes acceptable variation part of the spec. We mostly treat
@@ -533,12 +595,17 @@ layer everything else trusts. This is what LVS exists to solve, and
 `check_docstring_parity.py` already implements the needed
 identical-versus-intentionally-divergent distinction.
 
-**G-2. Prose has no mechanical counterpart.** The structural finding of § 5.
-Fully closing it requires T5, which is unsolved. Partially closing it does not:
-see steps 2 and 4 in § 8.
+**G-2. Spec prose has no mechanical counterpart.** The structural finding of § 5,
+and the rank stands, but the scope is narrower than an earlier draft claimed:
+guide, handbook and enumeration prose are all mechanically bound (§ 4b). Fully
+closing it for spec prose requires T5, which is unsolved. Partially closing it
+does not, and the repo already has three templates for how — see steps 2 and 4.
 
-**G-3. Traceability is unidirectional.** Spec → test only; orphan realization
-(behavior with no parent spec) is undetected. BK-324 facet 4 is the live instance.
+**G-3. Traceability is unidirectional and identifier-keyed.** Two limits, not one.
+Direction: spec → test only, so orphan realization (behavior with no parent spec)
+is undetected, and BK-324 facet 4 is the live instance. Granularity: enumeration
+stops at the identifier, so sub-ID clauses are unreachable by any set difference
+(§ 5 synthesis). Step 2a addresses the first; the second is the harder half.
 
 **G-4. The trace corpus is an unexploited drift detector.** 185 negative-outcome
 tags, already attributed, never aggregated.
@@ -590,18 +657,25 @@ divergence. Model it on `check_docstring_parity.py`, which already solves the
 **Mechanism:** E2 · **Size:** M (2a) + S (2b)
 
 This is the T6 half of the § 5 synthesis and the strategically important step.
-Two sub-steps, and **2a is the one that closes facet 4**:
+Framing matters: per the § 5 synthesis this is **not building an enumeration
+discipline from nothing**. Five gates already run derived-enumeration set
+differences, and three of them (`check_custom_backend_guide.py`,
+`check_ci_inventory.py`, `check_backend_order.py`) already target prose. Step 2
+extends that discipline in two directions it does not yet cover: *toward the
+implementation*, and *below identifier granularity*. Two sub-steps, and **2a is
+the one that closes facet 4**:
 
 **2a. `Impl ⊆ S` — enforced behavior must have a parent spec section.** Extend
-`check_formal_trace.py` (or add a sibling) with the implementation direction. A
-tractable first cut is narrow rather than general: every `raise InvalidPath` /
-`raise NotFound` site in `src/remote_store/backends/` and `src/remote_store/_store.py`
+`check_formal_trace.py` (or add a sibling) with the implementation direction. The
+tractable shape is a **heuristic over raise sites in the backend package**: each
 must be reachable from a spec ID via an existing marker or an explicit allowlist
 entry. **The allowlist is the deliverable**, not the gate: on day one it
 enumerates every orphan behavior we have, which is precisely what facet 4 turned
 out to be. Harder than 2b because implementation invariants are enforced rather
-than declared, so expect the first cut to be a heuristic over raise sites and to
-grow by hand.
+than declared, so expect the first cut to be approximate and to grow by hand.
+Which error types and which modules to start with belong in the backlog item when
+this is opened, not here — they are high-change-rate specifics with no claim on
+this layer.
 
 **2b. `I ⊆ S` — every Dafny invariant must appear in the spec.** Cheap, because
 `// @spec` tags already exist and `check_formal_trace.py` already parses them: the
@@ -697,7 +771,15 @@ results. **No source was read at full text.** Verification therefore supports "t
 work exists, is correctly attributed, and reports these numbers"; it does **not**
 support direct quotation or capture of methodological caveats.
 
-**Verified** (search-confirmed, full text unread):
+**Verified** (search-confirmed, full text unread). **Which rows carry the
+argument:** LVS and formal equivalence checking underwrite § 3 E1; AS9102 Form 3
+underwrites § 3 E2; SWE-059 underwrites § 5 finding 4; statcheck and double entry
+underwrite the honesty finding; MIL-HDBK-61A and Bosché are adjacent to E8 and the
+as-built deferral. **Knight & Leveson, the clinical-decision-support override
+figure and ACFE 2024 support no claim in §§ 1 to 8** — they are retained as
+provenance for the broad cross-discipline survey this document was narrowed from,
+so that the narrowing is auditable, and a reader should not infer that N-version
+independence, alert fatigue or fraud-detection channels are load-bearing here.
 
 | Claim | Source |
 |---|---|
@@ -753,10 +835,20 @@ deletion, per the gate's "remedy is rarely deletion":
   and annotated with the reflexive finding that its absence is the same defect one
   layer up.
 
-One item was judged borderline and kept: the path-level specifics in step 2a
-(`raise` sites, module paths) are high-change-rate, but they carry the feasibility
-argument that makes the step assessable, satisfying the gate's third condition.
-Implementation plans are an explicit purpose of this document type.
+A third item was **wrongly kept** on a first pass and has since been relocated.
+The path-level specifics in step 2a (module paths, specific error types) were
+retained on the argument that they satisfy the gate's third condition despite
+failing the first. That is precisely the trade
+[ID-232 § 7](research-id-232-detail-placement-durability.md) forbids: the three
+conditions are "conjunctive, not a weighted score; failing any one is a reason to
+move or cut the fact, not something a high score elsewhere buys back". Applying
+the gate's own remedy — relocation, not deletion — step 2a now asserts the
+*shape* of the heuristic (a pass over raise sites in the backend package), which
+is structurally stable and carries the feasibility argument, while the specific
+modules and error types move to the backlog item when the step is opened. Worth
+flagging loudly because this is the section where the document certifies its own
+compliance, so a gate applied loosely here would be the most quotable precedent
+in it.
 
 Deliberately *not* trimmed: the mechanism catalog, the taxonomy, the tier table and
 the evidence ledger. A document is the SSoT for its own stable core, and these are
@@ -778,7 +870,23 @@ changes because the review found real errors, not stylistic ones:
 | E10 listed last, treated as minor | Elevated: the only family reaching E, G and H at once, and the one that actually worked on BK-324 | Under-claim |
 | § 5 ended at seven findings | Added the tier-mismatch synthesis: mechanisms at T1–T4, failure at T6–T7 | Missing synthesis |
 
-One review suggestion was **not** adopted as given. The reviewer proposed `I ⊆ S`
+**Second round (PR #937 review).** Nine findings, all verified against source
+before applying, all accepted:
+
+| Was | Now |
+|---|---|
+| "Every mechanism we run sits at T1 to T4" | Wrong, and it contradicted § 3 of this document. Five gates run derived-enumeration set differences. Corrected to: our T6 coverage is real but **identifier-granular**, and BK-324's claims are sub-ID clauses (§ 5 synthesis) |
+| § 4b inventory omitted three prose-side gates | Added `check_custom_backend_guide.py`, `check_ci_inventory.py`, `check_backend_order.py`. They are working templates for derive-and-difference, which reframes step 2a as extending a discipline rather than inventing one |
+| "Prose is unchecked" (§ 6), "Prose has no mechanical counterpart" (G-2) | Narrowed to **spec** prose. Guide, handbook and enumeration prose are all mechanically bound |
+| Finding 2 cited only F2/F3 and called the gap a defect | F1 is the set difference D \ T, i.e. T6 not T1. And the residual bound is *stated* in the script's own docstring, which by this document's honesty finding is the correct way to hold the mechanism, not a defect |
+| Facet 1 grouped as "guarded by every backend" | That is facet 4's property. Facet 1 is `is_file("")` diverging across the S3 family, so it carries a class-B component now assigned in the synthesis table |
+| "Across 258 traces" | 257. The count used a glob one character looser than `check_traces.py`'s, counting `_schema.yml` |
+| "Spec 029 was tagged misleading four times" | Softened. The attribution heuristic bounds it to two-to-five; the imprecision is itself an argument for step 3 |
+| Self-validation kept step 2a's path specifics on condition 3 despite failing condition 1 | The gate is conjunctive and forbids that trade. Specifics relocated to the future backlog item; the stable *shape* stays |
+| Evidence ledger implied all rows were load-bearing | Header now separates rows that carry an argument from rows retained as provenance for the broad survey |
+| No backlog pointer back to this doc | `Related:` links added to BK-324 and BK-325, matching the convention on eight other items. The trace convention and the backlog-pointer convention are separate rules; conflating them was the original error |
+
+One review suggestion from the **first** round was **not** adopted as given. The reviewer proposed `I ⊆ S`
 (every Dafny invariant appears in the spec) as the check that "would have caught
 BK-324 facet 4 immediately", on the reading that the spec states the empty-path
 rule, Dafny enforces it, conformance tests it, and only the guide omits it. The
