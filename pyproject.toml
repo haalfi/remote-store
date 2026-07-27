@@ -161,9 +161,17 @@ dev = [
   # `aiohttp/connector.py` when you widen the bound (present in 3.14.3). The
   # >=3.13 floor no longer tracks a compat requirement (`AsyncStreamReaderMixin`
   # was its cause, and the vcrpy floor retired it); it is kept only so a resolve
-  # cannot silently drop below the oldest minor CI has exercised. All test-only;
-  # the published package constrains neither.
-  "vcrpy>=8.2",
+  # cannot silently drop below the oldest minor CI has exercised.
+  # vcrpy carries the same minor tripwire, for the same reason and on stronger
+  # evidence: 8.2.0 rewrote the aiohttp stub inside a *minor*, and the cassette
+  # fixtures pin private vcrpy behaviour (`filters.replace_headers`,
+  # `VCR._build_before_record_request` composition order in
+  # `tests/backends/fixtures/test_cassettes.py`), so a minor is exactly the size
+  # of release that can break us. Floor-only would leave the failure this pin
+  # exists to prevent (a fragile release landing silently on whichever PR
+  # resolves next) wide open on the library that actually caused it.
+  # All test-only; the published package constrains neither.
+  "vcrpy>=8.2,<8.4",
   "aiohttp>=3.13,<3.15",
   # Type checking & linting
   "mypy",

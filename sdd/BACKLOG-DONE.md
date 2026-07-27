@@ -47,13 +47,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
      bodies specifically.
   Both confirm the 8.2.0 fix (kevin1024/vcrpy#995) restored import
   compatibility only and left body handling alone.
-  Ripples the ripple-check Dependency row did not anticipate: **seven** live
-  version stamps, six of them justifying the Azure shim (four fixtures,
-  `graph_replay`, spec 048), the seventh
-  `test_cassettes.py::test_user_agent_absent_stays_absent` (REC-005), missed on
-  the first pass because the sweep keyed on the aiohttp-stub phrasing rather than
-  the version stamp — its `filters.replace_headers` guard verified still present
-  in 8.3.0. And the BUG-224 `filterwarnings` entry anchors on aiohttp's
+  Ripples the ripple-check Dependency row did not anticipate: **eight** live
+  version stamps across six files, seven of them justifying the Azure shim
+  (`azure_replay_async`, `azure_replay_hns_async`, and a docstring *and* an
+  inline `_factory` comment in each of `azure_live_async` / `azure_live_hns_async`,
+  plus `graph_replay` and spec 048). The count took two review rounds to settle,
+  each miss from the same cause — sweeping on a phrase rather than on the version
+  stamp: round one keyed on "aiohttp stub" and missed
+  `test_cassettes.py::test_user_agent_absent_stays_absent` (REC-005, the eighth;
+  its `filters.replace_headers` guard verified still present in 8.3.0), round two
+  keyed on one site per file and missed the second stamp inside
+  `azure_live_hns_async`. And the BUG-224 `filterwarnings` entry anchors on aiohttp's
   `_wait_for_close` connector qualname while its guard test is synthetic (never
   imports aiohttp); the symbol still exists in 3.14.3, so the suppression is
   live, and the pin comment now carries that re-check duty. Historical artifacts

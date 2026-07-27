@@ -65,7 +65,9 @@ phases:
         read_type: reference
         extract: >-
           pytest-recording floors vcrpy at only >=2.0.1, so the vcrpy>=8.2 floor
-          has to live in the dev deps; aiohttp demoted to a major-version guard
+          has to live in the dev deps. First shipped the aiohttp bound as a
+          major-version guard; review corrected it to the minor tripwire that
+          actually ships (see the fix phase)
         outcome: ok
       - file: sdd/traces/_schema.yml
         section: "audience (derived CHANGELOG rule)"
@@ -117,11 +119,32 @@ phases:
         section: "test_user_agent_absent_stays_absent (REC-005)"
         read_type: verify
         extract: >-
-          Seventh live 8.1.1 stamp, missed because the first sweep keyed on the
+          Eighth live 8.1.1 stamp, missed because the first sweep keyed on the
           aiohttp-stub phrasing rather than the version stamp. De-stamped undated,
-          unlike the six Azure sites: its claim is re-asserted by the test body
+          unlike the Azure sites: its claim is re-asserted by the test body
           against the installed vcrpy (guard verified still present in 8.3.0), so
           it goes red instead of going stale
+        outcome: ok
+      - file: tests/backends/fixtures/azure_live_hns_async.py
+        section: "_factory (_RS_CASSETTE_RECORDING branch)"
+        read_type: verify
+        extract: >-
+          Second review round found the sweep had still missed a stamp: this file
+          carries two, and only the module docstring was fixed. Both misses share
+          a cause worth naming — sweeping on a phrase ("aiohttp stub") and then on
+          one-site-per-file, instead of on the version string itself. `git grep
+          8.1.1` is the check that would have found all eight in one pass
+        outcome: ok
+      - file: pyproject.toml
+        section: "dev dependencies (vcrpy pin)"
+        read_type: verify
+        extract: >-
+          Review found the ceiling rationale proved more than the constraint
+          enforced: aiohttp got a minor tripwire while vcrpy stayed floor-only,
+          though vcrpy is the library whose fragile release caused the incident.
+          Gave vcrpy the matching `<8.4` tripwire — 8.2.0 rewrote the aiohttp stub
+          inside a minor, and the cassette tests pin private vcrpy behaviour, so a
+          minor is the release size that can break us
         outcome: ok
   - id: reproduce_behaviour
     name: Re-measure the limitations on the new floor
