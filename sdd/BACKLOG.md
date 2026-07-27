@@ -110,6 +110,11 @@ and the highest ID already in this file, then take the next integer. Run
   Surfaced in the PR #663 review. Steps are independent and may split
   into separate IDs. No priority until the gate is shown to miss a real
   regression; promote to BK-prefix at that point.
+  Related: [research](research/research-inconsistency-detection-multi-artifact.md)
+  § 9 step 2 — argues item 2 (clause granularity) is the *binding* constraint
+  rather than one hardening step among four, since our omission detection is
+  identifier-keyed and BK-324's claims are sub-ID clauses. Step 2b maps to item 1;
+  the `Impl ⊆ S` direction it proposes is not covered here.
 
 ---
 
@@ -137,6 +142,10 @@ and the highest ID already in this file, then take the next integer. Run
      guarded defensively by every backend, absent from BE-018/BE-019 and
      untested (mind the Dafny coupling).
   Evidence trail: PR #932 review threads and `sdd/traces/bk-320-*.yml`.
+  Related: [research](research/research-inconsistency-detection-multi-artifact.md)
+  — § 5 analyses these four facets as a detection failure, and § 9 step 5 proposes
+  settling the prose/Dafny/conformance authority rule *before* the four rules,
+  since the effort here is attribution rather than detection.
 
 - [ ] **BK-325 — Custom-backend guide: registry-integration and remaining contract-topic gaps**
   spec: — · effort: M · audience: user.site
@@ -155,6 +164,9 @@ and the highest ID already in this file, then take the next integer. Run
   - Small fixes: error-mapping checklist lacks a base-`RemoteStoreError`
     fallback row; `from exc` guidance omits the deliberate `from None`
     pattern; the `SEEKABLE_READ` note contradicts shipped range-readers.
+  Related: [research](research/research-inconsistency-detection-multi-artifact.md)
+  § 9 step 6 — this item and BK-324 are one rehearsal's findings, which is the
+  argument for scheduling the guide walkthrough rather than running it by accident.
 
 - [ ] **ID-225 — Evaluate migrating the docs stack from Material for MkDocs to Zensical**
   spec: — · effort: L · audience: user.site, library.maintainer, contributor.tooling
