@@ -8,8 +8,8 @@ live repository case (BK-324). Not a spec or ADR. The plan in § 8 is a proposal
 no backlog items were created.
 **Scope:** What makes inconsistency between parallel descriptions of one subject
 *detectable*; which detection mechanisms are proven in disciplines whose artifacts
-are machine-readable and whose checks are cheap; which of them this repository
-already runs; and where our gates are structurally blind.
+are machine-readable and whose claim spaces are mechanically enumerable; which of
+them this repository already runs; and where our gates are structurally blind.
 **Related:** [`sdd/000-process.md`](../000-process.md) (Rules 2, 3, 5),
 [`sdd/formal/README.md`](../formal/README.md),
 [`sdd/CLAUDE-REFERENCE.md`](../CLAUDE-REFERENCE.md) (ripple-check),
@@ -154,15 +154,32 @@ mechanisms flag with near-perfect reliability and attribute almost never.
 The broad survey covered accounting, construction, aviation, law, medicine and
 experimental science alongside software. Most of its pessimism came from
 disciplines whose artifacts are prose and whose ground truth is contested.
-Software-under-SDD and technical engineering share four properties that change the
-answer:
+Software-under-SDD and technical engineering share three properties that change
+the answer:
 
 1. Artifacts are machine-readable, so comparison can be mechanical.
-2. Re-derivation is cheap, so checks run per change rather than per quarter.
-3. Identifier discipline is already institutional (part numbers, net names, spec IDs).
-4. **The claim space is finite and enumerable from a canonical artifact.**
+2. Identifier discipline is already institutional (part numbers, net names, spec IDs).
+3. **The claim space is finite and enumerable from a canonical artifact.**
 
-Property 4 is the important one, and it produces the central finding of this
+**Cheapness is deliberately not on that list.** An earlier draft listed "checks
+are cheap" as a fourth precondition, which is a category error worth naming
+because the whole document turns on keeping these axes apart. Cost does not
+determine what is *detectable*; it determines how *often* a detection runs and
+whether an organization sustains it. Aviation, medicine and clinical trials detect
+a great deal with expensive mechanisms — first-article inspection, as-built
+survey, double data entry, audit re-performance — and none of them is cheap. The
+detectability gradient above ranks tiers by what the *comparison demands*, and
+cost appears nowhere in it, correctly.
+
+Cheapness is better understood as a **consequence** of properties 1 and 2, and an
+*amplifier* rather than an enabler: it is why these two disciplines can run the
+same mechanisms continuously instead of periodically, which is a real advantage
+(§ 6) but a different claim from "we can detect more". Treating it as a
+precondition would also license the wrong inference — that an expensive check is
+not worth building — when the actual design rule is the opposite: put the check
+where it cannot be routed around, then let its cost set its period.
+
+Property 3 is the important one, and it produces the central finding of this
 research. An earlier draft stated it as "omission is detectable in these two
 disciplines and only in these two", which is **false** and does not survive
 contact with a skeptical reader. Other disciplines have completeness devices: the
@@ -236,6 +253,7 @@ means: does it catch the whole class, and does it **attribute**?
 | **E8** | Scheduled reconciliation with a tolerance band | Periodic calibration, as-built survey | `drift-guard.yml` |
 | **E9** | Tracked, tolerated divergence | Waivers, deviations, non-conformance reports | Conformance xfail registry, `[~]` markers |
 | **E10** | Rehearsal / build-a-real-instance | Commissioning, first-article production | The custom-backend guide walkthrough (ad hoc) |
+| **E11** | User-sourced discrepancy reporting | Defect/snag reporting, confidential incident reporting | Issue tracker; the trace corpus's `outcome: misleading` tags |
 
 Three of these deserve detail.
 
@@ -348,10 +366,38 @@ because the builder must act (G), and it surfaces authority conflicts because th
 builder must pick a side and can say which choice was unclear (H). No mechanical
 gate does any of those.
 
-It is listed last because it is manual, unschedulable-by-default, and produces
-findings in prose. That ranking is about cost, not power. **In the one case this
-document has evidence for, E10 is the mechanism that actually worked** (§ 5,
-finding 5), and every gate ranked above it was green at the time.
+It is listed near the bottom because it is manual, unschedulable-by-default, and
+produces findings in prose. That ranking is about cost, not power. **In the one
+case this document has evidence for, E10 is the mechanism that actually worked**
+(§ 5, finding 5), and every gate ranked above it was green at the time.
+
+### E11 scales with usage rather than with checking budget
+
+Every other family in the catalog costs more the more you check. E11 costs almost
+nothing per finding and its yield grows with how many people *use* the
+descriptions. Coverage is terrible and unplannable; precision is excellent,
+because a reported discrepancy is one that actually obstructed someone.
+
+The evidence for taking it seriously is uncomfortable and comes from the
+discipline with the most heavily institutionalized detection machinery in the
+broad survey. In the ACFE's *Occupational Fraud 2024*, **43% of frauds were
+detected by a tip — 3.07× the next method — against 14% for internal audit and
+13% for management review.** The cheapest, least formal channel out-detects the
+professional apparatus built for exactly that job, by a wide margin. Read it as
+detection-method *share* among discovered frauds rather than sensitivity (frauds
+nobody found appear in no column), and it still reorders any detection portfolio.
+
+**We already run this and the document was mis-filing it.** The trace corpus's
+`outcome: misleading | unclear` tags are readers reporting that a description
+obstructed them, attributed to the file that did it. That is E11, not E7. An
+earlier draft classified step 3 as meta-checking, which misstates its purpose:
+aggregating those tags does not measure a checker's miss rate, it harvests a
+detection channel whose yield scales with how often people read our descriptions.
+The distinction matters for how the output is used — a ranked list of
+frequently-misleading references is a *work queue*, not a quality metric.
+
+For a project this size that is the single best cost-per-finding ratio available,
+and it needs no new mechanism, only aggregation.
 
 ---
 
@@ -664,6 +710,75 @@ in the catalog runs only when someone opens a guide PR.
 
 **G-8. Async twin behavioral parity is a checklist item, not a gate.**
 
+**G-9. Independence is assumed and never verified.** E1's whole warrant is that the
+Dafny contract is an *independent* description of the same behavior. Nothing checks
+that it is. See S8.
+
+---
+
+<a id="principles"></a>
+## 7.5 Substrate-independent design principles
+
+The sections above diagnose this repository. These are the transferable rules, and
+they are the generalizable output of the exercise — a reader who does not work on
+this project should be able to take these and leave the rest. Each is stated once
+and points at where it is argued, rather than re-arguing it. All
+`[analysis, unsourced]` except where a section carries evidence.
+
+**S1. Prefer one normative description driving N artifacts over N² pairwise parity
+checks.** Reach for a parity assertion only when the artifacts are genuinely two
+renderings for two audiences. Pairwise consistency does not compose into global
+consistency, so no wall of parity checks licenses a conclusion about the set (§ 3).
+
+**S2. A mechanical check should localize, not merely fail.** LVS reports the
+unmatched node. "These two disagree" leaves the expensive half of the work undone,
+and is the quality bar any new gate should clear (§ 3, E1).
+
+**S3. Enumerate the claim space from a canonical artifact, and require an
+accounted-for result per claim.** The only known defense against omission, and it
+lives or dies on stable identifiers (§ 2.1, § 3 E2). Its reach stops where the
+enumeration's granularity stops (§ 5 synthesis).
+
+**S4. Declare the authority rule per artifact pair, in writing, before the check
+exists.** Detection without a pre-agreed authority rule stalls in class H
+indefinitely, which is why BK-324 is effort L (§ 5, finding 6).
+
+**S5. Put the detector on a path nobody can route around.** The best-evidenced
+principle here: the same checker changed nothing as an optional download and moved
+the numbers when embedded in review. Deployment position dominated detection power
+(§ 9). Corollary: an excellent optional checker is usually worth less than a
+mediocre mandatory one.
+
+**S6. Distinguish tolerated from unnoticed, structurally.** Waiver registries and
+`[~]` markers are what let an organization afford to keep looking; without them,
+detection gets switched off under schedule pressure (§ 3, E9).
+
+**S7. Estimate the miss rate, not just the finding count.** Detection reports a
+numerator. Without seeded discrepancies the denominator is unknown and "we checked
+and found nothing" is uninterpretable (§ 3, E7).
+
+**S8. Independence of *derivation path* is what makes a second description
+informative — and it must be verified, not assumed.** This is the principle the
+narrowing nearly lost, and it has teeth here.
+
+Knight & Leveson had 27 versions of one program written independently from a
+common specification, ran a million tests, and found joint failures far above what
+independence predicts: **producers being independent does not make their errors
+independent**, because a specification that handles a case badly misleads everyone
+who reads it. Every mechanism whose power rests on independence inherits this —
+E1's verified reference, E3's canonical source, E5's parity pairs.
+
+Applied to us, uncomfortably: **E1's entire warrant is that the Dafny contract is
+an independent description of the same behavior.** If a `.dfy` postcondition was
+written by reading the Python implementation rather than the Markdown spec, the
+oracle certifies nothing except that the transcription was faithful — a
+correlated-error failure of exactly Knight & Leveson's shape, and one that leaves
+every gate green. Nothing in the repository records or checks which source a
+postcondition was derived from. That is G-9, and the cheap mitigation is
+procedural rather than mechanical: require the derivation source to be stated when
+a Dafny clause is authored, so a reviewer can see whether the second description
+is genuinely second.
+
 ---
 
 ## 8. Plan of next steps
@@ -741,7 +856,7 @@ honesty and would catch a *different* drift than 2a. Do it second and do not
 mistake it for the facet-4 fix.
 
 ### Step 3 — Aggregate trace outcome tags
-**Closes:** G-4 · **Mechanism:** E7 · **Size:** S
+**Closes:** G-4 · **Mechanism:** E11 (not E7 — see § 3) · **Size:** S
 
 Add `scripts/report_trace_outcomes.py` producing a ranked table of references by
 `misleading` + `unclear` count, with the citing traces. Run it as a report, not a
@@ -872,13 +987,18 @@ is a reasonable backlog question and is not decided here.
 argument:** LVS and equivalence checking underwrite § 3 E1; AS9102 Form 3
 underwrites § 3 E2; SWE-064 underwrites § 5 finding 4; statcheck and double entry
 underwrite the honesty finding; MIL-HDBK-61A and Bosché are adjacent to E8 and the
-as-built deferral. **Knight & Leveson, the clinical-decision-support override
-figure and ACFE 2024 support no claim in §§ 1 to 8** — they are retained as
-provenance for the broad cross-discipline survey this document was narrowed from,
-so that the narrowing is auditable, and a reader should not infer that N-version
-independence, alert fatigue or fraud-detection channels are load-bearing here.
-Rows kept for auditability still have to be locatable, so each carries a full
-citation.
+as-built deferral; **Knight & Leveson underwrites S8** and **ACFE 2024 underwrites
+E11**. Both were orphaned in an earlier revision, and the reason is worth
+recording: the narrowing dropped the two mechanisms they support, leaving the
+evidence in place with nothing to attach to. Restoring the mechanisms was the
+correct fix, not deleting the rows.
+
+**One row still supports no claim in §§ 1 to 8:** the clinical-decision-support
+override figure. It is retained as provenance for the broad cross-discipline
+survey this document was narrowed from — that survey is not in this repository,
+so the row must stand on its own citation, which it now does. A reader should not
+infer that alert fatigue is load-bearing here; it is background for E4's
+false-positive economics, nothing more.
 
 | Claim | Source |
 |---|---|
