@@ -121,7 +121,7 @@ the class demands.
 | **T4** Behavioral comparison | One side executable, another an oracle | Over sampled inputs only | High but incomplete | By convention |
 | **T5** Semantic comparison of prose | Meaning equivalence in natural language | No general oracle | Low | Rarely |
 | **T6** Completeness | Independent enumeration of the claim space | Not in general | Very low | — |
-| **T7** Intent and authority | Judgment about which description ought to govern | No | None | This *is* attribution |
+| **T7** Intent and authority | Judgment about which description ought to govern | Not a decision procedure | None | This *is* attribution |
 
 **T3.5 is where this repository's strongest tools actually live**, and an earlier
 draft omitted the tier, which mis-slotted them. A discharged Dafny postcondition
@@ -355,6 +355,12 @@ where our coverage of pairs is nevertheless incomplete.
 
 ### (b) Within one domain, across artifacts
 
+The inventory below was **assembled by hand for this document**, because no
+canonical one exists. That is itself a finding, and it is § 2.1 applied one level
+up: we have no enumeration of *which artifact pairs are checked*, so the checking
+layer has exactly the defect this document diagnoses in the specification layer.
+The table will drift, and nothing will notice.
+
 | Pair | Domain | Current detection |
 |---|---|---|
 | `Store` ↔ `AsyncStore` | realization | `check_docstring_parity.py` (docstrings only); behavioral parity is a DoD checkbox |
@@ -438,7 +444,10 @@ Our declared attribution rules do not cover prose vs Dafny vs conformance.
 ### Finding 7: the trace corpus already named the culprits
 
 Across 258 traces we have recorded **166 `misleading` and 19 `unclear`** outcome
-tags, each attributed to a file. The most-cited:
+tags, each attributed to a file. The most-cited, **measured on this document's
+date and not maintained thereafter** — step 3 proposes the generated report that
+becomes the authoritative version of this table, at which point the numbers below
+are superseded rather than merely stale:
 
 | Count | Reference |
 |---|---|
@@ -722,6 +731,36 @@ The three findings held most confidently are structural rather than empirical:
 that omission detection always reduces to a canonical enumerable claim set; that
 what distinguishes these disciplines is the enumeration being *derived* rather
 than maintained in parallel; and that our prose has no mechanical counterpart.
+
+### Self-validation against principle 8 (detail placement)
+
+Checked against the three-condition gate in
+[`research-id-232-detail-placement-durability.md`](research-id-232-detail-placement-durability.md).
+The decisive factor is amendment-channel cost: a research doc is a point-in-time
+snapshot whose updates require a *new document*, so its channel is expensive and it
+must externalize volatile detail rather than absorb it.
+
+Two items failed and were remedied by declaring a successor rather than by
+deletion, per the gate's "remedy is rarely deletion":
+
+- **The trace-tag counts (§ 5, finding 7)** are high-change-rate values in an
+  expensive-amendment artifact. They are load-bearing evidence for G-4 and step 3,
+  so deleting them would remove the justification for the step they motivate.
+  Marked as a dated measurement, with step 3's generated report named as the
+  successor SSoT.
+- **The artifact-pair inventory (§ 4b)** is a hand-built enumeration with no
+  authoritative home. Kept, because the gap analysis is unintelligible without it,
+  and annotated with the reflexive finding that its absence is the same defect one
+  layer up.
+
+One item was judged borderline and kept: the path-level specifics in step 2a
+(`raise` sites, module paths) are high-change-rate, but they carry the feasibility
+argument that makes the step assessable, satisfying the gate's third condition.
+Implementation plans are an explicit purpose of this document type.
+
+Deliberately *not* trimmed: the mechanism catalog, the taxonomy, the tier table and
+the evidence ledger. A document is the SSoT for its own stable core, and these are
+this document's core. Brevity is not the target.
 
 ### Revision note: what external review changed
 
