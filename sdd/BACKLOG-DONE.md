@@ -8,6 +8,62 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-326 — Lift the dev-env `aiohttp<3.14` cap; floor vcrpy at the release that fixed it**
+  spec: — · effort: S · audience: infra.test
+  The cap landed as a drive-by CI unblock inside ID-226 (#881) with no item of
+  its own: vcrpy 8.1.1 subclassed `aiohttp.streams.AsyncStreamReaderMixin` at
+  import time, aiohttp 3.14 removed that symbol, and every test crashed at
+  collection on the vcr aiohttp-stub import. vcrpy 8.2.0 fixed it
+  (kevin1024/vcrpy#995); 8.3.0 is current. Verified both directions in a
+  scratch venv before changing anything — 8.1.1 + aiohttp 3.14.3 raises the
+  `AttributeError`, 8.3.0 + 3.14.3 imports clean. **Diverged from dependabot
+  #934, which widened aiohttp alone:** the causal constraint is vcrpy's
+  version, and vcrpy is a transitive of pytest-recording, which floors it at
+  only `>=2.0.1` — so a `vcrpy>=8.2` floor goes in the dev deps and the
+  aiohttp bound is demoted from a compat cap to a **minor**-version tripwire
+  (`<3.15`; a major guard would be redundant, aiobotocore already caps `<4`).
+  Ceiling kept rather than dropped because the dep is test-only: the cost is one
+  dependabot PR per minor, the benefit is that a vcrpy-breaking minor gets a full
+  CI run before it can land.
+  **Behaviour re-measured, not inferred.** Moving the floor off 8.1.1 restated
+  every "vcrpy 8.1.1's aiohttp stub …" claim as a claim about 8.2/8.3, so the two
+  live workarounds resting on those claims were re-run against the new floor
+  rather than deferred:
+  1. *Async-Azure transport shim — still required.* Dropping
+     `AsyncioRequestsTransport` from `azure_replay_async` runs the fixture onto
+     `AioHttpTransport`: 114 passed in 8s with the shim, hangs after 11 tests
+     without it (killed at 600s), blocked in
+     `azure/core/pipeline/transport/_aiohttp.py` `__anext__` under
+     `download_blob` → `process_content`. The REC-008 fidelity caveat stands.
+  2. *S3 cassettes — still infeasible, but the failure moved.* Recording
+     `S3Backend` → `s3fs` → `aiobotocore` traffic under vcrpy 8.3.0 (moto
+     endpoint; the mechanism is client-side so the endpoint is irrelevant):
+     writes now **succeed** where 8.1.1 died on `AioAwsChunkedWrapper` with a
+     never-awaited coroutine, but every read returns an empty body — 0/27 bytes
+     on a small read, 0/1048576 on the 1 MiB streaming read, zero
+     never-awaited warnings. So the request-side defect the BK-181 spike
+     diagnosed is gone and a response-side body drop remains; spec 048's
+     "cannot drive the request/response wrappers" is corrected to the response
+     bodies specifically.
+  Both confirm the 8.2.0 fix (kevin1024/vcrpy#995) restored import
+  compatibility only and left body handling alone.
+  Ripples the ripple-check Dependency row did not anticipate: **eight** live
+  version stamps across six files, seven of them justifying the Azure shim
+  (`azure_replay_async`, `azure_replay_hns_async`, and a docstring *and* an
+  inline `_factory` comment in each of `azure_live_async` / `azure_live_hns_async`,
+  plus `graph_replay` and spec 048). The count took two review rounds to settle,
+  each miss from the same cause — sweeping on a phrase rather than on the version
+  stamp: round one keyed on "aiohttp stub" and missed
+  `test_cassettes.py::test_user_agent_absent_stays_absent` (REC-005, the eighth;
+  its `filters.replace_headers` guard verified still present in 8.3.0), round two
+  keyed on one site per file and missed the second stamp inside
+  `azure_live_hns_async`. And the BUG-224 `filterwarnings` entry anchors on aiohttp's
+  `_wait_for_close` connector qualname while its guard test is synthetic (never
+  imports aiohttp); the symbol still exists in 3.14.3, so the suppression is
+  live, and the pin comment now carries that re-check duty. Historical artifacts
+  (`sdd/research/*`, `sdd/traces/*`, rfc-0010) keep their 8.1.1 stamps by design.
+  No CHANGELOG entry: test-only, `infra.test` audience.
+
 - [x] **BUG-239 — Adapter drain-timeout test flaked on CI: pending task GC'd out of the WeakSet task registry**
   spec: — · effort: S · audience: infra.test
   `test_close_drain_timeout_logs_warning_with_hanging_task` failed twice on

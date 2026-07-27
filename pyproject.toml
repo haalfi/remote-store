@@ -146,13 +146,33 @@ dev = [
   "pytest-randomly>=3.15",  # BK-277: randomised test order in the `test-isolation` proof lane
   "hypothesis>=6.0",
   "moto[server,s3]>=5.2.0",
-  # vcrpy (pulled by pytest-recording) 8.1.1 references
-  # `aiohttp.streams.AsyncStreamReaderMixin`, which exists only in aiohttp 3.13.x
-  # (added in 3.13, removed in 3.14). aiobotocore allows aiohttp>=3.12,<4, so
-  # without this cap a fresh resolve pulled aiohttp 3.14.0 and every test crashed
-  # at collection on the vcr aiohttp-stub import (test-only; the published package
-  # has no aiohttp constraint). Lift once vcrpy supports aiohttp 3.14.
-  "aiohttp>=3.13,<3.14",
+  # vcrpy is a transitive of pytest-recording (which floors it at only >=2.0.1),
+  # so the floor lives here: 8.1.1 subclassed `aiohttp.streams.AsyncStreamReaderMixin`
+  # at import time, a symbol aiohttp removed in 3.14, and every test crashed at
+  # collection on the vcr aiohttp-stub import. vcrpy 8.2.0 fixed that
+  # (kevin1024/vcrpy#995), which is what lets aiohttp float past 3.14 again.
+  # The aiohttp bound is a *minor*-version tripwire, not a major-version guard
+  # (aiobotocore already caps <4, so a major guard here would be redundant): every
+  # aiohttp minor arrives as its own dependabot PR and gets a full CI run before it
+  # can land, so a vcrpy-breaking minor cannot slip in on an unrelated resolve.
+  # That is the whole reason the ceiling survives the compat fix. Raising it also
+  # re-exposes the BUG-224 `filterwarnings` entry below, which anchors on aiohttp's
+  # `_wait_for_close` connector qualname; confirm that symbol still exists in
+  # `aiohttp/connector.py` when you widen the bound (present in 3.14.3). The
+  # >=3.13 floor no longer tracks a compat requirement (`AsyncStreamReaderMixin`
+  # was its cause, and the vcrpy floor retired it); it is kept only so a resolve
+  # cannot silently drop below the oldest minor CI has exercised.
+  # vcrpy carries the same minor tripwire, for the same reason and on stronger
+  # evidence: 8.2.0 rewrote the aiohttp stub inside a *minor*, and the cassette
+  # fixtures pin private vcrpy behaviour (`filters.replace_headers`,
+  # `VCR._build_before_record_request` composition order in
+  # `tests/backends/fixtures/test_cassettes.py`), so a minor is exactly the size
+  # of release that can break us. Floor-only would leave the failure this pin
+  # exists to prevent (a fragile release landing silently on whichever PR
+  # resolves next) wide open on the library that actually caused it.
+  # All test-only; the published package constrains neither.
+  "vcrpy>=8.2,<8.4",
+  "aiohttp>=3.13,<3.15",
   # Type checking & linting
   "mypy",
   "ruff",

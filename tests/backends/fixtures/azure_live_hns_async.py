@@ -7,8 +7,8 @@ the persistent ``RS_TEST_LIVE_HNS_CONTAINER`` filesystem; the azure-subtree
 
 Under ``_RS_CASSETTE_RECORDING=1`` the async backend injects
 ``AsyncioRequestsTransport`` so vcrpy captures real streaming bodies — the same
-shim ``azure_live_async`` uses (vcrpy 8.1.1's aiohttp stub drops streaming
-bodies on record).
+shim ``azure_live_async`` uses (vcrpy's aiohttp stub drops streaming bodies on
+record; still measured on vcrpy 8.3.0 under BK-326).
 
 Gating, the dynamic ``pytest.mark.vcr`` under ``--record``, and
 ``conformance_excluded`` match ``azure_live_hns``.
@@ -53,7 +53,9 @@ def _factory() -> AsyncBackend:
     fs_name = require_azure_live_hns_container()
     client_options: dict[str, object] = {}
     if os.environ.get("_RS_CASSETTE_RECORDING") == "1":
-        # vcrpy 8.1.1's aiohttp stub drops streaming response bodies on record.
+        # vcrpy's aiohttp stub drops streaming response bodies on record (8.1.1 PoC
+        # finding; the body-handling limitation still measured on 8.3.0 under
+        # BK-326 — see azure_replay_async's module docstring).
         # Inject AsyncioRequestsTransport so the cassette captures real bodies.
         try:
             from azure.core.pipeline.transport import AsyncioRequestsTransport  # noqa: PLC0415

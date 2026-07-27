@@ -144,9 +144,12 @@ class TestGraphCassetteScrub:
     @pytest.mark.spec("REC-005")
     def test_user_agent_absent_stays_absent(self) -> None:
         """The ``("User-Agent", ...)`` tuple *rewrites* an existing header but must
-        never *add* one when absent — vcrpy 8.1.1 ``filters.replace_headers`` guards
+        never *add* one when absent — vcrpy's ``filters.replace_headers`` guards
         the rewrite with ``if k in new_headers:``. Byte-identity of re-records
-        depends on it: a request that carried no User-Agent must record none."""
+        depends on it: a request that carried no User-Agent must record none.
+        Undated deliberately, unlike the Azure aiohttp-stub comments: the assertion
+        below re-checks the guard on whatever vcrpy is installed, so a change
+        upstream goes red rather than leaving a stale claim."""
         scrub = _composed_request_filter(_graph_cfg())
         out = scrub(_request({"Accept": "application/json"}))  # no User-Agent in
         assert "user-agent" not in {k.lower() for k in out.headers}
