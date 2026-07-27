@@ -10944,8 +10944,8 @@ apply to:</p>
 </ul>
 <p><strong>Noted exception — S3.</strong> S3 is HTTP-transport but does not currently
 ship a <code>s3_replay</code> fixture. The implementing recording library
-(vcrpy 8.1.1) cannot drive the <code>aiobotocore</code> request/response
-wrappers that <code>s3fs</code> rides on, and <code>s3fs</code> exposes no equivalent of
+(vcrpy) cannot carry the <code>aiobotocore</code> response bodies that <code>s3fs</code>
+rides on, and <code>s3fs</code> exposes no equivalent of
 the <code>azure.core</code> transport injection that solves the analogous
 async-aiohttp problem for Azure. The <code>s3_moto</code> Stage-1 fixture
 provides in-process S3 coverage for the conformance surface, so the
