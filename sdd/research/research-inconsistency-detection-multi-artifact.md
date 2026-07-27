@@ -38,7 +38,8 @@ why ours did not fire, and what to do about it.
 > > are about the mechanism.**
 >
 > 1. **Warrant by construction.** Detection power is *derivable*, not measured:
->    LVS (graph isomorphism over extracted netlists), a discharged Dafny
+>    layout-versus-schematic checking, LVS (graph isomorphism over extracted
+>    netlists), a discharged Dafny
 >    postcondition, a type system, double entry's nullspace. No efficacy study is
 >    needed, because what the mechanism catches and misses follows from how it is
 >    built. **The obligation is to state the bound.** This is exactly the
@@ -65,7 +66,8 @@ why ours did not fire, and what to do about it.
 >
 > **Mapping onto vocabulary the reader may already have:** categories 1 and 2 are
 > *product* evidence and category 3 is *process* evidence, the split certification
-> practice already makes (DO-178C, and DO-333 for the formal-methods route that is
+> practice already makes (DO-178C, the airborne-software certification standard,
+> and DO-333, its formal-methods supplement, for the route that is
 > category 1 in its purest form). The classical epistemology split is
 > deduction / induction / testimony, in the same order.
 >
@@ -295,10 +297,10 @@ means: does it catch the whole class, and does it **attribute**?
 
 | # | Mechanism | Engineering instance | Our instance |
 |---|---|---|---|
-| **E1** | Equivalence check against a verified reference | LVS (layout vs schematic); RTL-to-netlist equivalence checking | Dafny `MemoryBackend` compiled and run through conformance as `DafnyOracleBackend` |
-| **E2** | Characteristic accountability | AS9102 Form 3: every ballooned characteristic has a traceable inspection result | `check_spec_marks.py`, `check_formal_trace.py` |
+| **E1** | Equivalence check against a verified reference | LVS (layout versus schematic); register-transfer-level (RTL) to netlist equivalence checking | Dafny `MemoryBackend` compiled and run through conformance as `DafnyOracleBackend` |
+| **E2** | Characteristic accountability | AS9102 (aerospace first-article inspection) Form 3: every ballooned characteristic has a traceable inspection result | `check_spec_marks.py`, `check_formal_trace.py` |
 | **E3** | Generation from a canonical model | Model-based definition; drawings generated from the 3D model | `gen_features.py`, `gen_graph.py`, `check_api_docs.py` |
-| **E4** | Rule checking | DRC, ERC | `ruff`, `mypy`, the `check_*.py` lint family |
+| **E4** | Rule checking | Design-rule and electrical-rule checks (DRC, ERC) | `ruff`, `mypy`, the `check_*.py` lint family |
 | **E5** | Pairwise parity assertion | Interface control documents | `check_capability_parity`, `check_docstring_parity`, `check_ripple_parity`, `check_ci_full_matrix` |
 | **E6** | One normative description driving N artifacts | One inspection plan applied to every unit of a part family | The conformance suite across all backends |
 | **E7** | Meta-checking the checker | Gauge R&R, proficiency testing, seeded defects | Mutation testing |
@@ -369,7 +371,8 @@ number.
 Two precision notes, because the mechanism is easy to over-describe. What the
 standard mandates is **unique identification and traceability**, satisfiable by a
 balloon number "or similar identifier" — the ballooned drawing is the common
-method, not the requirement, and sources asserting otherwise are FAI-tool vendors.
+method, not the requirement, and sources asserting otherwise are vendors of
+first-article-inspection (FAI) tooling.
 And FAI scope excludes procured standard catalog hardware and deliverable
 software, so "every characteristic" holds *within FAI scope*. Neither weakens the
 pattern being borrowed.
@@ -432,7 +435,8 @@ because a reported discrepancy is one that actually obstructed someone.
 
 The evidence for taking it seriously is uncomfortable and comes from the
 discipline with the most heavily institutionalized detection machinery in the
-broad survey. In the ACFE's *Occupational Fraud 2024*, **43% of frauds were
+broad survey. In the Association of Certified Fraud Examiners' (ACFE)
+*Occupational Fraud 2024*, **43% of frauds were
 detected by a tip — 3.07× the next method — against 14% for internal audit and
 13% for management review.** The cheapest, least formal channel out-detects the
 professional apparatus built for exactly that job, by a wide margin. Read it as
@@ -494,7 +498,7 @@ unaddressed.
 | `Capability` enum ↔ Dafny datatype ↔ `CapabilityName` arms | cross-source | `check_capability_parity.py` |
 | `ci.yml` ALL_PYTHONS ↔ `ci-full.yml` matrix | process | `check_ci_full_matrix.py` |
 | Ripple-check index ↔ detailed checklist | process | `check_ripple_parity.py` |
-| API doc pages ↔ graph IR | explanation | `check_api_docs.py` |
+| API doc pages ↔ graph intermediate representation (IR) | explanation | `check_api_docs.py` |
 | `infra/.env` ↔ `infra/_settings.py` | process | `check_infra_settings.py` |
 | Guide tables ↔ `Backend.__abstractmethods__` and the conformance suite | explanation ↔ realization | `check_custom_backend_guide.py` |
 | Workflow files ↔ `sdd/CI-OPERATIONS.md` prose | process | `check_ci_inventory.py` |
@@ -518,7 +522,7 @@ our detection coverage, because every gate was green throughout.
 
 ### Finding 1: all four facets are the prose spec
 
-- Facet 2: prose (BE-017/BE-021) demands `InvalidPath`; flat-NS backends raise `NotFound`. Prose contradicts code.
+- Facet 2: prose (BE-017/BE-021) demands `InvalidPath`; flat-namespace (flat-NS) backends raise `NotFound`. Prose contradicts code.
 - Facet 3: prose in [spec 037](../specs/037-depth-limited-listing.md) licenses ignoring `max_depth` while the Dafny model and DEPTH-003 tests require native pruning; 037's table is also wrong about S3 and Azure. Prose contradicts mechanism, and contradicts itself.
 - Facet 4: empty-path `InvalidPath` on move/copy is Store-enforced and guarded defensively by *every* backend, but absent from BE-018/BE-019 and untested. Prose absent, behavior uniform.
 - Facet 1: backend-layer obligations for `""`/`"."` are unspec'd, and `is_file("")` raises on the S3 family but not elsewhere. Prose absent **and** the backends disagree with each other.
@@ -599,7 +603,8 @@ Our characteristic accountability runs spec → test. NASA's **SWE-064**
 cited SWE-059, which is requirements ↔ design and so the wrong direction for this
 finding) states the rationale explicitly: the two directions catch structurally
 different defects, namely design elements not fulfilled in the code, and source
-code with no parent design element. Note that NPR 7150.2 Rev C and handbook
+code with no parent design element. Note that NASA Procedural Requirements
+(NPR) 7150.2 Rev C and handbook
 Ver C-D consolidate these into **SWE-052**, so a bare SWE-064 cite is current only
 against Rev A-B.
 
@@ -738,7 +743,8 @@ most projects lack entirely.
   artifact Rule 3 makes authoritative that has none.
 - **Tolerance thinking is underdeveloped.** Engineering states acceptable deviation
   *in the specification* — LVS compares device properties to a configured
-  tolerance; GD&T makes acceptable variation part of the spec. We mostly treat
+  tolerance; geometric dimensioning and tolerancing (GD&T) makes acceptable
+  variation part of the spec. We mostly treat
   every difference as pass/fail, with tolerances buried in check implementations.
 - **Rehearsal is unscheduled** (§ 5, finding 5).
 - **Traceability efficacy is measured on adjacent outcomes only.** Not a void:
@@ -1106,9 +1112,9 @@ false-positive economics, nothing more.
 | Equivalence checking proves **combinational** equivalence at matched compare points (registers, primary outputs, black-box input pins), conditional on a 1:1 state-element correspondence; standard synthesis sign-off. Black-box contents are unverified, and sequential transformations such as retiming fall outside it | Synopsys Formality |
 | AS9102 Form 3 ("Characteristic Accountability, Verification and Compatibility Evaluation") carries requirement, measured result and unique identifier per characteristic. The "accounted for, uniquely identified, results traceable to each unique identifier" clause language traces to **AS9102A § 5.2**; Rev C (2023) renumbers Form 3 fields. The mandate is unique identification, satisfiable by "a balloon number **or similar identifier**" — ballooning is the common method, not the requirement. FAI scope excludes procured standard catalog hardware and deliverable software | AS9102A § 5.2, practitioner analysis |
 | NASA **SWE-064** (bidirectional traceability, software **design ↔ code**) carries the rationale used in § 5 finding 4: it surfaces design elements not fulfilled in code, and code with no parent design element. SWE-059 is requirements ↔ design. NPR 7150.2 Rev C / handbook Ver C-D consolidate these into **SWE-052** | NASA SWE handbook |
-| MIL-HDBK-61A splits FCA (against the performance spec) from PCA (as-built against **its technical documentation**) | MIL-HDBK-61A, AcqNotes |
-| statcheck: ~half of articles **with statcheck-detectable APA-formatted NHST results** carry an inconsistency, ~1 in 8 a gross one | Nuijten et al. 2016, *Behavior Research Methods* |
-| statcheck **in peer review** is *associated with* a steeper decline than matched controls (preregistered pretest-posttest quasi-experiment, 2 treatment journals vs 2 controls, 7,000+ articles). Authors' own framing is "is related to" and "can be" | Nuijten & Wicherts 2024, *AMPPS* |
+| MIL-HDBK-61A splits the Functional Configuration Audit (FCA, against the performance spec) from the Physical Configuration Audit (PCA, as-built against **its technical documentation**) | MIL-HDBK-61A, AcqNotes |
+| statcheck: ~half of articles **with statcheck-detectable, APA-style-formatted null-hypothesis-significance-test (NHST) results** carry an inconsistency, ~1 in 8 a gross one | Nuijten et al. 2016, *Behavior Research Methods* |
+| statcheck **in peer review** is *associated with* a steeper decline than matched controls (preregistered pretest-posttest quasi-experiment, 2 treatment journals vs 2 controls, 7,000+ articles). Authors' own framing is "is related to" and "can be" | Nuijten & Wicherts 2024, *Advances in Methods and Practices in Psychological Science* |
 | statcheck's own accuracy is **contested**: 96–99.9% on results it detects (Nuijten et al. 2017) vs ~60% precision and ~61% recognition (Schmidt, arXiv:1610.01010); detection is tied to strict APA formatting (Böschen 2024, arXiv:2408.07948). Different denominators; the critiques are preprints | as cited |
 | Practical static analyses are deliberately unsound ("soundy"); the stated obligation is to explain the implications of that unsoundness rather than to eliminate it | Livshits, Sridharan, Smaragdakis et al., "In Defense of Soundiness: A Manifesto", *CACM* 58(2), 2015 |
 | Mutation testing's support is a statistically significant **correlation** between mutant detection and real-fault detection, independent of coverage — 357 real faults, 5 projects, ~321k LOC. Not a defect-reduction result | Just, Jalali, Inozemtseva, Ernst, Holmes & Fraser, *FSE* 2014 |
@@ -1118,7 +1124,7 @@ false-positive economics, nothing more.
 | A balance identity detects that **one** error occurred **without localizing it**, and is blind to offsetting pairs (distance-2 parity check: detects one, corrects none). Detection-**plus-correction** comes from the paper's parity-check-matrix construction, not from the trial balance | Arya, Fellingham, Schroeder & Young, *Double Entry Bookkeeping and Error Correction*, Ohio State working paper, 1996 |
 | Pooled override of drug-drug-interaction alerts **90% (95% CI 85–95)** across 16 studies, **I² = 100%**, per-study range ~46–98% | Felisberto et al., *Health Informatics Journal* 30(2), 2024, doi:10.1177/14604582241263242 |
 | ACFE 2024: tips detect 43% of occupational frauds, 3.07× the next method; internal audit 14%, management review 13% | ACFE Report to the Nations 2024 |
-| Bosché: **ICP model-matching of a known CAD model** against laser scans for as-built dimensional compliance (not learned recognition) | Bosché 2010, *Adv. Eng. Informatics* 24(1), 107–118 |
+| Bosché: **iterative-closest-point (ICP) matching of a known CAD model** against laser scans for as-built dimensional compliance (not learned recognition) | Bosché 2010, *Adv. Eng. Informatics* 24(1), 107–118 |
 
 **Traceability efficacy: an evidentiary mismatch, not a void.** An earlier draft
 said no efficacy evidence exists in either direction. That is wrong as a reader
