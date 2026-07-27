@@ -6,9 +6,10 @@ async pipeline against recorded cassette files.
 
 Transport shim
 --------------
-vcrpy 8.1.1's aiohttp stub cannot stream a response body — it deadlocks
+vcrpy's aiohttp stub cannot stream a response body — it deadlocks
 ``AioHttpTransport.__anext__`` on replay and drops the body silently on record
-(PoC finding, see ``sdd/research/research-bk-181-cassette-replay-poc.md``).
+(PoC finding on 8.1.1, see ``sdd/research/research-bk-181-cassette-replay-poc.md``;
+BK-327 re-tests it against the current floor).
 
 The fix is ``AsyncioRequestsTransport``, an ``azure.core`` async transport that
 runs ``requests``/urllib3 in a thread pool.  It is injected via the existing

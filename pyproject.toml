@@ -146,13 +146,15 @@ dev = [
   "pytest-randomly>=3.15",  # BK-277: randomised test order in the `test-isolation` proof lane
   "hypothesis>=6.0",
   "moto[server,s3]>=5.2.0",
-  # vcrpy (pulled by pytest-recording) 8.1.1 references
-  # `aiohttp.streams.AsyncStreamReaderMixin`, which exists only in aiohttp 3.13.x
-  # (added in 3.13, removed in 3.14). aiobotocore allows aiohttp>=3.12,<4, so
-  # without this cap a fresh resolve pulled aiohttp 3.14.0 and every test crashed
-  # at collection on the vcr aiohttp-stub import (test-only; the published package
-  # has no aiohttp constraint). Lift once vcrpy supports aiohttp 3.14.
-  "aiohttp>=3.13,<3.14",
+  # vcrpy is a transitive of pytest-recording (which floors it at only >=2.0.1),
+  # so the floor lives here: 8.1.1 subclassed `aiohttp.streams.AsyncStreamReaderMixin`
+  # at import time, a symbol aiohttp removed in 3.14, and every test crashed at
+  # collection on the vcr aiohttp-stub import. vcrpy 8.2.0 fixed that
+  # (kevin1024/vcrpy#995), which is what lets aiohttp float past 3.14 again.
+  # The aiohttp bound stays as a major-version guard only (aiobotocore allows
+  # >=3.12,<4); both are test-only, the published package has no aiohttp constraint.
+  "vcrpy>=8.2",
+  "aiohttp>=3.13,<3.15",
   # Type checking & linting
   "mypy",
   "ruff",

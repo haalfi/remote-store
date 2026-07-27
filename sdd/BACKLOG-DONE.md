@@ -8,6 +8,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-326 — Lift the dev-env `aiohttp<3.14` cap; floor vcrpy at the release that fixed it**
+  spec: — · effort: S · audience: infra.test
+  The cap landed as a drive-by CI unblock inside ID-226 (#881) with no item of
+  its own: vcrpy 8.1.1 subclassed `aiohttp.streams.AsyncStreamReaderMixin` at
+  import time, aiohttp 3.14 removed that symbol, and every test crashed at
+  collection on the vcr aiohttp-stub import. vcrpy 8.2.0 fixed it
+  (kevin1024/vcrpy#995); 8.3.0 is current. Verified both directions in a
+  scratch venv before changing anything — 8.1.1 + aiohttp 3.14.3 raises the
+  `AttributeError`, 8.3.0 + 3.14.3 imports clean. **Diverged from dependabot
+  #934, which widened aiohttp alone:** the causal constraint is vcrpy's
+  version, and vcrpy is a transitive of pytest-recording, which floors it at
+  only `>=2.0.1` — so a `vcrpy>=8.2` floor goes in the dev deps and the
+  aiohttp bound is demoted to a major-version guard (`<3.15`, dependabot-driven
+  so each minor gets a full CI run before it lands). Ceiling kept rather than
+  dropped because the dep is test-only: the cost is one PR per minor, the
+  benefit is that a vcrpy-breaking aiohttp release cannot land silently.
+  Ripple the ripple-check table did not anticipate: moving the floor off 8.1.1
+  staled six live version stamps justifying the async-Azure
+  `AsyncioRequestsTransport` shim (four fixtures, `graph_replay`, spec 048) —
+  de-stamped here, with the substance re-test split out as BK-327. Historical
+  artifacts (`sdd/research/*`, `sdd/traces/*`, rfc-0010) keep their 8.1.1
+  stamps by design. No CHANGELOG entry: test-only, `infra.test` audience.
+
 - [x] **BUG-239 — Adapter drain-timeout test flaked on CI: pending task GC'd out of the WeakSet task registry**
   spec: — · effort: S · audience: infra.test
   `test_close_drain_timeout_logs_warning_with_hanging_task` failed twice on

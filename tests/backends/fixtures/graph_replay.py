@@ -5,7 +5,7 @@ the ``httpx`` transport against recorded cassette files (no network). The
 token-provider is a constant stub — the bearer token is scrubbed out of every
 cassette at record time, so replay never needs a real one.
 
-vcrpy 8.1.1 records and replays ``httpx.AsyncClient.stream()`` with no transport
+vcrpy records and replays ``httpx.AsyncClient.stream()`` with no transport
 shim (proven by ``test_httpx_streaming_replay.py``), so — unlike the Azure async
 replay fixture — no ``AsyncioRequestsTransport`` is injected.
 

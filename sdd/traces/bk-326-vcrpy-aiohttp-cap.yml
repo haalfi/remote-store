@@ -1,0 +1,102 @@
+id: BK-326
+title: "Lift the dev-env aiohttp<3.14 cap; floor vcrpy at the release that fixed it"
+trigger: >-
+  The dev deps carried `aiohttp>=3.13,<3.14` with a comment reading "Lift once
+  vcrpy supports aiohttp 3.14". vcrpy 8.2.0 shipped that support and dependabot
+  #934 proposed widening the aiohttp bound, but no backlog item tracked the cap
+  and the widened bound left the causal constraint (vcrpy's version) unpinned.
+source_items:
+  - BK-326
+audience:
+  - infra.test
+discovery_followups:
+  - BK-327
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  - tests/backends/fixtures/azure_replay_async.py
+  - tests/backends/fixtures/azure_replay_hns_async.py
+  - tests/backends/fixtures/azure_live_async.py
+  - tests/backends/fixtures/azure_live_hns_async.py
+  - tests/backends/fixtures/graph_replay.py
+  - sdd/specs/048-testing-architecture.md
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: pyproject.toml
+        section: "dev dependencies (aiohttp cap comment)"
+        read_type: gate
+        extract: "The cap's own stated lift condition — 'once vcrpy supports aiohttp 3.14'"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "(full)"
+        read_type: gate
+        extract: "Whether a work item already tracked the cap; none exists, only ID-229 for the unrelated httpx cap"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works"
+        read_type: gate
+        extract: "ID assignment via sdd/backlogid.json, and the delete-here/add-to-DONE completion rule"
+        outcome: ok
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: pyproject.toml
+        section: "dev dependencies"
+        read_type: verify
+        extract: >-
+          Scratch-venv proof of both directions before changing anything: vcrpy
+          8.1.1 + aiohttp 3.14.3 raises AttributeError on
+          aiohttp.streams.AsyncStreamReaderMixin; 8.3.0 + 3.14.3 imports clean
+        outcome: ok
+      - file: infra/drift-locks/s3.txt
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          The s3 runtime lane already resolves aiohttp==3.14.2 and is green, so
+          the cap only ever bit the dev env, never the shipped package
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: pyproject.toml
+        section: "dev dependencies"
+        read_type: reference
+        extract: >-
+          pytest-recording floors vcrpy at only >=2.0.1, so the vcrpy>=8.2 floor
+          has to live in the dev deps; aiohttp demoted to a major-version guard
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience (derived CHANGELOG rule)"
+        read_type: gate
+        extract: "infra.test-only audience skips CHANGELOG"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Dependency"
+        read_type: verify
+        extract: >-
+          The row lists pyproject extras + pins, README install, docs
+          prerequisites — all aimed at user-facing runtime deps. It says nothing
+          about test-only dev deps, and nothing anticipated the version stamps
+          in fixture docstrings that a floor change invalidates
+        outcome: unclear
+      - file: sdd/specs/049-live-recording-architecture.md
+        section: "REC-008"
+        read_type: verify
+        extract: >-
+          The async-transport capture invariant states the aiohttp-stub
+          limitation without a version stamp, so it needed no edit — unlike the
+          six sites that did carry one
+        outcome: ok
+      - file: sdd/research/research-bk-181-s3-cassette-infeasibility.md
+        section: "Workarounds considered"
+        read_type: verify
+        extract: >-
+          Item 3 names a future vcrpy release as the retest entry point; became
+          the second leg of BK-327 rather than work for this PR
+        outcome: ok
