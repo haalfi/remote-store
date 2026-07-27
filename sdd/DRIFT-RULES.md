@@ -6,13 +6,12 @@
 THE source for how a check that compares two descriptions of the same thing is
 designed and reviewed. Applies whenever a change adds a `check_*` gate, adds a
 second description of something already described, or sets how often a recurring
-check runs.
+check runs. "Drift" here is artifacts disagreeing with each other, not the
+storage-consistency sense used in the library's own contracts.
 
-"Drift" here means artifacts disagreeing with each other, not the
-storage-consistency sense used in the library's own contracts, and not only the
-dependency drift [`drift-guard.yml`](../.github/workflows/drift-guard.yml) watches.
-Placement, shape and longevity of the documents themselves are governed by the
-[documentation framework](../CLAUDE.md#documentation-framework).
+Siblings: the [documentation framework](../CLAUDE.md#documentation-framework)
+governs the documents themselves; [`CI-OPERATIONS.md`](CI-OPERATIONS.md) governs
+operating a guard once built, and owns the surfaces rules 5, 6 and 9 touch.
 
 <a id="rules"></a>
 ## Rules
@@ -38,14 +37,16 @@ Placement, shape and longevity of the documents themselves are governed by the
    writing, before the check exists.** [review-enforced]
    Which side governs is a decision, not a fact. Declare it in the document that
    owns the pair, next to the contract it arbitrates — [`000-process.md`
-   Rule 3](000-process.md#rules), [`CLAUDE.md` principles](../CLAUDE.md) and
+   Rule 3](000-process.md#rules), [`CLAUDE.md` principles](../CLAUDE.md#principles) and
    [`sdd/formal/README.md`](formal/README.md) each carry theirs. Do not restate
    them here: a second copy of a direction is a second thing to get backwards.
 
-5. <a id="mandatory-path"></a>**Put the detector on a path nobody can route
-   around.** [review-enforced]
-   A new check belongs in `preflight`, `lint` or CI. If it is not worth gating,
-   do not build it.
+5. <a id="mandatory-path"></a>**Prefer the mandatory path; when a check is
+   deliberately advisory, state why.** [review-enforced]
+   Default a new check into `preflight`, `lint` or CI. Advisory checks are
+   legitimate under the durable-TODO principle
+   ([`CI-OPERATIONS.md`](CI-OPERATIONS.md#rules)); record the reason a check is
+   not gating.
 
 6. <a id="tolerated"></a>**Distinguish tolerated from unnoticed, structurally.**
    [review-enforced]

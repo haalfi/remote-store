@@ -80,8 +80,8 @@ Read this before starting. One line per trigger.
 | CHANGELOG entry               | One-line `- <ID>: <Title>` at top of `[Unreleased]`; release skill expands and groups |
 | Version number                | `bump-my-version` (drives `pyproject` file list), then `hatch run gen-graph`; full checklist in [CONTRIBUTING § Phase 2](../CONTRIBUTING.md#phase-2) |
 | Source/test/spec counts       | README badge + CI coverage report (no manual table) |
-| New authoritative process doc in `sdd/` | [CLAUDE.md § Documentation framework](../CLAUDE.md#documentation-framework) (if part of the trio), [CONTRIBUTING § Authoritative Document Format](../CONTRIBUTING.md#authoritative-document-format) (Scope subsection within), sibling authority back-references, `.claude/skills/*/SKILL.md` foundation lists, `docs-src/explanation/design/_nav.yml`, and this ripple-check |
-| New or changed cross-artifact check | [`sdd/DRIFT-RULES.md`](DRIFT-RULES.md) — applies when a change adds a `check_*` gate, adds a second description of something already described, or sets how often a recurring check runs |
+| New authoritative process doc in `sdd/` | [CLAUDE.md § Documentation framework](../CLAUDE.md#documentation-framework) (if part of the trio), [CONTRIBUTING § Authoritative Document Format](../CONTRIBUTING.md#authoritative-document-format) (Scope subsection within), sibling authority back-references, `.claude/agents/*.md` FOUNDATION lists, `docs-src/explanation/design/_nav.yml`, and this ripple-check |
+| New or changed cross-artifact check | [`sdd/DRIFT-RULES.md`](DRIFT-RULES.md#rules) |
 
 <a id="detailed-checklist"></a>
 ### Detailed checklist
@@ -256,15 +256,10 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | (if part of the trio), [CONTRIBUTING.md § Authoritative Document Format](../CONTRIBUTING.md#authoritative-document-format) |
 |                            | (Scope subsection within), sibling authority docs         |
 |                            | (back-references in their Intent & Scope),                |
-|                            | `.claude/skills/*/SKILL.md` foundation lists,             |
+|                            | `.claude/agents/*.md` FOUNDATION lists,             |
 |                            | `docs-src/explanation/design/_nav.yml`, and this ripple-check |
-| **New or changed cross-artifact check** | [`sdd/DRIFT-RULES.md`](DRIFT-RULES.md) — the nine rules |
-|                            | Triggers: a new or changed `check_*` gate; a second     |
-|                            | description of something already described; a change to |
-|                            | how often a recurring check runs.                        |
-|                            | Rules 3, 4 and 8 are preconditions — a derived           |
-|                            | enumeration, a declared authority rule, verified         |
-|                            | independence — and are the ones a review misses most.    |
+| **New or changed cross-artifact check** | [`sdd/DRIFT-RULES.md` Rules](DRIFT-RULES.md#rules) |
+|                            | (scope and rule set are stated there)                    |
 
 ---
 
@@ -381,8 +376,10 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
 - **Qualitative review.** The `check_*`/`docs-check` scripts in the mechanical
   gate enforce the mechanical rules but not the judgment-based ones. Review the
   changed tests against [`TESTING.md`](TESTING.md) (assertion depth, mock
-  discipline) and changed documentation against [`CONTENT-RULES.md`](CONTENT-RULES.md)
-  (prose longevity). Report violations before finishing.
+  discipline), changed documentation against [`CONTENT-RULES.md`](CONTENT-RULES.md)
+  (prose longevity), and any new or changed cross-artifact check against
+  [`DRIFT-RULES.md`](DRIFT-RULES.md) (all nine rules are review-enforced; no
+  mechanical gate exists). Report violations before finishing.
 
 ---
 

@@ -123,8 +123,8 @@ spec tracing). Applies to all new or changed tests.
 ## Drift checks
 
 See [`sdd/DRIFT-RULES.md`](sdd/DRIFT-RULES.md) for the rules governing checks that
-compare two descriptions of the same thing — a `check_*` gate, a second
-description of something already described, or how often a recurring check runs.
+compare two descriptions of the same thing. Applies to any new or changed
+cross-artifact check; that file states its own scope.
 
 ## GitHub operations
 
