@@ -63,7 +63,7 @@ jobs:
         with:
           # Single-source the primary interpreter, same as ci.yml's setup job.
           python-version-file: .python-version
-      - uses: astral-sh/setup-uv@v8.3.2
+      - uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: false
       # [bench] carries pytest-benchmark; [dev] carries the backend extras.
@@ -158,7 +158,7 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version-file: .python-version
-      - uses: astral-sh/setup-uv@v8.3.2
+      - uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: false
       - run: uv pip install -e ".[dev,bench]"
