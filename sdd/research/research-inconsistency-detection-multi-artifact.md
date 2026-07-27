@@ -1,10 +1,11 @@
 # Research: Detecting inconsistency among multiple descriptions of the same thing
 
 **Date:** 2026-07-27
-**Status:** Advisory research. Cross-discipline synthesis (deep-research harness,
-adversarially verified) narrowed to software-under-SDD and technical engineering,
-then tested against one live repository case (BK-324). Not a spec or ADR. The
-plan in § 8 is a proposal; no backlog items were created.
+**Status:** Advisory research, revised after external review (see § 9 revision
+note). Cross-discipline synthesis (deep-research harness, adversarially verified)
+narrowed to software-under-SDD and technical engineering, then tested against one
+live repository case (BK-324). Not a spec or ADR. The plan in § 8 is a proposal;
+no backlog items were created.
 **Scope:** What makes inconsistency between parallel descriptions of one subject
 *detectable*; which detection mechanisms are proven in disciplines whose artifacts
 are machine-readable and whose checks are cheap; which of them this repository
@@ -26,14 +27,30 @@ disagreeing with each other, undetected by any gate, found by a human writing a
 backend against the guide. This document asks what detection mechanisms exist,
 why ours did not fire, and what to do about it.
 
-> **Central honesty finding.** The mechanisms surveyed here are, with two
-> exceptions, *institutionalized* rather than *demonstrated*. Institutionalization
-> is strong evidence that a mechanism is affordable and politically survivable,
-> and weak evidence that it works. The two exceptions run opposite ways: where
-> efficacy has been measured, mandated mechanisms usually **underperform** their
-> reputation, and the one clear positive result is about **where a detector is
-> placed**, not how good it is. Treat § 3 as a design vocabulary, not a
-> league table.
+> **Central honesty finding.** Detection mechanisms fall into three epistemic
+> categories, and conflating them is the most common error in this space.
+>
+> 1. **Provable bound.** The mechanism's detection power is *derivable*, not
+>    measured: LVS (graph isomorphism over extracted netlists), a discharged
+>    Dafny postcondition, a type system, double-entry's nullspace. These need no
+>    efficacy study, because what they catch and what they miss follows from
+>    their construction. The obligation is to *state the bound*, since a
+>    mechanism whose blind spot is undocumented will be trusted outside its range.
+> 2. **Measured efficacy.** Mutation testing, and statcheck embedded in peer
+>    review, have real empirical support. The measurements are narrow — high
+>    precision over a slice — not broad claims about defect reduction.
+> 3. **Mandated, unmeasured.** Requirements traceability, safety cases,
+>    attestation regimes. Here institutionalization is strong evidence that a
+>    mechanism is affordable and politically survivable, and weak evidence that
+>    it works. Where efficacy in this category *has* been measured, it usually
+>    **underperforms** its reputation.
+>
+> The trap is reading category 3 as category 1, i.e. treating "the standard
+> requires it" as "its coverage is known". Note also that being a mandatory gate
+> is not evidence of efficacy: a tape-out cannot pass without LVS by
+> construction, which tells you LVS is a gate, not that it is effective. LVS's
+> real warrant is category 1. Treat § 3 as a design vocabulary annotated with
+> which category each mechanism sits in, not a league table.
 
 ---
 
@@ -44,9 +61,12 @@ that cannot both be true, **or** when one description silently omits a claim
 another treats as binding. The second half matters more than it looks: it is the
 half our tooling is worst at.
 
-Eight classes carve the space. The first four came from the framing question; the
-last four were needed to make the taxonomy cover what the discipline survey
-actually found.
+Eight phenomena matter, but they are **not eight peers**. An earlier draft listed
+them as one flat taxonomy and that was wrong: it mixed inconsistency types with a
+precondition, a representation property, and a governance failure. They sit at
+four different places in the detection pipeline.
+
+**Inconsistency types** — the things a detector can actually find:
 
 | Class | Definition | Instance in this repo |
 |---|---|---|
@@ -55,17 +75,36 @@ actually found.
 | **C. Within-artifact self-contradiction** | One artifact's claims cannot all hold | A spec section whose table contradicts its own prose (BK-324 facet 3) |
 | **D. Temporal drift** | Descriptions that were consistent and diverged through change | Guides describing superseded behavior |
 | **E. Silent omission** | One description treats a claim as binding; another is simply silent | Empty-path `InvalidPath` enforced everywhere, specified nowhere (BK-324 facet 4) |
-| **F. Referential / identity** | Same name, different subjects, or vice versa | Stale spec IDs in markers; capability name skew across sources |
-| **G. Granularity mismatch** | Descriptions sit at incommensurable levels, so nothing compares | One-line contract prose vs a 400-line backend |
-| **H. Authority ambiguity** | A real conflict exists and no rule says which side governs | BK-324: prose vs Dafny vs conformance, all "intent" |
 
-**E, F, G and H are not decorative.** E is a different problem *in kind*: comparing
-two present claims is a matching problem, while detecting an absent claim requires
-an independent enumeration of what claims should exist. F is upstream of
-everything, because every other class presupposes the descriptions are known to be
-about the same subject. G is the class that masquerades as consistency, since when
-nothing is comparable the checks pass. H is what makes detection output unusable:
-detection succeeds, attribution is undefined, and the finding stalls.
+E is a different problem *in kind* from A to D. Comparing two present claims is a
+matching problem; detecting an absent claim requires an independent enumeration of
+what claims should exist. That difference is the hinge of this whole document
+(§ 2.1).
+
+**Precondition — F. Referential / identity.** Same name denoting different
+subjects, or different names denoting one subject. This is not a class of
+inconsistency, it is the **condition under which A to E can be stated at all**.
+Without identity resolution, comparison produces both false positives (comparing
+unrelated things) and false negatives (never comparing related things), and it
+does so silently. Instance here: stale spec IDs in markers, capability name skew
+across sources. `check_capability_parity.py` and the `unknown-spec` failure modes
+of `check_formal_trace.py` are identity gates, not consistency gates.
+
+**Representation blocker — G. Granularity mismatch.** Descriptions at
+incommensurable levels of detail, so no pairwise claim comparison is possible
+without an intervening mapping. Instance: one-line contract prose versus a
+400-line backend. G is not detected so much as *suffered*: when nothing is
+comparable, every check passes and the silence reads as agreement. Note that G and
+E are hard to tell apart in the field — a claim that looks absent is often present
+at a coarser resolution — and both need the same remedy, a canonical enumeration.
+They differ in repair, not in detection: E needs the missing claim written, G needs
+a refinement relation between levels.
+
+**Post-detection failure — H. Authority ambiguity.** A real conflict exists and no
+rule says which description governs. H is emphatically *not* an inconsistency
+class: detection can succeed perfectly and H still blocks everything downstream.
+It belongs in this document because the framing question insisted attribution is
+part of detection *output*, and because BK-324 is stalled at exactly here (§ 5).
 
 ### The detectability gradient
 
@@ -78,10 +117,26 @@ the class demands.
 | **T1** Referential integrity | Shared identifiers, resolvable links | Yes | Total | Flags the dangling end only |
 | **T2** Closure / arithmetic identity | A derivable invariant | Yes | Total | Flags the identity, rarely the term |
 | **T3** Constraint / rule violation | Shared schema plus external rules | Yes, within the rule language | High | Yes, if rules carry authority |
+| **T3.5** Symbolic / bounded exhaustive comparison | Both sides expressible in a decidable-enough logic; a solver or model checker | Yes, within the type domain or the bounded model | High, at authoring cost | Yes, and it produces a counterexample |
 | **T4** Behavioral comparison | One side executable, another an oracle | Over sampled inputs only | High but incomplete | By convention |
 | **T5** Semantic comparison of prose | Meaning equivalence in natural language | No general oracle | Low | Rarely |
 | **T6** Completeness | Independent enumeration of the claim space | Not in general | Very low | — |
 | **T7** Intent and authority | Judgment about which description ought to govern | No | None | This *is* attribution |
+
+**T3.5 is where this repository's strongest tools actually live**, and an earlier
+draft omitted the tier, which mis-slotted them. A discharged Dafny postcondition
+is not rule checking (T3) and not sampled execution (T4): it is exhaustive over
+every input the declared types admit. TLC is exhaustive over a bounded model. The
+tier carries a fractional number because it was added after review rather than
+renumber the rest.
+
+**T4 degrades in practice to "agreement on the tested region".** Its reach is
+bounded by generator quality (for property-based testing) and by oracle fidelity —
+an oracle with a modelling gap cannot detect divergence inside that gap. Our own
+formal README documents one: the capability-round-trip postcondition detects
+*divergence* between `WriteResult` and the readable `FileInfo`, not *absence*, so
+a backend returning all-`None` on both sides verifies clean. That is a T4 blind
+spot stated honestly, and it is the correct way to hold a T4 mechanism.
 
 Three consequences worth carrying forward. Detection power is bought with
 formalization, and formalization competes with the work itself. The gradient is
@@ -104,15 +159,55 @@ answer:
 3. Identifier discipline is already institutional (part numbers, net names, spec IDs).
 4. **The claim space is finite and enumerable from a canonical artifact.**
 
-Property 4 is the important one, and it produces the single most useful finding in
-this research:
+Property 4 is the important one, and it produces the central finding of this
+research. An earlier draft stated it as "omission is detectable in these two
+disciplines and only in these two", which is **false** and does not survive
+contact with a skeptical reader. Other disciplines have completeness devices: the
+WHO surgical safety checklist, aviation's minimum-equipment and configuration-
+deviation lists, pre-flight checklists, clause inventories in structured
+contracts. The corrected claim:
 
-> **Omission (class E) is detectable in these two disciplines, and only in these
-> two.** The broad survey found no discipline with a general answer to omission,
-> because you cannot enumerate every binding claim in a contract or a patient's
-> history. You *can* enumerate every dimension on a drawing, and every section ID
-> in a spec file. That makes a completeness oracle constructible at T6, which is
-> otherwise the tier nothing reaches.
+> **Omission detection always reduces to maintaining a canonical, enumerable claim
+> set. What distinguishes these two disciplines is that the enumeration can be
+> *derived mechanically from the authoritative artifact*, rather than maintained
+> as a parallel artifact of its own.**
+
+That distinction is not cosmetic, and it is the reason the checklist
+counterexamples do not defeat the argument. A checklist is a second description.
+Someone enumerated it by hand, once; it drifts against the thing it enumerates;
+and it therefore needs its own consistency maintenance. A discipline that solves
+omission with checklists has bought a completeness oracle at the price of one more
+artifact in the inconsistency problem. When the enumeration is derived — every
+ballooned characteristic read off the drawing, every section ID read off the spec
+file — it cannot drift against its source, because it *is* its source.
+
+<a id="canonical-claim-set"></a>
+### 2.1 The canonical claim set is the real bottleneck
+
+Generalizing: the binding constraint on this whole problem is not which detectors
+you own, it is **where the canonical claim set lives and whether it is
+machine-enumerable**. Without one:
+
+- **E is impossible.** There is nothing to take a set difference against.
+- **A and B degrade into partial comparisons.** You compare the claims you thought
+  to compare, and a clean report means only that.
+- **G is invisible.** Nothing reveals that two descriptions were never comparable.
+- **F is unenforceable.** Identity needs an authority that assigns names, and the
+  claim set is where that authority is expressed.
+
+This reframes the practical question. Not "which mechanism is missing?" but
+"**which artifact is the enumeration source, and is anything derived from it?**".
+For us the honest answer is that the claim set is *fragmented*: partly in spec
+Markdown headings and requirement tables, partly in Dafny `// @spec` tags, partly
+in conformance markers, and — for facet-4-shaped behavior — partly in the
+implementation and nowhere else. § 5 argues that this fragmentation explains BK-324
+more directly than "the gates are blind" does.
+
+Fragmentation is not the same as having many descriptions, which is the deliberate
+premise of SDD and fine. The defect is that **no single description is designated
+as the enumeration source, and no derivation relation connects them.** Several
+parallel descriptions are healthy when one is canonical for enumeration and the
+others are checked against it.
 
 The corresponding limit is equally sharp: **T5 is exactly as unsolved here as
 anywhere.** Neither discipline can mechanically compare a prose claim to a
@@ -158,9 +253,23 @@ compares two *independently authored* descriptions across a domain boundary,
 mechanically, exhaustively, **and with localization**. Not "these disagree" but
 "this node differs".
 
-We already run this shape. The `DafnyOracleBackend` principle — if the oracle
-passes, the test is known-correct; if the oracle fails, the test has a bug — is
-LVS's logic with the authority roles named explicitly.
+**We run a weaker relative of this, and the difference matters.** An earlier draft
+called the `DafnyOracleBackend` our LVS, which over-claimed. LVS compares two
+*fully formalized* representations by structural correspondence: exhaustive,
+mechanical, one comparison. Ours is two steps with different strengths:
+
+1. The Dafny verifier discharges `MemoryBackend` as a refinement of
+   `BackendContract`. This is genuine **T3.5**: exhaustive over the declared type
+   domain.
+2. The compiled oracle then meets the real backends only through **T4**: shared
+   conformance test cases over sampled inputs.
+
+So the chain is "verified reference, sampled comparison", and its weakest link is
+step 2. The oracle principle — if the oracle passes, the test is known-correct; if
+it fails, the test has a bug — is LVS's *authority logic* correctly imported, but
+not LVS's *coverage*. Nothing here compares a backend to the contract
+exhaustively. Calling it equivalence checking would invite exactly the category-1
+misreading warned about in the honesty finding.
 
 ### E2 is the answer to omission
 
@@ -195,6 +304,29 @@ Whenever a new parity check is proposed, the first question is whether the pair
 can be re-shaped into E6. Some can. Some genuinely cannot: the ripple-check's two
 presentations are two renderings for two reading moments, so parity assertion is
 correct there and single-sourcing would defeat the purpose.
+
+**The structural limit, stated plainly: pairwise parity does not compose into
+global consistency.** A green wall of pairwise checks licenses no conclusion about
+the artifact set as a whole. Claims can be pairwise consistent and jointly
+unsatisfiable; a claim absent from every artifact in the set violates no pairwise
+assertion at all; and a check only constrains the pairs someone thought to write.
+This is why E5 cannot substitute for the canonical claim set of § 2.1 no matter
+how many checks are added, and it is the strongest argument against answering
+BK-324 with more gates.
+
+### E10 is more important than its position suggests
+
+Rehearsal — building a real instance and seeing what breaks — is the only family
+that reaches **E, G and H simultaneously**. An exercise stops dead at the step
+nobody wrote down (E), it forces two descriptions to a common level of detail
+because the builder must act (G), and it surfaces authority conflicts because the
+builder must pick a side and can say which choice was unclear (H). No mechanical
+gate does any of those.
+
+It is listed last because it is manual, unschedulable-by-default, and produces
+findings in prose. That ranking is about cost, not power. **In the one case this
+document has evidence for, E10 is the mechanism that actually worked** (§ 5,
+finding 5), and every gate ranked above it was green at the time.
 
 ---
 
@@ -323,6 +455,40 @@ times before BK-324 was written.** The signal existed, attributed and committed,
 and nothing aggregates it. A description that repeatedly misleads a reader is a
 drift detector with attribution already attached, and we are discarding it.
 
+### Synthesis: the failure is a tier mismatch, not a missing detector
+
+Compressing findings 1 to 7 against § 1's structure, BK-324 decomposes as:
+
+| Element | Where it sits |
+|---|---|
+| Backend-contract claims exist in prose, Dafny, tests and code with no unified identity | **F** — precondition unmet |
+| No enumeration of what the backend contract *claims*, so nothing can be differenced | **E** — and § 2.1's bottleneck |
+| One-line contract prose vs 400-line backends, never comparable | **G** |
+| No precedence among prose, Dafny and conformance | **H** |
+
+And the decisive observation: **every mechanism we run sits at T1 to T4. The
+failure lives at T6 and T7.** Our gates are not defective; they are aimed at tiers
+where the problem is not. Adding a twenty-first T1 check would not have moved
+BK-324 by a day.
+
+So the conclusion is sharper than "the gates are blind":
+
+> We are not missing a detector. We are missing a **canonical claim space** (T6)
+> and an **authority model** (T7). Everything in § 8 either builds one of those two
+> or is a lower-priority patch.
+
+**A tempting T6 check, and why it is not the one we need.** The obvious relation is
+"every invariant enforced in Dafny must appear in the spec", i.e. `I ⊆ S`. That is
+a worthwhile check and § 8 step 2b proposes it. But note carefully that **it would
+not have caught facet 4.** Facet 4's behavior is absent from the spec *and*
+untested, and the item flags only a Dafny *coupling* to mind rather than an
+existing Dafny invariant. The claim lives in the Python implementation and nowhere
+else. Catching it needs the *implementation → spec* direction, `Impl ⊆ S`, which is
+strictly harder because implementation invariants are not declared, only enforced.
+The distinction matters: `I ⊆ S` polices the formal layer's honesty, while
+`Impl ⊆ S` is what finds orphan behavior. We want both, and only the second closes
+facet 4.
+
 ---
 
 ## 6. Where we lead and where we do not
@@ -385,7 +551,20 @@ in the catalog runs only when someone opens a guide PR.
 
 Proposed, not created. Each step names the gap it closes, the mechanism family it
 instantiates, and a rough size. Steps 1 to 4 are independent and can land in any
-order. **Recommended first: step 1 (highest consequence) and step 3 (cheapest).**
+order.
+
+**Ordering follows the § 5 synthesis, not the gap ranking.** Two steps build the
+things actually missing — a canonical claim space and an authority model — and the
+rest are patches, however worthwhile:
+
+- **Strategic: step 2a** (claim space, T6) and **step 5.1** (authority model, T7).
+  Nothing else addresses what BK-324 exposed.
+- **Cheap and independently worth doing now: step 3** (aggregate trace tags; the
+  data is already committed) and **step 1** (twin parity; a documented, undetected
+  class-B defect in the layer everything trusts).
+
+A reasonable first slice is step 3 plus step 1 for immediate value, then step 2a
+as the real work.
 
 ### Step 1 — Parity gate for the Dafny twin classes
 **Closes:** G-1 · **Mechanism:** E1/E5 · **Size:** M
@@ -397,16 +576,30 @@ divergence. Model it on `check_docstring_parity.py`, which already solves the
 "identical versus deliberately divergent" classification problem. Wire into
 `lint`. Record in the formal README that twin drift is now gated.
 
-### Step 2 — Bidirectional traceability
-**Closes:** G-3, and BK-324 facet 4 concretely · **Mechanism:** E2 · **Size:** M
+### Step 2 — Bidirectional traceability (the canonical claim space)
+**Closes:** G-3, § 2.1's bottleneck, and BK-324 facet 4 concretely ·
+**Mechanism:** E2 · **Size:** M (2a) + S (2b)
 
-Extend `check_formal_trace.py` (or add a sibling) with the reverse direction:
-identify enforced behavior with no parent spec section. A tractable first cut is
-narrow rather than general — e.g. every `raise InvalidPath` / `raise NotFound`
-site in `src/remote_store/backends/` must be reachable from a spec ID via an
-existing marker or an explicit allowlist entry. The allowlist *is* the finding:
-it enumerates our orphan behaviors on day one, which is what facet 4 turned out
-to be.
+This is the T6 half of the § 5 synthesis and the strategically important step.
+Two sub-steps, and **2a is the one that closes facet 4**:
+
+**2a. `Impl ⊆ S` — enforced behavior must have a parent spec section.** Extend
+`check_formal_trace.py` (or add a sibling) with the implementation direction. A
+tractable first cut is narrow rather than general: every `raise InvalidPath` /
+`raise NotFound` site in `src/remote_store/backends/` and `src/remote_store/_store.py`
+must be reachable from a spec ID via an existing marker or an explicit allowlist
+entry. **The allowlist is the deliverable**, not the gate: on day one it
+enumerates every orphan behavior we have, which is precisely what facet 4 turned
+out to be. Harder than 2b because implementation invariants are enforced rather
+than declared, so expect the first cut to be a heuristic over raise sites and to
+grow by hand.
+
+**2b. `I ⊆ S` — every Dafny invariant must appear in the spec.** Cheap, because
+`// @spec` tags already exist and `check_formal_trace.py` already parses them: the
+check is that a Dafny postcondition carrying no spec coordinate, or one whose
+coordinate has no prose counterpart, fails. This polices the formal layer's
+honesty and would catch a *different* drift than 2a. Do it second and do not
+mistake it for the facet-4 fix.
 
 ### Step 3 — Aggregate trace outcome tags
 **Closes:** G-4 · **Mechanism:** E7 · **Size:** S
@@ -522,8 +715,34 @@ docstrings, `pyproject.toml` script lists, `sdd/000-process.md`,
 `sdd/formal/README.md`, and the trace corpus. The trace tag counts are a
 mechanical count over `sdd/traces/*.yml` on the date above.
 
-**Author's inference, not sourced:** the eight-class taxonomy, the tier table, the
-E5-versus-E6 scaling argument, the ranking in § 7, and the whole of § 8. The two
-findings I hold most confidently are structural rather than empirical: that
-omission is detectable here because the claim space is enumerable, and that our
-prose has no mechanical counterpart.
+**Author's inference, not sourced:** the four-layer taxonomy of § 1, the tier
+table, the E5-versus-E6 scaling argument and its non-composition limit, the
+canonical-claim-set argument of § 2.1, the ranking in § 7, and the whole of § 8.
+The three findings held most confidently are structural rather than empirical:
+that omission detection always reduces to a canonical enumerable claim set; that
+what distinguishes these disciplines is the enumeration being *derived* rather
+than maintained in parallel; and that our prose has no mechanical counterpart.
+
+### Revision note: what external review changed
+
+This document was reviewed before merge and materially corrected. Recording the
+changes because the review found real errors, not stylistic ones:
+
+| Was | Now | Kind |
+|---|---|---|
+| "Omission is detectable in these two disciplines, and only in these two" | Corrected: surgical checklists, MEL/CDL and clause inventories are counterexamples. The real distinction is *derived* versus *parallel-maintained* enumeration (§ 2) | Factual error |
+| `DafnyOracleBackend` presented as our LVS | Corrected to a two-step chain: T3.5 verification plus T4 sampled comparison. Not equivalence checking (§ 3, E1) | Factual error |
+| Flat eight-class taxonomy | Split into types (A–E), precondition (F), representation blocker (G), post-detection failure (H). The old form contradicted its own prose, which already called F "upstream" and H a detection-succeeded case | Structural |
+| Gradient jumped T3 → T4 | Added T3.5, symbolic/bounded exhaustive. The old table had no home for Dafny or TLC, i.e. for this repo's strongest tools | Omission |
+| "Institutionalized rather than demonstrated", with two exceptions | Three epistemic categories: provable bound, measured efficacy, mandated-unmeasured. Mutation testing has real empirical support; LVS's warrant is a derivable bound, not a study | Over-claim |
+| E5 scaling described as O(N²) cost | Added the stronger limit: pairwise parity does not compose into global consistency (§ 3) | Under-claim |
+| E10 listed last, treated as minor | Elevated: the only family reaching E, G and H at once, and the one that actually worked on BK-324 | Under-claim |
+| § 5 ended at seven findings | Added the tier-mismatch synthesis: mechanisms at T1–T4, failure at T6–T7 | Missing synthesis |
+
+One review suggestion was **not** adopted as given. The reviewer proposed `I ⊆ S`
+(every Dafny invariant appears in the spec) as the check that "would have caught
+BK-324 facet 4 immediately", on the reading that the spec states the empty-path
+rule, Dafny enforces it, conformance tests it, and only the guide omits it. The
+backlog item says the opposite: the rule is "absent from BE-018/BE-019 and
+untested". So `I ⊆ S` would not have caught it. The check is still worth having
+and is step 2b; the facet-4 fix is the harder `Impl ⊆ S` direction, step 2a.
