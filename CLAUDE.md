@@ -120,6 +120,12 @@ spec/test traceability obligations. Run `hatch run lint` before committing.
 See `sdd/TESTING.md` for testing quality rules (assertion depth, mock discipline,
 spec tracing). Applies to all new or changed tests.
 
+## Drift checks
+
+See [`sdd/DRIFT-RULES.md`](sdd/DRIFT-RULES.md) for the rules governing checks that
+compare two descriptions of the same thing — a `check_*` gate, a second
+description of something already described, or how often a recurring check runs.
+
 ## GitHub operations
 
 PR workflows are codified as skills: `/pr`, `/rvw-pr`, `/fix-pr`. Use those instead of ad-hoc `gh` commands.

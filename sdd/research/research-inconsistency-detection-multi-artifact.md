@@ -824,85 +824,49 @@ that it is. See S8.
 <a id="principles"></a>
 ## 8. Substrate-independent design principles
 
-The sections above diagnose this repository. These are the transferable rules, and
-they are the generalizable output of the exercise — a reader who does not work on
-this project should be able to take these and leave the rest. Each is stated once
-and points at where it is argued, rather than re-arguing it. All
-`[analysis, unsourced]` except where a section carries evidence.
+The sections above diagnose this repository. These are the transferable rules: a
+reader who does not work on this project should be able to take these and leave
+the rest.
 
-**S1. Prefer one normative description driving N artifacts over N² pairwise parity
-checks.** Reach for a parity assertion only when the artifacts are genuinely two
-renderings for two audiences. Pairwise consistency does not compose into global
-consistency, so no wall of parity checks licenses a conclusion about the set (§ 3).
+**They now live in [`sdd/DRIFT-RULES.md`](../DRIFT-RULES.md)**, which states them
+as applicable rules. They are not restated here, because a rule copied into two
+artifacts is the defect this document is about, and because a research doc is a
+point-in-time snapshot ([`000-process.md` § Document types](../000-process.md#document-types))
+while rules need a channel that can amend them as practice teaches us something.
+This section keeps the *argument*; that file carries the *statement*.
 
-**S2. A mechanical check should localize, not merely fail.** LVS reports the
-unmatched node. "These two disagree" leaves the expensive half of the work undone,
-and is the quality bar any new gate should clear (§ 3, E1).
+| Rule | In short | Argued in |
+|---|---|---|
+| **1** | One normative description driving N artifacts, not N² pairwise checks; pairwise consistency does not compose | § 3 (E5 vs E6) |
+| **2** | A check must localize, not merely fail | § 3 (E1) |
+| **3** | Enumerate the claim space from a canonical artifact; derived, not parallel-maintained | § 2.1, § 3 (E2), § 5 synthesis |
+| **4** | Declare the authority rule per artifact pair before the check exists | § 5 (finding 6) |
+| **5** | Put the detector on a path nobody can route around | § 10 (statcheck-in-review; a quasi-experimental association, not more) |
+| **6** | Distinguish tolerated from unnoticed, structurally | § 3 (E9) |
+| **7** | State the bound; estimate the miss rate | Honesty finding (category 1), § 3 (E7) |
+| **8** | Verify independence of derivation path; never assume it | § 10 (Knight & Leveson), G-9 |
+| **9** | Set the period from the drift rate, not the calendar | § 2 (the cheapness boundary), § 6, § 9 step 6 |
 
-**S3. Enumerate the claim space from a canonical artifact, and require an
-accounted-for result per claim.** The only known defense against omission, and it
-lives or dies on stable identifiers (§ 2.1, § 3 E2). Its reach stops where the
-enumeration's granularity stops (§ 5 synthesis).
+Two of these carry consequences for this repository that the rules file does not
+repeat, because they are findings rather than rules.
 
-**S4. Declare the authority rule per artifact pair, in writing, before the check
-exists.** Detection without a pre-agreed authority rule stalls in class H
-indefinitely, which is why BK-324 is effort L (§ 5, finding 6).
-
-**S5. Put the detector on a path nobody can route around.** Journals that ran a
-p-value checker *inside peer review* saw a steeper decline in reporting
-inconsistencies than matched controls (§ 10). State the evidence precisely,
-because an earlier draft of this principle did not: that is a quasi-experimental
-**association**, two treatment journals against two controls, and the authors say
-"is related to". It does not license "deployment position dominates detection
-power", which is what the earlier draft claimed — the category-2 construct-validity
-slip the honesty finding exists to prevent, committed against its own example.
-
-The *contrast* that makes the principle vivid — the same checker freely available
-for years while the corpus stayed broken — is **inference, not a measured arm**:
-no study here reports an optional-availability control. So S5 is a well-motivated
-design rule with one supporting quasi-experiment, not the document's best-evidenced
-finding. Corollary, still worth stating: an excellent optional checker is
-plausibly worth less than a mediocre mandatory one.
-
-**S6. Distinguish tolerated from unnoticed, structurally.** Waiver registries and
-`[~]` markers are what let an organization afford to keep looking; without them,
-detection gets switched off under schedule pressure (§ 3, E9).
-
-**S7. Estimate the miss rate, not just the finding count.** Detection reports a
-numerator. Without seeded discrepancies the denominator is unknown and "we checked
-and found nothing" is uninterpretable (§ 3, E7).
-
-**S8. Independence of *derivation path* is what makes a second description
-informative — and it must be verified, not assumed.** This is the principle the
-narrowing nearly lost, and it has teeth here.
-
-Knight & Leveson had 27 versions of one program written independently from a
-common specification, ran a million tests, and found joint failures far above what
-independence predicts: **producers being independent does not make their errors
-independent**, because a specification that handles a case badly misleads everyone
-who reads it. Every mechanism whose power rests on independence inherits this —
-E1's verified reference, E3's canonical source, E5's parity pairs.
-
-Applied to us, uncomfortably: **E1's entire warrant is that the Dafny contract is
-an independent description of the same behavior.** If a `.dfy` postcondition was
+**Rule 8 has teeth here.** E1's entire warrant is that the Dafny contract is an
+*independent* description of the same behavior. If a `.dfy` postcondition was
 written by reading the Python implementation rather than the Markdown spec, the
 oracle certifies nothing except that the transcription was faithful — a
 correlated-error failure of exactly Knight & Leveson's shape, and one that leaves
 every gate green. Nothing in the repository records or checks which source a
 postcondition was derived from. That is G-9, and the cheap mitigation is
-procedural rather than mechanical: require the derivation source to be stated when
-a Dafny clause is authored, so a reviewer can see whether the second description
-is genuinely second.
+procedural: require the derivation source to be stated when a Dafny clause is
+authored, so a reviewer can see whether the second description is genuinely second.
 
-**S9. Set the reconciliation period from the drift rate, not the calendar.**
-Annual, at-milestone and at-admission are conventions inherited from what it used
-to cost to stop and look. When the cost of a check falls, the correct period falls
-with it: continuous integration is a scheduled reconciliation ritual with the
-period driven toward zero, which is the one place software genuinely leads (§ 6).
-Ask of every recurring check what its period would be if it were free, and anchor
-it to the events that can invalidate the artifact rather than to a date — as
-step 6 does. Note the boundary with § 2: cost does not decide what is *detectable*,
-only how often you look.
+**Rule 5's evidence is weaker than the rule.** Journals that ran a p-value checker
+inside peer review saw a steeper decline than matched controls, but that is a
+quasi-experimental *association* with two treatment journals against two controls,
+and the authors say "is related to". The optional-versus-embedded contrast that
+makes the rule vivid has **no measured arm** in any source here; it is inference.
+The rule is well-motivated and under-evidenced, and § 10 says so rather than
+letting the § 9 ordering imply otherwise.
 
 ---
 
