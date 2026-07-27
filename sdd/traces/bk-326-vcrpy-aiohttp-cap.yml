@@ -9,8 +9,6 @@ source_items:
   - BK-326
 audience:
   - infra.test
-discovery_followups:
-  - BK-327
 expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:
@@ -98,8 +96,8 @@ phases:
         section: "Workarounds considered"
         read_type: verify
         extract: >-
-          Item 3 names a future vcrpy release as the retest entry point; became
-          the second leg of BK-327 rather than work for this PR
+          Item 3 names a future vcrpy release as the retest entry point, and this
+          change is that release arriving; re-measured below rather than deferred
         outcome: ok
   - id: fix
     name: Fix (review round)
@@ -125,3 +123,37 @@ phases:
           against the installed vcrpy (guard verified still present in 8.3.0), so
           it goes red instead of going stale
         outcome: ok
+  - id: reproduce_behaviour
+    name: Re-measure the limitations on the new floor
+    steps:
+      - file: tests/backends/fixtures/azure_replay_async.py
+        section: "Transport shim"
+        read_type: verify
+        extract: >-
+          Filing a follow-up item for this was wrong: moving the floor is what
+          restates these claims as claims about 8.2/8.3, so proving them belongs
+          to this change. Ran the fixture without AsyncioRequestsTransport against
+          the committed cassettes (replay is offline, so no credentials needed):
+          114 passed in 8s shimmed, hangs after 11 tests unshimmed, faulthandler
+          pinning the block at azure.core _aiohttp.py __anext__. Shim still required
+        outcome: ok
+      - file: sdd/research/bk-181-s3-spike/test_spike.py
+        section: "SMALL_PAYLOAD / LARGE_PAYLOAD"
+        read_type: reference
+        extract: >-
+          Reused the spike's payload sizes (small + 1 MiB, below the 5 MiB
+          multipart threshold) for a standalone S3 re-measure. The spike itself
+          refuses an emulator endpoint, but that guard exists for cassette
+          fidelity: the diagnosed failure is client-side in aiobotocore, so moto
+          exercises the same chain. Result: writes now pass, reads return empty
+          bodies (0/27 and 0/1048576), no never-awaited warnings — the request-side
+          defect is gone, a response-side drop remains, s3_replay still infeasible
+        outcome: ok
+      - file: sdd/specs/048-testing-architecture.md
+        section: "Noted exception — S3"
+        read_type: verify
+        extract: >-
+          The spec's stated mechanism ("cannot drive the request/response
+          wrappers") is now half wrong on the installed floor; narrowed it to the
+          response bodies, which is what the re-measure actually shows
+        outcome: misleading

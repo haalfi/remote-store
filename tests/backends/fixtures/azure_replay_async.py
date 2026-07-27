@@ -8,8 +8,15 @@ Transport shim
 --------------
 vcrpy's aiohttp stub cannot stream a response body — it deadlocks
 ``AioHttpTransport.__anext__`` on replay and drops the body silently on record
-(PoC finding on 8.1.1, see ``sdd/research/research-bk-181-cassette-replay-poc.md``;
-BK-327 re-tests it against the current floor).
+(PoC finding on 8.1.1, see ``sdd/research/research-bk-181-cassette-replay-poc.md``).
+
+Still true on vcrpy 8.3.0 / aiohttp 3.14.3, re-measured under BK-326: dropping the
+shim below runs this fixture straight onto ``AioHttpTransport`` and the suite hangs
+after 11 tests instead of passing 114 in 8s, blocked in
+``azure/core/pipeline/transport/_aiohttp.py`` ``__anext__`` under
+``download_blob`` → ``process_content``. The 8.2.0 aiohttp-3.14 fix
+(kevin1024/vcrpy#995) restored import compatibility only; it did not touch body
+handling. Re-check with that experiment before deleting this shim.
 
 The fix is ``AsyncioRequestsTransport``, an ``azure.core`` async transport that
 runs ``requests``/urllib3 in a thread pool.  It is injected via the existing

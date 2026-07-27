@@ -414,35 +414,6 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 
 ## Maintenance / Long-horizon
 
-- [ ] **BK-327 — Re-test the vcrpy aiohttp limitations against the 8.2+ floor**
-  spec: REC-008 (spec 049) · effort: M · audience: infra.test
-  Born from BK-326, which moved the dev floor from vcrpy 8.1.1 to `>=8.2`.
-  Two live workarounds are justified by limitations diagnosed on 8.1.1 and
-  never re-tested since:
-  1. **Async-Azure transport shim.** `azure_replay_async` /
-     `azure_replay_hns_async` inject `AsyncioRequestsTransport` because the
-     aiohttp stub deadlocks `AioHttpTransport.__anext__` on replay and drops
-     streamed bodies on record. Cost is the REC-008 fidelity caveat: defects
-     living purely in `AioHttpTransport` are invisible to replay.
-  2. **S3 cassette infeasibility.**
-     [`research-bk-181-s3-cassette-infeasibility.md`](research/research-bk-181-s3-cassette-infeasibility.md)
-     § Workarounds (3) names "wait for a vcrpy upstream fix" and preserves
-     `sdd/research/bk-181-s3-spike/` as the retest entry point for exactly
-     this situation.
-  **Prior evidence, source-read not run:** 8.2.0's aiohttp-3.14 fix
-  (kevin1024/vcrpy#995) re-implements `MockStream.iter_chunked` / `iter_any` /
-  `iter_chunks` by hand where 8.1.1 inherited them from the removed
-  `AsyncStreamReaderMixin` — same API shape, so a compat port rather than a
-  behaviour change; `new_request` still reads `data`/`json` straight from
-  kwargs with no async-iterable handling, so the `AioAwsChunkedWrapper` failure
-  that blocks S3 most likely persists. **Expect to confirm both limitations,
-  not lift them** — the value is replacing an inference with a run, and the
-  Azure leg is cheap (replay is offline: drop the shim from
-  `azure_replay_async` and see whether it still deadlocks). If the Azure leg
-  does pass unshimmed, that reclaims the REC-008 caveat and the shim can go.
-  Either outcome ends with the six de-stamped comments (four fixtures,
-  `graph_replay`, spec 048) restated against a version actually tested.
-
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
   spec: GR-033 · effort: M · audience: user.api
   BUG-225 capped the `graph` and `httpx` extras at `httpx>=0.24.0,<1.0`

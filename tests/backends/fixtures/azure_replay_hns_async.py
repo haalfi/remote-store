@@ -2,8 +2,8 @@
 
 Stage 1, kind=replay, async. The async sibling of ``azure_replay_hns`` (BK-303).
 Like ``azure_replay_async`` it injects ``AsyncioRequestsTransport`` because
-vcrpy's aiohttp stub cannot stream a response body on replay (observed on 8.1.1;
-BK-327 re-tests it against the current floor); every
+vcrpy's aiohttp stub cannot stream a response body on replay (still measured on
+vcrpy 8.3.0 under BK-326; see ``azure_replay_async``); every
 ``AsyncAzureBackend`` code path and ``azure.core`` async pipeline policy still
 runs, only the bottom transport leaf differs (``azure_live_hns_async`` with the
 real ``AioHttpTransport`` remains the source of truth for transport-leaf defects).

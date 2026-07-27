@@ -335,9 +335,8 @@ apply to:
 
 **Noted exception — S3.** S3 is HTTP-transport but does not currently
 ship a `s3_replay` fixture. The implementing recording library
-(vcrpy; diagnosed on 8.1.1, re-test tracked as BK-327) cannot drive
-the `aiobotocore` request/response wrappers that `s3fs` rides on,
-and `s3fs` exposes no equivalent of
+(vcrpy) cannot carry the `aiobotocore` response bodies that `s3fs`
+rides on, and `s3fs` exposes no equivalent of
 the `azure.core` transport injection that solves the analogous
 async-aiohttp problem for Azure. The `s3_moto` Stage-1 fixture
 provides in-process S3 coverage for the conformance surface, so the

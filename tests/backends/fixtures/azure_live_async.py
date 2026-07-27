@@ -83,8 +83,9 @@ def _factory() -> AsyncBackend:
         raise
     client_options: dict[str, object] = {}
     if os.environ.get("_RS_CASSETTE_RECORDING") == "1":
-        # vcrpy's aiohttp stub drops streaming response bodies on record (observed
-        # on 8.1.1; BK-327 re-tests it against the current floor).
+        # vcrpy's aiohttp stub drops streaming response bodies on record (8.1.1 PoC
+        # finding; the body-handling limitation still measured on 8.3.0 under
+        # BK-326 — see azure_replay_async's module docstring).
         # Inject AsyncioRequestsTransport so the cassette captures real bodies.
         try:
             from azure.core.pipeline.transport import AsyncioRequestsTransport  # noqa: PLC0415
