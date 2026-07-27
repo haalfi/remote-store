@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/research/research-bk-181-cassette-replay-poc/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/research/research-inconsistency-detection-multi-artifact/">
       
       
-        <link rel="prev" href="../research-benchmark-suite-v2/">
+        <link rel="prev" href="../research-id-232-detail-placement-durability/">
       
       
-        <link rel="next" href="../research-bk-181-s3-cassette-infeasibility/">
+        <link rel="next" href="../research-llms-full-txt-tooling/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>HTTP cassette/replay layer — mechanism PoC (BK-181) - remote-store</title>
+        <title>Detecting inconsistency among multiple descriptions of the same thing - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#research-http-cassettereplay-layer-mechanism-poc-bk-181" class="md-skip">
+        <a href="#research-detecting-inconsistency-among-multiple-descriptions-of-the-same-thing" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              HTTP cassette/replay layer — mechanism PoC (BK-181)
+              Detecting inconsistency among multiple descriptions of the same thing
             
           </span>
         </div>
@@ -7581,37 +7581,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    HTTP cassette/replay layer — mechanism PoC (BK-181)
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../research-bk-181-cassette-replay-poc/" class="md-nav__link">
         
   
   
@@ -7627,175 +7600,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#verdict" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Verdict
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#build-vs-reuse" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Build vs reuse
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-was-tested" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What was tested
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#success-criteria-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Success criteria — results
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Success criteria — results">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#1-interception-partial-for-async-fully-solved" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Interception — partial for async, fully solved
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-zero-credential-replay-pass" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Zero-credential replay — pass
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-hns-specific-behaviour-captured-pass" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. HNS-specific behaviour captured — pass
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-scrubbing-works-at-header-level-one-body-level-gap" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Scrubbing — works at header level; one body-level gap
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#5-per-run-identifier-problem-solved" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Per-run identifier problem — solved
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#6-missing-cassette-skip-solved" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Missing cassette → skip — solved
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#other-findings" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Other findings
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#recommendations-for-bk-181-proper" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Recommendations for BK-181 proper
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#reproduce" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Reproduce
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -8421,10 +8225,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../research-inconsistency-detection-multi-artifact/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Detecting inconsistency among multiple descriptions of the same thing
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -8440,6 +8271,486 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-what-counts-as-an-inconsistency-and-which-kinds-are-detectable" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. What counts as an inconsistency, and which kinds are detectable
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. What counts as an inconsistency, and which kinds are detectable">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-detectability-gradient" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The detectability gradient
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-why-our-two-disciplines-are-special" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Why our two disciplines are special
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Why our two disciplines are special">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-the-canonical-claim-set-is-the-real-bottleneck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 The canonical claim set is the real bottleneck
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-mechanism-catalog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Mechanism catalog
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Mechanism catalog">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#e1-is-the-strongest-mechanism-either-discipline-has" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E1 is the strongest mechanism either discipline has
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#e2-is-the-answer-to-omission" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E2 is the answer to omission
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#e6-beats-e5-whenever-it-is-available" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E6 beats E5 whenever it is available
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#e10-is-more-important-than-its-position-suggests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E10 is more important than its position suggests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#e11-scales-with-usage-rather-than-with-checking-budget" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E11 scales with usage rather than with checking budget
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-answering-the-core-question-for-this-repository" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Answering the core question for this repository
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Answering the core question for this repository">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-across-description-domains" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        (a) Across description domains
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-within-one-domain-across-artifacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        (b) Within one domain, across artifacts
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-the-bk-324-case-what-our-gates-cannot-see" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. The BK-324 case: what our gates cannot see
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. The BK-324 case: what our gates cannot see">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#finding-1-all-four-facets-are-the-prose-spec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Finding 1: all four facets are the prose spec
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-2-our-traceability-is-identifier-keyed-and-bk-324s-claims-are-not-identifiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Finding 2: our traceability is identifier-keyed, and BK-324's claims are not identifiers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-3-the-decoupling-arguments-form-is-unsound-past-the-pair-it-was-written-for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Finding 3: the decoupling argument's form is unsound past the pair it was written for
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-4-facet-4-is-an-orphan-realization-defect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Finding 4: facet 4 is an orphan-realization defect
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-5-bk-324-was-found-by-rehearsal-not-by-a-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Finding 5: BK-324 was found by rehearsal, not by a gate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-6-the-effort-is-attribution-not-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Finding 6: the effort is attribution, not detection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-7-the-trace-corpus-already-named-the-culprits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Finding 7: the trace corpus already named the culprits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#synthesis-the-failure-is-a-tier-mismatch-not-a-missing-detector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Synthesis: the failure is a tier mismatch, not a missing detector
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-where-we-lead-and-where-we-do-not" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Where we lead and where we do not
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-gaps-ranked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. Gaps, ranked
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8-substrate-independent-design-principles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. Substrate-independent design principles
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-plan-of-next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Plan of next steps
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Plan of next steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-parity-gate-for-the-dafny-twin-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Parity gate for the Dafny twin classes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-bidirectional-traceability-the-canonical-claim-space" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Bidirectional traceability (the canonical claim space)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-aggregate-trace-outcome-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Aggregate trace outcome tags
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-generate-spec-037s-backend-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Generate spec 037's backend table
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-decide-bk-324s-four-rules-with-an-attribution-rule-first" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Decide BK-324's four rules, with an attribution rule first
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-schedule-the-rehearsal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Schedule the rehearsal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-7-publish-the-characteristic-accountability-record" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Publish the characteristic-accountability record
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-8-derive-the-artifact-pair-inventory-instead-of-hand-maintaining-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8: Derive the artifact-pair inventory instead of hand-maintaining it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deferred-with-reasons" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deferred, with reasons
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-evidence-ledger-and-method-caveats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Evidence ledger and method caveats
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Evidence ledger and method caveats">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#self-validation-against-principle-8-detail-placement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Self-validation against principle 8 (detail placement)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#revision-note-what-review-changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Revision note: what review changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -10464,110 +10775,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#verdict" class="md-nav__link">
+  <a href="#1-what-counts-as-an-inconsistency-and-which-kinds-are-detectable" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Verdict
+        1. What counts as an inconsistency, and which kinds are detectable
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#build-vs-reuse" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Build vs reuse
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#what-was-tested" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        What was tested
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#success-criteria-results" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Success criteria — results
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Success criteria — results">
+    <nav class="md-nav" aria-label="1. What counts as an inconsistency, and which kinds are detectable">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#1-interception-partial-for-async-fully-solved" class="md-nav__link">
+  <a href="#the-detectability-gradient" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Interception — partial for async, fully solved
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#2-zero-credential-replay-pass" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Zero-credential replay — pass
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#3-hns-specific-behaviour-captured-pass" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. HNS-specific behaviour captured — pass
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#4-scrubbing-works-at-header-level-one-body-level-gap" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Scrubbing — works at header level; one body-level gap
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#5-per-run-identifier-problem-solved" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Per-run identifier problem — solved
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#6-missing-cassette-skip-solved" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Missing cassette → skip — solved
+        The detectability gradient
       
     </span>
   </a>
@@ -10580,10 +10803,254 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#other-findings" class="md-nav__link">
+  <a href="#2-why-our-two-disciplines-are-special" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Other findings
+        2. Why our two disciplines are special
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Why our two disciplines are special">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-the-canonical-claim-set-is-the-real-bottleneck" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 The canonical claim set is the real bottleneck
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-mechanism-catalog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Mechanism catalog
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Mechanism catalog">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#e1-is-the-strongest-mechanism-either-discipline-has" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E1 is the strongest mechanism either discipline has
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#e2-is-the-answer-to-omission" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E2 is the answer to omission
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#e6-beats-e5-whenever-it-is-available" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E6 beats E5 whenever it is available
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#e10-is-more-important-than-its-position-suggests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E10 is more important than its position suggests
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#e11-scales-with-usage-rather-than-with-checking-budget" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        E11 scales with usage rather than with checking budget
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-answering-the-core-question-for-this-repository" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Answering the core question for this repository
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Answering the core question for this repository">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a-across-description-domains" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        (a) Across description domains
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b-within-one-domain-across-artifacts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        (b) Within one domain, across artifacts
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-the-bk-324-case-what-our-gates-cannot-see" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. The BK-324 case: what our gates cannot see
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. The BK-324 case: what our gates cannot see">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#finding-1-all-four-facets-are-the-prose-spec" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Finding 1: all four facets are the prose spec
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-2-our-traceability-is-identifier-keyed-and-bk-324s-claims-are-not-identifiers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Finding 2: our traceability is identifier-keyed, and BK-324's claims are not identifiers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-3-the-decoupling-arguments-form-is-unsound-past-the-pair-it-was-written-for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Finding 3: the decoupling argument's form is unsound past the pair it was written for
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-4-facet-4-is-an-orphan-realization-defect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Finding 4: facet 4 is an orphan-realization defect
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-5-bk-324-was-found-by-rehearsal-not-by-a-gate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Finding 5: BK-324 was found by rehearsal, not by a gate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-6-the-effort-is-attribution-not-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Finding 6: the effort is attribution, not detection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#finding-7-the-trace-corpus-already-named-the-culprits" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Finding 7: the trace corpus already named the culprits
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#synthesis-the-failure-is-a-tier-mismatch-not-a-missing-detector" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Synthesis: the failure is a tier mismatch, not a missing detector
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-where-we-lead-and-where-we-do-not" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Where we lead and where we do not
       
     </span>
   </a>
@@ -10591,10 +11058,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#recommendations-for-bk-181-proper" class="md-nav__link">
+  <a href="#7-gaps-ranked" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Recommendations for BK-181 proper
+        7. Gaps, ranked
       
     </span>
   </a>
@@ -10602,13 +11069,168 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#reproduce" class="md-nav__link">
+  <a href="#8-substrate-independent-design-principles" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Reproduce
+        8. Substrate-independent design principles
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9-plan-of-next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. Plan of next steps
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. Plan of next steps">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-parity-gate-for-the-dafny-twin-classes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Parity gate for the Dafny twin classes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-bidirectional-traceability-the-canonical-claim-space" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Bidirectional traceability (the canonical claim space)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-aggregate-trace-outcome-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Aggregate trace outcome tags
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-generate-spec-037s-backend-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Generate spec 037's backend table
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-decide-bk-324s-four-rules-with-an-attribution-rule-first" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Decide BK-324's four rules, with an attribution rule first
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-schedule-the-rehearsal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Schedule the rehearsal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-7-publish-the-characteristic-accountability-record" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Publish the characteristic-accountability record
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-8-derive-the-artifact-pair-inventory-instead-of-hand-maintaining-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8: Derive the artifact-pair inventory instead of hand-maintaining it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#deferred-with-reasons" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deferred, with reasons
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10-evidence-ledger-and-method-caveats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. Evidence ledger and method caveats
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. Evidence ledger and method caveats">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#self-validation-against-principle-8-detail-placement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Self-validation against principle 8 (detail placement)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#revision-note-what-review-changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Revision note: what review changed
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -10629,259 +11251,1501 @@
 
 
 
-<h1 id="research-http-cassettereplay-layer-mechanism-poc-bk-181">Research: HTTP cassette/replay layer — mechanism PoC (BK-181)<a class="headerlink" href="#research-http-cassettereplay-layer-mechanism-poc-bk-181" title="Permanent link">&para;</a></h1>
-<p><strong>Date:</strong> 2026-05-14
-<strong>Status:</strong> PoC complete. Verdict: <strong>GO with <code>pytest-recording</code></strong> plus an
-async transport shim. Feeds the BK-181 implementation.
-<strong>Scope:</strong> A deliberately minimal spike answering the one open question in
-<a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">BK-181</a>: can <code>pytest-recording</code>/vcrpy record the real Azure
-SDK HTTP traffic and replay it at zero cost — sync <em>and</em> async — with
-credentials scrubbed? The alternative the backlog names is a custom
-<code>azure.core</code> transport adapter.
-<strong>Related:</strong> <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">BK-181</a>, <a href="../../specs/048-testing-architecture/">spec 048</a>
-(TEST-007/008/009), <a href="../../adrs/0028-testing-architecture-kind-stage-replay/">ADR-0028</a>,
-<a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">BUG-197</a>, the spike folder <a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/bk-181-poc"><code>bk-181-poc/</code></a>.</p>
-<p><strong>Context.</strong> BK-181 demotes live-only Azure HNS contracts to a zero-cost
-Stage 1 <code>&lt;backend&gt;_replay</code> fixture: Stage 3 records a cassette, every
-default CI run replays it. It is the foundation for turning the open HNS
-defects (the BUG-195..203 family, each "surfaced only by the Stage 3
-<code>azure_live</code> run") into always-on regression guards. The backlog left the
-recording mechanism unchosen and flagged async-pipeline coverage and
-scrubbing complexity as the axes to benchmark. This PoC settles it before
-the L-effort build starts. Per the repo's PoC convention the spike folder
-freezes once this doc lands; BK-181 reimplements at the real tree paths.</p>
-<hr />
-<h2 id="verdict">Verdict<a class="headerlink" href="#verdict" title="Permanent link">&para;</a></h2>
-<p><strong>Use <code>pytest-recording</code> (vcrpy).</strong> It works for sync and async Azure,
-needs <strong>zero production-code change</strong>, and reuses a maintained library for
-<code>--record-mode</code>, cassette management, and network blocking. The custom
-<code>azure.core</code> transport adapter — the "build" alternative — is not needed.</p>
-<p>One real wrinkle, fully worked around in the PoC: <strong>vcrpy 8.1.1's aiohttp
-stub cannot stream a response body.</strong> The fix is a one-line shim — inject
-<code>AsyncioRequestsTransport</code> into the async backend via the existing
-<code>client_options</code> kwarg — so async traffic rides vcrpy's proven
-requests/urllib3 stub instead. Details below.</p>
-<p>All six PoC success criteria pass. The spike has 4 tests (sync + async ×
-happy-path + the BUG-197 unhappy case); all 4 record against a real ADLS
-Gen2 account and replay green from committed, scrubbed cassettes with
-<code>--block-network</code> in 0.6 s.</p>
-<hr />
-<h2 id="build-vs-reuse">Build vs reuse<a class="headerlink" href="#build-vs-reuse" title="Permanent link">&para;</a></h2>
-<p><strong>Reuse wins decisively.</strong> <code>pytest-recording</code> + <code>vcrpy</code> installed clean
-(2 packages, no dependency conflicts with the existing dev set) and
-deliver, off the shelf:</p>
-<ul>
-<li>the <code>--record-mode</code> CLI surface (<code>once</code>/<code>rewrite</code>/<code>none</code>/...),</li>
-<li>per-test cassette files with a stable path convention,</li>
-<li><code>--block-network</code> enforcement (the zero-network proof),</li>
-<li>the YAML cassette format with request/response filtering hooks.</li>
-</ul>
-<p>The only "build" is ~150 lines of conftest glue — scrubbing, the
-fixed-name trick, the missing-cassette skip hook. A custom transport
-adapter would need <em>all of that anyway</em>, <strong>plus</strong> the adapter itself, in
-sync and async variants, <strong>plus</strong> a second mechanism for S3 (which has no
-<code>azure.core</code> pipeline). Reuse is less code and less surface to maintain.</p>
-<hr />
-<h2 id="what-was-tested">What was tested<a class="headerlink" href="#what-was-tested" title="Permanent link">&para;</a></h2>
-<p>Spike folder: <a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/bk-181-poc"><code>sdd/research/bk-181-poc/</code></a> — outside
-<code>testpaths</code>, run by pointing pytest at it explicitly.</p>
-<table>
-<thead>
-<tr>
-<th>File</th>
-<th>Role</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>conftest.py</code></td>
-<td>vcrpy wiring: scrubbing, record/replay connection-string switch, backend fixtures, missing-cassette → skip</td>
-</tr>
-<tr>
-<td><code>test_replay_sync.py</code></td>
-<td><code>AzureBackend</code>: happy-path round-trip + BUG-197 unhappy case</td>
-</tr>
-<tr>
-<td><code>test_replay_async.py</code></td>
-<td><code>AsyncAzureBackend</code>: same two cases</td>
-</tr>
-<tr>
-<td><code>cassettes/</code></td>
-<td>4 recorded, scrubbed cassettes (committed)</td>
-</tr>
-</tbody>
-</table>
-<p>Each test runs the <em>real</em> Azure SDK code path. The only thing that
-changes between record and replay is the transport: recording hits a real
-ADLS Gen2 account (<code>&lt;real-account&gt;</code>), replay serves the committed cassette
-from a fake connection string with no network.</p>
-<hr />
-<h2 id="success-criteria-results">Success criteria — results<a class="headerlink" href="#success-criteria-results" title="Permanent link">&para;</a></h2>
-<h3 id="1-interception-partial-for-async-fully-solved">1. Interception — partial for async, fully solved<a class="headerlink" href="#1-interception-partial-for-async-fully-solved" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Path</th>
-<th>SDK transport</th>
-<th>vcrpy stub</th>
-<th>Result</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Sync</td>
-<td><code>RequestsTransport</code> (urllib3)</td>
-<td>requests/urllib3</td>
-<td><strong>Works flawlessly</strong> — record and replay</td>
-</tr>
-<tr>
-<td>Async</td>
-<td><code>AioHttpTransport</code> (aiohttp)</td>
-<td>aiohttp</td>
-<td><strong>Broken</strong> — see below</td>
-</tr>
-</tbody>
-</table>
-<p>vcrpy 8.1.1's aiohttp stub cannot carry a streamed response body:</p>
-<ul>
-<li><strong>On record</strong>, the cassette captures the body correctly, but the live
-  caller receives <code>b""</code> — the body never reaches the SDK. The async
-  download path (<code>azure.core...._aiohttp.py</code> async-iterating the response
-  content) is left empty.</li>
-<li><strong>On replay</strong>, the same path <strong>deadlocks</strong>. Faulthandler caught it
-  blocked in <code>AioHttpTransport.__anext__</code> → <code>asyncio.streams.read</code>,
-  awaiting a stream vcrpy's mock response never feeds and never closes.
-  Responses <em>without</em> a body (the BUG-197 directory read, error
-  responses) replay fine — the deadlock is body-stream-specific.</li>
-</ul>
-<p><strong>Workaround (applied in the PoC):</strong> inject <code>AsyncioRequestsTransport</code> —
-an <code>azure.core</code> async transport that rides <code>requests</code> in a thread pool —
-into the async backend via <code>client_options={"transport": ...}</code>. Async
-traffic then flows through vcrpy's working urllib3 stub. The backend's own
-async code path (<code>aio/backends/_azure.py</code>) is unchanged; only the leaf
-transport differs, and injection uses an existing public kwarg, so
-production code is untouched.</p>
-<p><em>Fidelity caveat:</em> the async replay fixture exercises every async backend
-code path and every <code>azure.core</code> pipeline policy, but its leaf transport
-is <code>AsyncioRequestsTransport</code>, not the production-default
-<code>AioHttpTransport</code>. A defect living <em>purely</em> in aiohttp-transport
-behaviour would not be caught by replay. This is acceptable: the live
-Stage 3 <code>azure_live_async</code> fixture keeps the real <code>AioHttpTransport</code> and
-remains the source of truth (the spec's design intent), and conformance
-exercises the backend, not the transport leaf. If transport-layer
-fidelity ever matters, the options are an upstream vcrpy aiohttp fix or a
-custom <code>AsyncHttpTransport</code> adapter — neither blocks BK-181.</p>
-<h3 id="2-zero-credential-replay-pass">2. Zero-credential replay — pass<a class="headerlink" href="#2-zero-credential-replay-pass" title="Permanent link">&para;</a></h3>
-<p>Replay builds the backend from a fixed fake connection string
-(<code>AccountName=bk181poc</code>, Azurite's public well-known key — valid base64,
-not a secret). <code>hatch run pytest sdd/research/bk-181-poc/ --block-network
---allowed-hosts=127.0.0.1,::1,localhost</code> passes all 4 tests in 0.63 s with
-no network. (The loopback allowance is required only for the Windows
-<code>ProactorEventLoop</code> self-pipe — see Other findings.)</p>
-<h3 id="3-hns-specific-behaviour-captured-pass">3. HNS-specific behaviour captured — pass<a class="headerlink" href="#3-hns-specific-behaviour-captured-pass" title="Permanent link">&para;</a></h3>
-<p>Both BUG-197 cases (sync and async) replay green, asserting the current
-buggy <code>read_bytes(hns_dir) == b""</code>. The cassettes carry the
-<code>x-ms-is-hns-enabled: 'true'</code> account probe and the real HNS
-directory-marker traffic — exactly the behaviour Azurite cannot emulate
-and the whole BUG-195..203 family depends on. Recording this <em>confirmed
-BUG-197 reproduces on the async backend too</em>, against the real account.</p>
-<h3 id="4-scrubbing-works-at-header-level-one-body-level-gap">4. Scrubbing — works at header level; one body-level gap<a class="headerlink" href="#4-scrubbing-works-at-header-level-one-body-level-gap" title="Permanent link">&para;</a></h3>
-<p>Verified: grepping all 4 committed cassettes for the real account name,
-<code>authorization</code>, <code>x-ms-date</code>, <code>x-ms-client-request-id</code>,
-<code>x-ms-request-id</code>, <code>AccountKey</code>, <code>sig=</code> returns <strong>nothing</strong>. The
-<code>before_record_request</code> host rewrite turns <code>&lt;real-account&gt;</code> into
-<code>bk181poc</code> everywhere — URLs, headers, and response bodies.</p>
-<p><strong>Gap for BK-181 proper:</strong> per-run identifiers embedded in <em>error-response
-XML bodies</em> survive — e.g. <code>&lt;Message&gt;...RequestId:8fa924c6-...
-Time:2026-05-14T...</code> in a <code>ContainerAlreadyExists</code> body. Header scrubbing
-does not reach them. BK-181 needs a body-level regex scrub for
-<code>RequestId:</code> / <code>Time:</code> fragments. Cosmetic, not a credential leak, but it
-makes cassette diffs noisy. (Also cosmetic: <code>User-Agent</code> records the
-recording machine's OS/Python version — worth normalising.)</p>
-<h3 id="5-per-run-identifier-problem-solved">5. Per-run identifier problem — solved<a class="headerlink" href="#5-per-run-identifier-problem-solved" title="Permanent link">&para;</a></h3>
-<p>The live registry fixtures mint a per-call <code>conformance-&lt;uuid&gt;</code>
-filesystem (<code>azure_live.py:77</code>); that uuid would land in every request
-URL and break cassette matching. The PoC uses a <strong>fixed</strong> container name
-(<code>bk181poc</code>) plus the <code>before_record_request</code> host rewrite. vcrpy's
-default <code>match_on</code> (method/scheme/host/port/path/query) then matches
-cleanly: SharedKey auth keeps its signature in the <code>Authorization</code> header
-(scrubbed, unmatched), not the query, and <code>x-ms-client-request-id</code> is a
-header too. No custom matcher was needed.</p>
-<h3 id="6-missing-cassette-skip-solved">6. Missing cassette → skip — solved<a class="headerlink" href="#6-missing-cassette-skip-solved" title="Permanent link">&para;</a></h3>
-<p>vcrpy's native behaviour on a missing cassette in <code>record_mode=none</code> is to
-<em>raise</em>. TEST-007 wants a <em>skip</em>. A <code>pytest_collection_modifyitems</code> hook
-in the conftest checks each <code>vcr</code>-marked test's cassette path at
-collection time and adds <code>pytest.mark.skip</code> when it is absent. Verified:
-with one cassette removed, that test skips with a clear reason and the
-other three pass.</p>
-<hr />
-<h2 id="other-findings">Other findings<a class="headerlink" href="#other-findings" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong>Install is clean.</strong> <code>uv pip install pytest-recording</code> pulled
-  <code>pytest-recording==0.13.4</code> + <code>vcrpy==8.1.1</code>, no conflicts.</li>
-<li><strong><code>--block-network</code> vs Windows asyncio.</strong> pytest-recording's network
-  guard blocks <code>socket.socketpair()</code>, which the Windows <code>ProactorEventLoop</code>
-  needs for its self-pipe — async tests error at loop creation. Fix:
-  <code>--allowed-hosts=127.0.0.1,::1,localhost</code>. Real Azure hosts stay
-  blocked. BK-181's <code>--stage</code> runner should bake this allowance in.</li>
-<li><strong><code>filterwarnings = error</code> is unforgiving here.</strong> A half-created event
-  loop (from the <code>--block-network</code> issue above) leaks a <code>ResourceWarning</code>
-  that the global <code>error</code> filter escalates and that then poisons
-  <em>subsequent</em> tests via <code>PytestUnraisableExceptionWarning</code>. BK-181 must
-  keep async fixture teardown airtight.</li>
-<li><strong>Idempotent setup records cleanly.</strong> Filesystem- and directory-create
-  calls are wrapped in <code>except ResourceExistsError: pass</code>; the request is
-  identical whether the resource pre-exists (<code>409</code>) or not (<code>201</code>), so
-  re-records work against a dirty or clean account alike.</li>
-<li><strong>Speed.</strong> Full 4-test replay: ~0.6 s. Recording: ~4.5 s (real account).</li>
-</ul>
-<hr />
-<h2 id="recommendations-for-bk-181-proper">Recommendations for BK-181 proper<a class="headerlink" href="#recommendations-for-bk-181-proper" title="Permanent link">&para;</a></h2>
+<h1 id="research-detecting-inconsistency-among-multiple-descriptions-of-the-same-thing">Research: Detecting inconsistency among multiple descriptions of the same thing<a class="headerlink" href="#research-detecting-inconsistency-among-multiple-descriptions-of-the-same-thing" title="Permanent link">&para;</a></h1>
+<p><strong>Date:</strong> 2026-07-27
+<strong>Status:</strong> Advisory research, revised after external review (see § 10 revision
+note). Cross-discipline synthesis (deep-research harness, adversarially verified)
+narrowed to software-under-SDD and technical engineering, then tested against one
+live repository case (BK-324). Not a spec or ADR. The plan in § 9 is a proposal;
+no backlog items were created.
+<strong>Scope:</strong> What makes inconsistency between parallel descriptions of one subject
+<em>detectable</em>; which detection mechanisms are proven in disciplines whose artifacts
+are machine-readable and whose claim spaces are mechanically enumerable; which of
+them this repository already runs; where our gates are structurally blind; and
+what transfers to any multi-artifact process (§ 8).
+<strong>Related:</strong> <a href="../../process/"><code>sdd/000-process.md</code></a> (Rules 2, 3, 5),
+<a href="https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md"><code>sdd/formal/README.md</code></a>,
+<a href="https://github.com/haalfi/remote-store/blob/master/sdd/CLAUDE-REFERENCE.md"><code>sdd/CLAUDE-REFERENCE.md</code></a> (ripple-check),
+<a href="../research-bug-prevention-beyond-testing/"><code>research-bug-prevention-beyond-testing.md</code></a>,
+<a href="../research-expectation-driven-review/"><code>research-expectation-driven-review.md</code></a>,
+<a href="../research-id-232-detail-placement-durability/"><code>research-id-232-detail-placement-durability.md</code></a>,
+<code>sdd/BACKLOG.md</code> BK-324, BK-325.</p>
+<p><strong>Context:</strong> We maintain many parallel descriptions of one library: Markdown
+specs, Dafny contracts, TLA+ invariants, the implementation, the conformance
+suite, docstrings, guides, <code>FEATURES.md</code>, the CHANGELOG, the backlog, and the
+ripple-check. Twenty lint gates plus a preflight family, of which
+seven reconcile an artifact <em>pair</em> while the rest are single-artifact rule checks,
+already compare pieces of that set. BK-324 nevertheless records four descriptions of the backend contract
+disagreeing with each other, undetected by any gate, found by a human writing a
+backend against the guide. This document asks what detection mechanisms exist,
+why ours did not fire, and what to do about it.</p>
+<blockquote>
+<p><strong>Central honesty finding.</strong> The three categories below are not a taxonomy of
+<em>what</em> a check catches. They are a taxonomy of <strong>why you are entitled to believe
+it catches anything</strong> — the source of warrant.</p>
+<blockquote>
+<p><strong>Warrant by construction, by measurement, or by mandate. Only the first two
+are about the mechanism.</strong></p>
+</blockquote>
 <ol>
-<li><strong>Mechanism:</strong> <code>pytest-recording</code> + <code>vcrpy</code>. Add both to the <code>dev</code>
-   extra in <code>pyproject.toml</code>.</li>
-<li><strong>Async:</strong> inject <code>AsyncioRequestsTransport</code> in the <code>azure_replay_async</code>
-   fixture's factory via <code>client_options</code>. Document the fidelity caveat
-   next to it. Do <strong>not</strong> wait on an upstream vcrpy aiohttp fix.</li>
-<li><strong>Real-tree wiring:</strong> <code>tests/backends/fixtures/azure_replay.py</code> +
-   <code>azure_replay_async.py</code>; <code>[fixture.azure_replay]</code> /
-   <code>[fixture.azure_replay_async]</code> in <code>fixtures.toml</code> with
-   <code>kind = "replay"</code>, <code>stage = 1</code>, <code>container = "none"</code>; register via
-   <code>registry.register</code>. Cassettes at the spec location
-   <code>tests/backends/cassettes/azure/</code>. Model the recording-side factory on
-   <code>azure_live.py</code>, but with a <strong>deterministic</strong> filesystem name.</li>
-<li><strong><code>--record</code> wiring:</strong> map the spec's <code>pytest --stage=3 --record</code> onto
-   vcrpy's <code>--record-mode=rewrite</code> in <code>tests/conftest.py::pytest_addoption</code>,
-   and fold the <code>--allowed-hosts</code> loopback allowance into the runner.</li>
-<li><strong>Scrubbing:</strong> port the PoC's <code>vcr_config</code> and <em>add</em> a body-level regex
-   scrub for <code>RequestId:</code> / <code>Time:</code> fragments and <code>User-Agent</code>
-   normalisation.</li>
-<li><strong>Missing-cassette skip + plugin guard:</strong> port the
-   <code>pytest_collection_modifyitems</code> hook (the cassette-path logic mirrors
-   <code>pytest_recording.plugin</code>) and the <code>pytest_configure</code> plugin-availability
-   guard — the registry fixtures depend on <code>pytest-recording</code>'s
-   <code>record_mode</code> fixture, so a missing plugin should fail fast with a clear
-   message, not an opaque <code>fixture not found</code>.</li>
-<li><strong>S3 ("follows"):</strong> a separate validation — <code>s3fs</code> rides
-   <code>aiobotocore</code>/<code>botocore</code>, not <code>azure.core</code>. vcrpy supports botocore,
-   but the streaming-body behaviour must be re-checked the same way this
-   PoC checked aiohttp. Do not assume the Azure result transfers.</li>
-<li><strong>Ship the trace</strong> (<code>sdd/traces/bk-181-*.yml</code>) and the
-   <code>TESTING.md</code> / spec-048 migration-note updates with the work.</li>
+<li><strong>Warrant by construction.</strong> Detection power is <em>derivable</em>, not measured:
+   layout-versus-schematic checking, LVS (graph isomorphism over extracted
+   netlists), a discharged Dafny
+   postcondition, a type system, double entry's nullspace. No efficacy study is
+   needed, because what the mechanism catches and misses follows from how it is
+   built. <strong>The obligation is to state the bound.</strong> This is exactly the
+   <em>soundiness</em> argument: practical static analyses are deliberately unsound, and
+   the sin is not the unsoundness but leaving it undocumented so users
+   extrapolate past it. Livshits et al., "In Defense of Soundiness: A Manifesto",
+   <em>CACM</em> 58(2), 2015, which asks authors to "explain the general implications of
+   their unsoundness".</li>
+<li><strong>Warrant by measurement.</strong> Someone ran a study. The support is real and
+   <strong>narrow</strong>, and the risk is a <em>construct-validity</em> slip: reading a
+   measurement of one thing as a measurement of another. Mutation testing is the
+   clean example: Just et al. (<em>FSE</em> 2014, 357 real faults across five projects)
+   establish a statistically significant <strong>correlation between mutant detection
+   and real-fault detection</strong>, independent of coverage. That is not a
+   defect-reduction claim, and citing it as one is the slip. statcheck in peer
+   review is weaker still: quasi-experimental <em>association</em>, two treatment
+   journals against two controls, and the authors say "is related to".</li>
+<li><strong>Warrant by mandate.</strong> Requirements traceability, safety cases, attestation
+   regimes. A standard requires it, so it happens. Classically this is warrant by
+   <em>testimony</em> — except the witness never looked. Institutionalization is strong
+   evidence that a mechanism is affordable and politically survivable, and weak
+   evidence that it works; where efficacy here <em>has</em> been measured, it usually
+   <strong>underperforms</strong> its reputation.</li>
 </ol>
-<p><strong>Effort:</strong> stays <strong>L</strong>. The PoC removes the mechanism risk, but the
-real-tree fixture wiring, the <code>--stage</code>/<code>--record</code> plumbing, scrubbing
-completeness, the S3 second mechanism, and the docs/trace ripple are still
-the bulk of the work.</p>
+<p><strong>Mapping onto vocabulary the reader may already have:</strong> categories 1 and 2 are
+<em>product</em> evidence and category 3 is <em>process</em> evidence, the split certification
+practice already makes (DO-178C, the airborne-software certification standard,
+and DO-333, its formal-methods supplement, for the route that is
+category 1 in its purest form). The classical epistemology split is
+deduction / induction / testimony, in the same order.</p>
+<p><strong>The failure mode</strong> is treating a mandate-warranted mechanism as if it were
+measurement-warranted, or extending a construction-warranted guarantee past the
+construction that produced it. Both show up in this document's own drafts, twice
+each (§ 10). Note too that being a mandatory gate is not evidence of efficacy: a
+tape-out cannot pass without LVS by construction, which tells you LVS is a gate,
+not that it works. LVS's real warrant is category 1.</p>
+<p><strong>Where category 3 goes wrong has a name, and it is not a synonym for category 3.</strong>
+Meyer &amp; Rowan's <em>ceremonial conformity</em> (1977) describes organizations adopting
+structures for legitimacy and then decoupling them from the technical core,
+adopted, in their words, not because such forms are necessarily connected to more
+effective outcomes. That is the <em>failure mode category 3 is exposed to</em>, not the
+category itself: a mandated mechanism may work perfectly well and simply never
+have been measured. Collapsing the two would assert that everything mandated is
+ceremony, which is the same over-claim this finding exists to prevent. The
+canonical empirical instance is the WHO surgical safety checklist, which produced
+striking results in observational studies and then failed to replicate across 101
+Ontario hospitals (Urbach et al., <em>NEJM</em> 2014: complications 3.86% → 3.82%,
+30-day mortality 0.71% → 0.65%, neither significant).</p>
+<p><strong>What is ours rather than borrowed</strong> <code>[analysis, unsourced]</code>: the inversion in
+category 3. Neo-institutional theory reads institutionalization descriptively,
+from outside, as a fact about organizations. Read as a <em>decision rule for a
+practitioner choosing what to trust</em>, it says something sharper: that a
+mechanism's institutional status is evidence about <strong>the institution's
+constraints</strong>, not about the mechanism. Affordability and political survivability
+are what institutionalization measures. Efficacy is a separate question that
+usually has not been asked.</p>
+<p>Treat § 3 as a design vocabulary annotated with which warrant each mechanism
+carries, not a league table.</p>
+</blockquote>
 <hr />
-<h2 id="reproduce">Reproduce<a class="headerlink" href="#reproduce" title="Permanent link">&para;</a></h2>
-<p>See <a href="https://github.com/haalfi/remote-store/blob/master/sdd/research/bk-181-poc/README.md"><code>bk-181-poc/README.md</code></a>. In short:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv pip install --python .venv pytest-recording          # one-time
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>hatch run pytest sdd/research/bk-181-poc/ --block-network --allowed-hosts=127.0.0.1,::1,localhost
-</code></pre></div>
-<p>The second command replays the committed cassettes with no network and no
-credentials. Recording (needs a real ADLS Gen2 account in <code>.env</code> plus
-<code>RS_TEST_LIVE_HNS=1</code>) is <code>--record-mode=rewrite</code>.</p>
+<h2 id="1-what-counts-as-an-inconsistency-and-which-kinds-are-detectable">1. What counts as an inconsistency, and which kinds are detectable<a class="headerlink" href="#1-what-counts-as-an-inconsistency-and-which-kinds-are-detectable" title="Permanent link">&para;</a></h2>
+<p>An inconsistency exists when two descriptions make claims about the same subject
+that cannot both be true, <strong>or</strong> when one description silently omits a claim
+another treats as binding. The second half matters more than it looks: it is the
+half our tooling is worst at.</p>
+<p>Eight phenomena matter, but they are <strong>not eight peers</strong>. An earlier draft listed
+them as one flat taxonomy and that was wrong: it mixed inconsistency types with a
+precondition, a representation property, and a governance failure. They sit at
+four different places in the detection pipeline.</p>
+<p><strong>Inconsistency types</strong> — the things a detector can actually find:</p>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Definition</th>
+<th>Instance in this repo</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>A. Cross-domain contradiction</strong></td>
+<td>Descriptions from different domains (intent / realization / verification / explanation) disagree</td>
+<td>Spec prose demands <code>InvalidPath</code>, flat-NS backends raise <code>NotFound</code> (BK-324 facet 2)</td>
+</tr>
+<tr>
+<td><strong>B. Cross-artifact contradiction</strong></td>
+<td>Two artifacts of the same kind disagree</td>
+<td><code>MemoryBackend</code> vs <code>MemoryBackendMinimal</code>; <code>Store</code> vs <code>AsyncStore</code></td>
+</tr>
+<tr>
+<td><strong>C. Within-artifact self-contradiction</strong></td>
+<td>One artifact's claims cannot all hold</td>
+<td>A spec section whose table contradicts its own prose (BK-324 facet 3)</td>
+</tr>
+<tr>
+<td><strong>D. Temporal drift</strong></td>
+<td>Descriptions that were consistent and diverged through change</td>
+<td>Guides describing superseded behavior</td>
+</tr>
+<tr>
+<td><strong>E. Silent omission</strong></td>
+<td>One description treats a claim as binding; another is simply silent</td>
+<td>Empty-path <code>InvalidPath</code> enforced everywhere, specified nowhere (BK-324 facet 4)</td>
+</tr>
+</tbody>
+</table>
+<p>E is a different problem <em>in kind</em> from A to D. Comparing two present claims is a
+matching problem; detecting an absent claim requires an independent enumeration of
+what claims should exist. That difference is the hinge of this whole document
+(§ 2.1).</p>
+<p><strong>Precondition — F. Referential / identity.</strong> Same name denoting different
+subjects, or different names denoting one subject. This is not a class of
+inconsistency, it is the <strong>condition under which A to E can be stated at all</strong>.
+Without identity resolution, comparison produces both false positives (comparing
+unrelated things) and false negatives (never comparing related things), and it
+does so silently. Instance here: stale spec IDs in markers, capability name skew
+across sources. <code>check_capability_parity.py</code> and the <code>unknown-spec</code> failure modes
+of <code>check_formal_trace.py</code> are identity gates, not consistency gates.</p>
+<p><strong>Representation blocker — G. Granularity mismatch.</strong> Descriptions at
+incommensurable levels of detail, so no pairwise claim comparison is possible
+without an intervening mapping. Instance: one-line contract prose versus a
+400-line backend. G is not detected so much as <em>suffered</em>: when nothing is
+comparable, every check passes and the silence reads as agreement. Note that G and
+E are hard to tell apart in the field — a claim that looks absent is often present
+at a coarser resolution — and both need the same remedy, a canonical enumeration.
+They differ in repair, not in detection: E needs the missing claim written, G needs
+a refinement relation between levels.</p>
+<p><strong>Post-detection failure — H. Authority ambiguity.</strong> A real conflict exists and no
+rule says which description governs. H is emphatically <em>not</em> an inconsistency
+class: detection can succeed perfectly and H still blocks everything downstream.
+It belongs in this document because the framing question insisted attribution is
+part of detection <em>output</em>, and because BK-324 is stalled at exactly here (§ 5).</p>
+<h3 id="the-detectability-gradient">The detectability gradient<a class="headerlink" href="#the-detectability-gradient" title="Permanent link">&para;</a></h3>
+<p>Detectability is not a property of the class. It is a property of the <em>comparison</em>
+the class demands.</p>
+<table>
+<thead>
+<tr>
+<th>Tier</th>
+<th>What the check requires</th>
+<th>Decidable?</th>
+<th>Automation</th>
+<th>Attribution</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>T0</strong> Well-formedness</td>
+<td>Grammar of one artifact</td>
+<td>Yes</td>
+<td>Total</td>
+<td>Local</td>
+</tr>
+<tr>
+<td><strong>T1</strong> Referential integrity</td>
+<td>Shared identifiers, resolvable links</td>
+<td>Yes</td>
+<td>Total</td>
+<td>Flags the dangling end only</td>
+</tr>
+<tr>
+<td><strong>T2</strong> Closure / arithmetic identity</td>
+<td>A derivable invariant</td>
+<td>Yes</td>
+<td>Total</td>
+<td>Flags the identity, rarely the term</td>
+</tr>
+<tr>
+<td><strong>T3</strong> Constraint / rule violation</td>
+<td>Shared schema plus external rules</td>
+<td>Yes, within the rule language</td>
+<td>High</td>
+<td>Yes, if rules carry authority</td>
+</tr>
+<tr>
+<td><strong>T3.5</strong> Symbolic / bounded exhaustive comparison</td>
+<td>Both sides expressible in a decidable-enough logic; a solver or model checker</td>
+<td>Yes, within the type domain or the bounded model</td>
+<td>High, at authoring cost</td>
+<td>Yes, and it produces a counterexample</td>
+</tr>
+<tr>
+<td><strong>T4</strong> Behavioral comparison</td>
+<td>One side executable, another an oracle</td>
+<td>Over sampled inputs only</td>
+<td>High but incomplete</td>
+<td>By convention</td>
+</tr>
+<tr>
+<td><strong>T5</strong> Semantic comparison of prose</td>
+<td>Meaning equivalence in natural language</td>
+<td>No general oracle</td>
+<td>Low</td>
+<td>Rarely</td>
+</tr>
+<tr>
+<td><strong>T6</strong> Completeness</td>
+<td>Independent enumeration of the claim space</td>
+<td>Not in general</td>
+<td>Very low</td>
+<td>—</td>
+</tr>
+<tr>
+<td><strong>T7</strong> Intent and authority</td>
+<td>Judgment about which description ought to govern</td>
+<td>Not a decision procedure</td>
+<td>None</td>
+<td>This <em>is</em> attribution</td>
+</tr>
+</tbody>
+</table>
+<p><strong>T3.5 is where this repository's strongest tools actually live</strong>, and an earlier
+draft omitted the tier, which mis-slotted them. A discharged Dafny postcondition
+is not rule checking (T3) and not sampled execution (T4): it is exhaustive over
+every input the declared types admit. TLC is exhaustive over a bounded model. The
+tier carries a fractional number because it was added after review rather than
+renumber the rest.</p>
+<p><strong>T4 degrades in practice to "agreement on the tested region".</strong> Its reach is
+bounded by generator quality (for property-based testing) and by oracle fidelity —
+an oracle with a modelling gap cannot detect divergence inside that gap. Our own
+formal README documents one: the capability-round-trip postcondition detects
+<em>divergence</em> between <code>WriteResult</code> and the readable <code>FileInfo</code>, not <em>absence</em>, so
+a backend returning all-<code>None</code> on both sides verifies clean. That is a T4 blind
+spot stated honestly, and it is the correct way to hold a T4 mechanism.</p>
+<p>Three consequences worth carrying forward. Detection power is bought with
+formalization, and formalization competes with the work itself. The gradient is
+not the same as importance: T6 is the least detectable tier and often the most
+consequential. And <strong>attribution degrades faster than detection</strong> — T1 and T2
+mechanisms flag with near-perfect reliability and attribute almost never.</p>
+<hr />
+<h2 id="2-why-our-two-disciplines-are-special">2. Why our two disciplines are special<a class="headerlink" href="#2-why-our-two-disciplines-are-special" title="Permanent link">&para;</a></h2>
+<p>The broad survey covered accounting, construction, aviation, law, medicine and
+experimental science alongside software. Most of its pessimism came from
+disciplines whose artifacts are prose and whose ground truth is contested.
+Software-under-SDD and technical engineering share three properties that change
+the answer:</p>
+<ol>
+<li>Artifacts are machine-readable, so comparison can be mechanical.</li>
+<li>Identifier discipline is already institutional (part numbers, net names, spec IDs).</li>
+<li><strong>The claim space is finite and enumerable from a canonical artifact.</strong></li>
+</ol>
+<p><strong>Cheapness is deliberately not on that list.</strong> An earlier draft listed "checks
+are cheap" as a fourth precondition, which is a category error worth naming
+because the whole document turns on keeping these axes apart. Cost does not
+determine what is <em>detectable</em>; it determines how <em>often</em> a detection runs and
+whether an organization sustains it. Aviation, medicine and clinical trials detect
+a great deal with expensive mechanisms — first-article inspection, as-built
+survey, double data entry, audit re-performance — and none of them is cheap. The
+detectability gradient above ranks tiers by what the <em>comparison demands</em>, and
+cost appears nowhere in it, correctly.</p>
+<p>Cheapness is better understood as a <strong>consequence</strong> of properties 1 and 2, and an
+<em>amplifier</em> rather than an enabler: it is why these two disciplines can run the
+same mechanisms continuously instead of periodically, which is a real advantage
+(§ 6) but a different claim from "we can detect more". Treating it as a
+precondition would also license the wrong inference — that an expensive check is
+not worth building — when the actual design rule is the opposite: put the check
+where it cannot be routed around, then let its cost set its period.</p>
+<p>Property 3 is the important one, and it produces the central finding of this
+research. An earlier draft stated it as "omission is detectable in these two
+disciplines and only in these two", which is <strong>false</strong> and does not survive
+contact with a skeptical reader. Other disciplines have completeness devices: the
+WHO surgical safety checklist, aviation's minimum-equipment and
+configuration-deviation lists, pre-flight checklists, clause inventories in structured
+contracts. The corrected claim:</p>
+<blockquote>
+<p><strong>Omission detection always reduces to maintaining a canonical, enumerable claim
+set. What distinguishes these two disciplines is that the enumeration can be
+<em>derived mechanically from the authoritative artifact</em>, rather than maintained
+as a parallel artifact of its own.</strong></p>
+</blockquote>
+<p>That distinction is not cosmetic, and it is the reason the checklist
+counterexamples do not defeat the argument. A checklist is a second description.
+Someone enumerated it by hand, once; it drifts against the thing it enumerates;
+and it therefore needs its own consistency maintenance. A discipline that solves
+omission with checklists has bought a completeness oracle at the price of one more
+artifact in the inconsistency problem.</p>
+<p>The surgical checklist is also a caution about reading adoption as efficacy: it
+produced striking results in observational studies, was adopted worldwide on that
+basis, and then did not replicate across 101 Ontario hospitals (Urbach et al.,
+<em>NEJM</em> 2014). It remains a genuine completeness <em>device</em> — the counterexample
+stands — while being a poor advertisement for parallel-maintained enumeration. When the enumeration is derived — every
+ballooned characteristic read off the drawing, every section ID read off the spec
+file — it cannot drift against its source, because it <em>is</em> its source.</p>
+<p><a id="canonical-claim-set"></a></p>
+<h3 id="21-the-canonical-claim-set-is-the-real-bottleneck">2.1 The canonical claim set is the real bottleneck<a class="headerlink" href="#21-the-canonical-claim-set-is-the-real-bottleneck" title="Permanent link">&para;</a></h3>
+<p>Generalizing: the binding constraint on this whole problem is not which detectors
+you own, it is <strong>where the canonical claim set lives and whether it is
+machine-enumerable</strong>. Without one:</p>
+<ul>
+<li><strong>E is impossible.</strong> There is nothing to take a set difference against.</li>
+<li><strong>A and B degrade into partial comparisons.</strong> You compare the claims you thought
+  to compare, and a clean report means only that.</li>
+<li><strong>G is invisible.</strong> Nothing reveals that two descriptions were never comparable.</li>
+<li><strong>F is unenforceable.</strong> Identity needs an authority that assigns names, and the
+  claim set is where that authority is expressed.</li>
+</ul>
+<p>This reframes the practical question. Not "which mechanism is missing?" but
+"<strong>which artifact is the enumeration source, and is anything derived from it?</strong>".
+For us the honest answer is that the claim set is <em>fragmented</em>: partly in spec
+Markdown headings and requirement tables, partly in Dafny <code>// @spec</code> tags, partly
+in conformance markers, and — for facet-4-shaped behavior — partly in the
+implementation and nowhere else. § 5 argues that this fragmentation explains BK-324
+more directly than "the gates are blind" does.</p>
+<p>Fragmentation is not the same as having many descriptions, which is the deliberate
+premise of SDD and fine. The defect is that <strong>no single description is designated
+as the enumeration source, and no derivation relation connects them.</strong> Several
+parallel descriptions are healthy when one is canonical for enumeration and the
+others are checked against it.</p>
+<p>The corresponding limit is equally sharp: <strong>T5 is exactly as unsolved here as
+anywhere.</strong> Neither discipline can mechanically compare a prose claim to a
+behavior. Every mechanism below either avoids prose or checks something adjacent
+to it.</p>
+<hr />
+<h2 id="3-mechanism-catalog">3. Mechanism catalog<a class="headerlink" href="#3-mechanism-catalog" title="Permanent link">&para;</a></h2>
+<p>Eleven families survive the restriction. Ranked by detection strength, which here
+means: does it catch the whole class, and does it <strong>attribute</strong>?</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Mechanism</th>
+<th>Engineering instance</th>
+<th>Our instance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>E1</strong></td>
+<td>Equivalence check against a verified reference</td>
+<td>LVS (layout versus schematic); register-transfer-level (RTL) to netlist equivalence checking</td>
+<td>Dafny <code>MemoryBackend</code> compiled and run through conformance as <code>DafnyOracleBackend</code></td>
+</tr>
+<tr>
+<td><strong>E2</strong></td>
+<td>Characteristic accountability</td>
+<td>AS9102 (aerospace first-article inspection) Form 3: every ballooned characteristic has a traceable inspection result</td>
+<td><code>check_spec_marks.py</code>, <code>check_formal_trace.py</code></td>
+</tr>
+<tr>
+<td><strong>E3</strong></td>
+<td>Generation from a canonical model</td>
+<td>Model-based definition; drawings generated from the 3D model</td>
+<td><code>gen_features.py</code>, <code>gen_graph.py</code>, <code>check_api_docs.py</code></td>
+</tr>
+<tr>
+<td><strong>E4</strong></td>
+<td>Rule checking</td>
+<td>Design-rule and electrical-rule checks (DRC, ERC)</td>
+<td><code>ruff</code>, <code>mypy</code>, the <code>check_*.py</code> lint family</td>
+</tr>
+<tr>
+<td><strong>E5</strong></td>
+<td>Pairwise parity assertion</td>
+<td>Interface control documents</td>
+<td><code>check_capability_parity</code>, <code>check_docstring_parity</code>, <code>check_ripple_parity</code>, <code>check_ci_full_matrix</code></td>
+</tr>
+<tr>
+<td><strong>E6</strong></td>
+<td>One normative description driving N artifacts</td>
+<td>One inspection plan applied to every unit of a part family</td>
+<td>The conformance suite across all backends</td>
+</tr>
+<tr>
+<td><strong>E7</strong></td>
+<td>Meta-checking the checker</td>
+<td>Gauge R&amp;R, proficiency testing, seeded defects</td>
+<td>Mutation testing</td>
+</tr>
+<tr>
+<td><strong>E8</strong></td>
+<td>Scheduled reconciliation with a tolerance band</td>
+<td>Periodic calibration, as-built survey</td>
+<td><code>drift-guard.yml</code></td>
+</tr>
+<tr>
+<td><strong>E9</strong></td>
+<td>Tracked, tolerated divergence</td>
+<td>Waivers, deviations, non-conformance reports</td>
+<td>Conformance xfail registry, <code>[~]</code> markers</td>
+</tr>
+<tr>
+<td><strong>E10</strong></td>
+<td>Rehearsal / build-a-real-instance</td>
+<td>Commissioning, first-article production</td>
+<td>The custom-backend guide walkthrough (ad hoc)</td>
+</tr>
+<tr>
+<td><strong>E11</strong></td>
+<td>User-sourced discrepancy reporting</td>
+<td>Defect/snag reporting, confidential incident reporting</td>
+<td>Issue tracker; the trace corpus's <code>outcome: misleading</code> tags</td>
+</tr>
+</tbody>
+</table>
+<p>Five of these deserve detail.</p>
+<h3 id="e1-is-the-strongest-mechanism-either-discipline-has">E1 is the strongest mechanism either discipline has<a class="headerlink" href="#e1-is-the-strongest-mechanism-either-discipline-has" title="Permanent link">&para;</a></h3>
+<p>LVS-clean is a near-universal foundry prerequisite for tapeout — waiver-with-sign-off
+in practice rather than an unconditional zero. LVS extracts a netlist
+from the <em>realization</em> by tracing connectivity through metal layers and vias, then
+compares it device-by-device and node-by-node against the netlist from the
+<em>intent</em>. Unmatched nodes are reported individually for debugging, and device
+properties <strong>can be configured</strong> to compare against a tolerance, with
+out-of-tolerance reported as a property error. Alongside it, equivalence checking
+compares RTL against the synthesized gate netlist, on the reasoning that every
+synthesis transformation risks the netlist no longer implementing the RTL intent.</p>
+<p><strong>State the bounds, since this section is the honesty finding's category-1
+exemplar and a misstated bound here would be self-refuting.</strong> Equivalence checking
+proves <em>combinational</em> equivalence at <strong>matched compare points</strong> (registers,
+primary output ports, black-box input pins), conditional on a 1:1 state-element
+correspondence. Black-box contents are not verified, their outputs being treated
+as primary inputs; unmatched compare points are reported rather than folded into a
+global proof; inconclusive results from timeout or complexity are an ordinary
+outcome; and sequential transformations such as retiming or state re-encoding put
+the comparison outside combinational equivalence checking entirely. "Bit-exact
+correspondence", which an earlier draft asserted, is blog phrasing and overstates
+all of that.</p>
+<p>Why the family is still the gold standard: within those bounds it is the only
+mechanism in either discipline that compares two <em>independently authored</em>
+descriptions across a domain boundary, mechanically, exhaustively, <strong>and with
+localization</strong>. Not "these disagree" but "this node differs".</p>
+<p><strong>We run a weaker relative of this, and the difference matters.</strong> An earlier draft
+called the <code>DafnyOracleBackend</code> our LVS, which over-claimed. LVS compares two
+<em>fully formalized</em> representations by structural correspondence: exhaustive,
+mechanical, one comparison. Ours is two steps with different strengths:</p>
+<ol>
+<li>The Dafny verifier discharges <code>MemoryBackend</code> as a refinement of
+   <code>BackendContract</code>. This is genuine <strong>T3.5</strong>: exhaustive over the declared type
+   domain.</li>
+<li>The compiled oracle then meets the real backends only through <strong>T4</strong>: shared
+   conformance test cases over sampled inputs.</li>
+</ol>
+<p>So the chain is "verified reference, sampled comparison", and its weakest link is
+step 2. The oracle principle — if the oracle passes, the test is known-correct; if
+it fails, the test has a bug — is LVS's <em>authority logic</em> correctly imported, but
+not LVS's <em>coverage</em>. Nothing here compares a backend to the contract
+exhaustively. Calling it equivalence checking would invite exactly the category-1
+misreading warned about in the honesty finding.</p>
+<h3 id="e2-is-the-answer-to-omission">E2 is the answer to omission<a class="headerlink" href="#e2-is-the-answer-to-omission" title="Permanent link">&para;</a></h3>
+<p>AS9102's Form 3, "Characteristic Accountability, Verification and Compatibility
+Evaluation", carries every design characteristic beside its requirement, its
+measured result, and a unique identifier. The clause language — every design
+characteristic requirement accounted for, uniquely identified, with inspection
+results traceable to each unique identifier — traces to <strong>AS9102A § 5.2</strong>; Rev C
+(2023) renumbers Form 3's fields, so cite the revision rather than a bare section
+number.</p>
+<p>Two precision notes, because the mechanism is easy to over-describe. What the
+standard mandates is <strong>unique identification and traceability</strong>, satisfiable by a
+balloon number "or similar identifier" — the ballooned drawing is the common
+method, not the requirement, and sources asserting otherwise are vendors of
+first-article-inspection (FAI) tooling.
+And FAI scope excludes procured standard catalog hardware and deliverable
+software, so "every characteristic" holds <em>within FAI scope</em>. Neither weakens the
+pattern being borrowed.</p>
+<p>That is a completeness oracle at T6. It works because the characteristic set is
+mechanically enumerable from the authoritative artifact. <code>check_spec_marks.py</code>
+enumerates spec IDs from headings and requirement-table rows and asserts each has
+a <code>@pytest.mark.spec</code>; <code>check_formal_trace.py</code> builds the three-way coverage
+matrix across spec sections, Dafny <code>// @spec</code> tags and conformance markers. That
+is ballooning plus Form 3, in CI.</p>
+<p><strong>Rule 5 of <code>000-process.md</code> (IDs are stable; deprecated sections are marked, not
+removed) is what makes this work.</strong> It is load-bearing detection infrastructure,
+not bookkeeping.</p>
+<h3 id="e6-beats-e5-whenever-it-is-available">E6 beats E5 whenever it is available<a class="headerlink" href="#e6-beats-e5-whenever-it-is-available" title="Permanent link">&para;</a></h3>
+<p>Two shapes recur and they scale differently. A <strong>pairwise parity assertion</strong> is
+written per pair: N artifacts that must agree need O(N²) hand-authored checks,
+each itself an artifact that can drift. Most of our <code>check_*</code> scripts are this
+shape. <strong>One normative description driving N artifacts</strong> converts that to O(N) and
+attributes for free, because the normative side is declared authoritative in
+advance. The conformance suite is this; engineering's version is one inspection
+plan applied to every unit of a part family.</p>
+<p>Whenever a new parity check is proposed, the first question is whether the pair
+can be re-shaped into E6. Some can. Some genuinely cannot: the ripple-check's two
+presentations are two renderings for two reading moments, so parity assertion is
+correct there and single-sourcing would defeat the purpose.</p>
+<p><strong>The structural limit, stated plainly: pairwise parity does not compose into
+global consistency.</strong> A green wall of pairwise checks licenses no conclusion about
+the artifact set as a whole. Claims can be pairwise consistent and jointly
+unsatisfiable; a claim absent from every artifact in the set violates no pairwise
+assertion at all; and a check only constrains the pairs someone thought to write.
+This is why E5 cannot substitute for the canonical claim set of § 2.1 no matter
+how many checks are added, and it is the strongest argument against answering
+BK-324 with more gates.</p>
+<h3 id="e10-is-more-important-than-its-position-suggests">E10 is more important than its position suggests<a class="headerlink" href="#e10-is-more-important-than-its-position-suggests" title="Permanent link">&para;</a></h3>
+<p>Rehearsal — building a real instance and seeing what breaks — is the only family
+that reaches <strong>E, G and H simultaneously</strong>. An exercise stops dead at the step
+nobody wrote down (E), it forces two descriptions to a common level of detail
+because the builder must act (G), and it surfaces authority conflicts because the
+builder must pick a side and can say which choice was unclear (H). No mechanical
+gate does any of those.</p>
+<p>It is listed near the bottom because it is manual, unschedulable-by-default, and
+produces findings in prose. That ranking is about cost, not power. <strong>In the one
+case this document has evidence for, E10 is the mechanism that actually worked</strong>
+(§ 5, finding 5), and every gate ranked above it was green at the time.</p>
+<h3 id="e11-scales-with-usage-rather-than-with-checking-budget">E11 scales with usage rather than with checking budget<a class="headerlink" href="#e11-scales-with-usage-rather-than-with-checking-budget" title="Permanent link">&para;</a></h3>
+<p>Every other family in the catalog costs more the more you check. E11 costs almost
+nothing per finding and its yield grows with how many people <em>use</em> the
+descriptions. Coverage is terrible and unplannable; precision is excellent,
+because a reported discrepancy is one that actually obstructed someone.</p>
+<p>The evidence for taking it seriously is uncomfortable and comes from the
+discipline with the most heavily institutionalized detection machinery in the
+broad survey. In the Association of Certified Fraud Examiners' (ACFE)
+<em>Occupational Fraud 2024</em>, <strong>43% of frauds were
+detected by a tip — 3.07× the next method — against 14% for internal audit and
+13% for management review.</strong> The cheapest, least formal channel out-detects the
+professional apparatus built for exactly that job, by a wide margin. Read it as
+detection-method <em>share</em> among discovered frauds rather than sensitivity (frauds
+nobody found appear in no column), and it still reorders any detection portfolio.</p>
+<p><strong>We already run this and the document was mis-filing it.</strong> The trace corpus's
+<code>outcome: misleading | unclear</code> tags are readers reporting that a description
+obstructed them, attributed to the file that did it. That is E11, not E7. An
+earlier draft classified step 3 as meta-checking, which misstates its purpose:
+aggregating those tags does not measure a checker's miss rate, it harvests a
+detection channel whose yield scales with how often people read our descriptions.
+The distinction matters for how the output is used — a ranked list of
+frequently-misleading references is a <em>work queue</em>, not a quality metric.</p>
+<p>For a project this size that is the single best cost-per-finding ratio available,
+and it needs no new mechanism, only aggregation.</p>
+<hr />
+<h2 id="4-answering-the-core-question-for-this-repository">4. Answering the core question for this repository<a class="headerlink" href="#4-answering-the-core-question-for-this-repository" title="Permanent link">&para;</a></h2>
+<h3 id="a-across-description-domains">(a) Across description domains<a class="headerlink" href="#a-across-description-domains" title="Permanent link">&para;</a></h3>
+<p>Our domains: intent (<code>sdd/specs/</code>, ADRs, RFCs), intent-formalized (<code>sdd/formal/</code>),
+realization (<code>src/</code>), verification (<code>tests/</code>), explanation (<code>docs-src/</code>,
+docstrings, <code>FEATURES.md</code>), and process (BACKLOG, traces, ripple-check).</p>
+<table>
+<thead>
+<tr>
+<th>Mechanism</th>
+<th>Domains it bridges</th>
+<th>Classes caught</th>
+<th>Attributes?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>E1 verified-reference equivalence</td>
+<td>intent-formalized ↔ realization</td>
+<td>A, B, C</td>
+<td>Yes, decisively</td>
+</tr>
+<tr>
+<td>E2 characteristic accountability</td>
+<td>intent ↔ verification</td>
+<td><strong>E</strong>, F</td>
+<td>Yes, names the unaccounted ID</td>
+</tr>
+<tr>
+<td>E3 generation</td>
+<td>realization → explanation</td>
+<td>Prevents A, B, D</td>
+<td>—</td>
+</tr>
+<tr>
+<td>E4 / E6 executable comparison</td>
+<td>intent ↔ realization</td>
+<td>A, D (sampled)</td>
+<td>By declared convention</td>
+</tr>
+<tr>
+<td>Declared attribution rules</td>
+<td>any pair</td>
+<td>—</td>
+<td>This <em>is</em> attribution</td>
+</tr>
+</tbody>
+</table>
+<p>That last row is where we are genuinely ahead of most engineering organizations.
+Rule 3 ("if code and spec disagree, the code is wrong"), the CLAUDE.md principle-5
+pair ("backlog vs history conflict: backlog is wrong"), and the oracle principle
+are <strong>pre-declared authority rules per artifact pair, in writing</strong>. Most processes
+never write the convention down, which is why their findings stall. § 5 shows
+where our coverage of pairs is nevertheless incomplete.</p>
+<h3 id="b-within-one-domain-across-artifacts">(b) Within one domain, across artifacts<a class="headerlink" href="#b-within-one-domain-across-artifacts" title="Permanent link">&para;</a></h3>
+<p>The inventory below was <strong>assembled by hand for this document</strong>, because no
+canonical one exists. That is itself a finding, and it is § 2.1 applied one level
+up: we have no enumeration of <em>which artifact pairs are checked</em>, so the checking
+layer has exactly the defect this document diagnoses in the specification layer.
+The table will drift, and nothing will notice — which is why § 9 step 8 proposes
+deriving it from the <code>check_*.py</code> docstrings rather than leaving the gap named and
+unaddressed.</p>
+<table>
+<thead>
+<tr>
+<th>Pair</th>
+<th>Domain</th>
+<th>Current detection</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Store</code> ↔ <code>AsyncStore</code></td>
+<td>realization</td>
+<td><code>check_docstring_parity.py</code> (docstrings only); behavioral parity is a DoD checkbox</td>
+</tr>
+<tr>
+<td>Backend <em>i</em> ↔ backend <em>j</em></td>
+<td>realization</td>
+<td>Conformance suite (E6)</td>
+</tr>
+<tr>
+<td><code>MemoryBackend</code> ↔ <code>MemoryBackendMinimal</code></td>
+<td>intent-formalized</td>
+<td><strong>None in CI. Review only, documented</strong></td>
+</tr>
+<tr>
+<td><code>Capability</code> enum ↔ Dafny datatype ↔ <code>CapabilityName</code> arms</td>
+<td>cross-source</td>
+<td><code>check_capability_parity.py</code></td>
+</tr>
+<tr>
+<td><code>ci.yml</code> ALL_PYTHONS ↔ <code>ci-full.yml</code> matrix</td>
+<td>process</td>
+<td><code>check_ci_full_matrix.py</code></td>
+</tr>
+<tr>
+<td>Ripple-check index ↔ detailed checklist</td>
+<td>process</td>
+<td><code>check_ripple_parity.py</code></td>
+</tr>
+<tr>
+<td>API doc pages ↔ graph intermediate representation (IR)</td>
+<td>explanation</td>
+<td><code>check_api_docs.py</code></td>
+</tr>
+<tr>
+<td><code>infra/.env</code> ↔ <code>infra/_settings.py</code></td>
+<td>process</td>
+<td><code>check_infra_settings.py</code></td>
+</tr>
+<tr>
+<td>Guide tables ↔ <code>Backend.__abstractmethods__</code> and the conformance suite</td>
+<td>explanation ↔ realization</td>
+<td><code>check_custom_backend_guide.py</code></td>
+</tr>
+<tr>
+<td>Workflow files ↔ <code>sdd/CI-OPERATIONS.md</code> prose</td>
+<td>process</td>
+<td><code>check_ci_inventory.py</code></td>
+</tr>
+<tr>
+<td>Canonical backend order ↔ every enumeration of it</td>
+<td>cross-surface</td>
+<td><code>check_backend_order.py</code></td>
+</tr>
+</tbody>
+</table>
+<p>The last three rows are <strong>prose-side gates</strong>, and they matter to § 6 and G-2: each
+binds prose to a mechanically derived enumeration. <code>check_custom_backend_guide.py</code>
+requires the guide's abstract-methods table to list exactly
+<code>Backend.__abstractmethods__</code>; <code>check_ci_inventory.py</code> differences the workflow
+directory against handbook prose; <code>check_backend_order.py</code> drives every
+enumeration from one canonical order. They are three working templates for
+derive-and-difference, which is the pattern § 9 step 2a wants.</p>
+<hr />
+<h2 id="5-the-bk-324-case-what-our-gates-cannot-see">5. The BK-324 case: what our gates cannot see<a class="headerlink" href="#5-the-bk-324-case-what-our-gates-cannot-see" title="Permanent link">&para;</a></h2>
+<p>BK-324 records contract prose, the Dafny model, the conformance suite and shipped
+backends disagreeing across four facets. It is the best available evidence about
+our detection coverage, because every gate was green throughout.</p>
+<h3 id="finding-1-all-four-facets-are-the-prose-spec">Finding 1: all four facets are the prose spec<a class="headerlink" href="#finding-1-all-four-facets-are-the-prose-spec" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Facet 2: prose (BE-017/BE-021) demands <code>InvalidPath</code>; flat-namespace (flat-NS) backends raise <code>NotFound</code>. Prose contradicts code.</li>
+<li>Facet 3: prose in <a href="../../specs/037-depth-limited-listing/">spec 037</a> licenses ignoring <code>max_depth</code> while the Dafny model and DEPTH-003 tests require native pruning; 037's table is also wrong about S3 and Azure. Prose contradicts mechanism, and contradicts itself.</li>
+<li>Facet 4: empty-path <code>InvalidPath</code> on move/copy is Store-enforced and guarded defensively by <em>every</em> backend, but absent from BE-018/BE-019 and untested. Prose absent, behavior uniform.</li>
+<li>Facet 1: backend-layer obligations for <code>""</code>/<code>"."</code> are unspec'd, and <code>is_file("")</code> raises on the S3 family but not elsewhere. Prose absent <strong>and</strong> the backends disagree with each other.</li>
+</ul>
+<p>So the split is not a tidy two-and-two. Three facets are prose-shaped, and facet 1
+carries an additional <strong>class B</strong> component: an undetected cross-artifact
+divergence with no prose to say which side is right. That is a second data point
+for § 3's non-composition limit — no pairwise check covers
+backend-<em>i</em>-versus-backend-<em>j</em> on <code>is_file("")</code>, because the conformance suite has no cell for it.</p>
+<p>What survives, and it is the finding that matters: <strong>Rule 3 makes the Markdown
+spec authoritative over everything, and spec prose is the only description in the
+formal layer with no mechanical counterpart.</strong> Dafny is verified, TLA+ is
+model-checked, tests are run, backends are conformance-driven. Spec prose is read.
+The most authoritative artifact is the least checked one.</p>
+<h3 id="finding-2-our-traceability-is-identifier-keyed-and-bk-324s-claims-are-not-identifiers">Finding 2: our traceability is identifier-keyed, and BK-324's claims are not identifiers<a class="headerlink" href="#finding-2-our-traceability-is-identifier-keyed-and-bk-324s-claims-are-not-identifiers" title="Permanent link">&para;</a></h3>
+<p>An earlier draft said <code>check_formal_trace.py</code> is referential integrity and called
+that a defect. Both halves were wrong, and the correction sharpens the argument.</p>
+<p>The script has <strong>three</strong> failure modes, not two. F2 (<code>conformance-cites-unknown-spec</code>)
+and F3 (<code>dafny-tag-unknown-spec</code>) are referential integrity, T1. But <strong>F1
+(<code>dafny-clause-untested</code>) is a set difference</strong> — a spec ID carrying a verified
+Dafny postcondition that no conformance marker cites. That is omission detection
+over a derived enumeration: E2, tier T6, not T1.</p>
+<p><strong>State its bound precisely, since this is the in-repo exemplar §§ 3 and 5 lean
+on.</strong> F1 is not <code>D \ T</code> but <strong><code>(D ∩ S) \ T</code></strong>: the script's own docstring defines
+it as a Dafny-tagged ID <em>declared in S</em> that no marker cites. The <code>S</code> conjunct is
+load-bearing — a Dafny tag naming an ID absent from the specs falls to F3, identity
+at T1, and never reaches the completeness check. And the difference is taken
+<strong>minus a human-editable suppression set</strong>: <code>_BASELINE</code> parks known violations, and
+the docstring says so plainly — "Baseline <em>growth</em> is NOT blocked mechanically — a
+new violation can be parked by editing <code>_BASELINE</code>. That edit is visible in review
+and is the point where a human must refuse new debt; the check cannot make that
+judgement."</p>
+<p><strong>And the repo has already booked the work to close it.</strong> <code>sdd/BACKLOG.md</code> ID-207
+("Strengthen <code>check_formal_trace.py</code> from citation hygiene to clause enforcement",
+effort L) logs four hardening steps, two of which are exactly the bounds stated
+above: item 4 bars <code>_BASELINE</code> growth mechanically, and item 2 is
+"<strong>clause granularity, not ID granularity</strong>" — which is this document's headline
+diagnosis, logged before this document was written. That changes finding 2's
+conclusion in one respect worth stating: "stated bound, therefore correctly held"
+and "stated bound, <strong>and we have already decided to remove it</strong>" are different
+claims, and only the second matches the backlog.</p>
+<p>So the honest characterization of our best T6 mechanism is: <strong>a set difference over
+the intersection of two derived enumerations, minus a reviewer-maintained
+allow-list, with the removal of both limits already logged as ID-207.</strong> That is a
+category-1 bound, the script states it, and an earlier
+draft of this document omitted it — which inverts the point made two paragraphs
+below about stated bounds being the correct way to hold such a mechanism.</p>
+<p>Nor is the residual gap a defect. The script's docstring states its own bound
+explicitly and at length — "<strong>Citation, not assertion.</strong> T records that a marker
+naming an ID sits on a test; it does not verify the test asserts that clause, or
+that the test is even enabled ... or that the cited ID is the <em>right</em> one" — and
+by this document's own honesty finding, a <strong>stated</strong> bound is the correct way to
+hold a category-1 mechanism. Contrast finding 3, which is a genuinely <em>unstated</em>
+boundary. Stating a bound is the obligation; meeting it is not.</p>
+<p>The accurate finding is therefore narrower and more useful:</p>
+<blockquote>
+<p>Our traceability runs T1 <strong>plus a bounded T6 completeness check</strong>, over
+<strong>identifier-granular</strong> claim spaces: spec IDs, capability names, method names,
+workflow filenames. BK-324's claims are not identifiers. "Backends must raise
+<code>InvalidPath</code> on wrong-type access" is a sub-ID clause inside a section, so
+nothing enumerates it and no set difference can reach it.</p>
+</blockquote>
+<h3 id="finding-3-the-decoupling-arguments-form-is-unsound-past-the-pair-it-was-written-for">Finding 3: the decoupling argument's <em>form</em> is unsound past the pair it was written for<a class="headerlink" href="#finding-3-the-decoupling-arguments-form-is-unsound-past-the-pair-it-was-written-for" title="Permanent link">&para;</a></h3>
+<p><a href="https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md"><code>sdd/formal/README.md</code></a> argues that Dafny and TLA+ need no
+joint proof obligation because both are bound to the same Markdown spec, "so a
+drift surfaces as a verification failure on one side or the other".</p>
+<p><strong>Be exact about what facet 3 does and does not refute.</strong> The README's claim is
+scoped to <strong>Dafny ↔ TLA+</strong>; facet 3 is <strong>Dafny ↔ DEPTH-003 conformance tests</strong>, and
+TLA+ appears nowhere in it. So facet 3 is not a counterexample to that paragraph,
+and an earlier draft that presented it as one was reaching. What facet 3 does show
+is that the argument's <em>form</em> fails: the Dafny model and the DEPTH-003 tests agree
+<strong>with each other</strong> and disagree with the prose, so two mechanical sides in
+agreement produce two green checks and the drift is invisible precisely <em>because</em>
+the coupling is semantic.</p>
+<p>Generalized, and this is the defensible claim: <strong>"both sides are bound to the same
+prose, so drift surfaces on one of them" holds when drift moves a mechanical side,
+and fails when the prose is the side that moved</strong> — for any such pair, including
+Dafny ↔ TLA+, though we have no observed instance of that particular pair. Weaker
+than the original phrasing and still enough to justify the amendment, which is
+worth recording in the formal README rather
+than leaving as an unstated boundary.</p>
+<h3 id="finding-4-facet-4-is-an-orphan-realization-defect">Finding 4: facet 4 is an orphan-realization defect<a class="headerlink" href="#finding-4-facet-4-is-an-orphan-realization-defect" title="Permanent link">&para;</a></h3>
+<p>Our characteristic accountability runs spec → test. NASA's <strong>SWE-064</strong>
+(bidirectional traceability between software <em>design and code</em> — an earlier draft
+cited SWE-059, which is requirements ↔ design and so the wrong direction for this
+finding) states the rationale explicitly: the two directions catch structurally
+different defects, namely design elements not fulfilled in the code, and source
+code with no parent design element. Note that NASA Procedural Requirements
+(NPR) 7150.2 Rev C and handbook
+Ver C-D consolidate these into <strong>SWE-052</strong>, so a bare SWE-064 cite is current only
+against Rev A-B.</p>
+<p>We have direction one. Facet 4 is a direction-two defect: a convention enforced by
+<code>Store</code>, defensively guarded by every backend, in no spec, untested.</p>
+<h3 id="finding-5-bk-324-was-found-by-rehearsal-not-by-a-gate">Finding 5: BK-324 was found by rehearsal, not by a gate<a class="headerlink" href="#finding-5-bk-324-was-found-by-rehearsal-not-by-a-gate" title="Permanent link">&para;</a></h3>
+<p>Both BK-324 and BK-325 surfaced from PR #932's guide validation, i.e. a person
+building a real backend against the guide. That is commissioning, and it found
+what twenty gates could not. E10 is the only family that routinely reaches class E,
+because an exercise stops dead at the step nobody wrote down. We currently run it
+by accident, when someone happens to open a guide PR.</p>
+<h3 id="finding-6-the-effort-is-attribution-not-detection">Finding 6: the effort is attribution, not detection<a class="headerlink" href="#finding-6-the-effort-is-attribution-not-detection" title="Permanent link">&para;</a></h3>
+<p>BK-324 reads "Decide each rule once, then align". Detection finished months ago;
+the L is class H. Rule 3 arbitrates spec versus code, but facets 2 and 3 need
+arbitration <em>within</em> the intent domain, where the prose may be the wrong side.
+Our declared attribution rules do not cover prose vs Dafny vs conformance.</p>
+<h3 id="finding-7-the-trace-corpus-already-named-the-culprits">Finding 7: the trace corpus already named the culprits<a class="headerlink" href="#finding-7-the-trace-corpus-already-named-the-culprits" title="Permanent link">&para;</a></h3>
+<p>Across 258 traces we have recorded <strong>167 <code>misleading</code> and 20 <code>unclear</code></strong> outcome
+tags, 187 combined. (An earlier draft counted <code>sdd/traces/*.yml</code>, one character
+looser than <code>check_traces.py</code>'s <code>sdd/traces/[!_]*.yml</code>, and so counted
+<code>_schema.yml</code> as a trace.)</p>
+<p><strong>Attribution here is structural, not heuristic.</strong> <code>_schema.yml</code> makes <code>file</code> a
+required property of every step, with <code>outcome</code> a sibling and
+<code>additionalProperties: false</code>, so each tag is attached to exactly one file by the
+schema. A YAML parse gives exact counts — a point worth making because an
+intermediate draft <em>softened</em> these numbers on the strength of a grep-derived
+bound, which was an artifact of the tool rather than a property of the data.</p>
+<p><strong>These numbers are exact and already perishable, which is the argument for
+step 3 in miniature.</strong> They were re-measured twice during review: once to correct
+an extraction artifact, and once because a rebase onto <code>master</code> pulled in a new
+trace mid-review and moved every total by one. A hand-maintained count of a
+growing corpus is a description that drifts against its source by construction —
+precisely the defect this document is about, committed by this document. Table
+measured at the head of this branch; step 3's generated report supersedes it.</p>
+<table>
+<thead>
+<tr>
+<th><code>misleading</code> + <code>unclear</code></th>
+<th>Reference</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>16</td>
+<td><code>sdd/BACKLOG.md</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>src/remote_store/backends/_sftp.py</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>sdd/CLAUDE-REFERENCE.md</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>src/remote_store/backends/_local.py</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>sdd/BACKLOG-DONE.md</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>CONTRIBUTING.md</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>src/remote_store/backends/_azure.py</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>sdd/audits/audit-014-grandfathered-tests-allow-list.md</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td><a href="../../specs/029-async-store-backend-api/"><code>sdd/specs/029-async-store-backend-api.md</code></a></td>
+</tr>
+</tbody>
+</table>
+<p>The column is the two tag types <strong>combined</strong>; the sentence above reports them
+separately, and spec 029's four happen to be four <code>misleading</code> and zero <code>unclear</code>,
+so for that row alone the combined and single-metric readings coincide. Nothing
+else in the table signals which metric a given cell reports.
+Two entries were missing from an earlier version of this table, both dropped at a
+tie by an approximate extraction. Their return changes what it says: with
+<code>_azure.py</code> included, <strong>three backend implementations sit in the top seven</strong>, so
+misleading descriptions cluster in backend code at least as much as in process
+docs.</p>
+<p>BK-324's header reads <code>spec: 003, 029, 037</code>. <strong>Spec 029 carries exactly four
+<code>misleading</code> tags, all predating BK-324.</strong> The signal existed, attributed and
+committed, and nothing aggregates it — that absence, not any imprecision in the
+data, is the argument for step 3. A description that repeatedly misleads a reader
+is a drift detector with attribution already attached, and we are discarding it.</p>
+<h3 id="synthesis-the-failure-is-a-tier-mismatch-not-a-missing-detector">Synthesis: the failure is a tier mismatch, not a missing detector<a class="headerlink" href="#synthesis-the-failure-is-a-tier-mismatch-not-a-missing-detector" title="Permanent link">&para;</a></h3>
+<p>Compressing findings 1 to 7 against § 1's structure, BK-324 decomposes as:</p>
+<table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Where it sits</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Backend-contract claims exist in prose, Dafny, tests and code with no unified identity</td>
+<td><strong>F</strong> — precondition unmet</td>
+</tr>
+<tr>
+<td>No enumeration of what the backend contract <em>claims</em>, so nothing can be differenced</td>
+<td><strong>E</strong> — and § 2.1's bottleneck</td>
+</tr>
+<tr>
+<td>One-line contract prose vs 400-line backends, never comparable</td>
+<td><strong>G</strong></td>
+</tr>
+<tr>
+<td><code>is_file("")</code> diverging across backend families with no cell to compare them (facet 1)</td>
+<td><strong>B</strong> — and a second data point for § 3's non-composition limit</td>
+</tr>
+<tr>
+<td>No precedence among prose, Dafny and conformance</td>
+<td><strong>H</strong></td>
+</tr>
+</tbody>
+</table>
+<p>An earlier draft concluded here that "every mechanism we run sits at T1 to T4,
+the failure lives at T6 and T7". <strong>That was wrong, and it contradicted § 3 of this
+same document</strong>, which correctly calls <code>check_spec_marks.py</code> and
+<code>check_formal_trace.py</code> a completeness oracle at T6. Several gates do run a
+derived-enumeration set difference, which is the T6 shape:</p>
+<table>
+<thead>
+<tr>
+<th>Gate</th>
+<th>Enumeration it differences</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>check_formal_trace.py</code> F1</td>
+<td>(Dafny-tagged ∩ spec-declared) \ conformance-cited, minus the <code>_BASELINE</code> allow-list</td>
+</tr>
+<tr>
+<td><code>check_spec_marks.py</code></td>
+<td>Declared spec sections \ marker-cited IDs</td>
+</tr>
+<tr>
+<td><code>check_capability_parity.py</code></td>
+<td>Set <em>equality</em> across three sources, so omission in both directions</td>
+</tr>
+<tr>
+<td><code>check_docstring_parity.py</code></td>
+<td>Shared-docstring methods in neither the identical nor the divergent set</td>
+</tr>
+<tr>
+<td><code>check_ci_inventory.py</code></td>
+<td>Workflow files \ handbook prose</td>
+</tr>
+</tbody>
+</table>
+<p>The decisive observation is therefore not that we lack T6. It is:</p>
+<blockquote>
+<p><strong>Our T6 coverage is real but confined to identifier-granular claim spaces</strong> —
+spec IDs, capability names, method names, workflow filenames. BK-324's claims
+are sub-ID clauses inside spec sections, so no enumeration reaches them and no
+set difference can fire. We are missing a <strong>claim space at clause granularity</strong>
+(T6) and an <strong>authority model</strong> (T7).</p>
+</blockquote>
+<p>That is a sharper diagnosis and it changes § 9's framing materially. Step 2 is not
+building an enumeration discipline from nothing; it is <strong>extending an established
+one down a granularity level</strong>, with five working precedents in-repo. Adding a
+twenty-first <em>identifier</em>-keyed check would still not have moved BK-324 by a day.</p>
+<p><strong>A tempting T6 check, and why it is not the one we need.</strong> The obvious relation is
+"every invariant enforced in Dafny must appear in the spec", i.e. <code>I ⊆ S</code>. That is
+a worthwhile check and § 9 step 2b proposes it. But note carefully that <strong>it would
+not have caught facet 4.</strong> Facet 4's behavior is absent from the spec <em>and</em>
+untested, and the item flags only a Dafny <em>coupling</em> to mind rather than an
+existing Dafny invariant. The claim lives in the Python implementation and nowhere
+else. Catching it needs the <em>implementation → spec</em> direction, <code>Impl ⊆ S</code>, which is
+strictly harder because implementation invariants are not declared, only enforced.
+The distinction matters: <code>I ⊆ S</code> polices the formal layer's honesty, while
+<code>Impl ⊆ S</code> is what finds orphan behavior. We want both, and only the second closes
+facet 4.</p>
+<hr />
+<h2 id="6-where-we-lead-and-where-we-do-not">6. Where we lead and where we do not<a class="headerlink" href="#6-where-we-lead-and-where-we-do-not" title="Permanent link">&para;</a></h2>
+<p><strong>Ahead of most practice:</strong> omission is partially mechanized (E2); reconciliation
+frequency is per-change rather than periodic; attribution rules are declared per
+pair in writing; and we have a real miss-rate estimator in mutation testing, which
+most projects lack entirely.</p>
+<p><strong>Not ahead, and worth being honest about:</strong></p>
+<ul>
+<li><strong>Spec prose is unchecked</strong> (§ 5, finding 1), and it is authoritative. Note the
+  qualifier: guide prose, handbook prose and enumeration prose all <em>do</em> have
+  mechanical counterparts (§ 4b's last three rows). It is specifically the
+  artifact Rule 3 makes authoritative that has none.</li>
+<li><strong>Tolerance thinking is underdeveloped.</strong> Engineering states acceptable deviation
+  <em>in the specification</em> — LVS compares device properties to a configured
+  tolerance; geometric dimensioning and tolerancing (GD&amp;T) makes acceptable
+  variation part of the spec. We mostly treat
+  every difference as pass/fail, with tolerances buried in check implementations.</li>
+<li><strong>Rehearsal is unscheduled</strong> (§ 5, finding 5).</li>
+<li><strong>Traceability efficacy is measured on adjacent outcomes only.</strong> Not a void:
+  maintenance speed, task correctness and defect-density correlation all have
+  studies (§ 10). What no study measures is <strong>escaped-defect reduction</strong>, which is
+  the outcome the mandate rests on. E2's value
+  rests on the structural omission argument, not on measured defect reduction.</li>
+</ul>
+<hr />
+<h2 id="7-gaps-ranked">7. Gaps, ranked<a class="headerlink" href="#7-gaps-ranked" title="Permanent link">&para;</a></h2>
+<p>Ordered by consequence times cheapness.</p>
+<p><strong>G-1. <code>MemoryBackend</code> ↔ <code>MemoryBackendMinimal</code> drift is invisible to CI.</strong>
+Documented in <a href="https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md"><code>sdd/formal/README.md</code></a>: Dafny has no
+class-to-class inheritance, so <code>MemoryBackendMinimal</code> duplicates every method
+body; <code>dafny_verify.sh</code> passes on both after a one-sided edit because each proves
+its own contract. A known, documented, undetected class-B inconsistency in the
+layer everything else trusts. This is what LVS exists to solve, and
+<code>check_docstring_parity.py</code> already implements the needed
+identical-versus-intentionally-divergent distinction.</p>
+<p><strong>G-2. Spec prose has no mechanical counterpart.</strong> The structural finding of § 5,
+and the rank stands, but the scope is narrower than an earlier draft claimed:
+guide, handbook and enumeration prose are all mechanically bound (§ 4b). Fully
+closing it for spec prose requires T5, which is unsolved. Partially closing it
+does not, and the repo already has three templates for how — see steps 2 and 4.</p>
+<p><strong>G-3. Traceability is unidirectional and identifier-keyed.</strong> Two limits, not one.
+Direction: spec → test only, so orphan realization (behavior with no parent spec)
+is undetected, and BK-324 facet 4 is the live instance. Granularity: enumeration
+stops at the identifier, so sub-ID clauses are unreachable by any set difference
+(§ 5 synthesis). Step 2a addresses the first; the second is the harder half.</p>
+<p><strong>G-4. The trace corpus is an unexploited drift detector.</strong> 187 negative-outcome
+tags, already attributed, never aggregated.</p>
+<p><strong>G-5. No published characteristic-accountability record.</strong> <code>check_formal_trace.py</code>
+computes the coverage matrix and discards it. AS9102's insight is that the
+<em>retained record</em> is the artifact: what was verified, by what, at which release.</p>
+<p><strong>G-6. Rehearsal is unscheduled.</strong> The mechanism with the best findings-per-unit-noise
+in the catalog runs only when someone opens a guide PR.</p>
+<p><strong>G-7. Tolerances live in check implementations, not in specs.</strong></p>
+<p><strong>G-8. Async twin behavioral parity is a checklist item, not a gate.</strong></p>
+<p><strong>G-9. Independence is assumed and never verified.</strong> E1's whole warrant is that the
+Dafny contract is an <em>independent</em> description of the same behavior. Nothing checks
+that it is. See S8.</p>
+<hr />
+<p><a id="principles"></a></p>
+<h2 id="8-substrate-independent-design-principles">8. Substrate-independent design principles<a class="headerlink" href="#8-substrate-independent-design-principles" title="Permanent link">&para;</a></h2>
+<p>The sections above diagnose this repository. These are the transferable rules, and
+they are the generalizable output of the exercise — a reader who does not work on
+this project should be able to take these and leave the rest. Each is stated once
+and points at where it is argued, rather than re-arguing it. All
+<code>[analysis, unsourced]</code> except where a section carries evidence.</p>
+<p><strong>S1. Prefer one normative description driving N artifacts over N² pairwise parity
+checks.</strong> Reach for a parity assertion only when the artifacts are genuinely two
+renderings for two audiences. Pairwise consistency does not compose into global
+consistency, so no wall of parity checks licenses a conclusion about the set (§ 3).</p>
+<p><strong>S2. A mechanical check should localize, not merely fail.</strong> LVS reports the
+unmatched node. "These two disagree" leaves the expensive half of the work undone,
+and is the quality bar any new gate should clear (§ 3, E1).</p>
+<p><strong>S3. Enumerate the claim space from a canonical artifact, and require an
+accounted-for result per claim.</strong> The only known defense against omission, and it
+lives or dies on stable identifiers (§ 2.1, § 3 E2). Its reach stops where the
+enumeration's granularity stops (§ 5 synthesis).</p>
+<p><strong>S4. Declare the authority rule per artifact pair, in writing, before the check
+exists.</strong> Detection without a pre-agreed authority rule stalls in class H
+indefinitely, which is why BK-324 is effort L (§ 5, finding 6).</p>
+<p><strong>S5. Put the detector on a path nobody can route around.</strong> Journals that ran a
+p-value checker <em>inside peer review</em> saw a steeper decline in reporting
+inconsistencies than matched controls (§ 10). State the evidence precisely,
+because an earlier draft of this principle did not: that is a quasi-experimental
+<strong>association</strong>, two treatment journals against two controls, and the authors say
+"is related to". It does not license "deployment position dominates detection
+power", which is what the earlier draft claimed — the category-2 construct-validity
+slip the honesty finding exists to prevent, committed against its own example.</p>
+<p>The <em>contrast</em> that makes the principle vivid — the same checker freely available
+for years while the corpus stayed broken — is <strong>inference, not a measured arm</strong>:
+no study here reports an optional-availability control. So S5 is a well-motivated
+design rule with one supporting quasi-experiment, not the document's best-evidenced
+finding. Corollary, still worth stating: an excellent optional checker is
+plausibly worth less than a mediocre mandatory one.</p>
+<p><strong>S6. Distinguish tolerated from unnoticed, structurally.</strong> Waiver registries and
+<code>[~]</code> markers are what let an organization afford to keep looking; without them,
+detection gets switched off under schedule pressure (§ 3, E9).</p>
+<p><strong>S7. Estimate the miss rate, not just the finding count.</strong> Detection reports a
+numerator. Without seeded discrepancies the denominator is unknown and "we checked
+and found nothing" is uninterpretable (§ 3, E7).</p>
+<p><strong>S8. Independence of <em>derivation path</em> is what makes a second description
+informative — and it must be verified, not assumed.</strong> This is the principle the
+narrowing nearly lost, and it has teeth here.</p>
+<p>Knight &amp; Leveson had 27 versions of one program written independently from a
+common specification, ran a million tests, and found joint failures far above what
+independence predicts: <strong>producers being independent does not make their errors
+independent</strong>, because a specification that handles a case badly misleads everyone
+who reads it. Every mechanism whose power rests on independence inherits this —
+E1's verified reference, E3's canonical source, E5's parity pairs.</p>
+<p>Applied to us, uncomfortably: <strong>E1's entire warrant is that the Dafny contract is
+an independent description of the same behavior.</strong> If a <code>.dfy</code> postcondition was
+written by reading the Python implementation rather than the Markdown spec, the
+oracle certifies nothing except that the transcription was faithful — a
+correlated-error failure of exactly Knight &amp; Leveson's shape, and one that leaves
+every gate green. Nothing in the repository records or checks which source a
+postcondition was derived from. That is G-9, and the cheap mitigation is
+procedural rather than mechanical: require the derivation source to be stated when
+a Dafny clause is authored, so a reviewer can see whether the second description
+is genuinely second.</p>
+<p><strong>S9. Set the reconciliation period from the drift rate, not the calendar.</strong>
+Annual, at-milestone and at-admission are conventions inherited from what it used
+to cost to stop and look. When the cost of a check falls, the correct period falls
+with it: continuous integration is a scheduled reconciliation ritual with the
+period driven toward zero, which is the one place software genuinely leads (§ 6).
+Ask of every recurring check what its period would be if it were free, and anchor
+it to the events that can invalidate the artifact rather than to a date — as
+step 6 does. Note the boundary with § 2: cost does not decide what is <em>detectable</em>,
+only how often you look.</p>
+<hr />
+<h2 id="9-plan-of-next-steps">9. Plan of next steps<a class="headerlink" href="#9-plan-of-next-steps" title="Permanent link">&para;</a></h2>
+<p>Proposed, not created. Each step names the gap it closes, the mechanism family it
+instantiates, and a rough size. Steps 1 to 4 are independent and can land in any
+order.</p>
+<p><strong>Ordering follows the § 5 synthesis, not the gap ranking.</strong> Two steps build the
+things actually missing — a canonical claim space and an authority model — and the
+rest are patches, however worthwhile:</p>
+<ul>
+<li><strong>Strategic: step 2a</strong> (claim space, T6) and <strong>step 5.1</strong> (authority model, T7).
+  Nothing else addresses what BK-324 exposed.</li>
+<li><strong>Cheap and independently worth doing now: step 3</strong> (aggregate trace tags; the
+  data is already committed) and <strong>step 1</strong> (twin parity; a documented, undetected
+  class-B defect in the layer everything trusts).</li>
+</ul>
+<p>A reasonable first slice is step 3 plus step 1 for immediate value, then step 2a
+as the real work.</p>
+<h3 id="step-1-parity-gate-for-the-dafny-twin-classes">Step 1: Parity gate for the Dafny twin classes<a class="headerlink" href="#step-1-parity-gate-for-the-dafny-twin-classes" title="Permanent link">&para;</a></h3>
+<p><strong>Closes:</strong> G-1 · <strong>Mechanism:</strong> E1/E5 · <strong>Size:</strong> M</p>
+<p>Add <code>scripts/check_dafny_twin_parity.py</code>: normalize each method body of
+<code>MemoryBackend</code> and <code>MemoryBackendMinimal</code> and assert correspondence modulo the
+declared capability-set difference, with an explicit allowlist for intentional
+divergence. Model it on <code>check_docstring_parity.py</code>, which already solves the
+"identical versus deliberately divergent" classification problem. Wire into
+<code>lint</code>. Record in the formal README that twin drift is now gated.</p>
+<h3 id="step-2-bidirectional-traceability-the-canonical-claim-space">Step 2: Bidirectional traceability (the canonical claim space)<a class="headerlink" href="#step-2-bidirectional-traceability-the-canonical-claim-space" title="Permanent link">&para;</a></h3>
+<p><strong>Closes:</strong> G-3, § 2.1's bottleneck, and BK-324 facet 4 concretely ·
+<strong>Mechanism:</strong> E2 · <strong>Size:</strong> M (2a) + S (2b)</p>
+<p><strong>This step largely <em>is</em> <code>sdd/BACKLOG.md</code> ID-207, which predates this document.</strong>
+ID-207 ("Strengthen <code>check_formal_trace.py</code> from citation hygiene to clause
+enforcement", effort L) already logs four hardening steps against the same script.
+The mapping, so nobody re-derives it mid-flight: <strong>step 2b ≈ ID-207 item 1</strong>
+(derive D mechanically; fail on an untagged <code>ensures</code>), and <strong>the clause-granularity
+half of step 2a ≈ ID-207 item 2</strong>, which is this document's headline diagnosis
+already written down. ID-207 item 3 (a marker cites but does not assert) is the T5
+gap finding 2 names, and item 4 (bar <code>_BASELINE</code> growth) is the suppression-set
+bound. What this document adds is not the work but the <em>framing</em>: why clause
+granularity is the binding constraint rather than one hardening step among four,
+and the <code>Impl ⊆ S</code> direction, which ID-207 does not cover.</p>
+<p>Framing matters otherwise too: per the § 5 synthesis this is <strong>not building an
+enumeration discipline from nothing</strong>. Five gates already run derived-enumeration set
+differences, and three of them (<code>check_custom_backend_guide.py</code>,
+<code>check_ci_inventory.py</code>, <code>check_backend_order.py</code>) already target prose. Step 2
+extends that discipline in two directions it does not yet cover: <em>toward the
+implementation</em>, and <em>below identifier granularity</em>. Two sub-steps, and <strong>2a is
+the one that closes facet 4</strong>:</p>
+<p><strong>2a. <code>Impl ⊆ S</code> — enforced behavior must have a parent spec section.</strong> Extend
+<code>check_formal_trace.py</code> (or add a sibling) with the implementation direction. The
+tractable shape is a <strong>pass over raise sites in the backend package</strong>: each must be
+reachable from a spec ID via an existing marker or an explicit allowlist entry.
+<strong>The allowlist is the deliverable</strong>, not the gate: on day one it enumerates every
+orphan behavior we have, which is precisely what facet 4 turned out to be.</p>
+<p><strong>Order of magnitude, because it changes the proposition.</strong> An AST pass over
+<code>src/remote_store/backends/</code> at the time of writing finds raise statements in the
+<strong>several hundreds</strong>, with roughly a quarter as many again in the core modules.
+(Counts vary by method — whether bare re-raises inside <code>except</code> blocks are
+included moves the total materially — so treat the magnitude, not any figure, as
+the input to planning.) A day-one allowlist of that size is a different
+proposition from a dozen entries, and it is what makes "expect the first cut to be
+approximate" concrete. Two consequences the backlog item must settle:</p>
+<ol>
+<li><strong>Gate or report?</strong> Step 3 is deliberately a report, not a gate, to avoid the
+   false-positive fatigue that defeats rule checkers. A gate over a
+   several-hundred-site heuristic invites the same objection, and this document does not resolve it.</li>
+<li><strong>Scope beyond the backend package.</strong> Facet 4's <em>normative</em> enforcement lives one
+   layer above the backend tree, in the path-normalization layer; the backends hold
+   defensive duplicates. So a backends-only pass does reach facet 4, but through the
+   duplicates, and would record the behavior one layer from where it is actually
+   enforced. Covering the core modules too is probably right.</li>
+</ol>
+<p><strong>2b. <code>I ⊆ S</code> — every Dafny invariant must appear in the spec.</strong> Cheap, because
+<code>// @spec</code> tags already exist and <code>check_formal_trace.py</code> already parses them: the
+check is that a Dafny postcondition carrying no spec coordinate, or one whose
+coordinate has no prose counterpart, fails. This polices the formal layer's
+honesty and would catch a <em>different</em> drift than 2a. Do it second and do not
+mistake it for the facet-4 fix.</p>
+<h3 id="step-3-aggregate-trace-outcome-tags">Step 3: Aggregate trace outcome tags<a class="headerlink" href="#step-3-aggregate-trace-outcome-tags" title="Permanent link">&para;</a></h3>
+<p><strong>Closes:</strong> G-4 · <strong>Mechanism:</strong> E11 (not E7 — see § 3) · <strong>Size:</strong> S</p>
+<p>Add <code>scripts/report_trace_outcomes.py</code> producing a ranked table of references by
+<code>misleading</code> + <code>unclear</code> count, with the citing traces. Run it as a report, not a
+gate — there is no correct threshold, and gating it would create exactly the
+false-positive fatigue that defeats rule checkers elsewhere. Review the top of the
+list at the same cadence as the TLA+ status revisit.</p>
+<p><strong>Specify the extraction method, do not leave it open.</strong> Reuse <code>check_traces.py</code>'s
+<code>sdd/traces/[!_]*.yml</code> glob rather than re-deriving it, and read
+<code>phases[].steps[]</code> as <strong>parsed YAML</strong>, taking <code>file</code> from the same mapping as
+<code>outcome</code>. Both details are load-bearing: a looser glob reintroduces the
+<code>_schema.yml</code> off-by-one, and a nearest-preceding-key text scan reintroduces the
+attribution imprecision that caused a round trip in this document's own review.
+The schema guarantees exactness; only a sloppy reader loses it. That also makes
+this step smaller than S suggests — the data is committed and exact.</p>
+<h3 id="step-4-generate-spec-037s-backend-table">Step 4: Generate spec 037's backend table<a class="headerlink" href="#step-4-generate-spec-037s-backend-table" title="Permanent link">&para;</a></h3>
+<p><strong>Closes:</strong> part of G-2, and BK-324 facet 3 · <strong>Mechanism:</strong> E3 · <strong>Size:</strong> S/M</p>
+<p>A hand-maintained table making per-backend behavioral claims is the artifact class
+that must never be hand-maintained; we already generate <code>FEATURES.md</code> from
+<code>graph.json</code>. Either derive 037's table from capability declarations plus
+conformance results, or delete it and link to the generated surface. Then sweep
+for other hand-written per-backend claim tables and treat each the same way.</p>
+<h3 id="step-5-decide-bk-324s-four-rules-with-an-attribution-rule-first">Step 5: Decide BK-324's four rules, with an attribution rule first<a class="headerlink" href="#step-5-decide-bk-324s-four-rules-with-an-attribution-rule-first" title="Permanent link">&para;</a></h3>
+<p><strong>Closes:</strong> the BK-324 blockage · <strong>Mechanism:</strong> attribution · <strong>Size:</strong> L</p>
+<p>The item is L because of class H, so unblock the attribution before the content.
+Two sub-steps:</p>
+<ol>
+<li><strong>Extend the declared attribution rules to cover the intent domain internally.</strong>
+   Rule 3 settles spec vs code. Add the missing precedence for prose vs Dafny
+   postcondition vs conformance test, including the case where the prose is wrong.
+   This is a <code>000-process.md</code> amendment and it generalizes well beyond BK-324.</li>
+<li><strong>Then decide each of the four rules once</strong> and align spec prose, Dafny model,
+   conformance coverage, docstrings and backends together, per the item's own plan.</li>
+</ol>
+<p>Facet 2 deserves a specific framing: flat-NS <code>NotFound</code> is either a defect or a
+legitimate variation, and if it is legitimate the fix is to make it a <strong>declared
+capability</strong> so the conformance suite parameterizes on it. That converts an
+undeclared divergence into a declared one, which is our existing pattern.</p>
+<p><strong>Classification note for the owner's decision:</strong> BK-324 currently sits under
+<em>Docs &amp; Discoverability</em>. Facets 2 and 3 change runtime behavior or spec
+semantics and may be breaking. Found via docs, but arguably not a docs item, and
+the filing risks it reading as cosmetic.</p>
+<h3 id="step-6-schedule-the-rehearsal">Step 6: Schedule the rehearsal<a class="headerlink" href="#step-6-schedule-the-rehearsal" title="Permanent link">&para;</a></h3>
+<p><strong>Closes:</strong> G-6 · <strong>Mechanism:</strong> E10 · <strong>Size:</strong> S to define, M per run</p>
+<p>Make "build a backend against the guide, from scratch, without help" a scheduled
+exercise rather than a side effect of guide PRs. Its output is a list of places
+the guide, the contract or the conformance suite failed the builder.</p>
+<p><strong>Say the evidence level out loud: n = 1.</strong> The justification is a single run
+(PR #932), and E10's claim in § 3 to the best findings-per-unit-noise in the
+catalog rests on that same run. The step is cheap and probably right, but this
+document is scrupulous about evidence strength everywhere else and should not make
+an exception where the ranking is most flattering to the recommendation.</p>
+<p><strong>Cadence, since "S to define" is otherwise empty.</strong> Proposed: <strong>once per minor
+release, or after any change to the <code>Backend</code> ABC or the conformance suite,
+whichever comes first</strong> — the two events that can invalidate the guide. Anchoring
+it to contract change rather than to the calendar follows <strong>S9</strong> and gives the
+step actual content beyond the word "scheduled".</p>
+<h3 id="step-7-publish-the-characteristic-accountability-record">Step 7: Publish the characteristic-accountability record<a class="headerlink" href="#step-7-publish-the-characteristic-accountability-record" title="Permanent link">&para;</a></h3>
+<p><strong>Closes:</strong> G-5 · <strong>Mechanism:</strong> E2 · <strong>Size:</strong> S</p>
+<p>Render <code>check_formal_trace.py</code>'s coverage matrix as a generated artifact at
+release time: every spec ID, its verification evidence (test marker, Dafny tag,
+TLA+ invariant), and its status. Makes "what was verified, and by what" answerable
+historically rather than only at HEAD.</p>
+<h3 id="step-8-derive-the-artifact-pair-inventory-instead-of-hand-maintaining-it">Step 8: Derive the artifact-pair inventory instead of hand-maintaining it<a class="headerlink" href="#step-8-derive-the-artifact-pair-inventory-instead-of-hand-maintaining-it" title="Permanent link">&para;</a></h3>
+<p><strong>Closes:</strong> the § 4b reflexive gap · <strong>Mechanism:</strong> E3 · <strong>Size:</strong> S</p>
+<p>§ 4b's inventory of which artifact pairs are checked was assembled by hand and the
+document says of it: "The table will drift, and nothing will notice." Leaving a
+self-diagnosed gap out of the plan is conspicuous in a document whose thesis is
+that unenumerated claim spaces are where things hide, so it gets a step rather
+than a shrug.</p>
+<p>The fix is this document's own E3: derive the inventory from the <code>check_*.py</code>
+docstrings and publish it as a generated surface. That also gives step 7's
+accountability record a natural companion — one enumerates spec coverage, the
+other enumerates <em>checker</em> coverage.</p>
+<p><strong>Two complications that belong in the step, not in the implementation surprise.</strong>
+First, <strong>not every gate guards a pair.</strong> A substantial minority are single-artifact
+rule checks — this document's own E4 — whose docstrings state a <em>rule</em>, not a pair
+(assertion presence, mock discipline, forbidden RST roles, em dashes in TLA+). A
+derivation over the docstring corpus yields no row for those, so the deliverable is
+a derived inventory of <em>pair</em> gates <strong>plus an explicit "rule check, no pair"
+classification</strong>. Second, the <code>scripts/check_*.py</code> glob <strong>under-reaches</strong>:
+<code>scripts/docs/check_links.py</code> is a genuine cross-artifact gate outside it.</p>
+<p>Both mean the step needs either a docstring convention to key on or a curated
+mapping — and a curated mapping is precisely the parallel-artifact-that-drifts
+problem § 2.1 warns about. Naming that up front is the difference between a cheap
+step and a step that quietly recreates the defect it closes.</p>
+<h3 id="deferred-with-reasons">Deferred, with reasons<a class="headerlink" href="#deferred-with-reasons" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Standing async-parity contract suite</strong> (G-8): the right shape is E6, but the
+  DoD checkbox is currently holding. Revisit when a parity defect escapes.</li>
+<li><strong>Tolerances in specs</strong> (G-7): worth a pass over the numeric gates, but no
+  evidence yet that implicit tolerances have caused a miss.</li>
+<li><strong>Whole-implementation formal equivalence:</strong> a category error. LVS works because
+  both sides are finite Boolean functions over a common encoding. Our Dafny layer
+  correctly scopes to a reference backend and per-operation contracts, and the
+  formal README already reasons its way there.</li>
+<li><strong>As-built capture, first-article-per-unit, counterparty confirmation,
+  attestation with personal liability:</strong> no software analogue worth building.</li>
+</ul>
+<hr />
+<h2 id="10-evidence-ledger-and-method-caveats">10. Evidence ledger and method caveats<a class="headerlink" href="#10-evidence-ledger-and-method-caveats" title="Permanent link">&para;</a></h2>
+<p><strong>Method.</strong> A deep-research harness ran six search angles, extracted claims, and
+adversarially verified them (three voters per claim, two refutations to kill). One
+harness fault degraded that run: the automated verification stage lost its search
+tool to a permission-handler error, so ten of eleven claims were refused
+<em>procedurally rather than substantively</em>. All load-bearing claims were
+subsequently re-verified by hand against search results, twice.</p>
+<p><strong>A standing environmental constraint, not a one-off fault.</strong> Full-text fetching
+returns HTTP 403 for <strong>every</strong> external host under this repository's session
+egress policy. That reproduced identically across three separate rounds of work on
+this document, so it is a property of the environment rather than a failure of any
+one run, and it sets a <strong>permanent ceiling on citation quality for research docs
+in this repo</strong>: "this work exists, is correctly attributed, and reports these
+numbers" is reachable; verbatim quotation and capture of methodological caveats
+are not. Any future research doc here inherits the same ceiling and should
+disclose it the same way. Whether that warrants a documented citation convention
+is a reasonable backlog question and is not decided here.</p>
+<p><strong>Verified</strong> (search-confirmed, full text unread). <strong>Which rows carry the
+argument:</strong> LVS and equivalence checking underwrite § 3 E1; AS9102 Form 3
+underwrites § 3 E2; SWE-064 underwrites § 5 finding 4; statcheck and double entry
+underwrite the honesty finding; MIL-HDBK-61A and Bosché are adjacent to E8 and the
+as-built deferral; <strong>Knight &amp; Leveson underwrites S8</strong> and <strong>ACFE 2024 underwrites
+E11</strong>. Both were orphaned in an earlier revision, and the reason is worth
+recording: the narrowing dropped the two mechanisms they support, leaving the
+evidence in place with nothing to attach to. Restoring the mechanisms was the
+correct fix, not deleting the rows.</p>
+<p><strong>One row still supports no claim in §§ 1 to 9:</strong> the clinical-decision-support
+override figure. It is retained as provenance for the broad cross-discipline
+survey this document was narrowed from — that survey is not in this repository,
+so the row must stand on its own citation, which it now does. A reader should not
+infer that alert fatigue is load-bearing here; it is background for E4's
+false-positive economics, nothing more.</p>
+<table>
+<thead>
+<tr>
+<th>Claim</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>LVS extracts a layout netlist and compares it device-by-device and node-by-node against the schematic netlist; device-property comparison <strong>can be configured</strong> against a tolerance. LVS-clean is a near-universal foundry prerequisite for tapeout (waiver-with-sign-off, not an unconditional zero)</td>
+<td>Synopsys glossary; Wikipedia LVS</td>
+</tr>
+<tr>
+<td>Equivalence checking proves <strong>combinational</strong> equivalence at matched compare points (registers, primary outputs, black-box input pins), conditional on a 1:1 state-element correspondence; standard synthesis sign-off. Black-box contents are unverified, and sequential transformations such as retiming fall outside it</td>
+<td>Synopsys Formality</td>
+</tr>
+<tr>
+<td>AS9102 Form 3 ("Characteristic Accountability, Verification and Compatibility Evaluation") carries requirement, measured result and unique identifier per characteristic. The "accounted for, uniquely identified, results traceable to each unique identifier" clause language traces to <strong>AS9102A § 5.2</strong>; Rev C (2023) renumbers Form 3 fields. The mandate is unique identification, satisfiable by "a balloon number <strong>or similar identifier</strong>" — ballooning is the common method, not the requirement. FAI scope excludes procured standard catalog hardware and deliverable software</td>
+<td>AS9102A § 5.2, practitioner analysis</td>
+</tr>
+<tr>
+<td>NASA <strong>SWE-064</strong> (bidirectional traceability, software <strong>design ↔ code</strong>) carries the rationale used in § 5 finding 4: it surfaces design elements not fulfilled in code, and code with no parent design element. SWE-059 is requirements ↔ design. NPR 7150.2 Rev C / handbook Ver C-D consolidate these into <strong>SWE-052</strong></td>
+<td>NASA SWE handbook</td>
+</tr>
+<tr>
+<td>MIL-HDBK-61A splits the Functional Configuration Audit (FCA, against the performance spec) from the Physical Configuration Audit (PCA, as-built against <strong>its technical documentation</strong>)</td>
+<td>MIL-HDBK-61A, AcqNotes</td>
+</tr>
+<tr>
+<td>statcheck: ~half of articles <strong>with statcheck-detectable, APA-style-formatted null-hypothesis-significance-test (NHST) results</strong> carry an inconsistency, ~1 in 8 a gross one</td>
+<td>Nuijten et al. 2016, <em>Behavior Research Methods</em></td>
+</tr>
+<tr>
+<td>statcheck <strong>in peer review</strong> is <em>associated with</em> a steeper decline than matched controls (preregistered pretest-posttest quasi-experiment, 2 treatment journals vs 2 controls, 7,000+ articles). Authors' own framing is "is related to" and "can be"</td>
+<td>Nuijten &amp; Wicherts 2024, <em>Advances in Methods and Practices in Psychological Science</em></td>
+</tr>
+<tr>
+<td>statcheck's own accuracy is <strong>contested</strong>: 96–99.9% on results it detects (Nuijten et al. 2017) vs ~60% precision and ~61% recognition (Schmidt, arXiv:1610.01010); detection is tied to strict APA formatting (Böschen 2024, arXiv:2408.07948). Different denominators; the critiques are preprints</td>
+<td>as cited</td>
+</tr>
+<tr>
+<td>Practical static analyses are deliberately unsound ("soundy"); the stated obligation is to explain the implications of that unsoundness rather than to eliminate it</td>
+<td>Livshits, Sridharan, Smaragdakis et al., "In Defense of Soundiness: A Manifesto", <em>CACM</em> 58(2), 2015</td>
+</tr>
+<tr>
+<td>Mutation testing's support is a statistically significant <strong>correlation</strong> between mutant detection and real-fault detection, independent of coverage — 357 real faults, 5 projects, ~321k LOC. Not a defect-reduction result</td>
+<td>Just, Jalali, Inozemtseva, Ernst, Holmes &amp; Fraser, <em>FSE</em> 2014</td>
+</tr>
+<tr>
+<td>Organizations adopt formal structures for legitimacy and decouple them from the technical core; adoption is driven by institutional myth rather than by demonstrated effectiveness</td>
+<td>Meyer &amp; Rowan, "Institutionalized Organizations: Formal Structure as Myth and Ceremony", <em>AJS</em> 83, 1977, 340–363</td>
+</tr>
+<tr>
+<td>WHO surgical safety checklist did not replicate at scale: 101 Ontario hospitals, complications 3.86% → 3.82%, 30-day mortality 0.71% → 0.65%, neither significant, against striking prior observational results</td>
+<td>Urbach et al., <em>NEJM</em> 2014</td>
+</tr>
+<tr>
+<td>Knight &amp; Leveson: independence assumption rejected; 27 versions, 1,000,000 tests, correlated failures</td>
+<td>Knight &amp; Leveson 1986</td>
+</tr>
+<tr>
+<td>A balance identity detects that <strong>one</strong> error occurred <strong>without localizing it</strong>, and is blind to offsetting pairs (distance-2 parity check: detects one, corrects none). Detection-<strong>plus-correction</strong> comes from the paper's parity-check-matrix construction, not from the trial balance</td>
+<td>Arya, Fellingham, Schroeder &amp; Young, <em>Double Entry Bookkeeping and Error Correction</em>, Ohio State working paper, 1996</td>
+</tr>
+<tr>
+<td>Pooled override of drug-drug-interaction alerts <strong>90% (95% CI 85–95)</strong> across 16 studies, <strong>I² = 100%</strong>, per-study range ~46–98%</td>
+<td>Felisberto et al., <em>Health Informatics Journal</em> 30(2), 2024, doi:10.1177/14604582241263242</td>
+</tr>
+<tr>
+<td>ACFE 2024: tips detect 43% of occupational frauds, 3.07× the next method; internal audit 14%, management review 13%</td>
+<td>ACFE Report to the Nations 2024</td>
+</tr>
+<tr>
+<td>Bosché: <strong>iterative-closest-point (ICP) matching of a known CAD model</strong> against laser scans for as-built dimensional compliance (not learned recognition)</td>
+<td>Bosché 2010, <em>Adv. Eng. Informatics</em> 24(1), 107–118</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Traceability efficacy: an evidentiary mismatch, not a void.</strong> An earlier draft
+said no efficacy evidence exists in either direction. That is wrong as a reader
+will take it, and two studies exist:</p>
+<ul>
+<li>Rempel &amp; Mäder, <em>Preventing Defects: The Impact of Requirements Traceability
+  Completeness on Software Quality</em>, IEEE TSE 43(8), 2017, 777–797. 24
+  medium-to-large open-source projects; traceability completeness in three of four
+  requirements-implementation activities significantly associated with lower
+  defect <strong>density</strong>. Observational, not causal.</li>
+<li>Mäder &amp; Egyed, <em>Do developers benefit from requirements traceability when
+  evolving and maintaining a software system?</em>, EMSE 20, 2015. Controlled
+  experiment, 71 subjects, real maintenance tasks: ~24% faster and ~50% more
+  correct solutions with traceability available.</li>
+</ul>
+<p>The accurate statement: <strong>measured benefits are on adjacent outcomes</strong> —
+maintenance speed, task correctness, defect-density correlation. <strong>No study
+measures escaped-defect reduction</strong>, which is the outcome the mandate rests on.
+E2's case in this document still rests on the structural omission argument, but it
+is no longer arguing into a vacuum.</p>
+<p><strong>Repository claims</strong> in §§ 4 to 7 are from reading source in this session: script
+docstrings, <code>pyproject.toml</code> script lists, <code>sdd/000-process.md</code>,
+<code>sdd/formal/README.md</code>, and the trace corpus. The trace tag counts are a
+mechanical count over <code>sdd/traces/[!_]*.yml</code> — <code>check_traces.py</code>'s glob, not the
+looser one an earlier draft used — on the date above.</p>
+<p><strong>Author's inference, not sourced:</strong> the four-layer taxonomy of § 1, the tier
+table, the E5-versus-E6 scaling argument and its non-composition limit, the
+canonical-claim-set argument of § 2.1, the ranking in § 7, and the whole of § 9.
+The three findings held most confidently are structural rather than empirical:
+that omission detection always reduces to a canonical enumerable claim set; that
+what distinguishes these disciplines is the enumeration being <em>derived</em> rather
+than maintained in parallel; and that our <strong>spec</strong> prose has no mechanical
+counterpart.</p>
+<h3 id="self-validation-against-principle-8-detail-placement">Self-validation against principle 8 (detail placement)<a class="headerlink" href="#self-validation-against-principle-8-detail-placement" title="Permanent link">&para;</a></h3>
+<p>Checked against the three-condition gate in
+<a href="../research-id-232-detail-placement-durability/"><code>research-id-232-detail-placement-durability.md</code></a>.
+The decisive factor is amendment-channel cost: a research doc is a point-in-time
+snapshot whose updates require a <em>new document</em>, so its channel is expensive and it
+must externalize volatile detail rather than absorb it.</p>
+<p>Two items failed and were remedied by declaring a successor rather than by
+deletion, per the gate's "remedy is rarely deletion":</p>
+<ul>
+<li><strong>The trace-tag counts (§ 5, finding 7)</strong> are high-change-rate values in an
+  expensive-amendment artifact. They are load-bearing evidence for G-4 and step 3,
+  so deleting them would remove the justification for the step they motivate.
+  Marked as a dated measurement, with step 3's generated report named as the
+  successor SSoT.</li>
+<li><strong>The artifact-pair inventory (§ 4b)</strong> is a hand-built enumeration with no
+  authoritative home. Kept, because the gap analysis is unintelligible without it,
+  and annotated with the reflexive finding that its absence is the same defect one
+  layer up.</li>
+</ul>
+<p>A third item was <strong>wrongly kept</strong> on a first pass and has since been relocated.
+The path-level specifics in step 2a (module paths, specific error types) were
+retained on the argument that they satisfy the gate's third condition despite
+failing the first. That is precisely the trade
+<a href="../research-id-232-detail-placement-durability/">ID-232 § 7</a> forbids: the three
+conditions are "conjunctive, not a weighted score; failing any one is a reason to
+move or cut the fact, not something a high score elsewhere buys back". Applying
+the gate's own remedy — relocation, not deletion — step 2a now asserts the
+<em>shape</em> of the heuristic (a pass over raise sites in the backend package), which
+is structurally stable and carries the feasibility argument, while the specific
+modules and error types move to the backlog item when the step is opened. Worth
+flagging loudly because this is the section where the document certifies its own
+compliance, so a gate applied loosely here would be the most quotable precedent
+in it.</p>
+<p>A fourth item was relocated in the final round: the <strong>round-by-round review
+tables</strong> in § 10. They were valuable during review and would read as noise in six
+months — process residue whose authoritative home is the PR, not a durable
+artifact. The durable <em>lessons</em> stay; the change logs moved to PR #937. This is
+the same reasoning applied to this document's own history that § 2.1 applies to
+the specification layer.</p>
+<p>Deliberately <em>not</em> trimmed: the mechanism catalog, the taxonomy, the tier table and
+the evidence ledger. A document is the SSoT for its own stable core, and these are
+this document's core. Brevity is not the target.</p>
+<h3 id="revision-note-what-review-changed">Revision note: what review changed<a class="headerlink" href="#revision-note-what-review-changed" title="Permanent link">&para;</a></h3>
+<p>This document went through three rounds of correction before merge, and the
+durable lessons from them are recorded here. The full round-by-round tables lived
+in earlier revisions and have been relocated to PR #937, which is their
+authoritative home: per principle 8, process residue does not belong in a durable
+artifact once the process is over.</p>
+<p>Four corrections carry a lesson beyond this document:</p>
+<ul>
+<li><strong>A flat taxonomy hid a category error.</strong> Listing F (identity) and H (authority)
+  as peer inconsistency <em>classes</em> contradicted this document's own prose, which
+  already described F as upstream of everything and H as the case where detection
+  <em>succeeds</em>. The four-layer split in § 1 is the fix, and the general lesson is
+  that a taxonomy whose entries do not share a failure mode is a list, not a
+  taxonomy.</li>
+<li><strong>A stated bound is not a defect.</strong> An earlier draft called
+  <code>check_formal_trace.py</code>'s citation-not-assertion limit a defect. The script
+  documents that boundary itself, and by this document's own honesty finding that
+  is the correct way to hold a category-1 mechanism. What deserves the label is an
+  <em>unstated</em> boundary, such as the formal README gap in § 5 finding 3.</li>
+<li><strong>Two category-1 exemplars had overstated bounds.</strong> Double entry was credited
+  with detection-plus-localization it does not have, and equivalence checking with
+  bit-exact correspondence it does not prove. In a document whose central claim is
+  that provable-bound mechanisms must <em>state</em> their bounds, getting those two
+  wrong was the most self-refuting error available.</li>
+<li><strong>Tool artifacts can masquerade as data limits.</strong> The spec-029 tag count was
+  softened on the strength of a grep-derived bound, then restored when a
+  schema-driven YAML parse showed the count was exact all along. The schema
+  guarantees attribution; only a sloppy reader loses it. Step 3 is specified
+  accordingly.</li>
+</ul>
+<p>One review suggestion was <strong>not</strong> adopted as given: <code>I ⊆ S</code> (every Dafny invariant
+appears in the spec) was proposed as the check that would have caught BK-324
+facet 4, on the reading that the spec states the empty-path rule and conformance
+tests it. The backlog item says the opposite — the rule is "absent from
+BE-018/BE-019 and untested" — so <code>I ⊆ S</code> would not have fired. It is worth having
+regardless and is step 2b; the facet-4 fix is the harder <code>Impl ⊆ S</code>, step 2a.</p>
 
 
 
@@ -10917,7 +12781,7 @@ credentials. Recording (needs a real ADLS Gen2 account in <code>.env</code> plus
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../research-benchmark-suite-v2/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Benchmark Suite v2 — User-Decision Framing">
+          <a href="../research-id-232-detail-placement-durability/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Scope, abstraction, and the placement of detail in durable authoritative texts">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -10927,20 +12791,20 @@ credentials. Recording (needs a real ADLS Gen2 account in <code>.env</code> plus
                 Previous
               </span>
               <div class="md-ellipsis">
-                Benchmark Suite v2 — User-Decision Framing
+                Scope, abstraction, and the placement of detail in durable authoritative texts
               </div>
             </div>
           </a>
         
         
           
-          <a href="../research-bk-181-s3-cassette-infeasibility/" class="md-footer__link md-footer__link--next" aria-label="Next: BK-181 PR 2 — S3 cassette/replay infeasibility">
+          <a href="../research-llms-full-txt-tooling/" class="md-footer__link md-footer__link--next" aria-label="Next: `llms-full.txt` / Markdown-twin tooling for ID-220 (2026 refresh)">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                BK-181 PR 2 — S3 cassette/replay infeasibility
+                `llms-full.txt` / Markdown-twin tooling for ID-220 (2026 refresh)
               </div>
             </div>
             <div class="md-footer__button md-icon">
