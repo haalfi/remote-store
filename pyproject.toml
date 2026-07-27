@@ -151,8 +151,18 @@ dev = [
   # at import time, a symbol aiohttp removed in 3.14, and every test crashed at
   # collection on the vcr aiohttp-stub import. vcrpy 8.2.0 fixed that
   # (kevin1024/vcrpy#995), which is what lets aiohttp float past 3.14 again.
-  # The aiohttp bound stays as a major-version guard only (aiobotocore allows
-  # >=3.12,<4); both are test-only, the published package has no aiohttp constraint.
+  # The aiohttp bound is a *minor*-version tripwire, not a major-version guard
+  # (aiobotocore already caps <4, so a major guard here would be redundant): every
+  # aiohttp minor arrives as its own dependabot PR and gets a full CI run before it
+  # can land, so a vcrpy-breaking minor cannot slip in on an unrelated resolve.
+  # That is the whole reason the ceiling survives the compat fix. Raising it also
+  # re-exposes the BUG-224 `filterwarnings` entry below, which anchors on aiohttp's
+  # `_wait_for_close` connector qualname; confirm that symbol still exists in
+  # `aiohttp/connector.py` when you widen the bound (present in 3.14.3). The
+  # >=3.13 floor no longer tracks a compat requirement (`AsyncStreamReaderMixin`
+  # was its cause, and the vcrpy floor retired it); it is kept only so a resolve
+  # cannot silently drop below the oldest minor CI has exercised. All test-only;
+  # the published package constrains neither.
   "vcrpy>=8.2",
   "aiohttp>=3.13,<3.15",
   # Type checking & linting

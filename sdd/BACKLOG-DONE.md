@@ -25,11 +25,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   dropped because the dep is test-only: the cost is one PR per minor, the
   benefit is that a vcrpy-breaking aiohttp release cannot land silently.
   Ripple the ripple-check table did not anticipate: moving the floor off 8.1.1
-  staled six live version stamps justifying the async-Azure
-  `AsyncioRequestsTransport` shim (four fixtures, `graph_replay`, spec 048) —
-  de-stamped here, with the substance re-test split out as BK-327. Historical
-  artifacts (`sdd/research/*`, `sdd/traces/*`, rfc-0010) keep their 8.1.1
-  stamps by design. No CHANGELOG entry: test-only, `infra.test` audience.
+  staled **seven** live version stamps. Six justify the async-Azure
+  `AsyncioRequestsTransport` shim (four fixtures, `graph_replay`, spec 048) and
+  keep a dated form ("observed on 8.1.1; BK-327 re-tests it against the current
+  floor") — the limitation is asserted by prose alone, so undating it would
+  silently annex the 8.2/8.3 behaviour this PR never ran. The seventh,
+  `test_cassettes.py::test_user_agent_absent_stays_absent` (REC-005), cites
+  vcrpy's `filters.replace_headers` guard and was missed on the first pass
+  because the sweep keyed on the aiohttp-stub phrasing rather than the version
+  stamp; it is de-stamped undated instead, because the test's own assertion
+  re-checks the guard against whatever vcrpy is installed (verified still
+  present in 8.3.0), so it fails loudly rather than rotting. Second unanticipated
+  coupling, checked and clear: widening the bound moves the env onto an aiohttp
+  whose `_wait_for_close` connector qualname the BUG-224 `filterwarnings` entry
+  anchors on, and whose guard test is synthetic (never imports aiohttp) — the
+  symbol still exists in 3.14.3, so the suppression is live, and the pin comment
+  now tells the next person to re-check it. The substance re-test of the vcrpy
+  aiohttp limitations is BK-327. Historical artifacts (`sdd/research/*`,
+  `sdd/traces/*`, rfc-0010) keep their 8.1.1 stamps by design. No CHANGELOG
+  entry: test-only, `infra.test` audience.
 
 - [x] **BUG-239 — Adapter drain-timeout test flaked on CI: pending task GC'd out of the WeakSet task registry**
   spec: — · effort: S · audience: infra.test

@@ -8,7 +8,7 @@ the persistent ``RS_TEST_LIVE_HNS_CONTAINER`` filesystem; the azure-subtree
 Under ``_RS_CASSETTE_RECORDING=1`` the async backend injects
 ``AsyncioRequestsTransport`` so vcrpy captures real streaming bodies — the same
 shim ``azure_live_async`` uses (vcrpy's aiohttp stub drops streaming bodies on
-record; BK-327).
+record, observed on 8.1.1; BK-327 re-tests it against the current floor).
 
 Gating, the dynamic ``pytest.mark.vcr`` under ``--record``, and
 ``conformance_excluded`` match ``azure_live_hns``.
