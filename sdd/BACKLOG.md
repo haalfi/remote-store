@@ -138,7 +138,7 @@ and the highest ID already in this file, then take the next integer. Run
      untested (mind the Dafny coupling).
   Evidence trail: PR #932 review threads and `sdd/traces/bk-320-*.yml`.
   Related: [research](research/research-inconsistency-detection-multi-artifact.md)
-  — § 5 analyses these four facets as a detection failure, and § 8 step 5 proposes
+  — § 5 analyses these four facets as a detection failure, and § 9 step 5 proposes
   settling the prose/Dafny/conformance authority rule *before* the four rules,
   since the effort here is attribution rather than detection.
 
@@ -160,7 +160,7 @@ and the highest ID already in this file, then take the next integer. Run
     fallback row; `from exc` guidance omits the deliberate `from None`
     pattern; the `SEEKABLE_READ` note contradicts shipped range-readers.
   Related: [research](research/research-inconsistency-detection-multi-artifact.md)
-  § 8 step 6 — this item and BK-324 are one rehearsal's findings, which is the
+  § 9 step 6 — this item and BK-324 are one rehearsal's findings, which is the
   argument for scheduling the guide walkthrough rather than running it by accident.
 
 - [ ] **ID-225 — Evaluate migrating the docs stack from Material for MkDocs to Zensical**

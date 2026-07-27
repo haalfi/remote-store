@@ -1,15 +1,16 @@
 # Research: Detecting inconsistency among multiple descriptions of the same thing
 
 **Date:** 2026-07-27
-**Status:** Advisory research, revised after external review (see § 9 revision
+**Status:** Advisory research, revised after external review (see § 10 revision
 note). Cross-discipline synthesis (deep-research harness, adversarially verified)
 narrowed to software-under-SDD and technical engineering, then tested against one
-live repository case (BK-324). Not a spec or ADR. The plan in § 8 is a proposal;
+live repository case (BK-324). Not a spec or ADR. The plan in § 9 is a proposal;
 no backlog items were created.
 **Scope:** What makes inconsistency between parallel descriptions of one subject
 *detectable*; which detection mechanisms are proven in disciplines whose artifacts
 are machine-readable and whose claim spaces are mechanically enumerable; which of
-them this repository already runs; and where our gates are structurally blind.
+them this repository already runs; where our gates are structurally blind; and
+what transfers to any multi-artifact process (§ 8).
 **Related:** [`sdd/000-process.md`](../000-process.md) (Rules 2, 3, 5),
 [`sdd/formal/README.md`](../formal/README.md),
 [`sdd/CLAUDE-REFERENCE.md`](../CLAUDE-REFERENCE.md) (ripple-check),
@@ -430,7 +431,7 @@ The inventory below was **assembled by hand for this document**, because no
 canonical one exists. That is itself a finding, and it is § 2.1 applied one level
 up: we have no enumeration of *which artifact pairs are checked*, so the checking
 layer has exactly the defect this document diagnoses in the specification layer.
-The table will drift, and nothing will notice — which is why § 8 step 8 proposes
+The table will drift, and nothing will notice — which is why § 9 step 8 proposes
 deriving it from the `check_*.py` docstrings rather than leaving the gap named and
 unaddressed.
 
@@ -454,7 +455,7 @@ requires the guide's abstract-methods table to list exactly
 `Backend.__abstractmethods__`; `check_ci_inventory.py` differences the workflow
 directory against handbook prose; `check_backend_order.py` drives every
 enumeration from one canonical order. They are three working templates for
-derive-and-difference, which is the pattern § 8 step 2a wants.
+derive-and-difference, which is the pattern § 9 step 2a wants.
 
 ---
 
@@ -626,14 +627,14 @@ The decisive observation is therefore not that we lack T6. It is:
 > set difference can fire. We are missing a **claim space at clause granularity**
 > (T6) and an **authority model** (T7).
 
-That is a sharper diagnosis and it changes § 8's framing materially. Step 2 is not
+That is a sharper diagnosis and it changes § 9's framing materially. Step 2 is not
 building an enumeration discipline from nothing; it is **extending an established
 one down a granularity level**, with five working precedents in-repo. Adding a
 twenty-first *identifier*-keyed check would still not have moved BK-324 by a day.
 
 **A tempting T6 check, and why it is not the one we need.** The obvious relation is
 "every invariant enforced in Dafny must appear in the spec", i.e. `I ⊆ S`. That is
-a worthwhile check and § 8 step 2b proposes it. But note carefully that **it would
+a worthwhile check and § 9 step 2b proposes it. But note carefully that **it would
 not have caught facet 4.** Facet 4's behavior is absent from the spec *and*
 untested, and the item flags only a Dafny *coupling* to mind rather than an
 existing Dafny invariant. The claim lives in the Python implementation and nowhere
@@ -665,7 +666,7 @@ most projects lack entirely.
 - **Rehearsal is unscheduled** (§ 5, finding 5).
 - **Traceability efficacy is measured on adjacent outcomes only.** Not a void:
   maintenance speed, task correctness and defect-density correlation all have
-  studies (§ 9). What no study measures is **escaped-defect reduction**, which is
+  studies (§ 10). What no study measures is **escaped-defect reduction**, which is
   the outcome the mandate rests on. E2's value
   rests on the structural omission argument, not on measured defect reduction.
 
@@ -717,7 +718,7 @@ that it is. See S8.
 ---
 
 <a id="principles"></a>
-## 7.5 Substrate-independent design principles
+## 8. Substrate-independent design principles
 
 The sections above diagnose this repository. These are the transferable rules, and
 they are the generalizable output of the exercise — a reader who does not work on
@@ -746,7 +747,7 @@ indefinitely, which is why BK-324 is effort L (§ 5, finding 6).
 **S5. Put the detector on a path nobody can route around.** The best-evidenced
 principle here: the same checker changed nothing as an optional download and moved
 the numbers when embedded in review. Deployment position dominated detection power
-(§ 9). Corollary: an excellent optional checker is usually worth less than a
+(§ 10). Corollary: an excellent optional checker is usually worth less than a
 mediocre mandatory one.
 
 **S6. Distinguish tolerated from unnoticed, structurally.** Waiver registries and
@@ -781,7 +782,7 @@ is genuinely second.
 
 ---
 
-## 8. Plan of next steps
+## 9. Plan of next steps
 
 Proposed, not created. Each step names the gap it closes, the mechanism family it
 instantiates, and a rough size. Steps 1 to 4 are independent and can land in any
@@ -963,7 +964,7 @@ a natural companion — one enumerates spec coverage, the other enumerates
 
 ---
 
-## 9. Evidence ledger and method caveats
+## 10. Evidence ledger and method caveats
 
 **Method.** A deep-research harness ran six search angles, extracted claims, and
 adversarially verified them (three voters per claim, two refutations to kill). One
@@ -993,7 +994,7 @@ recording: the narrowing dropped the two mechanisms they support, leaving the
 evidence in place with nothing to attach to. Restoring the mechanisms was the
 correct fix, not deleting the rows.
 
-**One row still supports no claim in §§ 1 to 8:** the clinical-decision-support
+**One row still supports no claim in §§ 1 to 9:** the clinical-decision-support
 override figure. It is retained as provenance for the broad cross-discipline
 survey this document was narrowed from — that survey is not in this repository,
 so the row must stand on its own citation, which it now does. A reader should not
@@ -1043,7 +1044,7 @@ mechanical count over `sdd/traces/*.yml` on the date above.
 
 **Author's inference, not sourced:** the four-layer taxonomy of § 1, the tier
 table, the E5-versus-E6 scaling argument and its non-composition limit, the
-canonical-claim-set argument of § 2.1, the ranking in § 7, and the whole of § 8.
+canonical-claim-set argument of § 2.1, the ranking in § 7, and the whole of § 9.
 The three findings held most confidently are structural rather than empirical:
 that omission detection always reduces to a canonical enumerable claim set; that
 what distinguishes these disciplines is the enumeration being *derived* rather
@@ -1087,7 +1088,7 @@ compliance, so a gate applied loosely here would be the most quotable precedent
 in it.
 
 A fourth item was relocated in the final round: the **round-by-round review
-tables** in § 9. They were valuable during review and would read as noise in six
+tables** in § 10. They were valuable during review and would read as noise in six
 months — process residue whose authoritative home is the PR, not a durable
 artifact. The durable *lessons* stay; the change logs moved to PR #937. This is
 the same reasoning applied to this document's own history that § 2.1 applies to
