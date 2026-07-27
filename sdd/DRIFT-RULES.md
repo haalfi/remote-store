@@ -36,10 +36,11 @@ Placement, shape and longevity of the documents themselves are governed by the
 
 4. <a id="authority"></a>**Declare the authority rule per artifact pair, in
    writing, before the check exists.** [review-enforced]
-   Which side governs is a decision, not a fact. Declared so far: spec beats code
-   ([`000-process.md` Rule 3](000-process.md#rules)), backlog beats history
-   ([`CLAUDE.md` principle 5](../CLAUDE.md)), Dafny oracle beats test
-   ([`sdd/formal/README.md`](formal/README.md)). Add the pair you introduce.
+   Which side governs is a decision, not a fact. Declare it in the document that
+   owns the pair, next to the contract it arbitrates — [`000-process.md`
+   Rule 3](000-process.md#rules), [`CLAUDE.md` principles](../CLAUDE.md) and
+   [`sdd/formal/README.md`](formal/README.md) each carry theirs. Do not restate
+   them here: a second copy of a direction is a second thing to get backwards.
 
 5. <a id="mandatory-path"></a>**Put the detector on a path nobody can route
    around.** [review-enforced]

@@ -10,6 +10,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 - BK-320: Refresh the custom-backend guide's conformance-registration section to the registry-driven fixture system and add a CI drift gate keeping the guide in sync with the Backend ABC
 - BUG-235: Fix custom-backend guide snippets that broke at runtime (`list_files` missing `max_depth`, nonexistent `RegistryConfig.from_yaml` and `observe(hooks=)` APIs)
 - BK-317: Fix stale Context7 repo entry (folders cap, OneDrive tagline) and claim the docs-root entry
+- **Cross-artifact drift rules**: New `sdd/DRIFT-RULES.md` codifying nine rules for designing and reviewing a check that compares two descriptions of the same thing. Derived from `sdd/research/research-inconsistency-detection-multi-artifact.md`; `CLAUDE.md`, `CONTRIBUTING.md`, `sdd/CI-OPERATIONS.md` and the ripple-check updated to reference it
 
 ## [0.30.0] - 2026-07-19
 

@@ -15,6 +15,9 @@ have no other home in the repo. The gating push/PR test matrix and coverage
 lanes are merge gates, not maintenance guards, and live in
 [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
+For how a cross-artifact check should be *designed* rather than operated, see
+[`sdd/DRIFT-RULES.md`](DRIFT-RULES.md).
+
 ## Rules
 
 1. **Durable-TODO principle.** Every scheduled-maintenance guard emits a durable

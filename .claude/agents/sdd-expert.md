@@ -12,6 +12,7 @@ DOMAIN: sdd/ (specs, ADRs, RFCs, formal, process guides)
 
 FOUNDATION — read before evaluating (paths are repo-root-relative):
 - sdd/000-process.md, sdd/DESIGN.md
+- sdd/DRIFT-RULES.md (when the change adds or alters a cross-artifact check)
 - Specs and ADRs relevant to the task
 
 TASK: Provided in your invocation prompt. If it is missing or unclear, say so

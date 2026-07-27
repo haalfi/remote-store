@@ -81,6 +81,7 @@ Read this before starting. One line per trigger.
 | Version number                | `bump-my-version` (drives `pyproject` file list), then `hatch run gen-graph`; full checklist in [CONTRIBUTING § Phase 2](../CONTRIBUTING.md#phase-2) |
 | Source/test/spec counts       | README badge + CI coverage report (no manual table) |
 | New authoritative process doc in `sdd/` | [CLAUDE.md § Documentation framework](../CLAUDE.md#documentation-framework) (if part of the trio), [CONTRIBUTING § Authoritative Document Format](../CONTRIBUTING.md#authoritative-document-format) (Scope subsection within), sibling authority back-references, `.claude/skills/*/SKILL.md` foundation lists, `docs-src/explanation/design/_nav.yml`, and this ripple-check |
+| New or changed cross-artifact check | [`sdd/DRIFT-RULES.md`](DRIFT-RULES.md) — applies when a change adds a `check_*` gate, adds a second description of something already described, or sets how often a recurring check runs |
 
 <a id="detailed-checklist"></a>
 ### Detailed checklist
@@ -257,6 +258,13 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | (back-references in their Intent & Scope),                |
 |                            | `.claude/skills/*/SKILL.md` foundation lists,             |
 |                            | `docs-src/explanation/design/_nav.yml`, and this ripple-check |
+| **New or changed cross-artifact check** | [`sdd/DRIFT-RULES.md`](DRIFT-RULES.md) — the nine rules |
+|                            | Triggers: a new or changed `check_*` gate; a second     |
+|                            | description of something already described; a change to |
+|                            | how often a recurring check runs.                        |
+|                            | Rules 3, 4 and 8 are preconditions — a derived           |
+|                            | enumeration, a declared authority rule, verified         |
+|                            | independence — and are the ones a review misses most.    |
 
 ---
 

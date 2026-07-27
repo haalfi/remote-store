@@ -817,7 +817,7 @@ in the catalog runs only when someone opens a guide PR.
 
 **G-9. Independence is assumed and never verified.** E1's whole warrant is that the
 Dafny contract is an *independent* description of the same behavior. Nothing checks
-that it is. See S8.
+that it is. See [rule 8](../DRIFT-RULES.md#independence).
 
 ---
 
@@ -850,7 +850,16 @@ This section keeps the *argument*; that file carries the *statement*.
 Two of these carry consequences for this repository that the rules file does not
 repeat, because they are findings rather than rules.
 
-**Rule 8 has teeth here.** E1's entire warrant is that the Dafny contract is an
+**Rule 8 has teeth here, and the mechanism matters.** Knight & Leveson had 27
+versions of one program written independently from a common specification and ran
+a million tests: joint failures came in far above what independence predicts.
+The cause is not carelessness but the shared input — **a specification that
+handles a case badly misleads everyone who reads it**, so independent *authors*
+still produce correlated *errors*. Every mechanism whose power rests on
+independence inherits this: E1's verified reference, E3's canonical source, E5's
+parity pairs.
+
+Applied here: E1's entire warrant is that the Dafny contract is an
 *independent* description of the same behavior. If a `.dfy` postcondition was
 written by reading the Python implementation rather than the Markdown spec, the
 oracle certifies nothing except that the transcription was faithful — a
@@ -1021,7 +1030,8 @@ an exception where the ranking is most flattering to the recommendation.
 **Cadence, since "S to define" is otherwise empty.** Proposed: **once per minor
 release, or after any change to the `Backend` ABC or the conformance suite,
 whichever comes first** — the two events that can invalidate the guide. Anchoring
-it to contract change rather than to the calendar follows **S9** and gives the
+it to contract change rather than to the calendar follows
+[rule 9](../DRIFT-RULES.md#period) and gives the
 step actual content beyond the word "scheduled".
 
 ### Step 7: Publish the characteristic-accountability record
@@ -1099,7 +1109,7 @@ is a reasonable backlog question and is not decided here.
 argument:** LVS and equivalence checking underwrite § 3 E1; AS9102 Form 3
 underwrites § 3 E2; SWE-064 underwrites § 5 finding 4; statcheck and double entry
 underwrite the honesty finding; MIL-HDBK-61A and Bosché are adjacent to E8 and the
-as-built deferral; **Knight & Leveson underwrites S8** and **ACFE 2024 underwrites
+as-built deferral; **Knight & Leveson underwrites [rule 8](../DRIFT-RULES.md#independence)** and **ACFE 2024 underwrites
 E11**. Both were orphaned in an earlier revision, and the reason is worth
 recording: the narrowing dropped the two mechanisms they support, leaving the
 evidence in place with nothing to attach to. Restoring the mechanisms was the
