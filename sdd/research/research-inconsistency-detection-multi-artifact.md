@@ -22,10 +22,9 @@ what transfers to any multi-artifact process (§ 8).
 **Context:** We maintain many parallel descriptions of one library: Markdown
 specs, Dafny contracts, TLA+ invariants, the implementation, the conformance
 suite, docstrings, guides, `FEATURES.md`, the CHANGELOG, the backlog, and the
-ripple-check. Twenty lint gates plus a preflight family, of which roughly half
-reconcile an artifact *pair* (§ 4b lists eleven) while the rest are single-artifact
-rule checks, already compare pieces of
-that set. BK-324 nevertheless records four descriptions of the backend contract
+ripple-check. Twenty lint gates plus a preflight family, of which
+seven reconcile an artifact *pair* while the rest are single-artifact rule checks,
+already compare pieces of that set. BK-324 nevertheless records four descriptions of the backend contract
 disagreeing with each other, undetected by any gate, found by a human writing a
 backend against the guide. This document asks what detection mechanisms exist,
 why ours did not fire, and what to do about it.
@@ -292,7 +291,7 @@ to it.
 
 ## 3. Mechanism catalog
 
-Ten families survive the restriction. Ranked by detection strength, which here
+Eleven families survive the restriction. Ranked by detection strength, which here
 means: does it catch the whole class, and does it **attribute**?
 
 | # | Mechanism | Engineering instance | Our instance |
@@ -309,7 +308,7 @@ means: does it catch the whole class, and does it **attribute**?
 | **E10** | Rehearsal / build-a-real-instance | Commissioning, first-article production | The custom-backend guide walkthrough (ad hoc) |
 | **E11** | User-sourced discrepancy reporting | Defect/snag reporting, confidential incident reporting | Issue tracker; the trace corpus's `outcome: misleading` tags |
 
-Three of these deserve detail.
+Five of these deserve detail.
 
 ### E1 is the strongest mechanism either discipline has
 
@@ -561,9 +560,20 @@ new violation can be parked by editing `_BASELINE`. That edit is visible in revi
 and is the point where a human must refuse new debt; the check cannot make that
 judgement."
 
+**And the repo has already booked the work to close it.** `sdd/BACKLOG.md` ID-207
+("Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement",
+effort L) logs four hardening steps, two of which are exactly the bounds stated
+above: item 4 bars `_BASELINE` growth mechanically, and item 2 is
+"**clause granularity, not ID granularity**" — which is this document's headline
+diagnosis, logged before this document was written. That changes finding 2's
+conclusion in one respect worth stating: "stated bound, therefore correctly held"
+and "stated bound, **and we have already decided to remove it**" are different
+claims, and only the second matches the backlog.
+
 So the honest characterization of our best T6 mechanism is: **a set difference over
 the intersection of two derived enumerations, minus a reviewer-maintained
-allow-list.** That is a category-1 bound, the script states it, and an earlier
+allow-list, with the removal of both limits already logged as ID-207.** That is a
+category-1 bound, the script states it, and an earlier
 draft of this document omitted it — which inverts the point made two paragraphs
 below about stated bounds being the correct way to hold such a mechanism.
 
@@ -583,17 +593,27 @@ The accurate finding is therefore narrower and more useful:
 > `InvalidPath` on wrong-type access" is a sub-ID clause inside a section, so
 > nothing enumerates it and no set difference can reach it.
 
-### Finding 3: the formal layer's decoupling argument has a gap
+### Finding 3: the decoupling argument's *form* is unsound past the pair it was written for
 
 [`sdd/formal/README.md`](../formal/README.md) argues that Dafny and TLA+ need no
 joint proof obligation because both are bound to the same Markdown spec, "so a
-drift surfaces as a verification failure on one side or the other". Facet 3 is a
-counterexample. The Dafny model and the DEPTH-003 tests agree **with each other**
-and disagree with the prose. Two mechanical sides in agreement produce two green
-checks, and the drift is invisible precisely *because* the coupling is semantic.
+drift surfaces as a verification failure on one side or the other".
 
-The argument holds when drift moves one mechanical side. It does not hold when the
-prose is the side that moved. This is worth recording in the formal README rather
+**Be exact about what facet 3 does and does not refute.** The README's claim is
+scoped to **Dafny ↔ TLA+**; facet 3 is **Dafny ↔ DEPTH-003 conformance tests**, and
+TLA+ appears nowhere in it. So facet 3 is not a counterexample to that paragraph,
+and an earlier draft that presented it as one was reaching. What facet 3 does show
+is that the argument's *form* fails: the Dafny model and the DEPTH-003 tests agree
+**with each other** and disagree with the prose, so two mechanical sides in
+agreement produce two green checks and the drift is invisible precisely *because*
+the coupling is semantic.
+
+Generalized, and this is the defensible claim: **"both sides are bound to the same
+prose, so drift surfaces on one of them" holds when drift moves a mechanical side,
+and fails when the prose is the side that moved** — for any such pair, including
+Dafny ↔ TLA+, though we have no observed instance of that particular pair. Weaker
+than the original phrasing and still enough to justify the amendment, which is
+worth recording in the formal README rather
 than leaving as an unstated boundary.
 
 ### Finding 4: facet 4 is an orphan-realization defect
@@ -662,7 +682,8 @@ measured at the head of this branch; step 3's generated report supersedes it.
 
 The column is the two tag types **combined**; the sentence above reports them
 separately, and spec 029's four happen to be four `misleading` and zero `unclear`,
-so the two readings coincide there and nowhere else signals which metric is shown.
+so for that row alone the combined and single-metric readings coincide. Nothing
+else in the table signals which metric a given cell reports.
 Two entries were missing from an earlier version of this table, both dropped at a
 tie by an approximate extraction. Their return changes what it says: with
 `_azure.py` included, **three backend implementations sit in the top seven**, so
@@ -827,11 +848,21 @@ enumeration's granularity stops (§ 5 synthesis).
 exists.** Detection without a pre-agreed authority rule stalls in class H
 indefinitely, which is why BK-324 is effort L (§ 5, finding 6).
 
-**S5. Put the detector on a path nobody can route around.** The best-evidenced
-principle here: the same checker changed nothing as an optional download and moved
-the numbers when embedded in review. Deployment position dominated detection power
-(§ 10). Corollary: an excellent optional checker is usually worth less than a
-mediocre mandatory one.
+**S5. Put the detector on a path nobody can route around.** Journals that ran a
+p-value checker *inside peer review* saw a steeper decline in reporting
+inconsistencies than matched controls (§ 10). State the evidence precisely,
+because an earlier draft of this principle did not: that is a quasi-experimental
+**association**, two treatment journals against two controls, and the authors say
+"is related to". It does not license "deployment position dominates detection
+power", which is what the earlier draft claimed — the category-2 construct-validity
+slip the honesty finding exists to prevent, committed against its own example.
+
+The *contrast* that makes the principle vivid — the same checker freely available
+for years while the corpus stayed broken — is **inference, not a measured arm**:
+no study here reports an optional-availability control. So S5 is a well-motivated
+design rule with one supporting quasi-experiment, not the document's best-evidenced
+finding. Corollary, still worth stating: an excellent optional checker is
+plausibly worth less than a mediocre mandatory one.
 
 **S6. Distinguish tolerated from unnoticed, structurally.** Waiver registries and
 `[~]` markers are what let an organization afford to keep looking; without them,
@@ -908,9 +939,20 @@ divergence. Model it on `check_docstring_parity.py`, which already solves the
 **Closes:** G-3, § 2.1's bottleneck, and BK-324 facet 4 concretely ·
 **Mechanism:** E2 · **Size:** M (2a) + S (2b)
 
-This is the T6 half of the § 5 synthesis and the strategically important step.
-Framing matters: per the § 5 synthesis this is **not building an enumeration
-discipline from nothing**. Five gates already run derived-enumeration set
+**This step largely *is* `sdd/BACKLOG.md` ID-207, which predates this document.**
+ID-207 ("Strengthen `check_formal_trace.py` from citation hygiene to clause
+enforcement", effort L) already logs four hardening steps against the same script.
+The mapping, so nobody re-derives it mid-flight: **step 2b ≈ ID-207 item 1**
+(derive D mechanically; fail on an untagged `ensures`), and **the clause-granularity
+half of step 2a ≈ ID-207 item 2**, which is this document's headline diagnosis
+already written down. ID-207 item 3 (a marker cites but does not assert) is the T5
+gap finding 2 names, and item 4 (bar `_BASELINE` growth) is the suppression-set
+bound. What this document adds is not the work but the *framing*: why clause
+granularity is the binding constraint rather than one hardening step among four,
+and the `Impl ⊆ S` direction, which ID-207 does not cover.
+
+Framing matters otherwise too: per the § 5 synthesis this is **not building an
+enumeration discipline from nothing**. Five gates already run derived-enumeration set
 differences, and three of them (`check_custom_backend_guide.py`,
 `check_ci_inventory.py`, `check_backend_order.py`) already target prose. Step 2
 extends that discipline in two directions it does not yet cover: *toward the
@@ -1149,7 +1191,8 @@ is no longer arguing into a vacuum.
 **Repository claims** in §§ 4 to 7 are from reading source in this session: script
 docstrings, `pyproject.toml` script lists, `sdd/000-process.md`,
 `sdd/formal/README.md`, and the trace corpus. The trace tag counts are a
-mechanical count over `sdd/traces/*.yml` on the date above.
+mechanical count over `sdd/traces/[!_]*.yml` — `check_traces.py`'s glob, not the
+looser one an earlier draft used — on the date above.
 
 **Author's inference, not sourced:** the four-layer taxonomy of § 1, the tier
 table, the E5-versus-E6 scaling argument and its non-composition limit, the

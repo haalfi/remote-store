@@ -110,6 +110,11 @@ and the highest ID already in this file, then take the next integer. Run
   Surfaced in the PR #663 review. Steps are independent and may split
   into separate IDs. No priority until the gate is shown to miss a real
   regression; promote to BK-prefix at that point.
+  Related: [research](research/research-inconsistency-detection-multi-artifact.md)
+  § 9 step 2 — argues item 2 (clause granularity) is the *binding* constraint
+  rather than one hardening step among four, since our omission detection is
+  identifier-keyed and BK-324's claims are sub-ID clauses. Step 2b maps to item 1;
+  the `Impl ⊆ S` direction it proposes is not covered here.
 
 ---
 
