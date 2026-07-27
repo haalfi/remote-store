@@ -104,4 +104,4 @@ govern whether it **survives a schedule**.
 Derived from
 [`sdd/research/research-inconsistency-detection-multi-artifact.md`](research/research-inconsistency-detection-multi-artifact.md)
 § 8, which carries the argument, the cross-discipline evidence and the graded
-citations behind each rule.
+citations behind each rule as `S1`–`S9`, in the same order as the rules above.
