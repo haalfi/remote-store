@@ -30,33 +30,76 @@ disagreeing with each other, undetected by any gate, found by a human writing a
 backend against the guide. This document asks what detection mechanisms exist,
 why ours did not fire, and what to do about it.
 
-> **Central honesty finding.** Detection mechanisms fall into three epistemic
-> categories, and conflating them is the most common error in this space.
+> **Central honesty finding.** The three categories below are not a taxonomy of
+> *what* a check catches. They are a taxonomy of **why you are entitled to believe
+> it catches anything** — the source of warrant.
 >
-> 1. **Provable bound.** The mechanism's detection power is *derivable*, not
->    measured: LVS (graph isomorphism over extracted netlists), a discharged
->    Dafny postcondition, a type system, double-entry's nullspace. These need no
->    efficacy study, because what they catch and what they miss follows from
->    their construction. The obligation is to *state the bound*, since a
->    mechanism whose blind spot is undocumented will be trusted outside its range.
-> 2. **Measured efficacy.** Mutation testing has real empirical support. statcheck
->    embedded in peer review has *quasi-experimental evidence of association* — the
->    authors' own framing is "is related to", with two treatment journals against
->    two controls, so calling it measured efficacy would upgrade their claim. The
->    measurements in this category are narrow, high precision over a slice, not
->    broad claims about defect reduction.
-> 3. **Mandated, unmeasured.** Requirements traceability, safety cases,
->    attestation regimes. Here institutionalization is strong evidence that a
->    mechanism is affordable and politically survivable, and weak evidence that
->    it works. Where efficacy in this category *has* been measured, it usually
+> > **Warrant by construction, by measurement, or by mandate. Only the first two
+> > are about the mechanism.**
+>
+> 1. **Warrant by construction.** Detection power is *derivable*, not measured:
+>    LVS (graph isomorphism over extracted netlists), a discharged Dafny
+>    postcondition, a type system, double entry's nullspace. No efficacy study is
+>    needed, because what the mechanism catches and misses follows from how it is
+>    built. **The obligation is to state the bound.** This is exactly the
+>    *soundiness* argument: practical static analyses are deliberately unsound, and
+>    the sin is not the unsoundness but leaving it undocumented so users
+>    extrapolate past it. Livshits et al., "In Defense of Soundiness: A Manifesto",
+>    *CACM* 58(2), 2015, which asks authors to "explain the general implications of
+>    their unsoundness".
+> 2. **Warrant by measurement.** Someone ran a study. The support is real and
+>    **narrow**, and the risk is a *construct-validity* slip: reading a
+>    measurement of one thing as a measurement of another. Mutation testing is the
+>    clean example: Just et al. (*FSE* 2014, 357 real faults across five projects)
+>    establish a statistically significant **correlation between mutant detection
+>    and real-fault detection**, independent of coverage. That is not a
+>    defect-reduction claim, and citing it as one is the slip. statcheck in peer
+>    review is weaker still: quasi-experimental *association*, two treatment
+>    journals against two controls, and the authors say "is related to".
+> 3. **Warrant by mandate.** Requirements traceability, safety cases, attestation
+>    regimes. A standard requires it, so it happens. Classically this is warrant by
+>    *testimony* — except the witness never looked. Institutionalization is strong
+>    evidence that a mechanism is affordable and politically survivable, and weak
+>    evidence that it works; where efficacy here *has* been measured, it usually
 >    **underperforms** its reputation.
 >
-> The trap is reading category 3 as category 1, i.e. treating "the standard
-> requires it" as "its coverage is known". Note also that being a mandatory gate
-> is not evidence of efficacy: a tape-out cannot pass without LVS by
-> construction, which tells you LVS is a gate, not that it is effective. LVS's
-> real warrant is category 1. Treat § 3 as a design vocabulary annotated with
-> which category each mechanism sits in, not a league table.
+> **Mapping onto vocabulary the reader may already have:** categories 1 and 2 are
+> *product* evidence and category 3 is *process* evidence, the split certification
+> practice already makes (DO-178C, and DO-333 for the formal-methods route that is
+> category 1 in its purest form). The classical epistemology split is
+> deduction / induction / testimony, in the same order.
+>
+> **The failure mode** is treating a mandate-warranted mechanism as if it were
+> measurement-warranted, or extending a construction-warranted guarantee past the
+> construction that produced it. Both show up in this document's own drafts, twice
+> each (§ 10). Note too that being a mandatory gate is not evidence of efficacy: a
+> tape-out cannot pass without LVS by construction, which tells you LVS is a gate,
+> not that it works. LVS's real warrant is category 1.
+>
+> **Where category 3 goes wrong has a name, and it is not a synonym for category 3.**
+> Meyer & Rowan's *ceremonial conformity* (1977) describes organizations adopting
+> structures for legitimacy and then decoupling them from the technical core,
+> adopted, in their words, not because such forms are necessarily connected to more
+> effective outcomes. That is the *failure mode category 3 is exposed to*, not the
+> category itself: a mandated mechanism may work perfectly well and simply never
+> have been measured. Collapsing the two would assert that everything mandated is
+> ceremony, which is the same over-claim this finding exists to prevent. The
+> canonical empirical instance is the WHO surgical safety checklist, which produced
+> striking results in observational studies and then failed to replicate across 101
+> Ontario hospitals (Urbach et al., *NEJM* 2014: complications 3.86% → 3.82%,
+> 30-day mortality 0.71% → 0.65%, neither significant).
+>
+> **What is ours rather than borrowed** `[analysis, unsourced]`: the inversion in
+> category 3. Neo-institutional theory reads institutionalization descriptively,
+> from outside, as a fact about organizations. Read as a *decision rule for a
+> practitioner choosing what to trust*, it says something sharper: that a
+> mechanism's institutional status is evidence about **the institution's
+> constraints**, not about the mechanism. Affordability and political survivability
+> are what institutionalization measures. Efficacy is a separate question that
+> usually has not been asked.
+>
+> Treat § 3 as a design vocabulary annotated with which warrant each mechanism
+> carries, not a league table.
 
 ---
 
@@ -200,7 +243,13 @@ counterexamples do not defeat the argument. A checklist is a second description.
 Someone enumerated it by hand, once; it drifts against the thing it enumerates;
 and it therefore needs its own consistency maintenance. A discipline that solves
 omission with checklists has bought a completeness oracle at the price of one more
-artifact in the inconsistency problem. When the enumeration is derived — every
+artifact in the inconsistency problem.
+
+The surgical checklist is also a caution about reading adoption as efficacy: it
+produced striking results in observational studies, was adopted worldwide on that
+basis, and then did not replicate across 101 Ontario hospitals (Urbach et al.,
+*NEJM* 2014). It remains a genuine completeness *device* — the counterexample
+stands — while being a poor advertisement for parallel-maintained enumeration. When the enumeration is derived — every
 ballooned characteristic read off the drawing, every section ID read off the spec
 file — it cannot drift against its source, because it *is* its source.
 
@@ -1061,6 +1110,10 @@ false-positive economics, nothing more.
 | statcheck: ~half of articles **with statcheck-detectable APA-formatted NHST results** carry an inconsistency, ~1 in 8 a gross one | Nuijten et al. 2016, *Behavior Research Methods* |
 | statcheck **in peer review** is *associated with* a steeper decline than matched controls (preregistered pretest-posttest quasi-experiment, 2 treatment journals vs 2 controls, 7,000+ articles). Authors' own framing is "is related to" and "can be" | Nuijten & Wicherts 2024, *AMPPS* |
 | statcheck's own accuracy is **contested**: 96–99.9% on results it detects (Nuijten et al. 2017) vs ~60% precision and ~61% recognition (Schmidt, arXiv:1610.01010); detection is tied to strict APA formatting (Böschen 2024, arXiv:2408.07948). Different denominators; the critiques are preprints | as cited |
+| Practical static analyses are deliberately unsound ("soundy"); the stated obligation is to explain the implications of that unsoundness rather than to eliminate it | Livshits, Sridharan, Smaragdakis et al., "In Defense of Soundiness: A Manifesto", *CACM* 58(2), 2015 |
+| Mutation testing's support is a statistically significant **correlation** between mutant detection and real-fault detection, independent of coverage — 357 real faults, 5 projects, ~321k LOC. Not a defect-reduction result | Just, Jalali, Inozemtseva, Ernst, Holmes & Fraser, *FSE* 2014 |
+| Organizations adopt formal structures for legitimacy and decouple them from the technical core; adoption is driven by institutional myth rather than by demonstrated effectiveness | Meyer & Rowan, "Institutionalized Organizations: Formal Structure as Myth and Ceremony", *AJS* 83, 1977, 340–363 |
+| WHO surgical safety checklist did not replicate at scale: 101 Ontario hospitals, complications 3.86% → 3.82%, 30-day mortality 0.71% → 0.65%, neither significant, against striking prior observational results | Urbach et al., *NEJM* 2014 |
 | Knight & Leveson: independence assumption rejected; 27 versions, 1,000,000 tests, correlated failures | Knight & Leveson 1986 |
 | A balance identity detects that **one** error occurred **without localizing it**, and is blind to offsetting pairs (distance-2 parity check: detects one, corrects none). Detection-**plus-correction** comes from the paper's parity-check-matrix construction, not from the trial balance | Arya, Fellingham, Schroeder & Young, *Double Entry Bookkeeping and Error Correction*, Ohio State working paper, 1996 |
 | Pooled override of drug-drug-interaction alerts **90% (95% CI 85–95)** across 16 studies, **I² = 100%**, per-study range ~46–98% | Felisberto et al., *Health Informatics Journal* 30(2), 2024, doi:10.1177/14604582241263242 |
