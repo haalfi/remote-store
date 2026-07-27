@@ -925,7 +925,7 @@ rest are patches, however worthwhile:
 A reasonable first slice is step 3 plus step 1 for immediate value, then step 2a
 as the real work.
 
-### Step 1 — Parity gate for the Dafny twin classes
+### Step 1: Parity gate for the Dafny twin classes
 **Closes:** G-1 · **Mechanism:** E1/E5 · **Size:** M
 
 Add `scripts/check_dafny_twin_parity.py`: normalize each method body of
@@ -935,7 +935,7 @@ divergence. Model it on `check_docstring_parity.py`, which already solves the
 "identical versus deliberately divergent" classification problem. Wire into
 `lint`. Record in the formal README that twin drift is now gated.
 
-### Step 2 — Bidirectional traceability (the canonical claim space)
+### Step 2: Bidirectional traceability (the canonical claim space)
 **Closes:** G-3, § 2.1's bottleneck, and BK-324 facet 4 concretely ·
 **Mechanism:** E2 · **Size:** M (2a) + S (2b)
 
@@ -991,7 +991,7 @@ coordinate has no prose counterpart, fails. This polices the formal layer's
 honesty and would catch a *different* drift than 2a. Do it second and do not
 mistake it for the facet-4 fix.
 
-### Step 3 — Aggregate trace outcome tags
+### Step 3: Aggregate trace outcome tags
 **Closes:** G-4 · **Mechanism:** E11 (not E7 — see § 3) · **Size:** S
 
 Add `scripts/report_trace_outcomes.py` producing a ranked table of references by
@@ -1009,7 +1009,7 @@ attribution imprecision that caused a round trip in this document's own review.
 The schema guarantees exactness; only a sloppy reader loses it. That also makes
 this step smaller than S suggests — the data is committed and exact.
 
-### Step 4 — Generate spec 037's backend table
+### Step 4: Generate spec 037's backend table
 **Closes:** part of G-2, and BK-324 facet 3 · **Mechanism:** E3 · **Size:** S/M
 
 A hand-maintained table making per-backend behavioral claims is the artifact class
@@ -1018,7 +1018,7 @@ that must never be hand-maintained; we already generate `FEATURES.md` from
 conformance results, or delete it and link to the generated surface. Then sweep
 for other hand-written per-backend claim tables and treat each the same way.
 
-### Step 5 — Decide BK-324's four rules, with an attribution rule first
+### Step 5: Decide BK-324's four rules, with an attribution rule first
 **Closes:** the BK-324 blockage · **Mechanism:** attribution · **Size:** L
 
 The item is L because of class H, so unblock the attribution before the content.
@@ -1041,7 +1041,7 @@ undeclared divergence into a declared one, which is our existing pattern.
 semantics and may be breaking. Found via docs, but arguably not a docs item, and
 the filing risks it reading as cosmetic.
 
-### Step 6 — Schedule the rehearsal
+### Step 6: Schedule the rehearsal
 **Closes:** G-6 · **Mechanism:** E10 · **Size:** S to define, M per run
 
 Make "build a backend against the guide, from scratch, without help" a scheduled
@@ -1060,7 +1060,7 @@ whichever comes first** — the two events that can invalidate the guide. Anchor
 it to contract change rather than to the calendar follows **S9** and gives the
 step actual content beyond the word "scheduled".
 
-### Step 7 — Publish the characteristic-accountability record
+### Step 7: Publish the characteristic-accountability record
 **Closes:** G-5 · **Mechanism:** E2 · **Size:** S
 
 Render `check_formal_trace.py`'s coverage matrix as a generated artifact at
@@ -1068,7 +1068,7 @@ release time: every spec ID, its verification evidence (test marker, Dafny tag,
 TLA+ invariant), and its status. Makes "what was verified, and by what" answerable
 historically rather than only at HEAD.
 
-### Step 8 — Derive the artifact-pair inventory instead of hand-maintaining it
+### Step 8: Derive the artifact-pair inventory instead of hand-maintaining it
 **Closes:** the § 4b reflexive gap · **Mechanism:** E3 · **Size:** S
 
 § 4b's inventory of which artifact pairs are checked was assembled by hand and the
