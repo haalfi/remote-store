@@ -36,9 +36,12 @@ why ours did not fire, and what to do about it.
 >    efficacy study, because what they catch and what they miss follows from
 >    their construction. The obligation is to *state the bound*, since a
 >    mechanism whose blind spot is undocumented will be trusted outside its range.
-> 2. **Measured efficacy.** Mutation testing, and statcheck embedded in peer
->    review, have real empirical support. The measurements are narrow — high
->    precision over a slice — not broad claims about defect reduction.
+> 2. **Measured efficacy.** Mutation testing has real empirical support. statcheck
+>    embedded in peer review has *quasi-experimental evidence of association* — the
+>    authors' own framing is "is related to", with two treatment journals against
+>    two controls, so calling it measured efficacy would upgrade their claim. The
+>    measurements in this category are narrow, high precision over a slice, not
+>    broad claims about defect reduction.
 > 3. **Mandated, unmeasured.** Requirements traceability, safety cases,
 >    attestation regimes. Here institutionalization is strong evidence that a
 >    mechanism is affordable and politically survivable, and weak evidence that
@@ -238,20 +241,32 @@ Three of these deserve detail.
 
 ### E1 is the strongest mechanism either discipline has
 
-Chip design does not tape out until layout-versus-schematic returns zero. LVS
-extracts a netlist from the *realization* by tracing connectivity through metal
-layers and vias, then compares it device-by-device and node-by-node against the
-netlist from the *intent*. Unmatched nodes are reported individually for
-debugging, and device properties are compared against a configured **tolerance**,
-with out-of-tolerance reported as a property error. Alongside it, formal
-equivalence checking proves bit-exact correspondence between RTL and the
-synthesized gate netlist, on the reasoning that every synthesis transformation
-risks the netlist no longer implementing the RTL intent.
+LVS-clean is a near-universal foundry prerequisite for tapeout — waiver-with-
+sign-off in practice rather than an unconditional zero. LVS extracts a netlist
+from the *realization* by tracing connectivity through metal layers and vias, then
+compares it device-by-device and node-by-node against the netlist from the
+*intent*. Unmatched nodes are reported individually for debugging, and device
+properties **can be configured** to compare against a tolerance, with
+out-of-tolerance reported as a property error. Alongside it, equivalence checking
+compares RTL against the synthesized gate netlist, on the reasoning that every
+synthesis transformation risks the netlist no longer implementing the RTL intent.
 
-Why it is the gold standard: it is the only mechanism in either discipline that
-compares two *independently authored* descriptions across a domain boundary,
-mechanically, exhaustively, **and with localization**. Not "these disagree" but
-"this node differs".
+**State the bounds, since this section is the honesty finding's category-1
+exemplar and a misstated bound here would be self-refuting.** Equivalence checking
+proves *combinational* equivalence at **matched compare points** (registers,
+primary output ports, black-box input pins), conditional on a 1:1 state-element
+correspondence. Black-box contents are not verified, their outputs being treated
+as primary inputs; unmatched compare points are reported rather than folded into a
+global proof; inconclusive results from timeout or complexity are an ordinary
+outcome; and sequential transformations such as retiming or state re-encoding put
+the comparison outside combinational equivalence checking entirely. "Bit-exact
+correspondence", which an earlier draft asserted, is blog phrasing and overstates
+all of that.
+
+Why the family is still the gold standard: within those bounds it is the only
+mechanism in either discipline that compares two *independently authored*
+descriptions across a domain boundary, mechanically, exhaustively, **and with
+localization**. Not "these disagree" but "this node differs".
 
 **We run a weaker relative of this, and the difference matters.** An earlier draft
 called the `DafnyOracleBackend` our LVS, which over-claimed. LVS compares two
@@ -273,11 +288,21 @@ misreading warned about in the honesty finding.
 
 ### E2 is the answer to omission
 
-AS9102 requires an inspection drawing on which every characteristic carries a
-uniquely numbered balloon, and Form 3 lists every design characteristic beside its
-actual measured result. Section 5.2 requires verification that every design
-characteristic requirement is accounted for, uniquely identified, and has
-inspection results traceable to each unique identifier.
+AS9102's Form 3, "Characteristic Accountability, Verification and Compatibility
+Evaluation", carries every design characteristic beside its requirement, its
+measured result, and a unique identifier. The clause language — every design
+characteristic requirement accounted for, uniquely identified, with inspection
+results traceable to each unique identifier — traces to **AS9102A § 5.2**; Rev C
+(2023) renumbers Form 3's fields, so cite the revision rather than a bare section
+number.
+
+Two precision notes, because the mechanism is easy to over-describe. What the
+standard mandates is **unique identification and traceability**, satisfiable by a
+balloon number "or similar identifier" — the ballooned drawing is the common
+method, not the requirement, and sources asserting otherwise are FAI-tool vendors.
+And FAI scope excludes procured standard catalog hardware and deliverable
+software, so "every characteristic" holds *within FAI scope*. Neither weakens the
+pattern being borrowed.
 
 That is a completeness oracle at T6. It works because the characteristic set is
 mechanically enumerable from the authoritative artifact. `check_spec_marks.py`
@@ -359,7 +384,9 @@ The inventory below was **assembled by hand for this document**, because no
 canonical one exists. That is itself a finding, and it is § 2.1 applied one level
 up: we have no enumeration of *which artifact pairs are checked*, so the checking
 layer has exactly the defect this document diagnoses in the specification layer.
-The table will drift, and nothing will notice.
+The table will drift, and nothing will notice — which is why § 8 step 8 proposes
+deriving it from the `check_*.py` docstrings rather than leaving the gap named and
+unaddressed.
 
 | Pair | Domain | Current detection |
 |---|---|---|
@@ -452,12 +479,17 @@ than leaving as an unstated boundary.
 
 ### Finding 4: facet 4 is an orphan-realization defect
 
-Our characteristic accountability runs spec → test. NASA's SWE-059 requires
-*bidirectional* traceability on the explicit rationale that the two directions
-catch structurally different defects: design elements not fulfilled in code, and
-source code with no parent design element. We have direction one. Facet 4 is a
-direction-two defect: a convention enforced by `Store`, defensively guarded by
-every backend, in no spec, untested.
+Our characteristic accountability runs spec → test. NASA's **SWE-064**
+(bidirectional traceability between software *design and code* — an earlier draft
+cited SWE-059, which is requirements ↔ design and so the wrong direction for this
+finding) states the rationale explicitly: the two directions catch structurally
+different defects, namely design elements not fulfilled in the code, and source
+code with no parent design element. Note that NPR 7150.2 Rev C and handbook
+Ver C-D consolidate these into **SWE-052**, so a bare SWE-064 cite is current only
+against Rev A-B.
+
+We have direction one. Facet 4 is a direction-two defect: a convention enforced by
+`Store`, defensively guarded by every backend, in no spec, untested.
 
 ### Finding 5: BK-324 was found by rehearsal, not by a gate
 
@@ -477,15 +509,18 @@ Our declared attribution rules do not cover prose vs Dafny vs conformance.
 ### Finding 7: the trace corpus already named the culprits
 
 Across 257 traces we have recorded **166 `misleading` and 19 `unclear`** outcome
-tags, each attributed to a file. (An earlier draft said 258: the count used
-`sdd/traces/*.yml`, one character looser than `check_traces.py`'s
-`sdd/traces/[!_]*.yml`, and so counted `_schema.yml` as a trace. Step 3's
-aggregator should reuse that gate's glob rather than re-derive it, or it inherits
-the same off-by-one. A mechanical count miscounted, in a document arguing for
-mechanical counts.) The most-cited, **measured on this document's
-date and not maintained thereafter** — step 3 proposes the generated report that
-becomes the authoritative version of this table, at which point the numbers below
-are superseded rather than merely stale:
+tags, 185 combined. (An earlier draft said 258: the count used `sdd/traces/*.yml`,
+one character looser than `check_traces.py`'s `sdd/traces/[!_]*.yml`, and so
+counted `_schema.yml` as a trace.)
+
+**Attribution here is structural, not heuristic.** `_schema.yml` makes `file` a
+required property of every step, with `outcome` a sibling and
+`additionalProperties: false`, so each tag is attached to exactly one file by the
+schema. A YAML parse gives exact counts — a point worth making because an
+intermediate draft *softened* these numbers on the strength of a grep-derived
+bound, which was an artifact of the tool rather than a property of the data.
+Table measured on this document's date and not maintained thereafter; step 3
+proposes the generated report that supersedes it:
 
 | Count | Reference |
 |---|---|
@@ -495,16 +530,21 @@ are superseded rather than merely stale:
 | 6 | `sdd/CLAUDE-REFERENCE.md` |
 | 6 | `sdd/BACKLOG-DONE.md` |
 | 5 | `CONTRIBUTING.md` |
+| 5 | `src/remote_store/backends/_azure.py` |
+| 4 | `sdd/audits/audit-014-grandfathered-tests-allow-list.md` |
 | 4 | [`sdd/specs/029-async-store-backend-api.md`](../specs/029-async-store-backend-api.md) |
 
-BK-324's header reads `spec: 003, 029, 037`. **Spec 029 was tagged misleading
-repeatedly before BK-324 was written.** Treat the per-file counts as approximate:
-attribution here is a heuristic that walks back from each `outcome:` tag to the
-nearest preceding `file:` key, and independent search bounds spec 029's count to
-between two and five rather than confirming four. The imprecision is itself the
-argument for step 3 — the signal exists, attributed and committed, and nothing
-aggregates it reliably. A description that repeatedly misleads a reader is a drift
-detector with attribution already attached, and we are discarding it.
+Two entries were missing from an earlier version of this table, both dropped at a
+tie by an approximate extraction. Their return changes what it says: with
+`_azure.py` included, **three backend implementations sit in the top seven**, so
+the misleading descriptions cluster in backend code at least as much as in process
+docs.
+
+BK-324's header reads `spec: 003, 029, 037`. **Spec 029 carries exactly four
+`misleading` tags, all predating BK-324.** The signal existed, attributed and
+committed, and nothing aggregates it — that absence, not any imprecision in the
+data, is the argument for step 3. A description that repeatedly misleads a reader
+is a drift detector with attribution already attached, and we are discarding it.
 
 ### Synthesis: the failure is a tier mismatch, not a missing detector
 
@@ -577,7 +617,10 @@ most projects lack entirely.
   tolerance; GD&T makes acceptable variation part of the spec. We mostly treat
   every difference as pass/fail, with tolerances buried in check implementations.
 - **Rehearsal is unscheduled** (§ 5, finding 5).
-- **Traceability efficacy is unevidenced**, here and in the literature. E2's value
+- **Traceability efficacy is measured on adjacent outcomes only.** Not a void:
+  maintenance speed, task correctness and defect-density correlation all have
+  studies (§ 9). What no study measures is **escaped-defect reduction**, which is
+  the outcome the mandate rests on. E2's value
   rests on the structural omission argument, not on measured defect reduction.
 
 ---
@@ -667,15 +710,28 @@ the one that closes facet 4**:
 
 **2a. `Impl ⊆ S` — enforced behavior must have a parent spec section.** Extend
 `check_formal_trace.py` (or add a sibling) with the implementation direction. The
-tractable shape is a **heuristic over raise sites in the backend package**: each
-must be reachable from a spec ID via an existing marker or an explicit allowlist
-entry. **The allowlist is the deliverable**, not the gate: on day one it
-enumerates every orphan behavior we have, which is precisely what facet 4 turned
-out to be. Harder than 2b because implementation invariants are enforced rather
-than declared, so expect the first cut to be approximate and to grow by hand.
-Which error types and which modules to start with belong in the backlog item when
-this is opened, not here — they are high-change-rate specifics with no claim on
-this layer.
+tractable shape is a **pass over raise sites in the backend package**: each must be
+reachable from a spec ID via an existing marker or an explicit allowlist entry.
+**The allowlist is the deliverable**, not the gate: on day one it enumerates every
+orphan behavior we have, which is precisely what facet 4 turned out to be.
+
+**Order of magnitude, because it changes the proposition.** An AST pass over
+`src/remote_store/backends/` at the time of writing finds raise statements in the
+**several hundreds**, with roughly a quarter as many again in the core modules.
+(Counts vary by method — whether bare re-raises inside `except` blocks are
+included moves the total materially — so treat the magnitude, not any figure, as
+the input to planning.) A day-one allowlist of that size is a different
+proposition from a dozen entries, and it is what makes "expect the first cut to be
+approximate" concrete. Two consequences the backlog item must settle:
+
+1. **Gate or report?** Step 3 is deliberately a report, not a gate, to avoid the
+   false-positive fatigue that defeats rule checkers. A gate over a several-hundred-
+   site heuristic invites the same objection, and this document does not resolve it.
+2. **Scope beyond the backend package.** Facet 4's *normative* enforcement lives in
+   `RemotePath`'s normalization in `src/remote_store/_path.py`, outside the backend
+   tree; the backends hold defensive duplicates. So a backends-only pass does reach
+   facet 4, but through the duplicates, and would record the behavior one layer from
+   where it is actually enforced. Covering the core modules too is probably right.
 
 **2b. `I ⊆ S` — every Dafny invariant must appear in the spec.** Cheap, because
 `// @spec` tags already exist and `check_formal_trace.py` already parses them: the
@@ -691,8 +747,16 @@ Add `scripts/report_trace_outcomes.py` producing a ranked table of references by
 `misleading` + `unclear` count, with the citing traces. Run it as a report, not a
 gate — there is no correct threshold, and gating it would create exactly the
 false-positive fatigue that defeats rule checkers elsewhere. Review the top of the
-list at the same cadence as the TLA+ status revisit. This is the cheapest item
-here and the data is already committed.
+list at the same cadence as the TLA+ status revisit.
+
+**Specify the extraction method, do not leave it open.** Reuse `check_traces.py`'s
+`sdd/traces/[!_]*.yml` glob rather than re-deriving it, and read
+`phases[].steps[]` as **parsed YAML**, taking `file` from the same mapping as
+`outcome`. Both details are load-bearing: a looser glob reintroduces the
+`_schema.yml` off-by-one, and a nearest-preceding-key text scan reintroduces the
+attribution imprecision that caused a round trip in this document's own review.
+The schema guarantees exactness; only a sloppy reader loses it. That also makes
+this step smaller than S suggests — the data is committed and exact.
 
 ### Step 4 — Generate spec 037's backend table
 **Closes:** part of G-2, and BK-324 facet 3 · **Mechanism:** E3 · **Size:** S/M
@@ -730,10 +794,21 @@ the filing risks it reading as cosmetic.
 **Closes:** G-6 · **Mechanism:** E10 · **Size:** S to define, M per run
 
 Make "build a backend against the guide, from scratch, without help" a scheduled
-exercise with a fixed cadence rather than a side effect of guide PRs. Its output is
-a list of places the guide, the contract or the conformance suite failed the
-builder. BK-324 and BK-325 are one run's worth of findings, which is the
-justification.
+exercise rather than a side effect of guide PRs. Its output is a list of places
+the guide, the contract or the conformance suite failed the builder.
+
+**Say the evidence level out loud: n = 1.** The justification is a single run
+(PR #932), and E10's claim in § 3 to the best findings-per-unit-noise in the
+catalog rests on that same run. The step is cheap and probably right, but this
+document is scrupulous about evidence strength everywhere else and should not make
+an exception where the ranking is most flattering to the recommendation.
+
+**Cadence, since "S to define" is otherwise empty.** Proposed: **once per minor
+release, or after any change to the `Backend` ABC or the conformance suite,
+whichever comes first** — the two events that can invalidate the guide. Anchoring
+it to contract change rather than to the calendar follows P7 (set the period from
+the drift rate, not the calendar) and gives the step actual content beyond the
+word "scheduled".
 
 ### Step 7 — Publish the characteristic-accountability record
 **Closes:** G-5 · **Mechanism:** E2 · **Size:** S
@@ -742,6 +817,21 @@ Render `check_formal_trace.py`'s coverage matrix as a generated artifact at
 release time: every spec ID, its verification evidence (test marker, Dafny tag,
 TLA+ invariant), and its status. Makes "what was verified, and by what" answerable
 historically rather than only at HEAD.
+
+### Step 8 — Derive the artifact-pair inventory instead of hand-maintaining it
+**Closes:** the § 4b reflexive gap · **Mechanism:** E3 · **Size:** S
+
+§ 4b's inventory of which artifact pairs are checked was assembled by hand and the
+document says of it: "The table will drift, and nothing will notice." Leaving a
+self-diagnosed gap out of the plan is conspicuous in a document whose thesis is
+that unenumerated claim spaces are where things hide, so it gets a step rather
+than a shrug.
+
+The fix is this document's own E3: derive the inventory from the `check_*.py`
+docstrings (20 gates today), each of which already states the pair it guards, and
+publish it as a generated surface. That also gives step 7's accountability record
+a natural companion — one enumerates spec coverage, the other enumerates
+*checker* coverage. Cheap, and it closes the one gap this document created.
 
 ### Deferred, with reasons
 
@@ -761,45 +851,70 @@ historically rather than only at HEAD.
 ## 9. Evidence ledger and method caveats
 
 **Method.** A deep-research harness ran six search angles, extracted claims, and
-adversarially verified them (three voters per claim, two refutations to kill).
-**Two harness faults degraded that run and must be disclosed:** full-text fetching
-returned HTTP 403 for every host under the session's egress policy, and the
-automated verification stage lost its search tool to a permission-handler error,
-so ten of eleven claims were refused *procedurally rather than substantively*.
-Thirteen load-bearing claims were subsequently re-verified by hand against search
-results. **No source was read at full text.** Verification therefore supports "this
-work exists, is correctly attributed, and reports these numbers"; it does **not**
-support direct quotation or capture of methodological caveats.
+adversarially verified them (three voters per claim, two refutations to kill). One
+harness fault degraded that run: the automated verification stage lost its search
+tool to a permission-handler error, so ten of eleven claims were refused
+*procedurally rather than substantively*. All load-bearing claims were
+subsequently re-verified by hand against search results, twice.
+
+**A standing environmental constraint, not a one-off fault.** Full-text fetching
+returns HTTP 403 for **every** external host under this repository's session
+egress policy. That reproduced identically across three separate rounds of work on
+this document, so it is a property of the environment rather than a failure of any
+one run, and it sets a **permanent ceiling on citation quality for research docs
+in this repo**: "this work exists, is correctly attributed, and reports these
+numbers" is reachable; verbatim quotation and capture of methodological caveats
+are not. Any future research doc here inherits the same ceiling and should
+disclose it the same way. Whether that warrants a documented citation convention
+is a reasonable backlog question and is not decided here.
 
 **Verified** (search-confirmed, full text unread). **Which rows carry the
-argument:** LVS and formal equivalence checking underwrite § 3 E1; AS9102 Form 3
-underwrites § 3 E2; SWE-059 underwrites § 5 finding 4; statcheck and double entry
+argument:** LVS and equivalence checking underwrite § 3 E1; AS9102 Form 3
+underwrites § 3 E2; SWE-064 underwrites § 5 finding 4; statcheck and double entry
 underwrite the honesty finding; MIL-HDBK-61A and Bosché are adjacent to E8 and the
 as-built deferral. **Knight & Leveson, the clinical-decision-support override
 figure and ACFE 2024 support no claim in §§ 1 to 8** — they are retained as
 provenance for the broad cross-discipline survey this document was narrowed from,
 so that the narrowing is auditable, and a reader should not infer that N-version
 independence, alert fatigue or fraud-detection channels are load-bearing here.
+Rows kept for auditability still have to be locatable, so each carries a full
+citation.
 
 | Claim | Source |
 |---|---|
-| LVS extracts a layout netlist and compares device-by-device against the schematic netlist; property comparison is tolerance-configured; zero violations required before tapeout | Synopsys glossary; Wikipedia LVS |
-| Formal equivalence checking of RTL vs gate netlist is standard synthesis sign-off | Synopsys Formality |
-| AS9102 Form 3 requires every design characteristic uniquely identified with inspection results traceable to each identifier | AS9102 practitioner references |
-| NASA SWE-059 requires bidirectional traceability; the two directions catch unimplemented requirements vs orphan code | NASA SWE handbook |
-| MIL-HDBK-61A splits FCA (performance spec) from PCA (as-built vs as-designed) | MIL-HDBK-61A, AcqNotes |
-| statcheck: ~half of NHST psychology articles carry an inconsistency, ~1 in 8 gross | Nuijten et al. 2016, *Behavior Research Methods* |
-| statcheck **in peer review** produced a steeper decline than matched controls (preregistered, 7,000+ articles) | Nuijten & Wicherts 2024, *AMPPS* |
-| Knight & Leveson: independence assumption fails; 27 versions, 1M tests, correlated failures | Knight & Leveson 1986 |
-| Double entry is analyzable as an error-detecting code; detects two counterbalancing errors, localizes a single error | Arya & Fellingham |
-| Clinical decision support: ~90% override of drug-drug-interaction alerts | override meta-analysis, 2024 |
-| ACFE 2024: 43% of occupational frauds detected by tip, >3× the next method; internal audit 14% | ACFE Report to the Nations 2024 |
-| Bosché: automated CAD-object recognition in laser scans for as-built dimensional compliance | Bosché 2010, *Adv. Eng. Informatics* |
+| LVS extracts a layout netlist and compares it device-by-device and node-by-node against the schematic netlist; device-property comparison **can be configured** against a tolerance. LVS-clean is a near-universal foundry prerequisite for tapeout (waiver-with-sign-off, not an unconditional zero) | Synopsys glossary; Wikipedia LVS |
+| Equivalence checking proves **combinational** equivalence at matched compare points (registers, primary outputs, black-box input pins), conditional on a 1:1 state-element correspondence; standard synthesis sign-off. Black-box contents are unverified, and sequential transformations such as retiming fall outside it | Synopsys Formality |
+| AS9102 Form 3 ("Characteristic Accountability, Verification and Compatibility Evaluation") carries requirement, measured result and unique identifier per characteristic. The "accounted for, uniquely identified, results traceable to each unique identifier" clause language traces to **AS9102A § 5.2**; Rev C (2023) renumbers Form 3 fields. The mandate is unique identification, satisfiable by "a balloon number **or similar identifier**" — ballooning is the common method, not the requirement. FAI scope excludes procured standard catalog hardware and deliverable software | AS9102A § 5.2, practitioner analysis |
+| NASA **SWE-064** (bidirectional traceability, software **design ↔ code**) carries the rationale used in § 5 finding 4: it surfaces design elements not fulfilled in code, and code with no parent design element. SWE-059 is requirements ↔ design. NPR 7150.2 Rev C / handbook Ver C-D consolidate these into **SWE-052** | NASA SWE handbook |
+| MIL-HDBK-61A splits FCA (against the performance spec) from PCA (as-built against **its technical documentation**) | MIL-HDBK-61A, AcqNotes |
+| statcheck: ~half of articles **with statcheck-detectable APA-formatted NHST results** carry an inconsistency, ~1 in 8 a gross one | Nuijten et al. 2016, *Behavior Research Methods* |
+| statcheck **in peer review** is *associated with* a steeper decline than matched controls (preregistered pretest-posttest quasi-experiment, 2 treatment journals vs 2 controls, 7,000+ articles). Authors' own framing is "is related to" and "can be" | Nuijten & Wicherts 2024, *AMPPS* |
+| statcheck's own accuracy is **contested**: 96–99.9% on results it detects (Nuijten et al. 2017) vs ~60% precision and ~61% recognition (Schmidt, arXiv:1610.01010); detection is tied to strict APA formatting (Böschen 2024, arXiv:2408.07948). Different denominators; the critiques are preprints | as cited |
+| Knight & Leveson: independence assumption rejected; 27 versions, 1,000,000 tests, correlated failures | Knight & Leveson 1986 |
+| A balance identity detects that **one** error occurred **without localizing it**, and is blind to offsetting pairs (distance-2 parity check: detects one, corrects none). Detection-**plus-correction** comes from the paper's parity-check-matrix construction, not from the trial balance | Arya, Fellingham, Schroeder & Young, *Double Entry Bookkeeping and Error Correction*, Ohio State working paper, 1996 |
+| Pooled override of drug-drug-interaction alerts **90% (95% CI 85–95)** across 16 studies, **I² = 100%**, per-study range ~46–98% | Felisberto et al., *Health Informatics Journal* 30(2), 2024, doi:10.1177/14604582241263242 |
+| ACFE 2024: tips detect 43% of occupational frauds, 3.07× the next method; internal audit 14%, management review 13% | ACFE Report to the Nations 2024 |
+| Bosché: **ICP model-matching of a known CAD model** against laser scans for as-built dimensional compliance (not learned recognition) | Bosché 2010, *Adv. Eng. Informatics* 24(1), 107–118 |
 
-**Unverified and load-bearing:** whether requirements traceability *reduces
-escaped defects*, in either direction. It is the most heavily mandated mechanism
-in both disciplines and no efficacy evidence was found. E2's case rests on the
-structural omission argument alone.
+**Traceability efficacy: an evidentiary mismatch, not a void.** An earlier draft
+said no efficacy evidence exists in either direction. That is wrong as a reader
+will take it, and two studies exist:
+
+- Rempel & Mäder, *Preventing Defects: The Impact of Requirements Traceability
+  Completeness on Software Quality*, IEEE TSE 43(8), 2017, 777–797. 24 medium-to-
+  large open-source projects; traceability completeness in three of four
+  requirements-implementation activities significantly associated with lower
+  defect **density**. Observational, not causal.
+- Mäder & Egyed, *Do developers benefit from requirements traceability when
+  evolving and maintaining a software system?*, EMSE 20, 2015. Controlled
+  experiment, 71 subjects, real maintenance tasks: ~24% faster and ~50% more
+  correct solutions with traceability available.
+
+The accurate statement: **measured benefits are on adjacent outcomes** —
+maintenance speed, task correctness, defect-density correlation. **No study
+measures escaped-defect reduction**, which is the outcome the mandate rests on.
+E2's case in this document still rests on the structural omission argument, but it
+is no longer arguing into a vacuum.
 
 **Repository claims** in §§ 4 to 7 are from reading source in this session: script
 docstrings, `pyproject.toml` script lists, `sdd/000-process.md`,
@@ -812,7 +927,8 @@ canonical-claim-set argument of § 2.1, the ranking in § 7, and the whole of §
 The three findings held most confidently are structural rather than empirical:
 that omission detection always reduces to a canonical enumerable claim set; that
 what distinguishes these disciplines is the enumeration being *derived* rather
-than maintained in parallel; and that our prose has no mechanical counterpart.
+than maintained in parallel; and that our **spec** prose has no mechanical
+counterpart.
 
 ### Self-validation against principle 8 (detail placement)
 
@@ -850,46 +966,51 @@ flagging loudly because this is the section where the document certifies its own
 compliance, so a gate applied loosely here would be the most quotable precedent
 in it.
 
+A fourth item was relocated in the final round: the **round-by-round review
+tables** in § 9. They were valuable during review and would read as noise in six
+months — process residue whose authoritative home is the PR, not a durable
+artifact. The durable *lessons* stay; the change logs moved to PR #937. This is
+the same reasoning applied to this document's own history that § 2.1 applies to
+the specification layer.
+
 Deliberately *not* trimmed: the mechanism catalog, the taxonomy, the tier table and
 the evidence ledger. A document is the SSoT for its own stable core, and these are
 this document's core. Brevity is not the target.
+### Revision note: what review changed
 
-### Revision note: what external review changed
+This document went through three rounds of correction before merge, and the
+durable lessons from them are recorded here. The full round-by-round tables lived
+in earlier revisions and have been relocated to PR #937, which is their
+authoritative home: per principle 8, process residue does not belong in a durable
+artifact once the process is over.
 
-This document was reviewed before merge and materially corrected. Recording the
-changes because the review found real errors, not stylistic ones:
+Four corrections carry a lesson beyond this document:
 
-| Was | Now | Kind |
-|---|---|---|
-| "Omission is detectable in these two disciplines, and only in these two" | Corrected: surgical checklists, MEL/CDL and clause inventories are counterexamples. The real distinction is *derived* versus *parallel-maintained* enumeration (§ 2) | Factual error |
-| `DafnyOracleBackend` presented as our LVS | Corrected to a two-step chain: T3.5 verification plus T4 sampled comparison. Not equivalence checking (§ 3, E1) | Factual error |
-| Flat eight-class taxonomy | Split into types (A–E), precondition (F), representation blocker (G), post-detection failure (H). The old form contradicted its own prose, which already called F "upstream" and H a detection-succeeded case | Structural |
-| Gradient jumped T3 → T4 | Added T3.5, symbolic/bounded exhaustive. The old table had no home for Dafny or TLC, i.e. for this repo's strongest tools | Omission |
-| "Institutionalized rather than demonstrated", with two exceptions | Three epistemic categories: provable bound, measured efficacy, mandated-unmeasured. Mutation testing has real empirical support; LVS's warrant is a derivable bound, not a study | Over-claim |
-| E5 scaling described as O(N²) cost | Added the stronger limit: pairwise parity does not compose into global consistency (§ 3) | Under-claim |
-| E10 listed last, treated as minor | Elevated: the only family reaching E, G and H at once, and the one that actually worked on BK-324 | Under-claim |
-| § 5 ended at seven findings | Added the tier-mismatch synthesis: mechanisms at T1–T4, failure at T6–T7 | Missing synthesis |
+- **A flat taxonomy hid a category error.** Listing F (identity) and H (authority)
+  as peer inconsistency *classes* contradicted this document's own prose, which
+  already described F as upstream of everything and H as the case where detection
+  *succeeds*. The four-layer split in § 1 is the fix, and the general lesson is
+  that a taxonomy whose entries do not share a failure mode is a list, not a
+  taxonomy.
+- **A stated bound is not a defect.** An earlier draft called
+  `check_formal_trace.py`'s citation-not-assertion limit a defect. The script
+  documents that boundary itself, and by this document's own honesty finding that
+  is the correct way to hold a category-1 mechanism. What deserves the label is an
+  *unstated* boundary, such as the formal README gap in § 5 finding 3.
+- **Two category-1 exemplars had overstated bounds.** Double entry was credited
+  with detection-plus-localization it does not have, and equivalence checking with
+  bit-exact correspondence it does not prove. In a document whose central claim is
+  that provable-bound mechanisms must *state* their bounds, getting those two
+  wrong was the most self-refuting error available.
+- **Tool artifacts can masquerade as data limits.** The spec-029 tag count was
+  softened on the strength of a grep-derived bound, then restored when a
+  schema-driven YAML parse showed the count was exact all along. The schema
+  guarantees attribution; only a sloppy reader loses it. Step 3 is specified
+  accordingly.
 
-**Second round (PR #937 review).** Nine findings, all verified against source
-before applying, all accepted:
-
-| Was | Now |
-|---|---|
-| "Every mechanism we run sits at T1 to T4" | Wrong, and it contradicted § 3 of this document. Five gates run derived-enumeration set differences. Corrected to: our T6 coverage is real but **identifier-granular**, and BK-324's claims are sub-ID clauses (§ 5 synthesis) |
-| § 4b inventory omitted three prose-side gates | Added `check_custom_backend_guide.py`, `check_ci_inventory.py`, `check_backend_order.py`. They are working templates for derive-and-difference, which reframes step 2a as extending a discipline rather than inventing one |
-| "Prose is unchecked" (§ 6), "Prose has no mechanical counterpart" (G-2) | Narrowed to **spec** prose. Guide, handbook and enumeration prose are all mechanically bound |
-| Finding 2 cited only F2/F3 and called the gap a defect | F1 is the set difference D \ T, i.e. T6 not T1. And the residual bound is *stated* in the script's own docstring, which by this document's honesty finding is the correct way to hold the mechanism, not a defect |
-| Facet 1 grouped as "guarded by every backend" | That is facet 4's property. Facet 1 is `is_file("")` diverging across the S3 family, so it carries a class-B component now assigned in the synthesis table |
-| "Across 258 traces" | 257. The count used a glob one character looser than `check_traces.py`'s, counting `_schema.yml` |
-| "Spec 029 was tagged misleading four times" | Softened. The attribution heuristic bounds it to two-to-five; the imprecision is itself an argument for step 3 |
-| Self-validation kept step 2a's path specifics on condition 3 despite failing condition 1 | The gate is conjunctive and forbids that trade. Specifics relocated to the future backlog item; the stable *shape* stays |
-| Evidence ledger implied all rows were load-bearing | Header now separates rows that carry an argument from rows retained as provenance for the broad survey |
-| No backlog pointer back to this doc | `Related:` links added to BK-324 and BK-325, matching the convention on eight other items. The trace convention and the backlog-pointer convention are separate rules; conflating them was the original error |
-
-One review suggestion from the **first** round was **not** adopted as given. The reviewer proposed `I ⊆ S`
-(every Dafny invariant appears in the spec) as the check that "would have caught
-BK-324 facet 4 immediately", on the reading that the spec states the empty-path
-rule, Dafny enforces it, conformance tests it, and only the guide omits it. The
-backlog item says the opposite: the rule is "absent from BE-018/BE-019 and
-untested". So `I ⊆ S` would not have caught it. The check is still worth having
-and is step 2b; the facet-4 fix is the harder `Impl ⊆ S` direction, step 2a.
+One review suggestion was **not** adopted as given: `I ⊆ S` (every Dafny invariant
+appears in the spec) was proposed as the check that would have caught BK-324
+facet 4, on the reading that the spec states the empty-path rule and conformance
+tests it. The backlog item says the opposite — the rule is "absent from
+BE-018/BE-019 and untested" — so `I ⊆ S` would not have fired. It is worth having
+regardless and is step 2b; the facet-4 fix is the harder `Impl ⊆ S`, step 2a.
