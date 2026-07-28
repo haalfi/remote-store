@@ -908,9 +908,13 @@ only how often you look.
 
 ## 9. Plan of next steps
 
-Proposed, not created. Each step names the gap it closes, the mechanism family it
-instantiates, and a rough size. Steps 1 to 4 are independent and can land in any
-order.
+Each step names the gap it closes, the mechanism family it instantiates, and a
+rough size. Steps 1 to 4 are independent and can land in any order.
+
+**The steps are now filed.** `sdd/BACKLOG.md` § Cross-Artifact Consistency owns
+them as backlog items in execution order; each step below names its owner. This
+document carries the argument and the evidence, the backlog carries the work —
+so re-sequencing or re-scoping happens there, not here.
 
 **Ordering follows the § 5 synthesis, not the gap ranking.** Two steps build the
 things actually missing — a canonical claim space and an authority model — and the
@@ -955,7 +959,7 @@ between "exempt the item" and "pin what the exemption covers"; prefer the pin.
 
 ### Step 2: Bidirectional traceability (the canonical claim space)
 **Closes:** G-3, § 2.1's bottleneck, and BK-324 facet 4 concretely ·
-**Mechanism:** E2 · **Size:** M (2a) + S (2b)
+**Mechanism:** E2 · **Size:** M (2a) + S (2b) · **Owner: ID-207**
 
 **This step largely *is* `sdd/BACKLOG.md` ID-207, which predates this document.**
 ID-207 ("Strengthen `check_formal_trace.py` from citation hygiene to clause
@@ -1010,7 +1014,7 @@ honesty and would catch a *different* drift than 2a. Do it second and do not
 mistake it for the facet-4 fix.
 
 ### Step 3: Aggregate trace outcome tags
-**Closes:** G-4 · **Mechanism:** E11 (not E7 — see § 3) · **Size:** S
+**Closes:** G-4 · **Mechanism:** E11 (not E7 — see § 3) · **Size:** S · **Owner: BK-330**
 
 Add `scripts/report_trace_outcomes.py` producing a ranked table of references by
 `misleading` + `unclear` count, with the citing traces. Run it as a report, not a
@@ -1028,7 +1032,7 @@ The schema guarantees exactness; only a sloppy reader loses it. That also makes
 this step smaller than S suggests — the data is committed and exact.
 
 ### Step 4: Generate spec 037's backend table
-**Closes:** part of G-2, and BK-324 facet 3 · **Mechanism:** E3 · **Size:** S/M
+**Closes:** part of G-2, and BK-324 facet 3 · **Mechanism:** E3 · **Size:** S/M · **Owner: BK-331**
 
 A hand-maintained table making per-backend behavioral claims is the artifact class
 that must never be hand-maintained; we already generate `FEATURES.md` from
@@ -1037,7 +1041,8 @@ conformance results, or delete it and link to the generated surface. Then sweep
 for other hand-written per-backend claim tables and treat each the same way.
 
 ### Step 5: Decide BK-324's four rules, with an attribution rule first
-**Closes:** the BK-324 blockage · **Mechanism:** attribution · **Size:** L
+**Closes:** the BK-324 blockage · **Mechanism:** attribution · **Size:** L ·
+**Owners: BK-329** (5.1), **BK-324** (5.2)
 
 The item is L because of class H, so unblock the attribution before the content.
 Two sub-steps:
@@ -1054,13 +1059,13 @@ legitimate variation, and if it is legitimate the fix is to make it a **declared
 capability** so the conformance suite parameterizes on it. That converts an
 undeclared divergence into a declared one, which is our existing pattern.
 
-**Classification note for the owner's decision:** BK-324 currently sits under
-*Docs & Discoverability*. Facets 2 and 3 change runtime behavior or spec
-semantics and may be breaking. Found via docs, but arguably not a docs item, and
-the filing risks it reading as cosmetic.
+**Classification note — settled.** BK-324 sat under *Docs & Discoverability*,
+where the filing risked it reading as cosmetic; facets 2 and 3 change runtime
+behavior or spec semantics and may be breaking. It now files under
+*Cross-Artifact Consistency* with the rest of this plan.
 
 ### Step 6: Schedule the rehearsal
-**Closes:** G-6 · **Mechanism:** E10 · **Size:** S to define, M per run
+**Closes:** G-6 · **Mechanism:** E10 · **Size:** S to define, M per run · **Owner: BK-332**
 
 Make "build a backend against the guide, from scratch, without help" a scheduled
 exercise rather than a side effect of guide PRs. Its output is a list of places
@@ -1079,7 +1084,7 @@ it to contract change rather than to the calendar follows **S9** and gives the
 step actual content beyond the word "scheduled".
 
 ### Step 7: Publish the characteristic-accountability record
-**Closes:** G-5 · **Mechanism:** E2 · **Size:** S
+**Closes:** G-5 · **Mechanism:** E2 · **Size:** S · **Owner: ID-236**
 
 Render `check_formal_trace.py`'s coverage matrix as a generated artifact at
 release time: every spec ID, its verification evidence (test marker, Dafny tag,
@@ -1087,7 +1092,7 @@ TLA+ invariant), and its status. Makes "what was verified, and by what" answerab
 historically rather than only at HEAD.
 
 ### Step 8: Derive the artifact-pair inventory instead of hand-maintaining it
-**Closes:** the § 4b reflexive gap · **Mechanism:** E3 · **Size:** S
+**Closes:** the § 4b reflexive gap · **Mechanism:** E3 · **Size:** S · **Owner: ID-237**
 
 § 4b's inventory of which artifact pairs are checked was assembled by hand and the
 document says of it: "The table will drift, and nothing will notice." Leaving a

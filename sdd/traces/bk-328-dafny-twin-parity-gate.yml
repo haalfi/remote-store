@@ -10,6 +10,16 @@ source_items:
 audience:
   - contributor.tooling
   - library.maintainer
+discovery_followups:
+  # The research plan's remaining steps, filed as items in the same PR: the
+  # `orient` phase found the plan was reachable only from a research doc, so
+  # BACKLOG.md never showed it. Owners now exist for steps 2-8.
+  - BK-329
+  - BK-330
+  - BK-331
+  - BK-332
+  - ID-236
+  - ID-237
 expected_ripples:
   - sdd/backlogid.json
   - pyproject.toml
@@ -110,4 +120,30 @@ phases:
           Derived rule: no `user.` audience, so no CHANGELOG entry. Matches the
           precedent of the two closest analogues (BK-297 docstring parity,
           BK-245 capability parity), neither of which appears in the CHANGELOG.
+        outcome: ok
+  - id: file
+    name: File the rest of the programme
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works"
+        read_type: gate
+        extract: "Section shape, attribute line, ordering rule (higher-priority first within a group)"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "Cross-Artifact Consistency"
+        read_type: reference
+        extract: >-
+          New section holding the programme in execution order. Steps 2-8 filed
+          as BK-329/330/331/332 and ID-236/237; ID-207 and BK-324 moved in from
+          Lint/CI Completeness and Docs & Discoverability, BK-327 moved in as an
+          independent member. ID-235 and BK-325 deliberately left where they are
+          (single-artifact rule check, and guide content, respectively).
+        outcome: ok
+      - file: sdd/research/research-inconsistency-detection-multi-artifact.md
+        section: "9 (Plan of next steps)"
+        read_type: verify
+        extract: >-
+          Stamped an owner ID on every step and resolved the step-5 classification
+          note, so the doc carries the argument and the backlog carries the work
+          rather than both carrying a copy of the plan.
         outcome: ok

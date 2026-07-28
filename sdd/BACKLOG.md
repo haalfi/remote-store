@@ -75,9 +75,200 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Lint / CI Completeness
 
+- [ ] **ID-235 — Structural lint for BACKLOG files (entry-header integrity)**
+  spec: — · effort: S · audience: contributor.tooling
+  A string-anchored edit swallowed an entry header in `BACKLOG-DONE.md`
+  (PR #932), merging two items — and because `gen_backlogid.py` derives
+  IDs from headers, the stale JSON was masked too. Lint the structure:
+  every metadata line follows an entry header, headers unique across both
+  files, BACKLOG-DONE status `[x]` only. Home: extend
+  `scripts/gen_backlogid.py`.
+  Stays here rather than under Cross-Artifact Consistency: it checks one
+  artifact against a structural rule, not two descriptions against each other.
+
+---
+
+## Cross-Artifact Consistency
+
+Work whose purpose is detecting or settling disagreement between two or more
+descriptions of the same thing. Design and review rules for anything added here:
+[`DRIFT-RULES.md`](DRIFT-RULES.md#rules). The argument, evidence and gap ranking
+behind the programme: [research](research/research-inconsistency-detection-multi-artifact.md)
+§ 9, whose step numbers each item cites — that document carries the reasoning,
+this section carries the work.
+
+**Order is execution order**, and dependencies are stated by ID rather than by
+position so re-sequencing cannot silently invalidate them. BK-329, BK-330 and
+BK-331 are independent and cheap. BK-324 and ID-207 are the strategic pair the
+programme exists for, and each depends on something earlier. BK-332, ID-236 and
+ID-237 are follow-ons that get cheaper once the earlier work lands. BK-327 is
+independent of the chain and can be taken at any point.
+
+Step 1 (Dafny twin parity) shipped as BK-328; see
+[BACKLOG-DONE.md](BACKLOG-DONE.md). Two findings from it apply to what follows:
+a documented gap statement is not a measured one, and pinning what an exemption
+covers beats exempting the whole item.
+
+- [ ] **BK-329 — Declare the attribution rule for prose vs Dafny vs conformance**
+  spec: — · effort: S · audience: contributor.process
+  Research § 9 step 5.1. [`000-process.md` Rule 3](000-process.md#rules) settles
+  spec vs code, and nothing settles the intent domain internally: when contract
+  prose, a Dafny postcondition and a conformance test disagree, which one
+  governs — including the case where the prose is the wrong side.
+  [`DRIFT-RULES.md` Rule 4](DRIFT-RULES.md#authority) calls a declared authority
+  rule a **precondition**, so the precondition is currently unmet for the exact
+  pair BK-324 is stuck on. That is why BK-324 is effort L: the work there is
+  attribution, not detection. A `000-process.md` amendment, and it generalises
+  well beyond BK-324.
+  **First because it unblocks BK-324.**
+
+- [ ] **BK-330 — Aggregate trace outcome tags into a drift report**
+  spec: — · effort: S · audience: contributor.tooling
+  Research § 9 step 3. 187 `unclear` / `misleading` tags across 102 trace files
+  are committed, attributed, and never aggregated — a drift detector the repo
+  already paid for. Add `scripts/report_trace_outcomes.py`: references ranked by
+  negative-outcome count, with the citing traces.
+  **A report, not a gate**, per [`DRIFT-RULES.md` Rule 5](DRIFT-RULES.md#mandatory-path)'s
+  requirement to say why: there is no correct threshold, and gating it would
+  manufacture the false-positive fatigue that defeats rule checkers elsewhere.
+  Extraction method is decided, not open: reuse `check_traces.py`'s
+  `sdd/traces/[!_]*.yml` glob and read `phases[].steps[]` as parsed YAML, taking
+  `file` from the same mapping as `outcome`. A looser glob reintroduces the
+  `_schema.yml` off-by-one; a nearest-preceding-key text scan reintroduces an
+  attribution imprecision that already cost the research doc a review round.
+
+- [ ] **BK-331 — Generate spec 037's per-backend table, then sweep for its siblings**
+  spec: 037 · effort: S/M · audience: library.maintainer
+  Research § 9 step 4; closes the mechanical half of BK-324 facet 3. A
+  hand-maintained table making per-backend behavioural claims is the artifact
+  class that must never be hand-maintained, and 037's is wrong about S3 and
+  Azure today. Either derive it from capability declarations plus conformance
+  results — `FEATURES.md` from `graph.json` is the working precedent — or delete
+  it and link the generated surface. Then sweep for other hand-written
+  per-backend claim tables and treat each the same way.
+  **Before BK-324** so the depth-semantics decision is taken against a derived
+  table instead of restating a wrong one.
+
+- [ ] **BK-324 — Reconcile backend-contract divergences (root/alias, wrong-type errors, depth semantics, empty paths)**
+  spec: 003, 029, 037 · effort: L · audience: library.maintainer, user.site
+  Research § 9 step 5.2. **Depends on BK-329** (the authority rule); reads
+  better after BK-331. Four facets of one problem, surfaced by PR #932's guide
+  validation: contract prose, the Dafny model, the conformance suite, and
+  shipped backends disagree; the guide currently hedges by deferring to spec
+  003. Decide each rule once, then align spec prose, model, conformance
+  coverage, docstrings, and backends together:
+  1. Root/alias layer attribution — `Store` normalizes `"."` and rejects
+     root deletes; backend-layer obligations for `""`/`"."` are unspec'd
+     (`is_file("")` raises on the S3 family; no conformance coverage).
+  2. Wrong-type errors — BE-017/BE-021 demand `InvalidPath` regardless of
+     backend; flat-NS backends raise `NotFound`. Spec a flat-NS carve-out
+     or fix the backends. If the variation is legitimate, make it a
+     **declared capability** so the conformance suite parameterizes on it —
+     that converts an undeclared divergence into a declared one, which is the
+     pattern the repo already uses.
+  3. Depth semantics — spec 037 prose licenses ignoring `max_depth` while
+     the Dafny model and DEPTH-003 tests require native pruning (037's
+     table is also wrong about S3 and Azure); `recursive=False` +
+     `max_depth` precedence splits the sync model vs ASYNC-014 vs the SQL
+     backends vs the `Store` facade.
+  4. Empty-path `InvalidPath` on move/copy — Store-enforced convention,
+     guarded defensively by every backend, absent from BE-018/BE-019 and
+     untested (mind the Dafny coupling). This is the orphan-realization
+     facet: enforced behaviour with no parent spec section, and the live
+     instance ID-207's `Impl ⊆ S` direction exists to catch mechanically.
+  Evidence trail: PR #932 review threads and `sdd/traces/bk-320-*.yml`.
+  **Filed here, not under Docs & Discoverability**, where it originally sat:
+  facets 2 and 3 change runtime behaviour or spec semantics and may be
+  breaking. It was found via docs; it is not a docs item, and the old filing
+  risked it reading as cosmetic.
+
+- [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**
+  spec: — · effort: L · audience: contributor.tooling
+  Research § 9 step 2, the programme's strategic half: a canonical claim space,
+  extended toward the implementation and below identifier granularity. Best
+  taken after BK-324, which decides the orphan behaviours this item's day-one
+  allowlist would otherwise have to enumerate blind.
+  ID-206 shipped `scripts/check_formal_trace.py`; a PR #663 review
+  confirmed it certifies *citation hygiene at spec-ID granularity*, not
+  clause-level enforcement (its docstring was narrowed to say so). Four
+  independent hardening steps would close the gap:
+  1. **Derive D mechanically.** D is built from author-typed `// @spec`
+     tags, so deleting a tag silently drops an F1 and a new untagged
+     `ensures` never enters D. Parse every contract `ensures` and fail on
+     an untagged one — needs an exemption marker for proof-helper lemma
+     `ensures` (e.g. `SlashCountZero`, the Safe/Unsafe pairs) that encode
+     no spec clause. (Research step 2b.)
+  2. **Clause granularity, not ID granularity.** D/T/S key on spec ID, so
+     one marker clears F1 for every `ensures` sharing that ID (~10 share
+     `BE-014`). Per-clause sub-IDs, or a tag→test-name link, would gate
+     each postcondition individually. The research doc argues this is the
+     **binding** constraint rather than one hardening step among four,
+     since omission detection is identifier-keyed while BK-324's claims are
+     sub-ID clauses.
+  3. **Push T past citation.** A marker only cites an ID; it does not
+     prove the test asserts the clause, is enabled, or cites the *right*
+     ID — a wrong-but-real ID passes F2 and even satisfies F1.
+  4. **Bar baseline growth mechanically.** `_BASELINE` shrink-only is a
+     review convention; a new violation can be parked by editing the
+     frozenset. A committed count/hash pinned by a separate check would
+     make it mechanical.
+  **Not covered by any of the four:** the `Impl ⊆ S` direction (research step
+  2a) — enforced behaviour must have a parent spec section, as a pass over
+  raise sites where **the day-one allowlist is the deliverable**, not the gate.
+  Two things that scope decides: raise sites in the backend package run to the
+  *several hundreds*, so gate-or-report is a real question rather than a
+  formality; and facet 4's normative enforcement lives one layer above the
+  backend tree, so a backends-only pass reaches it through defensive duplicates
+  and records it a layer from where it is enforced.
+  Surfaced in the PR #663 review. Steps are independent and may split into
+  separate IDs; promote to BK-prefix when one is committed to.
+
+- [ ] **BK-332 — Schedule the custom-backend rehearsal**
+  spec: — · effort: S to define, M per run · audience: contributor.process
+  Research § 9 step 6. "Build a backend against the guide, from scratch,
+  without help" runs today only as a side effect of guide PRs. Its output is a
+  list of places the guide, the contract, or the conformance suite failed the
+  builder — BK-324 and BK-325 are one run's findings (PR #932), which is the
+  argument for scheduling it rather than running it by accident.
+  **Cadence:** once per minor release, or after any change to the `Backend` ABC
+  or the conformance suite, whichever comes first — the two events that can
+  invalidate the guide, per [`DRIFT-RULES.md` Rule 9](DRIFT-RULES.md#period).
+  **Evidence level, stated because the ranking flatters it:** n = 1. The claim
+  that rehearsal has the best findings-per-unit-noise rests on that single run.
+  **After BK-324**, which changes the contract a rehearsal would test against.
+
+- [ ] **ID-236 — Publish the characteristic-accountability record**
+  spec: — · effort: S · audience: contributor.tooling
+  Research § 9 step 7. `check_formal_trace.py` computes a spec-coverage matrix
+  and discards it. Render it at release time — every spec ID, its verification
+  evidence (test marker, Dafny tag, TLA+ invariant), its status — so "what was
+  verified, and by what" is answerable historically rather than only at HEAD.
+  **Why ID:** no committed outcome, and the matrix's shape changes under ID-207,
+  so the cost is unknown until that lands.
+
+- [ ] **ID-237 — Derive the cross-artifact checker inventory**
+  spec: — · effort: S · audience: contributor.tooling
+  Research § 9 step 8. The research doc's own inventory of which artifact pairs
+  are checked was assembled by hand, and it says of it: "The table will drift,
+  and nothing will notice." Derive it from the `check_*.py` docstrings and
+  publish it as a generated surface; it pairs naturally with ID-236, one
+  enumerating spec coverage and the other checker coverage.
+  Two complications belong in the scope rather than in the implementation
+  surprise. A substantial minority of gates are single-artifact rule checks
+  whose docstrings state a *rule*, not a pair (assertion presence, mock
+  discipline, forbidden RST roles, em dashes in TLA+), so the deliverable needs
+  an explicit "rule check, no pair" classification. And the `scripts/check_*.py`
+  glob under-reaches: `scripts/docs/check_links.py` is a genuine cross-artifact
+  gate outside it.
+  **Why ID:** both complications push toward either a docstring convention or a
+  curated mapping, and a curated mapping is precisely the
+  parallel-artifact-that-drifts problem this item would exist to close. That
+  decision is unmade.
+
 - [ ] **BK-327 — Gate dual-doc nav reachability and index listing**
   spec: — · effort: S · audience: contributor.tooling
-  A `<!-- doc: dual dest=explanation/design/*.md -->` marker publishes a page that
+  Independent of every other item in this section — take it whenever. A
+  `<!-- doc: dual dest=explanation/design/*.md -->` marker publishes a page that
   neither the docs-site nav nor the section index page lists, and nothing catches
   either omission. `mkdocs.yml` sets only `validation: links: not_found: warn`, so
   `nav.omitted_files` stays at its INFO default and `--strict` cannot promote it;
@@ -93,77 +284,9 @@ and the highest ID already in this file, then take the next integer. Run
   Surfaced by the PR #938 review; an unstated bound on `docs-gate` being trusted
   past its range ([`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)).
 
-- [ ] **ID-235 — Structural lint for BACKLOG files (entry-header integrity)**
-  spec: — · effort: S · audience: contributor.tooling
-  A string-anchored edit swallowed an entry header in `BACKLOG-DONE.md`
-  (PR #932), merging two items — and because `gen_backlogid.py` derives
-  IDs from headers, the stale JSON was masked too. Lint the structure:
-  every metadata line follows an entry header, headers unique across both
-  files, BACKLOG-DONE status `[x]` only. Home: extend
-  `scripts/gen_backlogid.py`.
-
-- [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**
-  spec: — · effort: L · audience: platform.tooling
-  ID-206 shipped `scripts/check_formal_trace.py`; a PR #663 review
-  confirmed it certifies *citation hygiene at spec-ID granularity*, not
-  clause-level enforcement (its docstring was narrowed to say so). Four
-  independent hardening steps would close the gap:
-  1. **Derive D mechanically.** D is built from author-typed `// @spec`
-     tags, so deleting a tag silently drops an F1 and a new untagged
-     `ensures` never enters D. Parse every contract `ensures` and fail on
-     an untagged one — needs an exemption marker for proof-helper lemma
-     `ensures` (e.g. `SlashCountZero`, the Safe/Unsafe pairs) that encode
-     no spec clause.
-  2. **Clause granularity, not ID granularity.** D/T/S key on spec ID, so
-     one marker clears F1 for every `ensures` sharing that ID (~10 share
-     `BE-014`). Per-clause sub-IDs, or a tag→test-name link, would gate
-     each postcondition individually.
-  3. **Push T past citation.** A marker only cites an ID; it does not
-     prove the test asserts the clause, is enabled, or cites the *right*
-     ID — a wrong-but-real ID passes F2 and even satisfies F1.
-  4. **Bar baseline growth mechanically.** `_BASELINE` shrink-only is a
-     review convention; a new violation can be parked by editing the
-     frozenset. A committed count/hash pinned by a separate check would
-     make it mechanical.
-  Surfaced in the PR #663 review. Steps are independent and may split
-  into separate IDs. No priority until the gate is shown to miss a real
-  regression; promote to BK-prefix at that point.
-  Related: [research](research/research-inconsistency-detection-multi-artifact.md)
-  § 9 step 2 — argues item 2 (clause granularity) is the *binding* constraint
-  rather than one hardening step among four, since our omission detection is
-  identifier-keyed and BK-324's claims are sub-ID clauses. Step 2b maps to item 1;
-  the `Impl ⊆ S` direction it proposes is not covered here.
-
 ---
 
 ## Docs & Discoverability
-
-- [ ] **BK-324 — Reconcile backend-contract divergences (root/alias, wrong-type errors, depth semantics, empty paths)**
-  spec: 003, 029, 037 · effort: L · audience: library.maintainer, user.site
-  Four facets of one problem, surfaced by PR #932's guide validation:
-  contract prose, the Dafny model, the conformance suite, and shipped
-  backends disagree; the guide currently hedges by deferring to spec 003.
-  Decide each rule once, then align spec prose, model, conformance
-  coverage, docstrings, and backends together:
-  1. Root/alias layer attribution — `Store` normalizes `"."` and rejects
-     root deletes; backend-layer obligations for `""`/`"."` are unspec'd
-     (`is_file("")` raises on the S3 family; no conformance coverage).
-  2. Wrong-type errors — BE-017/BE-021 demand `InvalidPath` regardless of
-     backend; flat-NS backends raise `NotFound`. Spec a flat-NS carve-out
-     or fix the backends.
-  3. Depth semantics — spec 037 prose licenses ignoring `max_depth` while
-     the Dafny model and DEPTH-003 tests require native pruning (037's
-     table is also wrong about S3 and Azure); `recursive=False` +
-     `max_depth` precedence splits the sync model vs ASYNC-014 vs the SQL
-     backends vs the `Store` facade.
-  4. Empty-path `InvalidPath` on move/copy — Store-enforced convention,
-     guarded defensively by every backend, absent from BE-018/BE-019 and
-     untested (mind the Dafny coupling).
-  Evidence trail: PR #932 review threads and `sdd/traces/bk-320-*.yml`.
-  Related: [research](research/research-inconsistency-detection-multi-artifact.md)
-  — § 5 analyses these four facets as a detection failure, and § 9 step 5 proposes
-  settling the prose/Dafny/conformance authority rule *before* the four rules,
-  since the effort here is attribution rather than detection.
 
 - [ ] **BK-325 — Custom-backend guide: registry-integration and remaining contract-topic gaps**
   spec: — · effort: M · audience: user.site
@@ -182,9 +305,9 @@ and the highest ID already in this file, then take the next integer. Run
   - Small fixes: error-mapping checklist lacks a base-`RemoteStoreError`
     fallback row; `from exc` guidance omits the deliberate `from None`
     pattern; the `SEEKABLE_READ` note contradicts shipped range-readers.
-  Related: [research](research/research-inconsistency-detection-multi-artifact.md)
-  § 9 step 6 — this item and BK-324 are one rehearsal's findings, which is the
-  argument for scheduling the guide walkthrough rather than running it by accident.
+  Guide content, so it stays here rather than under Cross-Artifact Consistency —
+  but it and BK-324 are one rehearsal's findings, which is the argument BK-332
+  makes for scheduling the walkthrough rather than running it by accident.
 
 - [ ] **ID-225 — Evaluate migrating the docs stack from Material for MkDocs to Zensical**
   spec: — · effort: L · audience: user.site, library.maintainer, contributor.tooling
