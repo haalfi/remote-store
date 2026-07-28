@@ -340,7 +340,13 @@ _CLASS_RE = re.compile(r"^class\s+(?P<name>\w+)\b[^{]*\{", re.MULTILINE)
 # the parallel list `sdd/DRIFT-RULES.md` Rule 3 warns about, so the enumeration is
 # derived from the source (every two-space declaration line is claimed) and this
 # set only decides whether the gate understands what it found.
-_MODIFIERS = frozenset({"ghost", "static", "twostate", "opaque", "least", "greatest", "abstract"})
+# ``inductive`` belongs here, not below: Dafny spells the declarations
+# ``inductive predicate F`` / ``inductive lemma L`` (the deprecated forms of
+# ``least predicate`` / ``least lemma``), never ``inductive F``.  Listed as a
+# keyword it would make ``inductive lemma L`` key on ``lemma`` rather than ``L``,
+# and two such declarations would then collide on one name.  ``copredicate`` and
+# ``colemma`` below are genuinely single-token keywords, which is why they differ.
+_MODIFIERS = frozenset({"ghost", "static", "twostate", "opaque", "least", "greatest", "abstract", "inductive"})
 _DECL_KEYWORDS = frozenset(
     {
         "method",
@@ -353,7 +359,6 @@ _DECL_KEYWORDS = frozenset(
         "iterator",
         "copredicate",
         "colemma",
-        "inductive",
     }
 )
 
@@ -367,9 +372,13 @@ _DECL_LINE_RE = re.compile(r"^  (?=[A-Za-z_])(?P<decl>.*)$", re.MULTILINE)
 _ATTR_RE = re.compile(r"\{:[^}]*\}")
 
 # Modifiers, then the declaration keyword, then the declared name if there is one
-# (``constructor`` has none).  Applied after attributes are stripped.
+# (``constructor`` has none).  ``method`` is skipped when it *follows* the keyword:
+# Dafny 3 spells ``function method F`` / ``predicate method F``, where the name is
+# the token after ``method``, not ``method`` itself.  Applied after attributes are
+# stripped.
 _DECL_SHAPE_RE = re.compile(
-    r"\s*(?:(?:" + "|".join(sorted(_MODIFIERS)) + r")\s+)*(?P<keyword>\w+)\s*(?P<name>[A-Za-z_]\w*)?"
+    r"\s*(?:(?:" + "|".join(sorted(_MODIFIERS)) + r")\s+)*"
+    r"(?P<keyword>\w+)\s*(?:method\s+)?(?P<name>[A-Za-z_]\w*)?"
 )
 
 
@@ -434,6 +443,14 @@ def class_members(literal_text: str, structural: str, classname: str) -> dict[st
     a changed statement is.  Anything before the first declaration is returned
     under ``(class preamble)`` rather than discarded, so a field or stray
     construct at the top of one class cannot vanish from the comparison.
+
+    Two declarations that resolve to the same name raise rather than collapsing
+    into one dict entry.  The gate runs with no Dafny toolchain (and, in
+    ``verify-formal``, after ``dafny verify`` has already passed), so "Dafny would
+    have rejected it" is not a check this scanner can lean on — and a collision
+    needs only two *scanner-derived* names to match, not two Dafny ones.  A silent
+    last-wins overwrite would be a member dropped from the gate with no failure,
+    which is the failure mode this whole design claims to have closed.
     """
     start, end = class_body(structural, classname)
     if start < 0:
@@ -449,6 +466,13 @@ def class_members(literal_text: str, structural: str, classname: str) -> dict[st
         out["(class preamble)"] = preamble
     for idx, (offset, name) in enumerate(spans):
         stop = spans[idx + 1][0] if idx + 1 < len(spans) else end
+        if name in out:
+            raise ParseError(
+                f"{classname}: two declarations both resolve to the member name "
+                f"{name!r}, so one would silently replace the other and drop out of "
+                f"the comparison. Fix the scanner's name extraction in "
+                f"scripts/check_dafny_twin_parity.py for this declaration shape."
+            )
         out[name] = literal_text[offset:stop]
     return out
 

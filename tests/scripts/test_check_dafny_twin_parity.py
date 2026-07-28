@@ -11,10 +11,19 @@ Three layers:
   a member present on one class only.
 * **Seeded mutation corpus** -- the `sdd/DRIFT-RULES.md` Rule 7 miss-rate
   estimate, run against the *live* Dafny source. In-scope mutations must be
-  caught; the out-of-scope ones named in the script's Bounds section must be
-  missed. The second half is the point: it keeps the documented bound honest,
-  so a future change that silently widens or narrows the gate's reach fails
-  here rather than being discovered by a reader trusting the docstring.
+  caught; the ``OUT_OF_SCOPE`` ones must be missed. The second half is the
+  point: it keeps the gate's stated reach honest, so a future change that
+  silently widens or narrows it fails here rather than being discovered by a
+  reader trusting the docstring.
+
+  ``OUT_OF_SCOPE`` holds two different kinds of row, and each carries its own
+  ``reason`` because the remedy differs and the test cannot tell them apart:
+  one is a documented Bounds entry (widening means the Bounds section is stale),
+  the other pins documented *behaviour* (``reindentation`` -- normalisation
+  collapsing layout is a feature, and it failing means ``normalise`` is broken,
+  not that a bound needs widening). Only two of the script's five Bounds entries
+  are corpus-held at all; the script's Bounds section tags each with how it is
+  held.
 """
 
 from __future__ import annotations
@@ -191,6 +200,50 @@ class TestClassMembers:
         members = _members(mod, source, "Alpha")
         assert set(members) == {"Wide"}
         assert "returns (r: int)" in members["Wide"]
+
+    def test_inductive_is_a_modifier_not_a_keyword(self, mod):
+        # Dafny spells these `inductive lemma L` / `inductive predicate P` (the
+        # deprecated forms of `least lemma` / `least predicate`). Treating
+        # `inductive` as the keyword would key the member on `lemma`, and two
+        # such declarations would then collide on one name.
+        source = textwrap.dedent(
+            """\
+            class Alpha extends Backend {
+              inductive lemma PreserveX(p: int)
+              {
+              }
+              inductive predicate Holds(p: int)
+              {
+                true
+              }
+            }
+            """
+        )
+        assert set(_members(mod, source, "Alpha")) == {"PreserveX", "Holds"}
+
+    def test_dafny3_function_method_keys_on_the_declared_name(self, mod):
+        source = textwrap.dedent(
+            """\
+            class Alpha extends Backend {
+              function method F(x: int): int
+              predicate method P(x: int)
+            }
+            """
+        )
+        assert set(_members(mod, source, "Alpha")) == {"F", "P"}
+
+    def test_colliding_member_names_raise(self, mod):
+        # The last silent-drop path: a dict assignment would keep only the last.
+        # The gate runs with no Dafny toolchain, so "Dafny would reject this" is
+        # not a check it can lean on.
+        source = "class Alpha extends Backend {\n  const dup: int\n  var dup: int\n}\n"
+        with pytest.raises(mod.ParseError, match="both resolve to the member name 'dup'"):
+            _members(mod, source, "Alpha")
+
+    def test_two_anonymous_constructors_raise(self, mod):
+        source = "class Alpha extends Backend {\n  constructor ()\n  {\n  }\n  constructor ()\n  {\n  }\n}\n"
+        with pytest.raises(mod.ParseError, match="'constructor'"):
+            _members(mod, source, "Alpha")
 
     def test_unknown_declaration_keyword_raises(self, mod):
         # Rule 3: an unrecognised declaration must fail, not be silently dropped.
@@ -490,16 +543,23 @@ IN_SCOPE: tuple[tuple[str, str, str], ...] = (
 # tags each. `reindentation` is not a Bounds entry at all: normalisation is a
 # documented feature, and it is here because a regression would show up as drift
 # on every reformatted member.
-OUT_OF_SCOPE: tuple[tuple[str, str, str], ...] = (
+# Each row carries its own reason, because the two populations need different
+# remedies when a row starts failing and the test cannot tell which row it is.
+OUT_OF_SCOPE: tuple[tuple[str, str, str, str], ...] = (
     (
         "comment-drift",
         "  // ID-209: duplicated lemmas (Dafny lacks class-to-class inheritance).",
         "  // Stale note that no longer matches the reference class.",
+        "a documented Bounds entry: comments are stripped before comparison. If this "
+        "now fails, the gate's reach widened and the Bounds section is out of date.",
     ),
     (
         "reindentation",
         "    var path_exists := path in fs;\n    var ancestors_ok := AncestorsTraversableCheck(path);",
         "      var path_exists := path in fs;\n        var ancestors_ok := AncestorsTraversableCheck(path);",
+        "NOT a Bounds entry -- normalisation collapsing layout is a documented "
+        "feature. If this now fails, `normalise` stopped collapsing whitespace, "
+        "which is a defect in it; do not widen the Bounds section.",
     ),
 )
 
@@ -525,13 +585,10 @@ class TestSeededMutations:
         errors = _errors_for(mod, _mutate_twin(live_source, old, new))
         assert errors, f"{label}: seeded drift went undetected"
 
-    @pytest.mark.parametrize(("label", "old", "new"), OUT_OF_SCOPE, ids=[m[0] for m in OUT_OF_SCOPE])
-    def test_out_of_scope_mutation_is_missed(self, mod, live_source, label, old, new):
+    @pytest.mark.parametrize(("label", "old", "new", "reason"), OUT_OF_SCOPE, ids=[m[0] for m in OUT_OF_SCOPE])
+    def test_out_of_scope_mutation_is_missed(self, mod, live_source, label, old, new, reason):
         errors = _errors_for(mod, _mutate_twin(live_source, old, new))
-        assert errors == [], (
-            f"{label}: the gate now catches a mutation its Bounds section says it "
-            f"misses -- widen the docstring in scripts/check_dafny_twin_parity.py"
-        )
+        assert errors == [], f"{label}: the gate now catches a mutation it is expected to miss. This row is {reason}"
 
     def test_pinned_member_keeps_its_unchanged_remainder_under_the_gate(self, mod, live_source):
         # `Write` is pinned, and pinning must not degrade to skipping: a change
@@ -598,6 +655,27 @@ class TestLiveRegister:
 
     def test_main_returns_zero(self, mod):
         assert mod.main([]) == 0
+
+    def test_main_returns_one_and_names_the_member_on_drift(self, mod, live_source, tmp_path, capsys):
+        # The gate's primary path, and the one every other `main` test misses:
+        # they land on the success path or on the MIN_MEMBERS guard, which
+        # returns before `compare` is called. Without this, deleting `main`'s
+        # `return 1` after `compare` leaves the suite green while `lint` and
+        # `verify-formal` both pass on drifted source.
+        source = tmp_path / "MemoryBackend.dfy"
+        source.write_text(
+            _mutate_twin(live_source, "r := Ok(is_file && ancestors_ok);", "r := Ok(is_file || ancestors_ok);"),
+            encoding="utf-8",
+        )
+        assert mod.main(["--source", str(source)]) == 1
+        # Rule 2 localisation must survive the trip through `main`, not just `compare`.
+        assert "IsFileMethod" in capsys.readouterr().err
+
+    def test_main_returns_one_on_an_unparsable_declaration(self, mod, live_source, tmp_path, capsys):
+        source = tmp_path / "MemoryBackend.dfy"
+        source.write_text(_mutate_twin(live_source, "  method Exists(", "  gizmo Exists("), encoding="utf-8")
+        assert mod.main(["--source", str(source)]) == 1
+        assert "unrecognised declaration keyword" in capsys.readouterr().err
 
     def test_main_fails_on_a_source_it_cannot_parse(self, mod, tmp_path):
         # The empty-parse guard: a source whose shape moved must fail loudly

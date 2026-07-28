@@ -12,7 +12,11 @@ Items graduate through the SDD pipeline:
 
 **Status legend:** `[ ]` pending · `[~]` in progress
 
-**Ordering:** within each topic group, higher-priority or blocking items come first.
+**Ordering:** within each topic group, higher-priority or blocking items come
+first — **except** where a section declares its own ordering, which it must state
+in its own preamble. A section whose items form a dependency chain may order by
+execution instead; readers who open the file at a heading need that stated where
+they land, not only here.
 
 **Item scope:** idea + decision-relevant constraints + open questions.
 Do not repeat process steps (those live in `sdd/000-process.md` and the ripple-check table).
@@ -97,19 +101,20 @@ behind the programme: [research](research/research-inconsistency-detection-multi
 § 9, whose step numbers each item cites — that document carries the reasoning,
 this section carries the work.
 
-**Order is execution order**, and dependencies are stated by ID rather than by
-position so re-sequencing cannot silently invalidate them. BK-329, BK-330 and
-BK-331 are independent and cheap. BK-324 and ID-207 come next and each depends on
-something earlier. BK-332, ID-236 and ID-237 are follow-ons that get cheaper once
-the earlier work lands. BK-327 is independent of the chain and can be taken at any
-point.
+**This section orders by execution, not by priority** — the declared exception to
+[the file's default](#how-this-file-works), because its items form a dependency
+chain. Position therefore says nothing about importance, and dependencies are
+stated by ID inside each item so re-sequencing cannot silently invalidate them.
+BK-329, BK-330 and BK-331 are independent and cheap. BK-324 and ID-207 come next
+and each depends on something earlier. BK-332, ID-236 and ID-237 are follow-ons
+that get cheaper once the earlier work lands. BK-327 is independent of the chain
+and can be taken at any point.
 
-**Execution order is not importance.** The research doc's designation, which this
-section adopts rather than restates: the two items that build what is actually
-missing are **BK-329** (the authority model) and **ID-207** (the canonical claim
-space). BK-324 is the item they unblock and the evidence that the gap is real —
-not itself one of the two — and it sits fourth because it is where the earlier
-three cash out, not because it outranks ID-207.
+On importance, the research doc's designation, which this section adopts rather
+than restates: the two items that build what is actually missing are **BK-329**
+(the authority model) and **ID-207** (the canonical claim space). BK-324 is the
+item they unblock and the evidence that the gap is real, not itself one of the
+two.
 
 Step 1 (Dafny twin parity) shipped as BK-328; see
 [BACKLOG-DONE.md](BACKLOG-DONE.md). Two findings from it apply to what follows:

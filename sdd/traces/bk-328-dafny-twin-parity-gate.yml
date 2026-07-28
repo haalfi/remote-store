@@ -23,7 +23,7 @@ discovery_followups:
 expected_ripples:
   - sdd/backlogid.json
   - pyproject.toml
-review_rounds: 2
+review_rounds: 3
 surprising_ripples:
   # The ripple-check has no row tying a new lint gate to CI's path filters, and
   # the local `hatch run lint` wiring looked complete. Review caught that CI's
@@ -216,4 +216,41 @@ phases:
           edit to Write while the gate stays green. Docstring is now qualitative;
           the snapshot stays in BACKLOG-DONE, where a completion record is the
           right home for it.
+        outcome: ok
+      - file: scripts/check_dafny_twin_parity.py
+        section: "_MODIFIERS, _DECL_KEYWORDS, class_members"
+        read_type: reference
+        extract: >-
+          Round 3. Two silent-drop paths survived the round-1 rewrite. `inductive`
+          was listed as a declaration keyword when Dafny uses it as a modifier
+          (`inductive lemma L`), so such a member keyed on `lemma` and two would
+          collide; moved to _MODIFIERS alongside its modern synonyms least and
+          greatest. And the member dict had no collision guard, so any two
+          declarations resolving to one name kept the last silently -- the gate
+          runs with no Dafny toolchain, so "Dafny would reject it" is not
+          available as a backstop. Both now raise.
+        outcome: ok
+      - file: tests/scripts/test_check_dafny_twin_parity.py
+        section: "TestLiveRegister, OUT_OF_SCOPE"
+        read_type: verify
+        extract: >-
+          Round 3. main's primary failure path -- compare returns errors,
+          therefore exit 1 -- had no coverage at all: every main test landed on
+          the success path or on the MIN_MEMBERS guard, which returns before
+          compare is called. Deleting that `return 1` would have left the suite
+          green while both CI wirings passed on drifted source. Also gave each
+          OUT_OF_SCOPE row its own reason, since the two populations (a Bounds
+          entry versus pinned behaviour) need opposite remedies and the shared
+          failure message sent a maintainer to widen a bound that never existed.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works"
+        read_type: gate
+        extract: >-
+          Round 3. The new section declared "order is execution order" against
+          the file rule "higher-priority items first", unamended -- and spent a
+          paragraph neutralising the reading that rule licenses, which was the
+          tell. Amended the file rule to name the exception (a section may
+          declare its own ordering in its preamble), so future programme-shaped
+          sections inherit it.
         outcome: ok
