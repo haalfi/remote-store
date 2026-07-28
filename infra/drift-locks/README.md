@@ -75,3 +75,13 @@ deliberate change motivated the refresh (e.g. a floor bump).
 > all describe the same resolution. A test plugin that cannot coexist with the
 > candidate set fails the install loudly (red smoke) rather than silently moving
 > a shared dependency off its pin.
+
+This guarantee is unconditional only on the candidate-artifact path, where the
+committed lock is byte-identical to the smoked freeze. On the local-resolve
+path, `refresh-baseline` re-resolves with `--pre` at commit time, which can be
+later than the run that produced the drift report; a package that moved
+between the two resolves lands in the new lock without ever being smoked. The
+gap does not self-heal: the workflow only smokes packages whose `status` is
+`drift` against the committed baseline, so once the later version becomes that
+baseline, a clean run reports `ok` and skips the smoke for it going forward.
+Note any such deltas in the refresh PR's description.
