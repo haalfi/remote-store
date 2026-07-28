@@ -19,6 +19,8 @@ Read the target files. For each finding record: `file:line`, category (Bug/Secur
 
 **`Docs` findings:** apply `sdd/CONTENT-RULES.md`; cite the rule number in the evidence.
 
+**Findings on cross-artifact checks:** apply `sdd/DRIFT-RULES.md`; cite the rule number in the evidence.
+
 ## Step 3: Report
 
 ```

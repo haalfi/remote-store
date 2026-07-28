@@ -11,7 +11,8 @@ storage-consistency sense used in the library's own contracts.
 
 Siblings: the [documentation framework](../CLAUDE.md#documentation-framework)
 governs the documents themselves; [`CI-OPERATIONS.md`](CI-OPERATIONS.md) governs
-operating a guard once built, and owns the surfaces rules 5, 6 and 9 touch.
+operating a guard once built, and owns the guard-side surfaces rules 5, 6 and 9
+touch.
 
 <a id="rules"></a>
 ## Rules

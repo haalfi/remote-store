@@ -75,7 +75,7 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Lint / CI Completeness
 
-- [ ] **BK-327 — Gate dual-doc nav reachability**
+- [ ] **BK-327 — Gate dual-doc nav reachability and index listing**
   spec: — · effort: S · audience: contributor.tooling
   A `<!-- doc: dual dest=explanation/design/*.md -->` marker publishes a page that
   neither the docs-site nav nor the section index page lists, and nothing catches
