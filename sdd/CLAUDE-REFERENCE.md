@@ -378,8 +378,8 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
   changed tests against [`TESTING.md`](TESTING.md) (assertion depth, mock
   discipline), changed documentation against [`CONTENT-RULES.md`](CONTENT-RULES.md)
   (prose longevity), and any new or changed cross-artifact check against
-  [`DRIFT-RULES.md`](DRIFT-RULES.md) (all nine rules are review-enforced; no
-  mechanical gate exists). Report violations before finishing.
+  [`DRIFT-RULES.md`](DRIFT-RULES.md) (claim space, declared authority, stated
+  bounds). Report violations before finishing.
 
 ---
 
