@@ -75,6 +75,24 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Lint / CI Completeness
 
+- [ ] **BK-327 — Gate dual-doc nav reachability and index listing**
+  spec: — · effort: S · audience: contributor.tooling
+  A `<!-- doc: dual dest=explanation/design/*.md -->` marker publishes a page that
+  neither the docs-site nav nor the section index page lists, and nothing catches
+  either omission. `mkdocs.yml` sets only `validation: links: not_found: warn`, so
+  `nav.omitted_files` stays at its INFO default and `--strict` cannot promote it;
+  `scripts/docs/nav.py` builds `SUMMARY.md` *from* `_nav.yml` and never diffs it
+  against the pages `gen_pages.py` emitted; the `_index.tmpl` Documents list is
+  hand-written and unchecked. So `hatch run docs-gate` goes green on a page that is
+  unreachable, unlisted, or both. Each surface had a live instance repaired by hand
+  in PR #938: `drift-rules` was absent from both, `ci-operations` was in `_nav.yml`
+  and absent from `_index.tmpl`.
+  Fix shape: a G-08 in `scripts/check_docs_framework.py` differencing emitted dual
+  `dest` paths against both `_nav.yml` and the `_index.tmpl` Documents list;
+  raising `nav.omitted_files` to WARNING covers the nav half only.
+  Surfaced by the PR #938 review; an unstated bound on `docs-gate` being trusted
+  past its range ([`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)).
+
 - [ ] **ID-235 — Structural lint for BACKLOG files (entry-header integrity)**
   spec: — · effort: S · audience: contributor.tooling
   A string-anchored edit swallowed an entry header in `BACKLOG-DONE.md`
