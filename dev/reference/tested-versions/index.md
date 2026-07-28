@@ -14,7 +14,7 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[azure]`
 
-*Captured 2026-07-21 on Python 3.13.*
+*Captured 2026-07-28 on Python 3.13.*
 
 | Package                       | Tested up to |
 | ----------------------------- | ------------ |
@@ -23,26 +23,26 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[dagster]`
 
-*Captured 2026-07-21 on Python 3.13.*
+*Captured 2026-07-28 on Python 3.13.*
 
 | Package   | Tested up to |
 | --------- | ------------ |
-| `dagster` | `1.13.14`    |
+| `dagster` | `1.13.15`    |
 
 ## `[graph]`
 
-*Captured 2026-07-21 on Python 3.13.*
+*Captured 2026-07-28 on Python 3.13.*
 
 | Package           | Tested up to |
 | ----------------- | ------------ |
 | `httpx`           | `0.28.1`     |
 | `msal`            | `1.38.0rc2`  |
 | `msal-extensions` | `1.3.1`      |
-| `platformdirs`    | `4.10.1`     |
+| `platformdirs`    | `4.11.0`     |
 
 ## `[httpx]`
 
-*Captured 2026-07-13 on Python 3.13.*
+*Captured 2026-07-28 on Python 3.13.*
 
 | Package | Tested up to |
 | ------- | ------------ |
@@ -58,7 +58,7 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[pydantic]`
 
-*Captured 2026-07-13 on Python 3.13.*
+*Captured 2026-07-28 on Python 3.13.*
 
 | Package             | Tested up to |
 | ------------------- | ------------ |
@@ -66,7 +66,7 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[requests]`
 
-*Captured 2026-07-13 on Python 3.13.*
+*Captured 2026-07-28 on Python 3.13.*
 
 | Package    | Tested up to |
 | ---------- | ------------ |
@@ -75,7 +75,7 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[s3]`
 
-*Captured 2026-07-21 on Python 3.13.*
+*Captured 2026-07-28 on Python 3.13.*
 
 | Package | Tested up to |
 | ------- | ------------ |
@@ -83,7 +83,7 @@ The table below is the projection of those lock files onto the top-level package
 
 ## `[s3-pyarrow]`
 
-*Captured 2026-07-21 on Python 3.13.*
+*Captured 2026-07-28 on Python 3.13.*
 
 | Package   | Tested up to |
 | --------- | ------------ |
