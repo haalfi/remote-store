@@ -23,12 +23,18 @@ discovery_followups:
 expected_ripples:
   - sdd/backlogid.json
   - pyproject.toml
+review_rounds: 1
 surprising_ripples:
   # Not anticipated by the ripple-check: the work's own justification, quoted
   # from formal/README.md, turned out to be overstated. Running dafny against
   # seeded edits corrected the README rather than merely citing it.
   - sdd/formal/README.md
   - sdd/formal/MemoryBackend.dfy
+  # Filing the plan into BACKLOG.md rippled back into the research doc's § 9
+  # preamble, which kept its own sequencing and had to be removed rather than
+  # left to drift. Review caught it; no ripple-check row covers "a doc that
+  # proposes an ordering the backlog now owns".
+  - sdd/research/research-inconsistency-detection-multi-artifact.md
 phases:
   - id: orient
     name: Orient and choose the item
@@ -146,4 +152,42 @@ phases:
           Stamped an owner ID on every step and resolved the step-5 classification
           note, so the doc carries the argument and the backlog carries the work
           rather than both carrying a copy of the plan.
+        outcome: unclear
+        # Incomplete: the § 9 preamble kept its own slice and strategic-pair
+        # sentences, so the plan was left sequenced two ways across two artifacts
+        # -- the exact duplication the new note claimed to prevent. Caught in
+        # review, not by the edit.
+  - id: fix
+    name: Address review
+    steps:
+      - file: scripts/check_dafny_twin_parity.py
+        section: "class_members, class_body"
+        read_type: reference
+        extract: >-
+          Two unstated bounds were real defects, both of the shape the PR fixed
+          elsewhere. The member vocabulary was a keyword allow-list, so a
+          const/var field on one class only was dropped (before the first
+          recognised declaration) or absorbed into a neighbour; membership is now
+          derived from every two-space declaration with an unknown keyword
+          failing loudly. Brace counting ran over text with literals intact, so a
+          brace inside a string desynced the class slicer; scanning now runs on a
+          literal-blanked, length-preserving copy.
+        outcome: ok
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "MemoryBackendMinimal.Write"
+        read_type: verify
+        extract: >-
+          The widened declaration scan first failed on Write's multi-line
+          signature, whose parameter list closes with `  )` at declaration
+          indent. Loud failure did its job on its first real encounter.
+        outcome: ok
+      - file: tests/scripts/test_check_dafny_twin_parity.py
+        section: "OUT_OF_SCOPE, TestSeededMutations"
+        read_type: verify
+        extract: >-
+          The corpus held 1 of the 5 documented bounds while the docstring
+          claimed the set. Bounds are now tagged by how each is held (corpus,
+          argued, structural), order-sensitivity is held as a fires-by-intent
+          test, and the trait bound is held structurally by running against a
+          copy with no BackendContract.dfy beside it.
         outcome: ok

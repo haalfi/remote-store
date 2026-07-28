@@ -29,9 +29,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   **Pins divergences rather than allowlisting them.** The two deliberate
   differences (the constructor's narrower capability set, and `Write`'s
   `CapWriteResultNative` branch that follows from it) record the exact changed
-  lines they license, so 108 of `Write`'s 110 normalised lines stay compared
-  where an allowlist would have dropped all 110 — and `Write` is the member
-  BK-324's facets would land in. 17 members are in lockstep, 2 pinned.
+  lines they license. For `Write` — the member BK-324's facets would land in —
+  the reference normalises to 114 lines and the twin to 110, the pin licenses 6
+  removals and 2 additions, and the other 108 of the twin's 110 lines stay
+  compared, where an allowlist would have dropped all 110. 17 members are in
+  lockstep, 2 pinned.
+  Membership is derived rather than listed: every two-space declaration in a
+  class body is claimed, an unknown declaration keyword fails loudly instead of
+  being dropped, and brace-counting runs over a literal-blanked copy so a brace
+  inside a string cannot desync the class slicer.
   Per [`DRIFT-RULES.md`](DRIFT-RULES.md#rules): Rule 1's pairwise exemption
   applies (one driver is unavailable — the duplication is forced by the
   language); Rule 4's authority is declared (the reference class is canonical,

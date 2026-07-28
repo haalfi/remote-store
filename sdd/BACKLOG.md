@@ -99,10 +99,17 @@ this section carries the work.
 
 **Order is execution order**, and dependencies are stated by ID rather than by
 position so re-sequencing cannot silently invalidate them. BK-329, BK-330 and
-BK-331 are independent and cheap. BK-324 and ID-207 are the strategic pair the
-programme exists for, and each depends on something earlier. BK-332, ID-236 and
-ID-237 are follow-ons that get cheaper once the earlier work lands. BK-327 is
-independent of the chain and can be taken at any point.
+BK-331 are independent and cheap. BK-324 and ID-207 come next and each depends on
+something earlier. BK-332, ID-236 and ID-237 are follow-ons that get cheaper once
+the earlier work lands. BK-327 is independent of the chain and can be taken at any
+point.
+
+**Execution order is not importance.** The research doc's designation, which this
+section adopts rather than restates: the two items that build what is actually
+missing are **BK-329** (the authority model) and **ID-207** (the canonical claim
+space). BK-324 is the item they unblock and the evidence that the gap is real —
+not itself one of the two — and it sits fourth because it is where the earlier
+three cash out, not because it outranks ID-207.
 
 Step 1 (Dafny twin parity) shipped as BK-328; see
 [BACKLOG-DONE.md](BACKLOG-DONE.md). Two findings from it apply to what follows:

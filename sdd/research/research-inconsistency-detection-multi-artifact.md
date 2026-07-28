@@ -909,25 +909,24 @@ only how often you look.
 ## 9. Plan of next steps
 
 Each step names the gap it closes, the mechanism family it instantiates, and a
-rough size. Steps 1 to 4 are independent and can land in any order.
+rough size.
 
-**The steps are now filed.** `sdd/BACKLOG.md` § Cross-Artifact Consistency owns
-them as backlog items in execution order; each step below names its owner. This
-document carries the argument and the evidence, the backlog carries the work —
-so re-sequencing or re-scoping happens there, not here.
+**The steps are now filed, and the sequencing moved with them.**
+`sdd/BACKLOG.md` § Cross-Artifact Consistency owns them as backlog items in
+execution order; each step below names its owner. This document carries the
+argument and the evidence, the backlog carries the work — so re-sequencing or
+re-scoping happens there, not here. An earlier draft of this section proposed its
+own slice ("step 3 plus step 1, then step 2a"); that has been removed rather than
+left to drift against the backlog's order, which is the duplication § 2.1 warns
+about and which this plan exists to stop reproducing.
 
-**Ordering follows the § 5 synthesis, not the gap ranking.** Two steps build the
-things actually missing — a canonical claim space and an authority model — and the
-rest are patches, however worthwhile:
-
-- **Strategic: step 2a** (claim space, T6) and **step 5.1** (authority model, T7).
-  Nothing else addresses what BK-324 exposed.
-- **Cheap and independently worth doing now: step 3** (aggregate trace tags; the
-  data is already committed) and **step 1** (twin parity; a documented, undetected
-  class-B defect in the layer everything trusts).
-
-A reasonable first slice is step 3 plus step 1 for immediate value, then step 2a
-as the real work.
+**What survives here is the *designation*, not the order**, because it is an
+analytic claim this document argues and the backlog only cites. Following the § 5
+synthesis rather than the gap ranking: two steps build the things actually
+missing — **step 2a** (the canonical claim space, T6) and **step 5.1** (the
+authority model, T7) — and the rest are patches, however worthwhile. Nothing else
+addresses what BK-324 exposed. Note the consequence, since it is easy to misread:
+BK-324 itself is the *blocked item*, not one of the two strategic mechanisms.
 
 ### Step 1: Parity gate for the Dafny twin classes
 **Closes:** G-1 · **Mechanism:** E1/E5 · **Size:** M · **Status: shipped as BK-328**

@@ -122,6 +122,8 @@ SAMPLE = textwrap.dedent(
     """\
     class Alpha extends Backend {
 
+      const tally: nat
+
       constructor ()
         ensures name == "alpha"
       {
@@ -151,29 +153,108 @@ SAMPLE = textwrap.dedent(
 
 class TestClassMembers:
     def test_scopes_to_named_class(self, mod):
-        members = mod.class_members(SAMPLE, "Beta")
+        members = _members(mod, SAMPLE, "Beta")
         assert set(members) == {"Copy"}
         assert "r := 2;" in members["Copy"]
 
     def test_parses_attributes_and_anonymous_constructor(self, mod):
-        members = mod.class_members(SAMPLE, "Alpha")
-        assert set(members) == {"constructor", "Copy", "Helper"}
+        members = _members(mod, SAMPLE, "Alpha")
+        assert set(members) == {"constructor", "Copy", "Helper", "tally"}
         # The member text spans signature, specification clauses and body.
         assert "ensures r == 1" in members["Copy"]
         assert "r := 1;" in members["Copy"]
 
-    def test_missing_class_yields_empty(self, mod):
-        assert mod.class_members(SAMPLE, "Gamma") == {}
+    def test_field_declarations_are_members(self, mod):
+        # `const`/`var` are how the Backend trait declares its own state, so a
+        # field added to one class only must be a visible member, not preamble
+        # absorbed into a neighbour.
+        members = _members(mod, SAMPLE, "Alpha")
+        assert "tally" in members
+        assert "const tally: nat" in members["tally"]
 
-    def test_unbalanced_braces_yield_empty(self, mod):
-        assert mod.class_body("class Alpha extends Backend {\n  method M()\n", "Alpha") == ""
+    def test_multiline_signature_continuation_is_not_a_declaration(self, mod):
+        # `Write`'s parameter list closes with `  )` at declaration indent.
+        source = textwrap.dedent(
+            """\
+            class Alpha extends Backend {
+              method Wide(
+                a: int,
+                b: int
+              )
+                returns (r: int)
+              {
+                r := a;
+              }
+            }
+            """
+        )
+        members = _members(mod, source, "Alpha")
+        assert set(members) == {"Wide"}
+        assert "returns (r: int)" in members["Wide"]
+
+    def test_unknown_declaration_keyword_raises(self, mod):
+        # Rule 3: an unrecognised declaration must fail, not be silently dropped.
+        source = "class Alpha extends Backend {\n  gizmo Thing(x: int)\n  {\n  }\n}\n"
+        with pytest.raises(mod.ParseError, match="unrecognised declaration keyword 'gizmo'"):
+            _members(mod, source, "Alpha")
+
+    def test_content_before_first_declaration_is_compared_not_dropped(self, mod):
+        source = "class Alpha extends Backend {\n  stray_marker\n}\n"
+        # `stray_marker` parses as a keyword-shaped token, so it fails loudly
+        # rather than vanishing -- the point is that it is never silently lost.
+        with pytest.raises(mod.ParseError):
+            _members(mod, source, "Alpha")
+
+    def test_missing_class_yields_empty(self, mod):
+        assert _members(mod, SAMPLE, "Gamma") == {}
+
+    def test_unbalanced_braces_yield_no_span(self, mod):
+        text = "class Alpha extends Backend {\n  method M()\n"
+        assert mod.class_body(mod.blank_literals(text), "Alpha") == (-1, -1)
 
     def test_live_classes_declare_the_same_members(self, mod, live_source):
-        stripped = mod.strip_comments(live_source)
-        reference = mod.class_members(stripped, mod.REFERENCE_CLASS)
-        twin = mod.class_members(stripped, mod.TWIN_CLASS)
+        reference = _members(mod, live_source, mod.REFERENCE_CLASS)
+        twin = _members(mod, live_source, mod.TWIN_CLASS)
         assert set(reference) == set(twin)
         assert len(reference) >= mod.MIN_MEMBERS
+
+
+class TestBlankLiterals:
+    def test_preserves_length_and_newlines(self, mod, live_source):
+        literal_text = mod.strip_comments(live_source)
+        structural = mod.blank_literals(literal_text)
+        assert len(structural) == len(literal_text)
+        assert structural.count("\n") == literal_text.count("\n")
+
+    def test_braces_inside_literals_do_not_reach_the_slicer(self, mod):
+        literal_text = "var a := \"{{{\"; var b := '}';"
+        structural = mod.blank_literals(literal_text)
+        assert "{" not in structural
+        assert "}" not in structural
+        # The literal-preserving text keeps them, which is what `normalise` compares.
+        assert "{{{" in literal_text
+
+    def test_class_slicing_survives_a_brace_in_a_literal(self, mod):
+        source = textwrap.dedent(
+            """\
+            class Alpha extends Backend {
+              constructor ()
+              {
+                name := "a{b";
+              }
+            }
+
+            class Beta extends Backend {
+              constructor ()
+              {
+                name := "a}b";
+              }
+            }
+            """
+        )
+        assert set(_members(mod, source, "Alpha")) == {"constructor"}
+        assert set(_members(mod, source, "Beta")) == {"constructor"}
+        assert 'name := "a}b";' in _members(mod, source, "Beta")["constructor"]
 
 
 # ---------------------------------------------------------------------------
@@ -355,15 +436,32 @@ IN_SCOPE: tuple[tuple[str, str, str], ...] = (
         "  method GetFolderInfoRenamed(",
     ),
     (
+        # A field on one class only. Invisible until the parser claimed every
+        # two-space declaration: `const`/`var` were outside the old keyword set,
+        # so this landed in the discarded preamble.
+        "field-on-one-side-only",
+        "class MemoryBackendMinimal extends Backend {\n",
+        "class MemoryBackendMinimal extends Backend {\n  const extra: nat\n",
+    ),
+    (
         "drift-inside-pinned-member",
         "r.value.path == path && r.value.size == |content|",
         "r.value.path == path && r.value.size == |path|",
     ),
 )
 
-# Mutation classes the script's Bounds section says it does NOT catch. Asserting
-# the miss keeps the documented bound executable: if a change here starts
-# catching one of these, the docstring is now wrong and this test says so.
+# Mutations the gate deliberately does NOT catch. Asserting the miss keeps the
+# claim executable: if a change here starts catching one, the docstring is now
+# wrong and this test says so.
+#
+# Only ONE of the script's five Bounds entries is of this shape (comment drift).
+# The order-sensitivity bound is held below by
+# `test_reordering_a_pinned_difference_fires_by_intent` because that bound is a
+# deliberate false *positive*, not a miss; the remaining three are argued or
+# structural and are not corpus-held -- see the script's Bounds section, which
+# tags each. `reindentation` is not a Bounds entry at all: normalisation is a
+# documented feature, and it is here because a regression would show up as drift
+# on every reformatted member.
 OUT_OF_SCOPE: tuple[tuple[str, str, str], ...] = (
     (
         "comment-drift",
@@ -378,11 +476,15 @@ OUT_OF_SCOPE: tuple[tuple[str, str, str], ...] = (
 )
 
 
+def _members(mod, source: str, classname: str) -> dict[str, str]:
+    literal_text = mod.strip_comments(source)
+    return mod.class_members(literal_text, mod.blank_literals(literal_text), classname)
+
+
 def _errors_for(mod, source: str) -> list[str]:
-    stripped = mod.strip_comments(source)
     return mod.compare(
-        mod.class_members(stripped, mod.REFERENCE_CLASS),
-        mod.class_members(stripped, mod.TWIN_CLASS),
+        _members(mod, source, mod.REFERENCE_CLASS),
+        _members(mod, source, mod.TWIN_CLASS),
     )
 
 
@@ -421,6 +523,34 @@ class TestSeededMutations:
         errors = _errors_for(mod, mutated)
         assert any("constructor" in error for error in errors), errors
 
+    def test_reordering_a_pinned_difference_fires_by_intent(self, mod, live_source):
+        # Holds the Bounds entry "line-for-line pins are order-sensitive". The
+        # constructor's two capability-set lines are reordered without changing
+        # their content, so the *difference* is the same set of lines in a new
+        # order. The gate fires, and that false positive is the documented price
+        # of not letting a moved clause pass as unchanged -- a later switch to an
+        # order-free comparison would silently drop it, and this test says so.
+        mutated = _mutate_twin(
+            live_source,
+            "    capabilities := {CapRead, CapWrite, CapDelete, CapList, CapMove, CapCopy,\n"
+            "                     CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead};\n",
+            "    capabilities := {CapWrite, CapRead, CapDelete, CapList, CapMove, CapCopy,\n"
+            "                     CapAtomicWrite, CapAtomicMove, CapMetadata, CapSeekableRead};\n",
+        )
+        errors = _errors_for(mod, mutated)
+        assert any("constructor" in error and "divergence changed" in error for error in errors), errors
+
+    def test_trait_drift_is_structurally_out_of_reach(self, mod, live_source, tmp_path):
+        # Holds the Bounds entry "the trait itself" structurally rather than by
+        # mutation: copy the source somewhere BackendContract.dfy does not exist
+        # and the gate still passes, so the trait cannot influence the verdict
+        # and no mutation to it could ever be caught. Seeding one would only
+        # produce a tautological pass, which is why it is not in OUT_OF_SCOPE.
+        isolated = tmp_path / "MemoryBackend.dfy"
+        isolated.write_text(live_source, encoding="utf-8")
+        assert not (tmp_path / "BackendContract.dfy").exists()
+        assert mod.main(["--source", str(isolated)]) == 0
+
 
 # ---------------------------------------------------------------------------
 # Live register + entry point
@@ -453,3 +583,18 @@ class TestLiveRegister:
         out = capsys.readouterr().out
         for member in mod.DIVERGENT:
             assert f'"{member}": Divergence(' in out
+
+    def test_print_pins_output_matches_the_pinned_changes(self, mod, capsys):
+        # The property that makes `--print-pins` safe to paste: what it emits for
+        # a member equals what DIVERGENT already records, line for line and in
+        # order. Asserting only that the key appears would pass on wrong content.
+        assert mod.main(["--print-pins"]) == 0
+        out = capsys.readouterr().out
+        for member, divergence in mod.DIVERGENT.items():
+            block = out.split(f'"{member}": Divergence(')[1].split("),\n    ),")[0]
+            emitted = tuple(
+                line.strip().rstrip(",")[1:-1].encode().decode("unicode_escape")
+                for line in block.splitlines()
+                if line.strip().startswith(("'", '"'))
+            )
+            assert emitted == divergence.changes, member
