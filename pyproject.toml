@@ -218,7 +218,7 @@ env.GITHUB_ACTIONS.installer = { value = "pip", if = ["true"] }
 # full lint/typecheck/test gauntlet. CI runs this same target via `uvx hatch run
 # preflight` in the `lint` job (BK-269), so the script list is the single source.
 preflight = ["python scripts/gen_graph.py --check", "python scripts/check_api_docs.py", "python scripts/check_docstring_parity.py", "python scripts/gen_features.py --check", "python scripts/gen_graph_viz.py --check", "python scripts/gen_adr_digest.py --check", "python scripts/drift_check.py render-docs --check"]
-lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_formal_trace.py", "python scripts/check_capability_parity.py", "python scripts/check_spec_marks.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py", "python scripts/check_infra_settings.py", "python scripts/check_no_tracker_refs.py", "python scripts/check_ci_inventory.py", "python scripts/check_traces.py", "python scripts/check_readthedocs_python.py", "python scripts/check_backend_order.py", "python scripts/check_ripple_parity.py", "python scripts/check_custom_backend_guide.py", "python scripts/check_ci_full_matrix.py"]
+lint = ["ruff check src/ tests/ examples/ scripts/", "python scripts/check_test_assertions.py tests", "python scripts/check_mock_spec.py tests", "python scripts/check_test_placement.py tests", "python scripts/check_tla_no_emdash.py", "python scripts/check_formal_trace.py", "python scripts/check_capability_parity.py", "python scripts/check_spec_marks.py", "python scripts/check_docs_framework.py", "python scripts/gen_backlogid.py --check", "python scripts/check_rst_roles.py", "python scripts/check_infra_settings.py", "python scripts/check_no_tracker_refs.py", "python scripts/check_ci_inventory.py", "python scripts/check_traces.py", "python scripts/check_readthedocs_python.py", "python scripts/check_backend_order.py", "python scripts/check_ripple_parity.py", "python scripts/check_custom_backend_guide.py", "python scripts/check_ci_full_matrix.py", "python scripts/check_dafny_twin_parity.py"]
 format = "ruff format src/ tests/ examples/ scripts/"
 format-check = "ruff format --check src/ tests/ examples/ scripts/"
 typecheck = "mypy src/ examples/"
@@ -317,6 +317,10 @@ gen-adr-digest = "python scripts/gen_adr_digest.py {args}"
 gen-adr-digest-check = "python scripts/gen_adr_digest.py --check"
 gen-api-check = "python scripts/check_api_docs.py"
 check-docstring-parity = "python scripts/check_docstring_parity.py {args}"
+# BK-328. Runs in `lint`, not `verify-formal`: it parses the .dfy source and
+# needs no Dafny toolchain, so it fires on every change rather than only in the
+# path-gated formal job. `--print-pins` regenerates DIVERGENT change tuples.
+check-dafny-twin-parity = "python scripts/check_dafny_twin_parity.py {args}"
 # ID-182 drift-guard helpers. `drift-check extras|resolve|diff|refresh-baseline|render-docs`
 # — see scripts/drift_check.py docstring. The scheduled workflow uses the same script.
 drift-check = "python scripts/drift_check.py {args}"

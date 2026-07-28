@@ -8,6 +8,41 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-328 — Gate `MemoryBackend` / `MemoryBackendMinimal` twin parity in the Dafny model**
+  spec: — · effort: M · audience: contributor.tooling, library.maintainer
+  Dafny has no class-to-class inheritance, so `MemoryBackendMinimal` duplicates
+  every member of `MemoryBackend` by hand. `sdd/formal/README.md` had documented
+  the resulting drift as invisible to CI and caught only in review — a known,
+  undetected class-B inconsistency in the layer every other formal claim rests
+  on. Implements step 1 of
+  [research](research/research-inconsistency-detection-multi-artifact.md) § 9,
+  the top-ranked gap (G-1).
+  **The README's claim was too broad, and measuring it changed the design.**
+  `dafny verify` was run against seeded one-sided edits rather than trusting the
+  prose: it *does* reject a weakened or dropped postcondition the trait
+  constrains. What it cannot see is drift inside what the contract
+  underdetermines — changing the twin's `GetFolderInfo` folder-name field, which
+  no postcondition pins, verifies at *478 verified, 0 errors* while changing the
+  twin's behaviour for every folder, as does any proof-structure edit. That band
+  is the gate's actual territory, and the README now says so instead of claiming
+  verification catches nothing.
+  **Pins divergences rather than allowlisting them.** The two deliberate
+  differences (the constructor's narrower capability set, and `Write`'s
+  `CapWriteResultNative` branch that follows from it) record the exact changed
+  lines they license, so 108 of `Write`'s 110 normalised lines stay compared
+  where an allowlist would have dropped all 110 — and `Write` is the member
+  BK-324's facets would land in. 17 members are in lockstep, 2 pinned.
+  Per [`DRIFT-RULES.md`](DRIFT-RULES.md#rules): Rule 1's pairwise exemption
+  applies (one driver is unavailable — the duplication is forced by the
+  language); Rule 4's authority is declared (the reference class is canonical,
+  per `sdd/formal/README.md`); Rule 7's bounds are stated in the script *and*
+  made executable by a seeded-mutation corpus that asserts the out-of-scope
+  classes are missed, so a change that silently widens the gate's reach fails
+  the tests rather than quietly outdating the docstring.
+  Also fixes a latent lexer hazard: Dafny allows prime-suffixed identifiers
+  (`var xs' := …`, present in `BackendContract.dfy`), which a naive quote scanner
+  reads as an opening char literal and uses to swallow unrelated code.
+
 - [x] **BK-326 — Lift the dev-env `aiohttp<3.14` cap; floor vcrpy at the release that fixed it**
   spec: — · effort: S · audience: infra.test
   The cap landed as a drive-by CI unblock inside ID-226 (#881) with no item of

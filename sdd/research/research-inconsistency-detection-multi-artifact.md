@@ -926,7 +926,7 @@ A reasonable first slice is step 3 plus step 1 for immediate value, then step 2a
 as the real work.
 
 ### Step 1: Parity gate for the Dafny twin classes
-**Closes:** G-1 · **Mechanism:** E1/E5 · **Size:** M
+**Closes:** G-1 · **Mechanism:** E1/E5 · **Size:** M · **Status: shipped as BK-328**
 
 Add `scripts/check_dafny_twin_parity.py`: normalize each method body of
 `MemoryBackend` and `MemoryBackendMinimal` and assert correspondence modulo the
@@ -934,6 +934,24 @@ declared capability-set difference, with an explicit allowlist for intentional
 divergence. Model it on `check_docstring_parity.py`, which already solves the
 "identical versus deliberately divergent" classification problem. Wire into
 `lint`. Record in the formal README that twin drift is now gated.
+
+**Two corrections from shipping it**, both worth carrying into the remaining
+steps. First, **G-1's premise was overstated in the direction that flatters the
+step**: `dafny verify` was run against seeded one-sided edits rather than taken
+on the formal README's word, and it *does* reject drift that changes what a
+class can prove. The genuinely silent band is narrower — drift inside what the
+contract underdetermines (a `GetFolderInfo` field no postcondition pins verifies
+at *478 verified, 0 errors* while changing behaviour for every folder) and
+proof-structure edits. The step was still worth doing, but S7's discipline about
+estimating a miss rate applies to the *gap statement* too, not only to the gate
+that closes it: G-1 was a documented claim nobody had measured.
+
+Second, **allowlisting a divergent member is weaker than pinning its
+difference**. The shipped gate records the exact changed lines each deliberate
+divergence licenses, so the unchanged remainder of a divergent member stays
+compared rather than dropping out entirely — which matters most for `Write`, the
+largest and most contract-bearing member. Steps 2a and 4 face the same choice
+between "exempt the item" and "pin what the exemption covers"; prefer the pin.
 
 ### Step 2: Bidirectional traceability (the canonical claim space)
 **Closes:** G-3, § 2.1's bottleneck, and BK-324 facet 4 concretely ·

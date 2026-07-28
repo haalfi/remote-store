@@ -8,6 +8,11 @@
 // body of MemoryBackend with a narrower capability set.  Dafny has no
 // class-to-class inheritance, so any postcondition or body change to
 // MemoryBackend must be manually reflected in MemoryBackendMinimal.
+// Verification alone does not enforce that: an edit that stays inside what the
+// contract underdetermines verifies clean on both classes.  The mirroring is
+// gated by scripts/check_dafny_twin_parity.py, which pins the two deliberate
+// divergences (the constructor's capability set, and Write's
+// CapWriteResultNative branch) and requires every other member to match.
 
 include "BackendContract.dfy"
 

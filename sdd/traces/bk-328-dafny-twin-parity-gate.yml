@@ -1,0 +1,113 @@
+id: BK-328
+title: "Gate MemoryBackend / MemoryBackendMinimal twin parity in the Dafny model"
+trigger: >-
+  Asked which consistency-fixing topic should land next. Ranked the research
+  doc's § 9 steps by decay rate rather than by its own suggested slice: step 1
+  is the only candidate with live exposure, and BK-324 will edit the very file
+  the duplication lives in, so the gate wants to exist before that edit.
+source_items:
+  - BK-328
+audience:
+  - contributor.tooling
+  - library.maintainer
+expected_ripples:
+  - sdd/backlogid.json
+  - pyproject.toml
+surprising_ripples:
+  # Not anticipated by the ripple-check: the work's own justification, quoted
+  # from formal/README.md, turned out to be overstated. Running dafny against
+  # seeded edits corrected the README rather than merely citing it.
+  - sdd/formal/README.md
+  - sdd/formal/MemoryBackend.dfy
+phases:
+  - id: orient
+    name: Orient and choose the item
+    steps:
+      - file: sdd/research/research-inconsistency-detection-multi-artifact.md
+        section: "9 (Plan of next steps), 7 (Gaps, ranked)"
+        read_type: reference
+        extract: "Step 1 closes G-1, the top-ranked gap; step 3 and step 5.1 are the alternatives"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "(full)"
+        read_type: gate
+        extract: "Find the competing candidates and the next free ID"
+        outcome: unclear
+        # None of the research doc's eight steps exist as backlog items; the
+        # plan is reachable only via three `Related:` annotations on other
+        # items. A reader of BACKLOG.md alone would not find step 1 at all.
+      - file: sdd/formal/README.md
+        section: "Notable properties"
+        read_type: gate
+        extract: "The documented statement of the defect: drift invisible in CI, caught only in review"
+        outcome: misleading
+        # Overstated. Verification does catch one-sided edits that change what a
+        # class can prove; only the underdetermined band is silent. Corrected in
+        # this PR rather than propagated into the new script's docstring.
+  - id: design
+    name: Design the gate
+    steps:
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 1 pairwise exemption, Rule 4 declared authority, Rule 6 register, Rule 7 stated bounds"
+        outcome: ok
+      - file: scripts/check_docstring_parity.py
+        section: "(full)"
+        read_type: reference
+        extract: "The identical-versus-intentionally-divergent registry pattern to model on"
+        outcome: ok
+      - file: scripts/check_capability_parity.py
+        section: "(full)"
+        read_type: reference
+        extract: "Dafny source-scanning idiom and the empty-parse guard"
+        outcome: ok
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "MemoryBackend, MemoryBackendMinimal"
+        read_type: reference
+        extract: "Member sets are equal but ordered differently; compare by name, not position"
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/check_dafny_twin_parity.py
+        section: "(full)"
+        read_type: reference
+        extract: "Scoped Dafny scan, per-member normalised comparison, pinned divergences"
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "(full)"
+        read_type: verify
+        extract: "Swept every .dfy for lexer hazards; found prime-suffixed identifiers a naive quote scanner would mis-lex"
+        outcome: ok
+  - id: verify
+    name: Verify behaviour, not signatures
+    steps:
+      - file: sdd/formal/MemoryBackend.dfy
+        section: "MemoryBackendMinimal"
+        read_type: verify
+        extract: >-
+          Seeded five one-sided edits and ran `dafny verify` on each. Dropped and
+          weakened postconditions are rejected by Dafny; the GetFolderInfo
+          folder-name field and a stray proof hint both verify at 478 verified,
+          0 errors while the gate catches them. This measurement redefined the
+          gate's claimed territory and both cases are now in the corpus.
+        outcome: ok
+      - file: tests/scripts/test_check_dafny_twin_parity.py
+        section: "TestSeededMutations"
+        read_type: verify
+        extract: "In-scope mutations caught, out-of-scope ones asserted missed, so the stated bound stays executable"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / New or changed cross-artifact check"
+        read_type: verify
+        extract: "Routes to DRIFT-RULES.md, which states its own scope and needs no edit for an added gate"
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience"
+        read_type: gate
+        extract: >-
+          Derived rule: no `user.` audience, so no CHANGELOG entry. Matches the
+          precedent of the two closest analogues (BK-297 docstring parity,
+          BK-245 capability parity), neither of which appears in the CHANGELOG.
+        outcome: ok
