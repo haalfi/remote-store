@@ -23,8 +23,14 @@ discovery_followups:
 expected_ripples:
   - sdd/backlogid.json
   - pyproject.toml
-review_rounds: 1
+review_rounds: 2
 surprising_ripples:
+  # The ripple-check has no row tying a new lint gate to CI's path filters, and
+  # the local `hatch run lint` wiring looked complete. Review caught that CI's
+  # lint job is CODE_PAT-gated and CODE_PAT excludes sdd/, so the gate skipped
+  # the .dfy-only PR it exists to catch. `verify-formal` already documented the
+  # fix pattern for three sibling gates.
+  - .github/workflows/ci.yml
   # Not anticipated by the ripple-check: the work's own justification, quoted
   # from formal/README.md, turned out to be overstated. Running dafny against
   # seeded edits corrected the README rather than merely citing it.
@@ -190,4 +196,24 @@ phases:
           argued, structural), order-sensitivity is held as a fires-by-intent
           test, and the trait bound is held structurally by running against a
           copy with no BackendContract.dfy beside it.
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "setup (path filters), lint, verify-formal"
+        read_type: gate
+        extract: >-
+          Round 2. Wiring the gate into `hatch run lint` alone left it skipped in
+          CI for a .dfy-only PR, because the lint job is CODE_PAT-gated and
+          CODE_PAT excludes sdd/. Reproduced both filters against the scenario:
+          code=false, formal=true. Added the gate to verify-formal, following the
+          pattern that job already documents for three sibling checks.
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1 and 3"
+        read_type: gate
+        extract: >-
+          Round 2. The exact line counts added in round 1 are pseudo-precise
+          values in durable prose that no gate holds; they go stale on a lockstep
+          edit to Write while the gate stays green. Docstring is now qualitative;
+          the snapshot stays in BACKLOG-DONE, where a completion record is the
+          right home for it.
         outcome: ok

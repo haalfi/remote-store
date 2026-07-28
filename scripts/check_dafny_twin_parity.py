@@ -40,10 +40,12 @@ skipped -- their difference is **pinned**: ``DIVERGENT`` records the exact set
 of changed lines the twin is allowed to have, so the unchanged remainder of a
 divergent member stays under the gate.  Two members are pinned today (the
 constructor's name and capability set, and ``Write``'s ``CapWriteResultNative``
-branch).  Concretely for ``Write``: the reference member normalises to 114 lines
-and the twin to 110, the pin licenses 6 removals and 2 additions, and the other
-108 of the twin's 110 lines stay compared -- where an allowlist would drop all
-110.
+branch).  The difference this makes is largest on ``Write``, much the biggest
+member: a pin licenses a handful of lines and leaves the whole remainder of the
+member compared, where an allowlist would drop every line of it.  (Exact counts
+are deliberately not quoted here -- they change whenever ``Write`` is edited in
+lockstep, which leaves the pin valid and the gate green, so a number in this
+docstring would go stale silently.  ``--print-pins`` prints the current one.)
 
 Membership is derived, not listed.  Every two-space-indented declaration in a
 class body is claimed as a member, and a declaration whose keyword the scanner
@@ -95,9 +97,13 @@ three.  Separately from the bounds, the corpus asserts every in-scope mutation
 class *is* caught, and that half is the positive control the zero-failure result
 depends on.
 
-Parsing is a scoped scan over the Dafny source -- no Dafny toolchain needed, so
-this runs in ``hatch run lint`` on every change rather than only in the
-path-gated formal-verification job.
+Parsing is a scoped scan over the Dafny source, so no Dafny toolchain is needed
+and the gate can run anywhere.  It is wired into ``hatch run lint`` *and* into
+CI's ``verify-formal`` job.  Both, deliberately: CI's ``lint`` runs only when the
+diff matches ``CODE_PAT``, which excludes ``sdd/`` -- so a PR that edits only
+``sdd/formal/MemoryBackend.dfy``, which is the canonical one-sided twin edit and
+the whole reason this gate exists, would skip it.  ``verify-formal`` is gated on
+``FORMAL_PAT`` and catches exactly that PR.
 
 Run with:
   hatch run check-dafny-twin-parity

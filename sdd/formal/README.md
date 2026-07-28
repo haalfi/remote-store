@@ -296,11 +296,13 @@ small, stable, and maintainable:
   which no postcondition pins — verifies at *478 verified, 0 errors* while
   changing the twin's behaviour for every folder, and proof-structure edits
   verify clean by construction.  That band is now gated by
-  `scripts/check_dafny_twin_parity.py` (in `hatch run lint`, no Dafny
-  toolchain needed), which compares the two classes member by member and pins
-  the two deliberate divergences (the constructor's capability set and
-  `Write`'s `CapWriteResultNative` branch) rather than skipping them.  Both
-  measured mutation classes are held by
+  `scripts/check_dafny_twin_parity.py`, which compares the two classes member by
+  member and pins the two deliberate divergences (the constructor's capability
+  set and `Write`'s `CapWriteResultNative` branch) rather than skipping them.
+  It needs no Dafny toolchain, and runs both in `hatch run lint` and in CI's
+  `verify-formal` job — the latter because `lint` is skipped for a change
+  confined to `sdd/`, which is precisely the shape of a one-sided edit here.
+  Both measured mutation classes are held by
   `tests/scripts/test_check_dafny_twin_parity.py`.
 
 ### Design decisions

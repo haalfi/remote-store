@@ -198,12 +198,40 @@ class TestClassMembers:
         with pytest.raises(mod.ParseError, match="unrecognised declaration keyword 'gizmo'"):
             _members(mod, source, "Alpha")
 
-    def test_content_before_first_declaration_is_compared_not_dropped(self, mod):
+    def test_keyword_shaped_content_before_first_declaration_raises(self, mod):
+        # Content at declaration indent is claimed as a declaration, so an
+        # unknown one fails loudly rather than vanishing into the preamble.
         source = "class Alpha extends Backend {\n  stray_marker\n}\n"
-        # `stray_marker` parses as a keyword-shaped token, so it fails loudly
-        # rather than vanishing -- the point is that it is never silently lost.
         with pytest.raises(mod.ParseError):
             _members(mod, source, "Alpha")
+
+    def test_content_before_first_declaration_becomes_a_comparable_member(self, mod):
+        # The preamble branch proper: content that does *not* match the
+        # declaration-line shape (here, deeper indent) is captured rather than
+        # discarded, so it reaches `compare` instead of vanishing.
+        source = textwrap.dedent(
+            """\
+            class Alpha extends Backend {
+                stray := 1;
+              method M()
+              {
+              }
+            }
+            """
+        )
+        members = _members(mod, source, "Alpha")
+        assert set(members) == {"(class preamble)", "M"}
+        assert "stray := 1;" in members["(class preamble)"]
+
+    def test_preamble_on_one_class_only_is_reported_by_compare(self, mod, unpinned):
+        # The property the docstring claims as a Rule 3 defence: a stray
+        # construct at the top of one class cannot pass unnoticed. Without the
+        # preamble capture this comparison would see two identical member sets.
+        reference = {"(class preamble)": "    stray := 1;\n", "M": "  method M()\n"}
+        twin = {"M": "  method M()\n"}
+        errors = unpinned.compare(reference, twin)
+        assert len(errors) == 1
+        assert "(class preamble)" in errors[0]
 
     def test_missing_class_yields_empty(self, mod):
         assert _members(mod, SAMPLE, "Gamma") == {}

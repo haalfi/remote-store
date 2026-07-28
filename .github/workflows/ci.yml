@@ -627,6 +627,14 @@ jobs:
         run: python3 scripts/check_spec_marks.py
       - name: Check formal-trace drift
         run: python3 scripts/check_formal_trace.py
+      # Same pattern again, and the most load-bearing instance of it: this gate
+      # exists to catch a one-sided edit to MemoryBackend.dfy, which is a
+      # FORMAL_PAT-only change. Wired solely into `lint` (CODE_PAT) it would skip
+      # the exact PR it was written for, and `dafny verify` above cannot cover the
+      # gap — the drift it catches is provable on both classes. Stdlib-only;
+      # system python3 suffices.
+      - name: Check Dafny twin parity
+        run: python3 scripts/check_dafny_twin_parity.py
 
   # INFORMATIONAL: TLA+ model checks for the live informal layer under
   # sdd/formal/tla/. Not in the gate below by design — see
