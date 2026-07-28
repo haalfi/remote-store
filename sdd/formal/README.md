@@ -287,9 +287,23 @@ small, stable, and maintainable:
   class-to-class inheritance, so `MemoryBackendMinimal` duplicates every
   method body of `MemoryBackend` with a narrower capability set.  Any
   postcondition or body change to `MemoryBackend` **must be manually
-  mirrored** in `MemoryBackendMinimal`.  `dafny_verify.sh` will still pass
-  on both after a one-sided edit (each class proves its own contract),
-  so drift is invisible in CI — it is caught only in review.
+  mirrored** in `MemoryBackendMinimal`.
+
+  Each class proves its own contract, so `dafny_verify.sh` catches a one-sided
+  edit only when it changes what that class can prove.  Weakening a
+  postcondition the trait declares is caught; drift inside what the contract
+  leaves open is not.  Changing the twin's `GetFolderInfo` folder-name field —
+  which no postcondition pins — verifies at *478 verified, 0 errors* while
+  changing the twin's behaviour for every folder, and proof-structure edits
+  verify clean by construction.  That band is now gated by
+  `scripts/check_dafny_twin_parity.py`, which compares the two classes member by
+  member and pins the two deliberate divergences (the constructor's capability
+  set and `Write`'s `CapWriteResultNative` branch) rather than skipping them.
+  It needs no Dafny toolchain, and runs both in `hatch run lint` and in CI's
+  `verify-formal` job — the latter because `lint` is skipped for a change
+  confined to `sdd/`, which is precisely the shape of a one-sided edit here.
+  Both measured mutation classes are held by
+  `tests/scripts/test_check_dafny_twin_parity.py`.
 
 ### Design decisions
 
