@@ -1,0 +1,105 @@
+id: BK-329
+title: "Declare the attribution rule for prose vs Dafny vs conformance"
+trigger: >-
+  sdd/BACKLOG.md § Cross-Artifact Consistency orders by execution and BK-329 sat
+  first, as the item unblocking BK-324. 000-process.md Rule 3 settled spec vs
+  code; nothing settled the intent domain against itself, so DRIFT-RULES Rule 4's
+  precondition (a declared authority rule per artifact pair) was unmet for the
+  exact pair BK-324 was stuck on.
+source_items:
+  - BK-329
+  - BK-324
+  - BK-328
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Cross-Artifact Consistency"
+        read_type: gate
+        extract: "the section declares execution order in its own preamble; BK-329 is first because it unblocks BK-324"
+        outcome: ok
+      - file: sdd/research/research-inconsistency-detection-multi-artifact.md
+        section: "9 (Step 5: Decide BK-324's four rules, with an attribution rule first)"
+        read_type: gate
+        extract: "step 5.1 is a 000-process.md amendment covering prose vs Dafny postcondition vs conformance test, including where the prose is wrong"
+        outcome: ok
+      - file: sdd/research/research-inconsistency-detection-multi-artifact.md
+        section: "5 (findings 1, 3, 6, 7 and synthesis)"
+        read_type: reference
+        extract: "prose is the most authoritative and least checked description; 'both sides bound to the same prose' fails when prose is the side that moved"
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules / Rule 4"
+        read_type: gate
+        extract: "declare authority in the document that owns the pair, next to the contract it arbitrates; do not restate a direction declared elsewhere"
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/000-process.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 3 is cited by name across traces, research, DRIFT-RULES and CONTRIBUTING — append Rule 7 rather than renumber or rewrite it"
+        outcome: ok
+      - file: sdd/formal/README.md
+        section: "Layers at a glance, Compiled oracle as conformance gate"
+        read_type: reference
+        extract: >-
+          two of the needed edges are already declared here: prose -> Dafny with a
+          satisfiability defeater, and Dafny > conformance via the compiled oracle.
+          The amendment supplies the missing edges and links these
+        outcome: ok
+      - file: sdd/TESTING-RUNBOOK.md
+        section: "(header)"
+        read_type: reference
+        extract: "spec-wins-over-runbook is a fourth declared edge; the 'Authority | Owns' table is the in-repo presentation precedent"
+        outcome: ok
+      - file: sdd/adrs/0004-empty-path-semantics.md
+        section: "Decision"
+        read_type: reference
+        extract: >-
+          the ADR defers its roster to spec 001 ad hoc, which is the rule that
+          became Rule 7's ADR/RFC clause. Also the closest artifact to BK-324
+          facet 4, and it does not settle the backend-layer obligation
+        outcome: unclear
+      - file: CONTRIBUTING.md
+        section: "Authoritative Document Format"
+        read_type: gate
+        extract: "rationale is excluded from authoritative docs; every sentence must force different behaviour or be cut. Argument stays in the research doc and is linked"
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience"
+        read_type: gate
+        extract: "contributor.process needs a CHANGELOG entry only when it introduces a new user-facing framework or spec; this amends an existing process doc, so no entry"
+        outcome: ok
+  - id: verify
+    name: Verify against live disagreements
+    steps:
+      - file: sdd/specs/037-depth-limited-listing.md
+        section: "DEPTH-003"
+        read_type: verify
+        extract: >-
+          confirms facet 3's shape — prose explicitly licenses ignoring max_depth
+          ('backends that do not override the parameter simply ignore it'), so
+          permissive prose is satisfiable and the satisfiability defeater never
+          fires. This is why a second defeater was needed
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BK-324 (item)"
+        read_type: verify
+        extract: >-
+          ran the draft rule against all four facets. Two rows were too strict
+          against real cases: 'uniform AND tested' dropped facet 4 (uniform,
+          untested), and 'every backend does Y' dropped facet 2 (a family split).
+          Facet 1 resolves to out-of-scope, not undecidable
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "live trace at sdd/traces/<id>-<slug>.yml; audience drives the CHANGELOG-required rule"
+        outcome: ok

@@ -8,6 +8,41 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-329 — Declare the attribution rule for prose vs Dafny vs conformance**
+  spec: — · effort: S · audience: contributor.process
+  Step 5.1 of
+  [research](research/research-inconsistency-detection-multi-artifact.md) § 9, and
+  the item BK-324 was blocked on. `000-process.md` Rule 3 settled spec vs code and
+  nothing settled the intent domain against itself, so
+  [`DRIFT-RULES.md` Rule 4](DRIFT-RULES.md#authority)'s precondition — a declared
+  authority rule per artifact pair — was unmet for exactly the pair BK-324 needed.
+  Landed as `000-process.md` Rule 7 plus a Guides subsection.
+  **The ordering was mostly already declared, in four places.** `formal/README.md`
+  carries both prose → Dafny (with a satisfiability defeater: a rejected form means
+  the spec contradicts itself) and Dafny > conformance (the compiled-oracle
+  principle); `TESTING-RUNBOOK.md` and ADR-0004 carry theirs. The amendment supplies
+  the missing edges and links the existing ones rather than restating any, per Rule
+  4's own instruction that a second copy of a direction is a second thing to get
+  backwards.
+  **What it adds beyond a precedence list** is separating *where the resolution is
+  written* (always the prose spec) from *which side was wrong* (not settled by
+  that). Rule 3 conflates them safely because code has no standing to be right; a
+  verified postcondition and a green conformance suite do. Three defeaters name when
+  prose is the side that must move — unsatisfiable, under-determined, unenforced —
+  of which only the first was already declared, and the first is the one a verifier
+  can catch, so it is the least useful in practice: permissive prose is satisfiable.
+  **Validated against BK-324's four facets before landing**, which changed two rows.
+  An early draft required "uniform *and tested*" for the under-determined defeater;
+  facet 4 is uniform and untested, and would have fallen through. An early
+  unenforced row required *every* backend to diverge; facet 2 is a family split.
+  Both were too strict against real cases rather than in the abstract. Result: three
+  facets classified, and facet 1 shown to be **not an attribution problem at all**
+  (prose absent *and* backends mutually disagreeing), so BK-324's remaining L is
+  content, not arbitration.
+  Facet 4's classification independently reproduces the disposition BK-324 had
+  already reasoned to — spec the rule at the `Store` layer that enforces it, not in
+  the backend tree that defensively duplicates it.
+
 - [x] **BK-328 — Gate `MemoryBackend` / `MemoryBackendMinimal` twin parity in the Dafny model**
   spec: — · effort: M · audience: contributor.tooling, library.maintainer
   Dafny has no class-to-class inheritance, so `MemoryBackendMinimal` duplicates

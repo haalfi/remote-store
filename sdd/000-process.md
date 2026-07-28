@@ -16,6 +16,7 @@ Authoritative source for the Spec-Driven Development workflow, spec/ADR/RFC form
 6. <a id="workflows"></a>**Workflows**:
    - **Features**: SPEC → TEST → IMPLEMENT → VALIDATE → DOCS. Operational items (CI, docs, pins) skip the spec step.
    - **Bug fixes**: BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together. If the bug contradicts a spec invariant, update the spec.
+7. <a id="intent-attribution"></a>**Prose records the resolution; it does not win the argument**: when spec prose, a Dafny postcondition and a conformance test disagree, the decision is written into the prose — but prose carries no presumption of correctness against a verified postcondition or against what the backends already ship and the suite already passes. See [§ Attribution inside the intent domain](#attribution-inside-the-intent-domain).
 
 ## Guides
 
@@ -56,6 +57,49 @@ def test_double_dot_rejected():
 ```
 
 `pytest -m "spec"` runs all spec-derived tests.
+
+<a id="attribution-inside-the-intent-domain"></a>
+### Attribution inside the intent domain
+
+Rule 3 settles intent against code. These settle the intent domain against
+itself: spec prose, the Dafny model, and the conformance suite. *Where the
+resolution is written* and *which side was wrong* are two questions; answer them
+in that order.
+
+1. **The resolution is written into the prose spec.** A disagreement closed by
+   editing only a postcondition, only a test, or only a backend is not closed.
+   Amend the spec section in the same change.
+2. **Prose carries no presumption of correctness.** It is the only description in
+   this domain with no mechanical counterpart, so a prose claim is evidence of
+   intent and of nothing else. Three defeaters put prose on the wrong side:
+
+   | Defeater | What you observe | What must move |
+   |---|---|---|
+   | **Unsatisfiable** | The verifier rejects the postcondition form the prose requires | Prose — the section contradicts itself |
+   | **Under-determined** | Prose is silent, or permits a variation, where shipped behaviour is uniform | Prose — state the behaviour and add the test it never had. Silence is not a licence to diverge; uniformity is not proof of intent, so where it is defensive duplication of a rule enforced elsewhere, spec it at the layer that enforces it |
+   | **Unenforced** | Prose demands X, shipped backends do otherwise, and the suite is green | Decide once. An unenforced prose claim is not a default: adopt the divergence as a declared variation, or enforce X as a breaking change on the ordinary path |
+
+3. **Two mechanical sides agreeing is not a vote.** A postcondition and a test
+   written in one change from one reading are one description, not two. Establish
+   independence per [`DRIFT-RULES.md` Rule 8](DRIFT-RULES.md#independence) before
+   counting them as agreement.
+4. **ADRs and RFCs record decisions, not contracts.** Where either disagrees with
+   a spec about what the system must do, the spec governs; supersede the ADR
+   rather than editing it (Rule 4).
+5. **A divergence you keep is registered, not remembered.** Give it an owner and a
+   rationale per [`DRIFT-RULES.md` Rule 6](DRIFT-RULES.md#tolerated): a `[~]`
+   backlog item, an xfail entry, or a stated exception in the spec section itself.
+
+These rules arbitrate prose against a mechanical description. Two backends
+disagreeing with each other is not an attribution question and no defeater
+applies: the conformance suite is the one driver
+([`DRIFT-RULES.md` Rule 1](DRIFT-RULES.md#one-driver)), and what the backends
+should do is an undecided contract, not a misattributed one.
+
+Dafny against the conformance suite is settled separately by the compiled-oracle
+principle in [`formal/README.md`](formal/README.md#compiled-oracle), which these
+rules do not restate. The evidence and argument behind them:
+[research § 5](research/research-inconsistency-detection-multi-artifact.md).
 
 ### Backlog
 

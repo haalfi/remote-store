@@ -105,34 +105,25 @@ this section carries the work.
 [the file's default](#how-this-file-works), because its items form a dependency
 chain. Position therefore says nothing about importance, and dependencies are
 stated by ID inside each item so re-sequencing cannot silently invalidate them.
-BK-329, BK-330 and BK-331 are independent and cheap. BK-324 and ID-207 come next
-and each depends on something earlier. BK-332, ID-236 and ID-237 are follow-ons
-that get cheaper once the earlier work lands. BK-327 is independent of the chain
-and can be taken at any point.
+BK-330 and BK-331 are independent and cheap. BK-324 and ID-207 come next and each
+depends on something earlier. BK-332, ID-236 and ID-237 are follow-ons that get
+cheaper once the earlier work lands. BK-327 is independent of the chain and can be
+taken at any point.
 
 On importance, the research doc's designation, which this section adopts rather
-than restates: the two items that build what is actually missing are **BK-329**
-(the authority model) and **ID-207** (the canonical claim space). BK-324 is the
-item they unblock and the evidence that the gap is real, not itself one of the
-two.
+than restates: the two items that build what is actually missing are the authority
+model — shipped as BK-329, now
+[`000-process.md` Rule 7](000-process.md#intent-attribution) — and **ID-207** (the
+canonical claim space). BK-324 is the item they unblock and the evidence that the
+gap is real, not itself one of the two.
 
-Step 1 (Dafny twin parity) shipped as BK-328; see
-[BACKLOG-DONE.md](BACKLOG-DONE.md). Two findings from it apply to what follows:
-a documented gap statement is not a measured one, and pinning what an exemption
-covers beats exempting the whole item.
-
-- [ ] **BK-329 — Declare the attribution rule for prose vs Dafny vs conformance**
-  spec: — · effort: S · audience: contributor.process
-  Research § 9 step 5.1. [`000-process.md` Rule 3](000-process.md#rules) settles
-  spec vs code, and nothing settles the intent domain internally: when contract
-  prose, a Dafny postcondition and a conformance test disagree, which one
-  governs — including the case where the prose is the wrong side.
-  [`DRIFT-RULES.md` Rule 4](DRIFT-RULES.md#authority) calls a declared authority
-  rule a **precondition**, so the precondition is currently unmet for the exact
-  pair BK-324 is stuck on. That is why BK-324 is effort L: the work there is
-  attribution, not detection. A `000-process.md` amendment, and it generalises
-  well beyond BK-324.
-  **First because it unblocks BK-324.**
+Shipped so far: step 1 (Dafny twin parity) as BK-328, step 5.1 (the attribution
+rule) as BK-329; see [BACKLOG-DONE.md](BACKLOG-DONE.md). Three findings from them
+apply to what follows: a documented gap statement is not a measured one, pinning
+what an exemption covers beats exempting the whole item, and an authority rule is
+worth exactly the live disagreements it decides — run a proposed one against them
+before believing it, because the case that does *not* resolve is the informative
+one.
 
 - [ ] **BK-330 — Aggregate trace outcome tags into a drift report**
   spec: — · effort: S · audience: contributor.tooling
@@ -163,8 +154,9 @@ covers beats exempting the whole item.
 
 - [ ] **BK-324 — Reconcile backend-contract divergences (root/alias, wrong-type errors, depth semantics, empty paths)**
   spec: 003, 029, 037 · effort: L · audience: library.maintainer, user.site
-  Research § 9 step 5.2. **Depends on BK-329** (the authority rule); reads
-  better after BK-331. Four facets of one problem, surfaced by PR #932's guide
+  Research § 9 step 5.2. **No longer blocked**: the authority rule it waited on
+  is [`000-process.md` Rule 7](000-process.md#intent-attribution). Reads better
+  after BK-331. Four facets of one problem, surfaced by PR #932's guide
   validation: contract prose, the Dafny model, the conformance suite, and
   shipped backends disagree; the guide currently hedges by deferring to spec
   003. Decide each rule once, then align spec prose, model, conformance
@@ -188,6 +180,19 @@ covers beats exempting the whole item.
      untested (mind the Dafny coupling). This is the orphan-realization
      facet: enforced behaviour with no parent spec section, and the live
      instance ID-207's `Impl ⊆ S` direction exists to catch mechanically.
+  Rule 7 was run against these four before it landed, and classifies them — which
+  side must move, not what the rule should say. Facets 3 and 4 are
+  **under-determined**: prose permits or omits what shipped behaviour does
+  uniformly, so the prose adopts the behaviour. Facet 4 additionally gains the
+  test it never had, and because its uniformity is defensive duplication of a
+  `Store`-layer rule, it specs one layer above the backend tree — which is the
+  disposition facet 4 already reasoned its way to independently. Facet 2 is
+  **unenforced**: prose demands `InvalidPath`, flat-NS backends ship `NotFound`,
+  the suite is green, so the prose claim is not the default and the carve-out and
+  the fix start level. Facet 1 is **not an attribution problem** — prose is absent
+  *and* the backends disagree with each other, so no defeater applies and what
+  they should do is undecided rather than misattributed. It was never blocked on
+  BK-329, and the conformance suite is what has to grow a cell for it.
   Evidence trail: PR #932 review threads and `sdd/traces/bk-320-*.yml`.
   **Filed here, not under Docs & Discoverability**, where it originally sat:
   facets 2 and 3 change runtime behaviour or spec semantics and may be

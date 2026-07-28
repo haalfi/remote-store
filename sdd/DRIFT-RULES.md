@@ -38,7 +38,7 @@ touch.
    writing, before the check exists.** [review-enforced]
    Which side governs is a decision, not a fact. Declare it in the document that
    owns the pair, next to the contract it arbitrates — [`000-process.md`
-   Rule 3](000-process.md#rules), [`CLAUDE.md` principles](../CLAUDE.md#principles) and
+   Rules 3 and 7](000-process.md#rules), [`CLAUDE.md` principles](../CLAUDE.md#principles) and
    [`sdd/formal/README.md`](formal/README.md) each carry theirs. Do not restate
    them here: a second copy of a direction is a second thing to get backwards.
 
