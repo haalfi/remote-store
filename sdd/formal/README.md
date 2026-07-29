@@ -206,6 +206,7 @@ age worse than the qualitative one.
    controls physical location. A module is informal until rule 3
    promotes it, regardless of directory.
 
+<a id="layers-at-a-glance"></a>
 ## Layers at a glance
 
 | Layer | Source of truth | Verified by |

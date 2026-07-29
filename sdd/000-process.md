@@ -10,13 +10,13 @@ Authoritative source for the Spec-Driven Development workflow, spec/ADR/RFC form
 
 1. **No code without a spec**: every testable contract must have a spec section ID.
 2. <a id="spec-test-traceability"></a>**No spec without tests**: every spec section must have at least one test with `@pytest.mark.spec("ID")`.
-3. **Specs are authoritative**: if code and spec disagree, the code is wrong.
+3. **Specs are authoritative**: if code and spec disagree, the code is wrong — unless the spec's claim was never enforced, which [Rule 7](#intent-attribution) qualifies.
 4. **ADRs are immutable once Accepted**: supersede an Accepted ADR, never edit it. Drafts may be refined before acceptance.
 5. **IDs are stable**: once assigned, a section ID never changes meaning. Deprecated sections are marked `[DEPRECATED]`, not removed.
 6. <a id="workflows"></a>**Workflows**:
    - **Features**: SPEC → TEST → IMPLEMENT → VALIDATE → DOCS. Operational items (CI, docs, pins) skip the spec step.
    - **Bug fixes**: BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together. If the bug contradicts a spec invariant, update the spec.
-7. <a id="intent-attribution"></a>**Prose records the resolution; it does not win the argument**: when spec prose, a Dafny postcondition and a conformance test disagree, the decision is written into the prose — but prose carries no presumption of correctness against a verified postcondition or against what the backends already ship and the suite already passes. See [§ Attribution inside the intent domain](#attribution-inside-the-intent-domain).
+7. <a id="intent-attribution"></a>**Prose records the resolution; it does not win the argument**: when spec prose, a Dafny postcondition and a conformance test disagree, the decision is written into the prose — but prose carries no presumption of correctness against a verified postcondition or against a claim the conformance suite never asserted. See [§ Attribution inside the intent domain](#attribution-inside-the-intent-domain).
 
 ## Guides
 
@@ -71,13 +71,14 @@ in that order.
    Amend the spec section in the same change.
 2. **Prose carries no presumption of correctness.** It is the only description in
    this domain with no mechanical counterpart, so a prose claim is evidence of
-   intent and of nothing else. Three defeaters put prose on the wrong side:
+   intent and of nothing else. Three defeaters strip that presumption. Only the
+   first two also settle which side moves; the third reopens the question:
 
-   | Defeater | What you observe | What must move |
+   | Defeater | What you observe | What follows |
    |---|---|---|
-   | **Unsatisfiable** | The verifier rejects the postcondition form the prose requires | Prose — the section contradicts itself |
-   | **Under-determined** | Prose is silent, or permits a variation, where shipped behaviour is uniform | Prose — state the behaviour and add the test it never had. Silence is not a licence to diverge; uniformity is not proof of intent, so where it is defensive duplication of a rule enforced elsewhere, spec it at the layer that enforces it |
-   | **Unenforced** | Prose demands X, shipped backends do otherwise, and the suite is green | Decide once. An unenforced prose claim is not a default: adopt the divergence as a declared variation, or enforce X as a breaking change on the ordinary path |
+   | **Unsatisfiable** | The verifier rejects the postcondition form the prose requires | Prose moves — the section contradicts itself. Owned by [`formal/README.md`](formal/README.md#layers-at-a-glance) and stated here only to complete the procedure |
+   | **Under-determined** | Prose is silent, or permits a variation, where shipped behaviour is uniform | Prose moves — state the behaviour and add the test it never had. Silence is not a licence to diverge; uniformity is not proof of intent, so where it is defensive duplication of a rule enforced elsewhere, spec it at the layer that enforces it |
+   | **Unenforced** | Prose demands X and the conformance suite never asserted it — backends diverging is how you notice, not what decides | Nothing moves yet. An unenforced claim is not a default, so decide it once: adopt the divergence as a declared variation, or enforce X as a breaking change on the ordinary path |
 
 3. **Two mechanical sides agreeing is not a vote.** A postcondition and a test
    written in one change from one reading are one description, not two. Establish
@@ -85,16 +86,18 @@ in that order.
    counting them as agreement.
 4. **ADRs and RFCs record decisions, not contracts.** Where either disagrees with
    a spec about what the system must do, the spec governs; supersede the ADR
-   rather than editing it (Rule 4).
+   rather than editing it ([Rule 4](#rules) above).
 5. **A divergence you keep is registered, not remembered.** Give it an owner and a
-   rationale per [`DRIFT-RULES.md` Rule 6](DRIFT-RULES.md#tolerated): a `[~]`
-   backlog item, an xfail entry, or a stated exception in the spec section itself.
+   rationale, in one of the register forms
+   [`DRIFT-RULES.md` Rule 6](DRIFT-RULES.md#tolerated) admits.
 
-These rules arbitrate prose against a mechanical description. Two backends
-disagreeing with each other is not an attribution question and no defeater
-applies: the conformance suite is the one driver
+These rules arbitrate prose against a mechanical description, so they need a
+prose claim to arbitrate. Where **prose is absent** and the backends disagree with
+each other, no defeater applies and this is not an attribution question: the
+conformance suite is the one driver
 ([`DRIFT-RULES.md` Rule 1](DRIFT-RULES.md#one-driver)), and what the backends
-should do is an undecided contract, not a misattributed one.
+should do is an undecided contract, not a misattributed one. Backends diverging
+under prose that *does* exist is a different case, and it is the third defeater.
 
 Dafny against the conformance suite is settled separately by the compiled-oracle
 principle in [`formal/README.md`](formal/README.md#compiled-oracle), which these

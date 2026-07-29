@@ -105,10 +105,11 @@ this section carries the work.
 [the file's default](#how-this-file-works), because its items form a dependency
 chain. Position therefore says nothing about importance, and dependencies are
 stated by ID inside each item so re-sequencing cannot silently invalidate them.
-BK-330 and BK-331 are independent and cheap. BK-324 and ID-207 come next and each
-depends on something earlier. BK-332, ID-236 and ID-237 are follow-ons that get
-cheaper once the earlier work lands. BK-327 is independent of the chain and can be
-taken at any point.
+BK-330 and BK-331 are independent and cheap. BK-324 comes next and no longer
+depends on anything, only reads better after BK-331; ID-207 keeps a stated
+dependency (best taken after BK-324). BK-332, ID-236 and ID-237 are follow-ons
+that get cheaper once the earlier work lands. BK-327 is independent of the chain
+and can be taken at any point.
 
 On importance, the research doc's designation, which this section adopts rather
 than restates: the two items that build what is actually missing are the authority
@@ -180,19 +181,27 @@ one.
      untested (mind the Dafny coupling). This is the orphan-realization
      facet: enforced behaviour with no parent spec section, and the live
      instance ID-207's `Impl ⊆ S` direction exists to catch mechanically.
-  Rule 7 was run against these four before it landed, and classifies them — which
-  side must move, not what the rule should say. Facets 3 and 4 are
-  **under-determined**: prose permits or omits what shipped behaviour does
-  uniformly, so the prose adopts the behaviour. Facet 4 additionally gains the
-  test it never had, and because its uniformity is defensive duplication of a
-  `Store`-layer rule, it specs one layer above the backend tree — which is the
-  disposition facet 4 already reasoned its way to independently. Facet 2 is
-  **unenforced**: prose demands `InvalidPath`, flat-NS backends ship `NotFound`,
-  the suite is green, so the prose claim is not the default and the carve-out and
-  the fix start level. Facet 1 is **not an attribution problem** — prose is absent
-  *and* the backends disagree with each other, so no defeater applies and what
-  they should do is undecided rather than misattributed. It was never blocked on
-  BK-329, and the conformance suite is what has to grow a cell for it.
+  Rule 7 was run against these four before it landed. It reaches two of them,
+  which is the honest result rather than the flattering one:
+  - **Facet 4 — under-determined.** Prose is silent where behaviour is uniform, so
+    prose adopts it and gains the test it never had; because the uniformity is
+    defensive duplication of a `Store`-layer rule, it specs one layer above the
+    backend tree, which is the disposition this facet already reasoned its way to.
+  - **Facet 2 — unenforced.** The suite never asserted `InvalidPath` for the
+    flat-NS family, so the prose claim is not the default and the carve-out and
+    the fix start level. The defeater strips the presumption; it does not pick.
+  - **Facet 1 — outside the rule.** Prose is absent *and* the backends disagree,
+    so no defeater applies and the contract is undecided rather than
+    misattributed. The conformance suite is what has to grow a cell for it.
+  - **Facet 3 — does not classify, and the facet's own description is why.** No
+    defeater fits: prose *permits* rather than demands (so not unenforced), and
+    shipped behaviour is *not* uniform (so not under-determined) — the S3 family
+    prunes natively via delimiter BFS while Azure lists the prefix and filters
+    client-side. Two further premises above need checking before the facet can be
+    decided: the conformance suite owns the DEPTH-003 *result* invariant, not
+    native pruning, and 037's table is wrong about S3 in a different direction
+    than about Azure. Settle the content first — that is BK-331's derived table —
+    then attribute.
   Evidence trail: PR #932 review threads and `sdd/traces/bk-320-*.yml`.
   **Filed here, not under Docs & Discoverability**, where it originally sat:
   facets 2 and 3 change runtime behaviour or spec semantics and may be
