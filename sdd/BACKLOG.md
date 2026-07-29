@@ -105,9 +105,10 @@ this section carries the work.
 [the file's default](#how-this-file-works), because its items form a dependency
 chain. Position therefore says nothing about importance, and dependencies are
 stated by ID inside each item so re-sequencing cannot silently invalidate them.
-BK-330 and BK-331 are independent and cheap. BK-324 comes next and no longer
-depends on anything, only reads better after BK-331; ID-207 keeps a stated
-dependency (best taken after BK-324). BK-332, ID-236 and ID-237 are follow-ons
+BK-330 and BK-331 are independent and cheap. BK-324 comes next with its
+*attribution* blocker cleared, but BK-331 still comes before it: facet 3 cannot be
+decided against 037's current table. ID-207 keeps its own (best taken after
+BK-324). BK-332, ID-236 and ID-237 are follow-ons
 that get cheaper once the earlier work lands. BK-327 is independent of the chain
 and can be taken at any point.
 
@@ -155,9 +156,10 @@ one.
 
 - [ ] **BK-324 — Reconcile backend-contract divergences (root/alias, wrong-type errors, depth semantics, empty paths)**
   spec: 003, 029, 037 · effort: L · audience: library.maintainer, user.site
-  Research § 9 step 5.2. **No longer blocked**: the authority rule it waited on
-  is [`000-process.md` Rule 7](000-process.md#intent-attribution). Reads better
-  after BK-331. Four facets of one problem, surfaced by PR #932's guide
+  Research § 9 step 5.2. **Attribution blocker cleared**: the authority rule it
+  waited on is [`000-process.md` Rule 7](000-process.md#intent-attribution).
+  **Still after BK-331**, which facet 3 below needs rather than merely prefers.
+  Four facets of one problem, surfaced by PR #932's guide
   validation: contract prose, the Dafny model, the conformance suite, and
   shipped backends disagree; the guide currently hedges by deferring to spec
   003. Decide each rule once, then align spec prose, model, conformance
@@ -192,7 +194,9 @@ one.
     the fix start level. The defeater strips the presumption; it does not pick.
   - **Facet 1 — outside the rule.** Prose is absent *and* the backends disagree,
     so no defeater applies and the contract is undecided rather than
-    misattributed. The conformance suite is what has to grow a cell for it.
+    misattributed. Deciding it is still spec work under
+    [Rule 1](000-process.md#rules), with a conformance cell alongside the new
+    section — not a cell instead of one.
   - **Facet 3 — does not classify, and the facet's own description is why.** No
     defeater fits: prose *permits* rather than demands (so not unenforced), and
     shipped behaviour is *not* uniform (so not under-determined) — the S3 family

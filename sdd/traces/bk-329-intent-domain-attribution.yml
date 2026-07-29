@@ -16,7 +16,9 @@ expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:
   - CLAUDE.md
-review_rounds: 1
+  - .claude/agents/store-backend-expert.md
+  - sdd/CLAUDE-REFERENCE.md
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -143,4 +145,35 @@ phases:
           the register forms were reproduced inline and had already drifted (a
           fourth form invented, one of Rule 6's dropped). Cite the rule, list
           nothing
+        outcome: ok
+  - id: fix_2
+    name: Fix (review round 2)
+    steps:
+      - file: .claude/agents/store-backend-expert.md
+        section: "CONSTRAINTS"
+        read_type: verify
+        extract: >-
+          third copy of the spec-over-code direction, unqualified, in the agent
+          whose DOMAIN is src/remote_store/ — the code that facets 2 and 4 touch.
+          Round 1 swept CLAUDE.md but treated it as the last copy instead of
+          grepping the wording
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Authority direction amended"
+        read_type: verify
+        extract: >-
+          the round-1 surprising ripple produced no ripple-check row, so the next
+          amendment would rediscover it. New trigger added to both presentations,
+          keyed on grepping the direction's wording because the copies do not cite
+          their source
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Guides / Attribution inside the intent domain"
+        read_type: verify
+        extract: >-
+          three boundary statements were each looser than the procedure they
+          gate: the scope sentence excluded absent prose that the
+          under-determined row fires on, the carve-out scoped out item 1 and
+          Rule 1 (licensing a test-only contract), and Rule 3's new qualifier
+          stated the exception without its disposition
         outcome: ok

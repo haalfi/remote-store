@@ -82,6 +82,7 @@ Read this before starting. One line per trigger.
 | Source/test/spec counts       | README badge + CI coverage report (no manual table) |
 | New authoritative process doc in `sdd/` | [CLAUDE.md § Documentation framework](../CLAUDE.md#documentation-framework) (if part of the trio), [CONTRIBUTING § Authoritative Document Format](../CONTRIBUTING.md#authoritative-document-format) (Scope subsection within), sibling authority back-references, `.claude/agents/*.md` FOUNDATION lists, the `/rvw-pr` and `/audit` step lists if the doc is review-enforced, `docs-src/explanation/design/_nav.yml` plus that section's `_index.tmpl`, and this ripple-check |
 | New or changed cross-artifact check | [`sdd/DRIFT-RULES.md`](DRIFT-RULES.md#rules) |
+| Authority direction amended   | Every copy of that direction, not just its owning doc: `CLAUDE.md` principles, `.claude/agents/*.md` CONSTRAINTS blocks, sibling `sdd/` authority docs. Grep the direction's wording, not the doc name |
 
 <a id="detailed-checklist"></a>
 ### Detailed checklist
@@ -260,6 +261,14 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | `docs-src/explanation/design/_nav.yml`, and this ripple-check |
 | **New or changed cross-artifact check** | [`sdd/DRIFT-RULES.md` Rules](DRIFT-RULES.md#rules) |
 |                            | (scope and rule set are stated there)                    |
+| **Authority direction amended** | Which side governs is copied into agent-facing files, |
+|                            | so amending it in the owning `sdd/` doc leaves the copies |
+|                            | asserting the old direction: `CLAUDE.md` principles,       |
+|                            | `.claude/agents/*.md` CONSTRAINTS blocks, sibling `sdd/`   |
+|                            | authority docs (see [`sdd/DRIFT-RULES.md` Rule 4](DRIFT-RULES.md#authority) |
+|                            | for why a second copy is a second thing to get backwards).|
+|                            | Grep the direction's **wording** — the copies do not cite  |
+|                            | the doc they came from, so a doc-name search misses them   |
 
 ---
 

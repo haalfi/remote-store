@@ -10,7 +10,7 @@ Authoritative source for the Spec-Driven Development workflow, spec/ADR/RFC form
 
 1. **No code without a spec**: every testable contract must have a spec section ID.
 2. <a id="spec-test-traceability"></a>**No spec without tests**: every spec section must have at least one test with `@pytest.mark.spec("ID")`.
-3. **Specs are authoritative**: if code and spec disagree, the code is wrong — unless the spec's claim was never enforced, which [Rule 7](#intent-attribution) qualifies.
+3. **Specs are authoritative**: if code and spec disagree, the code is wrong — unless the spec's claim was never enforced, which [Rule 7](#intent-attribution) qualifies: that makes the claim undecided, not the code right.
 4. **ADRs are immutable once Accepted**: supersede an Accepted ADR, never edit it. Drafts may be refined before acceptance.
 5. **IDs are stable**: once assigned, a section ID never changes meaning. Deprecated sections are marked `[DEPRECATED]`, not removed.
 6. <a id="workflows"></a>**Workflows**:
@@ -78,7 +78,7 @@ in that order.
    |---|---|---|
    | **Unsatisfiable** | The verifier rejects the postcondition form the prose requires | Prose moves — the section contradicts itself. Owned by [`formal/README.md`](formal/README.md#layers-at-a-glance) and stated here only to complete the procedure |
    | **Under-determined** | Prose is silent, or permits a variation, where shipped behaviour is uniform | Prose moves — state the behaviour and add the test it never had. Silence is not a licence to diverge; uniformity is not proof of intent, so where it is defensive duplication of a rule enforced elsewhere, spec it at the layer that enforces it |
-   | **Unenforced** | Prose demands X and the conformance suite never asserted it — backends diverging is how you notice, not what decides | Nothing moves yet. An unenforced claim is not a default, so decide it once: adopt the divergence as a declared variation, or enforce X as a breaking change on the ordinary path |
+   | **Unenforced** | Prose demands X and no test asserts X. A clause-level question: [Rule 2](#spec-test-traceability)'s marker is section-level, so a marked section is not evidence the clause is covered. Backends diverging is how you notice, not what decides | Nothing moves yet. An unenforced claim is not a default, so decide it once: adopt the divergence as a declared variation, or enforce X as a breaking change on the ordinary path |
 
 3. **Two mechanical sides agreeing is not a vote.** A postcondition and a test
    written in one change from one reading are one description, not two. Establish
@@ -91,13 +91,17 @@ in that order.
    rationale, in one of the register forms
    [`DRIFT-RULES.md` Rule 6](DRIFT-RULES.md#tolerated) admits.
 
-These rules arbitrate prose against a mechanical description, so they need a
-prose claim to arbitrate. Where **prose is absent** and the backends disagree with
-each other, no defeater applies and this is not an attribution question: the
+One case has nothing to attribute: **prose absent *and* shipped behaviour
+non-uniform**, so no defeater has an observation to fire on. Prose silence by
+itself does not qualify — that is the under-determined row's territory. Here the
 conformance suite is the one driver
-([`DRIFT-RULES.md` Rule 1](DRIFT-RULES.md#one-driver)), and what the backends
-should do is an undecided contract, not a misattributed one. Backends diverging
-under prose that *does* exist is a different case, and it is the third defeater.
+([`DRIFT-RULES.md` Rule 1](DRIFT-RULES.md#one-driver)) and the contract is
+undecided rather than misattributed.
+
+What that moots is the *arbitration*, not item 1 and not [Rule 1](#rules):
+deciding the behaviour creates a testable contract, so it gets a spec section and
+the decision still lands in prose. A conformance cell with no parent section is
+the orphan realization this procedure exists to prevent.
 
 Dafny against the conformance suite is settled separately by the compiled-oracle
 principle in [`formal/README.md`](formal/README.md#compiled-oracle), which these

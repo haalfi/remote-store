@@ -19,7 +19,9 @@ TASK: Provided in your invocation prompt. If it is missing or unclear, say so
 rather than guessing.
 
 CONSTRAINTS:
-- Specs are source of truth. Code contradicts spec → code is wrong.
+- Specs are source of truth. Code contradicts spec → code is wrong, unless the
+  spec's claim was never enforced, which sdd/000-process.md Rule 7 qualifies:
+  that makes the claim undecided, not the code right.
 - Store API consistency first, then backend implementation details.
 - Use existing backends as reference implementations.
 - Only create/modify files under src/remote_store/ (excluding ext/).
