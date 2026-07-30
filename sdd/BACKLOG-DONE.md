@@ -51,8 +51,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   which is why a dry run over four facets never exercised the gap — the premise was
   false. Added as **over-specified**, disposing that a verified clause with no prose
   parent is the formal layer's own orphan realization and is not self-authorizing.
-  **Validated against BK-324's four facets**, which changed the rule twelve times
-  across six review rounds, every time in the same place: the normative core held
+  **Validated against BK-324's four facets** across six review rounds, which
+  reworked the rule repeatedly and always in the same place: the normative core held
   throughout and the **boundary** statements were each a clause looser than the
   procedure they gate. An early draft
   required "uniform *and tested*" for the under-determined defeater; facet 4 is
@@ -145,6 +145,19 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   the fix cost nothing and leaves Rule 6 readable standalone.
   A trigger is a mitigation, not a reduction, and saying which one it is was the
   reviewer's point.
+  **A self-validation pass over this entry's own claims caught three defects**, two
+  of them in the round that added them. The ripple row's grep was still not runnable:
+  `.gitignore` carries `.claude/*`, so plain `rg` returns nothing under `.claude/` —
+  the copy most likely to be missed — and the alternation was broad enough to return
+  200+ hits in `sdd/`. The row now carries the exact tested command. The
+  ungated-gate follow-up was filed claiming `gen_adr_digest` was the *last* instance,
+  inherited from the review without checking; enumerating `lint` and `preflight`
+  against the path filters found `check_tla_no_emdash` (the `sdd/formal/tla/` subtree
+  `FORMAL_PAT` deliberately excludes) and `check_ci_inventory`'s handbook half, so
+  BK-333 covers three. And a precise count of rule revisions was dropped rather than
+  re-derived: it was unverifiable prose and
+  [`CONTENT-RULES.md` Rule 3](CONTENT-RULES.md#rules) bans pseudo-precise values in
+  narrative, which is also why BK-328 dropped its line counts.
   **Closed the gating hole this work exposed rather than only noting it.**
   `check_traces.py` and `gen_backlogid.py --check` lived only in `lint`, which
   `CODE_PAT` skips for an `sdd/`-only change — so a trace file and a

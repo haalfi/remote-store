@@ -90,24 +90,33 @@ and the highest ID already in this file, then take the next integer. Run
   Stays here rather than under Cross-Artifact Consistency: it checks one
   artifact against a structural rule, not two descriptions against each other.
 
-- [ ] **BK-333 — `gen_adr_digest.py --check` is ungated for an `sdd/adrs/`-only change**
+- [ ] **BK-333 — Three `lint`/`preflight` gates are unreachable for the `sdd/` change that trips them**
   spec: — · effort: S · audience: contributor.tooling
-  The last instance of the "an `sdd/`-only change reaches no gate" shape, after
-  BK-329 closed it for `check_traces` and `gen_backlogid --check`. The check lives
-  in `preflight`, which runs only inside CI's `lint` job; `CODE_PAT` does not match
-  `^sdd/`, and `FORMAL_PAT` is `^sdd/(formal|specs)/`, so it misses `sdd/adrs/`
-  too — the second-wiring escape hatch used for `check_spec_marks`,
-  `check_formal_trace` and `check_dafny_twin_parity` does not reach it. `docs-gate`
-  does not invoke it.
-  So adding an ADR, accepting a draft, or recording a supersession — exactly the
-  changes that bump `sdd/adrs/DIGEST.md` and can break supersession-graph
-  consistency — are validated by nothing in CI, and the artefact it guards is
-  **committed and generated**, so staleness ships.
-  Fix shape: add it to `docs-gate` beside the two BK-329 wired, following the
+  The remaining instances of the "an `sdd/`-only change reaches no gate" shape,
+  after BK-329 closed it for `check_traces` and `gen_backlogid --check`. `CODE_PAT`
+  does not match `^sdd/`, so CI's `lint` job (and `preflight` inside it) is skipped;
+  `FORMAL_PAT` is `^sdd/(formal|specs)/` **minus `sdd/formal/tla/`**, so the
+  second-wiring escape hatch used for `check_spec_marks`, `check_formal_trace`,
+  `check_capability_parity` and `check_dafny_twin_parity` does not reach these
+  three; and `docs-gate` invokes none of them:
+  - `gen_adr_digest.py --check` (in `preflight`) reads `sdd/adrs/`. Adding an ADR,
+    accepting a draft or recording a supersession is exactly what bumps the
+    **committed generated** `sdd/adrs/DIGEST.md` and can break supersession-graph
+    consistency, so staleness ships.
+  - `check_tla_no_emdash.py` reads `sdd/formal/tla/**/*.tla` — the one subtree
+    `FORMAL_PAT` deliberately excludes, so a TLA-only change skips the check
+    written for TLA files.
+  - `check_ci_inventory.py` compares `.github/workflows/` against
+    `sdd/CI-OPERATIONS.md`. The workflow side is covered (`CODE_PAT` matches
+    `^\.github/workflows/`); editing the handbook alone is not.
+  Fix shape: add each to `docs-gate` beside the two BK-329 wired, following the
   precedent `check_ripple_parity` documents. Filed rather than fixed in BK-329
-  because that PR touched no ADR: its own artefacts were the other two, and wiring
-  a third gate it did not exercise would have been scope it could not verify.
-  Surfaced by the PR #941 review.
+  because that PR touched no ADR, no TLA module and not the handbook: its own
+  artefacts were the other two, and wiring gates it did not exercise would have
+  been scope it could not verify.
+  Surfaced by the PR #941 review, which named `gen_adr_digest` as the last
+  instance; enumerating `lint` and `preflight` against the path filters found two
+  more, so the item is scoped to all three rather than to the one reported.
 
 ---
 

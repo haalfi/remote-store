@@ -267,12 +267,20 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | `.claude/agents/*.md` CONSTRAINTS blocks, sibling `sdd/`   |
 |                            | authority docs.                                            |
 |                            | The copies do not cite the doc they came from, so search by |
-|                            | wording, not doc name — and by an **alternation**, because  |
-|                            | they are phrased differently and share no one phrase:      |
-|                            | `code is wrong\|source of truth\|authoritative\|contradicts`, |
-|                            | over `CLAUDE.md`, `.claude/` and `sdd/*.md`. A single-phrase |
-|                            | grep finds three of the four known copies and misses the    |
-|                            | RFC, which is how that one was missed once already.        |
+|                            | wording. This exact command, which finds all four known     |
+|                            | copies:                                                     |
+|                            | `rg --no-ignore --hidden -e 'code is wrong' -e 'spec is source of truth' CLAUDE.md .claude/ sdd/` |
+|                            | (two `-e` flags, not an escaped `\|` — this file is read raw, |
+|                            | and in `rg`'s regex `\|` is a *literal* pipe that matches     |
+|                            | nothing)                                                     |
+|                            | Two parts are load-bearing. **`--no-ignore`**: `.gitignore`  |
+|                            | carries `.claude/*` with re-inclusions, so plain `rg` finds  |
+|                            | nothing under `.claude/` — the copy most likely to be missed.|
+|                            | And an **alternation**, because the copies are phrased       |
+|                            | differently: a single phrase misses the RFC, which is how    |
+|                            | that one was missed once already. Keep the terms narrow —    |
+|                            | broadening to `authoritative\|source of truth` returns 200+  |
+|                            | hits in `sdd/` and is not usable.                            |
 |                            | **Skip, deliberately:** `sdd/rfcs/` and `sdd/research/`    |
 |                            | (point-in-time per [§ Document types](000-process.md#document-types)) |
 |                            | and `sdd/traces/` (a record of what was read, never        |
