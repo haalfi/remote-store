@@ -61,7 +61,7 @@ description of the task the agent received.
 
 Arm A constraints:
 
-    - You MAY read /home/user/remote-store/sdd/RULEBOOK.md.
+    - You MAY read sdd/RULEBOOK.md.
     - You MAY NOT open any of: sdd/000-process.md, sdd/DESIGN.md,
       sdd/TESTING.md, sdd/AUTHORING.md, sdd/DOCUMENTATION.md,
       sdd/CONTENT-RULES.md, sdd/DRIFT-RULES.md, sdd/CI-OPERATIONS.md,
@@ -73,13 +73,15 @@ Arm A constraints:
 
 Arm B constraints:
 
-    - You MAY NOT open /home/user/remote-store/sdd/RULEBOOK.md.
+    - You MAY NOT open sdd/RULEBOOK.md.
     - You MAY read anything else: the sdd/ process docs, CONTRIBUTING.md,
       specs, source code, tests, sdd/BACKLOG.md, sdd/CLAUDE-REFERENCE.md.
 
 The prompt paths above name `sdd/RULEBOOK.md` because that is where the file was
-when the runs happened. They are transcripts, not instructions, and are left as
-recorded.
+when the runs happened. They are transcripts, not instructions, and are otherwise
+left as recorded. One substitution: the two arm constraint lines named the
+rulebook by absolute path in the original prompts; that path is specific to the
+machine the runs executed on and is repo-relative here.
 
 ## Transcription note
 
