@@ -1,24 +1,19 @@
-"""Aggregate sdd/traces/*.yml to size a rulebook-usefulness experiment."""
+"""Aggregate sdd/traces/*.yml to size a rulebook-usefulness experiment.
+
+Run from the repo root.
+"""
 
 from __future__ import annotations
 
 import glob
+import os
+import sys
 from collections import Counter
 
 import yaml
 
-COMPILED = {
-    "CLAUDE.md",
-    "sdd/000-process.md",
-    "sdd/DESIGN.md",
-    "sdd/TESTING.md",
-    "sdd/AUTHORING.md",
-    "sdd/DOCUMENTATION.md",
-    "sdd/CONTENT-RULES.md",
-    "sdd/DRIFT-RULES.md",
-    "sdd/CI-OPERATIONS.md",
-    "CONTRIBUTING.md",
-}
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _common import COMPILED  # noqa: E402
 
 files = sorted(p for p in glob.glob("sdd/traces/[!_]*.yml"))
 gate_files: Counter[str] = Counter()

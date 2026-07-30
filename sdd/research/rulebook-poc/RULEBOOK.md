@@ -15,12 +15,23 @@ a fact about *this document*, not about the rules below.
 authoritative in its source doc, and collecting it into one pass changes nothing
 about that. What is derived is the *transcription*, not the authority.
 
-**Where this document and a source doc differ, the source doc is right.** That is
-a transcription defect in this file, to be fixed here. It is not a rule with two
-readings. Because this is hand-compiled rather than generated (unlike
-[`sdd/adrs/DIGEST.md`](../../adrs/DIGEST.md)), it can fall behind a source edit, so
-check the source whenever the exact wording is load-bearing: editing a rule
-itself, or implementing a gate whose pass/fail boundary is the rule's text.
+**Where this document and a source doc differ, the source doc is right.** It is
+not a rule with two readings; this file is simply behind. Because it is
+hand-compiled rather than generated (unlike
+[`sdd/adrs/DIGEST.md`](../../adrs/DIGEST.md)), it falls behind whenever a source
+doc is edited, so check the source whenever the exact wording is load-bearing:
+editing a rule itself, or implementing a gate whose pass/fail boundary is the
+rule's text.
+
+**Synced to master `83e22a3`, and frozen there.** Following the PoC-folder
+convention (cf. [`bk-181-poc/README.md`](../bk-181-poc/README.md), which freezes
+once its finding lands), this artefact carries **no ongoing maintenance
+obligation**: it is evidence of what was tested, not a document under upkeep.
+Divergence after `83e22a3` is expected and is not a defect to file. That
+freeze is also why no drift gate guards this file — a frozen artefact has
+nothing to keep in sync, which is the only reading under which shipping a second
+normative description of the rule set does not owe
+[`DRIFT-RULES.md` rule 6](../../DRIFT-RULES.md#tolerated) a register entry.
 
 **Compilation conventions.**
 
@@ -49,7 +60,7 @@ The principles are universal and apply to any contributor, not only agents
 2. **Verify beyond the diff**: search for what references the thing you changed. The ripple-check in `sdd/CLAUDE-REFERENCE.md` has a Pre-work index (read **before starting** to anticipate ripples) and a Detailed checklist (read **before committing** to verify them). You MUST consult both presentations for changes that touch backends, errors, capabilities, versions, specs, or dependencies.
 3. **Repo describes reality at every commit**: docs, backlog, and CHANGELOG reflect current state, not future intent. Same commit, or mark `[~]`.
 4. **Single source of truth**: Authoritative references live in one place: link to them, don't copy. Examples: ripple-check, CHANGELOG section order, backlog ID format. Copies become stale.
-5. **Specs are source of truth**: code vs spec conflict: code is wrong. Backlog vs history conflict: backlog is wrong. Fix the less authoritative side.
+5. **Specs are source of truth**: code vs spec conflict: code is wrong — unless no test ever asserted that clause for the backend in question, which [`sdd/000-process.md` Rule 7](../../000-process.md#intent-attribution) qualifies (that makes the claim undecided, not the code right), along with prose vs Dafny vs conformance generally. Backlog vs history conflict: backlog is wrong. Fix the less authoritative side.
 6. **Run it, don't just type-check it**: verify behavior, not signatures. Reproduce bugs before claiming fixes. Test what matters, not just what type-checks.
 7. **Be critical, not agreeable**: challenge assumptions, question completeness, flag what's missing. Especially in reviews: a rubber-stamp is worse than no review. Ask what's untested, what could break, what's absent from the checklist.
 8. **Minimize mismatched detail, not detail**: durable artifacts — code, docs, specs, tests — keep the detail whose change-rate and correctness-locus fit the artifact, and relocate detail that belongs to another layer to its authoritative home (per principle 4). Brevity is a byproduct of correct placement, never the target: never delete a load-bearing reason to hit a length budget.
@@ -133,14 +144,17 @@ content.
 
 1. **No code without a spec**: every testable contract must have a spec section ID.
 2. **No spec without tests**: every spec section must have at least one test with `@pytest.mark.spec("ID")`.
-3. **Specs are authoritative**: if code and spec disagree, the code is wrong.
+3. **Specs are authoritative**: if code and spec disagree, the code is wrong — unless no test ever asserted that clause for the backend in question, which [Rule 7](../../000-process.md#intent-attribution) qualifies: that makes the claim undecided, not the code right.
 4. **ADRs are immutable once Accepted**: supersede an Accepted ADR, never edit it. Drafts may be refined before acceptance.
 5. **IDs are stable**: once assigned, a section ID never changes meaning. Deprecated sections are marked `[DEPRECATED]`, not removed.
 6. **Workflows**:
    - **Features**: SPEC → TEST → IMPLEMENT → VALIDATE → DOCS. Operational items (CI, docs, pins) skip the spec step.
    - **Bug fixes**: BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together. If the bug contradicts a spec invariant, update the spec.
+7. **Prose records the resolution; it does not win the argument**: when spec prose, a Dafny postcondition and a conformance test disagree, the decision is written into the prose — but prose carries no presumption of correctness against a verified postcondition or against a claim the conformance suite never asserted. See [§ Attribution inside the intent domain](../../000-process.md#attribution-inside-the-intent-domain).
 
-Exit criteria per feature type (contract-expanding, bridge/adapter) are
+The four defeaters that strip prose's presumption (unsatisfiable, over-specified,
+under-determined, unenforced) are a lookup table in that section, linked rather
+than copied. Exit criteria per feature type (contract-expanding, bridge/adapter) are
 checklists, not rules: [§ Feature-type Definition of Done](../../000-process.md#feature-type-definition-of-done).
 
 ---
@@ -247,9 +261,9 @@ the storage-consistency sense used in the library's own contracts.
 1. **Prefer one normative description driving N artifacts over N² pairwise checks.** [review-enforced] Drive every implementation from one shared suite rather than comparing implementations to each other. Use a pairwise parity assertion only when the two artifacts are genuinely two renderings for two audiences. Pairwise consistency does not compose.
 2. **A check must localize, not merely fail.** [review-enforced] Report *which* element differs, not that a difference exists. A gate that cannot name the differing element is not ready to add.
 3. **Enumerate the claim space from a canonical artifact, and require an accounted-for result per claim.** [review-enforced] The enumeration must be **derived** from the authoritative artifact, not maintained beside it, and requires stable identifiers. State the granularity: the check reaches no further than the enumeration does.
-4. **Declare the authority rule per artifact pair, in writing, before the check exists.** [review-enforced] Which side governs is a decision, not a fact. Declare it in the document that owns the pair, next to the contract it arbitrates — [`000-process.md` rule 3](../../000-process.md#rules), [`CLAUDE.md` principles](../../../CLAUDE.md#principles) and [`sdd/formal/README.md`](../../formal/README.md) each carry theirs. Do not restate them here: a second copy of a direction is a second thing to get backwards.
+4. **Declare the authority rule per artifact pair, in writing, before the check exists.** [review-enforced] Which side governs is a decision, not a fact. Declare it in the document that owns the pair, next to the contract it arbitrates — [`000-process.md` Rules 3 and 7](../../000-process.md#rules), [`CLAUDE.md` principles](../../../CLAUDE.md#principles) and [`sdd/formal/README.md`](../../formal/README.md) each carry theirs. Do not restate them here: a second copy of a direction is a second thing to get backwards.
 5. **Prefer the mandatory path; when a check is deliberately advisory, state why.** [review-enforced] Default a new check into `preflight`, `lint` or CI. Advisory checks are legitimate under the durable-TODO principle; record the reason a check is not gating.
-6. **Distinguish tolerated from unnoticed, structurally.** [review-enforced] Every accepted divergence gets a register entry with an owner and a rationale — an xfail entry, a `[~]` marker, a baseline allow-list. A check with no such register will be switched off instead.
+6. **Distinguish tolerated from unnoticed, structurally.** [review-enforced] Every accepted divergence gets a register entry with an owner and a rationale. An xfail entry, a `[~]` marker and a baseline allow-list are the usual forms; the list is not closed, so any durable home carrying both an owner and a rationale qualifies. A check with no such register will be switched off instead.
 7. **State the bound, and estimate the miss rate.** [review-enforced] Document in the check itself what it does not catch. Where feasible, seed known discrepancies and report what fraction was caught. An unstated bound gets trusted past its range.
 8. **Verify independence of derivation path; never assume it.** [review-enforced] When adding a second description, record what it was derived from. Independent authors do not produce independent errors.
 9. **Set the period from the drift rate, not the calendar.** [review-enforced] Anchor a recurring check to the events that can invalidate the artifact, not to a date. Cost decides how often you look, never what is detectable.
@@ -289,7 +303,7 @@ research, audits, `BACKLOG.md`, `README`, `CHANGELOG`, `DEVELOPMENT_STORY`,
 | Section | Source | Rules |
 |---|---|---|
 | 0 | [`CLAUDE.md`](../../../CLAUDE.md) | 8 principles + operating rules |
-| 1 | [`sdd/000-process.md`](../../000-process.md) | 6 |
+| 1 | [`sdd/000-process.md`](../../000-process.md) | 7 |
 | 2 | [`sdd/DESIGN.md`](../../DESIGN.md) | 12 |
 | 3 | [`sdd/TESTING.md`](../../TESTING.md) | 13 |
 | 4a | [`sdd/AUTHORING.md`](../../AUTHORING.md) | 5 |

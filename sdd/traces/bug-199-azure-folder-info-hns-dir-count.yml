@@ -13,7 +13,7 @@ discovery_followups:
   - BUG-213
 surprising_ripples:
   - scripts/record_cassettes.py
-  - sdd/TESTING.md
+  - sdd/TESTING-RUNBOOK.md
   - tests/backends/cassettes/azure/
 review_rounds: 2
 phases:
@@ -84,8 +84,8 @@ phases:
   - id: classify_decision
     name: Cassette sufficiency decision
     steps:
-      - file: sdd/TESTING.md
-        section: "Cassette-First Bug Investigation / Step 2"
+      - file: sdd/TESTING-RUNBOOK.md
+        section: "Cassette-first bug investigation / Step 2"
         read_type: gate
         extract: "Three viable fix shapes (include=['metadata'], DataLake get_paths, HEAD per entry) all change the wire call. Per the workflow's classification table: cassette insufficient → refresh required. Picked Fix B (get_paths, mirrors list_files at _azure.py:638-648)."
         outcome: ok
@@ -103,8 +103,8 @@ phases:
         read_type: reference
         extract: "Second-order bug surfaced: script deletes all cassettes at Step 1 before env validation at Step 2. RS_TEST_LIVE_HNS env mismatch wiped 253 cassettes; recovered via git restore. Reported to user as separate finding; not fixed in this PR."
         outcome: misleading
-      - file: sdd/TESTING.md
-        section: "Cassette Refresh"
+      - file: sdd/TESTING-RUNBOOK.md
+        section: "Cassette record & refresh"
         read_type: gate
         extract: "Doc gap: example showed 'hatch run record-azure' without RS_TEST_LIVE_HNS=1 prefix. Updated to 'RS_TEST_LIVE_HNS=1 hatch run record-azure' with rationale (deliberately not in .env to keep default test runs offline)."
         outcome: misleading
@@ -155,8 +155,8 @@ phases:
         read_type: gate
         extract: "Async HNS branch had no mock-level test (only cassette coverage). Added 3 mirror tests in TestAsyncAzureHNSPaths."
         outcome: ok
-      - file: sdd/TESTING.md
-        section: "Cassette-First Bug Investigation / Step 1"
+      - file: sdd/TESTING-RUNBOOK.md
+        section: "Cassette-first bug investigation / Step 1"
         read_type: gate
         extract: "Initial prose named _AZURE_HNS_KNOWN_FAILURE_FN_NAMES and _AZURE_REAL_FIXTURE_IDS by symbol — CONTENT-RULES Rule 1 violation (private symbols in stable prose rot on rename). Rewrote to describe mechanism (hook + constants) without naming the private symbols."
         outcome: misleading
@@ -169,8 +169,8 @@ phases:
         read_type: gate
         extract: "Initial fix read content_length first, then size — opposite order from props_to_fileinfo (_azure_common.py:127) which reads size first. Different orderings on the same PathProperties could give FolderInfo.total_size != FileInfo.size for the same path. Swapped to match the helper; same change applied to async sibling."
         outcome: misleading
-      - file: sdd/TESTING.md
-        section: "Cassette-First Bug Investigation / Step 4"
+      - file: sdd/TESTING-RUNBOOK.md
+        section: "Cassette-first bug investigation / Step 4"
         read_type: gate
         extract: "Round 1 fixed the private-symbol-in-prose violation in Step 1 but missed Step 4 — same constant named again. Rewrote Step 4 to point at 'the xfail roster (same file referenced in Step 1)' to match Step 1's mechanism-not-symbol phrasing."
         outcome: misleading

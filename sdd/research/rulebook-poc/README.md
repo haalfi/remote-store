@@ -11,9 +11,10 @@ research doc first; this folder exists so its numbers can be checked.
 
 | Path | What it is |
 |---|---|
-| [`RULEBOOK.md`](RULEBOOK.md) | The artefact under test. Lived at `sdd/RULEBOOK.md` during the experiment; moved here afterwards because it was not adopted, and its header was revised per research doc § 7 |
+| [`RULEBOOK.md`](RULEBOOK.md) | The artefact under test. Lived at `sdd/RULEBOOK.md` during the experiment; moved here afterwards because it was not adopted, header revised per research doc § 7, and re-synced once to master `83e22a3` after BK-329 amended five of the rules it compiles. **Frozen there** — it is evidence, not a maintained document |
 | [`PREREG.md`](PREREG.md) | Hypotheses, method, and decision rule, written **before** any agent launched |
 | `results/<arm>_<item>_<run>.txt` | 16 recorded gate lists, one per run |
+| `scripts/_common.py` | Shared `COMPILED` set and section normalisation, imported by all three analysis scripts so the vocabulary exists once |
 | `scripts/trace_stats.py` | Corpus aggregate over `sdd/traces/*.yml` (research doc § 3) |
 | `scripts/section_coverage.py` | Section-level carried-vs-dropped split (§ 3) |
 | `scripts/ground_truth.py` | Dumps the four items' triggers and recorded gates |
@@ -91,10 +92,19 @@ Escape reasons are not in the result files; the two quoted in research doc § 6
 are transcribed there verbatim from the arm-A BK-171 run 1 and BUG-199 run 2
 outputs.
 
-## Known defect in the ground truth
+## Defect found in the ground truth, and fixed
 
-The BUG-199 trace cites `sdd/TESTING.md` for four cassette gates whose content
-lives in `sdd/TESTING-RUNBOOK.md`. `scripts/score.py` corrects this in
-`correct()`, with the reason in its docstring. Without the correction both arms
-are marked wrong for citing the file that actually holds the content, and arm B's
-BUG-199 in-scope recall reads 33% instead of 100%.
+The BUG-199 trace cited `sdd/TESTING.md` for four cassette gates and one
+`surprising_ripples` entry. That content is in `sdd/TESTING-RUNBOOK.md`
+(§ Cassette record & refresh at line 160, § Cassette-first bug investigation at
+line 277), and `git log -S Cassette -- sdd/TESTING.md` shows `TESTING.md` never
+held it, so the trace was wrong when authored rather than aged into wrongness.
+
+**Corrected in the trace itself**, so the answer key is right at source and
+`score.py` carries no correction layer. An interim fix inside `score.py` remapped
+the file but not the section name, which left `Cassette Refresh` unable to match
+the runbook's actual `Cassette record & refresh` heading — so
+`results/B_BUG-199_run2.txt`, which cites that exact heading, stayed scored as a
+miss. Fixing the data rather than the scorer removed both the residual and the
+workaround. Effect on the published numbers: arm B's BUG-199 `recall_all` rises
+from 44% to 46% and its in-scope recall reads 100%; arm A is unaffected.
