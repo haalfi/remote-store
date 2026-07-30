@@ -10542,7 +10542,7 @@ touch.</p>
    writing, before the check exists.</strong> [review-enforced]
    Which side governs is a decision, not a fact. Declare it in the document that
    owns the pair, next to the contract it arbitrates — <a href="../process/#rules"><code>000-process.md</code>
-   Rule 3</a>, <a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#principles"><code>CLAUDE.md</code> principles</a> and
+   Rules 3 and 7</a>, <a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#principles"><code>CLAUDE.md</code> principles</a> and
    <a href="https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md"><code>sdd/formal/README.md</code></a> each carry theirs. Do not restate
    them here: a second copy of a direction is a second thing to get backwards.</p>
 </li>
@@ -10557,9 +10557,10 @@ touch.</p>
 <li>
 <p><a id="tolerated"></a><strong>Distinguish tolerated from unnoticed, structurally.</strong>
    [review-enforced]
-   Every accepted divergence gets a register entry with an owner and a rationale —
-   an xfail entry, a <code>[~]</code> marker, a baseline allow-list. A check with no such
-   register will be switched off instead.</p>
+   Every accepted divergence gets a register entry with an owner and a rationale.
+   An xfail entry, a <code>[~]</code> marker and a baseline allow-list are the usual forms;
+   the list is not closed, so any durable home carrying both an owner and a
+   rationale qualifies. A check with no such register will be switched off instead.</p>
 </li>
 <li>
 <p><a id="miss-rate"></a><strong>State the bound, and estimate the miss rate.</strong>

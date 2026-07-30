@@ -5374,6 +5374,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#attribution-inside-the-intent-domain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attribution inside the intent domain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#backlog" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10530,6 +10541,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#attribution-inside-the-intent-domain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attribution inside the intent domain
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#backlog" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10633,12 +10655,13 @@
 <ol>
 <li><strong>No code without a spec</strong>: every testable contract must have a spec section ID.</li>
 <li><a id="spec-test-traceability"></a><strong>No spec without tests</strong>: every spec section must have at least one test with <code>@pytest.mark.spec("ID")</code>.</li>
-<li><strong>Specs are authoritative</strong>: if code and spec disagree, the code is wrong.</li>
+<li><strong>Specs are authoritative</strong>: if code and spec disagree, the code is wrong — unless no test ever asserted that clause for the backend in question, which <a href="#intent-attribution">Rule 7</a> qualifies: that makes the claim undecided, not the code right.</li>
 <li><strong>ADRs are immutable once Accepted</strong>: supersede an Accepted ADR, never edit it. Drafts may be refined before acceptance.</li>
 <li><strong>IDs are stable</strong>: once assigned, a section ID never changes meaning. Deprecated sections are marked <code>[DEPRECATED]</code>, not removed.</li>
 <li><a id="workflows"></a><strong>Workflows</strong>:</li>
 <li><strong>Features</strong>: SPEC → TEST → IMPLEMENT → VALIDATE → DOCS. Operational items (CI, docs, pins) skip the spec step.</li>
 <li><strong>Bug fixes</strong>: BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together. If the bug contradicts a spec invariant, update the spec.</li>
+<li><a id="intent-attribution"></a><strong>Prose records the resolution; it does not win the argument</strong>: when spec prose, a Dafny postcondition and a conformance test disagree, the decision is written into the prose — but prose carries no presumption of correctness against a verified postcondition or against a claim the conformance suite never asserted. See <a href="#attribution-inside-the-intent-domain">§ Attribution inside the intent domain</a>.</li>
 </ol>
 <h2 id="guides">Guides<a class="headerlink" href="#guides" title="Permanent link">&para;</a></h2>
 <p><a id="spec-format"></a></p>
@@ -10669,6 +10692,83 @@ no subdirectory split is used while the tooling-spec count is small.</p>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;foo/../bar&quot;</span><span class="p">)</span>
 </code></pre></div>
 <p><code>pytest -m "spec"</code> runs all spec-derived tests.</p>
+<p><a id="attribution-inside-the-intent-domain"></a></p>
+<h3 id="attribution-inside-the-intent-domain">Attribution inside the intent domain<a class="headerlink" href="#attribution-inside-the-intent-domain" title="Permanent link">&para;</a></h3>
+<p>Rule 3 settles intent against code. These settle the intent domain against
+itself: spec prose, the Dafny model, and the conformance suite. <em>Where the
+resolution is written</em> and <em>which side was wrong</em> are two questions; answer them
+in that order.</p>
+<ol>
+<li><strong>The resolution is written into the prose spec.</strong> A disagreement closed by
+   editing only a postcondition, only a test, or only a backend is not closed.
+   Amend the spec section in the same change.</li>
+<li><strong>Prose carries no presumption of correctness.</strong> It is the only description in
+   this domain with no mechanical counterpart, so a prose claim is evidence of
+   intent and of nothing else. Four defeaters strip that presumption — two keyed on
+   the model, two on the suite and shipped behaviour. Rows 1 and 3 also settle which
+   side moves; rows 2 and 4 reopen the question instead:</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Defeater</th>
+<th>What you observe</th>
+<th>What follows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Unsatisfiable</strong></td>
+<td>The verifier rejects the postcondition form the prose requires</td>
+<td>Prose moves — the section contradicts itself. Owned by <a href="https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md#layers-at-a-glance"><code>formal/README.md</code></a> and stated here only to complete the procedure</td>
+</tr>
+<tr>
+<td><strong>Over-specified</strong></td>
+<td>A postcondition <em>verifies</em> and still asserts more than the prose does — the model is stricter than the contract it formalizes</td>
+<td>Decide which is the contract. The postcondition is not self-authorizing: a verified clause with no prose parent is the formal layer's own orphan realization. Either prose adopts the stronger form, or the postcondition weakens to what prose actually requires</td>
+</tr>
+<tr>
+<td><strong>Under-determined</strong></td>
+<td>Prose is silent, or permits a variation, where shipped behaviour is uniform</td>
+<td>Prose moves — state the behaviour and add the test it never had. Silence is not a licence to diverge; uniformity is not proof of intent, so where it is defensive duplication of a rule enforced elsewhere, spec it at the layer that enforces it. <strong>Where prose <em>permits</em> rather than is silent, narrowing it retires a licence</strong> third-party implementers of a public ABC were shipped against: that is a breaking change and takes the same path as the row below</td>
+</tr>
+<tr>
+<td><strong>Unenforced</strong></td>
+<td>Prose demands X and no test asserts X — for the backends in question. Two axes, and both bind: <a href="#spec-test-traceability">Rule 2</a>'s marker is section-level, so a marked section is not evidence the <em>clause</em> is covered; and the suite parameterizes over backends, so a clause asserted for one family is unenforced for the others. Backends diverging is how you notice, not what decides</td>
+<td>Nothing moves yet. An unenforced claim is not a default, so decide it once. <strong>If nothing diverges</strong>, prose stands and the deliverable is <a href="#spec-test-traceability">Rule 2</a>'s missing test. <strong>If something diverges</strong>, adopt it as a declared variation, or enforce X as a breaking change on the ordinary path</td>
+</tr>
+</tbody>
+</table>
+<ol>
+<li><strong>Two mechanical sides agreeing is not a vote.</strong> A postcondition and a test
+   written in one change from one reading are one description, not two. Establish
+   independence per <a href="../drift-rules/#independence"><code>DRIFT-RULES.md</code> Rule 8</a> before
+   counting them as agreement.</li>
+<li><strong>ADRs and RFCs record decisions, not contracts.</strong> Where either disagrees with
+   a spec about what the system must do, the spec governs; supersede the ADR
+   rather than editing it (<a href="#rules">Rule 4</a> above).</li>
+<li><strong>A divergence you keep is registered, not remembered.</strong> Give it the <strong>owner and
+   rationale</strong> <a href="../drift-rules/#tolerated"><code>DRIFT-RULES.md</code> Rule 6</a> requires, in one
+   of the homes it admits.</li>
+</ol>
+<p><strong>Where no defeater fires, the presumption stands and prose governs — except when
+nothing was decided in the first place.</strong> That exception is a residue with a
+shape: shipped behaviour <strong>non-uniform</strong>, and prose either absent or merely
+permissive, so no defeater has an observation to fire on. Prose silence or
+permission <em>alone</em> does not qualify; paired with uniform behaviour it is the
+under-determined row's territory. In the
+residue the conformance suite is the one driver
+(<a href="../drift-rules/#one-driver"><code>DRIFT-RULES.md</code> Rule 1</a>) and the contract is
+undecided rather than misattributed — permissive prose is not a decision to
+license the divergence, it is the absence of one.</p>
+<p>What that moots is the <em>arbitration</em>, not item 1 and not <a href="#rules">Rule 1</a>:
+deciding the behaviour creates a testable contract, so it gets a spec section and
+the decision still lands in prose. A conformance cell with no parent section is
+the orphan realization this procedure exists to prevent.</p>
+<p>Dafny against the conformance suite is settled separately by the compiled-oracle
+principle in <a href="https://github.com/haalfi/remote-store/blob/master/sdd/formal/README.md#compiled-oracle"><code>formal/README.md</code></a>, which these
+rules do not restate. The evidence and argument behind them:
+<a href="../research/research-inconsistency-detection-multi-artifact/">research § 5</a>.</p>
 <h3 id="backlog">Backlog<a class="headerlink" href="#backlog" title="Permanent link">&para;</a></h3>
 <p>Active work and ideas are tracked in <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md"><code>sdd/BACKLOG.md</code></a>.
 Completed items live in <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md"><code>sdd/BACKLOG-DONE.md</code></a>.</p>
