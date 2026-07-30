@@ -18,7 +18,7 @@ surprising_ripples:
   - CLAUDE.md
   - .claude/agents/store-backend-expert.md
   - sdd/CLAUDE-REFERENCE.md
-review_rounds: 3
+review_rounds: 4
 phases:
   - id: orient
     name: Orient
@@ -153,8 +153,26 @@ phases:
           nothing
         outcome: ok
   - id: fix_2
-    name: Fix (review rounds 2 and 3)
+    name: Fix (review rounds 2 to 4)
     steps:
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts]"
+        read_type: verify
+        extract: >-
+          check_traces and gen_backlogid --check lived only in `lint`, which
+          CODE_PAT skips for an sdd/-only change — so this PR's own trace and
+          backlogid bump were ungated in CI. Wired both into docs-gate, following
+          the precedent check-ripple-parity already documents three lines above
+        outcome: ok
+      - file: sdd/traces/
+        section: "(browse)"
+        read_type: verify
+        extract: >-
+          traces carry verbatim copies of the spec-over-code direction (bk-185,
+          bk-186) and are not among § Document types' five categories, so the
+          round-2 carve-out's citation did not reach them. Named explicitly with
+          its own reason rather than stretched under that section
+        outcome: ok
       - file: sdd/rfcs/rfc-0009-multi-agent-orchestration.md
         section: "All experts"
         read_type: verify

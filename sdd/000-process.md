@@ -91,12 +91,16 @@ in that order.
    rationale, in one of the register forms
    [`DRIFT-RULES.md` Rule 6](DRIFT-RULES.md#tolerated) admits.
 
-One case has nothing to attribute: **prose absent *and* shipped behaviour
-non-uniform**, so no defeater has an observation to fire on. Prose silence by
-itself does not qualify — that is the under-determined row's territory. Here the
-conformance suite is the one driver
+**Where no defeater fires, the presumption stands and prose governs — except when
+nothing was decided in the first place.** That exception is a residue with a
+shape: shipped behaviour **non-uniform**, and prose either absent or merely
+permissive, so no defeater has an observation to fire on. Prose silence or
+permission *alone* does not qualify; paired with uniform behaviour it is the
+under-determined row's territory. In the
+residue the conformance suite is the one driver
 ([`DRIFT-RULES.md` Rule 1](DRIFT-RULES.md#one-driver)) and the contract is
-undecided rather than misattributed.
+undecided rather than misattributed — permissive prose is not a decision to
+license the divergence, it is the absence of one.
 
 What that moots is the *arbitration*, not item 1 and not [Rule 1](#rules):
 deciding the behaviour creates a testable contract, so it gets a spec section and

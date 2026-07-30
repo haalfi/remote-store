@@ -184,8 +184,10 @@ one.
      untested (mind the Dafny coupling). This is the orphan-realization
      facet: enforced behaviour with no parent spec section, and the live
      instance ID-207's `Impl ⊆ S` direction exists to catch mechanically.
-  Rule 7 was run against these four before it landed. It reaches two of them,
-  which is the honest result rather than the flattering one:
+  Rule 7 was run against these four before it landed. It **decides two and puts
+  the other two in its declared residue** — the honest result rather than the
+  flattering one. Residue means no defeater has an observation to fire on, so the
+  contract was never decided; it does not mean prose governs by default:
   - **Facet 4 — under-determined.** Prose is silent where behaviour is uniform, so
     prose adopts it and gains the test it never had; because the uniformity is
     defensive duplication of a `Store`-layer rule, it specs one layer above the
@@ -195,12 +197,12 @@ one.
     which is what "unenforced for the backends in question" means. So the prose
     claim is not the default for that family, and the carve-out and the fix start
     level. The defeater strips the presumption; it does not pick.
-  - **Facet 1 — outside the rule.** Prose is absent *and* the backends disagree,
-    so no defeater applies and the contract is undecided rather than
+  - **Facet 1 — residue.** Prose is absent *and* the backends disagree, so no
+    defeater applies and the contract is undecided rather than
     misattributed. Deciding it is still spec work under
     [Rule 1](000-process.md#rules), with a conformance cell alongside the new
     section — not a cell instead of one.
-  - **Facet 3 — does not classify, and the facet's own description is why.** No
+  - **Facet 3 — residue too, and the facet's own description is why.** No
     defeater fits: prose *permits* rather than demands (so not unenforced), and
     shipped behaviour is *not* uniform (so not under-determined) — the S3 family
     prunes natively via delimiter BFS while Azure lists the prefix and filters

@@ -16,7 +16,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   nothing settled the intent domain against itself, so
   [`DRIFT-RULES.md` Rule 4](DRIFT-RULES.md#authority)'s precondition — a declared
   authority rule per artifact pair — was unmet for exactly the pair BK-324 needed.
-  Landed as `000-process.md` Rule 7 plus a Guides subsection.
+  Landed as `000-process.md` Rule 7 plus a Guides subsection, and closed the CI
+  gating hole the work exposed in `docs-gate`.
   **The ordering was mostly already declared, in four places.** `formal/README.md`
   carries both prose → Dafny (with a satisfiability defeater: a rejected form means
   the spec contradicts itself) and Dafny > conformance (the compiled-oracle
@@ -34,9 +35,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   instead, which is why Rule 3 and `CLAUDE.md` principle 5 now carry the "unless the
   claim was never enforced" qualifier and a pointer here: an unenforced spec claim
   is the one case where "the code is wrong" does not follow.
-  **Validated against BK-324's four facets**, which changed the rule four times,
-  every time in the same direction: the normative core held and the **boundary**
-  statements were each a clause looser than the procedure they gate. An early draft
+  **Validated against BK-324's four facets**, which changed the rule seven times
+  across four review rounds, every time in the same place: the normative core held
+  throughout and the **boundary** statements were each a clause looser than the
+  procedure they gate. An early draft
   required "uniform *and tested*" for the under-determined defeater; facet 4 is
   uniform and untested, and would have fallen through the row written to catch it.
   An early unenforced row required *every* backend to diverge; facet 2 is a family
@@ -55,6 +57,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   breaking-change guard, though `Backend` is a public ABC with a custom-backend
   guide: retiring a documented licence is breaking for out-of-tree implementers by
   exactly the reasoning the row below it applies.
+  The seventh closed the last gap the dry run could reach: naming only the
+  prose-absent residue left facet 3's shape — permissive prose with non-uniform
+  behaviour — matching no defeater and no carve-out, and the procedure's implicit
+  default (no defeater, so the presumption stands) then read as *licensing* the
+  divergence. The residue is now keyed on non-uniform behaviour with prose absent
+  **or** merely permissive, which covers both unreachable facets in one statement
+  instead of naming one and orphaning the other.
   **The exception needed its disposition, not just its existence.** Rule 3's
   qualifier first read "unless the claim was never enforced" and stopped, which
   inverts to "unenforced means the code wins" — the opposite of what the defeater
@@ -90,8 +99,19 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   direction is restated deliberately; the pointer-only alternative was considered
   and rejected for that reason. The ripple row is the register entry
   ([`DRIFT-RULES.md` Rule 6](DRIFT-RULES.md#tolerated)), so the divergence is
-  tolerated rather than unnoticed. A trigger is a mitigation, not a reduction, and
-  saying which one it is was the reviewer's point.
+  tolerated rather than unnoticed — with this entry as the register home, since a
+  ripple-check row is not one of Rule 6's forms and names no owner, and claiming
+  otherwise made the first divergence registered under the new item 5 fail it.
+  A trigger is a mitigation, not a reduction, and saying which one it is was the
+  reviewer's point.
+  **Closed the gating hole this work exposed rather than only noting it.**
+  `check_traces.py` and `gen_backlogid.py --check` lived only in `lint`, which
+  `CODE_PAT` skips for an `sdd/`-only change — so a trace file and a
+  `sdd/backlogid.json` bump, exactly what such a change adds, were validated by
+  nothing in CI. Both are now standalone `docs-gate` entries, following the
+  precedent `check_ripple_parity` set for the same reason and BK-328's for
+  `verify-formal`. A known ungated path recorded in a PR description is invisible at
+  the next commit; per principle 3 it had to land in the repo or become an item.
 
 - [x] **BK-328 — Gate `MemoryBackend` / `MemoryBackendMinimal` twin parity in the Dafny model**
   spec: — · effort: M · audience: contributor.tooling, library.maintainer

@@ -82,7 +82,7 @@ Read this before starting. One line per trigger.
 | Source/test/spec counts       | README badge + CI coverage report (no manual table) |
 | New authoritative process doc in `sdd/` | [CLAUDE.md § Documentation framework](../CLAUDE.md#documentation-framework) (if part of the trio), [CONTRIBUTING § Authoritative Document Format](../CONTRIBUTING.md#authoritative-document-format) (Scope subsection within), sibling authority back-references, `.claude/agents/*.md` FOUNDATION lists, the `/rvw-pr` and `/audit` step lists if the doc is review-enforced, `docs-src/explanation/design/_nav.yml` plus that section's `_index.tmpl`, and this ripple-check |
 | New or changed cross-artifact check | [`sdd/DRIFT-RULES.md`](DRIFT-RULES.md#rules) |
-| Authority direction amended   | Every live copy, not just the owning doc: `CLAUDE.md` principles, `.claude/agents/*.md` CONSTRAINTS blocks, sibling `sdd/` authority docs. Grep the direction's wording, not the doc name. RFCs and research are point-in-time and out of scope |
+| Authority direction amended   | Every live copy, not just the owning doc: `CLAUDE.md` principles, `.claude/agents/*.md` CONSTRAINTS blocks, sibling `sdd/` authority docs. Grep the direction's wording, not the doc name. `sdd/rfcs/`, `sdd/research/` and `sdd/traces/` are records, not instructions — skip them |
 
 <a id="detailed-checklist"></a>
 ### Detailed checklist
@@ -268,18 +268,14 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | authority docs.                                            |
 |                            | Grep the direction's **wording** — the copies do not cite  |
 |                            | the doc they came from, so a doc-name search misses them.  |
-|                            | **Out of scope:** `sdd/rfcs/` and `sdd/research/` are      |
-|                            | point-in-time per [§ Document types](000-process.md#document-types), |
-|                            | so a copy there records what was true when written and is  |
-|                            | not swept. The grep surfaces them; skip them deliberately. |
-|                            | **Why copies exist at all**, since [`sdd/DRIFT-RULES.md` Rule 4](DRIFT-RULES.md#authority) |
-|                            | says a second copy is a second thing to get backwards:     |
+|                            | **Skip, deliberately:** `sdd/rfcs/` and `sdd/research/`    |
+|                            | (point-in-time per [§ Document types](000-process.md#document-types)) |
+|                            | and `sdd/traces/` (a record of what was read, never        |
+|                            | rewritten — not covered by that section, which does not    |
+|                            | list traces). The grep surfaces all three.                 |
+|                            | Do not re-propose collapsing the copies into pointers:     |
 |                            | agent-facing files are read cold by a process that may not |
-|                            | follow a link, so the direction is restated deliberately.  |
-|                            | That is an accepted divergence with this row as its        |
-|                            | register entry ([Rule 6](DRIFT-RULES.md#tolerated)), not an |
-|                            | oversight — a pointer-only form was considered and rejected |
-|                            | for exactly the cold-read reason                            |
+|                            | follow a link. Rationale and owner: BK-329 in BACKLOG-DONE |
 
 ---
 
