@@ -82,7 +82,7 @@ Read this before starting. One line per trigger.
 | Source/test/spec counts       | README badge + CI coverage report (no manual table) |
 | New authoritative process doc in `sdd/` | [CLAUDE.md § Documentation framework](../CLAUDE.md#documentation-framework) (if part of the trio), [CONTRIBUTING § Authoritative Document Format](../CONTRIBUTING.md#authoritative-document-format) (Scope subsection within), sibling authority back-references, `.claude/agents/*.md` FOUNDATION lists, the `/rvw-pr` and `/audit` step lists if the doc is review-enforced, `docs-src/explanation/design/_nav.yml` plus that section's `_index.tmpl`, and this ripple-check |
 | New or changed cross-artifact check | [`sdd/DRIFT-RULES.md`](DRIFT-RULES.md#rules) |
-| Authority direction amended   | Every live copy, not just the owning doc: `CLAUDE.md` principles, `.claude/agents/*.md` CONSTRAINTS blocks, sibling `sdd/` authority docs. Grep the direction's wording, not the doc name. `sdd/rfcs/`, `sdd/research/` and `sdd/traces/` are records, not instructions — skip them |
+| Authority direction amended   | Every live copy, not just the owning doc: `CLAUDE.md` principles, `.claude/agents/*.md` CONSTRAINTS blocks, sibling `sdd/` authority docs. Search by wording, not doc name, and use an alternation — the copies are phrased differently. `sdd/rfcs/`, `sdd/research/` and `sdd/traces/` are records, not instructions — skip them |
 
 <a id="detailed-checklist"></a>
 ### Detailed checklist
@@ -266,8 +266,13 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | asserting the old direction: `CLAUDE.md` principles,       |
 |                            | `.claude/agents/*.md` CONSTRAINTS blocks, sibling `sdd/`   |
 |                            | authority docs.                                            |
-|                            | Grep the direction's **wording** — the copies do not cite  |
-|                            | the doc they came from, so a doc-name search misses them.  |
+|                            | The copies do not cite the doc they came from, so search by |
+|                            | wording, not doc name — and by an **alternation**, because  |
+|                            | they are phrased differently and share no one phrase:      |
+|                            | `code is wrong\|source of truth\|authoritative\|contradicts`, |
+|                            | over `CLAUDE.md`, `.claude/` and `sdd/*.md`. A single-phrase |
+|                            | grep finds three of the four known copies and misses the    |
+|                            | RFC, which is how that one was missed once already.        |
 |                            | **Skip, deliberately:** `sdd/rfcs/` and `sdd/research/`    |
 |                            | (point-in-time per [§ Document types](000-process.md#document-types)) |
 |                            | and `sdd/traces/` (a record of what was read, never        |

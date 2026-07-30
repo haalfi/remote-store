@@ -13,6 +13,8 @@ source_items:
 audience:
   - contributor.process
   - contributor.tooling
+discovery_followups:
+  - BK-333
 expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:
@@ -22,7 +24,7 @@ surprising_ripples:
   - pyproject.toml
   - scripts/check_traces.py
   - scripts/gen_backlogid.py
-review_rounds: 5
+review_rounds: 6
 phases:
   - id: orient
     name: Orient
@@ -162,6 +164,16 @@ phases:
   - id: fix_2
     name: Fix (review rounds 2 to 5)
     steps:
+      - file: sdd/specs/037-depth-limited-listing.md
+        section: "Backend strategies"
+        read_type: verify
+        extract: >-
+          the table's Azure row is accurate — Azure does flat-scan and filter
+          client-side, which _azure.py's docstring states too. Only the S3 row is
+          wrong. A round-5 fix had claimed the table wrong 'in opposite
+          directions', introducing a false premise inside the passage headed
+          Corrected premise
+        outcome: ok
       - file: sdd/formal/BackendContract.dfy
         section: "DEPTH-003 postcondition"
         read_type: verify

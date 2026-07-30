@@ -51,9 +51,10 @@ touch.
 
 6. <a id="tolerated"></a>**Distinguish tolerated from unnoticed, structurally.**
    [review-enforced]
-   Every accepted divergence gets a register entry with an owner and a rationale —
-   an xfail entry, a `[~]` marker, a baseline allow-list. A check with no such
-   register will be switched off instead.
+   Every accepted divergence gets a register entry with an owner and a rationale.
+   An xfail entry, a `[~]` marker and a baseline allow-list are the usual forms;
+   the list is not closed, so any durable home carrying both an owner and a
+   rationale qualifies. A check with no such register will be switched off instead.
 
 7. <a id="miss-rate"></a>**State the bound, and estimate the miss rate.**
    [review-enforced]

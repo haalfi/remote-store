@@ -90,6 +90,25 @@ and the highest ID already in this file, then take the next integer. Run
   Stays here rather than under Cross-Artifact Consistency: it checks one
   artifact against a structural rule, not two descriptions against each other.
 
+- [ ] **BK-333 — `gen_adr_digest.py --check` is ungated for an `sdd/adrs/`-only change**
+  spec: — · effort: S · audience: contributor.tooling
+  The last instance of the "an `sdd/`-only change reaches no gate" shape, after
+  BK-329 closed it for `check_traces` and `gen_backlogid --check`. The check lives
+  in `preflight`, which runs only inside CI's `lint` job; `CODE_PAT` does not match
+  `^sdd/`, and `FORMAL_PAT` is `^sdd/(formal|specs)/`, so it misses `sdd/adrs/`
+  too — the second-wiring escape hatch used for `check_spec_marks`,
+  `check_formal_trace` and `check_dafny_twin_parity` does not reach it. `docs-gate`
+  does not invoke it.
+  So adding an ADR, accepting a draft, or recording a supersession — exactly the
+  changes that bump `sdd/adrs/DIGEST.md` and can break supersession-graph
+  consistency — are validated by nothing in CI, and the artefact it guards is
+  **committed and generated**, so staleness ships.
+  Fix shape: add it to `docs-gate` beside the two BK-329 wired, following the
+  precedent `check_ripple_parity` documents. Filed rather than fixed in BK-329
+  because that PR touched no ADR: its own artefacts were the other two, and wiring
+  a third gate it did not exercise would have been scope it could not verify.
+  Surfaced by the PR #941 review.
+
 ---
 
 ## Cross-Artifact Consistency
@@ -175,9 +194,11 @@ one.
      that converts an undeclared divergence into a declared one, which is the
      pattern the repo already uses.
   3. Depth semantics — spec 037 prose licenses ignoring `max_depth`, and 037's
-     table is wrong about S3 and Azure in opposite directions: the shipped S3
-     backend *does* prune natively (`_s3_base.py`, BFS that stops queueing past
-     the limit) while Azure lists the prefix and filters client-side. `recursive=False` +
+     table is wrong **about S3 only**: the shipped S3 backend *does* prune
+     natively (`_s3_base.py`, BFS that stops queueing past the limit) where the
+     table claims a flat scan plus client filter. The Azure row is accurate —
+     Azure does list the prefix and filter client-side, which its docstring also
+     states — so shipped behaviour is non-uniform. `recursive=False` +
      `max_depth` precedence splits the sync model vs ASYNC-014 vs the SQL
      backends vs the `Store` facade.
      **Corrected premise:** this facet used to read "the Dafny model and DEPTH-003

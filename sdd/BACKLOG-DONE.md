@@ -29,9 +29,11 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   **What it adds beyond a precedence list** is separating *where the resolution is
   written* (always the prose spec) from *which side was wrong* (not settled by
   that). Prose has no mechanical counterpart; a verified postcondition and a green
-  conformance suite carry evidence it cannot. Three defeaters strip prose's
-  presumption of correctness — unsatisfiable, under-determined, unenforced — and
-  only the first two also decide which side moves. The third reopens the question
+  conformance suite carry evidence it cannot. Four defeaters strip prose's
+  presumption of correctness — unsatisfiable, over-specified, under-determined,
+  unenforced — two keyed on the model and two on the suite and shipped behaviour.
+  Only unsatisfiable and under-determined also decide which side moves; the others
+  reopen the question
   instead, which is why Rule 3 and `CLAUDE.md` principle 5 now carry the "unless no
   test ever asserted that clause for the backend in question" qualifier and a
   pointer here: that is the one case where "the code is wrong" does not follow. The
@@ -39,8 +41,18 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   "never enforced" unqualified would swallow the rule it carves out of — most
   individual clauses have no clause-level test, since Rule 2's marker is
   section-level.
-  **Validated against BK-324's four facets**, which changed the rule nine times
-  across five review rounds, every time in the same place: the normative core held
+  **The rule's own headline promised an edge its table did not deliver**, and four
+  facets could not surface it. Rule 7 says prose has no presumption "against a
+  verified postcondition", but the only model-keyed row was *unsatisfiable* — a
+  postcondition the verifier **rejects**. A postcondition that verifies and still
+  asserts more than the prose does matched nothing: the other rows key on the suite
+  and on shipped behaviour, and the residue names only the conformance suite as
+  driver. Facet 3's original premise would have been exactly that shape had it held,
+  which is why a dry run over four facets never exercised the gap — the premise was
+  false. Added as **over-specified**, disposing that a verified clause with no prose
+  parent is the formal layer's own orphan realization and is not self-authorizing.
+  **Validated against BK-324's four facets**, which changed the rule twelve times
+  across six review rounds, every time in the same place: the normative core held
   throughout and the **boundary** statements were each a clause looser than the
   procedure they gate. An early draft
   required "uniform *and tested*" for the under-determined defeater; facet 4 is
@@ -88,7 +100,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   left beside its refutation: it claimed the Dafny model and the DEPTH-003 tests
   require native pruning, and neither does — the postcondition and the conformance
   assertion both bound the *result*, and only the comment above the postcondition
-  says "backend-native". That comment is what misled the first classification. An
+  says "backend-native". That comment is what misled the first classification.
+  **The correction itself needed correcting**, which is the sharpest thing the
+  review surfaced: an intermediate draft said 037's table is wrong "about S3 and
+  Azure in opposite directions" — a fresh false premise inside the passage headed
+  *Corrected premise*. Only the S3 row is wrong. The Azure row accurately says flat
+  scan plus client filter, which is what `_azure.py` does and what its docstring
+  states. Non-uniformity is unaffected and still holds; it was the
+  table-wrongness claim that needed narrowing. An
   attribution rule cannot substitute for content that was never settled, and facet 3
   is where that shows.
   Facet 4's classification independently reproduces the disposition BK-324 had
@@ -118,8 +137,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   register and justified that partly on the row not being "one of Rule 6's forms".
   That reasoning was wrong and would have disqualified this entry too: Rule 6's
   three forms are examples, and what it actually requires is an owner and a
-  rationale. Item 5 now says so, since it ships as a rule others are held to. The
-  row's real disqualification was simply that it named no owner.
+  rationale. The row's real disqualification was simply that it named no owner.
+  **Rule 6 itself now says the list is open**, rather than `000-process.md` item 5
+  asserting a normative reading of a rule it does not own — which was a second copy
+  of Rule 6's scope, in the copy that decides whether this entry is a valid
+  register. `DRIFT-RULES.md` was already open in the diff for the Rule 4 edit, so
+  the fix cost nothing and leaves Rule 6 readable standalone.
   A trigger is a mitigation, not a reduction, and saying which one it is was the
   reviewer's point.
   **Closed the gating hole this work exposed rather than only noting it.**

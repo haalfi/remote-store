@@ -71,12 +71,14 @@ in that order.
    Amend the spec section in the same change.
 2. **Prose carries no presumption of correctness.** It is the only description in
    this domain with no mechanical counterpart, so a prose claim is evidence of
-   intent and of nothing else. Three defeaters strip that presumption. Only the
-   first two also settle which side moves; the third reopens the question:
+   intent and of nothing else. Four defeaters strip that presumption — two keyed on
+   the model, two on the suite and shipped behaviour. Rows 1 and 3 also settle which
+   side moves; rows 2 and 4 reopen the question instead:
 
    | Defeater | What you observe | What follows |
    |---|---|---|
    | **Unsatisfiable** | The verifier rejects the postcondition form the prose requires | Prose moves — the section contradicts itself. Owned by [`formal/README.md`](formal/README.md#layers-at-a-glance) and stated here only to complete the procedure |
+   | **Over-specified** | A postcondition *verifies* and still asserts more than the prose does — the model is stricter than the contract it formalizes | Decide which is the contract. The postcondition is not self-authorizing: a verified clause with no prose parent is the formal layer's own orphan realization. Either prose adopts the stronger form, or the postcondition weakens to what prose actually requires |
    | **Under-determined** | Prose is silent, or permits a variation, where shipped behaviour is uniform | Prose moves — state the behaviour and add the test it never had. Silence is not a licence to diverge; uniformity is not proof of intent, so where it is defensive duplication of a rule enforced elsewhere, spec it at the layer that enforces it. **Where prose *permits* rather than is silent, narrowing it retires a licence** third-party implementers of a public ABC were shipped against: that is a breaking change and takes the same path as the row below |
    | **Unenforced** | Prose demands X and no test asserts X — for the backends in question. Two axes, and both bind: [Rule 2](#spec-test-traceability)'s marker is section-level, so a marked section is not evidence the *clause* is covered; and the suite parameterizes over backends, so a clause asserted for one family is unenforced for the others. Backends diverging is how you notice, not what decides | Nothing moves yet. An unenforced claim is not a default, so decide it once. **If nothing diverges**, prose stands and the deliverable is [Rule 2](#spec-test-traceability)'s missing test. **If something diverges**, adopt it as a declared variation, or enforce X as a breaking change on the ordinary path |
 
@@ -87,10 +89,9 @@ in that order.
 4. **ADRs and RFCs record decisions, not contracts.** Where either disagrees with
    a spec about what the system must do, the spec governs; supersede the ADR
    rather than editing it ([Rule 4](#rules) above).
-5. **A divergence you keep is registered, not remembered.** Give it an **owner and
-   a rationale**, which is what [`DRIFT-RULES.md` Rule 6](DRIFT-RULES.md#tolerated)
-   requires; the forms it names are examples, so the register may be any durable
-   home that carries both.
+5. **A divergence you keep is registered, not remembered.** Give it the **owner and
+   rationale** [`DRIFT-RULES.md` Rule 6](DRIFT-RULES.md#tolerated) requires, in one
+   of the homes it admits.
 
 **Where no defeater fires, the presumption stands and prose governs — except when
 nothing was decided in the first place.** That exception is a residue with a
