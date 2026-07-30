@@ -18,7 +18,7 @@ surprising_ripples:
   - CLAUDE.md
   - .claude/agents/store-backend-expert.md
   - sdd/CLAUDE-REFERENCE.md
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -111,25 +111,31 @@ phases:
   - id: fix
     name: Fix (review round 1)
     steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-324 (item)"
+        read_type: reference
+        extract: >-
+          facet 3's description asserts 'the Dafny model and DEPTH-003 tests
+          require native pruning'. The classification was built on that sentence
+          instead of on the backends, and neither half of it survived checking —
+          this entry is the artifact that misled, not the code read to correct it
+        outcome: misleading
       - file: src/remote_store/backends/_s3_boto3.py
         section: "list_files"
         read_type: verify
         extract: >-
-          review challenged the facet-3 classification. S3 prunes natively via a
-          delimiter BFS with a depth limit; Azure lists the prefix and filters
-          client-side, so shipped behaviour is not uniform and the
-          under-determined defeater does not fit. The classification had rested on
-          the facet's own description rather than on the backends
-        outcome: misleading
+          S3 prunes natively via a delimiter BFS with a depth limit; Azure lists
+          the prefix and filters client-side, so shipped behaviour is not uniform
+          and the under-determined defeater does not fit
+        outcome: ok
       - file: tests/test_depth_listing.py
         section: "(module docstring)"
         read_type: verify
         extract: >-
           the conformance suite owns the DEPTH-003 *result* invariant; the
-          per-backend files check signatures. 'DEPTH-003 tests require native
-          pruning' does not hold, so facet 3 is recorded as not classifying rather
-          than reclassified
-        outcome: misleading
+          per-backend files check signatures. So facet 3 is recorded as not
+          classifying rather than reclassified
+        outcome: ok
       - file: CLAUDE.md
         section: "Principles / 5"
         read_type: verify
@@ -147,8 +153,17 @@ phases:
           nothing
         outcome: ok
   - id: fix_2
-    name: Fix (review round 2)
+    name: Fix (review rounds 2 and 3)
     steps:
+      - file: sdd/rfcs/rfc-0009-multi-agent-orchestration.md
+        section: "All experts"
+        read_type: verify
+        extract: >-
+          fourth copy of the direction, surfaced by the very trigger added in
+          round 2. Left unswept deliberately: RFCs are point-in-time per Document
+          types, and the ripple row now says so, because a reader following 'grep
+          the wording' lands here with nothing telling them to skip it
+        outcome: ok
       - file: .claude/agents/store-backend-expert.md
         section: "CONSTRAINTS"
         read_type: verify

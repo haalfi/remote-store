@@ -47,6 +47,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   scoped out the unconditional obligation — a decided behaviour gets a spec section
   under Rule 1 — which would have licensed a conformance cell with no parent
   section: the orphan realization the programme exists to remove.
+  Two more surfaced once the observation was decoupled from backend divergence to
+  fix the third: the unenforced row then fired on "prose demands X, no test asserts
+  X, every backend already does X" while offering only dispositions that presume a
+  divergence — the answer there is Rule 2's missing test, and the row now says so.
+  And the under-determined row prescribed narrowing a *permissive* contract with no
+  breaking-change guard, though `Backend` is a public ABC with a custom-backend
+  guide: retiring a documented licence is breaking for out-of-tree implementers by
+  exactly the reasoning the row below it applies.
   **The exception needed its disposition, not just its existence.** Rule 3's
   qualifier first read "unless the claim was never enforced" and stopped, which
   inverts to "unenforced means the code wins" — the opposite of what the defeater
@@ -65,7 +73,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Facet 4's classification independently reproduces the disposition BK-324 had
   already reasoned to — spec the rule at the `Store` layer that enforces it, not in
   the backend tree that defensively duplicates it.
-  **Swept three copies of the direction, and filed the trigger that finds them.**
+  **Swept the live copies of the direction, and filed the trigger that finds them.**
   Amending Rule 3 left `CLAUDE.md` principle 5 and
   `.claude/agents/store-backend-expert.md` asserting the unqualified version — the
   second being the agent whose domain is exactly the code the exception was written
@@ -73,7 +81,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   assuming it was the last is what left the second. The ripple-check now carries an
   **Authority direction amended** trigger keyed on grepping the direction's
   *wording*: the copies do not cite the doc they came from, so searching by doc name
-  finds none of them.
+  finds none of them. The trigger immediately found a fourth in
+  `sdd/rfcs/rfc-0009`, deliberately not swept — RFCs are point-in-time records, and
+  the row says so, since a reader following the grep lands there.
+  **Why the copies exist at all is recorded rather than assumed**, because Rule 4
+  says a second copy is a second thing to get backwards and this work kept three.
+  Agent-facing files are read cold by a process that may not follow a link, so the
+  direction is restated deliberately; the pointer-only alternative was considered
+  and rejected for that reason. The ripple row is the register entry
+  ([`DRIFT-RULES.md` Rule 6](DRIFT-RULES.md#tolerated)), so the divergence is
+  tolerated rather than unnoticed. A trigger is a mitigation, not a reduction, and
+  saying which one it is was the reviewer's point.
 
 - [x] **BK-328 — Gate `MemoryBackend` / `MemoryBackendMinimal` twin parity in the Dafny model**
   spec: — · effort: M · audience: contributor.tooling, library.maintainer

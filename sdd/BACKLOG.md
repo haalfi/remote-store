@@ -107,8 +107,9 @@ chain. Position therefore says nothing about importance, and dependencies are
 stated by ID inside each item so re-sequencing cannot silently invalidate them.
 BK-330 and BK-331 are independent and cheap. BK-324 comes next with its
 *attribution* blocker cleared, but BK-331 still comes before it: facet 3 cannot be
-decided against 037's current table. ID-207 keeps its own (best taken after
-BK-324). BK-332, ID-236 and ID-237 are follow-ons
+decided against 037's current table. ID-207 is unblocked but reads better after
+BK-324, which decides the orphan behaviours its day-one allowlist would otherwise
+enumerate blind. BK-332, ID-236 and ID-237 are follow-ons
 that get cheaper once the earlier work lands. BK-327 is independent of the chain
 and can be taken at any point.
 
@@ -189,9 +190,11 @@ one.
     prose adopts it and gains the test it never had; because the uniformity is
     defensive duplication of a `Store`-layer rule, it specs one layer above the
     backend tree, which is the disposition this facet already reasoned its way to.
-  - **Facet 2 — unenforced.** The suite never asserted `InvalidPath` for the
-    flat-NS family, so the prose claim is not the default and the carve-out and
-    the fix start level. The defeater strips the presumption; it does not pick.
+  - **Facet 2 — unenforced**, on the row's backend-scope axis: the clause *is*
+    asserted for the hierarchical backends and never was for the flat-NS family,
+    which is what "unenforced for the backends in question" means. So the prose
+    claim is not the default for that family, and the carve-out and the fix start
+    level. The defeater strips the presumption; it does not pick.
   - **Facet 1 — outside the rule.** Prose is absent *and* the backends disagree,
     so no defeater applies and the contract is undecided rather than
     misattributed. Deciding it is still spec work under
