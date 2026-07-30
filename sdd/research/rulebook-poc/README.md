@@ -11,6 +11,7 @@ research doc first; this folder exists so its numbers can be checked.
 
 | Path | What it is |
 |---|---|
+| [`RULEBOOK.md`](RULEBOOK.md) | The artefact under test. Lived at `sdd/RULEBOOK.md` during the experiment; moved here afterwards because it was not adopted, and its header was revised per research doc § 7 |
 | [`PREREG.md`](PREREG.md) | Hypotheses, method, and decision rule, written **before** any agent launched |
 | `results/<arm>_<item>_<run>.txt` | 16 recorded gate lists, one per run |
 | `scripts/trace_stats.py` | Corpus aggregate over `sdd/traces/*.yml` (research doc § 3) |
@@ -75,6 +76,10 @@ Arm B constraints:
     - You MAY NOT open /home/user/remote-store/sdd/RULEBOOK.md.
     - You MAY read anything else: the sdd/ process docs, CONTRIBUTING.md,
       specs, source code, tests, sdd/BACKLOG.md, sdd/CLAUDE-REFERENCE.md.
+
+The prompt paths above name `sdd/RULEBOOK.md` because that is where the file was
+when the runs happened. They are transcripts, not instructions, and are left as
+recorded.
 
 ## Transcription note
 

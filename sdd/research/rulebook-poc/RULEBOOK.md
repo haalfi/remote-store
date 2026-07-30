@@ -5,6 +5,12 @@ Every binding rule in this repo, compiled into one pass and ordered by when you
 hit it during a change: always-on conduct first, then plan, build, test,
 document, guard, ship.
 
+**Status: PoC artefact, not adopted.** This document has no standing as a repo
+process doc, which is why it lives beside its evidence rather than in `sdd/`. It
+was tested and did not earn adoption; see
+[`research-rulebook-poc.md`](../research-rulebook-poc.md) for the result. That is
+a fact about *this document*, not about the rules below.
+
 **Every rule here is binding.** Compilation does not weaken a rule. Each one is
 authoritative in its source doc, and collecting it into one pass changes nothing
 about that. What is derived is the *transcription*, not the authority.
@@ -12,7 +18,7 @@ about that. What is derived is the *transcription*, not the authority.
 **Where this document and a source doc differ, the source doc is right.** That is
 a transcription defect in this file, to be fixed here. It is not a rule with two
 readings. Because this is hand-compiled rather than generated (unlike
-[`sdd/adrs/DIGEST.md`](adrs/DIGEST.md)), it can fall behind a source edit, so
+[`sdd/adrs/DIGEST.md`](../../adrs/DIGEST.md)), it can fall behind a source edit, so
 check the source whenever the exact wording is load-bearing: editing a rule
 itself, or implementing a gate whose pass/fail boundary is the rule's text.
 
@@ -25,21 +31,21 @@ itself, or implementing a gate whose pass/fail boundary is the rule's text.
 - Rules whose body is a lookup table, a code example, or multi-paragraph
   exposition are **condensed** to their normative sentences, with the source
   section linked. Sections where this applies are marked *(condensed)*. Copying
-  the tables would breach [CONTENT-RULES rule 4](CONTENT-RULES.md) inside a
+  the tables would breach [CONTENT-RULES rule 4](../../CONTENT-RULES.md) inside a
   document whose whole purpose is to make the rules easier to obey.
 - Omitted: `## Guides` sections, bad→good examples, rationale, provenance.
 
 ---
 
-## 0. Always on — [`CLAUDE.md`](../CLAUDE.md) *(condensed below Audits)*
+## 0. Always on — [`CLAUDE.md`](../../../CLAUDE.md) *(condensed below Audits)*
 
 **Scope.** Working principles and operating rules for all work in this repo.
 The principles are universal and apply to any contributor, not only agents
-([`CONTRIBUTING.md` § Project Principles](../CONTRIBUTING.md)).
+([`CONTRIBUTING.md` § Project Principles](../../../CONTRIBUTING.md)).
 
 ### Principles
 
-1. **Ship complete**: a change is finished when everything it touches is consistent: code, tests, docs, CHANGELOG, BACKLOG. Track gaps as `[~]`. For releases, follow the full checklist in [`CONTRIBUTING.md` § Release](../CONTRIBUTING.md#release).
+1. **Ship complete**: a change is finished when everything it touches is consistent: code, tests, docs, CHANGELOG, BACKLOG. Track gaps as `[~]`. For releases, follow the full checklist in [`CONTRIBUTING.md` § Release](../../../CONTRIBUTING.md#release).
 2. **Verify beyond the diff**: search for what references the thing you changed. The ripple-check in `sdd/CLAUDE-REFERENCE.md` has a Pre-work index (read **before starting** to anticipate ripples) and a Detailed checklist (read **before committing** to verify them). You MUST consult both presentations for changes that touch backends, errors, capabilities, versions, specs, or dependencies.
 3. **Repo describes reality at every commit**: docs, backlog, and CHANGELOG reflect current state, not future intent. Same commit, or mark `[~]`.
 4. **Single source of truth**: Authoritative references live in one place: link to them, don't copy. Examples: ripple-check, CHANGELOG section order, backlog ID format. Copies become stale.
@@ -56,7 +62,7 @@ The principles are universal and apply to any contributor, not only agents
 
 ### Bug-fix protocol
 
-Canonical pipeline: [`000-process.md` rule 6](000-process.md#workflows). Per
+Canonical pipeline: [`000-process.md` rule 6](../../000-process.md#workflows). Per
 principle 6, **write the failing test, run it, see it fail** before implementing
 the fix.
 
@@ -109,7 +115,7 @@ Preserve `--` only in: shell end-of-options separators, spec-ID ranges, Mermaid 
 ### Documentation framework
 
 Three authority docs govern documentation. **Apply in order:**
-[`AUTHORING.md`](AUTHORING.md) (placement) → [`DOCUMENTATION.md`](DOCUMENTATION.md) (structure) → [`CONTENT-RULES.md`](CONTENT-RULES.md) (longevity).
+[`AUTHORING.md`](../../AUTHORING.md) (placement) → [`DOCUMENTATION.md`](../../DOCUMENTATION.md) (structure) → [`CONTENT-RULES.md`](../../CONTENT-RULES.md) (longevity).
 
 ### GitHub operations
 
@@ -119,7 +125,7 @@ Ignore AGENTS.md; `CLAUDE.md` defines Claude Code behavior for this repo.
 
 ---
 
-## 1. Plan & spec — [`sdd/000-process.md`](000-process.md)
+## 1. Plan & spec — [`sdd/000-process.md`](../../000-process.md)
 
 **Scope.** Authoritative source for the Spec-Driven Development workflow,
 spec/ADR/RFC formats, backlog tiers, and test traceability. Governs all `sdd/`
@@ -135,11 +141,11 @@ content.
    - **Bug fixes**: BACKLOG → CHANGELOG → failing TEST → FIX → COMMIT together. If the bug contradicts a spec invariant, update the spec.
 
 Exit criteria per feature type (contract-expanding, bridge/adapter) are
-checklists, not rules: [§ Feature-type Definition of Done](000-process.md#feature-type-definition-of-done).
+checklists, not rules: [§ Feature-type Definition of Done](../../000-process.md#feature-type-definition-of-done).
 
 ---
 
-## 2. Build — [`sdd/DESIGN.md`](DESIGN.md) *(condensed)*
+## 2. Build — [`sdd/DESIGN.md`](../../DESIGN.md) *(condensed)*
 
 **Scope.** Coding conventions for all `src/`, `tests/`, and `examples/` code.
 All code must pass `ruff check`, `ruff format`, and `mypy --strict`.
@@ -159,14 +165,14 @@ All code must pass `ruff check`, `ruff format`, and `mypy --strict`.
 
 ---
 
-## 3. Test — [`sdd/TESTING.md`](TESTING.md)
+## 3. Test — [`sdd/TESTING.md`](../../TESTING.md)
 
 **Scope.** Authoritative source for test **quality** rules and top-level
 **placement** of test files in `tests/`. Companion to DESIGN rule 11. For test
-*architecture*, see [spec 048](specs/048-testing-architecture.md) and ADR-0028.
+*architecture*, see [spec 048](../../specs/048-testing-architecture.md) and ADR-0028.
 
 Placement is a lookup table plus three `check-test-placement` lint rules (S, B,
-E): [§ Test Subpackage Placement](TESTING.md).
+E): [§ Test Subpackage Placement](../../TESTING.md).
 
 1. **Every test must have at least one meaningful assertion** [CI-enforced] — "no crash" is not a test. Public API methods need a failure-path test too (`pytest.raises` with `match=`).
 2. **Assert behavior, not types** [review-enforced] — `isinstance` may accompany behavioral assertions but never as the sole check.
@@ -186,37 +192,37 @@ E): [§ Test Subpackage Placement](TESTING.md).
 
 ## 4. Document — placement, then structure, then longevity
 
-### 4a. [`sdd/AUTHORING.md`](AUTHORING.md) — placement
+### 4a. [`sdd/AUTHORING.md`](../../AUTHORING.md) — placement
 
 **Scope.** Authoritative source for where documentation files belong. Governs
 the placement of all `.md` content in the repository.
 
 1. **File classification.** Every `.md` belongs to exactly one class. Classification follows a marker on the file or a directory default when no marker is present. A file with no marker and no matching default is unclassified and fails G-01.
 2. **Single home.** Each `.md` lives at exactly one path. Other presentations are derived from that path, never copied.
-3. **On-disk links.** Every relative `](path)` link in every `.md` must resolve to a real on-disk file in the repo. External URLs and pure anchors are exempt. Dual files additionally use only plain Markdown; see CONTENT-RULES rule 6 for the one snippet exception.
+3. **On-disk links.** Every relative `](../../path)` link in every `.md` must resolve to a real on-disk file in the repo. External URLs and pure anchors are exempt. Dual files additionally use only plain Markdown; see CONTENT-RULES rule 6 for the one snippet exception.
 4. **One bridge mechanism.** The bridge presents dual files on the docs site and rewrites on-disk links in docs-only files to docs-site URLs at build time. Exactly one bridge applies; new mechanisms are not added.
 5. **PR-time enforcement.** A PR-blocking check verifies every framework rule. Failures block merge.
 
 Marker forms (`dual` / `repo-only` / `docs-only`) and directory defaults:
-[§ Classification markers](AUTHORING.md#classification-markers). If unsure, declare dual.
+[§ Classification markers](../../AUTHORING.md#classification-markers). If unsure, declare dual.
 
-### 4b. [`sdd/DOCUMENTATION.md`](DOCUMENTATION.md) — structure *(condensed)*
+### 4b. [`sdd/DOCUMENTATION.md`](../../DOCUMENTATION.md) — structure *(condensed)*
 
 **Scope.** Authoritative source for documentation structure and standards.
 Governs the shape and quality of all docs work: new pages, restructuring,
 reviews.
 
 1. **Diataxis placement.** Every user-facing page belongs to exactly one category: learn → Tutorial; accomplish a task → Guides; look something up → Reference; understand why → Explanation. If unsure, it is probably a Guide. Pages that try to be two things at once must be split.
-2. **Content homes.** Each content type has one source location: [§ 2](DOCUMENTATION.md#content-homes).
-3. **Docstring completeness.** Required `Args`/`Returns`/`Raises`/Example per symbol type: [§ 3](DOCUMENTATION.md). No TODOs or placeholders in published docstrings.
-4. **Cross-linking requirements.** Link target follows the presentation hosting the destination: **documentation** (guides, API reference, explanation) → ReadTheDocs `/stable/`; **source files** (specs, ADRs, examples, source, CHANGELOG) → the GitHub repository. Within the docs site, always use relative links. Minimum per page: every guide links to at least one API reference page; every guide links to its matching example script (if one exists); every API class page links to its primary guide. Required-cross-link table: [§ 4](DOCUMENTATION.md#cross-linking-requirements).
+2. **Content homes.** Each content type has one source location: [§ 2](../../DOCUMENTATION.md#content-homes).
+3. **Docstring completeness.** Required `Args`/`Returns`/`Raises`/Example per symbol type: [§ 3](../../DOCUMENTATION.md). No TODOs or placeholders in published docstrings.
+4. **Cross-linking requirements.** Link target follows the presentation hosting the destination: **documentation** (guides, API reference, explanation) → ReadTheDocs `/stable/`; **source files** (specs, ADRs, examples, source, CHANGELOG) → the GitHub repository. Within the docs site, always use relative links. Minimum per page: every guide links to at least one API reference page; every guide links to its matching example script (if one exists); every API class page links to its primary guide. Required-cross-link table: [§ 4](../../DOCUMENTATION.md#cross-linking-requirements).
 5. **README requirements.** The README must contain: project description; who it is for; when NOT to use it; installation (base + extras); minimal working example with expected output; Store API overview (summary + link, not a method table); supported backends (name, install extra, underlying library, with capability detail linked); links to the docs site, CHANGELOG, and CONTRIBUTING; license, supported Python versions, project status badge.
 6. **Typography.** Prose dashes: `—` (U+2014) sparingly as a parenthetical aside; never `--` as a substitute. Table N/A value: `—`, never `--` or `No`. Preserve `--` only in shell flag syntax inside code blocks, spec-ID ranges, Mermaid edge syntax, `--8<--` snippet includes, and code/SQL comments inside fenced blocks.
 7. **URL alignment.** URL paths must correspond to navigation position.
 8. **Link integrity.** All internal links must resolve in their target presentation. Broken links fail the build, not warn.
 9. **Top-level nav structure.** `docs-src/_nav.yml` has only the four Diataxis quadrants as top-level content sections. `Home:` is permitted for the site index; it is not a content section. No other top-level section is allowed.
 
-### 4c. [`sdd/CONTENT-RULES.md`](CONTENT-RULES.md) — longevity
+### 4c. [`sdd/CONTENT-RULES.md`](../../CONTENT-RULES.md) — longevity
 
 **Scope.** Rules for writing documentation that stays accurate over time.
 Applies to all content: README, guides, docstrings, inline doc comments.
@@ -230,7 +236,7 @@ Applies to all content: README, guides, docstrings, inline doc comments.
 
 ---
 
-## 5. Guard consistency — [`sdd/DRIFT-RULES.md`](DRIFT-RULES.md)
+## 5. Guard consistency — [`sdd/DRIFT-RULES.md`](../../DRIFT-RULES.md)
 
 **Scope.** THE source for how a check that compares two descriptions of the same
 thing is designed and reviewed. Applies whenever a change adds a `check_*` gate,
@@ -241,7 +247,7 @@ the storage-consistency sense used in the library's own contracts.
 1. **Prefer one normative description driving N artifacts over N² pairwise checks.** [review-enforced] Drive every implementation from one shared suite rather than comparing implementations to each other. Use a pairwise parity assertion only when the two artifacts are genuinely two renderings for two audiences. Pairwise consistency does not compose.
 2. **A check must localize, not merely fail.** [review-enforced] Report *which* element differs, not that a difference exists. A gate that cannot name the differing element is not ready to add.
 3. **Enumerate the claim space from a canonical artifact, and require an accounted-for result per claim.** [review-enforced] The enumeration must be **derived** from the authoritative artifact, not maintained beside it, and requires stable identifiers. State the granularity: the check reaches no further than the enumeration does.
-4. **Declare the authority rule per artifact pair, in writing, before the check exists.** [review-enforced] Which side governs is a decision, not a fact. Declare it in the document that owns the pair, next to the contract it arbitrates — [`000-process.md` rule 3](000-process.md#rules), [`CLAUDE.md` principles](../CLAUDE.md#principles) and [`sdd/formal/README.md`](formal/README.md) each carry theirs. Do not restate them here: a second copy of a direction is a second thing to get backwards.
+4. **Declare the authority rule per artifact pair, in writing, before the check exists.** [review-enforced] Which side governs is a decision, not a fact. Declare it in the document that owns the pair, next to the contract it arbitrates — [`000-process.md` rule 3](../../000-process.md#rules), [`CLAUDE.md` principles](../../../CLAUDE.md#principles) and [`sdd/formal/README.md`](../../formal/README.md) each carry theirs. Do not restate them here: a second copy of a direction is a second thing to get backwards.
 5. **Prefer the mandatory path; when a check is deliberately advisory, state why.** [review-enforced] Default a new check into `preflight`, `lint` or CI. Advisory checks are legitimate under the durable-TODO principle; record the reason a check is not gating.
 6. **Distinguish tolerated from unnoticed, structurally.** [review-enforced] Every accepted divergence gets a register entry with an owner and a rationale — an xfail entry, a `[~]` marker, a baseline allow-list. A check with no such register will be switched off instead.
 7. **State the bound, and estimate the miss rate.** [review-enforced] Document in the check itself what it does not catch. Where feasible, seed known discrepancies and report what fraction was caught. An unstated bound gets trusted past its range.
@@ -250,13 +256,13 @@ the storage-consistency sense used in the library's own contracts.
 
 ---
 
-## 6. Ship — [`sdd/CI-OPERATIONS.md`](CI-OPERATIONS.md)
+## 6. Ship — [`sdd/CI-OPERATIONS.md`](../../CI-OPERATIONS.md)
 
 **Scope.** THE operations handbook for scheduled and automated CI guards: what
 each does, when it runs, where its finding shows up, how to act. Covers every
 workflow that runs without a contributor present, plus dependabot streams and
 Read the Docs. Gating push/PR test and coverage lanes are merge gates, not
-maintenance guards, and live in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
+maintenance guards, and live in [`CONTRIBUTING.md`](../../../CONTRIBUTING.md).
 
 1. **Durable-TODO principle.** Every scheduled-maintenance guard emits a durable GitHub Issue as its TODO and has a triage entry point (a skill or a runbook in this doc). A red X, a green check, and GitHub's actor email are insufficient alone: each is transient or filterable, so a guard whose only output is one of those is not a guard a maintainer can rely on.
 2. **Three layers, kept in agreement.** Every guard is documented in three places: the workflow file header, the runbook, and its triage skill where one exists. Adding or changing a guard means updating all three in the same change.
@@ -264,7 +270,7 @@ maintenance guards, and live in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
 
 ---
 
-## 7. Document format — [`CONTRIBUTING.md` § Authoritative Document Format](../CONTRIBUTING.md#authoritative-document-format) *(condensed)*
+## 7. Document format — [`CONTRIBUTING.md` § Authoritative Document Format](../../../CONTRIBUTING.md#authoritative-document-format) *(condensed)*
 
 **Scope.** The fixed structure of the process docs compiled above. Applies to
 root-level `sdd/` process documents. Does not apply to specs, ADRs, RFCs,
@@ -282,18 +288,18 @@ research, audits, `BACKLOG.md`, `README`, `CHANGELOG`, `DEVELOPMENT_STORY`,
 
 | Section | Source | Rules |
 |---|---|---|
-| 0 | [`CLAUDE.md`](../CLAUDE.md) | 8 principles + operating rules |
-| 1 | [`sdd/000-process.md`](000-process.md) | 6 |
-| 2 | [`sdd/DESIGN.md`](DESIGN.md) | 12 |
-| 3 | [`sdd/TESTING.md`](TESTING.md) | 13 |
-| 4a | [`sdd/AUTHORING.md`](AUTHORING.md) | 5 |
-| 4b | [`sdd/DOCUMENTATION.md`](DOCUMENTATION.md) | 9 |
-| 4c | [`sdd/CONTENT-RULES.md`](CONTENT-RULES.md) | 6 |
-| 5 | [`sdd/DRIFT-RULES.md`](DRIFT-RULES.md) | 9 |
-| 6 | [`sdd/CI-OPERATIONS.md`](CI-OPERATIONS.md) | 3 |
-| 7 | [`CONTRIBUTING.md`](../CONTRIBUTING.md#authoritative-document-format) | format contract |
+| 0 | [`CLAUDE.md`](../../../CLAUDE.md) | 8 principles + operating rules |
+| 1 | [`sdd/000-process.md`](../../000-process.md) | 6 |
+| 2 | [`sdd/DESIGN.md`](../../DESIGN.md) | 12 |
+| 3 | [`sdd/TESTING.md`](../../TESTING.md) | 13 |
+| 4a | [`sdd/AUTHORING.md`](../../AUTHORING.md) | 5 |
+| 4b | [`sdd/DOCUMENTATION.md`](../../DOCUMENTATION.md) | 9 |
+| 4c | [`sdd/CONTENT-RULES.md`](../../CONTENT-RULES.md) | 6 |
+| 5 | [`sdd/DRIFT-RULES.md`](../../DRIFT-RULES.md) | 9 |
+| 6 | [`sdd/CI-OPERATIONS.md`](../../CI-OPERATIONS.md) | 3 |
+| 7 | [`CONTRIBUTING.md`](../../../CONTRIBUTING.md#authoritative-document-format) | format contract |
 
-Not compiled: [`sdd/CLAUDE-REFERENCE.md`](CLAUDE-REFERENCE.md) (lookup tables,
-not rules), [`sdd/BACKLOG.md`](BACKLOG.md) (workflow conventions), specs, ADRs
-(see [`adrs/DIGEST.md`](adrs/DIGEST.md)), RFCs, and the `## Rules` blocks in
+Not compiled: [`sdd/CLAUDE-REFERENCE.md`](../../CLAUDE-REFERENCE.md) (lookup tables,
+not rules), [`sdd/BACKLOG.md`](../../BACKLOG.md) (workflow conventions), specs, ADRs
+(see [`adrs/DIGEST.md`](../../adrs/DIGEST.md)), RFCs, and the `## Rules` blocks in
 `.claude/skills/`.
