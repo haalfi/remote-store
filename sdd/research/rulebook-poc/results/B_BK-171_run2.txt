@@ -1,0 +1,19 @@
+sdd/BACKLOG.md :: How this file works
+CLAUDE.md :: Trace authoring
+sdd/CLAUDE-REFERENCE.md :: Pre-work index
+sdd/000-process.md :: Rules
+sdd/000-process.md :: Document types
+sdd/audits/audit-012-docs-structure.md :: F-01
+sdd/AUTHORING.md :: Rules
+sdd/AUTHORING.md :: Classification markers
+sdd/DOCUMENTATION.md :: Rules
+sdd/CONTENT-RULES.md :: Rules
+sdd/specs/047-docs-framework-tooling.md :: DOCFRAME-008
+sdd/DRIFT-RULES.md :: Rules
+sdd/TESTING.md :: Rules
+sdd/TESTING.md :: Test Subpackage Placement
+CHANGELOG.md :: [Unreleased]
+sdd/CLAUDE-REFERENCE.md :: Detailed checklist
+sdd/CLAUDE-REFERENCE.md :: PR validation gates
+###ESCAPES###
+NONE

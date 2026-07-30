@@ -1,0 +1,20 @@
+CLAUDE.md :: Principles
+sdd/CLAUDE-REFERENCE.md :: Pre-work index
+sdd/000-process.md :: Rules
+sdd/BACKLOG.md :: How this file works
+CLAUDE.md :: Trace authoring
+sdd/AUTHORING.md :: Rules
+sdd/AUTHORING.md :: Directory defaults
+sdd/DOCUMENTATION.md :: Rules
+sdd/audits/audit-012-docs-structure.md :: F-01
+sdd/specs/047-docs-framework-tooling.md :: DOCFRAME-004
+sdd/specs/047-docs-framework-tooling.md :: DOCFRAME-001
+sdd/adrs/0027-docs-bridge-single-mechanism.md :: Decision
+sdd/DRIFT-RULES.md :: Rules
+sdd/CI-OPERATIONS.md :: Rules
+sdd/TESTING.md :: Rules
+sdd/CONTENT-RULES.md :: Rules
+CONTRIBUTING.md :: Authoritative Document Format
+sdd/CLAUDE-REFERENCE.md :: Detailed checklist
+###ESCAPES###
+NONE

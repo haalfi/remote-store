@@ -1,0 +1,24 @@
+CLAUDE.md :: Principles
+sdd/AUTHORING.md :: Rules
+sdd/DRIFT-RULES.md :: Rules
+sdd/CLAUDE-REFERENCE.md :: Pre-work index
+sdd/audits/audit-012-docs-structure.md :: F-01
+sdd/BACKLOG.md :: How this file works
+sdd/specs/047-docs-framework-tooling.md :: DOCFRAME-004
+sdd/adrs/0027-docs-bridge-single-mechanism.md :: Decision
+scripts/docs/check_links.py :: check_repo_links
+scripts/docs/link.py :: LinkResolver
+scripts/docs/scan.py :: SDD_KINDS
+docs-src/_path_rules.yml :: sdd_kinds
+scripts/mkdocs_hooks.py :: on_page_markdown
+mkdocs.yml :: hooks
+scripts/gen_pages.py :: dual-render
+tests/scripts/test_check_links.py :: repo-link tests
+pyproject.toml :: scripts
+CHANGELOG.md :: [Unreleased]
+sdd/CLAUDE-REFERENCE.md :: PR validation gates
+###ESCAPES###
+sdd/AUTHORING.md :: Rules
+sdd/AUTHORING.md :: Classification markers
+sdd/traces/_schema.yml :: whole file
+sdd/DOCUMENTATION.md :: Cross-linking requirements

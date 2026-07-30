@@ -1,0 +1,23 @@
+CLAUDE.md :: Principles
+CLAUDE.md :: Documentation framework
+CLAUDE.md :: Backlog
+CLAUDE.md :: Trace authoring
+sdd/BACKLOG.md :: How this file works
+sdd/CLAUDE-REFERENCE.md :: Pre-work index
+CONTRIBUTING.md :: Authoritative Document Format
+CONTRIBUTING.md :: Documentation framework
+sdd/000-process.md :: Rules
+sdd/000-process.md :: Document types
+sdd/AUTHORING.md :: Rules
+sdd/AUTHORING.md :: Guides
+sdd/DOCUMENTATION.md :: Intent & Scope
+sdd/DOCUMENTATION.md :: Rules
+sdd/CONTENT-RULES.md :: Intent & Scope
+sdd/CONTENT-RULES.md :: Rules
+sdd/specs/047-docs-framework-tooling.md :: DOCFRAME-004
+sdd/DRIFT-RULES.md :: Rules
+.claude/agents/documentation-expert.md :: FOUNDATION
+sdd/CLAUDE-REFERENCE.md :: Detailed checklist
+CHANGELOG.md :: [Unreleased]
+###ESCAPES###
+NONE

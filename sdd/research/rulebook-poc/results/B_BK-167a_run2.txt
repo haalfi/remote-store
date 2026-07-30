@@ -1,0 +1,25 @@
+sdd/BACKLOG.md :: How this file works
+CLAUDE.md :: Backlog (mandatory)
+CLAUDE.md :: Trace authoring (mandatory)
+sdd/CLAUDE-REFERENCE.md :: Pre-work index
+sdd/000-process.md :: Rules
+sdd/000-process.md :: Spec format
+sdd/000-process.md :: Document types
+sdd/templates/spec-template.md :: (skeleton)
+sdd/templates/adr-template.md :: (skeleton)
+CLAUDE.md :: Documentation framework
+sdd/AUTHORING.md :: Rules
+sdd/DOCUMENTATION.md :: Rules
+sdd/CONTENT-RULES.md :: Rules
+CONTRIBUTING.md :: Authoritative Document Format
+sdd/DRIFT-RULES.md :: Rules
+sdd/DESIGN.md :: Rules
+sdd/TESTING.md :: Test Subpackage Placement
+sdd/TESTING.md :: Rules
+CONTRIBUTING.md :: Test Requirements
+pyproject.toml :: [tool.hatch.envs.default.scripts]
+CHANGELOG.md :: [Unreleased]
+sdd/CLAUDE-REFERENCE.md :: Detailed checklist
+sdd/CLAUDE-REFERENCE.md :: PR validation gates
+###ESCAPES###
+NONE

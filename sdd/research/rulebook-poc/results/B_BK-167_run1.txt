@@ -1,0 +1,19 @@
+CLAUDE.md :: Principles
+sdd/CLAUDE-REFERENCE.md :: Pre-work index
+sdd/BACKLOG.md :: How this file works
+CLAUDE.md :: Trace authoring
+CONTRIBUTING.md :: Authoritative Document Format
+sdd/000-process.md :: Document types
+sdd/AUTHORING.md :: Rules
+sdd/AUTHORING.md :: Where does my new file go?
+sdd/DOCUMENTATION.md :: Rules
+sdd/CONTENT-RULES.md :: Rules
+CLAUDE.md :: Documentation framework
+.claude/agents/documentation-expert.md :: FOUNDATION
+docs-src/explanation/design/_nav.yml :: nav
+sdd/DRIFT-RULES.md :: Rules
+CLAUDE.md :: Response style
+sdd/CLAUDE-REFERENCE.md :: Detailed checklist
+CHANGELOG.md :: [Unreleased]
+###ESCAPES###
+NONE

@@ -1,0 +1,24 @@
+sdd/CLAUDE-REFERENCE.md :: Pre-work index
+CLAUDE.md :: Bug-fix protocol
+sdd/000-process.md :: Rules
+sdd/BACKLOG.md :: How this file works
+sdd/BACKLOG-DONE.md :: BUG-199
+CHANGELOG.md :: [0.25.0]
+sdd/specs/012-azure-backend.md :: AZ-024
+sdd/specs/003-backend-adapter-contract.md :: BE-017
+sdd/specs/029-async-store-backend-api.md :: ASYNC-017
+src/remote_store/backends/_azure.py :: get_folder_info
+src/remote_store/aio/backends/_azure.py :: get_folder_info
+src/remote_store/_store.py :: get_folder_info
+tests/backends/conformance/test_metadata.py :: test_get_folder_info_excludes_subdirs
+tests/backends/conformance/test_async_extended.py :: test_get_folder_info_counts_recursive_children
+tests/backends/conformance/conftest.py :: _AZURE_HNS_KNOWN_FAILURE_FN_NAMES
+sdd/TESTING-RUNBOOK.md :: Cassette-first bug investigation
+sdd/TESTING-RUNBOOK.md :: Cassette record & refresh
+sdd/TESTING.md :: Rules
+CLAUDE.md :: Trace authoring
+CLAUDE.md :: Branching
+sdd/CLAUDE-REFERENCE.md :: Detailed checklist
+sdd/CLAUDE-REFERENCE.md :: PR validation gates
+###ESCAPES###
+NONE

@@ -1,0 +1,23 @@
+CLAUDE.md :: Bug-fix protocol
+CLAUDE.md :: Principles
+sdd/TESTING.md :: Rules
+sdd/CLAUDE-REFERENCE.md :: Pre-work index
+sdd/CLAUDE-REFERENCE.md :: Detailed checklist
+sdd/BACKLOG.md :: How this file works
+sdd/backlogid.json :: whole file
+sdd/specs/012-azure-backend.md :: AZ-024
+sdd/specs/003-backend-adapter-contract.md :: BE-017
+sdd/specs/038-nonrecursive-folder-info.md :: FOLDERINFO-001
+src/remote_store/backends/_azure.py :: get_folder_info
+src/remote_store/aio/backends/_azure.py :: get_folder_info
+src/remote_store/_store.py :: get_folder_info
+sdd/TESTING-RUNBOOK.md :: Per-backend recipes
+tests/backends/azure/test_live_hns.py :: TestAzureLiveHnsGetFolderInfoRoot
+sdd/specs/049-live-recording-architecture.md :: REC-003
+tests/test_pbt_folder_info_aggregates.py :: aggregate oracle
+CHANGELOG.md :: [Unreleased]
+###ESCAPES###
+sdd/000-process.md :: Rules
+sdd/000-process.md :: Feature-type Definition of Done
+sdd/TESTING.md :: Test Subpackage Placement
+sdd/traces/_schema.yml :: whole file

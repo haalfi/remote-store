@@ -1,0 +1,26 @@
+CLAUDE.md :: Bug-fix protocol
+CLAUDE.md :: Backlog
+CLAUDE.md :: Trace authoring
+sdd/CLAUDE-REFERENCE.md :: Pre-work index
+sdd/BACKLOG.md :: How this file works
+sdd/BACKLOG-DONE.md :: BUG-199
+sdd/specs/012-azure-backend.md :: AZ-024
+sdd/specs/003-backend-adapter-contract.md :: BE-017
+sdd/specs/029-async-store-backend-api.md :: ASYNC-017
+src/remote_store/backends/_azure.py :: get_folder_info
+src/remote_store/aio/backends/_azure.py :: get_folder_info
+src/remote_store/_store.py :: get_folder_info
+tests/backends/conformance/test_metadata.py :: test_get_folder_info_excludes_subdirs
+tests/backends/conformance/conftest.py :: _AZURE_HNS_KNOWN_FAILURE_FN_NAMES
+tests/backends/azure/test_config.py :: BUG-199 regression tests
+tests/backends/azure/aio/test_config.py :: async counterparts
+tests/backends/azure/test_live_hns.py :: HNS deviation suite
+sdd/TESTING-RUNBOOK.md :: Cassette-first bug investigation
+sdd/TESTING.md :: Rules
+sdd/backlogid.json :: max-per-prefix
+CHANGELOG.md :: [Unreleased]
+###ESCAPES###
+sdd/000-process.md :: Rules
+sdd/TESTING.md :: Test Subpackage Placement
+sdd/traces/_schema.yml :: whole file
+sdd/DESIGN.md :: Rules

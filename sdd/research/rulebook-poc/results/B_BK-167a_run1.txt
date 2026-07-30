@@ -1,0 +1,21 @@
+sdd/CLAUDE-REFERENCE.md :: Pre-work index
+sdd/BACKLOG.md :: How this file works
+sdd/000-process.md :: Rules
+sdd/000-process.md :: Spec format
+sdd/000-process.md :: Document types
+sdd/AUTHORING.md :: Rules
+sdd/AUTHORING.md :: Classification markers
+sdd/AUTHORING.md :: Directory defaults
+sdd/DOCUMENTATION.md :: Rules
+sdd/CONTENT-RULES.md :: Rules
+sdd/DRIFT-RULES.md :: Rules
+sdd/CI-OPERATIONS.md :: Rules
+sdd/TESTING.md :: Rules
+sdd/DESIGN.md :: Rules
+sdd/templates/spec-template.md :: whole file
+CONTRIBUTING.md :: Authoritative Document Format
+sdd/CLAUDE-REFERENCE.md :: Detailed checklist
+CLAUDE.md :: Trace authoring
+CHANGELOG.md :: [Unreleased]
+###ESCAPES###
+NONE

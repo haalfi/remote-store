@@ -1,0 +1,25 @@
+CLAUDE.md :: Documentation framework
+CLAUDE.md :: Principles
+sdd/AUTHORING.md :: Rules
+sdd/DOCUMENTATION.md :: Rules
+sdd/CONTENT-RULES.md :: Rules
+sdd/CLAUDE-REFERENCE.md :: Pre-work index
+sdd/CLAUDE-REFERENCE.md :: Detailed checklist
+sdd/CLAUDE-REFERENCE.md :: Quick reference
+sdd/BACKLOG.md :: How this file works
+sdd/specs/047-docs-framework-tooling.md :: DOCFRAME-002
+sdd/specs/047-docs-framework-tooling.md :: DOCFRAME-004
+scripts/check_docs_framework.py :: G-01
+.claude/agents/documentation-expert.md :: FOUNDATION
+.claude/skills/rvw-pr/SKILL.md :: Content-rules check
+docs-src/explanation/design/_nav.yml :: design section
+sdd/audits/audit-012-docs-structure.md :: findings
+CHANGELOG.md :: [Unreleased]
+###ESCAPES###
+sdd/AUTHORING.md :: Classification markers
+sdd/DOCUMENTATION.md :: Content homes
+sdd/CONTENT-RULES.md :: Rules
+CONTRIBUTING.md :: Authoritative Document Format
+sdd/000-process.md :: Rules
+sdd/DRIFT-RULES.md :: Rules
+sdd/traces/_schema.yml :: whole file

@@ -1,0 +1,30 @@
+CLAUDE.md :: Principles
+CLAUDE.md :: Documentation framework
+sdd/BACKLOG.md :: How this file works
+sdd/BACKLOG-DONE.md :: BK-167
+sdd/audits/audit-012-docs-structure.md :: Findings index
+sdd/adrs/0027-docs-bridge-single-mechanism.md :: Decision
+sdd/adrs/0007-docs-src-literate-nav.md :: Decision
+sdd/specs/047-docs-framework-tooling.md :: DOCFRAME-001..007
+sdd/CLAUDE-REFERENCE.md :: Pre-work index
+sdd/CLAUDE-REFERENCE.md :: Detailed checklist
+scripts/docs/scan.py :: load_link_map
+scripts/docs/render.py :: render_link_rewritten
+docs-src/_nav.yml :: nav
+pyproject.toml :: scripts
+tests/scripts/test_docs_framework.py :: spec-traced cases
+sdd/adrs/DIGEST.md :: ADR-0027
+.claude/skills/pr/SKILL.md :: Rules
+###ESCAPES###
+sdd/AUTHORING.md :: Classification markers
+sdd/AUTHORING.md :: Rules
+sdd/DOCUMENTATION.md :: Rules
+sdd/CONTENT-RULES.md :: Rules
+sdd/000-process.md :: Rules
+sdd/000-process.md :: Feature-type Definition of Done
+sdd/DRIFT-RULES.md :: Rules
+sdd/TESTING.md :: Rules
+sdd/TESTING.md :: Test Subpackage Placement
+sdd/DESIGN.md :: Rules
+sdd/traces/_schema.yml :: whole file
+CONTRIBUTING.md :: Authoritative Document Format

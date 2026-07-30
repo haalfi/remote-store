@@ -1,0 +1,25 @@
+CLAUDE.md :: Documentation framework
+sdd/AUTHORING.md :: Rules
+sdd/DOCUMENTATION.md :: Rules
+sdd/CONTENT-RULES.md :: Rules
+CONTRIBUTING.md :: Authoritative Document Format
+sdd/CLAUDE-REFERENCE.md :: Pre-work index
+sdd/CLAUDE-REFERENCE.md :: Detailed checklist
+sdd/DRIFT-RULES.md :: Rules
+sdd/000-process.md :: Rules
+sdd/specs/047-docs-framework-tooling.md :: DOCFRAME-002
+sdd/BACKLOG.md :: How this file works
+sdd/traces/_schema.yml :: example
+.claude/agents/documentation-expert.md :: FOUNDATION
+docs-src/explanation/design/_nav.yml :: Documents
+CHANGELOG.md :: [Unreleased]
+.claude/skills/pr/SKILL.md :: Rules
+###ESCAPES###
+CONTRIBUTING.md :: Authoritative Document Format
+sdd/AUTHORING.md :: Classification markers
+sdd/DOCUMENTATION.md :: Content homes
+sdd/CONTENT-RULES.md :: Rules
+sdd/000-process.md :: Rules
+sdd/DRIFT-RULES.md :: Rules
+sdd/traces/_schema.yml :: example
+sdd/CI-OPERATIONS.md :: Rules

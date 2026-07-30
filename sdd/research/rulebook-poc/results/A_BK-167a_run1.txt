@@ -1,0 +1,27 @@
+CLAUDE.md :: Principles
+sdd/CLAUDE-REFERENCE.md :: Pre-work index
+sdd/BACKLOG.md :: How this file works
+sdd/000-process.md :: Rules
+sdd/templates/spec-template.md :: whole file
+sdd/templates/adr-template.md :: whole file
+sdd/AUTHORING.md :: Rules
+sdd/DRIFT-RULES.md :: Rules
+sdd/DESIGN.md :: Rules
+sdd/TESTING.md :: Rules
+sdd/DOCUMENTATION.md :: Rules
+sdd/CONTENT-RULES.md :: Rules
+docs-src/_path_rules.yml :: whole file
+mkdocs.yml :: plugins
+scripts/mkdocs_hooks.py :: whole file
+scripts/gen_pages.py :: whole file
+pyproject.toml :: scripts
+sdd/adrs/DIGEST.md :: sources
+sdd/CLAUDE-REFERENCE.md :: Detailed checklist
+###ESCAPES###
+sdd/AUTHORING.md :: Classification markers
+sdd/000-process.md :: Feature-type Definition of Done
+sdd/000-process.md :: Document types
+sdd/TESTING.md :: Test Subpackage Placement
+sdd/DOCUMENTATION.md :: Content homes
+sdd/DOCUMENTATION.md :: Cross-linking requirements
+sdd/traces/_schema.yml :: whole file
