@@ -9,7 +9,9 @@ findings that a maintainer may want to action separately.
 that an agent reads *instead of* the source process docs. Covers the artefact
 built (`sdd/RULEBOOK.md`, branch `claude/principles-rules-rulebook-poc-euimxw`),
 a static coverage analysis over the trace corpus, and a 16-run A/B replay
-experiment. Does not cover generator tooling, drift gating, or any change to the
+experiment. The artefact as tested is commit `b3a71a3`; its header was revised
+after this document was written, in response to § 6, so read § 1 and § 6 against
+that commit rather than against the current file. Does not cover generator tooling, drift gating, or any change to the
 source docs; none were built.
 **Related:** [`CLAUDE.md` § Principles](../../CLAUDE.md#principles),
 [`CONTRIBUTING.md` § Authoritative Document Format](../../CONTRIBUTING.md#authoritative-document-format),
@@ -44,7 +46,7 @@ Compilation conventions, which turned out to be the decisive design choice:
   rules easier to obey.
 - `## Guides` sections, examples, rationale and provenance dropped.
 - Header marks the document non-authoritative and hand-compiled: source docs win
-  on conflict.
+  on conflict. (Revised after this document was written; see § 6 and § 7.)
 
 ## 2. Method
 
@@ -160,7 +162,16 @@ Not recommended for adoption as built. A rule digest that must be labelled
 non-authoritative cannot substitute for the sources, and the routing job it might
 otherwise do is already done better by `CLAUDE.md`.
 
-Two paths remain open, neither pursued here:
+One correction was applied after this document was written, in response to § 6:
+the header no longer calls the document non-authoritative. It now separates the
+*rules*, which bind exactly as they do in their source docs, from the
+*transcription*, which is what may drift. This removes the stated grounds on
+which arm A refused the digest, but **the effect is unmeasured** — no replay was
+re-run against the revised header, so every number in § 4 belongs to commit
+`b3a71a3` and none of them should be read as evidence for or against the
+revision.
+
+Two further paths remain open, neither pursued here:
 
 - **Generate it.** `DIGEST.md` escapes the paradox because a generator plus a
   drift gate make "do not edit by hand" enforceable rather than aspirational. A

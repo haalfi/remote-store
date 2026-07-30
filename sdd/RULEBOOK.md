@@ -5,11 +5,16 @@ Every binding rule in this repo, compiled into one pass and ordered by when you
 hit it during a change: always-on conduct first, then plan, build, test,
 document, guard, ship.
 
-**Non-authoritative.** This is a derived digest, like
-[`sdd/adrs/DIGEST.md`](adrs/DIGEST.md). On any conflict the source doc wins.
-Unlike the ADR digest it is **hand-compiled, not generated**, so it drifts the
-moment a source doc changes. Treat a rule here as a pointer to verify, never as
-the last word.
+**Every rule here is binding.** Compilation does not weaken a rule. Each one is
+authoritative in its source doc, and collecting it into one pass changes nothing
+about that. What is derived is the *transcription*, not the authority.
+
+**Where this document and a source doc differ, the source doc is right.** That is
+a transcription defect in this file, to be fixed here. It is not a rule with two
+readings. Because this is hand-compiled rather than generated (unlike
+[`sdd/adrs/DIGEST.md`](adrs/DIGEST.md)), it can fall behind a source edit, so
+check the source whenever the exact wording is load-bearing: editing a rule
+itself, or implementing a gate whose pass/fail boundary is the rule's text.
 
 **Compilation conventions.**
 
