@@ -38,7 +38,7 @@ touch.
    writing, before the check exists.** [review-enforced]
    Which side governs is a decision, not a fact. Declare it in the document that
    owns the pair, next to the contract it arbitrates — [`000-process.md`
-   Rule 3](000-process.md#rules), [`CLAUDE.md` principles](../CLAUDE.md#principles) and
+   Rules 3 and 7](000-process.md#rules), [`CLAUDE.md` principles](../CLAUDE.md#principles) and
    [`sdd/formal/README.md`](formal/README.md) each carry theirs. Do not restate
    them here: a second copy of a direction is a second thing to get backwards.
 
@@ -51,9 +51,10 @@ touch.
 
 6. <a id="tolerated"></a>**Distinguish tolerated from unnoticed, structurally.**
    [review-enforced]
-   Every accepted divergence gets a register entry with an owner and a rationale —
-   an xfail entry, a `[~]` marker, a baseline allow-list. A check with no such
-   register will be switched off instead.
+   Every accepted divergence gets a register entry with an owner and a rationale.
+   An xfail entry, a `[~]` marker and a baseline allow-list are the usual forms;
+   the list is not closed, so any durable home carrying both an owner and a
+   rationale qualifies. A check with no such register will be switched off instead.
 
 7. <a id="miss-rate"></a>**State the bound, and estimate the miss rate.**
    [review-enforced]

@@ -8,6 +8,165 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-329 — Declare the attribution rule for prose vs Dafny vs conformance**
+  spec: — · effort: S · audience: contributor.process, contributor.tooling
+  Step 5.1 of
+  [research](research/research-inconsistency-detection-multi-artifact.md) § 9, and
+  the item BK-324 was blocked on. `000-process.md` Rule 3 settled spec vs code and
+  nothing settled the intent domain against itself, so
+  [`DRIFT-RULES.md` Rule 4](DRIFT-RULES.md#authority)'s precondition — a declared
+  authority rule per artifact pair — was unmet for exactly the pair BK-324 needed.
+  Landed as `000-process.md` Rule 7 plus a Guides subsection, and closed the CI
+  gating hole the work exposed in `docs-gate`.
+  **The ordering was mostly already declared, in four places.** `formal/README.md`
+  carries both prose → Dafny (with a satisfiability defeater: a rejected form means
+  the spec contradicts itself) and Dafny > conformance (the compiled-oracle
+  principle); `TESTING-RUNBOOK.md` and ADR-0004 carry theirs. The amendment supplies
+  the missing edges and cites the existing ones. The satisfiability defeater is the
+  one exception — it is restated so the decision procedure is complete, and it says
+  in the table that `formal/README.md` owns it, per Rule 4's instruction that a
+  second copy of a direction is a second thing to get backwards.
+  **What it adds beyond a precedence list** is separating *where the resolution is
+  written* (always the prose spec) from *which side was wrong* (not settled by
+  that). Prose has no mechanical counterpart; a verified postcondition and a green
+  conformance suite carry evidence it cannot. Four defeaters strip prose's
+  presumption of correctness — unsatisfiable, over-specified, under-determined,
+  unenforced — two keyed on the model and two on the suite and shipped behaviour.
+  Only unsatisfiable and under-determined also decide which side moves; the others
+  reopen the question
+  instead, which is why Rule 3 and `CLAUDE.md` principle 5 now carry the "unless no
+  test ever asserted that clause for the backend in question" qualifier and a
+  pointer here: that is the one case where "the code is wrong" does not follow. The
+  qualifier is scoped rather than bare because Rule 3 gets quoted alone, and
+  "never enforced" unqualified would swallow the rule it carves out of — most
+  individual clauses have no clause-level test, since Rule 2's marker is
+  section-level.
+  **The rule's own headline promised an edge its table did not deliver**, and four
+  facets could not surface it. Rule 7 says prose has no presumption "against a
+  verified postcondition", but the only model-keyed row was *unsatisfiable* — a
+  postcondition the verifier **rejects**. A postcondition that verifies and still
+  asserts more than the prose does matched nothing: the other rows key on the suite
+  and on shipped behaviour, and the residue names only the conformance suite as
+  driver. Facet 3's original premise would have been exactly that shape had it held,
+  which is why a dry run over four facets never exercised the gap — the premise was
+  false. Added as **over-specified**, disposing that a verified clause with no prose
+  parent is the formal layer's own orphan realization and is not self-authorizing.
+  **Validated against BK-324's four facets** across six review rounds, which
+  reworked the rule repeatedly and always in the same place: the normative core held
+  throughout and the **boundary** statements were each a clause looser than the
+  procedure they gate. An early draft
+  required "uniform *and tested*" for the under-determined defeater; facet 4 is
+  uniform and untested, and would have fallen through the row written to catch it.
+  An early unenforced row required *every* backend to diverge; facet 2 is a family
+  split. The scope carve-out excluded "backends disagreeing with each other"
+  unconditionally, contradicting the facet-2 classification in the same change; then
+  its replacement excluded *absent prose*, which is what the under-determined row
+  fires on, so facet 4 fell outside the rule that decides it. The carve-out also
+  scoped out the unconditional obligation — a decided behaviour gets a spec section
+  under Rule 1 — which would have licensed a conformance cell with no parent
+  section: the orphan realization the programme exists to remove.
+  Two more surfaced once the observation was decoupled from backend divergence to
+  fix the third: the unenforced row then fired on "prose demands X, no test asserts
+  X, every backend already does X" while offering only dispositions that presume a
+  divergence — the answer there is Rule 2's missing test, and the row now says so.
+  And the under-determined row prescribed narrowing a *permissive* contract with no
+  breaking-change guard, though `Backend` is a public ABC with a custom-backend
+  guide: retiring a documented licence is breaking for out-of-tree implementers by
+  exactly the reasoning the row below it applies.
+  The seventh closed the last gap the dry run could reach: naming only the
+  prose-absent residue left facet 3's shape — permissive prose with non-uniform
+  behaviour — matching no defeater and no carve-out, and the procedure's implicit
+  default (no defeater, so the presumption stands) then read as *licensing* the
+  divergence. The residue is now keyed on non-uniform behaviour with prose absent
+  **or** merely permissive, which covers both unreachable facets in one statement
+  instead of naming one and orphaning the other.
+  **The exception needed its disposition, not just its existence.** Rule 3's
+  qualifier first read "unless the claim was never enforced" and stopped, which
+  inverts to "unenforced means the code wins" — the opposite of what the defeater
+  says. Rule 3 is quoted verbatim without its neighbours across the repo, so the
+  line has to carry the disposition. Same for the two agent-facing copies. The
+  defeater is also bounded to clause granularity, because Rule 2's marker is
+  section-level and so a marked section is no evidence a clause is covered.
+  **The rule decides two of the four and puts the other two in its declared
+  residue**, which is the result rather than the one that flatters the item. Facet 4
+  is under-determined and facet 2 unenforced on the backend-scope axis. Facets 1 and
+  3 are residue — no defeater has an observation to fire on, so the contract was
+  never decided, which the rule handles explicitly rather than falling silent: the
+  conformance suite drives, and deciding the behaviour is still spec work under
+  Rule 1. Facet 3 lands there because prose permits rather than demands and shipped
+  behaviour is not uniform: the shipped S3 backend prunes natively, one prefix
+  listing at a time, while Azure filters client-side.
+  **One of that facet's own premises was disproven and is corrected in place**, not
+  left beside its refutation: it claimed the Dafny model and the DEPTH-003 tests
+  require native pruning, and neither does — the postcondition and the conformance
+  assertion both bound the *result*, and only the comment above the postcondition
+  says "backend-native". That comment is what misled the first classification.
+  **The correction itself needed correcting**, which is the sharpest thing the
+  review surfaced: an intermediate draft said 037's table is wrong "about S3 and
+  Azure in opposite directions" — a fresh false premise inside the passage headed
+  *Corrected premise*. Only the S3 row is wrong. The Azure row accurately says flat
+  scan plus client filter, which is what `_azure.py` does and what its docstring
+  states. Non-uniformity is unaffected and still holds; it was the
+  table-wrongness claim that needed narrowing. An
+  attribution rule cannot substitute for content that was never settled, and facet 3
+  is where that shows.
+  Facet 4's classification independently reproduces the disposition BK-324 had
+  already reasoned to — spec the rule at the `Store` layer that enforces it, not in
+  the backend tree that defensively duplicates it.
+  **Swept the live copies of the direction, and filed the trigger that finds them.**
+  Amending Rule 3 left `CLAUDE.md` principle 5 and
+  `.claude/agents/store-backend-expert.md` asserting the unqualified version — the
+  second being the agent whose domain is exactly the code the exception was written
+  for. Neither was anticipated by the ripple-check, and sweeping the first while
+  assuming it was the last is what left the second. The ripple-check now carries an
+  **Authority direction amended** trigger keyed on grepping the direction's
+  *wording*: the copies do not cite the doc they came from, so searching by doc name
+  finds none of them. The trigger immediately found further copies in `sdd/rfcs/`,
+  `sdd/research/` and `sdd/traces/`, all deliberately unswept: they are records of
+  what was true or what was read, not instructions. The row names all three, because
+  § Document types covers only the first two — traces are not one of its five
+  categories — and a reader following the grep lands on all of them.
+  **Why the copies exist at all is recorded rather than assumed**, because Rule 4
+  says a second copy is a second thing to get backwards and this work kept three.
+  Agent-facing files are read cold by a process that may not follow a link, so the
+  direction is restated deliberately; the pointer-only alternative was considered
+  and rejected for that reason. **This entry is the register home** under
+  [`DRIFT-RULES.md` Rule 6](DRIFT-RULES.md#tolerated) — owner BK-329, rationale
+  above — so the divergence is tolerated rather than unnoticed, and the ripple row
+  points here for both. An intermediate draft claimed the row itself was the
+  register and justified that partly on the row not being "one of Rule 6's forms".
+  That reasoning was wrong and would have disqualified this entry too: Rule 6's
+  three forms are examples, and what it actually requires is an owner and a
+  rationale. The row's real disqualification was simply that it named no owner.
+  **Rule 6 itself now says the list is open**, rather than `000-process.md` item 5
+  asserting a normative reading of a rule it does not own — which was a second copy
+  of Rule 6's scope, in the copy that decides whether this entry is a valid
+  register. `DRIFT-RULES.md` was already open in the diff for the Rule 4 edit, so
+  the fix cost nothing and leaves Rule 6 readable standalone.
+  A trigger is a mitigation, not a reduction, and saying which one it is was the
+  reviewer's point.
+  **A self-validation pass over this entry's own claims caught three defects**, two
+  of them in the round that added them. The ripple row's grep was still not runnable:
+  `.gitignore` carries `.claude/*`, so plain `rg` returns nothing under `.claude/` —
+  the copy most likely to be missed — and the alternation was broad enough to return
+  200+ hits in `sdd/`. The row now carries the exact tested command. The
+  ungated-gate follow-up was filed claiming `gen_adr_digest` was the *last* instance,
+  inherited from the review without checking; enumerating `lint` and `preflight`
+  against the path filters found `check_tla_no_emdash` (the `sdd/formal/tla/` subtree
+  `FORMAL_PAT` deliberately excludes) and `check_ci_inventory`'s handbook half, so
+  BK-333 covers three. And a precise count of rule revisions was dropped rather than
+  re-derived: it was unverifiable prose and
+  [`CONTENT-RULES.md` Rule 3](CONTENT-RULES.md#rules) bans pseudo-precise values in
+  narrative, which is also why BK-328 dropped its line counts.
+  **Closed the gating hole this work exposed rather than only noting it.**
+  `check_traces.py` and `gen_backlogid.py --check` lived only in `lint`, which
+  `CODE_PAT` skips for an `sdd/`-only change — so a trace file and a
+  `sdd/backlogid.json` bump, exactly what such a change adds, were validated by
+  nothing in CI. Both are now standalone `docs-gate` entries, following the
+  precedent `check_ripple_parity` set for the same reason and BK-328's for
+  `verify-formal`. A known ungated path recorded in a PR description is invisible at
+  the next commit; per principle 3 it had to land in the repo or become an item.
+
 - [x] **BK-328 — Gate `MemoryBackend` / `MemoryBackendMinimal` twin parity in the Dafny model**
   spec: — · effort: M · audience: contributor.tooling, library.maintainer
   Dafny has no class-to-class inheritance, so `MemoryBackendMinimal` duplicates

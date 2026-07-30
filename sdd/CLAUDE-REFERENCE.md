@@ -82,6 +82,7 @@ Read this before starting. One line per trigger.
 | Source/test/spec counts       | README badge + CI coverage report (no manual table) |
 | New authoritative process doc in `sdd/` | [CLAUDE.md § Documentation framework](../CLAUDE.md#documentation-framework) (if part of the trio), [CONTRIBUTING § Authoritative Document Format](../CONTRIBUTING.md#authoritative-document-format) (Scope subsection within), sibling authority back-references, `.claude/agents/*.md` FOUNDATION lists, the `/rvw-pr` and `/audit` step lists if the doc is review-enforced, `docs-src/explanation/design/_nav.yml` plus that section's `_index.tmpl`, and this ripple-check |
 | New or changed cross-artifact check | [`sdd/DRIFT-RULES.md`](DRIFT-RULES.md#rules) |
+| Authority direction amended   | Every live copy, not just the owning doc: `CLAUDE.md` principles, `.claude/agents/*.md` CONSTRAINTS blocks, sibling `sdd/` authority docs. Search by wording, not doc name, and use an alternation — the copies are phrased differently. `sdd/rfcs/`, `sdd/research/` and `sdd/traces/` are records, not instructions — skip them |
 
 <a id="detailed-checklist"></a>
 ### Detailed checklist
@@ -260,6 +261,34 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | `docs-src/explanation/design/_nav.yml`, and this ripple-check |
 | **New or changed cross-artifact check** | [`sdd/DRIFT-RULES.md` Rules](DRIFT-RULES.md#rules) |
 |                            | (scope and rule set are stated there)                    |
+| **Authority direction amended** | Which side governs is copied into agent-facing files, |
+|                            | so amending it in the owning `sdd/` doc leaves the copies  |
+|                            | asserting the old direction: `CLAUDE.md` principles,       |
+|                            | `.claude/agents/*.md` CONSTRAINTS blocks, sibling `sdd/`   |
+|                            | authority docs.                                            |
+|                            | The copies do not cite the doc they came from, so search by |
+|                            | wording. This exact command, which finds all four known     |
+|                            | copies:                                                     |
+|                            | `rg --no-ignore --hidden -e 'code is wrong' -e 'spec is source of truth' CLAUDE.md .claude/ sdd/` |
+|                            | (two `-e` flags, not an escaped `\|` — this file is read raw, |
+|                            | and in `rg`'s regex `\|` is a *literal* pipe that matches     |
+|                            | nothing)                                                     |
+|                            | Two parts are load-bearing. **`--no-ignore`**: `.gitignore`  |
+|                            | carries `.claude/*` with re-inclusions, so plain `rg` finds  |
+|                            | nothing under `.claude/` — the copy most likely to be missed.|
+|                            | And an **alternation**, because the copies are phrased       |
+|                            | differently: a single phrase misses the RFC, which is how    |
+|                            | that one was missed once already. Keep the terms narrow —    |
+|                            | broadening to `authoritative\|source of truth` returns 200+  |
+|                            | hits in `sdd/` and is not usable.                            |
+|                            | **Skip, deliberately:** `sdd/rfcs/` and `sdd/research/`    |
+|                            | (point-in-time per [§ Document types](000-process.md#document-types)) |
+|                            | and `sdd/traces/` (a record of what was read, never        |
+|                            | rewritten — not covered by that section, which does not    |
+|                            | list traces). The grep surfaces all three.                 |
+|                            | Do not re-propose collapsing the copies into pointers:     |
+|                            | agent-facing files are read cold by a process that may not |
+|                            | follow a link. Rationale and owner: BK-329 in BACKLOG-DONE |
 
 ---
 

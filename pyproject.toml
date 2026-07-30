@@ -349,12 +349,18 @@ check-ripple-parity = "python scripts/check_ripple_parity.py"
 # reason: the guide is a docs surface, so the docs gate invokes it directly.
 check-custom-backend-guide = "python scripts/check_custom_backend_guide.py"
 check-links = "python scripts/docs/check_links.py --root ."
+# Standalone entry point for the trace-schema gate, same reason as the three
+# above: an `sdd/`-only change skips the `lint` job (CODE_PAT) that otherwise
+# owns it, and a trace file is exactly what such a change adds, so the docs gate
+# invokes it directly. `gen-backlogid-check` (defined above) joins `docs-gate`
+# for the same reason — a `sdd/backlogid.json` bump rides the same path.
+check-traces = "python scripts/check_traces.py"
 docs-check = "python scripts/check_docs_framework.py"
 docs = "mkdocs serve"
 docs-build = "mkdocs build --strict"
 # The full set of checks that validate a docs/spec change, as one entry point CI
 # invokes once. Composed by reference so each sub-target stays the single source.
-docs-gate = ["docs-check", "check-no-tracker-refs", "check-backend-order", "check-ripple-parity", "check-custom-backend-guide", "check-links", "drift-docs-check", "docs-build"]
+docs-gate = ["docs-check", "check-no-tracker-refs", "check-backend-order", "check-ripple-parity", "check-custom-backend-guide", "check-traces", "gen-backlogid-check", "check-links", "drift-docs-check", "docs-build"]
 pre-commit-install = "pre-commit install"
 # Requires Docker Desktop; not included in 'all' (CI uses setup-dafny-action natively)
 verify-formal = "bash scripts/dafny_verify.sh"

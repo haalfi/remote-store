@@ -90,6 +90,34 @@ and the highest ID already in this file, then take the next integer. Run
   Stays here rather than under Cross-Artifact Consistency: it checks one
   artifact against a structural rule, not two descriptions against each other.
 
+- [ ] **BK-333 — Three `lint`/`preflight` gates are unreachable for the `sdd/` change that trips them**
+  spec: — · effort: S · audience: contributor.tooling
+  The remaining instances of the "an `sdd/`-only change reaches no gate" shape,
+  after BK-329 closed it for `check_traces` and `gen_backlogid --check`. `CODE_PAT`
+  does not match `^sdd/`, so CI's `lint` job (and `preflight` inside it) is skipped;
+  `FORMAL_PAT` is `^sdd/(formal|specs)/` **minus `sdd/formal/tla/`**, so the
+  second-wiring escape hatch used for `check_spec_marks`, `check_formal_trace`,
+  `check_capability_parity` and `check_dafny_twin_parity` does not reach these
+  three; and `docs-gate` invokes none of them:
+  - `gen_adr_digest.py --check` (in `preflight`) reads `sdd/adrs/`. Adding an ADR,
+    accepting a draft or recording a supersession is exactly what bumps the
+    **committed generated** `sdd/adrs/DIGEST.md` and can break supersession-graph
+    consistency, so staleness ships.
+  - `check_tla_no_emdash.py` reads `sdd/formal/tla/**/*.tla` — the one subtree
+    `FORMAL_PAT` deliberately excludes, so a TLA-only change skips the check
+    written for TLA files.
+  - `check_ci_inventory.py` compares `.github/workflows/` against
+    `sdd/CI-OPERATIONS.md`. The workflow side is covered (`CODE_PAT` matches
+    `^\.github/workflows/`); editing the handbook alone is not.
+  Fix shape: add each to `docs-gate` beside the two BK-329 wired, following the
+  precedent `check_ripple_parity` documents. Filed rather than fixed in BK-329
+  because that PR touched no ADR, no TLA module and not the handbook: its own
+  artefacts were the other two, and wiring gates it did not exercise would have
+  been scope it could not verify.
+  Surfaced by the PR #941 review, which named `gen_adr_digest` as the last
+  instance; enumerating `lint` and `preflight` against the path filters found two
+  more, so the item is scoped to all three rather than to the one reported.
+
 ---
 
 ## Cross-Artifact Consistency
@@ -105,34 +133,28 @@ this section carries the work.
 [the file's default](#how-this-file-works), because its items form a dependency
 chain. Position therefore says nothing about importance, and dependencies are
 stated by ID inside each item so re-sequencing cannot silently invalidate them.
-BK-329, BK-330 and BK-331 are independent and cheap. BK-324 and ID-207 come next
-and each depends on something earlier. BK-332, ID-236 and ID-237 are follow-ons
+BK-330 and BK-331 are independent and cheap. BK-324 comes next with its
+*attribution* blocker cleared, but BK-331 still comes before it: facet 3 cannot be
+decided against 037's current table. ID-207 is unblocked but reads better after
+BK-324, which decides the orphan behaviours its day-one allowlist would otherwise
+enumerate blind. BK-332, ID-236 and ID-237 are follow-ons
 that get cheaper once the earlier work lands. BK-327 is independent of the chain
 and can be taken at any point.
 
 On importance, the research doc's designation, which this section adopts rather
-than restates: the two items that build what is actually missing are **BK-329**
-(the authority model) and **ID-207** (the canonical claim space). BK-324 is the
-item they unblock and the evidence that the gap is real, not itself one of the
-two.
+than restates: the two items that build what is actually missing are the authority
+model — shipped as BK-329, now
+[`000-process.md` Rule 7](000-process.md#intent-attribution) — and **ID-207** (the
+canonical claim space). BK-324 is the item they unblock and the evidence that the
+gap is real, not itself one of the two.
 
-Step 1 (Dafny twin parity) shipped as BK-328; see
-[BACKLOG-DONE.md](BACKLOG-DONE.md). Two findings from it apply to what follows:
-a documented gap statement is not a measured one, and pinning what an exemption
-covers beats exempting the whole item.
-
-- [ ] **BK-329 — Declare the attribution rule for prose vs Dafny vs conformance**
-  spec: — · effort: S · audience: contributor.process
-  Research § 9 step 5.1. [`000-process.md` Rule 3](000-process.md#rules) settles
-  spec vs code, and nothing settles the intent domain internally: when contract
-  prose, a Dafny postcondition and a conformance test disagree, which one
-  governs — including the case where the prose is the wrong side.
-  [`DRIFT-RULES.md` Rule 4](DRIFT-RULES.md#authority) calls a declared authority
-  rule a **precondition**, so the precondition is currently unmet for the exact
-  pair BK-324 is stuck on. That is why BK-324 is effort L: the work there is
-  attribution, not detection. A `000-process.md` amendment, and it generalises
-  well beyond BK-324.
-  **First because it unblocks BK-324.**
+Shipped so far: step 1 (Dafny twin parity) as BK-328, step 5.1 (the attribution
+rule) as BK-329; see [BACKLOG-DONE.md](BACKLOG-DONE.md). Three findings from them
+apply to what follows: a documented gap statement is not a measured one, pinning
+what an exemption covers beats exempting the whole item, and an authority rule is
+worth exactly the live disagreements it decides — run a proposed one against them
+before believing it, because the case that does *not* resolve is the informative
+one.
 
 - [ ] **BK-330 — Aggregate trace outcome tags into a drift report**
   spec: — · effort: S · audience: contributor.tooling
@@ -163,8 +185,10 @@ covers beats exempting the whole item.
 
 - [ ] **BK-324 — Reconcile backend-contract divergences (root/alias, wrong-type errors, depth semantics, empty paths)**
   spec: 003, 029, 037 · effort: L · audience: library.maintainer, user.site
-  Research § 9 step 5.2. **Depends on BK-329** (the authority rule); reads
-  better after BK-331. Four facets of one problem, surfaced by PR #932's guide
+  Research § 9 step 5.2. **Attribution blocker cleared**: the authority rule it
+  waited on is [`000-process.md` Rule 7](000-process.md#intent-attribution).
+  **Still after BK-331**, which facet 3 below needs rather than merely prefers.
+  Four facets of one problem, surfaced by PR #932's guide
   validation: contract prose, the Dafny model, the conformance suite, and
   shipped backends disagree; the guide currently hedges by deferring to spec
   003. Decide each rule once, then align spec prose, model, conformance
@@ -178,16 +202,52 @@ covers beats exempting the whole item.
      **declared capability** so the conformance suite parameterizes on it —
      that converts an undeclared divergence into a declared one, which is the
      pattern the repo already uses.
-  3. Depth semantics — spec 037 prose licenses ignoring `max_depth` while
-     the Dafny model and DEPTH-003 tests require native pruning (037's
-     table is also wrong about S3 and Azure); `recursive=False` +
+  3. Depth semantics — spec 037 prose licenses ignoring `max_depth`, and 037's
+     table is wrong **about S3 only**: the shipped S3 backend *does* prune
+     natively (`_s3_base.py`, BFS that stops queueing past the limit) where the
+     table claims a flat scan plus client filter. The Azure row is accurate —
+     Azure does list the prefix and filter client-side, which its docstring also
+     states — so shipped behaviour is non-uniform. `recursive=False` +
      `max_depth` precedence splits the sync model vs ASYNC-014 vs the SQL
      backends vs the `Store` facade.
+     **Corrected premise:** this facet used to read "the Dafny model and DEPTH-003
+     tests require native pruning". Neither does. `BackendContract.dfy`'s
+     DEPTH-003 postcondition bounds `Depth(path, fi.path) <= max_depth` over the
+     *result*, and the conformance suite owns the same result invariant; only the
+     comment above the postcondition says "backend-native", and that comment is
+     what misled an earlier classification of this facet. Native pruning is a
+     performance property nothing in the intent domain currently requires.
   4. Empty-path `InvalidPath` on move/copy — Store-enforced convention,
      guarded defensively by every backend, absent from BE-018/BE-019 and
      untested (mind the Dafny coupling). This is the orphan-realization
      facet: enforced behaviour with no parent spec section, and the live
      instance ID-207's `Impl ⊆ S` direction exists to catch mechanically.
+  Rule 7 was run against these four before it landed. It **decides two and puts
+  the other two in its declared residue** — the honest result rather than the
+  flattering one. Residue means no defeater has an observation to fire on, so the
+  contract was never decided; it does not mean prose governs by default:
+  - **Facet 4 — under-determined.** Prose is silent where behaviour is uniform, so
+    prose adopts it and gains the test it never had; because the uniformity is
+    defensive duplication of a `Store`-layer rule, it specs one layer above the
+    backend tree, which is the disposition this facet already reasoned its way to.
+  - **Facet 2 — unenforced**, on the row's backend-scope axis: the clause *is*
+    asserted for the hierarchical backends and never was for the flat-NS family,
+    which is what "unenforced for the backends in question" means. So the prose
+    claim is not the default for that family, and the carve-out and the fix start
+    level. The defeater strips the presumption; it does not pick.
+  - **Facet 1 — residue.** Prose is absent *and* the backends disagree, so no
+    defeater applies and the contract is undecided rather than
+    misattributed. Deciding it is still spec work under
+    [Rule 1](000-process.md#rules), with a conformance cell alongside the new
+    section — not a cell instead of one.
+  - **Facet 3 — residue too, and the facet's own description is why.** No
+    defeater fits: prose *permits* rather than demands (so not unenforced), and
+    shipped behaviour is *not* uniform (so not under-determined) — the shipped S3
+    backend prunes natively, one prefix listing at a time, while Azure lists the
+    prefix and filters client-side. The classification was first built on this
+    facet's own "requires native pruning" premise, now corrected above: nothing in
+    the intent domain requires it. Settle the content first — that is BK-331's
+    derived table — then attribute.
   Evidence trail: PR #932 review threads and `sdd/traces/bk-320-*.yml`.
   **Filed here, not under Docs & Discoverability**, where it originally sat:
   facets 2 and 3 change runtime behaviour or spec semantics and may be

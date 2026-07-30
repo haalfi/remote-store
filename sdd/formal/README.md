@@ -206,6 +206,7 @@ age worse than the qualitative one.
    controls physical location. A module is informal until rule 3
    promotes it, regardless of directory.
 
+<a id="layers-at-a-glance"></a>
 ## Layers at a glance
 
 | Layer | Source of truth | Verified by |
@@ -219,6 +220,12 @@ Dafny and TLA+ are parallel specifications — not auto-generated from
 Python. When a Markdown spec item changes, the corresponding Dafny
 postcondition or TLA+ invariant is updated; if the verifier rejects
 the new form, the spec has an internal contradiction.
+
+A rejected form is only the case a verifier can catch. For the
+disagreement generally — prose against a verified postcondition or
+against a green conformance suite, including where prose is the side
+that must move — see [`000-process.md` Rule
+7](../000-process.md#intent-attribution).
 
 ## Operations
 

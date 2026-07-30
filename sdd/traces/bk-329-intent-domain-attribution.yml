@@ -1,0 +1,242 @@
+id: BK-329
+title: "Declare the attribution rule for prose vs Dafny vs conformance"
+trigger: >-
+  sdd/BACKLOG.md § Cross-Artifact Consistency orders by execution and BK-329 sat
+  first, as the item unblocking BK-324. 000-process.md Rule 3 settled spec vs
+  code; nothing settled the intent domain against itself, so DRIFT-RULES Rule 4's
+  precondition (a declared authority rule per artifact pair) was unmet for the
+  exact pair BK-324 was stuck on.
+source_items:
+  - BK-329
+  - BK-324
+  - BK-328
+audience:
+  - contributor.process
+  - contributor.tooling
+discovery_followups:
+  - BK-333
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  - CLAUDE.md
+  - .claude/agents/store-backend-expert.md
+  - sdd/CLAUDE-REFERENCE.md
+  - pyproject.toml
+  - scripts/check_traces.py
+  - scripts/gen_backlogid.py
+review_rounds: 6
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Cross-Artifact Consistency"
+        read_type: gate
+        extract: "the section declares execution order in its own preamble; BK-329 is first because it unblocks BK-324"
+        outcome: ok
+      - file: sdd/research/research-inconsistency-detection-multi-artifact.md
+        section: "9 (Step 5: Decide BK-324's four rules, with an attribution rule first)"
+        read_type: gate
+        extract: "step 5.1 is a 000-process.md amendment covering prose vs Dafny postcondition vs conformance test, including where the prose is wrong"
+        outcome: ok
+      - file: sdd/research/research-inconsistency-detection-multi-artifact.md
+        section: "5 (findings 1, 3, 6, 7 and synthesis)"
+        read_type: reference
+        extract: "prose is the most authoritative and least checked description; 'both sides bound to the same prose' fails when prose is the side that moved"
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules / Rule 4"
+        read_type: gate
+        extract: "declare authority in the document that owns the pair, next to the contract it arbitrates; do not restate a direction declared elsewhere"
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/000-process.md
+        section: "Rules"
+        read_type: gate
+        extract: "Rule 3 is cited by name across traces, research, DRIFT-RULES and CONTRIBUTING — append Rule 7 rather than renumber or rewrite it"
+        outcome: ok
+      - file: sdd/formal/README.md
+        section: "Layers at a glance, Compiled oracle as conformance gate"
+        read_type: reference
+        extract: >-
+          two of the needed edges are already declared here: prose -> Dafny with a
+          satisfiability defeater, and Dafny > conformance via the compiled oracle.
+          The amendment supplies the missing edges and links these
+        outcome: ok
+      - file: sdd/TESTING-RUNBOOK.md
+        section: "(header)"
+        read_type: reference
+        extract: "spec-wins-over-runbook is a fourth declared edge; the 'Authority | Owns' table is the in-repo presentation precedent"
+        outcome: ok
+      - file: sdd/adrs/0004-empty-path-semantics.md
+        section: "Decision"
+        read_type: reference
+        extract: >-
+          the ADR defers its roster to spec 001 ad hoc, which is the rule that
+          became Rule 7's ADR/RFC clause. Also the closest artifact to BK-324
+          facet 4, and it does not settle the backend-layer obligation
+        outcome: unclear
+      - file: CONTRIBUTING.md
+        section: "Authoritative Document Format"
+        read_type: gate
+        extract: "rationale is excluded from authoritative docs; every sentence must force different behaviour or be cut. Argument stays in the research doc and is linked"
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience"
+        read_type: gate
+        extract: "contributor.process needs a CHANGELOG entry only when it introduces a new user-facing framework or spec; this amends an existing process doc, so no entry"
+        outcome: ok
+  - id: verify
+    name: Verify against live disagreements
+    steps:
+      - file: sdd/specs/037-depth-limited-listing.md
+        section: "DEPTH-003"
+        read_type: verify
+        extract: >-
+          confirms facet 3's shape — prose explicitly licenses ignoring max_depth
+          ('backends that do not override the parameter simply ignore it'), so
+          permissive prose is satisfiable and the satisfiability defeater never
+          fires. This is why a second defeater was needed
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BK-324 (item)"
+        read_type: verify
+        extract: >-
+          ran the draft rule against all four facets. Two rows were too strict
+          against real cases: 'uniform AND tested' dropped facet 4 (uniform,
+          untested), and 'every backend does Y' dropped facet 2 (a family split).
+          Facet 1 resolves to out-of-scope, not undecidable
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Backlog item touched"
+        read_type: verify
+        extract: "live trace at sdd/traces/<id>-<slug>.yml; audience drives the CHANGELOG-required rule"
+        outcome: ok
+  - id: fix
+    name: Fix (review round 1)
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-324 (item)"
+        read_type: reference
+        extract: >-
+          facet 3's description asserts 'the Dafny model and DEPTH-003 tests
+          require native pruning'. The classification was built on that sentence
+          instead of on the backends, and neither half of it survived checking —
+          this entry is the artifact that misled, not the code read to correct it
+        outcome: misleading
+      - file: src/remote_store/backends/_s3_base.py
+        section: "list_files"
+        read_type: verify
+        extract: >-
+          the shipped S3 backend prunes natively — BFS over s3fs.ls that stops
+          queueing directories past the limit — while Azure lists the prefix and
+          filters client-side, so shipped behaviour is not uniform and the
+          under-determined defeater does not fit. First cited _s3_boto3.py, which
+          pyproject excludes from the wheel: the claim is about *shipped*
+          behaviour, so a parked PoC could not evidence it
+        outcome: ok
+      - file: tests/test_depth_listing.py
+        section: "(module docstring)"
+        read_type: verify
+        extract: >-
+          the conformance suite owns the DEPTH-003 *result* invariant; the
+          per-backend files check signatures. So facet 3 is recorded as not
+          classifying rather than reclassified
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Principles / 5"
+        read_type: verify
+        extract: >-
+          principle 5 carried the unqualified 'code is wrong' direction Rule 7
+          qualifies, and is the file every session loads first. Not anticipated by
+          the ripple-check; caught in review
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules / Rule 6"
+        read_type: gate
+        extract: >-
+          the register forms were reproduced inline and had already drifted (a
+          fourth form invented, one of Rule 6's dropped). Cite the rule, list
+          nothing
+        outcome: ok
+  - id: fix_2
+    name: Fix (review rounds 2 to 5)
+    steps:
+      - file: sdd/specs/037-depth-limited-listing.md
+        section: "Backend strategies"
+        read_type: verify
+        extract: >-
+          the table's Azure row is accurate — Azure does flat-scan and filter
+          client-side, which _azure.py's docstring states too. Only the S3 row is
+          wrong. A round-5 fix had claimed the table wrong 'in opposite
+          directions', introducing a false premise inside the passage headed
+          Corrected premise
+        outcome: ok
+      - file: sdd/formal/BackendContract.dfy
+        section: "DEPTH-003 postcondition"
+        read_type: verify
+        extract: >-
+          the postcondition bounds Depth(path, fi.path) <= max_depth over the
+          result, like the conformance assertion; only the comment above it says
+          "backend-native". So facet 3's 'the Dafny model requires native pruning'
+          premise is wrong on the Dafny half too, and the comment is what misled
+          the classification. Corrected in the item rather than left beside its
+          refutation
+        outcome: misleading
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts]"
+        read_type: verify
+        extract: >-
+          check_traces and gen_backlogid --check lived only in `lint`, which
+          CODE_PAT skips for an sdd/-only change — so this PR's own trace and
+          backlogid bump were ungated in CI. Wired both into docs-gate, following
+          the precedent check-ripple-parity already documents three lines above
+        outcome: ok
+      - file: sdd/traces/
+        section: "(browse)"
+        read_type: verify
+        extract: >-
+          traces carry verbatim copies of the spec-over-code direction (bk-185,
+          bk-186) and are not among § Document types' five categories, so the
+          round-2 carve-out's citation did not reach them. Named explicitly with
+          its own reason rather than stretched under that section
+        outcome: ok
+      - file: sdd/rfcs/rfc-0009-multi-agent-orchestration.md
+        section: "All experts"
+        read_type: verify
+        extract: >-
+          fourth copy of the direction, surfaced by the very trigger added in
+          round 2. Left unswept deliberately: RFCs are point-in-time per Document
+          types, and the ripple row now says so, because a reader following 'grep
+          the wording' lands here with nothing telling them to skip it
+        outcome: ok
+      - file: .claude/agents/store-backend-expert.md
+        section: "CONSTRAINTS"
+        read_type: verify
+        extract: >-
+          third copy of the spec-over-code direction, unqualified, in the agent
+          whose DOMAIN is src/remote_store/ — the code that facets 2 and 4 touch.
+          Round 1 swept CLAUDE.md but treated it as the last copy instead of
+          grepping the wording
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Authority direction amended"
+        read_type: verify
+        extract: >-
+          the round-1 surprising ripple produced no ripple-check row, so the next
+          amendment would rediscover it. New trigger added to both presentations,
+          keyed on grepping the direction's wording because the copies do not cite
+          their source
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Guides / Attribution inside the intent domain"
+        read_type: verify
+        extract: >-
+          three boundary statements were each looser than the procedure they
+          gate: the scope sentence excluded absent prose that the
+          under-determined row fires on, the carve-out scoped out item 1 and
+          Rule 1 (licensing a test-only contract), and Rule 3's new qualifier
+          stated the exception without its disposition
+        outcome: ok
