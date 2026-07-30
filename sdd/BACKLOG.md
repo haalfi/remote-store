@@ -174,11 +174,19 @@ one.
      **declared capability** so the conformance suite parameterizes on it —
      that converts an undeclared divergence into a declared one, which is the
      pattern the repo already uses.
-  3. Depth semantics — spec 037 prose licenses ignoring `max_depth` while
-     the Dafny model and DEPTH-003 tests require native pruning (037's
-     table is also wrong about S3 and Azure); `recursive=False` +
+  3. Depth semantics — spec 037 prose licenses ignoring `max_depth`, and 037's
+     table is wrong about S3 and Azure in opposite directions: the shipped S3
+     backend *does* prune natively (`_s3_base.py`, BFS that stops queueing past
+     the limit) while Azure lists the prefix and filters client-side. `recursive=False` +
      `max_depth` precedence splits the sync model vs ASYNC-014 vs the SQL
      backends vs the `Store` facade.
+     **Corrected premise:** this facet used to read "the Dafny model and DEPTH-003
+     tests require native pruning". Neither does. `BackendContract.dfy`'s
+     DEPTH-003 postcondition bounds `Depth(path, fi.path) <= max_depth` over the
+     *result*, and the conformance suite owns the same result invariant; only the
+     comment above the postcondition says "backend-native", and that comment is
+     what misled an earlier classification of this facet. Native pruning is a
+     performance property nothing in the intent domain currently requires.
   4. Empty-path `InvalidPath` on move/copy — Store-enforced convention,
      guarded defensively by every backend, absent from BE-018/BE-019 and
      untested (mind the Dafny coupling). This is the orphan-realization
@@ -204,13 +212,12 @@ one.
     section — not a cell instead of one.
   - **Facet 3 — residue too, and the facet's own description is why.** No
     defeater fits: prose *permits* rather than demands (so not unenforced), and
-    shipped behaviour is *not* uniform (so not under-determined) — the S3 family
-    prunes natively via delimiter BFS while Azure lists the prefix and filters
-    client-side. Two further premises above need checking before the facet can be
-    decided: the conformance suite owns the DEPTH-003 *result* invariant, not
-    native pruning, and 037's table is wrong about S3 in a different direction
-    than about Azure. Settle the content first — that is BK-331's derived table —
-    then attribute.
+    shipped behaviour is *not* uniform (so not under-determined) — the shipped S3
+    backend prunes natively, one prefix listing at a time, while Azure lists the
+    prefix and filters client-side. The classification was first built on this
+    facet's own "requires native pruning" premise, now corrected above: nothing in
+    the intent domain requires it. Settle the content first — that is BK-331's
+    derived table — then attribute.
   Evidence trail: PR #932 review threads and `sdd/traces/bk-320-*.yml`.
   **Filed here, not under Docs & Discoverability**, where it originally sat:
   facets 2 and 3 change runtime behaviour or spec semantics and may be

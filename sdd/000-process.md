@@ -10,7 +10,7 @@ Authoritative source for the Spec-Driven Development workflow, spec/ADR/RFC form
 
 1. **No code without a spec**: every testable contract must have a spec section ID.
 2. <a id="spec-test-traceability"></a>**No spec without tests**: every spec section must have at least one test with `@pytest.mark.spec("ID")`.
-3. **Specs are authoritative**: if code and spec disagree, the code is wrong — unless the spec's claim was never enforced, which [Rule 7](#intent-attribution) qualifies: that makes the claim undecided, not the code right.
+3. **Specs are authoritative**: if code and spec disagree, the code is wrong — unless no test ever asserted that clause for the backend in question, which [Rule 7](#intent-attribution) qualifies: that makes the claim undecided, not the code right.
 4. **ADRs are immutable once Accepted**: supersede an Accepted ADR, never edit it. Drafts may be refined before acceptance.
 5. **IDs are stable**: once assigned, a section ID never changes meaning. Deprecated sections are marked `[DEPRECATED]`, not removed.
 6. <a id="workflows"></a>**Workflows**:
@@ -87,9 +87,10 @@ in that order.
 4. **ADRs and RFCs record decisions, not contracts.** Where either disagrees with
    a spec about what the system must do, the spec governs; supersede the ADR
    rather than editing it ([Rule 4](#rules) above).
-5. **A divergence you keep is registered, not remembered.** Give it an owner and a
-   rationale, in one of the register forms
-   [`DRIFT-RULES.md` Rule 6](DRIFT-RULES.md#tolerated) admits.
+5. **A divergence you keep is registered, not remembered.** Give it an **owner and
+   a rationale**, which is what [`DRIFT-RULES.md` Rule 6](DRIFT-RULES.md#tolerated)
+   requires; the forms it names are examples, so the register may be any durable
+   home that carries both.
 
 **Where no defeater fires, the presumption stands and prose governs — except when
 nothing was decided in the first place.** That exception is a residue with a

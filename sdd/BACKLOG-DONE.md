@@ -9,7 +9,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 ## Unreleased
 
 - [x] **BK-329 — Declare the attribution rule for prose vs Dafny vs conformance**
-  spec: — · effort: S · audience: contributor.process
+  spec: — · effort: S · audience: contributor.process, contributor.tooling
   Step 5.1 of
   [research](research/research-inconsistency-detection-multi-artifact.md) § 9, and
   the item BK-324 was blocked on. `000-process.md` Rule 3 settled spec vs code and
@@ -32,11 +32,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   conformance suite carry evidence it cannot. Three defeaters strip prose's
   presumption of correctness — unsatisfiable, under-determined, unenforced — and
   only the first two also decide which side moves. The third reopens the question
-  instead, which is why Rule 3 and `CLAUDE.md` principle 5 now carry the "unless the
-  claim was never enforced" qualifier and a pointer here: an unenforced spec claim
-  is the one case where "the code is wrong" does not follow.
-  **Validated against BK-324's four facets**, which changed the rule seven times
-  across four review rounds, every time in the same place: the normative core held
+  instead, which is why Rule 3 and `CLAUDE.md` principle 5 now carry the "unless no
+  test ever asserted that clause for the backend in question" qualifier and a
+  pointer here: that is the one case where "the code is wrong" does not follow. The
+  qualifier is scoped rather than bare because Rule 3 gets quoted alone, and
+  "never enforced" unqualified would swallow the rule it carves out of — most
+  individual clauses have no clause-level test, since Rule 2's marker is
+  section-level.
+  **Validated against BK-324's four facets**, which changed the rule nine times
+  across five review rounds, every time in the same place: the normative core held
   throughout and the **boundary** statements were each a clause looser than the
   procedure they gate. An early draft
   required "uniform *and tested*" for the under-determined defeater; facet 4 is
@@ -71,12 +75,20 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   line has to carry the disposition. Same for the two agent-facing copies. The
   defeater is also bounded to clause granularity, because Rule 2's marker is
   section-level and so a marked section is no evidence a clause is covered.
-  **The rule reaches two of the four**, which is the result rather than the one that
-  flatters the item. Facet 4 is under-determined and facet 2 unenforced. Facet 1 is
-  outside the rule by construction. Facet 3 does not classify at all: prose permits
-  rather than demands, and shipped behaviour is not uniform — the S3 family prunes
-  natively while Azure filters client-side — so no defeater fits, and two premises
-  in the facet's own description need checking before it can be decided. An
+  **The rule decides two of the four and puts the other two in its declared
+  residue**, which is the result rather than the one that flatters the item. Facet 4
+  is under-determined and facet 2 unenforced on the backend-scope axis. Facets 1 and
+  3 are residue — no defeater has an observation to fire on, so the contract was
+  never decided, which the rule handles explicitly rather than falling silent: the
+  conformance suite drives, and deciding the behaviour is still spec work under
+  Rule 1. Facet 3 lands there because prose permits rather than demands and shipped
+  behaviour is not uniform: the shipped S3 backend prunes natively, one prefix
+  listing at a time, while Azure filters client-side.
+  **One of that facet's own premises was disproven and is corrected in place**, not
+  left beside its refutation: it claimed the Dafny model and the DEPTH-003 tests
+  require native pruning, and neither does — the postcondition and the conformance
+  assertion both bound the *result*, and only the comment above the postcondition
+  says "backend-native". That comment is what misled the first classification. An
   attribution rule cannot substitute for content that was never settled, and facet 3
   is where that shows.
   Facet 4's classification independently reproduces the disposition BK-324 had
@@ -90,18 +102,24 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   assuming it was the last is what left the second. The ripple-check now carries an
   **Authority direction amended** trigger keyed on grepping the direction's
   *wording*: the copies do not cite the doc they came from, so searching by doc name
-  finds none of them. The trigger immediately found a fourth in
-  `sdd/rfcs/rfc-0009`, deliberately not swept — RFCs are point-in-time records, and
-  the row says so, since a reader following the grep lands there.
+  finds none of them. The trigger immediately found further copies in `sdd/rfcs/`,
+  `sdd/research/` and `sdd/traces/`, all deliberately unswept: they are records of
+  what was true or what was read, not instructions. The row names all three, because
+  § Document types covers only the first two — traces are not one of its five
+  categories — and a reader following the grep lands on all of them.
   **Why the copies exist at all is recorded rather than assumed**, because Rule 4
   says a second copy is a second thing to get backwards and this work kept three.
   Agent-facing files are read cold by a process that may not follow a link, so the
   direction is restated deliberately; the pointer-only alternative was considered
-  and rejected for that reason. The ripple row is the register entry
-  ([`DRIFT-RULES.md` Rule 6](DRIFT-RULES.md#tolerated)), so the divergence is
-  tolerated rather than unnoticed — with this entry as the register home, since a
-  ripple-check row is not one of Rule 6's forms and names no owner, and claiming
-  otherwise made the first divergence registered under the new item 5 fail it.
+  and rejected for that reason. **This entry is the register home** under
+  [`DRIFT-RULES.md` Rule 6](DRIFT-RULES.md#tolerated) — owner BK-329, rationale
+  above — so the divergence is tolerated rather than unnoticed, and the ripple row
+  points here for both. An intermediate draft claimed the row itself was the
+  register and justified that partly on the row not being "one of Rule 6's forms".
+  That reasoning was wrong and would have disqualified this entry too: Rule 6's
+  three forms are examples, and what it actually requires is an owner and a
+  rationale. Item 5 now says so, since it ships as a rule others are held to. The
+  row's real disqualification was simply that it named no owner.
   A trigger is a mitigation, not a reduction, and saying which one it is was the
   reviewer's point.
   **Closed the gating hole this work exposed rather than only noting it.**

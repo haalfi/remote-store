@@ -46,6 +46,10 @@ Exit codes
 Run with::
 
     hatch run lint                  # bundled
+    hatch run docs-gate             # bundled; the gate CI runs for an
+                                    # ``sdd/``-only change, which ``lint``
+                                    # skips (CODE_PAT) even though such a
+                                    # change is what adds a trace
     python scripts/check_traces.py
 """
 

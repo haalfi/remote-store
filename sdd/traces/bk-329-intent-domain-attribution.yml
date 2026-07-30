@@ -12,13 +12,17 @@ source_items:
   - BK-328
 audience:
   - contributor.process
+  - contributor.tooling
 expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:
   - CLAUDE.md
   - .claude/agents/store-backend-expert.md
   - sdd/CLAUDE-REFERENCE.md
-review_rounds: 4
+  - pyproject.toml
+  - scripts/check_traces.py
+  - scripts/gen_backlogid.py
+review_rounds: 5
 phases:
   - id: orient
     name: Orient
@@ -120,13 +124,16 @@ phases:
           instead of on the backends, and neither half of it survived checking —
           this entry is the artifact that misled, not the code read to correct it
         outcome: misleading
-      - file: src/remote_store/backends/_s3_boto3.py
+      - file: src/remote_store/backends/_s3_base.py
         section: "list_files"
         read_type: verify
         extract: >-
-          S3 prunes natively via a delimiter BFS with a depth limit; Azure lists
-          the prefix and filters client-side, so shipped behaviour is not uniform
-          and the under-determined defeater does not fit
+          the shipped S3 backend prunes natively — BFS over s3fs.ls that stops
+          queueing directories past the limit — while Azure lists the prefix and
+          filters client-side, so shipped behaviour is not uniform and the
+          under-determined defeater does not fit. First cited _s3_boto3.py, which
+          pyproject excludes from the wheel: the claim is about *shipped*
+          behaviour, so a parked PoC could not evidence it
         outcome: ok
       - file: tests/test_depth_listing.py
         section: "(module docstring)"
@@ -153,8 +160,19 @@ phases:
           nothing
         outcome: ok
   - id: fix_2
-    name: Fix (review rounds 2 to 4)
+    name: Fix (review rounds 2 to 5)
     steps:
+      - file: sdd/formal/BackendContract.dfy
+        section: "DEPTH-003 postcondition"
+        read_type: verify
+        extract: >-
+          the postcondition bounds Depth(path, fi.path) <= max_depth over the
+          result, like the conformance assertion; only the comment above it says
+          "backend-native". So facet 3's 'the Dafny model requires native pruning'
+          premise is wrong on the Dafny half too, and the comment is what misled
+          the classification. Corrected in the item rather than left beside its
+          refutation
+        outcome: misleading
       - file: pyproject.toml
         section: "[tool.hatch.envs.default.scripts]"
         read_type: verify

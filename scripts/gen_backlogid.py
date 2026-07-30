@@ -9,7 +9,9 @@ Check mode (--check):
     Read-only. Verifies the JSON is current, then checks BACKLOG.md for
     collisions with done items and prints next safe IDs per prefix.
     Exit 0 = clean; 1 = stale JSON or collisions found.
-    Suitable for use as a lint gate.
+    Wired into `hatch run lint` and `hatch run docs-gate` — the latter because
+    `lint` is CODE_PAT-gated and so skipped for an `sdd/`-only change, which is
+    exactly the change that bumps this file.
 """
 
 from __future__ import annotations

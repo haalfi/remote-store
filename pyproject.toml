@@ -349,10 +349,11 @@ check-ripple-parity = "python scripts/check_ripple_parity.py"
 # reason: the guide is a docs surface, so the docs gate invokes it directly.
 check-custom-backend-guide = "python scripts/check_custom_backend_guide.py"
 check-links = "python scripts/docs/check_links.py --root ."
-# Standalone entry points for the trace-schema and backlog-ID gates, same reason
-# as the three above: an `sdd/`-only change skips the `lint` job (CODE_PAT) that
-# otherwise owns them, and a trace file plus a `sdd/backlogid.json` bump are
-# exactly what such a change adds, so the docs gate invokes them directly.
+# Standalone entry point for the trace-schema gate, same reason as the three
+# above: an `sdd/`-only change skips the `lint` job (CODE_PAT) that otherwise
+# owns it, and a trace file is exactly what such a change adds, so the docs gate
+# invokes it directly. `gen-backlogid-check` (defined above) joins `docs-gate`
+# for the same reason — a `sdd/backlogid.json` bump rides the same path.
 check-traces = "python scripts/check_traces.py"
 docs-check = "python scripts/check_docs_framework.py"
 docs = "mkdocs serve"
