@@ -229,11 +229,12 @@ class TestRanking:
         assert [r.reference for r in corpus.references] == ["zebra.md", "alpha.md", "beta.md"]
 
     def test_traces_sharing_an_id_are_not_collapsed(self, tmp_path):
-        # `id` is pattern-constrained, not unique: 13 committed traces
-        # share `ID-127` and two share `BK-181`. Accumulating citations
-        # by id drops every one but the last — which is the "entries
-        # dropped by an approximate extraction" defect this report
-        # exists to retire, so it gets its own regression test.
+        # `id` is pattern-constrained, not unique — sdd/traces/_schema.yml
+        # `properties/id` is the authority, and the convention it mandates
+        # reuses one backlog ID across a multi-PR item. Accumulating
+        # citations by id drops every one but the last, which is the
+        # "entries dropped by an approximate extraction" defect this
+        # report exists to retire, so it gets its own regression test.
         root, traces = _repo(tmp_path, "a.md")
         _write(traces, "id-127-one.yml", _trace("ID-127", _step("a.md", "misleading")))
         _write(traces, "id-127-two.yml", _trace("ID-127", _step("a.md", "unclear")))
@@ -724,6 +725,104 @@ class TestRendering:
 
         assert "No ranked references carry a negative outcome tag." in rendered
         assert "not shown" not in rendered
+
+    def test_reads_and_rate_reach_the_rendered_table(self, tmp_path):
+        # The columns are the point of the denominator, and asserting them
+        # only on the ReferenceRow leaves them deletable from the table in
+        # silence — the same gap `test_not_ranked_sections_are_actually_
+        # rendered` exists to close for the segregated sections.
+        root, traces = _repo(tmp_path, "a.md")
+        _write(
+            traces,
+            "bk-1-x.yml",
+            _trace("BK-1", _step("a.md", "misleading") + _step("a.md", "ok") + _step("a.md", "ok")),
+        )
+        rendered = _mod.render_markdown(_collect(root, traces))
+
+        assert "| Total | misleading | unclear | reads | rate | Reference | Citing traces |" in rendered
+        assert "| 1 | 1 | 0 | 3 | 33.3% | `a.md` |" in rendered
+
+    def test_rate_below_one_percent_does_not_render_as_zero(self, tmp_path):
+        # `:.0%` floored a real finding to "0%", which reads as "never
+        # misled anyone" on a row that exists because it did.
+        root, traces = _repo(tmp_path, "a.md")
+        steps = _step("a.md", "misleading") + _step("a.md", "ok") * 200
+        _write(traces, "bk-1-x.yml", _trace("BK-1", steps))
+        rendered = _mod.render_markdown(_collect(root, traces))
+
+        assert "| 201 | 0.5% |" in rendered
+
+    def test_header_totals_are_not_re_derived_from_the_ranked_rows(self, tmp_path):
+        # The docstring's headline invariant is a claim about this header
+        # line: every tag counts toward the totals regardless of class.
+        # Only a corpus carrying all four classes at once can separate
+        # "counted during the scan" from "summed back from the table".
+        root, traces = _repo(tmp_path, "a.md")
+        _write(
+            traces,
+            "bk-1-x.yml",
+            _trace(
+                "BK-1",
+                _step("a.md", "misleading")
+                + _step("sdd/plans/gone.md", "misleading")
+                + _step(".venv/lib/x.py", "unclear")
+                + _step('""', "unclear"),
+            ),
+        )
+        corpus = _collect(root, traces)
+        rendered = _mod.render_markdown(corpus)
+
+        # One ranked, one unresolved, one external, one unattributed.
+        assert (len(corpus.references), len(corpus.unresolved), len(corpus.external)) == (1, 1, 1)
+        assert corpus.unattributed == 1
+        assert "Negative tags: 4 (`misleading` 2, `unclear` 2) across 1 traces and 3 references." in rendered
+        assert "Segregated from the ranking, not discarded" in rendered
+
+    def test_coverage_percentage_is_rendered(self, tmp_path):
+        # Coverage is quoted content, not decoration: the schema names it
+        # as its own signal about authoring discipline.
+        root, traces = _repo(tmp_path, "a.md")
+        _write(
+            traces,
+            "bk-1-x.yml",
+            _trace("BK-1", _step("a.md", "misleading") + _step("a.md") + _step("a.md") + _step("a.md")),
+        )
+        rendered = _mod.render_markdown(_collect(root, traces))
+
+        assert "4 steps · 1 carry an explicit `outcome` (25.0%)" in rendered
+
+    def test_multiline_extract_cannot_break_out_of_its_list_item(self, tmp_path):
+        # Block-scalar `extract` values are legal and common in the real
+        # corpus. Interpolated raw, the embedded newlines end the list
+        # item and a continuation line starting `###` forges a heading in
+        # the section whose `###` headings are the reader's navigation.
+        root, traces = _repo(tmp_path, "a.md")
+        _write(
+            traces,
+            "bk-1-x.yml",
+            _trace(
+                "BK-1",
+                """\
+                - file: a.md
+                  section: "S"
+                  read_type: gate
+                  extract: |
+                    first line
+                    ### forged heading
+                    | forged | table |
+                  outcome: misleading
+                """,
+            ),
+        )
+        rendered = _mod.render_markdown(_collect(root, traces))
+
+        detail = rendered.split("## Detail")[1]
+        item = next(line for line in detail.splitlines() if line.startswith("- bk-1-x"))
+        assert "first line ### forged heading | forged | table |" in item
+        # Nothing escaped onto a line of its own. The Detail section's own
+        # `### <reference>` headings are its navigation, which is exactly
+        # what a forged one would be indistinguishable from.
+        assert not any(line.startswith(("### forged", "| forged")) for line in detail.splitlines())
 
 
 # --------------------------------------------------------------------------

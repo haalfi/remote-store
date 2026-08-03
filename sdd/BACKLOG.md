@@ -89,8 +89,9 @@ and the highest ID already in this file, then take the next integer. Run
   **The trigger class, not the instance, is what makes this worth a row.** It
   fires on every new script in `scripts/`, of which the repo has dozens and every
   one carries an alias. Surfaced by the PR #944 review: BK-330 reasoned to the
-  right answer only via the adjacent "New or changed cross-artifact check" row,
-  which covers a check and says nothing about a report, a `gen_*` or a `bench-*`.
+  right answer only via the adjacent cross-artifact row — which this same PR then
+  widened to name drift reports, so it now covers the report case and still says
+  nothing about a `gen_*`, a `bench-*`, or any other script.
   Fix shape: one trigger row in **both** presentations of the ripple-check table
   (`check_ripple_parity.py` enforces trigger-parity, so a row added to one and
   not the other fails `lint`), naming the reachability question and the
@@ -100,6 +101,30 @@ and the highest ID already in this file, then take the next integer. Run
   misroute and whose fix is a `docs-gate` entry. This is a missing row in a
   documentation table; different artifact, different fix, different verification.
   BK-333's enumeration of exactly three is load-bearing and should not absorb it.
+
+- [ ] **BK-335 — `check_links.py` cannot see Markdown links inside Python docstrings**
+  spec: — · effort: S/M · audience: contributor.tooling
+  [`scripts/docs/check_links.py`](../scripts/docs/check_links.py) walks git-tracked
+  `.md` only, and guards on `tgt_path.suffix != ".md"`. So a
+  `](../sdd/DRIFT-RULES.md#anchor)` link written inside a `scripts/*.py` docstring
+  is validated by nothing: rename the anchor and every reference to it breaks
+  silently.
+  Measured, not hypothetical: at the time of filing, `scripts/report_trace_outcomes.py`
+  and `scripts/_trace_corpus.py` carry several such links between them, pointing at
+  anchors minted three PRs earlier in `sdd/DRIFT-RULES.md`. All resolve today —
+  this is an unchecked surface, not a live break. `scripts/check_test_placement.py`
+  had the pattern first, so BK-330 multiplied it rather than introducing it.
+  **Why it was not fixed in BK-330:** the remedy is a new cross-artifact check in
+  its own right — it needs a claim space, a stated bound and a decision about what
+  counts as a link in Python source, and it will surface pre-existing breakage
+  across `scripts/` unrelated to the PR that found it. Adding that inside a review
+  round is how a check ships without the design [`DRIFT-RULES.md`](DRIFT-RULES.md#rules)
+  requires of it.
+  Fix shape: extend the walk to extract links from `.py` docstrings (or a narrower
+  "repo-relative Markdown link in any tracked text file" pass), and expect a first
+  run that reports existing breakage — decide up front whether that is fixed or
+  baselined, since [Rule 6](DRIFT-RULES.md#tolerated) wants tolerated divergence
+  registered rather than unnoticed.
 
 - [ ] **ID-239 — Sweep backlog IDs used as provenance anchors out of durable artifacts**
   spec: — · effort: — · audience: contributor.process
@@ -135,7 +160,8 @@ and the highest ID already in this file, then take the next integer. Run
   `sdd/**` **are** published prose, and "Out of scope: `sdd/**`" already
   contradicts the dual-dest mechanism today. Settle that first; it bounds
   everything else.
-  **Why ID, not BK:** the same reasoning ID-238 states two sections below. The
+  **Why ID, not BK:** the same reasoning ID-238 states under Cross-Artifact
+  Consistency. The
   scope question above is unevaluated and the item's own body says deciding it
   "bounds everything else", so the size of the committed half is unknown — which
   is also why `effort:` is `—` rather than a guess. Contrast BK-334 above, which

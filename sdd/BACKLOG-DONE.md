@@ -82,22 +82,31 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   mandating the convention that produces the duplicates — so it now says so and
   is the authority the code sites cite. **The counts** are what was consolidated
   to a single home: they appear once, above, SHA-pinned, and no longer in code.
-  The rule itself is restated wherever the code depends on it, each citing the
-  schema — a deliberate copy, because a keying decision is unreadable without the
-  reason beside it, and the ranking this report ships is what would surface the
-  restatements drifting.
+  The rule itself is restated in the three code sites that depend on it, each
+  citing the schema — a deliberate copy, because a keying decision is unreadable
+  without the reason beside it, and the ranking this report ships is what would
+  surface the restatements drifting.
   **Reads and rate.** The ranking measures exposure at least as much as failure
   rate: `CLAUDE.md` makes opening the backlog item step one of nearly every
-  trace, so `sdd/BACKLOG.md` accumulates tags across ~222 reads while a spec read
-  by a handful of traces cannot. The report now carries `reads` (every citing
-  step, tagged or not) and `rate` beside the count, and the sort key stays the
-  absolute count — a rate sort's head is single-read noise, since 72 of 106
-  ranked references carry exactly one tag and 16 of those read 100%. Both figures
-  measured at this branch's head; re-run rather than trusting them.
-  Two bounds were added with it: drain files (`sdd/BACKLOG.md` empties into
+  trace, so `sdd/BACKLOG.md` accumulates tags across an order of magnitude more
+  reads than a spec only a handful of traces open. The report now carries `reads`
+  (every citing step, tagged or not) and `rate` beside the count.
+  **The sort key stays the absolute count**, and that is the decision worth
+  recording: a rate sort's head is single-read noise, because most ranked
+  references carry exactly one tag and a large minority of those were read
+  exactly once, so they render at 100% and outrank everything real. Rescuing a
+  rate sort needs a minimum-reads threshold, which reintroduces the "no correct
+  threshold" problem that makes this a report rather than a gate. No figures are
+  restated here — this entry's own headline finding is that a hand-copied count
+  of a growing corpus is stale before its commit lands, and a branch-head anchor
+  stops meaning anything once the branch merges. Run
+  `hatch run report-trace-outcomes`.
+  Three bounds were added with it: drain files (`sdd/BACKLOG.md` empties into
   `sdd/BACKLOG-DONE.md`, so a tag stays pinned to a path whose cited section has
-  moved while both paths keep resolving — nothing surfaces it, unlike a rename),
-  and unattributed tags.
+  moved while both paths keep resolving — a localization defect that, unlike a
+  rename, lands nowhere; `rate` is unaffected, since tags and reads drain
+  together), `rate`'s denominator mixing assessed with never-assessed reads, and
+  unattributed tags.
   **Declined, so it is not re-litigated:** a `--format json` mode. No consumer
   exists, and the collection API returns dataclasses that a future one can call
   directly.

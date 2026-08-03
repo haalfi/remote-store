@@ -11,6 +11,7 @@ discovery_followups:
   - ID-238
   - BK-334
   - ID-239
+  - BK-335
 expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:
@@ -18,7 +19,12 @@ surprising_ripples:
   - sdd/DRIFT-RULES.md
   - sdd/CLAUDE-REFERENCE.md
   - scripts/check_traces.py
-review_rounds: 2
+  - CLAUDE.md
+  - sdd/CONTENT-RULES.md
+  - .claude/skills/rvw-pr/SKILL.md
+  - .claude/skills/audit/SKILL.md
+  - .claude/agents/sdd-expert.md
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -137,8 +143,8 @@ phases:
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check table / Detailed checklist"
         read_type: verify
-        extract: "Confirm every fired row is discharged and no code-surface row was missed. This check returned a false pass: the 'New test file' row was recorded as discharged while pytestmark = pytest.mark.os_sensitive was absent, and round one had to catch it. The marker is CI's inclusion mechanism for the macOS and Windows legs, not a label, so a suite that writes corpora to disk and resolves references against a filesystem root ran on one platform only. Tagged here rather than on the test module, which told me nothing and did not exist when the row was mis-discharged"
-        outcome: misleading
+        extract: "Confirm every fired row is discharged and no code-surface row was missed. My pass returned a false positive: I recorded the 'New test file' row as discharged while pytestmark = pytest.mark.os_sensitive was absent, and round one had to catch it. The row is not at fault — it names 'local filesystem' explicitly and links the marker's rationale, so nothing it said was wrong, stale or contradictory. An authoring error, not a read that failed to deliver, so it belongs in this extract and carries no outcome tag"
+        outcome: ok
       - file: CHANGELOG.md
         section: "[Unreleased]"
         read_type: verify
@@ -158,8 +164,13 @@ phases:
         read_type: verify
         extract: "Round two: the test added in round one to close a vacuity finding was itself vacuous for the exact claim in its own comment — a collected fixture cannot discriminate the filename tie-break, because collect_outcomes already returns citations sorted by trace_file and Python's sort is stable, so any tying key reproduces the expected order. Rebuilt on hand-made Citations equal on total and misleading, supplied in reverse filename order, and verified by mutation rather than by reading"
         outcome: ok
-      - file: sdd/traces/bk-330-trace-outcome-report.yml
-        section: "orient, verify"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Detailed checklist"
         read_type: verify
-        extract: "Round two: this trace fed the aggregator it ships a misleading tag on the PR's own test module — a file that told me nothing and did not exist when the ripple row was mis-discharged — while the step that actually recorded the false pass stayed ok. Exactly the anti-pattern the module's Rule 7 bound cites PR #941 for correcting, and live in the report's output. Tag moved to the verify step that made the false claim"
-        outcome: misleading
+        extract: "Rounds two and three: my misleading tag for the mis-discharged ripple row landed on two blameless artifacts in turn — first this PR's own test module, then this row — before the right answer surfaced. Neither told me anything wrong; my verification pass returned a false positive. An agent's own miss belongs in an extract, not in an outcome, and a tag that self-corrects during review must not earn its own trace a row: that would make sdd/traces/*.yml accumulate in the ranking in proportion to review diligence, which is noise the reporting mechanism generates about itself"
+        outcome: ok
+      - file: scripts/report_trace_outcomes.py
+        section: "render_markdown Detail section"
+        read_type: verify
+        extract: "Round three: extract and section were interpolated raw into Markdown list items while the corpus holds hundreds of block-scalar extract values, so the Detail section fragmented and a continuation line beginning ### or | would render as a heading or table inside the report. Flattened both. Found by a reviewer reading the default output, not by any test — every fixture used a single-line extract"
+        outcome: ok

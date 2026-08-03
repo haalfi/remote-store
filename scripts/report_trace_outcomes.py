@@ -59,6 +59,15 @@ State the bound, per [Rule 7](../sdd/DRIFT-RULES.md#miss-rate):
   ([Rule 3](../sdd/DRIFT-RULES.md#claim-space)). It does not check that
   the section still exists, that the tag is honest, or that two traces
   citing the same file meant the same part of it.
+* **The Detail section says what a reader wanted, not what went wrong.**
+  ``extract`` is defined by the schema as "what to take from this read",
+  written in imperative mood *before* the outcome is known — so rendering
+  it after the tag reads as an explanation of the failure when it is
+  nothing of the kind. Some authors do write the failure narrative into
+  ``extract``, but that is authoring practice rather than schema, and
+  nothing marks which kind a given line is. So the report localizes to a
+  file and a section and stops: it can tell you *where* to look and never
+  *what* to fix.
 * **Corpus validity is assumed, not re-derived**
   ([Rule 8](../sdd/DRIFT-RULES.md#independence)). ``check_traces.py``
   gates schema conformance in ``lint`` and ``docs-gate``; a trace that
@@ -72,15 +81,30 @@ State the bound, per [Rule 7](../sdd/DRIFT-RULES.md#miss-rate):
   being moved rather than by being fixed. The unresolvable section is
   where that shows up, which is one reason it is printed rather than
   dropped.
-* **Drain files are worse than renames, and nothing surfaces them.** When
-  content migrates between two paths that *both* keep resolving, no row
-  moves and no section flags it. ``sdd/BACKLOG.md`` drains into
+* **Drain files, and nothing surfaces them.** When content migrates
+  between two paths that *both* keep resolving, no row moves and no
+  section flags it. ``sdd/BACKLOG.md`` drains into
   ``sdd/BACKLOG-DONE.md`` as items complete, so a tag written against a
   live item stays pinned to ``BACKLOG.md`` after the cited section has
-  moved out of it. The consequences are both directions of wrong: the
-  ranked row points a reader at a file where the cited section no longer
-  exists, and one artifact's signal is split across two rows. Renames at
-  least land in "unresolvable"; this lands nowhere.
+  moved out of it. **The damage is localization, not measurement**: the
+  ranked row sends a reader to a file where the cited section no longer
+  lives, and the count is split across two rows. ``rate`` is unaffected —
+  a step keeps the path it recorded and tagged steps are a subset of
+  citing steps, so tags and reads drain together and each half carries
+  the ratio of the whole (measured on this corpus: both halves and the
+  combination agree to within a rounding step). Renames at least land in
+  "unresolvable"; a drain lands nowhere.
+* **``rate``'s denominator mixes assessed and never-assessed reads.**
+  ``reads`` counts every citing step, but well under half of all steps
+  carry an explicit ``outcome`` — and that fraction *varies by
+  reference*, so two rows showing the same ``rate`` can rest on very
+  different amounts of actual assessment. The header prints one global
+  coverage figure, which cannot correct any individual row. Treat
+  ``rate`` as "negative tags per citation", which is what it measures,
+  and not as a failure rate; it is reported to interrogate a row, never
+  to order rows against each other. The schema licenses treating an
+  absent ``outcome`` as ``ok`` for ranking, which is what makes this a
+  bound to state rather than a bug to fix.
 
 Reading the ranking
 ===================
@@ -102,7 +126,10 @@ default to assume.
 How references are classified
 =============================
 A silent filter is the same defect class as a silent truncation, so the
-rules are stated here and printed in the report:
+report prints these rules itself (see ``_classification_legend``) — a
+reader holding the rendered Markdown in a terminal or a PR comment
+cannot be sent to a Python docstring. What follows is the reasoning
+behind each class; the report carries the rules.
 
 * **Ranked** — everything that resolves to a path in the working tree,
   plus the two forms the schema licenses that never name a file:
@@ -418,6 +445,43 @@ def collect_outcomes(
     )
 
 
+def _classification_legend() -> list[str]:
+    """The filtering rules, rendered for the reader of the report.
+
+    These live in the output rather than only in this module's docstring
+    because the audience for them is whoever is looking at the table —
+    in a terminal, a pasted file or a PR comment — and "open the Python
+    module" is not a pointer they can follow from there. The docstring
+    keeps the *reasoning* behind each class; this is the rule itself.
+    """
+    return [
+        "**How the ranking is filtered.** Ranked: references resolving in the working "
+        "tree, plus the schema's `{placeholder}` and directory forms, which skip "
+        "resolution. Not ranked, but still counted in the totals above: paths outside "
+        "the repo, paths no longer present, and tags carrying no `file`. Only the "
+        "ranking is filtered — no tag is dropped.",
+    ]
+
+
+def _one_line(text: str) -> str:
+    """Flatten *text* so it cannot break out of a Markdown list item.
+
+    ``extract`` and ``section`` are free-form author strings, and the
+    schema licenses YAML block scalars: at the time of writing the corpus
+    holds hundreds of multi-line ``extract`` values. Interpolated raw,
+    each embedded newline ends the list item — fragmenting the Detail
+    section into loose lists — and a continuation line beginning ``#``,
+    ``|``, ``>`` or four spaces renders as a heading, table, blockquote or
+    code block *inside* the report. A forged ``###`` is the worst case,
+    since ``###`` headings are the Detail section's navigation.
+
+    Collapsing whitespace is enough: the danger is structural Markdown at
+    the start of a *line*, so with no line breaks there is nothing for it
+    to start.
+    """
+    return " ".join(text.split())
+
+
 def _citation_summary(row: ReferenceRow) -> str:
     """``N ids: BK-1 (2), BK-2 (1)`` — bounded so the table stays legible.
 
@@ -474,11 +538,15 @@ def render_markdown(
     lines.append("Ranked by `misleading` + `unclear`. Ties break by `misleading`, then by path.")
     lines.append(
         "`reads` counts every step citing the reference, tagged or not; `rate` is "
-        "tags/reads. **Read them together** — a high count on a file that every "
-        "trace opens is exposure, not failure rate."
+        "tags/reads. **Read them together, and read neither alone** — a high count "
+        "on a file every trace opens is exposure rather than failure rate, and a "
+        "high `rate` over a handful of reads is noise. Most of the corpus is "
+        "untagged, and the tagged fraction varies per reference, so `rate` ranks "
+        "poorly across rows: use it to interrogate a row, not to order them."
     )
     lines.append("**A report, not a gate** — the exit code never depends on what is below.")
-    lines.append("See the module docstring for what it does not catch and how references are classified.")
+    lines.extend(_classification_legend())
+    lines.append("See the module docstring for why this is not a gate and what it does not catch.")
     lines.append("")
 
     shown = [r for r in corpus.references if min_count is None or r.total >= min_count]
@@ -490,8 +558,11 @@ def render_markdown(
         lines.append("|---:|---:|---:|---:|---:|---|---|")
         for row in shown:
             lines.append(
+                # One decimal: `:.0%` floors anything under 0.5% to "0%",
+                # which reads as "never misled anyone" on a row that
+                # exists because it did.
                 f"| {row.total} | {row.misleading} | {row.unclear} | {row.reads} | "
-                f"{row.rate:.0%} | `{row.reference}` | {_citation_summary(row)} |"
+                f"{row.rate:.1%} | `{row.reference}` | {_citation_summary(row)} |"
             )
     elif corpus.references:
         # Nothing shown but the ranking is non-empty: the filters hid all
@@ -520,8 +591,8 @@ def render_markdown(
                 # carries the id as its prefix anyway.
                 origin = Path(citation.trace_file).stem
                 for step in citation.steps:
-                    section = step.section or "(no section)"
-                    lines.append(f'- {origin} · {step.outcome} · "{section}" — {step.extract}')
+                    section = _one_line(step.section) or "(no section)"
+                    lines.append(f'- {origin} · {step.outcome} · "{section}" — {_one_line(step.extract)}')
             lines.append("")
 
     if corpus.unresolved or corpus.external:
@@ -573,13 +644,13 @@ def main(argv: list[str] | None = None) -> int:
         "--top",
         type=int,
         default=None,
-        help="Show only the N highest-ranked references. Totals stay unfiltered.",
+        help="Show only the N highest-ranked references (default: all of them). Totals stay unfiltered.",
     )
     parser.add_argument(
         "--min-count",
         type=int,
         default=None,
-        help="Hide ranked references with fewer than N tags. Totals stay unfiltered.",
+        help="Hide ranked references with fewer than N tags (default: no minimum). Totals stay unfiltered.",
     )
     args = parser.parse_args(argv)
 

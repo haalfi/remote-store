@@ -13,6 +13,8 @@ import sys
 import textwrap
 from pathlib import Path
 
+import pytest
+
 _SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "check_traces.py"
 
 
@@ -115,6 +117,35 @@ class TestValidation:
         violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
         assert len(violations) == 1
         assert violations[0].path == "(parse)"
+        # The message names the exception class, so the three kinds of
+        # unreadable trace are distinguishable in CI output.
+        assert "ParserError" in violations[0].message
+
+    @pytest.mark.parametrize("kind", ["undecodable", "directory"])
+    def test_unreadable_trace_is_a_violation_not_a_traceback(self, tmp_path, kind):
+        # Neither is a yaml.YAMLError: both come out of read_text before
+        # the parser. Uncaught they abort this gate with a traceback in
+        # `lint` and `docs-gate` instead of printing the violation it
+        # exists to print. The glob admits directories because Path.glob
+        # does not filter to files, and a bad rebase can leave a file
+        # undecodable. report_trace_outcomes.py handles the same three —
+        # one driver, so the consumers must agree, and both must be shown
+        # to agree rather than asserted to.
+        schema = _write_schema(tmp_path)
+        traces = tmp_path / "traces"
+        traces.mkdir(parents=True, exist_ok=True)
+        if kind == "undecodable":
+            (traces / "bad.yml").write_bytes(b'id: ID-1\ntitle: "\xff\xfe"\n')
+            expected = "UnicodeDecodeError"
+        else:
+            (traces / "adir.yml").mkdir()
+            expected = "IsADirectoryError"
+
+        violations = _mod.collect_violations(schema_path=schema, traces_dir=traces)
+
+        assert len(violations) == 1
+        assert violations[0].path == "(parse)"
+        assert expected in violations[0].message
 
     def test_broken_schema_short_circuits(self, tmp_path):
         # A malformed schema must fail loudly, not silently pass every trace.

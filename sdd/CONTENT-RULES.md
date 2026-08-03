@@ -80,6 +80,14 @@ of the same coin: a document is the SSoT for its own stable core — its purpose
 principles, and design intent. Other documents link to it for those things; they
 do not restate them. When in doubt, ask rule 1.
 
+### Finding the documents that are failing readers
+
+Agent traces tag any read that did not deliver (`sdd/traces/_schema.yml`
+`outcome`). `hatch run report-trace-outcomes` aggregates those tags into a
+ranking of the referenced files, with the traces and sections that cited each.
+It is a report, never a gate: read it when asking which documents to improve,
+not as a pass/fail. The script's module docstring states what it does not catch.
+
 ### Provenance
 
 Derived from [`sdd/research/research-doc-content-longevity.md`](research/research-doc-content-longevity.md).
