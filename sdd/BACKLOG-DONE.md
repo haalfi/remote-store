@@ -18,18 +18,30 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   report-trace-outcomes`): referenced files ranked by negative-outcome count,
   each with the traces that cited it and the sections they cited, plus corpus
   totals and tag-coverage.
+  **Partially closes step 3, which asked for a report *and* a review cadence.**
+  The report is here; nothing yet causes anyone to read it. The residue is
+  **[ID-238](BACKLOG.md)**, and the section preamble is qualified to match.
   **A report, not a gate**, per [`DRIFT-RULES.md` Rule 5](DRIFT-RULES.md#mandatory-path)'s
-  requirement to record why. Two reasons, both in the module docstring: there is
-  no correct threshold — "more than N `misleading` tags" is a prompt to read the
-  file, not a defect — and the input is retrospective self-assessment rather than
-  an observed invariant, so failing a build on it would manufacture exactly the
-  false-positive fatigue that defeats rule checkers elsewhere. The exit code is
-  `0` regardless of findings, including on an unparseable trace; there is
-  deliberately no code that signals findings, and a test named for that fact
-  guards it. Owner: whoever picks up a ranked reference; this entry is the
-  Rule 6 register home. Deliberately absent from `lint`, `preflight`, `docs-gate`
-  and `all` — what keeps it executable rather than rotting is its own test suite,
-  which runs in `all` and includes a live-corpus run.
+  requirement to record why. The two reasons live in the script's module
+  docstring — this entry points at them rather than restating them, so there is
+  one copy to keep true. The exit code is `0` regardless of findings, including
+  when a trace cannot be read or parsed; there is deliberately no code that
+  signals findings, and `test_findings_never_change_the_exit_code` asserts the
+  return value, so a promotion to a gate fails it by construction.
+  **Rule 6 register entry — owner: [ID-238](BACKLOG.md).** That item decides what
+  triggers reading the report, so it is the item that will settle whether this
+  advisory check stays tolerated or gets switched off, which is what Rule 6 asks
+  an owner to be answerable for. (Naming no owner is what BK-329's round-5 review
+  disqualified a candidate register for; "whoever picks up a ranked reference"
+  was a description of the unowned state, not an owner.)
+  Deliberately absent from `lint`, `preflight`, `docs-gate` and `all`. What keeps
+  it executable rather than rotting is its own test suite, including a
+  live-corpus run — **locally**. In CI the qualifier matters: `CODE_PAT` does not
+  match `^sdd/`, so a trace-only change, the very class that grows the corpus
+  this report reads, skips the `test` job. Exposure is thin (schema validity is
+  gated in `docs-gate`, and the live-corpus test asserts structural invariants a
+  new trace is unlikely to break) but the claim is bounded here rather than left
+  to a future maintainer to discover.
   **The two decided constraints held, and both stated rationales were
   imprecise** — worth recording because they are the reason the tests look the
   way they do. Under a parsed-YAML reader a looser glob moves the corpus
@@ -61,11 +73,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   **A bug caught by cross-checking the first live run** against an independent
   count, recorded because it is the same defect class the item exists to retire:
   citations accumulated per trace `id`, and `id` is pattern-constrained but not
-  unique — 13 traces share `ID-127`, two share `BK-181` — so an id-keyed
-  accumulator silently dropped tags. Re-keyed on the trace filename. The
-  consistency assertion had not caught it because the corpus totals were summed
-  back from the rows; they are now counted during the scan, so the two
-  derivations can actually disagree.
+  unique — at `83e22a3`, 13 traces shared `ID-127` and two shared `BK-181` — so
+  an id-keyed accumulator silently dropped tags. Re-keyed on the trace filename.
+  The consistency assertion had not caught it because the corpus totals were
+  summed back from the rows; they are now counted during the scan, so the two
+  derivations can actually disagree. The load-bearing fact is that `id` is not
+  unique, and `sdd/traces/_schema.yml` was the artifact asserting otherwise while
+  mandating the convention that produces the duplicates — so it now says so, and
+  is the single home for that fact. The counts above are a SHA-pinned
+  measurement, not a live figure; the code carries the rule, not the numbers.
   **Declined, so it is not re-litigated:** a `--format json` mode. No consumer
   exists, and the collection API returns dataclasses that a future one can call
   directly.

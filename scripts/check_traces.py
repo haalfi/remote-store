@@ -78,8 +78,8 @@ if TYPE_CHECKING:
 SCHEMA_PATH = TRACES_DIR / "_schema.yml"
 
 # The "[!_]" carve-out that skips _schema.yml lives in _trace_corpus.py,
-# shared with report_trace_outcomes.py (BK-330) so the gate and the
-# report cannot disagree about what a trace is. DRIFT-RULES Rule 1.
+# shared with report_trace_outcomes.py so the gate and the report cannot
+# disagree about what a trace is. DRIFT-RULES Rule 1.
 
 
 @dataclass(frozen=True)

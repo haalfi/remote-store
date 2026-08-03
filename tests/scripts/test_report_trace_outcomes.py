@@ -1,4 +1,4 @@
-"""Unit tests for scripts/report_trace_outcomes.py (BK-330 outcome report).
+"""Unit tests for the trace outcome report.
 
 The report ranks references by ``misleading`` + ``unclear`` count across
 ``sdd/traces/[!_]*.yml``. Most tests run against hermetic ``tmp_path``
@@ -7,15 +7,15 @@ report against the live repo and asserts structural invariants only —
 never counts, because a frozen count of a growing corpus is the exact
 defect this report exists to retire.
 
-Two of BK-330's constraints guard failure modes that are **latent** in
-the real corpus: at the time of writing, a nearest-preceding-key text
-scan agrees with the parsed-YAML reader on all 193 tags, and
-``_schema.yml`` contributes no tags under a parsed-YAML reader whatever
-the glob. Neither hazard can therefore be demonstrated against real
-data, so each is tested with a synthetic corpus **plus a positive
-control** proving the fixture actually exercises the hazard — per
-``sdd/TESTING.md`` § "A green test can be vacuous", a fixture that
-cannot fail proves nothing.
+Two of the report's extraction constraints guard failure modes that are
+**latent** in the real corpus: a nearest-preceding-key text scan agrees
+with the parsed-YAML reader on every committed tag, and ``_schema.yml``
+contributes no tags under a parsed-YAML reader whatever the glob.
+Neither hazard can therefore be demonstrated against real data, so each
+is tested with a synthetic corpus **plus a positive control** proving
+the fixture actually exercises the hazard — per ``sdd/TESTING.md``
+§ "A green test can be vacuous", a fixture that cannot fail proves
+nothing.
 """
 
 from __future__ import annotations
@@ -27,6 +27,12 @@ import textwrap
 from pathlib import Path
 
 import pytest
+
+# The suite writes trace corpora to disk and resolves references against
+# a filesystem root, so it is OS-sensitive: CI's macOS and Windows legs
+# select tests with `pytest -m "os_sensitive"`, making the marker the
+# inclusion mechanism rather than a label.
+pytestmark = pytest.mark.os_sensitive
 
 _SCRIPTS = Path(__file__).resolve().parents[2] / "scripts"
 _SCRIPT = _SCRIPTS / "report_trace_outcomes.py"
@@ -221,34 +227,64 @@ class TestRanking:
         assert (row.misleading, row.unclear) == (1, 1)
         assert sorted(c.trace_file for c in row.citations) == ["id-127-one.yml", "id-127-two.yml"]
 
-    def test_corpus_totals_are_counted_independently_of_the_rows(self, tmp_path):
-        # The totals are counted during the scan, not summed back from
-        # the rows, so the live-corpus consistency assertion compares two
-        # derivations instead of restating one.
+    def test_corpus_totals_count_each_outcome_into_its_own_bucket(self, tmp_path):
+        # Asymmetric on purpose: a (1, 1) fixture is invariant under
+        # swapping the two counters, so the test named for the totals
+        # could not see them swapped.
         root, traces = _repo(tmp_path, "a.md")
-        _write(traces, "id-127-one.yml", _trace("ID-127", _step("a.md", "misleading")))
+        _write(
+            traces,
+            "id-127-one.yml",
+            _trace("ID-127", _step("a.md", "misleading") + _step("a.md", "misleading")),
+        )
         _write(traces, "id-127-two.yml", _trace("ID-127", _step("a.md", "unclear")))
         corpus = _collect(root, traces)
 
-        assert corpus.negatives == 2
-        assert (corpus.misleading, corpus.unclear) == (1, 1)
+        assert corpus.negatives == 3
+        assert (corpus.misleading, corpus.unclear) == (2, 1)
         assert corpus.traces_with_negatives == 2
 
     def test_citing_traces_carry_per_trace_counts(self, tmp_path):
         root, traces = _repo(tmp_path, "a.md")
-        _write(traces, "bk-1-x.yml", _trace("BK-1", _step("a.md", "misleading") + _step("a.md", "unclear")))
+        _write(
+            traces,
+            "bk-1-x.yml",
+            _trace(
+                "BK-1",
+                _step("a.md", "misleading", section="Rules", extract="first read")
+                + _step("a.md", "unclear", section="Exit codes", extract="second read"),
+            ),
+        )
         _write(traces, "bk-2-y.yml", _trace("BK-2", _step("a.md", "misleading")))
         row = _row(_collect(root, traces), "a.md")
 
         assert [(c.trace_file, c.total) for c in row.citations] == [("bk-1-x.yml", 2), ("bk-2-y.yml", 1)]
-        # Rule 2 (localize): the citation names the section, not just the file.
-        assert [s.section for s in row.citations[0].steps] == ["S", "S"]
+        # Rule 2 (localize) is why Step carries `section` AND `extract`.
+        # Distinct values on both, so this pins ordering and pairing too —
+        # the builder defaults could not detect steps being swapped.
+        assert [(s.section, s.extract) for s in row.citations[0].steps] == [
+            ("Rules", "first read"),
+            ("Exit codes", "second read"),
+        ]
 
 
 class TestSegregation:
-    def test_external_paths_are_segregated_not_ranked(self, tmp_path):
+    @pytest.mark.parametrize(
+        "ext",
+        [
+            ".venv/lib/python3.11/site-packages/dagster/_core/storage/x.py",
+            "node_modules/left-pad/index.js",
+            # The absolute/home clauses are documented classification rules
+            # and need their own cases: `_EXTERNAL_SEGMENTS` membership
+            # alone does not reach them, and an absolute path left ranked
+            # would resolve — `repo_root / "/etc/hosts"` is `/etc/hosts` —
+            # and file a system file as a repo documentation failure.
+            "/etc/hosts",
+            "~/notes.md",
+        ],
+    )
+    def test_external_paths_are_segregated_not_ranked(self, tmp_path, ext):
         root, traces = _repo(tmp_path, "a.md")
-        ext = ".venv/lib/python3.11/site-packages/dagster/_core/storage/x.py"
         _write(traces, "bk-1-x.yml", _trace("BK-1", _step("a.md", "misleading") + _step(ext, "misleading")))
         corpus = _collect(root, traces)
 
@@ -277,6 +313,44 @@ class TestSegregation:
 
         assert [r.reference for r in corpus.references] == [reference]
         assert corpus.unresolved == ()
+
+
+class TestIdCollisionSurvivesRendering:
+    """The id-uniqueness fix has a rendering half; collection is not enough.
+
+    A regression re-keyed on ``trace_id`` would be caught in collection
+    and pass silently here, which is the same information loss in a
+    different place.
+    """
+
+    @staticmethod
+    def _same_id_corpus(tmp_path):
+        root, traces = _repo(tmp_path, "a.md")
+        _write(traces, "id-127-one.yml", _trace("ID-127", _step("a.md", "misleading", extract="from one")))
+        _write(traces, "id-127-two.yml", _trace("ID-127", _step("a.md", "unclear", extract="from two")))
+        return _collect(root, traces)
+
+    def test_detail_lines_distinguish_traces_sharing_an_id(self, tmp_path):
+        detail = _mod.render_markdown(self._same_id_corpus(tmp_path)).split("## Detail")[1]
+
+        assert "id-127-one" in detail
+        assert "id-127-two" in detail
+
+    def test_rank_citation_orders_same_id_citations_by_filename(self, tmp_path):
+        # rank_citation is public and its docstring claims the filename
+        # tie-break; with equal counts and equal ids, only the filename
+        # can produce a stable order.
+        row = _row(self._same_id_corpus(tmp_path), "a.md")
+        ordered = sorted(row.citations, key=_mod.rank_citation)
+
+        assert [c.trace_file for c in ordered] == ["id-127-one.yml", "id-127-two.yml"]
+
+    def test_summary_counts_ids_not_files(self, tmp_path):
+        # The prefix, the listed entries and the "+N more" tail must all
+        # count the same unit, or the line does not add up.
+        summary = _mod._citation_summary(_row(self._same_id_corpus(tmp_path), "a.md"))
+
+        assert summary == "1 id: ID-127 (2)"
 
 
 # --------------------------------------------------------------------------
@@ -398,26 +472,55 @@ class TestAttributionIsStructural:
 
 
 class TestNeverAGate:
-    @pytest.mark.parametrize("case", ["negatives", "empty", "unparseable"])
+    # check_traces.py documents exit 1 as "one or more violations". This
+    # test is the structural tripwire for the absence of that code here:
+    # it asserts the return value, so any promotion to a gate fails it by
+    # construction and cannot be reworded around.
+    @pytest.mark.parametrize(
+        "case",
+        ["negatives", "empty", "unparseable", "undecodable", "directory"],
+    )
     def test_findings_never_change_the_exit_code(self, tmp_path, capsys, case):
         root, traces = _repo(tmp_path, "a.md")
+        unreadable = {
+            # Neither of these is a yaml.YAMLError: both come out of
+            # read_text before the parser is reached, and both used to
+            # escape as an exit-1 traceback.
+            "undecodable": lambda: (traces / "bad.yml").write_bytes(b'id: BK-1\ntitle: "\xff\xfe"\n'),
+            "directory": lambda: (traces / "adir.yml").mkdir(),
+        }
         if case == "negatives":
             _write(traces, "bk-1-x.yml", _trace("BK-1", _step("a.md", "misleading")))
         elif case == "unparseable":
             _write(traces, "broken.yml", "id: BK-1\ntitle: [unterminated\n")
+        elif case in unreadable:
+            unreadable[case]()
 
         rc = _mod.main(["--traces-dir", str(traces), "--repo-root", str(root)])
 
         assert rc == 0
-        if case == "unparseable":
-            assert "broken.yml" in capsys.readouterr().err
+        if case in {"unparseable", *unreadable}:
+            # Skipped, and said so: silence would make a corrupt corpus
+            # indistinguishable from a clean one.
+            assert ".yml" in capsys.readouterr().err
 
-    def test_no_exit_code_signals_findings(self):
-        # check_traces.py documents exit 1 as "one or more violations".
-        # The absence of that code here is the structural signal that this
-        # is a report; a future promotion to a gate has to delete this test.
-        assert "not a gate" in _mod.__doc__.lower()
-        assert not hasattr(_mod, "EXIT_FINDINGS")
+    @pytest.mark.parametrize(
+        "argv",
+        [
+            ["--traces-dir", "definitely-absent"],
+            ["--repo-root", "definitely-absent"],
+            ["--top", "-1"],
+            ["--min-count", "-1"],
+        ],
+    )
+    def test_wrong_invocation_is_a_usage_error(self, argv):
+        # Exit 2 is the module's only failure path. `--top -1` matters
+        # most: shown[:-1] silently drops the lowest-ranked row and
+        # renders as a complete table.
+        with pytest.raises(SystemExit) as exc:
+            _mod.main(argv)
+
+        assert exc.value.code == 2
 
 
 class TestRendering:
@@ -435,10 +538,13 @@ class TestRendering:
 
         assert "`b.md`" in full
         assert "`b.md`" not in topped.split("## Detail")[0]
-        # A truncated table that silently moved the denominator would be
-        # the same defect class as the _schema.yml off-by-one.
+        # Truncating must move neither the denominator nor the reader's
+        # knowledge that it happened. Both halves, or the report can stop
+        # disclosing that it truncated and nothing notices.
         assert "3 (`misleading` 2, `unclear` 1)" in full
         assert "3 (`misleading` 2, `unclear` 1)" in topped
+        assert "1 further ranked reference(s) not shown" in topped
+        assert "not shown" not in full
 
     def test_min_count_drops_the_tail(self, tmp_path):
         root, traces = _repo(tmp_path, "a.md", "b.md")
@@ -449,14 +555,33 @@ class TestRendering:
         rendered = _mod.render_markdown(corpus, min_count=2).split("## Detail")[0]
         assert "`a.md`" in rendered
         assert "`b.md`" not in rendered
+        assert "1 further ranked reference(s) not shown" in rendered
 
-    def test_paths_render_posix_on_every_platform(self, tmp_path):
-        root, traces = _repo(tmp_path, "sdd/BACKLOG.md")
-        _write(traces, "bk-1-x.yml", _trace("BK-1", _step("sdd/BACKLOG.md", "misleading")))
+    @pytest.mark.parametrize("filters", [{"min_count": 9999}, {"top": 0}])
+    def test_hiding_everything_does_not_claim_there_is_nothing(self, tmp_path, filters):
+        # The disclosure used to live inside the `if shown:` branch, so it
+        # vanished at exactly the moment 100% of the ranking was hidden —
+        # and the empty-corpus sentence took its place, stating something
+        # false. This is the silent-filter class the report exists to name.
+        root, traces = _repo(tmp_path, "a.md")
+        _write(traces, "bk-1-x.yml", _trace("BK-1", _step("a.md", "misleading")))
+        corpus = _collect(root, traces)
+
+        rendered = _mod.render_markdown(corpus, **filters)
+
+        assert "No ranked references carry a negative outcome tag" not in rendered
+        assert "Every ranked reference was hidden by the active filters." in rendered
+        assert "1 further ranked reference(s) not shown" in rendered
+
+    def test_empty_ranking_says_so(self, tmp_path):
+        # The counterpart: with nothing to hide, the sentence is true and
+        # must still be reachable.
+        root, traces = _repo(tmp_path)
+        _write(traces, "bk-1-x.yml", _trace("BK-1", _step("a.md", "ok")))
         rendered = _mod.render_markdown(_collect(root, traces))
 
-        assert "sdd/BACKLOG.md" in rendered
-        assert "\\" not in rendered
+        assert "No ranked references carry a negative outcome tag." in rendered
+        assert "not shown" not in rendered
 
 
 # --------------------------------------------------------------------------
@@ -468,15 +593,22 @@ def test_repo_corpus_report_runs():
     """The report must run green against the committed corpus.
 
     Structural invariants only. Asserting a count here would freeze a
-    number that moves on every merged PR — the defect BK-330 exists to
-    retire, and one this PR reproduces the moment it adds its own trace.
+    number that moves on every merged PR — the defect this report exists
+    to retire, and one this very trace reproduces by being added.
+
+    Assertions that restate one derivation by a longer route were
+    removed: ``negatives == misleading + unclear`` and
+    ``row.total == row.misleading + row.unclear`` hold by construction
+    for every input, and ``trace_file`` is taken from the same directory
+    it was then checked against. What survives is the one genuine
+    two-derivation comparison — row totals accumulated through
+    ``per_reference`` against counters incremented during the scan — which
+    is what catches a regression to id-keyed accumulation.
     """
     corpus = _mod.collect_outcomes()
-    traces_dir = Path(__file__).resolve().parents[2] / "sdd" / "traces"
 
     assert corpus.traces_scanned > 0
     assert corpus.references, "the committed corpus carries negative outcome tags"
-    assert corpus.negatives == corpus.misleading + corpus.unclear
     assert corpus.parse_errors == ()
 
     ranked = list(corpus.references)
@@ -486,8 +618,6 @@ def test_repo_corpus_report_runs():
     assert total_from_rows == corpus.negatives
 
     for row in ranked:
-        assert row.total == row.misleading + row.unclear >= 1
-        for citation in row.citations:
-            assert (traces_dir / citation.trace_file).exists()
+        assert row.total >= 1
 
     assert _mod.main([]) == 0

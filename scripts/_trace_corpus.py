@@ -3,15 +3,22 @@
 ``sdd/traces/_schema.yml`` tells aggregators to glob
 ``"sdd/traces/[!_]*.yml"`` so that underscore-prefixed infrastructure
 files — the schema itself — are not read as traces. Two tools need that
-carve-out: ``check_traces.py`` (the PR-time schema gate, ID-179) and
-``report_trace_outcomes.py`` (the outcome report, BK-330).
+carve-out: ``check_traces.py`` (the PR-time schema validation gate) and
+``report_trace_outcomes.py`` (the outcome report).
 
 It lives here rather than in either tool because
 [`sdd/DRIFT-RULES.md` Rule 1](../sdd/DRIFT-RULES.md#one-driver) prefers one
 normative description driving N artifacts over N copies that agree until
-they do not. A copied glob is exactly the shape that drifts: the research
-behind BK-330 records an earlier draft counting ``sdd/traces/*.yml``, one
-character looser, and so counting ``_schema.yml`` as a trace.
+they do not. A copied glob is exactly the shape that drifts: an earlier
+draft of the research behind this module counted ``sdd/traces/*.yml``, one
+character looser, and so counted ``_schema.yml`` as a trace.
+
+**Authority: the schema governs, and this constant is a copy of it**
+([Rule 4](../sdd/DRIFT-RULES.md#authority) — a direction stated rather
+than left inferable). ``TRACE_GLOB`` and the schema's prose instruction
+are two descriptions of one fact, and nothing detects them diverging: if
+the schema changes the carve-out, this constant is what is wrong, and no
+check will say so.
 
 The report does not import the gate directly, even though the gate is
 where the glob first landed. ``check_traces`` imports ``jsonschema`` at

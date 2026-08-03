@@ -79,6 +79,56 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Lint / CI Completeness
 
+- [ ] **BK-334 — No ripple-check row covers adding a `hatch` script alias**
+  spec: — · effort: S · audience: contributor.process
+  The [Pre-work index](CLAUDE-REFERENCE.md#pre-work-index) has no trigger for
+  adding an entry to `pyproject.toml`'s `[tool.hatch.envs.default.scripts]`.
+  That edit is what decides whether a new `scripts/*.py` is reachable by
+  anything — whether it joins `lint` / `preflight` / `docs-gate` / `all`, or is
+  deliberately left out — and the table is silent on it.
+  **The trigger class, not the instance, is what makes this worth a row.** It
+  fires on every new script in `scripts/`, of which the repo has dozens and every
+  one carries an alias. Surfaced by the PR #944 review: BK-330 reasoned to the
+  right answer only via the adjacent "New or changed cross-artifact check" row,
+  which covers a check and says nothing about a report, a `gen_*` or a `bench-*`.
+  Fix shape: one trigger row in **both** presentations of the ripple-check table
+  (`check_ripple_parity.py` enforces trigger-parity, so a row added to one and
+  not the other fails `lint`), naming the reachability question and the
+  `docs-gate`-vs-`lint` choice `check_traces` documents three lines above the
+  `report-trace-outcomes` alias.
+  **Distinct from BK-333**, which is scoped to three gates that CI *path filters*
+  misroute and whose fix is a `docs-gate` entry. This is a missing row in a
+  documentation table; different artifact, different fix, different verification.
+  BK-333's enumeration of exactly three is load-bearing and should not absorb it.
+
+- [ ] **BK-335 — Sweep backlog IDs used as provenance anchors out of durable artifacts**
+  spec: — · effort: M · audience: contributor.process
+  A backlog ID is a short-lived coordinate; the code, config and comments it gets
+  stamped into are long-lived. `pyproject.toml` alone carries dozens of
+  `# BK-NNN:` / `# ID-NNN:` comment prefixes, and source docstrings across
+  `scripts/` open the same way. Once the item is closed the ID explains nothing a
+  reader can act on — it points at an archive entry rather than describing the
+  thing in front of them.
+  Surfaced by the PR #944 review, where the user objected to a
+  `# BK-330.`-prefixed `pyproject.toml` comment. That PR's own new and modified
+  files were fixed in place; the pre-existing sites were explicitly left out of
+  its scope, since the sweep needs its own verification.
+  **Preserve the distinction that makes this tractable:** an ID used as a
+  *provenance anchor* ("BK-330: rank references by…") is what goes — rewrite the
+  sentence to describe the thing on its own terms. An ID that is *data* stays: a
+  comment recording that several traces share `id: ID-127`, a test fixture using
+  an ID as a literal trace identifier, or a backlog/CHANGELOG cross-reference are
+  all load-bearing. Where a fact like that is kept, pin it rather than restating
+  it loose.
+  **Open, and the reason this is not purely mechanical:** the ripple-check
+  ["Tracker ID in published prose" row](CLAUDE-REFERENCE.md#pre-work-index) and
+  [`CONTENT-RULES.md` Rules 1 + 5](CONTENT-RULES.md#rules) currently scope
+  *out* source `#` comments and everything under `sdd/**`. Deciding whether that
+  carve-out should narrow — and if so, whether a `check_no_tracker_refs.py`
+  extension can enforce the anchor-versus-data distinction without false
+  positives — is the first half of this item, and it governs how large the second
+  half is.
+
 - [ ] **ID-235 — Structural lint for BACKLOG files (entry-header integrity)**
   spec: — · effort: S · audience: contributor.tooling
   A string-anchored edit swallowed an entry header in `BACKLOG-DONE.md`
@@ -138,9 +188,8 @@ BK-331 is independent and cheap. BK-324 comes next with its
 decided against 037's current table. ID-207 is unblocked but reads better after
 BK-324, which decides the orphan behaviours its day-one allowlist would otherwise
 enumerate blind. BK-332, ID-236 and ID-237 are follow-ons
-that get cheaper once the earlier work lands. BK-327 is independent of the chain
-and can be taken at any point, as is ID-238 — it needs BK-330's report to exist,
-which it now does, and nothing else in the chain.
+that get cheaper once the earlier work lands. BK-327 and ID-238 are independent
+of the chain and can be taken at any point; both sit at the section's tail.
 
 On importance, the research doc's designation, which this section adopts rather
 than restates: the two items that build what is actually missing are the authority
@@ -150,42 +199,16 @@ canonical claim space). BK-324 is the item they unblock and the evidence that th
 gap is real, not itself one of the two.
 
 Shipped so far: step 1 (Dafny twin parity) as BK-328, step 5.1 (the attribution
-rule) as BK-329, step 3 (the trace-outcome report) as BK-330; see
-[BACKLOG-DONE.md](BACKLOG-DONE.md). Four findings from them
+rule) as BK-329, and **step 3's report half** as BK-330; see
+[BACKLOG-DONE.md](BACKLOG-DONE.md). Step 3 asked for a report *and* a review
+cadence — the cadence is open as ID-238 at the tail of this section, so step 3
+is not closed. Four findings from them
 apply to what follows: a documented gap statement is not a measured one, pinning
 what an exemption covers beats exempting the whole item, an authority rule is
 worth exactly the live disagreements it decides — run a proposed one against them
 before believing it, because the case that does *not* resolve is the informative
 one — and a hand-counted figure about a growing corpus is stale before the commit
 that writes it lands, so cite the generator instead.
-
-- [ ] **ID-238 — Decide whether the trace-outcome report gets a review trigger, and what fires it**
-  spec: — · effort: S · audience: contributor.process
-  Research § 9 step 3 asked for two things: the report, and "review the top of the
-  list at the same cadence as the TLA+ status revisit". BK-330 shipped the report;
-  its item body dropped the cadence sentence, so the report exists and nothing
-  causes anyone to read it. **That gap between what the research asked for and
-  what the item scoped is this item's whole justification** — recorded here rather
-  than folded into BK-330, which deliberately shipped a tool and left the practice
-  question open.
-  The analogy the research offered is `sdd/formal/README.md`'s TLA+ status revisit
-  (every 6 months or every 10 spec amendments touching TLA-backed sections,
-  whichever first, each revisit tracked as a backlog entry — the ID-150 pattern).
-  **The analogy is not the decision.** [`DRIFT-RULES.md` Rule 9](DRIFT-RULES.md#period)
-  says set the period from the drift rate and anchor a recurring check to the
-  events that can invalidate the artifact, not to a date — so an event trigger
-  ("a reference crosses N tags", "at each release", "when a ranked file is next
-  edited") is as admissible as a calendar one, and choosing between those shapes
-  is most of the work.
-  Input to that argument, not the answer: BK-330 § 7 measured the corpus growing
-  by roughly +3 negative tags and +1 tagged trace per merged PR across
-  `79d0382` → `d9a2d3d` → `83e22a3`. Re-measure with `hatch run
-  report-trace-outcomes` rather than trusting that figure — its going stale is the
-  finding BK-330 shipped.
-  **Why ID, not BK:** the user asked for the question to be filed, not for a
-  period to be committed to. Whether a scheduled review is the right mechanism at
-  all is unevaluated, and Rule 9 makes "no recurring trigger, act on the report
-  when a reference is next touched" a legitimate outcome.
 
 - [ ] **BK-331 — Generate spec 037's per-backend table, then sweep for its siblings**
   spec: 037 · effort: S/M · audience: library.maintainer
@@ -371,6 +394,40 @@ that writes it lands, so cite the generator instead.
   raising `nav.omitted_files` to WARNING covers the nav half only.
   Surfaced by the PR #938 review; an unstated bound on `docs-gate` being trusted
   past its range ([`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)).
+
+- [ ] **ID-238 — Decide whether the trace-outcome report gets a review trigger, and what fires it**
+  spec: — · effort: S · audience: contributor.process
+  Independent of the chain, like BK-327 above — take it whenever, though it is
+  only actionable now that BK-330's report exists.
+  Research § 9 step 3 asked for two things: the report, and "review the top of the
+  list at the same cadence as the TLA+ status revisit". BK-330 shipped the report;
+  its item body dropped the cadence sentence, so the report exists and nothing
+  causes anyone to read it. **That gap between what the research asked for and
+  what the item scoped is this item's whole justification** — recorded here rather
+  than folded into BK-330, which deliberately shipped a tool and left the practice
+  question open.
+  This item is also the **named owner of BK-330's
+  [Rule 6](DRIFT-RULES.md#tolerated) register entry**: the decision it takes is
+  what settles whether that advisory check stays tolerated or gets switched off.
+  The analogy the research offered is `sdd/formal/README.md`'s TLA+ status revisit
+  (every 6 months or every 10 spec amendments, whichever first, each revisit
+  tracked as a backlog entry — the ID-150 pattern).
+  **The analogy is not the decision.** [`DRIFT-RULES.md` Rule 9](DRIFT-RULES.md#period)
+  says set the period from the drift rate and anchor a recurring check to the
+  events that can invalidate the artifact, not to a date — so an event trigger
+  ("a reference crosses N tags", "at each release", "when a ranked file is next
+  edited") is as admissible as a calendar one, and choosing between those shapes
+  is most of the work.
+  Input to that argument, not the answer: BK-330's
+  [BACKLOG-DONE entry](BACKLOG-DONE.md) measured the corpus growing by roughly
+  +3 negative tags and +1 tagged trace per merged PR across `79d0382` →
+  `d9a2d3d` → `83e22a3`. Re-measure with `hatch run report-trace-outcomes`
+  rather than trusting that figure — its going stale is the finding BK-330
+  shipped.
+  **Why ID, not BK:** the question was filed, not a period committed to. Whether
+  a scheduled review is the right mechanism at all is unevaluated, and Rule 9
+  makes "no recurring trigger, act on the report when a ranked file is next
+  touched" a legitimate outcome.
 
 ---
 

@@ -355,11 +355,11 @@ check-links = "python scripts/docs/check_links.py --root ."
 # invokes it directly. `gen-backlogid-check` (defined above) joins `docs-gate`
 # for the same reason — a `sdd/backlogid.json` bump rides the same path.
 check-traces = "python scripts/check_traces.py"
-# BK-330. Deliberately absent from `lint`, `preflight`, `docs-gate` and `all`:
-# this is a report, not a gate, and its exit code never depends on what it
-# finds. DRIFT-RULES Rule 5 requires an advisory check to say why it is not
-# gating — the reason is in the script's module docstring. Its own tests run
-# in the suite, which is what keeps it executable without gating on it.
+# Deliberately absent from `lint`, `preflight`, `docs-gate` and `all`: this is
+# a report, not a gate, and its exit code never depends on what it finds.
+# DRIFT-RULES Rule 5 requires an advisory check to say why it is not gating —
+# the reason is in the script's module docstring. Its own tests run in the
+# suite, which is what keeps it executable without gating on it.
 report-trace-outcomes = "python scripts/report_trace_outcomes.py {args}"
 docs-check = "python scripts/check_docs_framework.py"
 docs = "mkdocs serve"

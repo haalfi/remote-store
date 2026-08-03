@@ -31,11 +31,16 @@ properties:
     type: string
     pattern: "^(BK|BUG|ID|AF|BL|UC)-[0-9]+[a-z]?$"
     description: |
-      Unique identifier for the use case. Backlog-derived traces reuse the
-      backlog ID (BK-NNN, BUG-NNN, ID-NNN, AF-NNN, BL-NNN per
+      Identifier for the use case — **not unique**. Backlog-derived traces
+      reuse the backlog ID (BK-NNN, BUG-NNN, ID-NNN, AF-NNN, BL-NNN per
       sdd/BACKLOG.md "ID prefixes"); hypothetical / generic use cases use
       UC-NNN. The trailing letter form (BK-167a, BK-167b) is allowed for
       split items.
+
+      Because that convention reuses the backlog ID, an item worked across
+      several PRs produces several traces carrying the same id. Aggregators
+      must key on the trace **filename**, which the filesystem guarantees
+      unique; keying on `id` silently collapses those traces into one.
 
   title:
     type: string

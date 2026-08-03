@@ -6,8 +6,12 @@
 THE source for how a check that compares two descriptions of the same thing is
 designed and reviewed. Applies whenever a change adds a `check_*` gate, adds a
 second description of something already described, or sets how often a recurring
-check runs. "Drift" here is artifacts disagreeing with each other, not the
-storage-consistency sense used in the library's own contracts.
+check runs. It applies equally to a **non-gating report** that aggregates a
+drift signal rather than asserting a comparison — Rule 5 already contemplates
+advisory checks, and such a report still owes a derived enumeration, localized
+output, a stated bound and a register entry. "Drift" here is artifacts
+disagreeing with each other, not the storage-consistency sense used in the
+library's own contracts.
 
 Siblings: the [documentation framework](../CLAUDE.md#documentation-framework)
 governs the documents themselves; [`CI-OPERATIONS.md`](CI-OPERATIONS.md) governs

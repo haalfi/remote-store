@@ -1,4 +1,4 @@
-"""BK-330: rank references by the negative outcome tags traces attach to them.
+"""Rank references by the negative outcome tags traces attach to them.
 
 Every step in an ``sdd/traces/*.yml`` trace may carry an ``outcome`` of
 ``ok``, ``unclear`` or ``misleading``. The negative two are recorded by
@@ -32,11 +32,13 @@ deliberately advisory one to say why. The reasons:
   picked to make today's corpus pass would gate tomorrow's on an
   arbitrary line.
 * **The input is retrospective self-assessment, not an observed
-  invariant.** Every other cross-artifact check in ``scripts/`` compares
-  two mechanical descriptions and can say which one is wrong. This one
-  reports where authors *said* they were misled. Failing a build on that
-  would manufacture exactly the false-positive fatigue that defeats rule
-  checkers elsewhere.
+  invariant.** A pairwise cross-artifact check compares two mechanical
+  descriptions and can name the element that differs — which side is
+  *wrong* is a separate question its Rule 4 authority rule settles, not
+  something the check decides. This one has neither: no second
+  description, and nothing to localize beyond where an author *said*
+  they were misled. Failing a build on that would manufacture exactly
+  the false-positive fatigue that defeats rule checkers elsewhere.
 
 What this report does NOT catch
 ===============================
@@ -62,6 +64,14 @@ State the bound, per [Rule 7](../sdd/DRIFT-RULES.md#miss-rate):
   gates schema conformance in ``lint`` and ``docs-gate``; a trace that
   fails to parse here is reported to stderr and skipped rather than
   re-validated.
+* **The ranking key is a path string, which is not a stable identifier**
+  ([Rule 3](../sdd/DRIFT-RULES.md#claim-space) asks for one). Renaming a
+  file silently restarts its count: the old path drops into
+  "unresolvable" carrying the accumulated tags, and the new path begins
+  at zero. So a long-standing offender can leave the top of the table by
+  being moved rather than by being fixed. The unresolvable section is
+  where that shows up, which is one reason it is printed rather than
+  dropped.
 
 How references are classified
 =============================
@@ -86,7 +96,7 @@ ranking is filtered.
 
 Extraction method
 =================
-Fixed by BK-330, and both halves are load-bearing:
+Both halves are load-bearing:
 
 * the ``sdd/traces/[!_]*.yml`` glob, shared with ``check_traces.py`` via
   ``scripts/_trace_corpus.py`` rather than re-declared here;
@@ -101,9 +111,13 @@ Fixed by BK-330, and both halves are load-bearing:
 Exit codes
 ==========
 * ``0`` — always, including when the report is full of findings, when the
-  corpus is empty, and when a trace fails to parse. There is deliberately
-  no exit code that signals findings; adding one would make this a gate.
-* ``2`` — argparse usage error, or ``--traces-dir`` does not exist.
+  corpus is empty, and when a trace file cannot be read or parsed (bad
+  YAML, undecodable bytes, or a directory caught by the glob — ``Path.glob``
+  does not filter to files). There is deliberately no exit code that
+  signals findings; adding one would make this a gate.
+* ``2`` — argparse usage error: an unusable ``--traces-dir`` or
+  ``--repo-root``, or a negative ``--top`` / ``--min-count``. These are
+  wrong invocations, not findings.
 """
 
 from __future__ import annotations
@@ -229,11 +243,12 @@ def collect_outcomes(
     repo_root: Path = ROOT,
 ) -> Corpus:
     """Aggregate negative outcome tags across the trace corpus."""
-    # Keyed by trace *filename*, never by the trace's `id`: 13 committed
-    # traces share `id: ID-127` and two share `BK-181`, so an id-keyed
-    # accumulator silently drops every citation but the last. The schema
-    # constrains `id` to a pattern, not to uniqueness — the filename is
-    # the only per-trace key the filesystem guarantees.
+    # Keyed by trace *filename*, never by the trace's `id`. The schema
+    # constrains `id` to a pattern, not to uniqueness, and mandates the
+    # convention that produces duplicates ("backlog-derived traces reuse
+    # the backlog ID"), so a multi-PR item yields several traces with one
+    # id and an id-keyed accumulator drops all but the last. The filename
+    # is the only per-trace key the filesystem guarantees.
     per_reference: dict[str, dict[str, Citation]] = {}
     parse_errors: list[tuple[str, str]] = []
     traces_scanned = 0
@@ -249,8 +264,14 @@ def collect_outcomes(
     for path in iter_trace_files(traces_dir):
         try:
             document = yaml.safe_load(path.read_text(encoding="utf-8"))
-        except yaml.YAMLError as exc:
-            parse_errors.append((path.name, str(exc)))
+        except (yaml.YAMLError, OSError, UnicodeDecodeError) as exc:
+            # OSError and UnicodeDecodeError come from read_text, not from
+            # the parser, and neither is a yaml.YAMLError: the glob admits
+            # directories (Path.glob does not filter to files) and a
+            # truncated or mis-encoded file after a bad rebase decodes to
+            # neither. Letting either escape would exit 1 with a traceback
+            # — the code the exit-code contract above says does not exist.
+            parse_errors.append((path.name, f"{type(exc).__name__}: {exc}"))
             continue
 
         traces_scanned += 1
@@ -334,12 +355,14 @@ def collect_outcomes(
 
 
 def _citation_summary(row: ReferenceRow) -> str:
-    """``N traces: BK-1 (2), BK-2 (1)`` — bounded so the table stays legible.
+    """``N ids: BK-1 (2), BK-2 (1)`` — bounded so the table stays legible.
 
-    Counts are grouped by trace ``id`` for display. Ids are not unique
-    (13 traces share ``ID-127``), so an ungrouped list would print the
-    same id repeatedly and read as a bug; the Detail section below names
-    the individual trace files.
+    Counts are grouped by trace ``id`` for display, because ids are not
+    unique and an ungrouped list would print the same id repeatedly and
+    read as a bug. The prefix therefore counts **ids, not files**, and
+    says so: counting files here while the list and its ``+N more`` tail
+    count ids would not add up on any row where two citing traces share
+    an id. The Detail section below names the individual trace files.
     """
     grouped: dict[str, int] = {}
     for citation in row.citations:
@@ -348,8 +371,8 @@ def _citation_summary(row: ReferenceRow) -> str:
     shown = [f"{trace_id} ({total})" for trace_id, total in ordered[:4]]
     more = len(ordered) - len(shown)
     tail = f", +{more} more" if more > 0 else ""
-    plural = "s" if len(row.citations) != 1 else ""
-    return f"{len(row.citations)} trace{plural}: " + ", ".join(shown) + tail
+    plural = "s" if len(ordered) != 1 else ""
+    return f"{len(ordered)} id{plural}: " + ", ".join(shown) + tail
 
 
 def rank_citation(citation: Citation) -> tuple[int, int, str]:
@@ -397,12 +420,19 @@ def render_markdown(
             lines.append(
                 f"| {row.total} | {row.misleading} | {row.unclear} | `{row.reference}` | {_citation_summary(row)} |"
             )
-        hidden = len(corpus.references) - len(shown)
-        if hidden > 0:
-            lines.append("")
-            lines.append(f"{hidden} further ranked reference(s) not shown; the totals above are unfiltered.")
+    elif corpus.references:
+        # Nothing shown but the ranking is non-empty: the filters hid all
+        # of it. Saying "no references carry a tag" here would be false,
+        # and it is the one case where a reader most needs telling — so
+        # the disclosure below sits outside this branch, not inside it.
+        lines.append("Every ranked reference was hidden by the active filters.")
     else:
         lines.append("No ranked references carry a negative outcome tag.")
+
+    hidden = len(corpus.references) - len(shown)
+    if hidden > 0:
+        lines.append("")
+        lines.append(f"{hidden} further ranked reference(s) not shown; the totals above are unfiltered.")
     lines.append("")
 
     if shown:
@@ -481,6 +511,19 @@ def main(argv: list[str] | None = None) -> int:
 
     if not args.traces_dir.is_dir():
         parser.error(f"--traces-dir does not exist: {args.traces_dir}")
+    # --repo-root decides the whole ranking: every reference is classified
+    # by (repo_root / reference).exists(). Pointed somewhere wrong it does
+    # not fail, it silently refiles the corpus as "not present in the
+    # working tree" — under a heading that reassures the reader that is
+    # expected. A wrong invocation must be loud, not plausible.
+    if not args.repo_root.is_dir():
+        parser.error(f"--repo-root does not exist: {args.repo_root}")
+    # Negative values are silently destructive rather than inert:
+    # shown[:-1] drops the lowest-ranked row and looks like a full table.
+    if args.top is not None and args.top < 0:
+        parser.error(f"--top must be >= 0, got {args.top}")
+    if args.min_count is not None and args.min_count < 0:
+        parser.error(f"--min-count must be >= 0, got {args.min_count}")
 
     corpus = collect_outcomes(traces_dir=args.traces_dir, repo_root=args.repo_root)
     for name, message in corpus.parse_errors:
