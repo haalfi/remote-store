@@ -55,6 +55,14 @@ def parse(path: str) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
 
 
 def hit(gt: tuple[str, str], cited: list[tuple[str, str]]) -> bool:
+    """Did the run cite this gate?
+
+    Bounds, per `sdd/DRIFT-RULES.md` rule 7. Non-Markdown files match at file
+    level only, so any citation of a code or test file satisfies every gate
+    recorded in it. A `FULL` on either side is a wildcard, so one
+    `X.md :: whole file` citation satisfies every recorded gate section in
+    `X.md`. Both are generous to the run being scored.
+    """
     f, k = gt
     for cf, ck in cited:
         if cf != f:
@@ -64,6 +72,17 @@ def hit(gt: tuple[str, str], cited: list[tuple[str, str]]) -> bool:
         if k == ck or k == "FULL" or ck == "FULL":
             return True
     return False
+
+
+def strict_hit(gt: tuple[str, str], cited: list[tuple[str, str]], esc: list[tuple[str, str]]) -> bool:
+    """As `hit`, but a gate the run also listed as an escape does not count.
+
+    Several arm-A runs list the same `(file, section)` in both blocks: the agent
+    named the gate and in the same breath recorded that it could not open the doc
+    that satisfies it. Crediting that as a hit inflates arm A one-sidedly, since
+    every arm-B escape block is `NONE`.
+    """
+    return hit(gt, cited) and not hit(gt, esc)
 
 
 rows: defaultdict[tuple[str, str], list[dict[str, float]]] = defaultdict(list)
@@ -76,30 +95,35 @@ for path in sorted(glob.glob("sdd/research/rulebook-poc/results/*.txt")):
         {
             "recall_all": sum(hit(g, cited) for g in gt) / len(gt),
             "recall_in": sum(hit(g, cited) for g in gt_in) / len(gt_in),
+            "strict_all": sum(strict_hit(g, cited, esc) for g in gt) / len(gt),
             "escapes": len(esc),
             "cited": len(cited),
+            "overlap": sum(1 for c in cited if c in esc),
         }
     )
 
-print(f"{'arm':4} {'item':9} {'recall(all)':>12} {'recall(in-scope)':>17} {'escapes':>8} {'cited':>6}")
-agg: defaultdict[str, list[float]] = defaultdict(lambda: [0.0, 0.0, 0.0, 0.0])
+cols = f"{'arm':4} {'item':9} {'recall(all)':>12} {'strict':>8} {'recall(in-scope)':>17} {'escapes':>8} {'overlap':>8} {'cited':>6}"
+print(cols)
+agg: defaultdict[str, list[float]] = defaultdict(lambda: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
 for (arm, item), rs in sorted(rows.items(), key=lambda kv: (kv[0][1], kv[0][0])):
-    ra = sum(r["recall_all"] for r in rs) / len(rs)
-    ri = sum(r["recall_in"] for r in rs) / len(rs)
-    es = sum(r["escapes"] for r in rs) / len(rs)
-    ct = sum(r["cited"] for r in rs) / len(rs)
-    print(f"{arm:4} {item:9} {ra:11.0%} {ri:16.0%} {es:8.1f} {ct:6.1f}")
+    n_r = len(rs)
+    ra = sum(r["recall_all"] for r in rs) / n_r
+    rs_ = sum(r["strict_all"] for r in rs) / n_r
+    ri = sum(r["recall_in"] for r in rs) / n_r
+    es = sum(r["escapes"] for r in rs) / n_r
+    ov = sum(r["overlap"] for r in rs) / n_r
+    ct = sum(r["cited"] for r in rs) / n_r
+    print(f"{arm:4} {item:9} {ra:11.0%} {rs_:7.0%} {ri:16.0%} {es:8.1f} {ov:8.1f} {ct:6.1f}")
     a = agg[arm]
-    a[0] += ra
-    a[1] += ri
-    a[2] += es
-    a[3] += ct
+    for i, v in enumerate((ra, rs_, ri, es, ov, ct)):
+        a[i] += v
 
 print()
 n = len({i for _, i in rows})
 for arm in sorted(agg):
     a = agg[arm]
     print(
-        f"ARM {arm}: recall(all)={a[0] / n:.0%}  recall(in-scope)={a[1] / n:.0%}  "
-        f"escapes/run={a[2] / n:.1f}  cited/run={a[3] / n:.1f}"
+        f"ARM {arm}: recall(all)={a[0] / n:.0%}  strict={a[1] / n:.0%}  "
+        f"recall(in-scope)={a[2] / n:.0%}  escapes/run={a[3] / n:.1f}  "
+        f"overlap/run={a[4] / n:.1f}  cited/run={a[5] / n:.1f}"
     )

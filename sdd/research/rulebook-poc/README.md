@@ -14,6 +14,7 @@ research doc first; this folder exists so its numbers can be checked.
 | [`RULEBOOK.md`](RULEBOOK.md) | The artefact under test. Lived at `sdd/RULEBOOK.md` during the experiment; moved here afterwards because it was not adopted, header revised per research doc § 7, and re-synced once to master `83e22a3` after BK-329 amended five of the rules it compiles. **Frozen there** — it is evidence, not a maintained document |
 | [`PREREG.md`](PREREG.md) | Hypotheses, method, and decision rule, written **before** any agent launched |
 | `results/<arm>_<item>_<run>.txt` | 16 recorded gate lists, one per run |
+| [`results/escape-reasons.md`](results/escape-reasons.md) | Every arm-A escape with the reason the agent gave — the evidence research doc § 6 rests on |
 | `scripts/_common.py` | Shared `COMPILED` set and section normalisation, imported by all three analysis scripts so the vocabulary exists once |
 | `scripts/trace_stats.py` | Corpus aggregate over `sdd/traces/*.yml` (research doc § 3) |
 | `scripts/section_coverage.py` | Section-level carried-vs-dropped split (§ 3) |
@@ -32,6 +33,30 @@ forbidden to open. Filenames encode arm, item, and run: `A_BK-167a_run1.txt`.
 Arm A could read `sdd/RULEBOOK.md` but not the eight compiled `sdd/` process docs
 or `CONTRIBUTING.md`. Arm B could read those but not the rulebook. Both were
 denied `sdd/traces/`, the answer key.
+
+## The header as tested
+
+Research doc § 6 is about a header the shipped `RULEBOOK.md` no longer carries,
+and the commit that held it (`b3a71a3`) is on a branch this repo squash-merges,
+so it will not survive in `master`. The paragraph § 6 turns on is reproduced here
+verbatim so the finding stays checkable:
+
+> **Non-authoritative.** This is a derived digest, like
+> `sdd/adrs/DIGEST.md`. On any conflict the source doc wins. Unlike the ADR
+> digest it is **hand-compiled, not generated**, so it drifts the moment a source
+> doc changes. Treat a rule here as a pointer to verify, never as the last word.
+
+(Quoted with its one inline link flattened to a code span: the original linked
+`sdd/adrs/DIGEST.md` relative to `sdd/`, which does not resolve from this depth.
+No prose is changed.)
+
+That is the text the five arm-A runs in
+[`results/escape-reasons.md`](results/escape-reasons.md) are reacting to when
+they say "explicitly non-authoritative and hand-compiled". It was replaced twice:
+first to separate rule authority from transcription fidelity, then to drop the
+binding-instruction framing entirely in favour of record framing, after review
+pointed out that a binding document declaring its own divergence expected is the
+stale competing authority principle 4 forbids.
 
 ## Agent prompt
 
@@ -88,9 +113,10 @@ machine the runs executed on and is repo-relative here.
 
 `results/*.txt` carry the `file :: section` pairs only. The agents also returned
 a `## PLAN` block and, for escapes, a free-text reason. Plans were not scored.
-Escape reasons are not in the result files; the two quoted in research doc § 6
-are transcribed there verbatim from the arm-A BK-171 run 1 and BUG-199 run 2
-outputs.
+Escape reasons live in [`results/escape-reasons.md`](results/escape-reasons.md),
+added after review pointed out that § 6 — the finding the PR calls the one that
+matters — was the single claim in the package its own evidence folder could not
+check.
 
 ## Defect found in the ground truth, and fixed
 

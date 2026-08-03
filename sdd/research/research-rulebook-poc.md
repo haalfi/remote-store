@@ -8,12 +8,13 @@ findings that a maintainer may want to action separately.
 **Scope:** Whether the repo's binding rules can be compiled into one document
 that an agent reads *instead of* the source process docs. Covers the artefact
 built, a static coverage analysis over the trace corpus, and a 16-run A/B replay
-experiment. The artefact **as tested** is `sdd/RULEBOOK.md` at commit `b3a71a3`,
-294 lines; it **ships** at
-[`rulebook-poc/RULEBOOK.md`](rulebook-poc/RULEBOOK.md), relocated because it was
-not adopted and longer than 294 lines because its header was twice revised in
-response to § 6 and to review. Read § 1 and § 6 against `b3a71a3`, not against
-the shipped file. Does not cover generator tooling, drift gating, or any change to the
+experiment. The artefact **as tested** was `sdd/RULEBOOK.md`, 294 lines; it
+**ships** at [`rulebook-poc/RULEBOOK.md`](rulebook-poc/RULEBOOK.md), relocated
+because it was not adopted and longer than 294 lines because its header was twice
+revised, in response to § 6 and then to review. § 1 and § 6 describe the tested
+version, not the shipped one; the header they turn on is reproduced verbatim in
+[`rulebook-poc/README.md` § The header as tested](rulebook-poc/README.md), since
+the branch commit that carried it will not survive a squash merge. Does not cover generator tooling, drift gating, or any change to the
 source docs; none were built.
 **Related:** [`CLAUDE.md` § Principles](../../CLAUDE.md#principles),
 [`CONTRIBUTING.md` § Authoritative Document Format](../../CONTRIBUTING.md#authoritative-document-format),
@@ -93,44 +94,55 @@ scanned, so a reader whose numbers differ can tell newer traces from a bug.
 The single most-read gate file in the corpus is `sdd/BACKLOG.md` at 165 gates,
 more than any compiled doc, and it is out of scope by construction.
 
-Every one of the 77 dropped-section hits is `## Guides` content, clustering on
-exactly the lookup tables the compilation convention chose to link rather than
-copy:
+The 77 split **47 `## Guides` hits and 30 other non-Rules hits**. Both cluster on
+the lookup tables the compilation convention chose to link rather than copy, but
+the distinction matters because § 8 finding 1 is about Guides specifically:
+`CONTRIBUTING.md` has no Guides block at all, and
+`TESTING.md :: Test Subpackage Placement` sits between Intent & Scope and Rules.
+The rulebook drops both; neither is Guides content.
 
-| Hits | Dropped gate section |
-|---|---|
-| 22 | `sdd/TESTING.md :: Test Subpackage Placement` |
-| 21 | `sdd/000-process.md :: Test traceability` |
-| 7 | `sdd/AUTHORING.md :: Directory defaults` |
-| 6 | `CONTRIBUTING.md :: Adding a New Backend` |
-| 5 | `sdd/AUTHORING.md :: Where does my new file go?` |
-| 5 | `sdd/000-process.md :: Document types` |
-| 5 | `sdd/000-process.md :: Spec format` |
+| Hits | Bucket | Dropped gate section |
+|---|---|---|
+| 22 | other | `sdd/TESTING.md :: Test Subpackage Placement` |
+| 21 | Guides | `sdd/000-process.md :: Test traceability` |
+| 7 | Guides | `sdd/AUTHORING.md :: Directory defaults` |
+| 6 | other | `CONTRIBUTING.md :: Adding a New Backend` |
+| 5 | Guides | `sdd/AUTHORING.md :: Where does my new file go?` |
+| 5 | Guides | `sdd/000-process.md :: Document types` |
+| 5 | Guides | `sdd/000-process.md :: Spec format` |
 
 ## 4. Replay results
 
-| Arm | Recall (all gates) | Recall (in-scope) | Escapes per run | Gates cited |
-|---|---|---|---|---|
-| **A** (rulebook only) | 49% | 51% | 6.6 | 18.6 |
-| **B** (source docs) | 71% | 85% | — | 19.2 |
+| Arm | Recall (all gates) | Strict recall | Recall (in-scope) | Escapes per run | Gates cited |
+|---|---|---|---|---|---|
+| **A** (rulebook only) | 49% | **29%** | 51% | 6.6 | 18.6 |
+| **B** (source docs) | 71% | 71% | 85% | — | 19.2 |
 
 Per item:
 
-| Item | A recall | B recall | A escapes |
-|---|---|---|---|
-| BK-167 | 69% | 100% | 7.5 |
-| BK-167a | 33% | 72% | 9.5 |
-| BK-171 | 50% | 65% | 5.5 |
-| BUG-199 | 44% | 46% | 4.0 |
+| Item | A recall | A strict | B recall | A escapes |
+|---|---|---|---|---|
+| BK-167 | 69% | 19% | 100% | 7.5 |
+| BK-167a | 33% | 33% | 72% | 9.5 |
+| BK-171 | 50% | 20% | 65% | 5.5 |
+| BUG-199 | 44% | 44% | 46% | 4.0 |
 
 Arm A lost on every item. Both arms cited a comparable number of gates, so arm A
 was not simply terser; it cited a *different and worse* set.
+
+**Strict recall** does not credit a run for a gate it also listed as an escape.
+Several arm-A runs name a gate and, in the same output, record that they could
+not open the doc that satisfies it — `A_BK-167_run2` does this four times.
+Crediting those inflates arm A one-sidedly, because every arm-B escape block is
+`NONE`. Under the strict count the gap widens from 49-vs-71 to **29-vs-71**. The
+plain figure is kept alongside because it is the one the pre-registration
+implied; the strict figure is the more honest read of the same runs.
 
 ## 5. Hypotheses
 
 | ID | Hypothesis | Outcome |
 |---|---|---|
-| H1 | Arm A recall >= Arm B | **False.** 49% against 71%; A lost on all four items. |
+| H1 | Arm A recall >= Arm B | **False.** 49% against 71%, or 29% against 71% not crediting escaped gates; A lost on all four items either way. |
 | H2 | A's escapes concentrate in condensed sections and table-bodied rules | **Confirmed.** |
 | H3 | The 20% in-scope ceiling is hard (predicted false) | **False, as predicted.** Arm A routed itself to specs, ADRs, `BACKLOG.md`, `CLAUDE-REFERENCE.md` and source code without difficulty. |
 | H4 | Recall depressed by gates citing `## Guides` sections | **Confirmed.** |
@@ -142,9 +154,11 @@ already carries, so the rulebook does not win as an index either.
 
 ## 6. The unpredicted finding: the disclaimer paradox
 
-Arm A agents repeatedly declined to rely on the rulebook and cited its own
-non-authoritative header as the reason. Two verbatim examples from
-[`rulebook-poc/results/`](rulebook-poc/README.md):
+Arm A agents declined to rely on the rulebook and, in **5 of the 8 arm-A runs**,
+cited its own non-authoritative header as the reason. Every escape and its stated
+reason is transcribed in
+[`rulebook-poc/results/escape-reasons.md`](rulebook-poc/results/escape-reasons.md),
+so the count is checkable rather than asserted. Two verbatim examples:
 
 > RULEBOOK is explicitly non-authoritative and hand-compiled, so the exact
 > normative wording cannot be edited from the digest.
@@ -152,15 +166,22 @@ non-authoritative header as the reason. Two verbatim examples from
 > substituted `sdd/RULEBOOK.md` § 0, which self-declares non-authoritative and
 > hand-compiled.
 
+The other 3 runs escape on **condensation** rather than authority — "condenses
+this to a link", "explicitly defers the table", "only summarises and links out".
+Both are refusals to rely on the digest, but only the first group is evidence for
+the paradox below; the second is evidence for H2.
+
 This is structural, not a wording defect. Label the digest honestly and a careful
 reader correctly refuses to act on it wherever the exact rule text is
 load-bearing. Remove the label and it becomes the stale competing authority that
 [`CLAUDE.md` principle 4](../../CLAUDE.md#principles) forbids. The safety
 property and the substitution use case are in direct opposition.
 
-A consequence worth stating plainly: H1's failure is partly self-inflicted. The
-digest was *disbelieved* at least as often as it was misread, so 49% measures
-trust as much as content.
+H1's failure is therefore partly self-inflicted: some of arm A's misses are the
+digest being disbelieved rather than misread. How much is **not measured** —
+nothing here separates a gate missed through distrust from one missed because the
+rule was condensed away, and no design in this experiment could, since a single
+escape often cites both.
 
 ## 7. Verdict
 
@@ -212,7 +233,9 @@ Two further paths remain open, neither pursued here:
 **1. `## Guides` sections are load-bearing, contradicting the format contract.**
 [`CONTRIBUTING.md` § Authoritative Document Format](../../CONTRIBUTING.md#authoritative-document-format)
 defines Guides as "heuristics, examples, lookup tables. Useful but not binding."
-The trace record shows Guides sections cited as `gate` 77 times.
+The trace record shows Guides sections cited as `gate` **47 times** (of 77
+dropped-section gates in total; the other 30 are non-Rules content that is not
+Guides, per § 3).
 `sdd/000-process.md :: Test traceability`, which carries the
 `@pytest.mark.spec("ID")` obligation, is a gate 21 times while being formally
 non-binding. The contract misclassifies part of its own binding material, and
@@ -264,11 +287,25 @@ Read the numbers against these before reusing them.
   deviation is recorded in the pre-registration. Single model, single session.
 - **Ground truth is imperfect.** Traces are human-authored and demonstrably
   drift, per finding 2. One error was found and corrected; others may remain.
-- **Scoring is fuzzy.** Sections are matched on a normalised head token, and
-  non-Markdown files match at file level only. The normalisation is shared by all
-  three scripts ([`scripts/_common.py`](rulebook-poc/scripts/_common.py)) rather
-  than written per script, after review found the two copies had already diverged
-  on whether `whole file` meant a whole-document read.
+- **Scoring is fuzzy, and every fuzz favours the run being scored.** Sections
+  match on a normalised head token; non-Markdown files match at file level only,
+  so one citation of a code file satisfies every gate recorded in it; and a
+  `whole file` citation on either side is a wildcard satisfying every recorded
+  gate section in that document. The normalisation is shared by all three scripts
+  ([`scripts/_common.py`](rulebook-poc/scripts/_common.py)) rather than written
+  per script, after review found the two copies had already diverged on whether
+  `whole file` meant a whole-document read.
+- **§ 3's dropped count is a lower bound.** A cited section matching no literal
+  heading is counted as carried, and `key()` collapses numbered citations to
+  `RULES`, which is carried unconditionally. 32 of the 288 in-scope gates take the
+  unmatched-heading path. Both biases run toward the artefact, so the true
+  dropped figure is above 77. `section_coverage.py` prints this bound with its
+  output, per DRIFT-RULES rule 7.
+- **A scanner bug hid the Guides split until review.** The heading walker was not
+  fence-aware, and `000-process.md` carries a `## <PREFIX>-NNN: <Rule Title>`
+  line inside a fenced template. Treating that as a real heading reset the
+  section walker and misfiled every heading after it, which is why an earlier
+  draft of § 3 reported the Guides share as 20 rather than 47.
 - **`CLAUDE.md`'s carried/dropped split is hand-enumerated.** It has no `## Rules`
   block to derive the § 3 classification from, unlike the eight process docs, so
   its dropped set is a judgement call in `_common.py`. Review flagged that an
@@ -292,8 +329,12 @@ From the repo root:
 The scripts read the live `sdd/traces/` tree, so § 3 reproduces exactly only at
 corpus commit `297c79d` (260 traces). `trace_stats.py` and `section_coverage.py`
 print the trace count they scanned; if it differs from 260, the corpus has moved
-and so will every § 3 number. § 4 is stable, since the four replayed traces are
-pinned by name in `score.py`.
+and so will every § 3 number.
+
+§ 4 is **not** insulated from this. `score.py` pins the four replayed traces by
+*name*, not by content, and this PR is the counter-example: correcting the BUG-199
+trace moved arm B's recall for that item from 44% to 46%. Editing any of the four
+moves a § 4 number with nothing in the output to signal it.
 
 Agent prompts are reproduced in
 [`rulebook-poc/README.md`](rulebook-poc/README.md); the runs themselves are not

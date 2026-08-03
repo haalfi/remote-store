@@ -18,6 +18,41 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from _common import CLAUDE_MD_DROPPED, COMPILED, CONTRIBUTING_CARRIED, key  # noqa: E402
 
 
+def headings(path: str) -> list[tuple[int, str]]:
+    """Real Markdown headings in `path` as (level, lowercased text), in order.
+
+    Fence-aware. `sdd/000-process.md` line 29 is `## <PREFIX>-NNN: <Rule Title>`
+    inside a fenced spec-format template; treating that as a heading silently
+    reset the section walker and misfiled every heading after it.
+    """
+    out: list[tuple[int, str]] = []
+    fenced = False
+    with open(path) as fh:
+        for line in fh:
+            if re.match(r"^\s*(```|~~~)", line):
+                fenced = not fenced
+                continue
+            if fenced:
+                continue
+            m = re.match(r"^(#{2,4})\s+(.+?)\s*$", line)
+            if m:
+                out.append((len(m.group(1)), m.group(2).strip().lower()))
+    return out
+
+
+def _block(path: str, name: str) -> set[str]:
+    """Sub-headings under the `## <name>` block of `path`."""
+    out: set[str] = set()
+    inside = False
+    for level, text in headings(path):
+        if level == 2:
+            inside = text == name
+            continue
+        if inside:
+            out.add(text)
+    return out
+
+
 def dropped_sections(path: str) -> set[str]:
     """Heading texts in `path` that RULEBOOK.md does not carry.
 
@@ -30,30 +65,39 @@ def dropped_sections(path: str) -> set[str]:
 
     out: set[str] = set()
     if path == "CONTRIBUTING.md":
-        with open(path) as fh:
-            for line in fh:
-                m = re.match(r"^#{2,3}\s+(.+?)\s*$", line)
-                if m and m.group(1).strip().lower() not in CONTRIBUTING_CARRIED:
-                    out.add(m.group(1).strip().lower())
-        return out
+        return {t for _lvl, t in headings(path) if t not in CONTRIBUTING_CARRIED}
 
-    with open(path) as fh:
-        lines = fh.read().splitlines()
     in_rules = False
-    for line in lines:
-        m2 = re.match(r"^##\s+(.+?)\s*$", line)
-        if m2:
-            in_rules = m2.group(1).strip().lower() == "rules"
+    for level, text in headings(path):
+        if level == 2:
+            in_rules = text == "rules"
             if not in_rules:
-                out.add(m2.group(1).strip().lower())
+                out.add(text)
             continue
-        m3 = re.match(r"^###\s+(.+?)\s*$", line)
-        if m3 and not in_rules:
-            out.add(m3.group(1).strip().lower())
+        if not in_rules:
+            out.add(text)
     return out
 
 
+def guides_sections(path: str) -> set[str]:
+    """Heading texts living under this file's `## Guides` block.
+
+    `dropped` and `Guides` are different predicates: `CONTRIBUTING.md` has no
+    Guides block at all, and `TESTING.md :: Test Subpackage Placement` sits
+    between Intent & Scope and Rules. Both are dropped; neither is Guides.
+    """
+    if path in ("CLAUDE.md", "CONTRIBUTING.md"):
+        return set()
+    return _block(path, "guides")
+
+
+def all_headings(path: str) -> set[str]:
+    return {t for _lvl, t in headings(path)}
+
+
 DROPPED = {p: dropped_sections(p) for p in COMPILED}
+GUIDES = {p: guides_sections(p) for p in COMPILED}
+HEADINGS = {p: all_headings(p) for p in COMPILED}
 
 
 def classify(file: str, section: str) -> str:
@@ -63,8 +107,11 @@ def classify(file: str, section: str) -> str:
     if head == "RULES":
         return "served"
     if head in DROPPED.get(file, set()):
-        return "dropped"
-    # heading not found outside the Rules block -> assume inside it
+        return "dropped-guides" if head in GUIDES.get(file, set()) else "dropped-other"
+    if head not in HEADINGS.get(file, set()):
+        # No heading matches. Counted as served, which is generous to the
+        # artefact; reported separately so the bound is measured, not assumed.
+        return "served-unmatched"
     return "served"
 
 
@@ -82,15 +129,31 @@ for path in sorted(glob.glob("sdd/traces/[!_]*.yml")):
                 continue
             c = classify(s["file"], s["section"])
             counts[c] += 1
-            if c == "dropped":
-                dropped_hits[f"{s['file']} :: {s['section'].split(' / ')[0]}"] += 1
+            if c.startswith("dropped"):
+                label = "Guides" if c == "dropped-guides" else "other"
+                dropped_hits[f"[{label}] {s['file']} :: {s['section'].split(' / ')[0]}"] += 1
 
 tot = sum(counts.values())
+served = counts["served"] + counts["served-unmatched"]
+dropped = counts["dropped-guides"] + counts["dropped-other"]
 print(f"traces scanned: {n_traces}")
 print(f"in-scope gate steps: {tot}")
-for k, v in counts.most_common():
-    print(f"  {k:10s} {v:4d}  ({100 * v / tot:.0f}%)")
+print(
+    f"  served     {served:4d}  ({100 * served / tot:.0f}%)  "
+    f"of which {counts['served-unmatched']} matched no heading (see bound below)"
+)
+print(
+    f"  dropped    {dropped:4d}  ({100 * dropped / tot:.0f}%)  "
+    f"= {counts['dropped-guides']} Guides + {counts['dropped-other']} other non-Rules"
+)
+print(f"  whole-doc  {counts['whole-doc']:4d}  ({100 * counts['whole-doc'] / tot:.0f}%)")
 
 print("\nmost-cited gate sections the rulebook DROPS:")
 for k, v in dropped_hits.most_common(14):
     print(f"  {v:3d}  {k}")
+
+print(
+    "\nBound (DRIFT-RULES rule 7): a cited section matching no literal heading is\n"
+    "counted as served, and `key()` collapses numbered citations to RULES, which is\n"
+    "served unconditionally. Both push the same way, so `dropped` is a lower bound."
+)

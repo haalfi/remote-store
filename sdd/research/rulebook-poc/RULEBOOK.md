@@ -11,27 +11,26 @@ was tested and did not earn adoption; see
 [`research-rulebook-poc.md`](../research-rulebook-poc.md) for the result. That is
 a fact about *this document*, not about the rules below.
 
-**Every rule here is binding.** Compilation does not weaken a rule. Each one is
-authoritative in its source doc, and collecting it into one pass changes nothing
-about that. What is derived is the *transcription*, not the authority.
-
-**Where this document and a source doc differ, the source doc is right.** It is
-not a rule with two readings; this file is simply behind. Because it is
-hand-compiled rather than generated (unlike
-[`sdd/adrs/DIGEST.md`](../../adrs/DIGEST.md)), it falls behind whenever a source
-doc is edited, so check the source whenever the exact wording is load-bearing:
-editing a rule itself, or implementing a gate whose pass/fail boundary is the
-rule's text.
+**These rules bind; this file is not where they bind from.** Every rule below is
+authoritative **in its source doc**, and compiling it here neither strengthens
+nor weakens it. This document is a *record* of those rules as they read at one
+commit — not an instruction to follow, and not a place to look a rule up. Go to
+the source.
 
 **Synced to master `83e22a3`, and frozen there.** Following the PoC-folder
 convention (cf. [`bk-181-poc/README.md`](../bk-181-poc/README.md), which freezes
 once its finding lands), this artefact carries **no ongoing maintenance
-obligation**: it is evidence of what was tested, not a document under upkeep.
-Divergence after `83e22a3` is expected and is not a defect to file. That
-freeze is also why no drift gate guards this file — a frozen artefact has
-nothing to keep in sync, which is the only reading under which shipping a second
-normative description of the rule set does not owe
-[`DRIFT-RULES.md` rule 6](../../DRIFT-RULES.md#tolerated) a register entry.
+obligation**. Divergence from the sources after `83e22a3` is expected and is not
+a defect to file — see the research doc § 7, where exactly that happened within a
+day and became the PoC's strongest evidence.
+
+Being a record rather than an instruction is what keeps this file inside the
+[ripple-check](../../CLAUDE-REFERENCE.md#pre-work-index) *Authority direction
+amended* skip for `sdd/research/`, and is why a frozen artefact owes
+[`DRIFT-RULES.md` rule 6](../../DRIFT-RULES.md#tolerated) no register entry: it
+has nothing to keep in sync. A document that claimed to be a live instruction
+*and* declared its own divergence expected would be precisely the stale competing
+authority [`CLAUDE.md` principle 4](../../../CLAUDE.md#principles) forbids.
 
 **Compilation conventions.**
 
