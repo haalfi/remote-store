@@ -72,6 +72,32 @@ State the bound, per [Rule 7](../sdd/DRIFT-RULES.md#miss-rate):
   being moved rather than by being fixed. The unresolvable section is
   where that shows up, which is one reason it is printed rather than
   dropped.
+* **Drain files are worse than renames, and nothing surfaces them.** When
+  content migrates between two paths that *both* keep resolving, no row
+  moves and no section flags it. ``sdd/BACKLOG.md`` drains into
+  ``sdd/BACKLOG-DONE.md`` as items complete, so a tag written against a
+  live item stays pinned to ``BACKLOG.md`` after the cited section has
+  moved out of it. The consequences are both directions of wrong: the
+  ranked row points a reader at a file where the cited section no longer
+  exists, and one artifact's signal is split across two rows. Renames at
+  least land in "unresolvable"; this lands nowhere.
+
+Reading the ranking
+===================
+**The count measures exposure at least as much as failure rate.**
+``CLAUDE.md`` makes "open the backlog item" the first step of nearly
+every trace, so ``sdd/BACKLOG.md`` gets a chance to earn a tag in almost
+all of them, while a spec read by three traces gets three. A file that
+misled every reader it ever had can sort below one that misled a small
+fraction of many.
+
+So the table carries ``reads`` (every step citing the reference, tagged
+or not) and ``rate`` (tags/reads) beside the absolute count. **They are
+meant to be read together**: ``rate`` alone over-promotes a file read
+twice and tagged once, which is why it is reported rather than sorted
+on. The sort key is the absolute count — see ``rank_key``; whether it
+should become ``rate`` is a judgement to make against real output, not a
+default to assume.
 
 How references are classified
 =============================
@@ -90,9 +116,14 @@ rules are stated here and printed in the report:
 * **Unresolvable** — repo-shaped paths not present in the working tree
   (a since-deleted or since-renamed file). Also segregated: a trace
   records what was read at the time, so this is history, not an error.
+* **Unattributed** — a negative tag on a step with no ``file``. Ranked
+  nowhere, since there is nothing to rank it against, but counted into
+  the totals and disclosed in the header. Only reachable on a corpus
+  that already fails ``check_traces`` (the schema requires ``file`` at
+  ``minLength: 1``), which is why it is a count rather than a section.
 
-Every tag counts toward the corpus totals regardless of class. Only the
-ranking is filtered.
+Every tag counts toward the corpus totals regardless of class — including
+the unattributed ones. Only the ranking is filtered.
 
 Extraction method
 =================
@@ -176,6 +207,14 @@ class ReferenceRow:
     misleading: int
     unclear: int
     citations: tuple[Citation, ...]
+    #: How many steps cited this reference at all, tagged or not — the
+    #: denominator for ``rate``.
+    reads: int = 0
+
+    @property
+    def rate(self) -> float:
+        """Negative tags per read, as a fraction. ``0.0`` if never read."""
+        return self.total / self.reads if self.reads else 0.0
 
 
 @dataclass(frozen=True)
@@ -193,15 +232,21 @@ class Corpus:
     external: tuple[ReferenceRow, ...]
     unresolved: tuple[ReferenceRow, ...]
     parse_errors: tuple[tuple[str, str], ...]
+    #: Negative tags carrying no ``file``. Counted into the totals above
+    #: and excluded from every row, so the two can be reconciled.
+    unattributed: int = 0
 
 
 def rank_key(row: ReferenceRow) -> tuple[int, int, str]:
     """Sort key: most tags first, then most ``misleading``, then by path.
 
-    The tie-break is documented and tested because ties dominate the
-    tail — most references carry one or two tags — and an undocumented
-    one silently reorders the report between runs. The research behind
-    BK-330 records two entries being dropped "at a tie by an approximate
+    Deliberately absolute count, not ``rate``: see the "Reading the
+    ranking" section of the module docstring for why the choice is open
+    rather than settled. Changing this is one line, and the tie-break is
+    documented and tested because ties dominate the tail — most
+    references carry one or two tags — and an undocumented one silently
+    reorders the report between runs. The research behind this report
+    records two entries being dropped "at a tie by an approximate
     extraction", which is the same failure with the ordering left
     implicit.
     """
@@ -243,12 +288,12 @@ def collect_outcomes(
     repo_root: Path = ROOT,
 ) -> Corpus:
     """Aggregate negative outcome tags across the trace corpus."""
-    # Keyed by trace *filename*, never by the trace's `id`. The schema
-    # constrains `id` to a pattern, not to uniqueness, and mandates the
-    # convention that produces duplicates ("backlog-derived traces reuse
-    # the backlog ID"), so a multi-PR item yields several traces with one
-    # id and an id-keyed accumulator drops all but the last. The filename
-    # is the only per-trace key the filesystem guarantees.
+    # Keyed by trace *filename*, never by the trace's `id`:
+    # sdd/traces/_schema.yml `properties/id` is the authority and states
+    # `id` is not unique, because the convention it mandates reuses the
+    # backlog ID across a multi-PR item. An id-keyed accumulator drops
+    # all but the last of those. The filename is the only per-trace key
+    # the filesystem guarantees.
     per_reference: dict[str, dict[str, Citation]] = {}
     parse_errors: list[tuple[str, str]] = []
     traces_scanned = 0
@@ -260,6 +305,9 @@ def collect_outcomes(
     negatives = 0
     misleading = 0
     unclear = 0
+    unattributed = 0
+    # reference -> how many steps cited it at all, tagged or not.
+    reads: dict[str, int] = {}
 
     for path in iter_trace_files(traces_dir):
         try:
@@ -285,16 +333,30 @@ def collect_outcomes(
             outcome = step.get("outcome")
             if outcome is not None:
                 steps_tagged += 1
+            reference = str(step.get("file", "")).strip()
+            # Counted for every step, not only tagged ones: this is the
+            # ranking's denominator. Without it the table measures how
+            # often a file is *read* as much as how often it misleads —
+            # `CLAUDE.md` makes opening the backlog item step one of
+            # nearly every trace, which is most of why it ranks first.
+            if reference:
+                reads[reference] = reads.get(reference, 0) + 1
             if outcome not in NEGATIVE_OUTCOMES:
                 continue
-            reference = str(step.get("file", "")).strip()
-            if not reference:
-                continue
+            # A negative tag with no `file` is counted into the corpus
+            # totals before being dropped from the ranking, so the
+            # docstring's "every tag counts toward the corpus totals
+            # regardless of class" stays true. Only the ranking is
+            # filtered; a silently uncounted tag would be the defect
+            # class this report exists to name.
             negatives += 1
             if outcome == "misleading":
                 misleading += 1
             else:
                 unclear += 1
+            if not reference:
+                unattributed += 1
+                continue
             found.setdefault(reference, []).append(
                 Step(
                     outcome=str(outcome),
@@ -327,6 +389,7 @@ def collect_outcomes(
             misleading=sum(c.misleading for c in ordered),
             unclear=sum(c.unclear for c in ordered),
             citations=ordered,
+            reads=reads.get(reference, 0),
         )
         if _is_external(reference):
             external.append(row)
@@ -351,6 +414,7 @@ def collect_outcomes(
         external=tuple(external),
         unresolved=tuple(unresolved),
         parse_errors=tuple(parse_errors),
+        unattributed=unattributed,
     )
 
 
@@ -358,8 +422,9 @@ def _citation_summary(row: ReferenceRow) -> str:
     """``N ids: BK-1 (2), BK-2 (1)`` — bounded so the table stays legible.
 
     Counts are grouped by trace ``id`` for display, because ids are not
-    unique and an ungrouped list would print the same id repeatedly and
-    read as a bug. The prefix therefore counts **ids, not files**, and
+    unique (``sdd/traces/_schema.yml`` ``properties/id``) and an
+    ungrouped list would print the same id repeatedly and read as a bug.
+    The prefix therefore counts **ids, not files**, and
     says so: counting files here while the list and its ``+N more`` tail
     count ids would not add up on any row where two citing traces share
     an id. The Detail section below names the individual trace files.
@@ -403,8 +468,15 @@ def render_markdown(
         f"`unclear` {corpus.unclear}) across {corpus.traces_with_negatives} traces "
         f"and {len(corpus.references) + len(corpus.external) + len(corpus.unresolved)} references."
     )
+    if corpus.unattributed:
+        lines.append(f"{corpus.unattributed} tag(s) carry no `file` and are counted above but ranked nowhere.")
     lines.append("")
     lines.append("Ranked by `misleading` + `unclear`. Ties break by `misleading`, then by path.")
+    lines.append(
+        "`reads` counts every step citing the reference, tagged or not; `rate` is "
+        "tags/reads. **Read them together** — a high count on a file that every "
+        "trace opens is exposure, not failure rate."
+    )
     lines.append("**A report, not a gate** — the exit code never depends on what is below.")
     lines.append("See the module docstring for what it does not catch and how references are classified.")
     lines.append("")
@@ -414,11 +486,12 @@ def render_markdown(
         shown = shown[:top]
 
     if shown:
-        lines.append("| Total | misleading | unclear | Reference | Citing traces |")
-        lines.append("|---:|---:|---:|---|---|")
+        lines.append("| Total | misleading | unclear | reads | rate | Reference | Citing traces |")
+        lines.append("|---:|---:|---:|---:|---:|---|---|")
         for row in shown:
             lines.append(
-                f"| {row.total} | {row.misleading} | {row.unclear} | `{row.reference}` | {_citation_summary(row)} |"
+                f"| {row.total} | {row.misleading} | {row.unclear} | {row.reads} | "
+                f"{row.rate:.0%} | `{row.reference}` | {_citation_summary(row)} |"
             )
     elif corpus.references:
         # Nothing shown but the ranking is non-empty: the filters hid all
@@ -442,8 +515,9 @@ def render_markdown(
             lines.append(f"### `{row.reference}` — {row.total} (misleading {row.misleading}, unclear {row.unclear})")
             lines.append("")
             for citation in sorted(row.citations, key=rank_citation):
-                # The file stem, not the id: ids are not unique, and the
-                # stem carries the id as its prefix anyway.
+                # The file stem, not the id: ids are not unique
+                # (sdd/traces/_schema.yml `properties/id`), and the stem
+                # carries the id as its prefix anyway.
                 origin = Path(citation.trace_file).stem
                 for step in citation.steps:
                     section = step.section or "(no section)"

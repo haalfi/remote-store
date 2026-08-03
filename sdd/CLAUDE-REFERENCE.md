@@ -81,7 +81,7 @@ Read this before starting. One line per trigger.
 | Version number                | `bump-my-version` (drives `pyproject` file list), then `hatch run gen-graph`; full checklist in [CONTRIBUTING § Phase 2](../CONTRIBUTING.md#phase-2) |
 | Source/test/spec counts       | README badge + CI coverage report (no manual table) |
 | New authoritative process doc in `sdd/` | [CLAUDE.md § Documentation framework](../CLAUDE.md#documentation-framework) (if part of the trio), [CONTRIBUTING § Authoritative Document Format](../CONTRIBUTING.md#authoritative-document-format) (Scope subsection within), sibling authority back-references, `.claude/agents/*.md` FOUNDATION lists, the `/rvw-pr` and `/audit` step lists if the doc is review-enforced, `docs-src/explanation/design/_nav.yml` plus that section's `_index.tmpl`, and this ripple-check |
-| New or changed cross-artifact check | [`sdd/DRIFT-RULES.md`](DRIFT-RULES.md#rules) |
+| New or changed cross-artifact check or drift report | [`sdd/DRIFT-RULES.md`](DRIFT-RULES.md#rules) |
 | Authority direction amended   | Every live copy, not just the owning doc: `CLAUDE.md` principles, `.claude/agents/*.md` CONSTRAINTS blocks, sibling `sdd/` authority docs. Search by wording, not doc name, and use an alternation — the copies are phrased differently. `sdd/rfcs/`, `sdd/research/` and `sdd/traces/` are records, not instructions — skip them |
 
 <a id="detailed-checklist"></a>
@@ -259,7 +259,7 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | (back-references in their Intent & Scope),                |
 |                            | `.claude/agents/*.md` FOUNDATION lists,             |
 |                            | `docs-src/explanation/design/_nav.yml`, and this ripple-check |
-| **New or changed cross-artifact check** | [`sdd/DRIFT-RULES.md` Rules](DRIFT-RULES.md#rules) |
+| **New or changed cross-artifact check or drift report** | [`sdd/DRIFT-RULES.md` Rules](DRIFT-RULES.md#rules) |
 |                            | (scope and rule set are stated there)                    |
 | **Authority direction amended** | Which side governs is copied into agent-facing files, |
 |                            | so amending it in the owning `sdd/` doc leaves the copies  |
@@ -309,7 +309,7 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 | Check or update testing quality rules    | `sdd/TESTING.md`                                     |
 | Run a stage / live-cloud test / record cassettes | `sdd/TESTING-RUNBOOK.md`                     |
 | Check or update doc content quality rules | `sdd/CONTENT-RULES.md`                              |
-| Add or review a cross-artifact drift check | `sdd/DRIFT-RULES.md`                               |
+| Add or review a cross-artifact check or drift report | `sdd/DRIFT-RULES.md`                               |
 | Understand the full SDD workflow         | `sdd/000-process.md`                                 |
 | Add or update a backend guide            | `docs-src/guides/backends/` + docs nav               |
 | Run a quick smoke test                   | `examples/` — pick one and run it                    |
@@ -406,7 +406,7 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
   gate enforce the mechanical rules but not the judgment-based ones. Review the
   changed tests against [`TESTING.md`](TESTING.md) (assertion depth, mock
   discipline), changed documentation against [`CONTENT-RULES.md`](CONTENT-RULES.md)
-  (prose longevity), and any new or changed cross-artifact check against
+  (prose longevity), and any new or changed cross-artifact check or drift report against
   [`DRIFT-RULES.md`](DRIFT-RULES.md) (claim space, declared authority, stated
   bounds). Report violations before finishing.
 

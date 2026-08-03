@@ -63,9 +63,21 @@ _REAL_SCHEMA = Path(__file__).resolve().parents[2] / "sdd" / "traces" / "_schema
 # --------------------------------------------------------------------------
 
 
-def _trace(trace_id: str, steps_yaml: str, *, title: str = "fixture") -> str:
-    """A schema-valid trace wrapping *steps_yaml* in a single phase."""
-    return textwrap.dedent(
+def _trace(
+    trace_id: str,
+    steps_yaml: str,
+    *,
+    title: str = "fixture",
+    second_phase_steps: str | None = None,
+) -> str:
+    """A schema-valid trace wrapping *steps_yaml* in a phase.
+
+    ``second_phase_steps`` adds a second ``phases[]`` entry. Real traces
+    carry three to five phases and most negative tags live outside the
+    first, so a corpus that is single-phase everywhere cannot tell a
+    full ``phases[]`` walk from one that reads only ``phases[0]``.
+    """
+    body = textwrap.dedent(
         f"""\
             id: {trace_id}
             title: "{title}"
@@ -80,6 +92,11 @@ def _trace(trace_id: str, steps_yaml: str, *, title: str = "fixture") -> str:
                 steps:
             """
     ) + textwrap.indent(textwrap.dedent(steps_yaml), " " * 6)
+    if second_phase_steps is not None:
+        body += "  - id: verify\n    name: Verify\n    steps:\n" + textwrap.indent(
+            textwrap.dedent(second_phase_steps), " " * 6
+        )
+    return body
 
 
 def _step(file: str, outcome: str | None = None, *, section: str = "S", extract: str = "take this") -> str:
@@ -238,11 +255,80 @@ class TestRanking:
             _trace("ID-127", _step("a.md", "misleading") + _step("a.md", "misleading")),
         )
         _write(traces, "id-127-two.yml", _trace("ID-127", _step("a.md", "unclear")))
+        # A scanned trace carrying NO negative tag, so
+        # traces_with_negatives is falsifiable: without it, counting
+        # every scanned trace instead is indistinguishable, and the
+        # header line would overstate the corpus's reach.
+        _write(traces, "bk-9-clean.yml", _trace("BK-9", _step("a.md", "ok")))
         corpus = _collect(root, traces)
 
         assert corpus.negatives == 3
         assert (corpus.misleading, corpus.unclear) == (2, 1)
+        assert corpus.traces_scanned == 3
         assert corpus.traces_with_negatives == 2
+
+    def test_steps_outside_the_first_phase_are_counted(self, tmp_path):
+        # Real traces carry three to five phases and most negative tags
+        # live outside the first, so a single-phase corpus cannot tell a
+        # full phases[] walk from one that reads only phases[0].
+        root, traces = _repo(tmp_path, "a.md", "b.md")
+        _write(
+            traces,
+            "bk-1-x.yml",
+            _trace(
+                "BK-1",
+                _step("a.md", "misleading"),
+                second_phase_steps=_step("b.md", "unclear"),
+            ),
+        )
+        corpus = _collect(root, traces)
+
+        assert corpus.steps == 2
+        assert corpus.negatives == 2
+        assert [r.reference for r in corpus.references] == ["a.md", "b.md"]
+
+    def test_reads_count_every_citation_not_only_tagged_ones(self, tmp_path):
+        # The denominator exists to separate exposure from failure rate,
+        # so it must count untagged reads. Counting only tagged steps
+        # would make rate 100% everywhere and say nothing.
+        root, traces = _repo(tmp_path, "a.md", "b.md")
+        _write(
+            traces,
+            "bk-1-x.yml",
+            _trace(
+                "BK-1",
+                _step("a.md", "misleading") + _step("a.md", "ok") + _step("a.md") + _step("a.md", "ok"),
+                second_phase_steps=_step("b.md", "misleading") + _step("b.md", "misleading"),
+            ),
+        )
+        corpus = _collect(root, traces)
+
+        widely_read, always_wrong = _row(corpus, "a.md"), _row(corpus, "b.md")
+        assert (widely_read.total, widely_read.reads) == (1, 4)
+        assert widely_read.rate == 0.25
+        assert (always_wrong.total, always_wrong.reads) == (2, 2)
+        assert always_wrong.rate == 1.0
+        # The hazard the denominator exists to expose: the more-read file
+        # outranks the one that misled every reader it ever had.
+        assert [r.reference for r in corpus.references] == ["b.md", "a.md"]
+
+    def test_negative_tag_without_a_file_still_counts_in_the_totals(self, tmp_path):
+        # Reachable only on a corpus that already fails check_traces, but
+        # the docstring promises every tag counts toward the totals
+        # regardless of class. Dropping it before the counters would make
+        # this the one silent filter in a report about silent filters.
+        root, traces = _repo(tmp_path, "a.md")
+        _write(
+            traces,
+            "bk-1-x.yml",
+            _trace("BK-1", _step("a.md", "misleading") + _step('""', "unclear")),
+        )
+        corpus = _collect(root, traces)
+
+        assert corpus.negatives == 2
+        assert corpus.unattributed == 1
+        assert [r.reference for r in corpus.references] == ["a.md"]
+        assert "1 tag(s) carry no `file`" in _mod.render_markdown(corpus)
 
     def test_citing_traces_carry_per_trace_counts(self, tmp_path):
         root, traces = _repo(tmp_path, "a.md")
@@ -303,6 +389,27 @@ class TestSegregation:
         assert [r.reference for r in corpus.unresolved] == [gone]
         assert corpus.negatives == 2
 
+    def test_not_ranked_sections_are_actually_rendered(self, tmp_path):
+        # The segregation tests above stop at the Corpus object. The
+        # stated Rule 7 bound names the printing as its own mitigation
+        # ("the unresolvable section is where that shows up, which is one
+        # reason it is printed"), so a bound whose mitigation can be
+        # deleted silently is not a bound.
+        root, traces = _repo(tmp_path, "a.md")
+        gone = "sdd/plans/ID-127-graph-backend-implementation.md"
+        ext = ".venv/lib/python3.11/site-packages/dagster/x.py"
+        _write(
+            traces,
+            "bk-1-x.yml",
+            _trace("BK-1", _step("a.md", "misleading") + _step(gone, "unclear") + _step(ext, "misleading")),
+        )
+        rendered = _mod.render_markdown(_collect(root, traces))
+
+        assert "Not present in the working tree" in rendered
+        assert f"`{gone}`" in rendered
+        assert "External to the repository" in rendered
+        assert f"`{ext}`" in rendered
+
     @pytest.mark.parametrize("reference", ["sdd/specs/{analog}", "tests/aio/ext/"])
     def test_placeholders_and_directories_skip_resolution(self, tmp_path, reference):
         # The schema licenses both forms; neither names a file on disk, so
@@ -336,12 +443,23 @@ class TestIdCollisionSurvivesRendering:
         assert "id-127-one" in detail
         assert "id-127-two" in detail
 
-    def test_rank_citation_orders_same_id_citations_by_filename(self, tmp_path):
-        # rank_citation is public and its docstring claims the filename
-        # tie-break; with equal counts and equal ids, only the filename
-        # can produce a stable order.
-        row = _row(self._same_id_corpus(tmp_path), "a.md")
-        ordered = sorted(row.citations, key=_mod.rank_citation)
+    def test_rank_citation_orders_same_id_citations_by_filename(self):
+        # Hand-built rather than collected, because a collected fixture
+        # cannot discriminate this at all: `collect_outcomes` already
+        # returns `row.citations` sorted by trace_file, and Python's sort
+        # is stable, so ANY tying key reproduces the expected order. The
+        # inputs must therefore be equal on `total` AND on `misleading`
+        # — otherwise (-total, -misleading) decides first — and supplied
+        # in reverse filename order so only the third element can undo it.
+        step = _mod.Step(outcome="misleading", section="S", extract="e")
+        later = _mod.Citation(
+            trace_id="ID-127", trace_file="id-127-two.yml", total=1, misleading=1, unclear=0, steps=(step,)
+        )
+        earlier = _mod.Citation(
+            trace_id="ID-127", trace_file="id-127-one.yml", total=1, misleading=1, unclear=0, steps=(step,)
+        )
+
+        ordered = sorted([later, earlier], key=_mod.rank_citation)
 
         assert [c.trace_file for c in ordered] == ["id-127-one.yml", "id-127-two.yml"]
 
@@ -351,6 +469,18 @@ class TestIdCollisionSurvivesRendering:
         summary = _mod._citation_summary(_row(self._same_id_corpus(tmp_path), "a.md"))
 
         assert summary == "1 id: ID-127 (2)"
+
+    def test_summary_caps_the_list_and_discloses_the_remainder(self, tmp_path):
+        # The cap and the "+N more" tail are a silent truncation the
+        # moment either stops working, which is the same defect class as
+        # the ranking-table filter fixed elsewhere in this module. One
+        # reference cited by six distinct ids reaches both.
+        root, traces = _repo(tmp_path, "a.md")
+        for n in range(6):
+            _write(traces, f"bk-{n}-x.yml", _trace(f"BK-{n}", _step("a.md", "misleading")))
+        summary = _mod._citation_summary(_row(_collect(root, traces), "a.md"))
+
+        assert summary == "6 ids: BK-0 (1), BK-1 (1), BK-2 (1), BK-3 (1), +2 more"
 
 
 # --------------------------------------------------------------------------
@@ -504,6 +634,18 @@ class TestNeverAGate:
             # indistinguishable from a clean one.
             assert ".yml" in capsys.readouterr().err
 
+    @pytest.mark.parametrize("flag", ["--top", "--min-count"])
+    def test_zero_is_a_legal_filter_not_a_usage_error(self, tmp_path, flag):
+        # The reject side is tested below; this is the accept side of the
+        # same boundary. Without it, tightening `< 0` to `<= 0` starts
+        # rejecting the invocation the docstring documents as legal, and
+        # nothing notices — the rendering test for `top=0` calls
+        # render_markdown directly and never reaches argparse.
+        root, traces = _repo(tmp_path, "a.md")
+        _write(traces, "bk-1-x.yml", _trace("BK-1", _step("a.md", "misleading")))
+
+        assert _mod.main(["--traces-dir", str(traces), "--repo-root", str(root), flag, "0"]) == 0
+
     @pytest.mark.parametrize(
         "argv",
         [
@@ -615,9 +757,16 @@ def test_repo_corpus_report_runs():
     assert ranked == sorted(ranked, key=_mod.rank_key)
 
     total_from_rows = sum(r.total for r in ranked + list(corpus.external) + list(corpus.unresolved))
-    assert total_from_rows == corpus.negatives
+    assert total_from_rows + corpus.unattributed == corpus.negatives
 
     for row in ranked:
         assert row.total >= 1
+        # Every tagged step is also a read, so the denominator can never
+        # be smaller than the numerator and `rate` can never exceed 1.
+        # A denominator counted only over tagged steps would peg every
+        # rate at 100% and say nothing; one counted over the wrong
+        # reference would breach this.
+        assert row.reads >= row.total
+        assert 0 < row.rate <= 1
 
     assert _mod.main([]) == 0

@@ -156,8 +156,17 @@ def collect_violations(
         rel = trace_path.relative_to(ROOT) if trace_path.is_relative_to(ROOT) else trace_path
         try:
             document = yaml.safe_load(trace_path.read_text(encoding="utf-8"))
-        except yaml.YAMLError as exc:
-            violations.append(Violation(source=str(rel), path="(parse)", message=f"YAML parse error: {exc}"))
+        except (yaml.YAMLError, OSError, UnicodeDecodeError) as exc:
+            # OSError and UnicodeDecodeError come from read_text, not the
+            # parser, and neither is a yaml.YAMLError. The shared glob
+            # admits directories (Path.glob does not filter to files) and
+            # a bad rebase can leave a file undecodable. Uncaught, either
+            # aborts this gate with a traceback in `lint` and `docs-gate`
+            # instead of printing the violation it exists to print.
+            # report_trace_outcomes.py handles the same three for the same
+            # reason: one driver, so the consumers must agree about what
+            # it can hand them.
+            violations.append(Violation(source=str(rel), path="(parse)", message=f"{type(exc).__name__}: {exc}"))
             continue
         violations.extend(_validate_document(validator, document, source=str(rel)))
 

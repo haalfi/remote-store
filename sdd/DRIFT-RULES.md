@@ -3,13 +3,13 @@
 
 ## Intent & Scope
 
-THE source for how a check that compares two descriptions of the same thing is
-designed and reviewed. Applies whenever a change adds a `check_*` gate, adds a
-second description of something already described, or sets how often a recurring
-check runs. It applies equally to a **non-gating report** that aggregates a
-drift signal rather than asserting a comparison — Rule 5 already contemplates
-advisory checks, and such a report still owes a derived enumeration, localized
-output, a stated bound and a register entry. "Drift" here is artifacts
+THE source for how a mechanism that detects artifacts disagreeing with each
+other is designed and reviewed — whether it compares two descriptions and fails,
+or aggregates a drift signal and only reports. Applies whenever a change adds a
+`check_*` gate, adds a non-gating drift report, adds a second description of
+something already described, or sets how often a recurring check runs. The rules
+below apply **in full** to each: a report is not a reduced-obligation category,
+and Rule 5 already contemplates advisory checks. "Drift" here is artifacts
 disagreeing with each other, not the storage-consistency sense used in the
 library's own contracts.
 

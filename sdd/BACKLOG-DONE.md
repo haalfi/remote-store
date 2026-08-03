@@ -79,9 +79,25 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   summed back from the rows; they are now counted during the scan, so the two
   derivations can actually disagree. The load-bearing fact is that `id` is not
   unique, and `sdd/traces/_schema.yml` was the artifact asserting otherwise while
-  mandating the convention that produces the duplicates — so it now says so, and
-  is the single home for that fact. The counts above are a SHA-pinned
-  measurement, not a live figure; the code carries the rule, not the numbers.
+  mandating the convention that produces the duplicates — so it now says so and
+  is the authority the code sites cite. **The counts** are what was consolidated
+  to a single home: they appear once, above, SHA-pinned, and no longer in code.
+  The rule itself is restated wherever the code depends on it, each citing the
+  schema — a deliberate copy, because a keying decision is unreadable without the
+  reason beside it, and the ranking this report ships is what would surface the
+  restatements drifting.
+  **Reads and rate.** The ranking measures exposure at least as much as failure
+  rate: `CLAUDE.md` makes opening the backlog item step one of nearly every
+  trace, so `sdd/BACKLOG.md` accumulates tags across ~222 reads while a spec read
+  by a handful of traces cannot. The report now carries `reads` (every citing
+  step, tagged or not) and `rate` beside the count, and the sort key stays the
+  absolute count — a rate sort's head is single-read noise, since 72 of 106
+  ranked references carry exactly one tag and 16 of those read 100%. Both figures
+  measured at this branch's head; re-run rather than trusting them.
+  Two bounds were added with it: drain files (`sdd/BACKLOG.md` empties into
+  `sdd/BACKLOG-DONE.md`, so a tag stays pinned to a path whose cited section has
+  moved while both paths keep resolving — nothing surfaces it, unlike a rename),
+  and unattributed tags.
   **Declined, so it is not re-litigated:** a `--format json` mode. No consumer
   exists, and the collection API returns dataclasses that a future one can call
   directly.

@@ -101,8 +101,8 @@ and the highest ID already in this file, then take the next integer. Run
   documentation table; different artifact, different fix, different verification.
   BK-333's enumeration of exactly three is load-bearing and should not absorb it.
 
-- [ ] **BK-335 — Sweep backlog IDs used as provenance anchors out of durable artifacts**
-  spec: — · effort: M · audience: contributor.process
+- [ ] **ID-239 — Sweep backlog IDs used as provenance anchors out of durable artifacts**
+  spec: — · effort: — · audience: contributor.process
   A backlog ID is a short-lived coordinate; the code, config and comments it gets
   stamped into are long-lived. `pyproject.toml` alone carries dozens of
   `# BK-NNN:` / `# ID-NNN:` comment prefixes, and source docstrings across
@@ -120,14 +120,27 @@ and the highest ID already in this file, then take the next integer. Run
   an ID as a literal trace identifier, or a backlog/CHANGELOG cross-reference are
   all load-bearing. Where a fact like that is kept, pin it rather than restating
   it loose.
-  **Open, and the reason this is not purely mechanical:** the ripple-check
-  ["Tracker ID in published prose" row](CLAUDE-REFERENCE.md#pre-work-index) and
-  [`CONTENT-RULES.md` Rules 1 + 5](CONTENT-RULES.md#rules) currently scope
-  *out* source `#` comments and everything under `sdd/**`. Deciding whether that
-  carve-out should narrow — and if so, whether a `check_no_tracker_refs.py`
-  extension can enforce the anchor-versus-data distinction without false
-  positives — is the first half of this item, and it governs how large the second
-  half is.
+  **Open, and the reason this is not purely mechanical.** The carve-out lives in
+  exactly one place: the ripple-check
+  ["Tracker ID in published prose" row](CLAUDE-REFERENCE.md#pre-work-index),
+  whose "Out of scope" clause names `sdd/**`, CHANGELOG, DEVELOPMENT_STORY and
+  source `#` comments. [`CONTENT-RULES.md`](CONTENT-RULES.md) carries **no**
+  tracker-ID carve-out — its scope line says the opposite ("Applies to all
+  content: README, guides, docstrings, and inline doc comments"), so there is
+  nothing to narrow there and an implementer should not go looking.
+  A sharper form of the question than "should the carve-out narrow", because it
+  does not need a policy judgement to be a defect: `DRIFT-RULES.md`,
+  `CONTENT-RULES.md` and `000-process.md` all carry `<!-- doc: dual dest=... -->`
+  and `scripts/gen_pages.py` renders them into the published site — so parts of
+  `sdd/**` **are** published prose, and "Out of scope: `sdd/**`" already
+  contradicts the dual-dest mechanism today. Settle that first; it bounds
+  everything else.
+  **Why ID, not BK:** the same reasoning ID-238 states two sections below. The
+  scope question above is unevaluated and the item's own body says deciding it
+  "bounds everything else", so the size of the committed half is unknown — which
+  is also why `effort:` is `—` rather than a guess. Contrast BK-334 above, which
+  has a stated fix shape, a named enforcement mechanism and a stated
+  verification, and is `BK` for exactly those reasons.
 
 - [ ] **ID-235 — Structural lint for BACKLOG files (entry-header integrity)**
   spec: — · effort: S · audience: contributor.tooling
