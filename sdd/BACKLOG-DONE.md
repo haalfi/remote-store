@@ -8,6 +8,71 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-330 — Aggregate trace outcome tags into a drift report**
+  spec: — · effort: S · audience: contributor.tooling
+  Step 3 of
+  [research](research/research-inconsistency-detection-multi-artifact.md) § 9,
+  closing G-4. The trace corpus had recorded `unclear` / `misleading` outcome
+  tags for years — committed, attributed by the schema, and never aggregated.
+  Shipped as `scripts/report_trace_outcomes.py` (`hatch run
+  report-trace-outcomes`): referenced files ranked by negative-outcome count,
+  each with the traces that cited it and the sections they cited, plus corpus
+  totals and tag-coverage.
+  **A report, not a gate**, per [`DRIFT-RULES.md` Rule 5](DRIFT-RULES.md#mandatory-path)'s
+  requirement to record why. Two reasons, both in the module docstring: there is
+  no correct threshold — "more than N `misleading` tags" is a prompt to read the
+  file, not a defect — and the input is retrospective self-assessment rather than
+  an observed invariant, so failing a build on it would manufacture exactly the
+  false-positive fatigue that defeats rule checkers elsewhere. The exit code is
+  `0` regardless of findings, including on an unparseable trace; there is
+  deliberately no code that signals findings, and a test named for that fact
+  guards it. Owner: whoever picks up a ranked reference; this entry is the
+  Rule 6 register home. Deliberately absent from `lint`, `preflight`, `docs-gate`
+  and `all` — what keeps it executable rather than rotting is its own test suite,
+  which runs in `all` and includes a live-corpus run.
+  **The two decided constraints held, and both stated rationales were
+  imprecise** — worth recording because they are the reason the tests look the
+  way they do. Under a parsed-YAML reader a looser glob moves the corpus
+  *denominator* only, not the tag count: `_schema.yml` has no top-level `phases`
+  and its examples carry `outcome: ok`. And a nearest-preceding-key text scan
+  produces byte-identical results to the parser against every committed trace.
+  Both hazards are therefore **latent, not live**, so neither is demonstrable
+  against real data; each is tested with a synthetic schema-valid corpus **plus a
+  positive control** (a naive scanner kept in the test module, asserted to get
+  the fixtures wrong) proving the fixture discriminates at all. The legal YAML
+  that breaks a text scan: a step listing `outcome` before `file`, and a
+  block-scalar `extract` containing a line reading `file: ...`.
+  **The glob is now one driver, not two copies.** `scripts/_trace_corpus.py`
+  holds it; `check_traces.py` and the report both import it
+  ([Rule 1](DRIFT-RULES.md#one-driver)). The report does not import the gate
+  directly, which was the first choice: `check_traces` imports `jsonschema` at
+  module scope, and a report that only parses YAML should not acquire a
+  schema-validation dependency to borrow a five-character string.
+  **The item's own headline count was wrong, which is the thesis in miniature.**
+  It claimed 187 tags across 102 files. That was exactly right for the tree
+  *before* the commit that wrote it (`79d0382`) and already false when that
+  commit landed, because the same PR added its own trace: `d9a2d3d` measured
+  190 across 103. At `83e22a3` it was **193 across 104**, and this PR moves it
+  again by adding its own trace. Hence no restated number here: run
+  `hatch run report-trace-outcomes`. The figure came from research finding 7,
+  which flagged itself as "exact and already perishable" and named this report
+  as its successor — the qualification did not survive being copied into the
+  backlog.
+  **A bug caught by cross-checking the first live run** against an independent
+  count, recorded because it is the same defect class the item exists to retire:
+  citations accumulated per trace `id`, and `id` is pattern-constrained but not
+  unique — 13 traces share `ID-127`, two share `BK-181` — so an id-keyed
+  accumulator silently dropped tags. Re-keyed on the trace filename. The
+  consistency assertion had not caught it because the corpus totals were summed
+  back from the rows; they are now counted during the scan, so the two
+  derivations can actually disagree.
+  **Declined, so it is not re-litigated:** a `--format json` mode. No consumer
+  exists, and the collection API returns dataclasses that a future one can call
+  directly.
+  **No CHANGELOG entry:** `audience` is `contributor.tooling` only, and the
+  schema's derived rule requires one iff an audience starts with `user.` or
+  `contributor.process` introduces a new user-facing framework or spec.
+
 - [x] **BK-329 — Declare the attribution rule for prose vs Dafny vs conformance**
   spec: — · effort: S · audience: contributor.process, contributor.tooling
   Step 5.1 of

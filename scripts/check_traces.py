@@ -14,7 +14,9 @@ What this gate does
 -------------------
 For every ``sdd/traces/[!_]*.yml`` file (the ``[!_]`` glob skips
 infrastructure files like ``_schema.yml`` itself, per the schema's own
-note), parse the YAML and validate the document against the *whole*
+note; it lives in ``scripts/_trace_corpus.py`` so this gate and
+``report_trace_outcomes.py`` share one definition of "a trace"), parse
+the YAML and validate the document against the *whole*
 schema using ``jsonschema``. The draft is selected from the schema's
 ``$schema`` keyword, so the check tracks whatever JSON Schema dialect the
 schema declares. Two further self-checks run first:
@@ -64,19 +66,20 @@ from typing import TYPE_CHECKING, Any
 import yaml
 from jsonschema.validators import validator_for
 
+sys.path.insert(0, str(Path(__file__).parent))
+
+from _trace_corpus import ROOT, TRACES_DIR, iter_trace_files  # noqa: E402
+
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Iterable
 
     from jsonschema.protocols import Validator
 
-ROOT = Path(__file__).resolve().parent.parent
-TRACES_DIR = ROOT / "sdd" / "traces"
 SCHEMA_PATH = TRACES_DIR / "_schema.yml"
 
-# Underscore-prefixed files (e.g. _schema.yml) are infrastructure, not
-# traces — the schema's own description tells aggregators to glob
-# "sdd/traces/[!_]*.yml". The gate uses the same carve-out.
-_TRACE_GLOB = "[!_]*.yml"
+# The "[!_]" carve-out that skips _schema.yml lives in _trace_corpus.py,
+# shared with report_trace_outcomes.py (BK-330) so the gate and the
+# report cannot disagree about what a trace is. DRIFT-RULES Rule 1.
 
 
 @dataclass(frozen=True)
@@ -107,11 +110,6 @@ def _json_path(absolute_path: Iterable[Any]) -> str:
 def load_schema(schema_path: Path = SCHEMA_PATH) -> dict[str, Any]:
     """Parse the trace schema YAML into a mapping."""
     return yaml.safe_load(schema_path.read_text(encoding="utf-8"))
-
-
-def iter_trace_files(traces_dir: Path = TRACES_DIR) -> Iterator[Path]:
-    """Yield every trace file (sorted), skipping underscore-prefixed infra."""
-    return iter(sorted(traces_dir.glob(_TRACE_GLOB)))
 
 
 def _validate_document(

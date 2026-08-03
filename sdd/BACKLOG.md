@@ -133,13 +133,14 @@ this section carries the work.
 [the file's default](#how-this-file-works), because its items form a dependency
 chain. Position therefore says nothing about importance, and dependencies are
 stated by ID inside each item so re-sequencing cannot silently invalidate them.
-BK-330 and BK-331 are independent and cheap. BK-324 comes next with its
+BK-331 is independent and cheap. BK-324 comes next with its
 *attribution* blocker cleared, but BK-331 still comes before it: facet 3 cannot be
 decided against 037's current table. ID-207 is unblocked but reads better after
 BK-324, which decides the orphan behaviours its day-one allowlist would otherwise
 enumerate blind. BK-332, ID-236 and ID-237 are follow-ons
 that get cheaper once the earlier work lands. BK-327 is independent of the chain
-and can be taken at any point.
+and can be taken at any point, as is ID-238 — it needs BK-330's report to exist,
+which it now does, and nothing else in the chain.
 
 On importance, the research doc's designation, which this section adopts rather
 than restates: the two items that build what is actually missing are the authority
@@ -149,27 +150,42 @@ canonical claim space). BK-324 is the item they unblock and the evidence that th
 gap is real, not itself one of the two.
 
 Shipped so far: step 1 (Dafny twin parity) as BK-328, step 5.1 (the attribution
-rule) as BK-329; see [BACKLOG-DONE.md](BACKLOG-DONE.md). Three findings from them
+rule) as BK-329, step 3 (the trace-outcome report) as BK-330; see
+[BACKLOG-DONE.md](BACKLOG-DONE.md). Four findings from them
 apply to what follows: a documented gap statement is not a measured one, pinning
-what an exemption covers beats exempting the whole item, and an authority rule is
+what an exemption covers beats exempting the whole item, an authority rule is
 worth exactly the live disagreements it decides — run a proposed one against them
 before believing it, because the case that does *not* resolve is the informative
-one.
+one — and a hand-counted figure about a growing corpus is stale before the commit
+that writes it lands, so cite the generator instead.
 
-- [ ] **BK-330 — Aggregate trace outcome tags into a drift report**
-  spec: — · effort: S · audience: contributor.tooling
-  Research § 9 step 3. 187 `unclear` / `misleading` tags across 102 trace files
-  are committed, attributed, and never aggregated — a drift detector the repo
-  already paid for. Add `scripts/report_trace_outcomes.py`: references ranked by
-  negative-outcome count, with the citing traces.
-  **A report, not a gate**, per [`DRIFT-RULES.md` Rule 5](DRIFT-RULES.md#mandatory-path)'s
-  requirement to say why: there is no correct threshold, and gating it would
-  manufacture the false-positive fatigue that defeats rule checkers elsewhere.
-  Extraction method is decided, not open: reuse `check_traces.py`'s
-  `sdd/traces/[!_]*.yml` glob and read `phases[].steps[]` as parsed YAML, taking
-  `file` from the same mapping as `outcome`. A looser glob reintroduces the
-  `_schema.yml` off-by-one; a nearest-preceding-key text scan reintroduces an
-  attribution imprecision that already cost the research doc a review round.
+- [ ] **ID-238 — Decide whether the trace-outcome report gets a review trigger, and what fires it**
+  spec: — · effort: S · audience: contributor.process
+  Research § 9 step 3 asked for two things: the report, and "review the top of the
+  list at the same cadence as the TLA+ status revisit". BK-330 shipped the report;
+  its item body dropped the cadence sentence, so the report exists and nothing
+  causes anyone to read it. **That gap between what the research asked for and
+  what the item scoped is this item's whole justification** — recorded here rather
+  than folded into BK-330, which deliberately shipped a tool and left the practice
+  question open.
+  The analogy the research offered is `sdd/formal/README.md`'s TLA+ status revisit
+  (every 6 months or every 10 spec amendments touching TLA-backed sections,
+  whichever first, each revisit tracked as a backlog entry — the ID-150 pattern).
+  **The analogy is not the decision.** [`DRIFT-RULES.md` Rule 9](DRIFT-RULES.md#period)
+  says set the period from the drift rate and anchor a recurring check to the
+  events that can invalidate the artifact, not to a date — so an event trigger
+  ("a reference crosses N tags", "at each release", "when a ranked file is next
+  edited") is as admissible as a calendar one, and choosing between those shapes
+  is most of the work.
+  Input to that argument, not the answer: BK-330 § 7 measured the corpus growing
+  by roughly +3 negative tags and +1 tagged trace per merged PR across
+  `79d0382` → `d9a2d3d` → `83e22a3`. Re-measure with `hatch run
+  report-trace-outcomes` rather than trusting that figure — its going stale is the
+  finding BK-330 shipped.
+  **Why ID, not BK:** the user asked for the question to be filed, not for a
+  period to be committed to. Whether a scheduled review is the right mechanism at
+  all is unevaluated, and Rule 9 makes "no recurring trigger, act on the report
+  when a reference is next touched" a legitimate outcome.
 
 - [ ] **BK-331 — Generate spec 037's per-backend table, then sweep for its siblings**
   spec: 037 · effort: S/M · audience: library.maintainer
