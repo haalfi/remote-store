@@ -817,7 +817,9 @@ class AsyncAzureBackend(AsyncBackend):
         Args:
             path: Backend-relative folder key, or ``""`` for the root.
             recursive: If ``True``, include files in all subdirectories.
-            max_depth: Optional maximum folder depth to traverse.
+            max_depth: Optional maximum folder depth. The whole prefix is
+                listed and depth is filtered client-side, so the bound trims
+                results without reducing I/O.
 
         Returns:
             An async iterator of ``FileInfo`` objects.

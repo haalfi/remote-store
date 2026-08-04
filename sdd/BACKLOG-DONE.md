@@ -8,6 +8,67 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-331 — Delete spec 037's per-backend table, and its two siblings**
+  spec: 037, 027, 020 · effort: S/M · audience: library.maintainer, user.api_docs
+  Research § 9 step 4; closes the mechanical half of BK-324 facet 3. The item
+  offered two dispositions — derive the table, or delete it and link the
+  generated surface. **Neither table was derivable, and the reason is in the
+  spec that owns it.** DEPTH-003 declares no capability flag because native
+  pruning and client-side filtering "produce identical results"; the conformance
+  suite and the Dafny postcondition both bound the *result*, per BK-324 facet
+  3's corrected premise. So no declaration carries the property, and generating
+  one would mean adding the capability flag 037 deliberately refused. Deletion,
+  with the contract kept and the strategy left to the backend docstrings that
+  already state it.
+  **Measured before deciding**, against every shipped `list_files`:
+
+  | Row | Table said | Code does |
+  |---|---|---|
+  | S3 | flat scan + client filter | prunes natively (`_s3_base.py` BFS, stops queueing past the bound) |
+  | Local, SFTP, Memory, Azure, HTTP | as listed | confirmed accurate |
+  | S3-boto3, SQLAlchemy, Graph, async Memory, async Azure | *absent* | four prune natively, one filters client-side |
+
+  One row wrong and five implementations missing — the drift is the omissions,
+  not the error. The same count holds for 027 ITER-005 (seven rows; SQLAlchemy,
+  HTTP, S3-boto3 and the async family never added).
+  **The replacement is better than the table it removes.** Every sync backend's
+  `iter_children` docstring already opens "Overrides the base two-pass default
+  with a single …", and every sync `list_files` docstring states its own depth
+  strategy — co-located with the code, rendered into the API reference, and
+  complete where the tables were not. Two async `list_files` docstrings named
+  the parameter without its strategy; both now state it, which is what makes the
+  pointer true rather than aspirational.
+  **Third sibling: 020 SEC-004.** SEC-003 names `_SENSITIVE_KEYS` as the single
+  source of truth and says the spec "does not re-enumerate it, so a future
+  widening cannot leave the prose stale" — and SEC-004 re-enumerated it one
+  section later, then went stale exactly as predicted when the set gained
+  `client_secret` and `client_certificate`. A spec stating the principle and
+  violating it in the next section is the strongest available evidence that the
+  rule needs to bind tables, not just prose.
+  **Deliberately no new gate.** A check for "table whose first column is backend
+  names" would fire on legitimate ones, and [`DRIFT-RULES.md`
+  Rule 5](DRIFT-RULES.md#mandatory-path) wants the gate-or-report reasoning
+  recorded rather than assumed. The three tables are gone; whether the *class*
+  needs a detector is left open rather than answered with a noisy regex.
+  **A fourth sibling was found and deliberately left**, filed as
+  **[BK-339](BACKLOG.md)**. `docs-src/reference/api/store.md`'s Backend Behavior
+  Matrix is the same class on the user-facing surface, with one measured error
+  (Memory's `copy()` does preserve metadata; the row says it does not). It is not
+  swept here because "delete and point at the docstring" is the wrong
+  disposition for a reference page: some rows duplicate the capabilities matrix,
+  some carry information available nowhere else, and one publishes an ordering
+  the specs do not guarantee. That is a decision, not a sweep.
+  **The sweep itself was widened after a miss.** The first pass grepped for
+  tables with backend names in the *first column* and found 037, 027 and 020.
+  Transposed tables — backends as column headers — matched nothing in that
+  pattern, and the user-facing instance is transposed. Both shapes were then
+  swept across `sdd/specs/` and `docs-src/`.
+  **Ripple caught by the sweep:** `tests/backends/azure/test_depth_listing.py`
+  cited "Per spec 037 DEPTH-003, Azure has no native pruning" — a claim sourced
+  from the deleted table. Still true, but its authority moved; re-pointed at the
+  backend docstring. Its S3 twin was checked for the same shape and cites only
+  the ABC signature, so it needed nothing.
+
 - [x] **BK-338 — One unguided reviewer replaces the five-expert review roster**
   spec: — · effort: S · audience: contributor.process
   `/orchestrate` Step 6 spawned all 5 domain experts to cross-review each

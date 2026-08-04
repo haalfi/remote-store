@@ -106,13 +106,9 @@ net when the backend already filtered natively.
 **No capability flag:** Unlike glob, depth filtering produces identical results
 whether done natively or client-side. The optimization is purely performance.
 
-**Backend strategies:**
-
-| Backend    | Native strategy                                       |
-|------------|-------------------------------------------------------|
-| **Local**  | `os.walk()` with depth counter; skip dirs beyond limit. |
-| **SFTP**   | Depth tracking in recursive calls; stop recursing at limit. |
-| **Memory** | DFS stack depth tracking; don't push beyond limit.    |
-| **S3**     | Accept parameter, no native optimization (flat scan + client filter). |
-| **Azure**  | Accept parameter, no native optimization (flat scan + client filter). |
-| **HTTP**   | Accept parameter; raises `CapabilityNotSupported` (listing not supported). |
+**Backend strategy is implementation detail, not contract.** A backend either
+prunes traversal natively or yields the full recursive result for the Store-level
+filter to trim. The two differ only in I/O cost, never in result — the reason
+this section declares no capability flag — so the spec states no per-backend
+strategy. Which one a backend uses is documented in its own `list_files()`
+docstring, next to the code that decides it.

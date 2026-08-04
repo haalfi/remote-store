@@ -40,6 +40,9 @@ the failing test, run it, see it fail** before implementing the fix.
 - See `sdd/BACKLOG.md` for workflow rules, ID prefixes, completing-work
   procedure, and active items. Completed items are in `sdd/BACKLOG-DONE.md`.
 - Commit messages start with item ID when applicable (e.g., `AF-008: Add credential masking`).
+- **After a PR merges, start the next item without asking.** Take it from the
+  ordering the relevant BACKLOG section declares; stop only for a decision the
+  section leaves open or a blocker it does not resolve.
 
 <a id="trace-authoring"></a>
 ## Trace authoring (mandatory)

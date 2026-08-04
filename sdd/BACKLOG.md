@@ -254,9 +254,8 @@ this section carries the work.
 [the file's default](#how-this-file-works), because its items form a dependency
 chain. Position therefore says nothing about importance, and dependencies are
 stated by ID inside each item so re-sequencing cannot silently invalidate them.
-BK-331 is independent and cheap. BK-324 comes next with its
-*attribution* blocker cleared, but BK-331 still comes before it: facet 3 cannot be
-decided against 037's current table. ID-207 is unblocked but reads better after
+BK-324 comes first, with both its blockers now cleared — *attribution* by
+BK-329, and facet 3's *content* by BK-331. ID-207 is unblocked but reads better after
 BK-324, which decides the orphan behaviours its day-one allowlist would otherwise
 enumerate blind. BK-332, ID-236 and ID-237 are follow-ons
 that get cheaper once the earlier work lands. BK-327 and ID-238 are independent
@@ -270,7 +269,8 @@ canonical claim space). BK-324 is the item they unblock and the evidence that th
 gap is real, not itself one of the two.
 
 Shipped so far: step 1 (Dafny twin parity) as BK-328, step 5.1 (the attribution
-rule) as BK-329, and **step 3's report half** as BK-330; see
+rule) as BK-329, step 4 (037's per-backend table) as BK-331, and **step 3's
+report half** as BK-330; see
 [BACKLOG-DONE.md](BACKLOG-DONE.md). Step 3 asked for a report *and* a review
 cadence — the cadence is open as ID-238 at the tail of this section, so step 3
 is not closed. Four findings from them
@@ -281,23 +281,13 @@ before believing it, because the case that does *not* resolve is the informative
 one — and a hand-counted figure about a growing corpus is stale before the commit
 that writes it lands, so cite the generator instead.
 
-- [ ] **BK-331 — Generate spec 037's per-backend table, then sweep for its siblings**
-  spec: 037 · effort: S/M · audience: library.maintainer
-  Research § 9 step 4; closes the mechanical half of BK-324 facet 3. A
-  hand-maintained table making per-backend behavioural claims is the artifact
-  class that must never be hand-maintained, and 037's is wrong about S3 and
-  Azure today. Either derive it from capability declarations plus conformance
-  results — `FEATURES.md` from `graph.json` is the working precedent — or delete
-  it and link the generated surface. Then sweep for other hand-written
-  per-backend claim tables and treat each the same way.
-  **Before BK-324** so the depth-semantics decision is taken against a derived
-  table instead of restating a wrong one.
-
 - [ ] **BK-324 — Reconcile backend-contract divergences (root/alias, wrong-type errors, depth semantics, empty paths)**
   spec: 003, 029, 037 · effort: L · audience: library.maintainer, user.site
   Research § 9 step 5.2. **Attribution blocker cleared**: the authority rule it
   waited on is [`000-process.md` Rule 7](000-process.md#intent-attribution).
-  **Still after BK-331**, which facet 3 below needs rather than merely prefers.
+  **Both blockers cleared.** BK-331 settled facet 3's content — not with a
+  derived table but by removing the per-backend claim from 037 entirely, so
+  there is no longer a wrong table to decide against or to restate.
   Four facets of one problem, surfaced by PR #932's guide
   validation: contract prose, the Dafny model, the conformance suite, and
   shipped backends disagree; the guide currently hedges by deferring to spec
@@ -356,8 +346,12 @@ that writes it lands, so cite the generator instead.
     backend prunes natively, one prefix listing at a time, while Azure lists the
     prefix and filters client-side. The classification was first built on this
     facet's own "requires native pruning" premise, now corrected above: nothing in
-    the intent domain requires it. Settle the content first — that is BK-331's
-    derived table — then attribute.
+    the intent domain requires it. **Content settled by BK-331**, which found the
+    property is declared nowhere and testable nowhere, and removed 037's
+    per-backend claim rather than deriving it. What remains for this facet is the
+    part that was always the contract: `recursive=False` + `max_depth`
+    precedence across the sync model, ASYNC-014, the SQL backends and the `Store`
+    facade. The strategy half is no longer a spec question.
   Evidence trail: PR #932 review threads and `sdd/traces/bk-320-*.yml`.
   **Filed here, not under Docs & Discoverability**, where it originally sat:
   facets 2 and 3 change runtime behaviour or spec semantics and may be
@@ -446,6 +440,36 @@ that writes it lands, so cite the generator instead.
   curated mapping, and a curated mapping is precisely the
   parallel-artifact-that-drifts problem this item would exist to close. That
   decision is unmade.
+
+- [ ] **BK-339 — Decide what replaces `store.md`'s hand-maintained Backend Behavior Matrix**
+  spec: — · effort: M · audience: user.site
+  Found by BK-331's sibling sweep and deliberately not swept with it: the same
+  defect class as 037/027/020, but on the **user-facing** surface, where
+  deletion needs a replacement decision rather than a pointer.
+  `docs-src/reference/api/store.md` § Backend Behavior Matrix hand-maintains five
+  behavioural rows across ten backends, and carries the line *"Verify against
+  actual code before relying on these in production"* — a reference page telling
+  readers not to trust it, which is the admission that it drifts.
+  **One measured error, not a suspicion.** The `copy()` preserves metadata` row
+  says `—` for Memory, but `MemoryBackend.copy` constructs the destination with
+  `metadata=src_node.metadata` (`src/remote_store/backends/_memory.py`), so user
+  metadata survives a copy. The row is also **ambiguous in a way that hides the
+  error**: Local's cell reads "Yes (`copy2`)", which is filesystem metadata,
+  while Memory's concerns user metadata — one row conflating two different
+  properties, which is why a reader cannot tell a wrong cell from an
+  out-of-scope one. Fixing the cell without splitting the row re-hides it.
+  **The disposition is the work, and it is not the one BK-331 used.** Rows
+  divide three ways: derivable from capability declarations (`Native glob()`
+  duplicates the capabilities matrix's GLOB row — the two currently agree, so
+  this is duplication rather than contradiction); genuinely useful user
+  information available nowhere else (`move()` atomicity, `write_atomic()`
+  mechanism); and under-specified (`list_files()` ordering, which the specs do
+  not guarantee — publishing per-backend orderings invites reliance on an
+  unguaranteed property). Deleting outright would remove real value; deriving
+  needs declarations that do not exist for the middle group.
+  **Check `capabilities-matrix.md` at the same time** — it is the neighbouring
+  ten-backend table and a candidate home for the derivable rows, but whether it
+  is generated or hand-maintained was not established by this sweep.
 
 - [ ] **BK-327 — Gate dual-doc nav reachability and index listing**
   spec: — · effort: S · audience: contributor.tooling

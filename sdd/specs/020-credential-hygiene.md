@@ -52,12 +52,10 @@ credential parameters and call `_reveal()` to unwrap them. Backends store
 revealed plain strings internally — they already have AF-008 `__repr__`
 masking, and SDK clients need plain strings.
 
-| Backend | Parameters |
-|---------|-----------|
-| S3 | `key`, `secret` |
-| S3-PyArrow | `key`, `secret` |
-| SFTP | `password` |
-| Azure | `account_key`, `sas_token`, `connection_string` |
+Which parameters this covers for a given backend is that backend's
+constructor signature intersected with the SEC-003 set. For the same reason
+SEC-003 gives, this spec does not re-enumerate the pairing: a table here went
+stale as soon as the set gained the Graph client-credentials entries.
 
 ### SEC-005: SFTP Host Key Policy Enum Coercion
 
