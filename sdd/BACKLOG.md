@@ -281,7 +281,7 @@ before believing it, because the case that does *not* resolve is the informative
 one — and a hand-counted figure about a growing corpus is stale before the commit
 that writes it lands, so cite the generator instead.
 
-- [ ] **BK-324 — Reconcile backend-contract divergences (root/alias, wrong-type errors, depth semantics, empty paths)**
+- [~] **BK-324 — Reconcile backend-contract divergences (root/alias, wrong-type errors, depth semantics, empty paths)**
   spec: 003, 029, 037 · effort: L · audience: library.maintainer, user.site
   Research § 9 step 5.2. **Attribution blocker cleared**: the authority rule it
   waited on is [`000-process.md` Rule 7](000-process.md#intent-attribution).
@@ -357,6 +357,30 @@ that writes it lands, so cite the generator instead.
   facets 2 and 3 change runtime behaviour or spec semantics and may be
   breaking. It was found via docs; it is not a docs item, and the old filing
   risked it reading as cosmetic.
+
+  **[~] All four facets implemented and committed; five review findings open.**
+  Implementation is on the branch and the full gate is green (7624 passed, skips
+  614 to 595), but an independent review found five defects, two of them
+  introduced by this work. Not moved to BACKLOG-DONE until they close, because
+  the item claims a reconciliation that is not yet true.
+  **Findings 1, 3 and 4 are one class**, not three: the two root spellings take
+  different paths, and testing `if path` truthiness rather than `is_root` is the
+  mechanism, since `"."` is truthy. BE-029, added by this same work, says both
+  spellings are the same path, so the implementation contradicts the clause it
+  shipped with. Demonstrated on moto: `delete(".")` raises `InvalidPath` while
+  `delete("")` raises `NotFound`.
+  **Finding 2 is a regression this work introduced:** facet-1 aliasing makes
+  `_s3_path(".")` the bare bucket, so `cat_file` hits botocore's zero-length-Key
+  rejection and escapes as a generic `RemoteStoreError` where it was previously
+  a clean `NotFound`.
+  **Finding 5 is a deliberate-decision item:** Azure `read_seekable` uses
+  `_errors` rather than `_file_op_errors`, so a folder path yields `NotFound`
+  where `read` yields `InvalidPath`. Spec and code agree today only because
+  BE-021's operation list omits seekable reads; either add it or record why not.
+  **The green gate caught none of the five.** Coverage rose and skips fell while
+  a root-spelling inconsistency survived that a five-line probe exposed — carry
+  that into ID-207, whose whole subject is what identifier-keyed checking cannot
+  see.
 
 - [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**
   spec: — · effort: L · audience: contributor.tooling
@@ -470,6 +494,24 @@ that writes it lands, so cite the generator instead.
   **Check `capabilities-matrix.md` at the same time** — it is the neighbouring
   ten-backend table and a candidate home for the derivable rows, but whether it
   is generated or hand-maintained was not established by this sweep.
+
+- [ ] **ID-240 — Model "the root always exists" in the Dafny contract**
+  spec: BE-029 · effort: S · audience: contributor.process
+  Surfaced by BK-324 facet 1, and the only half of it the formal model does not
+  already carry. `BackendContract.dfy` declares `const Root: Path := "."` and
+  PATH-015 makes `"."` well-formed, so the *aliasing* half was Dafny's position
+  before it was Python's. But nothing in `Valid()` asserts `Root in fs`, so
+  BE-029's other clause — the root is a folder **even on an empty store**, which
+  is where SFTP was actually wrong (`base_path` is created lazily by the first
+  write) — has no formal twin.
+  **Why ID rather than BK:** the change itself is small, but adding a conjunct
+  to `Valid()` obliges every existing lemma and method postcondition to
+  re-establish it, and whether that proof cost is worth one clause is exactly
+  the judgement `sdd/formal/README.md` asks to be made deliberately rather than
+  by reflex. Measure the proof delta before committing.
+  **Do not treat the Python fix as the gap.** The conformance suite already
+  covers the empty-store case across the fixture registry; this item is about
+  the model, and closing it changes no runtime behaviour.
 
 - [ ] **BK-327 — Gate dual-doc nav reachability and index listing**
   spec: — · effort: S · audience: contributor.tooling
