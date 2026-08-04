@@ -1419,6 +1419,23 @@ class TestBackendRootPath:
         assert info.total_size == 5
 
     @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("ASYNC-017")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    async def test_get_folder_info_on_empty_root_does_not_raise(self, async_backend: AsyncBackend, root: str) -> None:
+        """The root aggregates to zero rather than reporting itself missing.
+
+        Separate from the seeded sibling because an empty store is where a
+        truthiness-based root test shows: ``""`` short-circuits to a
+        ``FolderInfo`` while ``"."`` falls through to the not-found branch.
+        The sync twin carries the same cell; its absence here is why an
+        async-only ``get_folder_info`` defect shipped and was caught by a
+        per-backend test rather than by conformance.
+        """
+        _require(async_backend, Capability.LIST, Capability.METADATA)
+        info = await async_backend.get_folder_info(root)
+        assert info.file_count == 0
+
+    @pytest.mark.spec("BE-029")
     @pytest.mark.spec("BE-021")
     @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
     @pytest.mark.parametrize(("op", "cap"), _ASYNC_ROOT_FILE_OPS)

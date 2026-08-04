@@ -116,18 +116,35 @@ exists. For `path` in `{"", "."}`:
 folder, so BE-021's first row applies to it exactly as to any other folder
 path: `read`, `read_bytes`, `read_seekable`, `get_file_info`, `delete` (with or
 without `missing_ok`) and the `move`/`copy` **source** all raise `InvalidPath`.
-Backends MUST decide this **before** calling their SDK. Root-ness is decidable
-from the string with no round trip, and handing an empty object key to an SDK
-that rejects zero-length keys at parameter validation turns a permanently wrong
-request into a transport-shaped, retryable-looking error.
+That **outcome** binds every backend in scope, whatever route it takes to get
+there.
+
+**Where a backend has to decide it.** A backend whose native root is itself an
+addressable node — a filesystem directory, a drive-root item — MAY hand the
+root to its SDK and read the verdict off the answer: the store answers
+*correctly*, merely later, and an `IsADirectoryError` or a `folder` facet is
+the same verdict a string test would have produced. The MUST is for the
+backends without that property: **a backend whose SDK cannot answer correctly
+for its own native spelling of the root MUST decide root-ness from the key,
+before the call.** The shape that fails is a flat namespace whose root key is
+the empty string, and it fails in both directions — an SDK that rejects a
+zero-length key at parameter validation turns a permanently wrong request into
+a transport-shaped, retryable-looking error, while one that accepts it reads
+the bare prefix back as a zero-length object and *succeeds*. Root-ness is
+decidable from the string with no round trip, so neither outcome has to be
+risked to learn it.
+
+**Conformance pins the outcome, not the order** — and does not need to pin
+both: a backend that gets the order wrong is observable as exactly the wrong
+error class or a spurious success, which is what the cells below assert.
 
 **BE-020 outranks this check.** On a backend with `close_is_terminal = True`,
 a file-shaped call on the root *after* `close()` raises `BackendUnavailable`,
 not `InvalidPath`: BE-020 states its guarantee without exception, and a closed
-backend is the more fundamental error. The root pre-check is cheap and so
-naturally wants to run first — implementations MUST still run the closed guard
-ahead of it, or the answer depends on which guard the implementer happened to
-write first. Pinned by
+backend is the more fundamental error. A root pre-check is cheap and so
+naturally wants to run first — a backend that has one MUST still run the closed
+guard ahead of it, or the answer depends on which guard the implementer
+happened to write first. Pinned by
 `tests/backends/conformance/test_close_posture.py::test_close_posture_outranks_root_rejection`.
 
 **One predicate, both spellings.** `remote_store._path.is_root` is the shared
@@ -177,12 +194,21 @@ and its async sibling in `test_async_extended.py`, both gated on
 `test_async_extended.py::TestAsyncBackendNativePath` (async).
 
 **Coverage note.** Two LIST-capable backends are not reachable from those
-cells: `SQLQueryBackend` has no fixture-registry entry, and the Graph backend's
-conformance cells are skipped for want of a recorded cassette. Both are pinned
-in their per-backend homes instead (`tests/backends/sqlquery/`,
-`tests/backends/graph/`). A clause that binds every LIST-capable backend needs
-its coverage checked per backend, not per source site — both of those defects
-survived a source-wide sweep because no cell executed against them.
+cells: `SQLQueryBackend` has no fixture-registry entry (BK-340), and the Graph
+backend's conformance cells are skipped for want of a recorded cassette
+(ID-241). Their per-backend homes pin **part** of this clause, not all of it:
+
+| Backend | Pinned in its per-backend home | Pinned nowhere |
+|---------|-------------------------------|----------------|
+| `SQLQueryBackend` — `tests/backends/sqlquery/test_config.py::TestRootPath` | the query rows (`exists` / `is_folder` / `is_file`, empty store included), `get_folder_info` on the root, and `native_path` agreeing on both spellings | the file-shaped-operation row: `read`, `read_bytes`, `read_seekable`, `get_file_info` on the root |
+| Graph — `tests/backends/graph/aio/test_backend.py` | addressing only: `native_path` agreeing on both spellings (also under `base_path`), `to_key` returning the canonical root key, and every root spelling refused by `_require_writable_key` | the query rows and the file-shaped-operation row |
+
+A clause that binds every LIST-capable backend needs its coverage checked per
+backend, not per source site — both defects this clause was written from
+survived a source-wide sweep because no cell executed against them. The
+per-backend cells pin the sites that sweep found; the right-hand column is what
+is still asserted by nobody, and closing it structurally is what BK-340 and
+ID-241 are for.
 
 ### BE-006: read()
 
@@ -369,7 +395,7 @@ discharged structurally. Verified in `MemoryBackend.dfy`. See ID-151.
 **Invariant:** `get_folder_info(path)` returns `FolderInfo`.
 **Raises:** `NotFound` if the path does not exist. `InvalidPath` if the path names a file (wrong type — use `get_file_info` instead). See BE-021.
 **Flat-namespace backends are not exempt** (BK-324): when the prefix listing comes back empty they probe the exact key and raise `InvalidPath` rather than `NotFound`. See [BE-021](#be-021-error-mapping) for the shared error-path rule and its cost model.
-**Root:** `get_folder_info("")` aggregates over the whole store rather than raising — see BE-027.
+**Root:** `get_folder_info("")` aggregates over the whole store rather than raising — see BE-029.
 **Formal coverage:** `get_folder_info()` is modelled in `sdd/formal/BackendContract.dfy` as `GetFolderInfo` with postconditions `IsFile → InvalidPath`, `!PathExists → NotFound`, `IsDir → Ok`, `file_count == |ChildFiles(fs, path)|`, and `total_size == SumSizes(fs, ChildFiles(fs, path))`. Verified in `MemoryBackend.dfy`. Property-based aggregate coverage against the compiled Dafny oracle lives in `tests/test_pbt_folder_info_aggregates.py`. See ID-130, ID-134, ID-187.
 
 ### BE-018: move()
@@ -463,7 +489,19 @@ The obligation is discharged on the **error path only**. A backend derives the
 type verdict when the operation has already failed to find what it needed — one
 `MaxKeys=1` prefix listing for "is this a folder?", one HEAD / exact-key lookup
 for "is this a file?" — and converts the miss into `InvalidPath`. A call that
-succeeds never runs the probe, so the guarantee costs nothing on the hot path.
+*finds its target* never runs the probe, so the guarantee costs nothing on the
+hot path.
+
+**One case both fails and succeeds**, and it is the idempotent-delete idiom:
+`delete(path, missing_ok=True)` against an absent key. The lookup misses, so
+the probe runs; the call then returns cleanly because `missing_ok` tolerates the
+miss. That costs one extra listing per absent key — in a delete loop, one per
+key. It is not avoidable by testing `missing_ok` first: `delete(folder,
+missing_ok=True)` must still raise `InvalidPath` (the row above says "with or
+without `missing_ok`"), and after a missed lookup the probe is the only thing
+separating *this is a folder* from *this is genuinely absent*. Skipping it would
+restore the silent success this clause exists to remove, so the cost is the
+price of the verdict, not an oversight.
 The probe is **fail-open**: if it errors (503, throttling, network blip) the
 operation's original error stands rather than being replaced by a transport
 error, the same posture the file-ancestor walk takes (see BE-008 / ID-211).

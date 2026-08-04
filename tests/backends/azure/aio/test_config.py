@@ -1238,10 +1238,9 @@ class TestAsyncAzureRootPathNonHns:
     construction with the same ``ValueError`` as the sync SDK -- before any
     HTTP, which is what makes the clause testable with no emulator.
 
-    The async conformance suite has no ``get_folder_info`` empty-root cell at
-    all (``test_async_extended.py::TestBackendRootPath`` covers only the seeded
-    aggregate), so the defect this pins was invisible to it in both the Docker
-    and Docker-less lanes.
+    The async conformance suite states the same contract, but its Azure cells
+    are gated on the ``azurite_async`` fixture and so run only under Docker;
+    these run in every lane. That is how the defect they pin shipped green.
     """
 
     @pytest.mark.spec("BE-029")
