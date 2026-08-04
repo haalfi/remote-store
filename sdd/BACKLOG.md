@@ -311,8 +311,8 @@ would have caught what this programme has actually caught so far. Detecting thos
 needs semantic comparison of prose, which § 1 marks as having no general oracle.
 The mechanisms that did catch them were an author-side sibling sweep and running
 the code rather than reading the diff — neither in the research doc's ranking,
-and neither yet shipped (BK-336 and BK-338 remain open, below). Weigh a future
-step-2 argument against that.
+and neither yet shipped (BK-336 and BK-338 are open under Lint / CI
+Completeness). Weigh a future step-2 argument against that.
 
 Shipped so far: step 1 (Dafny twin parity) as BK-328, step 5.1 (the attribution
 rule) as BK-329, step 4 (037's per-backend table) as BK-331, and **step 3's

@@ -64,9 +64,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   **Coverage bound, stated because a green gate would otherwise mislead.**
   `azurite`, `azurite_async`, `s3_pyarrow_moto` and `s3_pyarrow_minio` need a
   Docker daemon unavailable in this environment, so the **Azure non-HNS and
-  S3-PyArrow branches are implemented and typechecked but were never executed
+  S3-PyArrow branches were implemented and typechecked but never executed
   here**. `azure_replay` (HNS) runs green, confirming the HNS short-circuit adds
-  no requests to recorded cassettes. CI is their first real run.
+  no requests to recorded cassettes.
+  **The bound paid out on the first CI run: two real defects, both Azure
+  non-HNS.** `is_file(root)` handed the SDK an empty blob name, which
+  `ContainerClient` rejects at client construction; `get_folder_info(root)` fell
+  into the not-found branch on an empty container — the same defect fixed on
+  SFTP one round earlier and missed in its sibling. Both reproduced offline once
+  known, since the SDK rejects before any HTTP: the barrier was never Docker,
+  it was not knowing where to look. Worth stating plainly — a declared coverage
+  bound found what a green local gate of 7908 tests did not.
 
 - [x] **BK-331 — Delete spec 037's per-backend table, and its two siblings**
   spec: 037, 027, 020 · effort: S/M · audience: library.maintainer, user.api_docs
