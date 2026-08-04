@@ -39,9 +39,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   to `backends/`, since the async ABC lives elsewhere), and SFTP answered
   `NotFound` rather than a wrong-type error for root file-ops on an untouched
   store.
-  **For a cross-backend rule, the sibling sweep [BK-336](BACKLOG-DONE.md)
-  requires is a coverage question, not a grep.** That is the amendment this item
-  earns, and the two structural holes it exposed are filed as
+  **For a cross-backend rule, a sibling sweep is a coverage question, not a
+  grep.** That is the lesson this item earns (BK-336 in `BACKLOG.md` is where it
+  would be written down), and the two structural holes it exposed are filed as
   **[BK-340](BACKLOG.md)** (`SQLQueryBackend` has no conformance fixture at all)
   and **[ID-241](BACKLOG.md)** (the replay hook skips cells by test name even
   when the cell makes no HTTP call).
@@ -128,76 +128,6 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   from the deleted table. Still true, but its authority moved; re-pointed at the
   backend docstring. Its S3 twin was checked for the same shape and cites only
   the ABC signature, so it needed nothing.
-
-- [x] **BK-338 — One unguided reviewer replaces the five-expert review roster**
-  spec: — · effort: S · audience: contributor.process
-  `/orchestrate` Step 6 spawned all 5 domain experts to cross-review each
-  other's output, and `/rvw-pr` was in practice re-run under themed briefs
-  (documentation, adversarial, process) across rounds. Both are replaced by a
-  single general reviewer with no persona: `subagent_type: general-purpose`,
-  `model: fable`, 15-minute budget.
-  **The measurement is PR #944**, five rounds and 13 lens-passes over one day.
-  Rounds 2–5 did not find five defects; they re-found one class in places the
-  previous fix had not looked, and round 1's tracker-ID finding and round 5's
-  header-counter finding are the same failure a day apart. Persona breadth did
-  not predict what got found: the only user-facing bug in the PR was found on
-  round 3 by the pass that *ran the tool and read its output*, after
-  correctness, process and adversarial passes had all read the same code
-  without running it. Running the thing is generic behaviour, not a domain
-  lens.
-  **The counter-argument, and what answers it.** The documentation persona may
-  have run the tool *because* its brief pointed it at the user's experience — in
-  which case deleting the persona deletes the behaviour. So the behaviour is now
-  required outright: `/orchestrate` Step 6 instructs the reviewer to run what the
-  change produces and read the output. `/rvw-pr` deliberately gets no such
-  instruction; its `allowed-tools` excludes Edit, Write and non-`gh` Bash by
-  design, so it structurally cannot run anything, and that is also why the PR
-  #944 finding came from an `/orchestrate` expert rather than from `/rvw-pr`.
-  **The roster was paying review cost for grep's job.** What a themed re-run
-  found late, [BK-336](BACKLOG-DONE.md)'s author-side sibling sweep finds at
-  fix time for a fraction of the wall-clock — which is why the two ship
-  together and why the round cap alone was not the fix.
-  **The 15-minute budget is a scoping assertion, not a speed target.** Over
-  budget means the diff is too large to review as one unit or the reviewer is
-  re-deriving what the diff shows; the skill requires naming which, rather than
-  running longer. Round count, not per-pass depth, is what cost the day: even
-  at 15 minutes each, 13 passes plus 5 fix-and-push cycles is the whole
-  budget. Capping the pass without collapsing the roster would have bought
-  shallower passes at the same round count.
-  **Unchanged deliberately:** `/orchestrate` Steps 3 and 4 still spawn all 5
-  experts. Plan refinement and implementation are not code review, and PR #944
-  measured only the review path. ADR-0020 needs no amendment — it delegates the
-  roster and round cap to the skill as operational contract (its § Decision,
-  final paragraph), and the iterative-convergence decision itself is untouched.
-  **Falsifiable prediction, recorded for the next item.** BK-330 took five
-  rounds. If BK-331 converges in two or three, this and BK-336 earned
-  themselves. If it still takes five, the round count is not being driven by
-  reviewer configuration and the next investigation should look at what
-  actually generates the repeats rather than tuning the roster again.
-
-- [x] **BK-336 — `/fix-pr` must find a finding's siblings, not just fix the lines it names**
-  spec: — · effort: S · audience: contributor.process
-  Shipped in `.claude/skills/fix-pr/SKILL.md` **Step 2**, which said only "Be
-  critical. Verify each claim against the code." The missing half — *and find
-  its siblings* — is now a table mapping the class of finding to its sweep
-  (`Grep` for a repeated literal or restated sentence, mutation for a possibly
-  vacuous assertion, re-reading the line for a stale counter), with the
-  claim-granularity rule for test vacuity kept as its own paragraph. Step 6
-  must report each sweep **including the ones that found nothing**: that is the
-  only evidence the class is closed rather than unexamined.
-  **Technique is selected by finding class, not fixed.** Two of PR #944's four
-  sibling sets were greps and carried most of the cost — the DRIFT-RULES
-  trigger sweep took four rounds and three separate one-copy-short fixes. A
-  rule phrased around mutation alone would have missed both.
-  **The reviewer-side obligation the item also proposed was deliberately not
-  added.** BK-336 suggested putting the same sweep in `/rvw-pr`'s brief, on the
-  grounds that reviewers were the only ones doing it. [BK-338](BACKLOG-DONE.md)
-  makes that the wrong home: the sweep moved to the author precisely so the
-  reviewer stops being the mechanism that catches a class. Mutation-verification
-  of blocking findings moved the same direction, into `/fix-pr` Step 3.
-  **Verified against its own evidence table, not by inspection.** Each of the
-  four PR #944 rows was replayed against the new Step 2 to confirm the rule
-  selects the technique the row's "what would have found them" column names.
 
 - [x] **BK-330 — Aggregate trace outcome tags into a drift report**
   spec: — · effort: S · audience: contributor.tooling

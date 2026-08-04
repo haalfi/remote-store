@@ -510,14 +510,23 @@ class AzureBackend(Backend):
     def is_file(self, path: str) -> bool:
         """Return ``True`` if *path* is an existing blob (not an HNS directory marker).
 
-        One HEAD round-trip; a missing blob or an ``hdi_isfolder`` directory
-        returns ``False``.
+        The root is a folder under both spellings, so it answers ``False``
+        without a round trip. Otherwise one HEAD; a missing blob or an
+        ``hdi_isfolder`` directory returns ``False``.
 
         Raises:
             PermissionDenied: If credentials are rejected or lack access (401/403).
             BackendUnavailable: On throttling (429), 5xx, or transport failure.
         """
         with self._errors(path):
+            # BE-029: the root is a folder, never a blob, and the answer is
+            # decidable from the string. It must be, on either namespace: both
+            # spellings alias to an empty blob name, which the Blob SDK rejects
+            # at BlobClient construction ("Please specify a container name and
+            # blob name"), turning a legitimate query into a transport-shaped
+            # error that BE-021 forbids is_file from raising at all.
+            if is_root(path):
+                return False
             bc = self._blob_client(path)
             try:
                 props = bc.get_blob_properties()
@@ -1290,7 +1299,13 @@ class AzureBackend(Backend):
                             modified = modified.replace(tzinfo=timezone.utc)
                         if latest_modified is None or modified > latest_modified:
                             latest_modified = modified
-                if file_count == 0:
+                # BE-029: the root exists by definition, not by observation. An
+                # empty container yields no blobs, which is "nothing has been
+                # written yet" and not "there is no root" -- a distinction no
+                # caller can act on. Only a non-root prefix can be genuinely
+                # missing. (``_reject_file`` already exempts the root, so this
+                # guard is about the NotFound below.)
+                if file_count == 0 and not is_root(path):
                     self._reject_file(path)
                     raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
 

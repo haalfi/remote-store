@@ -133,28 +133,17 @@ and wait.
 
 ## Step 6: Review
 
-Spawn **one general reviewer** over all expert output — Agent tool,
-`subagent_type: general-purpose`, `model: fable`, no domain persona and no lens
-brief, 15-minute budget. It returns:
+Spawn all 5 experts in **review mode** — each reviews *all output from all
+experts*, not just their own domain. Each returns:
 - Issues found (with file, line, category)
 - "Clean — no issues" if nothing to report
-
-**Require it to run what the change produces** — the CLI, the script, the built
-page — and to read the output, not only the diff. This is the one reviewer
-behaviour with a measured hit rate, and it must be asked for explicitly now that
-no persona implies it.
-
-Steps 3 and 4 still spawn all 5 experts. Only this step — code review of
-produced output — is a single reviewer.
 
 **Simple mode:** Single pass. If issues found, orchestrator fixes directly.
 
 **Standard/Complex mode:** If issues found:
-1. Route each issue to the responsible expert for fixing, and require the
-   sibling sweep ([`/fix-pr` Step 2](../fix-pr/SKILL.md)) — the fix is not the
-   flagged line, it is the class behind it.
+1. Route each issue to the responsible expert for fixing.
 2. Re-spawn affected experts with targeted fix tasks.
-3. Re-review (one reviewer again). **Max 2 review rounds total.**
+3. Re-review (all 5 experts again). **Max 2 review rounds total.**
 4. If issues remain after 2 rounds → present to user for decision.
 
 ## Step 7: Finish

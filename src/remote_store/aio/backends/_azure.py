@@ -457,12 +457,21 @@ class AsyncAzureBackend(AsyncBackend):
         """Return ``True`` if ``path`` is an existing file.
 
         Args:
-            path: Backend-relative key.
+            path: Backend-relative key, or a root spelling (``""`` / ``"."``),
+                which is a folder and answers ``False`` without a round trip.
 
         Returns:
             ``True`` if *path* exists and is a file.
         """
         async with self._errors(path):
+            # BE-029: the root is a folder, never a blob, and the answer is
+            # decidable from the string. It must be, on either namespace: both
+            # spellings alias to an empty blob name, which the Blob SDK rejects
+            # at BlobClient construction ("Please specify a container name and
+            # blob name"), turning a legitimate query into a transport-shaped
+            # error that BE-021 forbids is_file from raising at all.
+            if is_root(path):
+                return False
             bc = self._blob_client(path)
             try:
                 props = await bc.get_blob_properties()
@@ -1149,7 +1158,13 @@ class AsyncAzureBackend(AsyncBackend):
                             modified = modified.replace(tzinfo=timezone.utc)
                         if latest_modified is None or modified > latest_modified:
                             latest_modified = modified
-                if file_count == 0:
+                # BE-029: the root exists by definition, not by observation. An
+                # empty container yields no blobs, which is "nothing has been
+                # written yet" and not "there is no root" -- a distinction no
+                # caller can act on. Only a non-root prefix can be genuinely
+                # missing. (``_reject_file`` already exempts the root, so this
+                # guard is about the NotFound below.)
+                if file_count == 0 and not is_root(path):
                     await self._reject_file(path)
                     raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
 
