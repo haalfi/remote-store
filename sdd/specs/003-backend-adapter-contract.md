@@ -84,6 +84,52 @@ for cap in cs:
 ### BE-005: is_file() / is_folder()
 
 **Invariant:** `is_file(path)` returns `True` only if `path` is a file. `is_folder(path)` returns `True` only if `path` is a folder. Both return `False` for non-existent paths and for paths whose ancestors contain a file (file-as-directory-component); in both cases, the path cannot be accessed, so `False` is the semantically correct response.
+**Root:** the store root (`""` or `"."`) is always a folder — see BE-029.
+
+### BE-029: Root Path
+
+**Invariant:** Every backend accepts both spellings of the store root — `""`
+and `"."` — and treats them as the same path: a folder that always exists.
+For `path` in `{"", "."}`:
+
+| Query | Answer |
+|-------|--------|
+| `exists(path)` | `True` |
+| `is_folder(path)` | `True` |
+| `is_file(path)` | `False` — and it does **not** raise |
+| `get_folder_info(path)` | aggregates the whole store (never `NotFound`) |
+| `list_files(path)` / `list_folders(path)` / `iter_children(path)` | enumerate from the root |
+
+**The root exists by definition, not by observation.** An empty store still
+has a root: `is_folder("")` is `True` before anything is written. Backends that
+would otherwise answer from a stat or a listing must short-circuit — otherwise
+"nothing has been written yet" is indistinguishable from "there is no root",
+a distinction no backend can act on and none of them exposes anywhere else.
+
+**Why `is_file("")` may not raise.** BE-021 already forbids `exists()`,
+`is_file()` and `is_folder()` from raising on an inaccessible path; the root is
+the same rule at the boundary. A backend whose SDK rejects a zero-length key at
+parameter validation must answer `False` itself rather than let the rejection
+surface as `BackendUnavailable`.
+
+**Layering.** `Store` normalises `"."` and refuses a root delete (STORE-002 in
+[001-store-api.md](001-store-api.md)), so an application going through `Store`
+never depends on this clause. It binds the layer below, which has its own
+callers: the adapter surface, `unwrap()` consumers, anything round-tripping a
+`FolderInfo.path` (rendered `"."` by `RemotePath.ROOT`) back into a query, and
+the conformance suite itself. `remote_store._path.is_root` is the shared
+predicate; backends that build a listing prefix by concatenation must consult it
+rather than test `if path`, because `"./"` is a real and permanently empty
+prefix on a flat namespace.
+
+**Out of scope:** mutating the root. `delete("")` / `delete_folder("")` are
+governed at the `Store` layer (STORE-002); backend behaviour for them is
+undefined by this clause. Writing *to* the root path is a malformed file path
+and is rejected by path validation, not by this clause.
+
+**Conformance:** `tests/backends/conformance/test_io.py::TestBackendRootPath`
+and its async sibling in `test_async_extended.py`, both parametrised over both
+spellings.
 
 ### BE-006: read()
 
@@ -269,6 +315,8 @@ discharged structurally. Verified in `MemoryBackend.dfy`. See ID-151.
 
 **Invariant:** `get_folder_info(path)` returns `FolderInfo`.
 **Raises:** `NotFound` if the path does not exist. `InvalidPath` if the path names a file (wrong type — use `get_file_info` instead). See BE-021.
+**Flat-namespace backends are not exempt** (BK-324): when the prefix listing comes back empty they probe the exact key and raise `InvalidPath` rather than `NotFound`. See [BE-021](#be-021-error-mapping) for the shared error-path rule and its cost model.
+**Root:** `get_folder_info("")` aggregates over the whole store rather than raising — see BE-027.
 **Formal coverage:** `get_folder_info()` is modelled in `sdd/formal/BackendContract.dfy` as `GetFolderInfo` with postconditions `IsFile → InvalidPath`, `!PathExists → NotFound`, `IsDir → Ok`, `file_count == |ChildFiles(fs, path)|`, and `total_size == SumSizes(fs, ChildFiles(fs, path))`. Verified in `MemoryBackend.dfy`. Property-based aggregate coverage against the compiled Dafny oracle lives in `tests/test_pbt_folder_info_aggregates.py`. See ID-130, ID-134, ID-187.
 
 ### BE-018: move()
@@ -347,6 +395,41 @@ map to the specified error type regardless of backend:
 The type-mismatch rule (`InvalidPath`) takes precedence over the existence rule (`NotFound`) — a directory path is not "missing", it is the wrong type. This is machine-verified in `sdd/formal/BackendContract.dfy` (`Read`, `Delete`, `DeleteFolder`, `GetFileInfo`, `GetFolderInfo`, `Move`, `Copy` postconditions).
 
 **Scope note:** This table covers *cross-cutting* scenarios that apply to multiple operations. Method-specific errors (e.g. `DirectoryNotEmpty` from `delete_folder`, `CapabilityNotSupported` from capability-gated operations) are documented per-method and intentionally omitted here.
+
+**Flat-namespace backends: no exemption, but an error-path obligation.** A
+flat namespace stores keys, not nodes, so "this path is a directory" is not an
+answer the store returns — it has to be derived from a prefix listing. That
+made the two type-mismatch rows above quietly optional on S3, Azure non-HNS
+and SQL for a long time: those backends answered `NotFound`, or worse
+succeeded (a bare prefix read as a zero-length object, a `delete` that no-oped,
+a `get_folder_info` that counted the file as its own content). BK-324 settled
+it in favour of the contract: **the two rows hold on every backend**, and the
+divergence is a defect rather than a declared variation.
+
+The obligation is discharged on the **error path only**. A backend derives the
+type verdict when the operation has already failed to find what it needed — one
+`MaxKeys=1` prefix listing for "is this a folder?", one HEAD / exact-key lookup
+for "is this a file?" — and converts the miss into `InvalidPath`. A call that
+succeeds never runs the probe, so the guarantee costs nothing on the hot path.
+The probe is **fail-open**: if it errors (503, throttling, network blip) the
+operation's original error stands rather than being replaced by a transport
+error, the same posture the file-ancestor walk takes (see BE-008 / ID-211).
+
+Because the probe fires on failure, the obligation reaches exactly the
+operations that *can* fail on a wrong-type path: `read`, `read_bytes`,
+`delete`, `get_file_info`, `delete_folder`, `get_folder_info`, and the
+`move`/`copy` **source**. It does not reach `write`, `write_atomic`, or the
+`move`/`copy` **destination** — a flat-namespace write to a key that shadows a
+prefix succeeds, so there is no error to reclassify. Those stay under BE-008's
+flat-namespace exemption, which is unchanged.
+
+Type mismatch outranks `missing_ok`: `delete(folder, missing_ok=True)` and
+`delete_folder(file, missing_ok=True)` raise `InvalidPath`, because the
+tolerance is for a *missing* path, not a wrong-typed one. This is the same rule
+BE-012 already states for hierarchical backends, now uniform.
+
+**Conformance:** `tests/backends/conformance/test_errors.py` and its async
+sibling `test_async_extended.py` carry no flat-namespace skip on these cells.
 
 **Broad exception handler rule:** Backends MUST NOT use bare `except OSError`
 or `except Exception` handlers that map all errors to a single type. Handlers

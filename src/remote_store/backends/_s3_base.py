@@ -22,7 +22,7 @@ from remote_store._errors import (
     _permission_denied,
 )
 from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo
-from remote_store._path import RemotePath
+from remote_store._path import RemotePath, is_root
 from remote_store.backends._fileinfo import _clean_etag, _name_from_path, _normalize_modified
 
 if TYPE_CHECKING:
@@ -166,13 +166,92 @@ class _S3Base(Backend):
 
     # endregion
 
+    # region: shared — wrong-type reclassification (BE-021, BK-324 facet 2)
+
+    def _s3_is_object(self, path: str) -> bool:
+        """One ``HeadObject``: ``True`` iff an object exists at exactly *path*.
+
+        Narrower than ``s3fs.exists``, which also answers ``True`` for a bare
+        common prefix. The file-shaped operations need the narrow answer so
+        that a prefix falls through to the type-mismatch branch instead of
+        being mistaken for a file.
+        """
+        from botocore.exceptions import BotoCoreError, ClientError
+
+        if is_root(path):
+            return False  # the root is a folder, never an object
+        try:
+            self._s3fs.call_s3("head_object", Bucket=self._bucket, Key=path)
+        except (FileNotFoundError, ClientError, BotoCoreError, OSError):
+            return False
+        return True
+
+    def _s3_has_children(self, path: str) -> bool:
+        """One ``MaxKeys=1`` listing: ``True`` iff any key lives under ``path/``.
+
+        Goes through ``call_s3`` rather than ``s3fs.ls`` so the answer is never
+        served from the fsspec directory cache — a stale ``True`` here would
+        turn a legitimate ``NotFound`` into a spurious ``InvalidPath``.
+        """
+        from botocore.exceptions import BotoCoreError, ClientError
+
+        try:
+            resp = self._s3fs.call_s3(
+                "list_objects_v2",
+                Bucket=self._bucket,
+                Prefix="" if is_root(path) else f"{path.rstrip('/')}/",
+                MaxKeys=1,
+            )
+        except (FileNotFoundError, ClientError, BotoCoreError, OSError):
+            return False
+        return bool(resp.get("KeyCount", 0)) or bool(resp.get("CommonPrefixes"))
+
+    def _reject_folder(self, path: str) -> None:
+        """Error path: raise ``InvalidPath`` if *path* is a virtual folder.
+
+        Fail-open on probe failures (the closures above swallow their own SDK
+        error shapes), so a transient listing failure leaves the operation's
+        original error standing rather than replacing it with a transport one.
+        """
+        from remote_store.backends._flat_ns import _wrong_type_if_folder
+
+        _wrong_type_if_folder(path, has_children=self._s3_has_children, backend=self.name)
+
+    def _reject_file(self, path: str) -> None:
+        """Error path: raise ``InvalidPath`` if *path* is an object."""
+        from remote_store.backends._flat_ns import _wrong_type_if_file
+
+        _wrong_type_if_file(path, is_object=self._s3_is_object, backend=self.name)
+
+    @contextmanager
+    def _s3fs_file_errors(self, path: str) -> Iterator[None]:
+        """``_s3fs_errors`` plus wrong-type reclassification of a miss.
+
+        For file-shaped operations whose miss surfaces as a ``NotFound`` from
+        the SDK rather than from an explicit pre-check. The prefix probe runs
+        only once the mapped error is already ``NotFound``.
+        """
+        try:
+            with self._s3fs_errors(path):
+                yield
+        except NotFound:
+            self._reject_folder(path)
+            raise
+
+    # endregion
+
     # region: path helpers
 
     def _s3_path(self, path: str) -> str:
-        """Build ``bucket/key`` path for s3fs."""
-        if path:
-            return f"{self._bucket}/{path}"
-        return self._bucket
+        """Build ``bucket/key`` path for s3fs.
+
+        Both spellings of the store root resolve to the bare bucket: S3 names
+        the root by the empty key, and passing ``"."`` through would address a
+        literal ``./`` prefix that no write ever creates.
+        """
+        if is_root(path):
+            return self._bucket
+        return f"{self._bucket}/{path}"
 
     def to_key(self, native_path: str) -> str:
         prefix = f"{self._bucket}/"
@@ -469,7 +548,11 @@ class _S3Base(Backend):
         # non-existent prefixes.
         with self._s3fs_errors(path):
             s3_path = self._s3_path(path)
-            if not self._s3fs.exists(s3_path):
+            if not is_root(path) and not self._s3_has_children(path):
+                # BE-017/BE-021: an object at *path* is a type mismatch, not a
+                # missing folder. The root has no object form, so it skips both
+                # checks and always aggregates (BE-029).
+                self._reject_file(path)
                 raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
             file_count = 0
             total_size = 0

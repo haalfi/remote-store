@@ -1226,8 +1226,13 @@ class TestAzureHNSPaths:
         backend._hns = False
         bc = MagicMock(spec=BlobClient)
         bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
-        backend._cc_instance = MagicMock(spec=["get_blob_client"])
+        # BK-324 facet 2: on a flat namespace the source miss is reclassified to
+        # InvalidPath when the prefix has children, so the container client must
+        # also answer the probe. Empty listing == genuinely missing, so NotFound
+        # stands — which is what this test pins.
+        backend._cc_instance = MagicMock(spec=["get_blob_client", "list_blobs"])
         backend._cc_instance.get_blob_client.return_value = bc
+        backend._cc_instance.list_blobs.return_value = []
 
         with pytest.raises(NotFound, match="not found|Not found"):
             getattr(backend, op)("missing.txt", "missing.txt")

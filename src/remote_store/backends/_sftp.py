@@ -31,7 +31,7 @@ from remote_store._errors import (
     RemoteStoreError,
 )
 from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
-from remote_store._path import RemotePath
+from remote_store._path import RemotePath, is_root
 from remote_store._stream import _ErrorMappingStream
 
 if TYPE_CHECKING:
@@ -683,6 +683,12 @@ class SFTPBackend(Backend):
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails.
         """
+        if is_root(path):
+            # The store root is a folder by definition, not by observation.
+            # ``base_path`` is created lazily by the first write, so a stat
+            # here would report an as-yet-unwritten store as having no root --
+            # a distinction no other backend draws and none of them exposes.
+            return True
         with self._errors(path):
             try:
                 self._sftp.stat(self._sftp_path(path))
@@ -700,6 +706,8 @@ class SFTPBackend(Backend):
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails.
         """
+        if is_root(path):
+            return False  # the root is a folder, never a regular file
         with self._errors(path):
             try:
                 attrs = self._sftp.stat(self._sftp_path(path))
@@ -717,6 +725,8 @@ class SFTPBackend(Backend):
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails.
         """
+        if is_root(path):
+            return True  # see exists(): the root is a folder by definition
         with self._errors(path):
             try:
                 attrs = self._sftp.stat(self._sftp_path(path))
@@ -1692,12 +1702,16 @@ class SFTPBackend(Backend):
             self._ssh_client = None
 
     def _sftp_path(self, path: str) -> str:
-        """Convert a relative remote_store path to an absolute SFTP path."""
-        if path:
-            if self._base_path == "/":
-                return f"/{path}"
-            return f"{self._base_path}/{path}"
-        return self._base_path
+        """Convert a relative remote_store path to an absolute SFTP path.
+
+        Both spellings of the store root resolve to ``base_path``; letting
+        ``"."`` through would address a literal ``base_path/.`` component.
+        """
+        if is_root(path):
+            return self._base_path
+        if self._base_path == "/":
+            return f"/{path}"
+        return f"{self._base_path}/{path}"
 
     def _raise_if_dir(self, sftp_path: str, path: str) -> None:
         """Raise ``InvalidPath`` if *sftp_path* is a directory; return otherwise.

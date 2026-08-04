@@ -67,6 +67,59 @@ class TestBackendFileFolder:
 
 
 @pytest.mark.parametrize("backend", fixture_params(Capability.WRITE), indirect=True)
+class TestBackendRootPath:
+    """BE-029: the store root is a folder, on every backend and under both spellings.
+
+    ``Store`` normalises ``"."`` and refuses a root delete before delegating,
+    so an application never depends on this. It binds the layer below: anyone
+    holding a ``Backend`` directly — the adapter surface, ``unwrap()``
+    consumers, the conformance suite itself — must get the same answer
+    everywhere. Before BK-324 they did not: one backend raised on
+    ``is_file("")`` because its SDK rejects a zero-length key, and the
+    ``"."`` spelling disagreed with ``""`` on several.
+    """
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_root_is_a_folder(self, backend: Backend, root: str) -> None:
+        """exists → True, is_folder → True, is_file → False; never raises."""
+        backend.write("rootprobe/a.txt", b"x")
+        assert backend.exists(root) is True
+        assert backend.is_folder(root) is True
+        assert backend.is_file(root) is False
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_root_is_a_folder_when_store_is_empty(self, backend: Backend, root: str) -> None:
+        """The root exists before anything is written.
+
+        A flat namespace has no object to find here, so this is the case that
+        separates "the root is a folder by definition" from "the root happens
+        to have children".
+        """
+        assert backend.exists(root) is True
+        assert backend.is_folder(root) is True
+        assert backend.is_file(root) is False
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-017")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_get_folder_info_on_root_aggregates(self, backend: Backend, root: str) -> None:
+        """get_folder_info(root) aggregates the store instead of raising.
+
+        Asserting the count (not merely that no error escaped) is what keeps
+        this from passing on a backend that answers for some other prefix —
+        ``"./"`` is a real, and empty, prefix on a flat namespace.
+        """
+        _require(backend, Capability.METADATA)
+        backend.write("rootinfo/a.txt", b"aa")
+        backend.write("rootinfo/b.txt", b"bbb")
+        info = backend.get_folder_info(root)
+        assert info.file_count == 2
+        assert info.total_size == 5
+
+
+@pytest.mark.parametrize("backend", fixture_params(Capability.WRITE), indirect=True)
 class TestBackendRead:
     """BE-006 through BE-007: read operations."""
 

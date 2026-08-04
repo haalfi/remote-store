@@ -110,15 +110,40 @@ class RemotePath:
 
     @classmethod
     def from_backend_path(cls, path: str) -> RemotePath:
-        """Create a RemotePath, using ROOT for empty paths.
+        """Create a RemotePath, using ROOT for the root spellings.
 
         Backends use this in ``get_folder_info`` to avoid duplicating
         the ``RemotePath(path) if path else RemotePath.ROOT`` pattern.
+        Both root spellings map to ``ROOT``; ``_normalize`` would otherwise
+        reject ``"."`` for normalising to nothing, which is the right answer
+        for a *file* path and the wrong one for the root folder.
         """
-        return cls(path) if path else cls.ROOT
+        return cls.ROOT if is_root(path) else cls(path)
 
 
 # Class-level root sentinel (bypasses __init__ validation).
 _root = object.__new__(RemotePath)
 object.__setattr__(_root, "_path", ".")
 RemotePath.ROOT = _root
+
+
+_ROOT_SPELLINGS: Final = frozenset({"", "."})
+
+
+def is_root(path: str) -> bool:
+    """Return ``True`` if *path* is one of the two spellings of the store root.
+
+    ``""`` is how a backend key names the root; ``"."`` is how ``RemotePath``
+    renders it. Both reach backends — ``Store`` normalises its own inputs, but
+    a caller holding a ``Backend`` directly, or one round-tripping a
+    ``FolderInfo.path`` back into a query, does not. Backends that build a
+    listing prefix by string concatenation must consult this first: ``"./"``
+    is a real, and permanently empty, prefix on a flat namespace, so treating
+    ``"."`` as an ordinary key silently answers for nothing.
+    """
+    return path in _ROOT_SPELLINGS
+
+
+def strip_root(path: str) -> str:
+    """Collapse either root spelling to ``""``, leaving other paths untouched."""
+    return "" if is_root(path) else path

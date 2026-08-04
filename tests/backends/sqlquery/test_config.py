@@ -377,11 +377,19 @@ class TestListFiles:
         assert files[0].name == "total.parquet"
 
     def test_list_max_depth(self, backend: SQLQueryBackend) -> None:
-        files = list(backend.list_files("", max_depth=0))
-        assert len(files) == 0  # all files are at depth 1
+        """DEPTH-003: the bound applies only when ``recursive=True``.
 
-        files = list(backend.list_files("", max_depth=1))
-        assert len(files) == 5  # all files are at depth 1
+        Previously this asserted ``list_files("", max_depth=1) == 5`` — depth
+        taking precedence over the default ``recursive=False``. BK-324 facet 3
+        settled the Backend-ABC rule the other way, so that combination is now
+        inert and the recursive form carries the depth assertions.
+        """
+        assert len(list(backend.list_files("", recursive=True, max_depth=0))) == 0  # all files are at depth 1
+        assert len(list(backend.list_files("", recursive=True, max_depth=1))) == 5
+
+        # recursive=False ignores the bound rather than letting it take
+        # precedence: only depth-0 files, and every file here is one level down.
+        assert len(list(backend.list_files("", max_depth=1))) == 0
 
     def test_file_info_sentinel_values(self, backend: SQLQueryBackend) -> None:
         files = list(backend.list_files("reports"))

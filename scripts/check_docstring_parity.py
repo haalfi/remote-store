@@ -183,6 +183,12 @@ TWINS: tuple[Twin, ...] = (
         identical=frozenset(
             {
                 "_errors",
+                "_file_op_errors",
+                "_flat_has_children",
+                "_flat_is_blob",
+                "_reject_file",
+                "_reject_folder",
+                "_src_props",
                 "check_health",
                 "delete_folder",
             }

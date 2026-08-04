@@ -243,6 +243,28 @@ class TestListFilesCompleteness:
 
     @pytest.mark.spec("BE-014")
     @pytest.mark.spec("DEPTH-003")
+    @pytest.mark.parametrize("max_depth", [0, 1, 2, 3])
+    def test_list_files_non_recursive_ignores_max_depth(self, backend: Backend, max_depth: int) -> None:
+        """DEPTH-003: ``max_depth`` applies only when ``recursive=True``.
+
+        With ``recursive=False`` the depth bound is inert for every value —
+        the result is the immediate children, identical to omitting
+        ``max_depth`` entirely. Parametrised past ``max_depth=0`` because
+        0 coincides with the correct answer: a backend that wrongly lets
+        depth take precedence still passes at 0 and only diverges from 1 up.
+
+        The ``Store`` never emits this combination (DEPTH-001 normalises
+        ``max_depth`` into ``recursive`` first), so this is the Backend-ABC
+        contract for direct callers, and the reason the rule needed stating:
+        the SQL backends honoured the bound here while Memory and Local
+        ignored it (BK-324 facet 3).
+        """
+        _seed(backend, self.DEPTH_TREE)
+        files = list(backend.list_files("pc", recursive=False, max_depth=max_depth))
+        assert {f.name for f in files} == {"a.txt"}
+
+    @pytest.mark.spec("BE-014")
+    @pytest.mark.spec("DEPTH-003")
     def test_list_files_unlimited_depth(self, backend: Backend) -> None:
         """max_depth=None -> all files returned (DEPTH-003: defers to recursive)."""
         _seed(backend, self.DEPTH_TREE)

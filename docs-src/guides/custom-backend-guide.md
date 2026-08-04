@@ -130,13 +130,15 @@ traceback for debugging.
 - `is_file("")` is always `False`. `is_folder("")` is always `True`.
 
 A layer note on the alias rules: `Store` normalizes `"."` to `""` before
-your backend runs, so your backend never sees `"."` through `Store` — an
-unscoped store's root arrives as `""`, and a scoped store prepends its
-`root_path`, so root arrives as that prefix instead. The rule to follow:
-implement the root invariants in terms of `""`, and treat `"."` handling
-as optional defense for direct backend callers — the tutorial guards
-both, which is the safe shape. The precise backend-layer obligations live
-in the
+your backend runs, so through `Store` your backend only ever sees `""` (or,
+for a scoped store, its `root_path` prefix). Handling `"."` is nonetheless
+**required**, not optional defense: the backend surface has callers of its own
+— adapters, `unwrap()` consumers, anything that feeds a `FolderInfo.path` back
+into a query, since that renders the root as `"."` — and the conformance suite
+exercises both spellings. Answer both from one predicate rather than testing
+`if path`: on a flat namespace `"./"` is a real and permanently empty key
+prefix, so a backend that treats `"."` as an ordinary key answers for nothing
+and reports it as success. The precise backend-layer obligations live in the
 [Backend Adapter Contract](../../sdd/specs/003-backend-adapter-contract.md).
 
 ---
@@ -686,12 +688,27 @@ conformance indirect fixture; no identity-set lookup is needed.
 
 Key behavioral differences that the conformance tests check:
 
-| Behavior | Hierarchical (Local, SFTP, Memory) | Flat-namespace (S3, Azure, HTTP) |
+| Behavior | Hierarchical (Local, SFTP, Memory) | Flat-namespace (S3, Azure, SQL) |
 |---|---|---|
-| Write to a path that is an existing directory | Raises `InvalidPath` | Typically allowed (no real directory) |
-| `delete_folder(recursive=False)` on non-empty folder | Raises `DirectoryNotEmpty` | Behaviour varies; some tests are skipped |
+| Write to a path that is an existing directory | Raises `InvalidPath` | Allowed — the write has no error to reclassify |
+| Read / delete / stat / move-source on a path that is a folder | Raises `InvalidPath` | Raises `InvalidPath` — derived on the error path |
+| `delete_folder` / `get_folder_info` on a path that is a file | Raises `InvalidPath` | Raises `InvalidPath` — derived on the error path |
+| `delete_folder(recursive=False)` on non-empty folder | Raises `DirectoryNotEmpty` | Raises `DirectoryNotEmpty` |
 | Explicit directory creation | Required (mkdir semantics) | Not needed; folders emerge from key prefixes |
 | `is_folder(path)` for a prefix with no keys | `False` | `False` |
+
+**Wrong-type errors are not a variation.** Rows two and three hold on every
+backend. A flat namespace cannot answer "is this a directory?" directly, so it
+derives the answer *after* the operation has already failed — one bounded
+prefix listing, or one HEAD — and converts the miss into `InvalidPath`. Do the
+same in your backend rather than letting a `NotFound` stand: the probe costs
+nothing on the success path, because a successful call never reaches it. Make
+it fail-open, so a probe that itself errors leaves the operation's original
+error intact.
+
+What flat-namespace backends *are* exempt from is the write side — a write to
+a key that shadows a prefix succeeds, so there is no error to reclassify, and
+the same applies to a move/copy destination.
 
 If your backend is hierarchical (the common case), no action is needed — the
 full extended suite applies.
@@ -760,9 +777,10 @@ focused tests covering the same categories the conformance suite verifies:
 
 #### Edge cases
 
-- Empty path (`""`) and root alias (`"."`) — root always exists and is always a folder
-- `is_file("")` always returns `False`; `exists("")` never raises
-  (test these through `Store` — see the layer note in Step 5)
+- Empty path (`""`) and root alias (`"."`) — root always exists and is always
+  a folder, under both spellings, and on a store nothing has been written to yet
+- `is_file("")` always returns `False`; `exists("")` never raises — including
+  when the SDK rejects a zero-length key (answer it yourself, before the call)
 - Deeply nested paths (`"a/b/c/d/e/file.txt"`)
 - Non-existent paths to `list_files` / `list_folders` yield nothing (no exception)
 - `repr(backend)` does not expose credentials or secrets

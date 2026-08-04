@@ -847,6 +847,10 @@ class TestAsyncAzureDeleteOperations:
     async def test_delete_folder_not_found(self) -> None:
         backend, cc, bc = _setup_non_hns_backend()
         cc.list_blobs.return_value = _async_iter([])
+        # BK-324 facet 2: an empty prefix listing alone no longer implies
+        # "missing" — a blob at the same key would make this a type mismatch.
+        # Pin the genuinely-absent case so NotFound is the right verdict.
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
 
         with pytest.raises(NotFound, match="not found|Folder not found"):
             await backend.delete_folder("dir")
@@ -855,6 +859,7 @@ class TestAsyncAzureDeleteOperations:
     async def test_delete_folder_missing_ok(self) -> None:
         backend, cc, bc = _setup_non_hns_backend()
         cc.list_blobs.return_value = _async_iter([])
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
 
         result = await backend.delete_folder("dir", missing_ok=True)
         assert result is None
@@ -1144,6 +1149,7 @@ class TestAsyncAzureMetadata:
     async def test_get_folder_info_not_found(self) -> None:
         backend, cc, bc = _setup_non_hns_backend()
         cc.list_blobs.return_value = _async_iter([])
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
 
         with pytest.raises(NotFound, match="not found|Folder not found"):
             await backend.get_folder_info("empty")
