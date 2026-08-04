@@ -292,6 +292,20 @@ $defs:
           field. Pair with `outcome` when the read did not deliver
           what was hoped for.
 
+          The field therefore carries two registers, and both are
+          licensed: the prospective phrase above, and a retrospective
+          clause recording how the step actually landed. The
+          retrospective half is where an agent's **own** miss goes — a
+          verification that returned a false pass, a conclusion drawn
+          from the wrong artifact — because `outcome` names which
+          document failed a reader and must not be used to blame a
+          document for the reader's error. A retrospective clause may
+          be a sentence rather than a phrase and past tense rather than
+          imperative; keep it to what a later reader needs.
+
+          Aggregators: nothing marks which register a given `extract`
+          is in, so it cannot be read as a description of the failure.
+
       outcome:
         type: string
         enum: [ok, unclear, misleading]

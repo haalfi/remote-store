@@ -12,8 +12,16 @@ discovery_followups:
   - BK-334
   - ID-239
   - BK-335
+  - BK-336
 expected_ripples:
   - sdd/backlogid.json
+# The .claude/** entries are claimed as genuinely unanticipated, not as an
+# authoring miss. The ripple rows that name those paths fire on "New
+# authoritative process doc in sdd/" and "Authority direction amended";
+# this PR did neither — it widened an existing doc's scope sentence, and no
+# row fires on that. Per the schema's own guidance a recurring entry here
+# points at a missing ripple-check row, which is the BK-334 shape; the
+# widening took four rounds and was one copy short in three of them.
 surprising_ripples:
   - sdd/traces/_schema.yml
   - sdd/DRIFT-RULES.md
@@ -21,10 +29,12 @@ surprising_ripples:
   - scripts/check_traces.py
   - CLAUDE.md
   - sdd/CONTENT-RULES.md
+  - sdd/CI-OPERATIONS.md
   - .claude/skills/rvw-pr/SKILL.md
   - .claude/skills/audit/SKILL.md
   - .claude/agents/sdd-expert.md
-review_rounds: 3
+  - .claude/agents/documentation-expert.md
+review_rounds: 4
 phases:
   - id: orient
     name: Orient
@@ -173,4 +183,14 @@ phases:
         section: "render_markdown Detail section"
         read_type: verify
         extract: "Round three: extract and section were interpolated raw into Markdown list items while the corpus holds hundreds of block-scalar extract values, so the Detail section fragmented and a continuation line beginning ### or | would render as a heading or table inside the report. Flattened both. Found by a reviewer reading the default output, not by any test — every fixture used a single-line extract"
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "$defs/step.extract"
+        read_type: verify
+        extract: "Round four: three artifacts gave three answers about what `extract` is for. The schema said short imperative phrase, CLAUDE.md (as amended in round three) said put your own misses there, and this report's own Rule 7 bound called that unsanctioned. Resolved by moving the schema: the field genuinely carries two registers, the retrospective one is where an agent's own miss belongs precisely so `outcome` is not used to blame a document for a reader's error, and rounds two to four directed exactly that. The bound now describes two registers rather than an unsanctioned practice"
+        outcome: ok
+      - file: scripts/report_trace_outcomes.py
+        section: "_one_line, _classification_legend"
+        read_type: verify
+        extract: "Round four: every fix round had shipped a correct change beside a new addition nothing asserted — the section half of the Markdown fix, and the classification legend, both deletable with the suite green. Mutating each addition rather than only the lines a finding named is now the standing method, and is filed as BK-336 against the /fix-pr skill"
         outcome: ok

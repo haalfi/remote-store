@@ -59,15 +59,15 @@ State the bound, per [Rule 7](../sdd/DRIFT-RULES.md#miss-rate):
   ([Rule 3](../sdd/DRIFT-RULES.md#claim-space)). It does not check that
   the section still exists, that the tag is honest, or that two traces
   citing the same file meant the same part of it.
-* **The Detail section says what a reader wanted, not what went wrong.**
-  ``extract`` is defined by the schema as "what to take from this read",
-  written in imperative mood *before* the outcome is known — so rendering
-  it after the tag reads as an explanation of the failure when it is
-  nothing of the kind. Some authors do write the failure narrative into
-  ``extract``, but that is authoring practice rather than schema, and
-  nothing marks which kind a given line is. So the report localizes to a
-  file and a section and stops: it can tell you *where* to look and never
-  *what* to fix.
+* **The Detail section renders ``extract``, which carries two registers
+  and does not say which one you got.** The schema licenses both a
+  prospective phrase ("what to take from this read", written before the
+  outcome is known) and a retrospective clause recording how the step
+  landed. Rendering either after the tag reads as an explanation of the
+  failure, and only the second kind is one — nothing distinguishes them
+  mechanically. So the report localizes to a file and a section and
+  stops: it can tell you *where* to look and never reliably *what* to
+  fix.
 * **Corpus validity is assumed, not re-derived**
   ([Rule 8](../sdd/DRIFT-RULES.md#independence)). ``check_traces.py``
   gates schema conformance in ``lint`` and ``docs-gate``; a trace that
@@ -86,14 +86,18 @@ State the bound, per [Rule 7](../sdd/DRIFT-RULES.md#miss-rate):
   section flags it. ``sdd/BACKLOG.md`` drains into
   ``sdd/BACKLOG-DONE.md`` as items complete, so a tag written against a
   live item stays pinned to ``BACKLOG.md`` after the cited section has
-  moved out of it. **The damage is localization, not measurement**: the
+  moved out of it. **Two things break: localization and the count.** The
   ranked row sends a reader to a file where the cited section no longer
-  lives, and the count is split across two rows. ``rate`` is unaffected —
-  a step keeps the path it recorded and tagged steps are a subset of
-  citing steps, so tags and reads drain together and each half carries
-  the ratio of the whole (measured on this corpus: both halves and the
-  combination agree to within a rounding step). Renames at least land in
-  "unresolvable"; a drain lands nowhere.
+  lives, and the split count sinks the drained artifact below where its
+  combined signal belongs — which matters because the count is the sort
+  key. Renames at least land in "unresolvable"; a drain lands nowhere.
+  ``rate`` is the one column a drain leaves alone, because a step keeps
+  the path it recorded and tagged steps are a subset of citing steps, so
+  tags and reads migrate together and the *combined* ratio is preserved.
+  That the two halves also match is an observation about this corpus
+  (``sdd/BACKLOG.md`` and ``sdd/BACKLOG-DONE.md`` both sit at 8.6%), not
+  an entailment: a drain that moved preferentially-tagged sections would
+  move each half's rate while still preserving the combination.
 * **``rate``'s denominator mixes assessed and never-assessed reads.**
   ``reads`` counts every citing step, but well under half of all steps
   carry an explicit ``outcome`` — and that fraction *varies by

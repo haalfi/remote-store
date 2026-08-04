@@ -101,12 +101,11 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   of a growing corpus is stale before its commit lands, and a branch-head anchor
   stops meaning anything once the branch merges. Run
   `hatch run report-trace-outcomes`.
-  Three bounds were added with it: drain files (`sdd/BACKLOG.md` empties into
-  `sdd/BACKLOG-DONE.md`, so a tag stays pinned to a path whose cited section has
-  moved while both paths keep resolving — a localization defect that, unlike a
-  rename, lands nowhere; `rate` is unaffected, since tags and reads drain
-  together), `rate`'s denominator mixing assessed with never-assessed reads, and
-  unattributed tags.
+  Three bounds were added with it — drain files, `rate`'s denominator mixing
+  assessed with never-assessed reads, and unattributed tags. Each is stated in
+  the module docstring; this entry points rather than restating, because a bound
+  copied here is a second thing to keep true and the first attempt at copying
+  one already drifted from its original within a round.
   **Declined, so it is not re-litigated:** a `--format json` mode. No consumer
   exists, and the collection API returns dataclasses that a future one can call
   directly.

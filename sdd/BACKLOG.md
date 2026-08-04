@@ -102,6 +102,36 @@ and the highest ID already in this file, then take the next integer. Run
   documentation table; different artifact, different fix, different verification.
   BK-333's enumeration of exactly three is load-bearing and should not absorb it.
 
+- [ ] **BK-336 — `/fix-pr` must mutation-verify every addition in the fix commit**
+  spec: — · effort: S · audience: contributor.process
+  `.claude/skills/fix-pr/SKILL.md` Step 5 validates by running the gate. A green
+  gate cannot see a new addition that nothing asserts, because the added lines
+  *execute* — coverage counts them and the suite passes. So a fix round reliably
+  closes the findings it was given and ships a fresh unasserted addition beside
+  them.
+  **Evidence, four consecutive rounds on PR #944**, each a correct code change
+  paired with a new addition no test could falsify:
+  1. a test written to close a vacuity finding, itself vacuous for the claim in
+     its own comment;
+  2. a `reads`/`rate` denominator correct at the object level, unasserted at the
+     render layer;
+  3. those render cells closed, while the classification legend added in the
+     same diff stayed deletable in silence;
+  4. a Markdown-flattening fix applied to two fields and tested on one.
+  Round three is the sharpest: the commit's own new test carries the comment
+  *"asserting them only on the ReferenceRow leaves them deletable from the table
+  in silence"*, and the same commit left another render-layer addition exactly
+  that way, one function over. The rule was written down and broken in the same
+  diff, which is why a checklist step is the fix rather than more care.
+  Fix shape: a Step 5 clause requiring the author to **enumerate what the fix
+  commit adds** — every new function, rendered element, field and branch — and
+  mutate each, treating any survivor as unfinished. Distinct from "test the
+  finding you were given", which is what the skill already implies and what kept
+  passing while this failed.
+  Add the same enumeration obligation to `/rvw-pr`'s reviewer brief if it does
+  not already imply it, since the four instances above were all caught by a
+  reviewer's mutation battery rather than by the author.
+
 - [ ] **BK-335 — `check_links.py` cannot see Markdown links inside Python docstrings**
   spec: — · effort: S/M · audience: contributor.tooling
   [`scripts/docs/check_links.py`](../scripts/docs/check_links.py) walks git-tracked

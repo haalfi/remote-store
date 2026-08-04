@@ -122,9 +122,9 @@ spec tracing). Applies to all new or changed tests.
 
 ## Drift checks
 
-See [`sdd/DRIFT-RULES.md`](sdd/DRIFT-RULES.md) for the rules governing checks that
-compare two descriptions of the same thing. Applies to any new or changed
-cross-artifact check; that file states its own scope.
+See [`sdd/DRIFT-RULES.md`](sdd/DRIFT-RULES.md) for the rules governing mechanisms
+that detect artifacts disagreeing with each other. Applies to any new or changed
+cross-artifact check or drift report; that file states its own scope.
 
 ## GitHub operations
 

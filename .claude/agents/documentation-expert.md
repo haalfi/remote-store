@@ -14,7 +14,7 @@ FOUNDATION — read before writing (paths are repo-root-relative):
 - sdd/AUTHORING.md (placement)
 - sdd/DOCUMENTATION.md (structure, cross-linking)
 - sdd/CONTENT-RULES.md (longevity)
-- sdd/DRIFT-RULES.md (when the change adds or alters a doc-vs-source check)
+- sdd/DRIFT-RULES.md (when the change adds or alters a doc-vs-source check or drift report)
 - sdd/DESIGN.md § 4 (docstring format)
 - The task-specific spec
 

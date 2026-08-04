@@ -757,6 +757,12 @@ class TestRendering:
         # line: every tag counts toward the totals regardless of class.
         # Only a corpus carrying all four classes at once can separate
         # "counted during the scan" from "summed back from the table".
+        # The fixture is asymmetric on every counter the line prints, or
+        # a summed-back mutant coincides with the truth and survives:
+        # the unattributed tag is `misleading` (so `misleading` has a tag
+        # outside every row), the external one is `unclear`, and a second
+        # trace carries no negatives (so traces-with-negatives differs
+        # from traces-scanned).
         root, traces = _repo(tmp_path, "a.md")
         _write(
             traces,
@@ -766,17 +772,69 @@ class TestRendering:
                 _step("a.md", "misleading")
                 + _step("sdd/plans/gone.md", "misleading")
                 + _step(".venv/lib/x.py", "unclear")
-                + _step('""', "unclear"),
+                + _step('""', "misleading"),
             ),
         )
+        _write(traces, "bk-9-clean.yml", _trace("BK-9", _step("a.md", "ok")))
         corpus = _collect(root, traces)
         rendered = _mod.render_markdown(corpus)
 
         # One ranked, one unresolved, one external, one unattributed.
         assert (len(corpus.references), len(corpus.unresolved), len(corpus.external)) == (1, 1, 1)
         assert corpus.unattributed == 1
-        assert "Negative tags: 4 (`misleading` 2, `unclear` 2) across 1 traces and 3 references." in rendered
+        assert (corpus.traces_scanned, corpus.traces_with_negatives) == (2, 1)
+        assert "Negative tags: 4 (`misleading` 3, `unclear` 1) across 1 traces and 3 references." in rendered
         assert "Segregated from the ranking, not discarded" in rendered
+
+    def test_classification_legend_reaches_the_rendered_report(self, tmp_path):
+        # The legend exists for exactly one reason — to put the filtering
+        # rules where the reader of the Markdown is. Asserting nothing
+        # about the rendered text leaves it deletable from the render
+        # while the function keeps existing and keeps being covered.
+        root, traces = _repo(tmp_path, "a.md")
+        _write(traces, "bk-1-x.yml", _trace("BK-1", _step("a.md", "misleading")))
+        rendered = _mod.render_markdown(_collect(root, traces))
+
+        assert "**How the ranking is filtered.**" in rendered
+        assert "Only the ranking is filtered — no tag is dropped." in rendered
+        # The pointer to what stays in the docstring is the other half of
+        # the same contract and is deletable in silence for the same reason.
+        assert "See the module docstring for why this is not a gate" in rendered
+
+    def test_multiline_section_cannot_break_out_of_its_list_item(self, tmp_path):
+        # `section` carries no block scalars in the corpus today, so this
+        # is a latent hazard — which by this module's own rule needs a
+        # synthetic fixture *plus* a positive control proving the fixture
+        # exercises it. The schema constrains `section` only as a
+        # non-empty string, and one of its documented forms is a spec-ID
+        # list, which is what gets wrapped as a folded scalar once long.
+        root, traces = _repo(tmp_path, "a.md")
+        _write(
+            traces,
+            "bk-1-x.yml",
+            _trace(
+                "BK-1",
+                """\
+                - file: a.md
+                  section: >
+                    BE-008, BE-010, BE-021,
+                    BE-030
+                  read_type: gate
+                  extract: "take this"
+                  outcome: misleading
+                """,
+            ),
+        )
+        corpus = _collect(root, traces)
+
+        # Positive control: a folded scalar still appends a trailing
+        # newline, so the fixture really does carry the hazard.
+        assert "\n" in _row(corpus, "a.md").citations[0].steps[0].section
+
+        detail = _mod.render_markdown(corpus).split("## Detail")[1]
+        item = next(line for line in detail.splitlines() if line.startswith("- bk-1-x"))
+        assert '"BE-008, BE-010, BE-021, BE-030"' in item
+        assert not any(line.startswith("BE-030") for line in detail.splitlines())
 
     def test_coverage_percentage_is_rendered(self, tmp_path):
         # Coverage is quoted content, not decoration: the schema names it
