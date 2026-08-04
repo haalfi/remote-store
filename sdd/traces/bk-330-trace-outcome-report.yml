@@ -194,5 +194,5 @@ phases:
       - file: scripts/report_trace_outcomes.py
         section: "_one_line, _classification_legend"
         read_type: verify
-        extract: "Round four: every fix round had shipped a correct change beside a new addition nothing asserted — the section half of the Markdown fix, and the classification legend, both deletable with the suite green. Mutating each addition rather than only the lines a finding named is now the standing method, and is filed as BK-336 against the /fix-pr skill"
+        extract: "Round four: every fix round had shipped a correct change beside a new addition nothing asserted — the section half of the Markdown fix, and the classification legend, both deletable with the suite green. The root cause is reacting only on the lines a comment names instead of searching own work for the same pattern, which also produced the tracker-ID and trigger-copy sweeps two rounds earlier; filed as BK-336 against /fix-pr Step 2. Mutation is the right technique for the test-vacuity class only — the two sweeps were greps"
         outcome: ok

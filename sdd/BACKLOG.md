@@ -134,35 +134,48 @@ and the highest ID already in this file, then take the next integer. Run
   filters. Surfaced by the PR #944 review, which noted the diagnosis had been
   recorded in that PR's trace and filed nowhere.
 
-- [ ] **BK-336 — `/fix-pr` must mutation-verify every addition in the fix commit**
-  spec: — · effort: S · audience: contributor.process
-  `.claude/skills/fix-pr/SKILL.md` Step 5 validates by running the gate. A green
-  gate cannot see a new addition that nothing asserts, because the added lines
-  *execute* — coverage counts them and the suite passes. So a fix round reliably
-  closes the findings it was given and ships a fresh unasserted addition beside
-  them.
-  **Evidence, four consecutive rounds on PR #944**, each a correct code change
-  paired with a new addition no test could falsify:
-  1. a test written to close a vacuity finding, itself vacuous for the claim in
-     its own comment;
-  2. a `reads`/`rate` denominator correct at the object level, unasserted at the
-     render layer;
-  3. those render cells closed, while the classification legend added in the
-     same diff stayed deletable in silence;
-  4. a Markdown-flattening fix applied to two fields and tested on one.
-  Round three is the sharpest: the commit's own new test carries the comment
-  *"asserting them only on the ReferenceRow leaves them deletable from the table
-  in silence"*, and the same commit left another render-layer addition exactly
-  that way, one function over. The rule was written down and broken in the same
-  diff, which is why a checklist step is the fix rather than more care.
-  Fix shape: a Step 5 clause requiring the author to **enumerate what the fix
-  commit adds** — every new function, rendered element, field and branch — and
-  mutate each, treating any survivor as unfinished. Distinct from "test the
-  finding you were given", which is what the skill already implies and what kept
-  passing while this failed.
-  Add the same enumeration obligation to `/rvw-pr`'s reviewer brief if it does
-  not already imply it, since the four instances above were all caught by a
-  reviewer's mutation battery rather than by the author.
+- [ ] **BK-336 — `/fix-pr` must find a finding's siblings, not just fix the lines it names**
+  spec: — · effort: S/M · audience: contributor.process
+  **Root cause:** the author fixes, tests and reacts only on the exact lines a
+  review comment mentions, and does not recheck whether the same pattern occurs
+  elsewhere in their own work.
+  **Principle:** a review finding is a concrete instance. Identify the root cause
+  behind it, and search for other occurrences with the same root cause that the
+  reviewer has not flagged yet.
+  **Home:** `.claude/skills/fix-pr/SKILL.md` **Step 2**, which today says "Be
+  critical. Verify each claim against the code — comments can be wrong or already
+  fixed." That is half of triage. The missing half is *and find its siblings*.
+  **Detection technique is selected by the class of finding, not fixed** — this
+  is why the item is not "mutation-verify every addition". Evidence from PR #944,
+  where every row's siblings were found only after a later round flagged them
+  separately:
+
+  | Finding as flagged | Unflagged siblings | What would have found them |
+  |---|---|---|
+  | Tracker ID at `pyproject.toml:358` | a worse instance in the module docstring, plus three more files | grep |
+  | DRIFT-RULES trigger, one copy | three more copies, then three more again | grep |
+  | Test vacuity at a named symbol | adjacent additions in the same commit, four rounds running | mutation |
+  | Header `misleading` counter | `unclear` on the same format string | reading the line |
+
+  Two of the four are greps, and they carried most of the cost: the trigger sweep
+  took four rounds and three separate one-copy-short fixes. A rule phrased around
+  mutation would have missed both.
+  **The principle is known to work, because it was applied once.** Round four's
+  fix note: *"The streak was the signal, so I swept for the pattern instead of
+  the instance."* That round produced the only complete fix in five — three
+  copies nobody had named, one of which a previous reviewer had explicitly
+  cleared.
+  **Sub-case worth keeping, because it is the subtlest instance:** for test
+  vacuity the sibling search must enumerate at **claim** granularity, not symbol
+  granularity — "which claim does this assertion make", not "which symbol did the
+  finding name". Round five found two survivors hiding inside symbols round four
+  had already enumerated, because two claims shared one format string.
+  Also consider the same obligation in `/rvw-pr`'s reviewer brief: every instance
+  above was found by a reviewer rather than the author, so the reviewer's sweep
+  is currently the only one happening.
+  **Audience stays `contributor.process`** rather than gaining
+  `contributor.tooling`: the change is prose in a skill's step list, with no
+  script, hook or hatch alias moving.
 
 - [ ] **BK-335 — `check_links.py` cannot see Markdown links inside Python docstrings**
   spec: — · effort: S/M · audience: contributor.tooling
