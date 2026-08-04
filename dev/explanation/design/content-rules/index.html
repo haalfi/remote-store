@@ -5262,6 +5262,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#finding-the-documents-that-are-failing-readers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Finding the documents that are failing readers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#provenance" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10469,6 +10480,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#finding-the-documents-that-are-failing-readers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Finding the documents that are failing readers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#provenance" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10581,6 +10603,12 @@ shape; volatile detail lives in its authoritative location.</strong> The positiv
 of the same coin: a document is the SSoT for its own stable core — its purpose,
 principles, and design intent. Other documents link to it for those things; they
 do not restate them. When in doubt, ask rule 1.</p>
+<h3 id="finding-the-documents-that-are-failing-readers">Finding the documents that are failing readers<a class="headerlink" href="#finding-the-documents-that-are-failing-readers" title="Permanent link">&para;</a></h3>
+<p>Agent traces tag any read that did not deliver (<code>sdd/traces/_schema.yml</code>
+<code>outcome</code>). <code>hatch run report-trace-outcomes</code> aggregates those tags into a
+ranking of the referenced files, with the traces and sections that cited each.
+It is a report, never a gate: read it when asking which documents to improve,
+not as a pass/fail. The script's module docstring states what it does not catch.</p>
 <h3 id="provenance">Provenance<a class="headerlink" href="#provenance" title="Permanent link">&para;</a></h3>
 <p>Derived from <a href="../research/research-doc-content-longevity/"><code>sdd/research/research-doc-content-longevity.md</code></a>.</p>
 
