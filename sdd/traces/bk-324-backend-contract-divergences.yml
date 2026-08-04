@@ -1,0 +1,170 @@
+id: BK-324
+title: "Reconcile backend-contract divergences (root/alias, wrong-type errors, depth semantics, empty paths)"
+trigger: >-
+  Contract prose, the Dafny model, the conformance suite and shipped backends
+  disagreed on four points surfaced by PR #932's custom-backend-guide
+  walkthrough. The attribution blocker cleared by BK-329, the facet-3 content
+  blocker by BK-331.
+source_items:
+  - BK-324
+  - BK-329
+  - BK-331
+audience:
+  - user.api
+  - library.maintainer
+discovery_followups:
+  - ID-240
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+surprising_ripples:
+  - sdd/specs/010-native-path-resolution.md
+  - sdd/specs/036-seekable-read.md
+  - scripts/check_docstring_parity.py
+  - tests/backends/sqlquery/test_config.py
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-324 (item), Cross-Artifact Consistency preamble"
+        read_type: gate
+        extract: >-
+          Four facets, their Rule 7 classifications, and which are residue.
+          Facets 1 and 3 residue, 2 unenforced, 4 under-determined — so three
+          of the four needed a user decision before any code moved.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-017, BE-018, BE-019, BE-021"
+        read_type: gate
+        extract: >-
+          What the contract actually demands for wrong-type paths and for
+          move/copy preconditions. Read to confirm facet 4's claim that the
+          empty-path rule is absent here — it is, but the rule turned out to
+          live in STORE-002 instead, so the read was correct and the item's
+          conclusion from it was not.
+        outcome: ok
+      - file: sdd/specs/001-store-api.md
+        section: "STORE-002"
+        read_type: gate
+        extract: >-
+          Refutes facet 4's premise outright: the empty-path rejection is
+          specified and names move and copy explicitly, one layer above the
+          backend tree, which is exactly where the facet's disposition wanted
+          to put it. Nothing needed speccing; only the test was missing.
+        outcome: ok
+  - id: decide
+    name: Settle the three undecided facets
+    steps:
+      - file: sdd/000-process.md
+        section: "Rule 7 (intent attribution)"
+        read_type: gate
+        extract: >-
+          Confirms residue means undecided rather than prose-governs-by-default,
+          so facets 1 and 3 required a decision rather than a reading
+        outcome: ok
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "SQLBlobBackend.list_files, SQLQueryBackend.list_files"
+        read_type: verify
+        extract: >-
+          Facet 3 reproduced before deciding: recursive=False with max_depth=2
+          returned the whole tree, behaving as recursive=True, while Memory and
+          Local ignored the bound
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/specs/037-depth-limited-listing.md
+        section: "DEPTH-003"
+        read_type: reference
+        extract: >-
+          Facet 3: max_depth applies only when recursive=True at the Backend
+          ABC, stated as deliberately differing from DEPTH-001 because the
+          Store normalises before delegating
+        outcome: ok
+      - file: tests/test_store.py
+        section: "TestStoreBasics (STORE-002 cells)"
+        read_type: reference
+        extract: >-
+          Facet 4: the file-targeted half of STORE-002 had no test. First
+          attempt asserted only the exception type and survived deleting the
+          guard outright — 14 of 16 methods still raised from deeper layers.
+          Replaced with an assertion that no I/O reaches the backend, which is
+          the only thing the Store layer uniquely provides.
+        outcome: ok
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "wrong-type helpers, _reject_root_as_file"
+        read_type: reference
+        extract: >-
+          Facets 1 and 2, delegated to the store-backend expert. Error-path-only
+          discharge so the success path pays no extra I/O; root decided from the
+          string so it never reaches an SDK.
+        outcome: ok
+  - id: review
+    name: Review rounds
+    steps:
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "root exemption guards"
+        read_type: verify
+        extract: >-
+          Round 1 finding: the exemption tested `if path` truthiness and `"."`
+          is truthy, so the dot spelling ran the probe and on S3 answered for
+          the whole bucket. BE-029, added by the same work, says both spellings
+          are the same path — the implementation contradicted the clause it
+          shipped with.
+        outcome: ok
+      - file: src/remote_store/backends/_s3.py
+        section: "read, read_bytes"
+        read_type: verify
+        extract: >-
+          Round 1 finding: a regression this work introduced. Facet-1 aliasing
+          made _s3_path(".") the bare bucket, so cat_file hit botocore
+          zero-length-Key and escaped as generic RemoteStoreError where it had
+          been a clean NotFound.
+        outcome: ok
+      - file: sdd/specs/010-native-path-resolution.md
+        section: "NPR-005, NPR-021"
+        read_type: verify
+        extract: >-
+          Sibling the fix round missed and the orchestrator found: the
+          round-trip identity is stated here twice more, and both were false
+          once "." became a valid key returning the canonical "". The fix had
+          updated BE-025 and BE-029 only. Same defect class as the item itself —
+          one claim, several homes, updated in one.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/formal/BackendContract.dfy
+        section: "Root constant, type-mismatch postconditions, Valid()"
+        read_type: verify
+        extract: >-
+          No Dafny edit needed, and the reason inverts the item's framing. The
+          type-mismatch postconditions carry no namespace carve-out, so facet 2
+          is a Python defect fix; and Root := "." with the adapter mapping ""
+          onto it was already the model's position, so facet 1 aligned Python to
+          Dafny. The one unmodelled half — Valid() never asserts Root in fs — is
+          filed as ID-240.
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] all, lint, format-check"
+        read_type: verify
+        extract: >-
+          The agent brief said run lint and pytest but not `all`, and lint does
+          not include format-check, so a docstring indentation reached the gate
+          and failed it. The commit gate would not have caught it either — it
+          runs lint. Future agent briefs must name format-check explicitly.
+        outcome: misleading
+      - file: tests/backends/fixtures/registry.py
+        section: "Docker-gated fixtures"
+        read_type: verify
+        extract: >-
+          Coverage bound stated rather than papered over: azurite,
+          azurite_async, s3_pyarrow_moto and s3_pyarrow_minio need a Docker
+          daemon unavailable here, so the Azure non-HNS and S3-PyArrow branches
+          are implemented and typechecked but never executed locally. CI is
+          their first real run.
+        outcome: ok
