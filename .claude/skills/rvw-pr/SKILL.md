@@ -3,6 +3,7 @@ name: rvw-pr
 description: Post inline review comments on a GitHub PR. Find real issues only.
 disable-model-invocation: true
 context: fork
+model: fable
 argument-hint: "[PR number] [optional context]"
 allowed-tools: Read, Grep, Glob, Bash, mcp__MCP_DOCKER__pull_request_read, mcp__MCP_DOCKER__list_pull_requests, mcp__MCP_DOCKER__list_commits, mcp__MCP_DOCKER__get_file_contents, mcp__MCP_DOCKER__pull_request_review_write, mcp__MCP_DOCKER__add_comment_to_pending_review
 # Intentional: no Edit or Write — review is read-only auditing. Bash is for `gh` PR-content reads only (never for fixing or filesystem scouting).
@@ -16,9 +17,29 @@ Your only valuable output is review insights. The only artifact you create is co
 
 PR number and optional reviewer context are in `$ARGUMENTS`. Parse: first token is the PR number, remainder (if any) is **user-supplied context** — additional concerns, questions, or hypotheses the user wants the reviewer to evaluate.
 
+That slot takes a **claim to check**, never a persona to adopt. "Does the retry
+path leak the handle on timeout?" is context; "review this as a documentation
+reviewer" is a themed brief the Budget section forbids — decline it and run the
+general pass.
+
 **No PR number provided?** Call `list_pull_requests` (`owner: "haalfi"`, `repo: "remote-store"`, `state: "OPEN"`) and ask the user which PR to review. Do not auto-pick.
 
 Repo: `haalfi/remote-store`.
+
+## Budget: one general pass, 15 minutes
+
+**One pass, no persona.** Review as a general reviewer. Do not re-review a PR
+under a themed brief — "as a documentation reviewer", "as an adversarial
+reviewer", "for security" — and do not stack such passes across rounds. Themed
+re-runs re-find one defect class rather than new ones; catching a *class* is the
+author's sibling sweep in [`/fix-pr` Step 2](../fix-pr/SKILL.md), not the
+reviewer's job.
+
+**15 minutes wall-clock.** Over budget means the review is scoped wrong, not
+that it needs longer: the diff is too large to review as one unit, or you are
+re-deriving what the diff already shows. Post what you have, and name both the
+skipped surface and which of those two it was in the Step 5 summary. Bound the
+Step 1 full-file reads with the large-diff priority in Rules.
 
 ## Step 0: Verify PR is open
 
@@ -85,6 +106,11 @@ Apply confidence filter: only post findings you are ≥80% confident about. Skip
 - Deleted lines: `side: "LEFT"` with base-branch line number
 - Tag with category: `Bug:` / `Spec:` / `Test:` / `Consistency:` / `Ripple:` / `Perf:` / `Security:`
 - Uncertain: `Possible:` prefix
+- **One claim per comment: the defect, and where the evidence is.** Do not
+  restate the code the comment already sits on, re-derive the reasoning, or
+  recap the PR. Three lines is the working budget; past that the comment is
+  holding detail that belongs in the diff, the spec it cites, or nowhere
+  ([`CLAUDE.md` principle 8](../../../CLAUDE.md#principles)).
 - **Found something that needs fixing? Describe the problem in a comment. Do not fix it, do not offer to fix it.**
 
 **Critical:** Post all findings and **STOP**. Do not wait for user feedback. Do not offer follow-ups ("Want me to fix...?"). Do not suggest further actions. This is a read-only workflow — auditing only.

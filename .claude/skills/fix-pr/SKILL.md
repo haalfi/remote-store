@@ -78,9 +78,32 @@ For each actionable item note: file, line, category (Bug/Spec/Test/Consistency/R
 
 **Be critical.** Verify each claim against the code — comments can be wrong or already fixed. Skip bad suggestions with a reason, don't blindly apply them.
 
+**Find the siblings.** A finding is one instance; the defect is the root cause
+behind it. Name that cause, then search your own work on this branch for its
+other occurrences — the ones no reviewer flagged. Choose the technique from the
+class of finding:
+
+| Class of finding | Sweep with |
+|---|---|
+| Repeated literal, identifier, tracker ID, restated sentence | `Grep` for the string, then for its paraphrases |
+| Test whose assertion may be vacuous | mutation — break the code, confirm the test fails |
+| Off-by-one, stale counter, wrong label | re-read the line and its neighbours |
+
+Enumerate test vacuity at **claim** granularity, not symbol granularity: ask
+which claim each assertion makes. Two claims can share one symbol and one format
+string, and the second survives a symbol-level sweep.
+
+Report what you swept and what it turned up in Step 6. A fix applied only to the
+flagged lines is half a triage — it hands the reviewer the next round.
+
 ## Step 3: Fix
 
 Read each file in full, make the fix, verify against relevant `sdd/` docs (specs, ADRs, audits, design docs) if the change touches a documented area.
+
+**Verify blocking findings by mutation.** For any finding the reviewer called
+blocking, break the fixed code deliberately and confirm the test or check goes
+red. One that passes both before and after the mutation is not guarding
+anything. This is the author's obligation — the reviewer no longer carries it.
 
 ## Step 4: Resolve threads
 
@@ -121,9 +144,17 @@ do not create a new trace here.
 
 ## Step 6: Commit and push
 
-Stage, commit (`fix: address PR #$ARGUMENTS review`), push. Report: comments fixed/resolved, skipped with reasons.
+Stage, commit (`fix: address PR #$ARGUMENTS review`), push. Report: comments
+fixed/resolved, skipped with reasons, and each sibling sweep with its result
+(including the sweeps that found nothing — those are the evidence the class is
+closed).
 
 ## Rules
 
 - Do not merge, close, or approve the PR.
-- Fix what was asked — don't refactor surrounding code.
+- Fix what was asked — don't refactor surrounding code. The sibling sweep is not
+  an exception: it fixes further instances of the *flagged* defect, never
+  unrelated code it passes on the way.
+- Keep posted replies and the Step 6 report to the claim and its evidence
+  pointer — no re-explanation of what the diff already shows
+  ([`CLAUDE.md` principle 8](../../../CLAUDE.md#principles)).

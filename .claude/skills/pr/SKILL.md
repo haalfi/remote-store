@@ -56,3 +56,6 @@ Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
 
 - This skill only creates the PR. Do not merge or approve it.
 - Do not push to master.
+- Keep the body to what the template asks, sourced from the diff. No
+  re-explanation of code the diff already shows and no narration of how the work
+  went ([`CLAUDE.md` principle 8](../../../CLAUDE.md#principles)).

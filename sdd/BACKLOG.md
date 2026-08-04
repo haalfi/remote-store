@@ -134,49 +134,6 @@ and the highest ID already in this file, then take the next integer. Run
   filters. Surfaced by the PR #944 review, which noted the diagnosis had been
   recorded in that PR's trace and filed nowhere.
 
-- [ ] **BK-336 — `/fix-pr` must find a finding's siblings, not just fix the lines it names**
-  spec: — · effort: S/M · audience: contributor.process
-  **Root cause:** the author fixes, tests and reacts only on the exact lines a
-  review comment mentions, and does not recheck whether the same pattern occurs
-  elsewhere in their own work.
-  **Principle:** a review finding is a concrete instance. Identify the root cause
-  behind it, and search for other occurrences with the same root cause that the
-  reviewer has not flagged yet.
-  **Home:** `.claude/skills/fix-pr/SKILL.md` **Step 2**, which today says "Be
-  critical. Verify each claim against the code — comments can be wrong or already
-  fixed." That is half of triage. The missing half is *and find its siblings*.
-  **Detection technique is selected by the class of finding, not fixed** — this
-  is why the item is not "mutation-verify every addition". Evidence from PR #944,
-  where every row's siblings were found only after a later round flagged them
-  separately:
-
-  | Finding as flagged | Unflagged siblings | What would have found them |
-  |---|---|---|
-  | Tracker ID at `pyproject.toml:358` | a worse instance in the module docstring, plus three more files | grep |
-  | DRIFT-RULES trigger, one copy | three more copies, then three more again | grep |
-  | Test vacuity at a named symbol | adjacent additions in the same commit, four rounds running | mutation |
-  | Header `misleading` counter | `unclear` on the same format string | reading the line |
-
-  Two of the four are greps, and they carried most of the cost: the trigger sweep
-  took four rounds and three separate one-copy-short fixes. A rule phrased around
-  mutation would have missed both.
-  **The principle is known to work, because it was applied once.** Round four's
-  fix note: *"The streak was the signal, so I swept for the pattern instead of
-  the instance."* That round produced the only complete fix in five — three
-  copies nobody had named, one of which a previous reviewer had explicitly
-  cleared.
-  **Sub-case worth keeping, because it is the subtlest instance:** for test
-  vacuity the sibling search must enumerate at **claim** granularity, not symbol
-  granularity — "which claim does this assertion make", not "which symbol did the
-  finding name". Round five found two survivors hiding inside symbols round four
-  had already enumerated, because two claims shared one format string.
-  Also consider the same obligation in `/rvw-pr`'s reviewer brief: every instance
-  above was found by a reviewer rather than the author, so the reviewer's sweep
-  is currently the only one happening.
-  **Audience stays `contributor.process`** rather than gaining
-  `contributor.tooling`: the change is prose in a skill's step list, with no
-  script, hook or hatch alias moving.
-
 - [ ] **BK-335 — `check_links.py` cannot see Markdown links inside Python docstrings**
   spec: — · effort: S/M · audience: contributor.tooling
   [`scripts/docs/check_links.py`](../scripts/docs/check_links.py) walks git-tracked
