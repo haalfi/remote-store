@@ -755,6 +755,7 @@ class SFTPBackend(Backend):
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails mid-read.
         """
+        self._reject_root_as_file(path)
         with self._errors(path):
             sftp_path = self._sftp_path(path)
             # BK-313: eager, unlike read_bytes/delete — a streaming read never
@@ -810,6 +811,7 @@ class SFTPBackend(Backend):
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails mid-read.
         """
+        self._reject_root_as_file(path)
         with self._errors(path):
             sftp_path = self._sftp_path(path)
             try:
@@ -1105,6 +1107,7 @@ class SFTPBackend(Backend):
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails.
         """
+        self._reject_root_as_file(path)
         with self._errors(path):
             sftp_path = self._sftp_path(path)
             try:
@@ -1297,6 +1300,7 @@ class SFTPBackend(Backend):
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails.
         """
+        self._reject_root_as_file(path)
         with self._errors(path):
             sftp_path = self._sftp_path(path)
             try:
@@ -1327,6 +1331,17 @@ class SFTPBackend(Backend):
         """
         with self._errors(path):
             sftp_path = self._sftp_path(path)
+            if is_root(path):
+                # The root is a folder by definition, and base_path may not
+                # exist yet on an untouched store; an absent root aggregates
+                # to zero rather than reporting itself missing.
+                file_count, total_size, latest_modified = self._collect_folder_stats(sftp_path)
+                return FolderInfo(
+                    path=RemotePath.from_backend_path(path),
+                    file_count=file_count,
+                    total_size=total_size,
+                    modified_at=latest_modified,
+                )
             try:
                 attrs = self._sftp.stat(sftp_path)
             except OSError as exc:
@@ -1366,6 +1381,7 @@ class SFTPBackend(Backend):
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails.
         """
+        self._reject_root_as_file(src)
         with self._errors(src):
             src_sftp = self._sftp_path(src)
             dst_sftp = self._sftp_path(dst)
@@ -1430,6 +1446,7 @@ class SFTPBackend(Backend):
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails.
         """
+        self._reject_root_as_file(src)
         with self._errors(src):
             src_sftp = self._sftp_path(src)
             dst_sftp = self._sftp_path(dst)
@@ -1700,6 +1717,19 @@ class SFTPBackend(Backend):
             with contextlib.suppress(Exception):
                 self._ssh_client.close()
             self._ssh_client = None
+
+    def _reject_root_as_file(self, path: str) -> None:
+        """Pre-check: the store root is a folder, so a file op on it is a type error.
+
+        Hierarchical backends usually reach this verdict for free by stat-ing
+        the path. SFTP cannot rely on that: ``base_path`` is created lazily by
+        the first write, so on an untouched store the stat returns ENOENT and
+        the operation reports the root *missing* rather than wrong-typed. The
+        string check is definitional and costs no round trip.
+        """
+        from remote_store.backends._flat_ns import _reject_root_as_file
+
+        _reject_root_as_file(path, self.name)
 
     def _sftp_path(self, path: str) -> str:
         """Convert a relative remote_store path to an absolute SFTP path.

@@ -1384,17 +1384,24 @@ class TestBackendRootPath:
     @pytest.mark.spec("BE-029")
     @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
     async def test_root_is_a_folder(self, async_backend: AsyncBackend, root: str) -> None:
-        """exists → True, is_folder → True, is_file → False; never raises."""
-        _require(async_backend, Capability.WRITE)
-        await async_backend.write("rootprobe/a.txt", b"x")
+        """exists → True, is_folder → True, is_file → False; never raises.
+
+        No seed, so this is also the empty-store case — the harder one for a
+        flat namespace, where there is no object to find and the answer must
+        come from the definition rather than a listing. Requiring a written
+        file to ask the question is what kept read-only backends out.
+        """
+        _require(async_backend, Capability.LIST)
         assert await async_backend.exists(root) is True
         assert await async_backend.is_folder(root) is True
         assert await async_backend.is_file(root) is False
 
     @pytest.mark.spec("BE-029")
     @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
-    async def test_root_is_a_folder_when_store_is_empty(self, async_backend: AsyncBackend, root: str) -> None:
-        """The root exists before anything is written — by definition, not observation."""
+    async def test_root_is_a_folder_with_content(self, async_backend: AsyncBackend, root: str) -> None:
+        """Same three answers once the store is non-empty."""
+        _require(async_backend, Capability.LIST, Capability.WRITE)
+        await async_backend.write("rootprobe/a.txt", b"x")
         assert await async_backend.exists(root) is True
         assert await async_backend.is_folder(root) is True
         assert await async_backend.is_file(root) is False
@@ -1404,7 +1411,7 @@ class TestBackendRootPath:
     @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
     async def test_get_folder_info_on_root_aggregates(self, async_backend: AsyncBackend, root: str) -> None:
         """get_folder_info(root) aggregates the store instead of raising."""
-        _require(async_backend, Capability.WRITE, Capability.METADATA)
+        _require(async_backend, Capability.LIST, Capability.WRITE, Capability.METADATA)
         await async_backend.write("rootinfo/a.txt", b"aa")
         await async_backend.write("rootinfo/b.txt", b"bbb")
         info = await async_backend.get_folder_info(root)
@@ -1424,8 +1431,7 @@ class TestBackendRootPath:
         rather than equality on ``.path``, because a backend may echo the root
         in its own canonical spelling.
         """
-        _require(async_backend, Capability.WRITE, cap)
-        await async_backend.write("rootop/a.txt", b"x")
+        _require(async_backend, Capability.LIST, cap)
         with pytest.raises(InvalidPath) as exc:
             await _ASYNC_ROOT_FILE_OP_CALLS[op](async_backend, root)
         assert is_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
@@ -1435,12 +1441,49 @@ class TestBackendRootPath:
     @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
     async def test_delete_root_with_missing_ok_still_raises(self, async_backend: AsyncBackend, root: str) -> None:
         """``missing_ok`` tolerates a missing path, never a wrong-typed one."""
-        _require(async_backend, Capability.WRITE, Capability.DELETE)
+        _require(async_backend, Capability.LIST, Capability.WRITE, Capability.DELETE)
         await async_backend.write("rootmok/a.txt", b"x")
         with pytest.raises(InvalidPath) as exc:
             await async_backend.delete(root, missing_ok=True)
         assert is_root(exc.value.path)
         assert await async_backend.exists("rootmok/a.txt") is True
+
+
+class TestAsyncBackendNativePath:
+    """BE-025 / BE-029 addressing, on the async surface.
+
+    The sync equivalents live in ``test_identity.py``, which parametrises over
+    sync fixtures only — so an async-native backend could not be reached by
+    them at all. That gap is why a root-spelling defect in an async backend's
+    ``native_path`` survived a source-wide sweep: the sweep found the sites,
+    but no cell executed against that backend.
+    """
+
+    @pytest.mark.spec("BE-025")
+    @pytest.mark.spec("BE-029")
+    async def test_native_path_agrees_on_both_root_spellings(self, async_backend: AsyncBackend) -> None:
+        """``""`` and ``"."`` are one path, so they resolve to one native path."""
+        assert async_backend.native_path(".") == async_backend.native_path("")
+
+    @pytest.mark.spec("BE-025")
+    @pytest.mark.spec("BE-029")
+    async def test_resolve_agrees_on_both_root_spellings(self, async_backend: AsyncBackend) -> None:
+        """The ``resolve()`` plan carries the same native path for both spellings."""
+        assert async_backend.resolve(".").native_path == async_backend.resolve("").native_path
+
+    @pytest.mark.spec("BE-025")
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("NPR-005")
+    async def test_to_key_of_root_is_the_canonical_spelling(self, async_backend: AsyncBackend) -> None:
+        """Round-tripping the root yields ``""`` — the canonical key spelling."""
+        assert async_backend.to_key(async_backend.native_path(".")) == ""
+
+    @pytest.mark.spec("BE-025")
+    @pytest.mark.spec("NPR-020")
+    @pytest.mark.parametrize("key", ["some/key", ""], ids=["nested", "empty"])
+    async def test_native_path_round_trip(self, async_backend: AsyncBackend, key: str) -> None:
+        """native_path is the inverse of to_key for every canonical key."""
+        assert async_backend.to_key(async_backend.native_path(key)) == key
 
 
 class TestBackendQueryMethodsTypeConflicts:

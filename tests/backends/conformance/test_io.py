@@ -96,9 +96,9 @@ _ROOT_FILE_OP_CALLS = {
 defers its verdict to first byte is not credited with a lazy handle."""
 
 
-@pytest.mark.parametrize("backend", fixture_params(Capability.WRITE), indirect=True)
+@pytest.mark.parametrize("backend", fixture_params(Capability.LIST), indirect=True)
 class TestBackendRootPath:
-    """BE-029: the store root is a folder, on every backend and under both spellings.
+    """BE-029: the store root is a folder, under both spellings.
 
     ``Store`` normalises ``"."`` and refuses a root delete before delegating,
     so an application never depends on this. It binds the layer below: anyone
@@ -107,26 +107,40 @@ class TestBackendRootPath:
     everywhere. Before BK-324 they did not: one backend raised on
     ``is_file("")`` because its SDK rejects a zero-length key, and the
     ``"."`` spelling disagreed with ``""`` on several.
+
+    **Gated on LIST, not WRITE.** "The root is a folder" presupposes a backend
+    that has folders, and ``Capability.LIST`` is how a backend declares it
+    does. Gating on WRITE instead was an accident of these cells needing a
+    seeded file, and it silently excluded every read-only backend that *does*
+    enumerate — which is where the rule still needs to hold. The seeds are now
+    confined to the two cells that genuinely need one, behind ``_require``.
     """
 
     @pytest.mark.spec("BE-029")
     @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
     def test_root_is_a_folder(self, backend: Backend, root: str) -> None:
-        """exists → True, is_folder → True, is_file → False; never raises."""
-        backend.write("rootprobe/a.txt", b"x")
+        """exists → True, is_folder → True, is_file → False; never raises.
+
+        No seed, so this is also the empty-store case — the harder one for a
+        flat namespace, where there is no object to find and the answer must
+        come from the definition rather than a listing. Requiring a written
+        file to ask the question is what kept read-only backends out.
+        """
         assert backend.exists(root) is True
         assert backend.is_folder(root) is True
         assert backend.is_file(root) is False
 
     @pytest.mark.spec("BE-029")
     @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
-    def test_root_is_a_folder_when_store_is_empty(self, backend: Backend, root: str) -> None:
-        """The root exists before anything is written.
+    def test_root_is_a_folder_with_content(self, backend: Backend, root: str) -> None:
+        """Same three answers once the store is non-empty.
 
-        A flat namespace has no object to find here, so this is the case that
-        separates "the root is a folder by definition" from "the root happens
-        to have children".
+        The sibling above covers the empty store, which is the harder case for
+        a flat namespace. This one guards the other direction: a backend that
+        answered from a listing would flip once a key exists.
         """
+        _require(backend, Capability.WRITE)
+        backend.write("rootprobe/a.txt", b"x")
         assert backend.exists(root) is True
         assert backend.is_folder(root) is True
         assert backend.is_file(root) is False
@@ -141,12 +155,26 @@ class TestBackendRootPath:
         this from passing on a backend that answers for some other prefix —
         ``"./"`` is a real, and empty, prefix on a flat namespace.
         """
-        _require(backend, Capability.METADATA)
+        _require(backend, Capability.METADATA, Capability.WRITE)
         backend.write("rootinfo/a.txt", b"aa")
         backend.write("rootinfo/b.txt", b"bbb")
         info = backend.get_folder_info(root)
         assert info.file_count == 2
         assert info.total_size == 5
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-017")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_get_folder_info_on_empty_root_does_not_raise(self, backend: Backend, root: str) -> None:
+        """The root aggregates to zero rather than reporting itself missing.
+
+        Separate from the seeded sibling because an empty store is where a
+        truthiness-based root test shows: ``""`` short-circuits to a
+        ``FolderInfo`` while ``"."`` falls through to the not-found branch.
+        """
+        _require(backend, Capability.METADATA)
+        info = backend.get_folder_info(root)
+        assert info.file_count == 0
 
     @pytest.mark.spec("BE-029")
     @pytest.mark.spec("BE-021")
@@ -157,22 +185,21 @@ class TestBackendRootPath:
     ) -> None:
         """A file-shaped operation on the root is a type error, not a miss.
 
-                The root is a folder (BE-029), so BE-021's first row applies and the
-                answer is ``InvalidPath`` — the same answer these operations give for
-                any other folder path. Both spellings must reach it, and by the same
-                route: the class of defect this pins is one spelling taking a
-                different code path from the other, which produced ``NotFound`` for
-                ``""`` and ``InvalidPath`` for ``"."`` on the same backend and call.
+        The root is a folder (BE-029), so BE-021's first row applies and the
+        answer is ``InvalidPath`` — the same answer these operations give for
+        any other folder path. Both spellings must reach it, and by the same
+        route: the class of defect this pins is one spelling taking a
+        different code path from the other, which produced ``NotFound`` for
+        ``""`` and ``InvalidPath`` for ``"."`` on the same backend and call.
 
         The raised error must be *about the root*: a backend that let the root
-                through to its SDK and mapped the resulting zero-length-key rejection
-                would name something else, or raise a retryable class for a permanent
-                condition. ``is_root`` rather than equality, because a backend may
-                echo the root in its own canonical spelling — the verified oracle maps
-                ``""`` to ``"."`` at its type boundary by design.
+        through to its SDK and mapped the resulting zero-length-key rejection
+        would name something else, or raise a retryable class for a permanent
+        condition. ``is_root`` rather than equality, because a backend may echo
+        the root in its own canonical spelling — the verified oracle maps
+        ``""`` to ``"."`` at its type boundary by design.
         """
         _require(backend, cap)
-        backend.write("rootop/a.txt", b"x")
         with pytest.raises(InvalidPath) as exc:
             _ROOT_FILE_OP_CALLS[op](backend, root)
         assert is_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
@@ -188,7 +215,7 @@ class TestBackendRootPath:
         returning ``None`` and reporting success for a call that deleted
         nothing.
         """
-        _require(backend, Capability.DELETE)
+        _require(backend, Capability.DELETE, Capability.WRITE)
         backend.write("rootmok/a.txt", b"x")
         with pytest.raises(InvalidPath) as exc:
             backend.delete(root, missing_ok=True)

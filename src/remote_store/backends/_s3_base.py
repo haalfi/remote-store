@@ -212,9 +212,14 @@ class _S3Base(Backend):
         Costs no round trip (root-ness is decidable from the string) and keeps
         the root out of the SDK, where a zero-length ``Key`` is rejected at
         parameter validation and surfaces as a transport-shaped error.
+
+        The closed-backend guard outranks this check and so runs first: a
+        closed backend refuses before it classifies the path. Otherwise the
+        answer would depend on which guard happens to be written first.
         """
         from remote_store.backends._flat_ns import _reject_root_as_file
 
+        self._raise_if_closed()
         _reject_root_as_file(path, self.name)
 
     def _reject_folder(self, path: str) -> None:

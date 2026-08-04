@@ -495,6 +495,46 @@ that writes it lands, so cite the generator instead.
   ten-backend table and a candidate home for the derivable rows, but whether it
   is generated or hand-maintained was not established by this sweep.
 
+- [ ] **BK-340 — `SQLQueryBackend` has no conformance fixture, so no cross-backend rule reaches it**
+  spec: — · effort: M · audience: infra.test
+  `tests/backends/fixtures/registry.py` has no entry for `SQLQueryBackend`, so
+  **nothing in `tests/backends/conformance/` executes against it** — not the
+  capability-gated cells, not the ungated ones. Every cross-backend invariant is
+  asserted for it by nobody.
+  **This is not hypothetical: it is how BK-324's round-2 miss survived.** The
+  root-spelling class was fixed across eleven sites and declared closed; review
+  round 3 found it still live in `SQLQueryBackend`, three lines from a line that
+  same fix had edited. A source sweep found the other backends because they are
+  reachable; this one was invisible to the tests and therefore to the sweep.
+  Root behaviour is now pinned in `tests/backends/sqlquery/test_config.py`, which
+  is a per-backend patch over a structural hole, not a fix for it.
+  **Why M, not S:** registering a fixture runs the *entire* conformance surface
+  against a read-only query-mapping backend, and the expected skip set — WRITE,
+  DELETE, MOVE, COPY, ATOMIC_* — has to be established deliberately rather than
+  discovered by failure. That sizing is the whole item.
+  **Check `ReadOnlyHttpBackend` at the same time**: it *is* registered, so the
+  question there is whether its gates are right, not whether it is reachable.
+
+- [ ] **ID-241 — Conformance cells that make no HTTP call still skip on a missing cassette**
+  spec: — · effort: S · audience: infra.test
+  The missing-cassette hook fires **per test name**, regardless of whether the
+  test issues a request. So `graph_replay` and `azure_replay_async` skip
+  pure-addressing cells — `native_path` / `to_key` / `resolve`, which are string
+  manipulation with no I/O — purely because no cassette was recorded for that
+  test name.
+  **Cost, measured:** BK-324 added `TestAsyncBackendNativePath` to conformance,
+  and it immediately caught a truthiness defect in the `AsyncBackend.native_path`
+  default that a source sweep had missed (the async ABC sits outside
+  `src/remote_store/backends/`, where the sweep looked). That cell earned its
+  place and is nonetheless skipped on both replay fixtures; Graph's root
+  addressing is pinned in `tests/backends/graph/aio/test_backend.py` instead.
+  **Fix shape:** let a cell declare it makes no HTTP call, and have the hook
+  honour that instead of skipping by name. The alternative — recording empty
+  cassettes per test name — scales with the test count and reintroduces the
+  hand-maintained-parallel-artifact problem.
+  **Why ID:** whether the marker belongs on the test, the fixture, or the hook is
+  unmade, and the answer decides how much of the replay lane changes.
+
 - [ ] **ID-240 — Model "the root always exists" in the Dafny contract**
   spec: BE-029 · effort: S · audience: contributor.process
   Surfaced by BK-324 facet 1, and the only half of it the formal model does not

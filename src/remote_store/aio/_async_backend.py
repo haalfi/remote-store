@@ -6,6 +6,7 @@ import abc
 from typing import TYPE_CHECKING, ClassVar, TypeVar
 
 from remote_store._errors import CapabilityNotSupported
+from remote_store._path import strip_root
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Mapping
@@ -413,13 +414,17 @@ class AsyncBackend(abc.ABC):
         identity function -- backends with a native root (bucket, base_path)
         override this to prepend their prefix.
 
+        Both spellings of the store root collapse to the canonical ``""``:
+        they name one path, so they must produce one native path. Mirrors the
+        sync ``Backend`` default.
+
         Args:
             path: Backend-relative key.
 
         Returns:
             Backend-native path usable with the native handle from ``unwrap()``.
         """
-        return path
+        return strip_root(path)
 
     def resolve(self, path: str) -> ResolutionPlan:
         """Return a ``ResolutionPlan`` describing how *path* maps to storage.

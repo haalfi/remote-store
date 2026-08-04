@@ -1348,7 +1348,7 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
 
     def exists(self, path: str) -> bool:
         self._validate_path(path, allow_empty=True)
-        if not path:
+        if is_root(path):
             return True
         # Check file (exact key match)
         if path in self._queries:
@@ -1359,13 +1359,13 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
 
     def is_file(self, path: str) -> bool:
         self._validate_path(path, allow_empty=True)
-        if not path:
-            return False
+        if is_root(path):
+            return False  # the root is a folder, never a registered query
         return path in self._queries
 
     def is_folder(self, path: str) -> bool:
         self._validate_path(path, allow_empty=True)
-        if not path:
+        if is_root(path):
             return True
         prefix = path + "/"
         return any(k.startswith(prefix) for k in self._queries)
@@ -1518,7 +1518,7 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
             if not prefix or key.startswith(prefix):
                 file_count += 1
 
-        if file_count == 0 and path:
+        if file_count == 0 and not is_root(path):
             raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
 
         return FolderInfo(

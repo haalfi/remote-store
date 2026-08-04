@@ -989,9 +989,14 @@ class S3Boto3Backend(Backend):
         zero-length ``Key`` is rejected at parameter validation and would
         surface as ``BackendUnavailable`` -- a retryable classification for a
         permanently wrong request.
+
+        The closed-backend guard outranks this check and so runs first: a
+        closed backend refuses before it classifies the path. Otherwise the
+        answer would depend on which guard happens to be written first.
         """
         from remote_store.backends._flat_ns import _reject_root_as_file
 
+        self._raise_if_closed()
         _reject_root_as_file(path, self.name)
 
     def _reject_folder(self, path: str) -> None:

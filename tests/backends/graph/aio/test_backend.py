@@ -17,7 +17,7 @@ import respx
 
 from remote_store._capabilities import Capability
 from remote_store._config import RetryPolicy
-from remote_store._errors import CapabilityNotSupported
+from remote_store._errors import CapabilityNotSupported, InvalidPath
 from remote_store.aio.backends._graph.backend import GraphBackend, _encode_segment
 
 _DRIVE = "b!driveid123"
@@ -184,6 +184,45 @@ class TestAddressing:
     def test_round_trip_identity(self, key: str) -> None:
         backend = _make()
         assert backend.to_key(backend.native_path(key)) == key
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("GR-036a")
+    def test_native_path_agrees_on_both_root_spellings(self) -> None:
+        """``""`` and ``"."`` name one path, so they address one item.
+
+        Splitting on ``/`` and keeping every truthy segment kept ``"."``,
+        producing an address for an item literally named ``.`` under the drive
+        root. These cells live here, not in the conformance suite: the async
+        addressing cells there are skipped on this backend for want of a
+        cassette, so nothing in that suite executes against it.
+        """
+        backend = _make()
+        assert backend.native_path(".") == backend.native_path("")
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-025")
+    def test_to_key_of_root_is_the_canonical_spelling(self) -> None:
+        backend = _make()
+        assert backend.to_key(backend.native_path(".")) == ""
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("GR-058")
+    def test_native_path_root_spellings_agree_under_base_path(self) -> None:
+        """The base_path scoping does not reintroduce the divergence."""
+        backend = _make(base_path="root/sub")
+        assert backend.native_path(".") == backend.native_path("")
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("GR-017")
+    @pytest.mark.parametrize("root", ["", "/", ".", "./", "/./"], ids=range(5))
+    def test_write_to_drive_root_is_rejected(self, root: str) -> None:
+        """Every spelling that addresses the root is unwritable.
+
+        A ``strip("/")`` test accepted ``"."``, so ``write(".", ...)`` created
+        an item named ``.`` instead of being refused.
+        """
+        with pytest.raises(InvalidPath, match="drive root"):
+            _make()._require_writable_key(root)
 
     @pytest.mark.spec("GR-009")
     def test_resolve_carries_drive_id(self) -> None:

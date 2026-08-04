@@ -88,9 +88,19 @@ for cap in cs:
 
 ### BE-029: Root Path
 
-**Invariant:** Every backend accepts both spellings of the store root — `""`
-and `"."` — and treats them as the same path: a folder that always exists.
-For `path` in `{"", "."}`:
+**Applies to:** backends declaring `Capability.LIST`. "The root is a folder"
+presupposes a backend that *has* folders, and LIST is how a backend declares
+that it enumerates them. A backend without LIST exposes a flat set of
+addressable objects with no root to speak of, and its answers for `""` are
+whatever its own contract says — `ReadOnlyHttpBackend`, for instance, resolves
+the empty key to its base URL and reads that. The boundary is the declared
+capability, never a named backend: naming one would reintroduce exactly the
+undeclared divergence this clause removes, and a future LIST-less backend
+would inherit the right treatment for free.
+
+**Invariant:** Every LIST-capable backend accepts both spellings of the store
+root — `""` and `"."` — and treats them as the same path: a folder that always
+exists. For `path` in `{"", "."}`:
 
 | Query | Answer |
 |-------|--------|
@@ -110,6 +120,15 @@ Backends MUST decide this **before** calling their SDK. Root-ness is decidable
 from the string with no round trip, and handing an empty object key to an SDK
 that rejects zero-length keys at parameter validation turns a permanently wrong
 request into a transport-shaped, retryable-looking error.
+
+**BE-020 outranks this check.** On a backend with `close_is_terminal = True`,
+a file-shaped call on the root *after* `close()` raises `BackendUnavailable`,
+not `InvalidPath`: BE-020 states its guarantee without exception, and a closed
+backend is the more fundamental error. The root pre-check is cheap and so
+naturally wants to run first — implementations MUST still run the closed guard
+ahead of it, or the answer depends on which guard the implementer happened to
+write first. Pinned by
+`tests/backends/conformance/test_close_posture.py::test_close_posture_outranks_root_rejection`.
 
 **One predicate, both spellings.** `remote_store._path.is_root` is the shared
 test; `strip_root` is its normalising form. A backend that asks `if path`
@@ -152,8 +171,18 @@ path, rejected by path validation. Note `delete("")` is **not** out of scope —
 it is a file-shaped operation on a folder, and the row above governs it.
 
 **Conformance:** `tests/backends/conformance/test_io.py::TestBackendRootPath`
-and its async sibling in `test_async_extended.py`, both parametrised over both
-spellings.
+and its async sibling in `test_async_extended.py`, both gated on
+`Capability.LIST` and parametrised over both spellings; addressing is covered by
+`test_identity.py::TestBackendNativePath` (sync) and
+`test_async_extended.py::TestAsyncBackendNativePath` (async).
+
+**Coverage note.** Two LIST-capable backends are not reachable from those
+cells: `SQLQueryBackend` has no fixture-registry entry, and the Graph backend's
+conformance cells are skipped for want of a recorded cassette. Both are pinned
+in their per-backend homes instead (`tests/backends/sqlquery/`,
+`tests/backends/graph/`). A clause that binds every LIST-capable backend needs
+its coverage checked per backend, not per source site — both of those defects
+survived a source-wide sweep because no cell executed against them.
 
 ### BE-006: read()
 

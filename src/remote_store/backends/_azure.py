@@ -357,9 +357,14 @@ class AzureBackend(Backend):
         Runs on HNS accounts too, unlike the probe-backed rejections below:
         root-ness needs no round trip and no namespace knowledge, and the
         alternative is handing an empty blob name to the SDK.
+
+        The closed-backend guard outranks this check and so runs first: a
+        closed backend refuses before it classifies the path. Otherwise the
+        answer would depend on which guard happens to be written first.
         """
         from remote_store.backends._flat_ns import _reject_root_as_file
 
+        self._raise_if_closed()
         _reject_root_as_file(path, self.name)
 
     def _reject_folder(self, path: str) -> None:
