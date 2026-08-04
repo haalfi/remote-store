@@ -757,12 +757,12 @@ class TestRendering:
         # line: every tag counts toward the totals regardless of class.
         # Only a corpus carrying all four classes at once can separate
         # "counted during the scan" from "summed back from the table".
-        # The fixture is asymmetric on every counter the line prints, or
-        # a summed-back mutant coincides with the truth and survives:
-        # the unattributed tag is `misleading` (so `misleading` has a tag
-        # outside every row), the external one is `unclear`, and a second
-        # trace carries no negatives (so traces-with-negatives differs
-        # from traces-scanned).
+        # Each counter on the line needs a tag living OUTSIDE every row,
+        # or summing the rows back coincides with the truth and the
+        # mutant survives. One unattributed tag protects only its own
+        # bucket, so there are two: one `misleading`, one `unclear`. A
+        # second trace carries no negatives, so traces-with-negatives
+        # differs from traces-scanned in both directions.
         root, traces = _repo(tmp_path, "a.md")
         _write(
             traces,
@@ -772,18 +772,22 @@ class TestRendering:
                 _step("a.md", "misleading")
                 + _step("sdd/plans/gone.md", "misleading")
                 + _step(".venv/lib/x.py", "unclear")
-                + _step('""', "misleading"),
+                + _step('""', "misleading")
+                + _step('""', "unclear"),
             ),
         )
         _write(traces, "bk-9-clean.yml", _trace("BK-9", _step("a.md", "ok")))
         corpus = _collect(root, traces)
         rendered = _mod.render_markdown(corpus)
 
-        # One ranked, one unresolved, one external, one unattributed.
+        # One ranked, one unresolved, one external, two unattributed.
         assert (len(corpus.references), len(corpus.unresolved), len(corpus.external)) == (1, 1, 1)
-        assert corpus.unattributed == 1
+        assert corpus.unattributed == 2
         assert (corpus.traces_scanned, corpus.traces_with_negatives) == (2, 1)
-        assert "Negative tags: 4 (`misleading` 3, `unclear` 1) across 1 traces and 3 references." in rendered
+        # rows sum to misleading 2 / unclear 1; the header must not.
+        assert "Negative tags: 5 (`misleading` 3, `unclear` 2) across 1 traces and 3 references." in rendered
+        assert "Corpus: 2 traces" in rendered
+        assert "2 tag(s) carry no `file`" in rendered
         assert "Segregated from the ranking, not discarded" in rendered
 
     def test_classification_legend_reaches_the_rendered_report(self, tmp_path):
@@ -807,7 +811,13 @@ class TestRendering:
         # synthetic fixture *plus* a positive control proving the fixture
         # exercises it. The schema constrains `section` only as a
         # non-empty string, and one of its documented forms is a spec-ID
-        # list, which is what gets wrapped as a folded scalar once long.
+        # list, which is what gets wrapped once long.
+        #
+        # A LITERAL `|` scalar, not a folded `>` one: folding joins the
+        # interior lines itself, so a `>` fixture leaves only a trailing
+        # newline and cannot tell flattening from `.strip()`. The hazard
+        # `_one_line` guards is structural Markdown at the start of a
+        # line, which needs an interior newline to exist at all.
         root, traces = _repo(tmp_path, "a.md")
         _write(
             traces,
@@ -816,9 +826,9 @@ class TestRendering:
                 "BK-1",
                 """\
                 - file: a.md
-                  section: >
-                    BE-008, BE-010, BE-021,
-                    BE-030
+                  section: |
+                    BE-008, BE-010,
+                    ### forged heading
                   read_type: gate
                   extract: "take this"
                   outcome: misleading
@@ -827,14 +837,18 @@ class TestRendering:
         )
         corpus = _collect(root, traces)
 
-        # Positive control: a folded scalar still appends a trailing
-        # newline, so the fixture really does carry the hazard.
-        assert "\n" in _row(corpus, "a.md").citations[0].steps[0].section
+        # Positive control: the fixture carries the hazard the function
+        # guards — an interior newline followed by structural Markdown,
+        # which survives `.strip()`.
+        assert "\n### forged heading" in _row(corpus, "a.md").citations[0].steps[0].section.strip()
 
         detail = _mod.render_markdown(corpus).split("## Detail")[1]
         item = next(line for line in detail.splitlines() if line.startswith("- bk-1-x"))
-        assert '"BE-008, BE-010, BE-021, BE-030"' in item
-        assert not any(line.startswith("BE-030") for line in detail.splitlines())
+        # The per-step outcome is Rule 2 localization payload and is
+        # readable nowhere else in the output — the table aggregates it.
+        assert item.startswith("- bk-1-x · misleading · ")
+        assert '"BE-008, BE-010, ### forged heading"' in item
+        assert not any(line.startswith("### forged") for line in detail.splitlines())
 
     def test_coverage_percentage_is_rendered(self, tmp_path):
         # Coverage is quoted content, not decoration: the schema names it

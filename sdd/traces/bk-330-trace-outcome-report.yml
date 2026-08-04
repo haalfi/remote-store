@@ -13,6 +13,7 @@ discovery_followups:
   - ID-239
   - BK-335
   - BK-336
+  - BK-337
 expected_ripples:
   - sdd/backlogid.json
 # The .claude/** entries are claimed as genuinely unanticipated, not as an
@@ -20,8 +21,9 @@ expected_ripples:
 # authoritative process doc in sdd/" and "Authority direction amended";
 # this PR did neither — it widened an existing doc's scope sentence, and no
 # row fires on that. Per the schema's own guidance a recurring entry here
-# points at a missing ripple-check row, which is the BK-334 shape; the
-# widening took four rounds and was one copy short in three of them.
+# points at a missing ripple-check row: the widening took four rounds and
+# was one copy short in three of them, and that gap is now filed as
+# BK-337 rather than left as a diagnosis in a comment.
 surprising_ripples:
   - sdd/traces/_schema.yml
   - sdd/DRIFT-RULES.md

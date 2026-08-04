@@ -102,6 +102,38 @@ and the highest ID already in this file, then take the next integer. Run
   documentation table; different artifact, different fix, different verification.
   BK-333's enumeration of exactly three is load-bearing and should not absorb it.
 
+- [ ] **BK-337 — Widening an authority doc's scope reaches no row that finds its restating copies**
+  spec: — · effort: S/M · audience: contributor.process
+  The [Pre-work index](CLAUDE-REFERENCE.md#pre-work-index) has a row for a **new**
+  authoritative process doc, and one for an authority **direction** amended (which
+  side governs). Neither fires on the commonest amendment: an existing authority
+  doc's **scope or subject sentence** widening. Nothing then finds the copies that
+  restate that scope to route readers in.
+  **Measured target set — six live restating copies** of one direction, at the
+  time of filing: `CLAUDE.md` § Drift checks, `sdd/CI-OPERATIONS.md`,
+  `sdd/CLAUDE-REFERENCE.md` in both ripple presentations,
+  `.claude/agents/sdd-expert.md` and `documentation-expert.md`, and
+  `.claude/skills/rvw-pr/SKILL.md` and `audit/SKILL.md`.
+  **Demonstrated recurrence:** PR #944 widened `DRIFT-RULES.md`'s scope sentence
+  and took four review rounds to find them all, being one copy short in three of
+  those rounds. `scripts/check_ripple_parity.py` structurally cannot help — it
+  enforces parity between the two ripple presentations, not between them and the
+  copies scattered through `.claude/**`.
+  **Two candidate dispositions, and choosing between them is the first half.**
+  Add a trigger row keyed on "an authority doc's scope or subject sentence is
+  widened", naming the `.claude/**` step lists and agent FOUNDATION blocks as
+  targets — or attack the cause and **delete the restatements**, leaving each
+  reader to link to the doc that states its own scope, as `CLAUDE.md` § Drift
+  checks already half-does ("that file states its own scope"). The second is
+  strictly better if it is achievable: a row keeps N copies synchronised, while
+  deletion removes the synchronisation problem. The obstacle is that agent-facing
+  files are read cold by a process that may not follow a link, which is the
+  reasoning BK-329 recorded when it accepted the copies in the first place.
+  **Distinct from BK-334**, which is scoped to `hatch` script aliases — a
+  different trigger with a different target set — and from BK-333's CI path
+  filters. Surfaced by the PR #944 review, which noted the diagnosis had been
+  recorded in that PR's trace and filed nowhere.
+
 - [ ] **BK-336 — `/fix-pr` must mutation-verify every addition in the fix commit**
   spec: — · effort: S · audience: contributor.process
   `.claude/skills/fix-pr/SKILL.md` Step 5 validates by running the gate. A green

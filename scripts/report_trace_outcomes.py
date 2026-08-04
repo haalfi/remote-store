@@ -91,13 +91,16 @@ State the bound, per [Rule 7](../sdd/DRIFT-RULES.md#miss-rate):
   lives, and the split count sinks the drained artifact below where its
   combined signal belongs — which matters because the count is the sort
   key. Renames at least land in "unresolvable"; a drain lands nowhere.
-  ``rate`` is the one column a drain leaves alone, because a step keeps
-  the path it recorded and tagged steps are a subset of citing steps, so
-  tags and reads migrate together and the *combined* ratio is preserved.
-  That the two halves also match is an observation about this corpus
-  (``sdd/BACKLOG.md`` and ``sdd/BACKLOG-DONE.md`` both sit at 8.6%), not
-  an entailment: a drain that moved preferentially-tagged sections would
-  move each half's rate while still preserving the combination.
+  ``rate`` is the one column a drain can leave alone, and the reason is
+  specific to a ratio: each half is a subsample of the original, and a
+  subsample's *ratio* still estimates the whole when the drained sections
+  are no worse than average, whereas a subsample's *sum* cannot estimate
+  anything. That proviso is what makes this contingent rather than
+  guaranteed — a drain that moved preferentially-tagged sections would
+  move each half's rate, while the combined ratio held either way (as it
+  does for every column, which is why combination alone distinguishes
+  nothing). On this corpus the two halves agree to within a rounding
+  step; run the report for the current figures.
 * **``rate``'s denominator mixes assessed and never-assessed reads.**
   ``reads`` counts every citing step, but well under half of all steps
   carry an explicit ``outcome`` — and that fraction *varies by
