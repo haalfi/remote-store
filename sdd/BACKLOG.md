@@ -254,19 +254,34 @@ this section carries the work.
 [the file's default](#how-this-file-works), because its items form a dependency
 chain. Position therefore says nothing about importance, and dependencies are
 stated by ID inside each item so re-sequencing cannot silently invalidate them.
-BK-324 comes first, with both its blockers now cleared — *attribution* by
-BK-329, and facet 3's *content* by BK-331. ID-207 is unblocked but reads better after
-BK-324, which decides the orphan behaviours its day-one allowlist would otherwise
-enumerate blind. BK-332, ID-236 and ID-237 are follow-ons
-that get cheaper once the earlier work lands. BK-327 and ID-238 are independent
-of the chain and can be taken at any point; both sit at the section's tail.
+**BK-340 and ID-241 come first**, then ID-207's steps 3 and 4. This is a
+re-sequencing on measured evidence, not the original plan: BK-324 was expected to
+clear the way for ID-207 step 2, and instead supplied four instances of the drift
+this programme exists to detect — none of which step 2 would have caught. BK-340
+and ID-241 are what those four actually exhibited (a rule gated so no fixture ever
+runs it), and ID-207 step 3 is the other half (a citation is not an assertion).
+Step 2 keeps its L cost and its ~2.5% reach; it follows rather than leads, and
+ID-207 states the evidence. BK-332, ID-236 and ID-237 are follow-ons that get
+cheaper once the earlier work lands. BK-327 and ID-238 are independent of the
+chain and can be taken at any point; both sit at the section's tail.
 
 On importance, the research doc's designation, which this section adopts rather
 than restates: the two items that build what is actually missing are the authority
 model — shipped as BK-329, now
 [`000-process.md` Rule 7](000-process.md#intent-attribution) — and **ID-207** (the
-canonical claim space). BK-324 is the item they unblock and the evidence that the
+canonical claim space). BK-324 was the item they unblock and the evidence that the
 gap is real, not itself one of the two.
+
+**That designation now has a measured qualification, recorded here because the
+research doc is point-in-time and does not get rewritten.** ID-207 builds a
+*canonical claim space* — an omission detector, research § 1 class E. BK-324's
+four instances were class A/C/D: one claim restated in several homes and updated
+in one. So ID-207 remains the strategic item, and it is **not** the item that
+would have caught what this programme has actually caught so far. Detecting those
+needs semantic comparison of prose, which § 1 marks as having no general oracle.
+The mechanisms that did catch them were an author-side sibling sweep (BK-336) and
+running the code rather than reading the diff (BK-338) — both shipped, neither in
+the research doc's ranking. Weigh a future step-2 argument against that.
 
 Shipped so far: step 1 (Dafny twin parity) as BK-328, step 5.1 (the attribution
 rule) as BK-329, step 4 (037's per-backend table) as BK-331, and **step 3's
@@ -281,12 +296,61 @@ before believing it, because the case that does *not* resolve is the informative
 one — and a hand-counted figure about a growing corpus is stale before the commit
 that writes it lands, so cite the generator instead.
 
+- [ ] **BK-340 — `SQLQueryBackend` has no conformance fixture, so no cross-backend rule reaches it**
+  spec: — · effort: M · audience: infra.test
+  `tests/backends/fixtures/registry.py` has no entry for `SQLQueryBackend`, so
+  **nothing in `tests/backends/conformance/` executes against it** — not the
+  capability-gated cells, not the ungated ones. Every cross-backend invariant is
+  asserted for it by nobody.
+  **This is not hypothetical: it is how BK-324's round-2 miss survived.** The
+  root-spelling class was fixed across eleven sites and declared closed; review
+  round 3 found it still live in `SQLQueryBackend`, three lines from a line that
+  same fix had edited. A source sweep found the other backends because they are
+  reachable; this one was invisible to the tests and therefore to the sweep.
+  Root behaviour is now pinned in `tests/backends/sqlquery/test_config.py`, which
+  is a per-backend patch over a structural hole, not a fix for it.
+  **Why M, not S:** registering a fixture runs the *entire* conformance surface
+  against a read-only query-mapping backend, and the expected skip set — WRITE,
+  DELETE, MOVE, COPY, ATOMIC_* — has to be established deliberately rather than
+  discovered by failure. That sizing is the whole item.
+  **Check `ReadOnlyHttpBackend` at the same time**: it *is* registered, so the
+  question there is whether its gates are right, not whether it is reachable.
+
+- [ ] **ID-241 — Conformance cells that make no HTTP call still skip on a missing cassette**
+  spec: — · effort: S · audience: infra.test
+  The missing-cassette hook fires **per test name**, regardless of whether the
+  test issues a request. So `graph_replay` and `azure_replay_async` skip
+  pure-addressing cells — `native_path` / `to_key` / `resolve`, which are string
+  manipulation with no I/O — purely because no cassette was recorded for that
+  test name.
+  **Cost, measured:** BK-324 added `TestAsyncBackendNativePath` to conformance,
+  and it immediately caught a truthiness defect in the `AsyncBackend.native_path`
+  default that a source sweep had missed (the async ABC sits outside
+  `src/remote_store/backends/`, where the sweep looked). That cell earned its
+  place and is nonetheless skipped on both replay fixtures; Graph's root
+  addressing is pinned in `tests/backends/graph/aio/test_backend.py` instead.
+  **Fix shape:** let a cell declare it makes no HTTP call, and have the hook
+  honour that instead of skipping by name. The alternative — recording empty
+  cassettes per test name — scales with the test count and reintroduces the
+  hand-maintained-parallel-artifact problem.
+  **Why ID:** whether the marker belongs on the test, the fixture, or the hook is
+  unmade, and the answer decides how much of the replay lane changes.
+
 - [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**
   spec: — · effort: L · audience: contributor.tooling
   Research § 9 step 2, the programme's strategic half: a canonical claim space,
-  extended toward the implementation and below identifier granularity. Best
-  taken after BK-324, which decides the orphan behaviours this item's day-one
-  allowlist would otherwise have to enumerate blind.
+  extended toward the implementation and below identifier granularity.
+  **Re-sequenced after BK-324, on measured evidence — take steps 3 and 4 before
+  step 2.** BK-324 was expected to clear the way for step 2; instead it supplied
+  four instances of the drift this programme targets, and a design investigation
+  found step 2 would have caught none of them (see the step 2 bullet). What the
+  four exhibited was **coverage reachability** — a rule can be gated so no
+  fixture ever runs it, which is BK-340 and ID-241 in this file — and
+  **citation ≠ assertion**, which is this item's own **step 3**. Both are cheaper than L and
+  both have measured instances behind them; step 2 has an L cost, a ~2.5% reach,
+  and no instance. Step 2 is not abandoned: after 3 and 4 land, its unresolved
+  scope question ("Dafny-backed only, or corpus-wide?") will have been answered
+  by what those two find.
   ID-206 shipped `scripts/check_formal_trace.py`; a PR #663 review
   confirmed it certifies *citation hygiene at spec-ID granularity*, not
   clause-level enforcement (its docstring was narrowed to say so). Four
@@ -298,12 +362,44 @@ that writes it lands, so cite the generator instead.
      `ensures` (e.g. `SlashCountZero`, the Safe/Unsafe pairs) that encode
      no spec clause. (Research step 2b.)
   2. **Clause granularity, not ID granularity.** D/T/S key on spec ID, so
-     one marker clears F1 for every `ensures` sharing that ID (~10 share
-     `BE-014`). Per-clause sub-IDs, or a tag→test-name link, would gate
-     each postcondition individually. The research doc argues this is the
-     **binding** constraint rather than one hardening step among four,
-     since omission detection is identifier-keyed while BK-324's claims are
-     sub-ID clauses.
+     one marker clears F1 for every `ensures` sharing that ID. Run
+     `hatch run python scripts/check_formal_trace.py` for the live per-ID
+     tag counts — do not restate them here, per BK-330's finding that a
+     hand-counted figure about a growing corpus is stale before the commit
+     that writes it lands. (This bullet previously claimed "~10 share
+     `BE-014`"; BE-014 carries 6 and the maximum is BE-018, so the count
+     and the exemplar were both wrong.) Per-clause sub-IDs, or a
+     tag→test-name link, would gate each postcondition individually.
+     **Read [`DRIFT-RULES.md` Rule 3](DRIFT-RULES.md#rules) before
+     choosing between them** — it requires the enumeration be *derived*
+     from the authoritative artifact rather than maintained beside it, and
+     that decides more of the question than either candidate's own framing.
+     **The binding-constraint claim is narrower than it was written.** The
+     research doc argued clause granularity is binding "since omission
+     detection is identifier-keyed while BK-324's claims are sub-ID
+     clauses." That holds for **facet 4 only** — an E-class orphan, spec'd
+     and unasserted. It does **not** transfer to the restatement instances
+     BK-324 actually kept hitting, and a design investigation measured why:
+     **neither candidate would have caught any of the four.** F1 is an
+     omission detector; the four were contradictions (research § 1 classes
+     A/C/D), one claim restated in several homes and updated in one.
+     Finer identifiers make omission detection finer; they do not convert
+     it into a contradiction detector. The decisive case is review findings
+     1/3/4 — BE-021's F1 was **green for the entire life of the
+     divergence**, because the tests existed, cited the right ID, and were
+     enabled, while carrying per-fixture skips and capability gates.
+     Sub-IDs leave that green.
+     **Scope reality:** the Dafny model reaches 26 of 933 declared sections
+     and 94 tag sites of a corpus estimated near 3,600 clauses. Step 2 as
+     written is a granularity improvement over roughly 2.5% of the claim
+     space, and the four motivating instances are not inside it. Corpus-wide
+     is the only scope under which any of them becomes reachable, and that
+     is a different, larger item.
+     **Needs an ADR before implementation, either way**: sub-IDs change the
+     spec-ID grammar that [`000-process.md` Rule 5](000-process.md#rules)
+     governs and on which ~11,800 citations across 518 files depend; a
+     tag→test-name link promotes pytest node IDs to a contract surface and
+     takes a Rule 3 exemption.
   3. **Push T past citation.** A marker only cites an ID; it does not
      prove the test asserts the clause, is enabled, or cites the *right*
      ID — a wrong-but-real ID passes F2 and even satisfies F1.
@@ -393,46 +489,6 @@ that writes it lands, so cite the generator instead.
   **Check `capabilities-matrix.md` at the same time** — it is the neighbouring
   ten-backend table and a candidate home for the derivable rows, but whether it
   is generated or hand-maintained was not established by this sweep.
-
-- [ ] **BK-340 — `SQLQueryBackend` has no conformance fixture, so no cross-backend rule reaches it**
-  spec: — · effort: M · audience: infra.test
-  `tests/backends/fixtures/registry.py` has no entry for `SQLQueryBackend`, so
-  **nothing in `tests/backends/conformance/` executes against it** — not the
-  capability-gated cells, not the ungated ones. Every cross-backend invariant is
-  asserted for it by nobody.
-  **This is not hypothetical: it is how BK-324's round-2 miss survived.** The
-  root-spelling class was fixed across eleven sites and declared closed; review
-  round 3 found it still live in `SQLQueryBackend`, three lines from a line that
-  same fix had edited. A source sweep found the other backends because they are
-  reachable; this one was invisible to the tests and therefore to the sweep.
-  Root behaviour is now pinned in `tests/backends/sqlquery/test_config.py`, which
-  is a per-backend patch over a structural hole, not a fix for it.
-  **Why M, not S:** registering a fixture runs the *entire* conformance surface
-  against a read-only query-mapping backend, and the expected skip set — WRITE,
-  DELETE, MOVE, COPY, ATOMIC_* — has to be established deliberately rather than
-  discovered by failure. That sizing is the whole item.
-  **Check `ReadOnlyHttpBackend` at the same time**: it *is* registered, so the
-  question there is whether its gates are right, not whether it is reachable.
-
-- [ ] **ID-241 — Conformance cells that make no HTTP call still skip on a missing cassette**
-  spec: — · effort: S · audience: infra.test
-  The missing-cassette hook fires **per test name**, regardless of whether the
-  test issues a request. So `graph_replay` and `azure_replay_async` skip
-  pure-addressing cells — `native_path` / `to_key` / `resolve`, which are string
-  manipulation with no I/O — purely because no cassette was recorded for that
-  test name.
-  **Cost, measured:** BK-324 added `TestAsyncBackendNativePath` to conformance,
-  and it immediately caught a truthiness defect in the `AsyncBackend.native_path`
-  default that a source sweep had missed (the async ABC sits outside
-  `src/remote_store/backends/`, where the sweep looked). That cell earned its
-  place and is nonetheless skipped on both replay fixtures; Graph's root
-  addressing is pinned in `tests/backends/graph/aio/test_backend.py` instead.
-  **Fix shape:** let a cell declare it makes no HTTP call, and have the hook
-  honour that instead of skipping by name. The alternative — recording empty
-  cassettes per test name — scales with the test count and reintroduces the
-  hand-maintained-parallel-artifact problem.
-  **Why ID:** whether the marker belongs on the test, the fixture, or the hook is
-  unmade, and the answer decides how much of the replay lane changes.
 
 - [ ] **ID-240 — Model "the root always exists" in the Dafny contract**
   spec: BE-029 · effort: S · audience: contributor.process
