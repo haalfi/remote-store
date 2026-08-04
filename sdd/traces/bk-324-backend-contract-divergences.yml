@@ -14,6 +14,8 @@ audience:
   - library.maintainer
 discovery_followups:
   - ID-240
+  - BK-340
+  - ID-241
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
@@ -24,7 +26,7 @@ surprising_ripples:
   - sdd/specs/036-seekable-read.md
   - scripts/check_docstring_parity.py
   - tests/backends/sqlquery/test_config.py
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -125,6 +127,19 @@ phases:
           zero-length-Key and escaped as generic RemoteStoreError where it had
           been a clean NotFound.
         outcome: ok
+      - file: tests/backends/fixtures/registry.py
+        section: "fixture_params, capability gating"
+        read_type: verify
+        extract: >-
+          Round 2 found the class still live in SQLQueryBackend, three lines from
+          a line the round-1 fix had edited. The sweep had searched source and
+          found 11 sites; it never asked which backends the new cells execute
+          against. The root cells were WRITE-gated, SQLQuery is read-only, and
+          Graph is absent from the sync registry — so no test reached either.
+          Replacing the sweep question with coverage then found two further
+          defects no reviewer flagged. For a cross-backend rule the sibling
+          sweep is a coverage question, not a grep.
+        outcome: misleading
       - file: sdd/specs/010-native-path-resolution.md
         section: "NPR-005, NPR-021"
         read_type: verify

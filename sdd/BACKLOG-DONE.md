@@ -8,6 +8,66 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-324 — Reconcile backend-contract divergences (root/alias, wrong-type errors, depth semantics, empty paths)**
+  spec: 003, 010, 029, 036, 037, 001 · effort: L · audience: user.api, library.maintainer
+  Research § 9 step 5.2. All four facets settled: the user decided 1, 2 and 3;
+  facet 4 carried its own disposition. Facets 1 and 2 delegated to the
+  store-backend expert across three fix rounds, facets 3 and 4 done inline.
+  New **BE-029** (root path); BE-017, BE-021, BE-025, SEEK-003, DEPTH-003 and
+  spec 010's NPR-005/NPR-021 amended. 7450 → 7908 tests.
+  **Every facet's stated premise was wrong, and only measurement caught it.**
+
+  | Facet | Item said | Measured |
+  |---|---|---|
+  | 1 | an S3-family problem | `get_folder_info(".")` raised on Memory, Local, SFTP **and the Dafny oracle**; SFTP's root did not exist until first write |
+  | 2 | flat-NS backends "raise `NotFound` instead" | S3 did not raise **at all** for four of six governed ops — silent no-op or silent success |
+  | 2 | "S3 family and Azure" | SQLBlob and SQLQuery are equally flat-NS and equally divergent |
+  | 4 | absent from BE-018/BE-019, untested | **specified** in STORE-002, which names `move` and `copy`; only the test was missing |
+
+  **The defect class outlived three sweeps, and how it was finally caught is the
+  transferable result.** Round 1 review found five defects in code that had just
+  passed a green gate. The fix swept eleven sites and declared the class closed;
+  round 2 found it **still live in `SQLQueryBackend`, three lines from a line
+  that fix had edited**. It survived because the sweep asked *which source lines
+  match* — the root cells were gated on `Capability.WRITE`, `SQLQuery` is
+  read-only, and `GraphBackend` is absent from the sync fixture registry, so no
+  test reached either. Round 3 replaced the question with **which backends do
+  these cells actually execute against**, built as a script mapping each
+  parametrize token to the fixture registry, and immediately found two more
+  defects no reviewer had flagged: `AsyncBackend.native_path` carried the
+  identical truthiness bug as the sync ABC default (invisible to a grep scoped
+  to `backends/`, since the async ABC lives elsewhere), and SFTP answered
+  `NotFound` rather than a wrong-type error for root file-ops on an untouched
+  store.
+  **For a cross-backend rule, the sibling sweep [BK-336](BACKLOG-DONE.md)
+  requires is a coverage question, not a grep.** That is the amendment this item
+  earns, and the two structural holes it exposed are filed as
+  **[BK-340](BACKLOG.md)** (`SQLQueryBackend` has no conformance fixture at all)
+  and **[ID-241](BACKLOG.md)** (the replay hook skips cells by test name even
+  when the cell makes no HTTP call).
+  **BE-029's boundary is derived, not named.** It binds backends declaring
+  `Capability.LIST`; `ReadOnlyHttpBackend` declares none and is correctly outside
+  it. Writing "except ReadOnlyHttpBackend" would have reintroduced precisely the
+  undeclared divergence this item exists to remove — the same reasoning that
+  made facet 2 a fix rather than a carve-out.
+  **Neither facet needed a Dafny edit, and the reason inverts the framing.** The
+  type-mismatch postconditions carry no namespace carve-out, so facet 2 is a
+  Python defect fix; and `const Root := "."` with the adapter mapping `""` onto
+  it was already the model's position, so facet 1 aligned Python to Dafny. The
+  one unmodelled half — `Valid()` never asserts `Root in fs` — is
+  **[ID-240](BACKLOG.md)**.
+  **Round-trip consequence, recorded in all four homes.** `native_path(".")` and
+  `native_path("")` share one native path, so `to_key(native_path("."))` is `""`.
+  Forced — an inverse cannot return two spellings. BE-025 and BE-029 took it in
+  the fix round; specs 010 NPR-005 and NPR-021 state the same identity and were
+  false as written until caught separately.
+  **Coverage bound, stated because a green gate would otherwise mislead.**
+  `azurite`, `azurite_async`, `s3_pyarrow_moto` and `s3_pyarrow_minio` need a
+  Docker daemon unavailable in this environment, so the **Azure non-HNS and
+  S3-PyArrow branches are implemented and typechecked but were never executed
+  here**. `azure_replay` (HNS) runs green, confirming the HNS short-circuit adds
+  no requests to recorded cassettes. CI is their first real run.
+
 - [x] **BK-331 — Delete spec 037's per-backend table, and its two siblings**
   spec: 037, 027, 020 · effort: S/M · audience: library.maintainer, user.api_docs
   Research § 9 step 4; closes the mechanical half of BK-324 facet 3. The item
