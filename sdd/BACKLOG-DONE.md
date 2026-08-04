@@ -8,6 +8,111 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-330 — Aggregate trace outcome tags into a drift report**
+  spec: — · effort: S · audience: contributor.tooling
+  Step 3 of
+  [research](research/research-inconsistency-detection-multi-artifact.md) § 9,
+  closing G-4. The trace corpus had recorded `unclear` / `misleading` outcome
+  tags for years — committed, attributed by the schema, and never aggregated.
+  Shipped as `scripts/report_trace_outcomes.py` (`hatch run
+  report-trace-outcomes`): referenced files ranked by negative-outcome count,
+  each with the traces that cited it and the sections they cited, plus corpus
+  totals and tag-coverage.
+  **Partially closes step 3, which asked for a report *and* a review cadence.**
+  The report is here; nothing yet causes anyone to read it. The residue is
+  **[ID-238](BACKLOG.md)**, and the section preamble is qualified to match.
+  **A report, not a gate**, per [`DRIFT-RULES.md` Rule 5](DRIFT-RULES.md#mandatory-path)'s
+  requirement to record why. The two reasons live in the script's module
+  docstring — this entry points at them rather than restating them, so there is
+  one copy to keep true. The exit code is `0` regardless of findings, including
+  when a trace cannot be read or parsed; there is deliberately no code that
+  signals findings, and `test_findings_never_change_the_exit_code` asserts the
+  return value, so a promotion to a gate fails it by construction.
+  **Rule 6 register entry — owner: [ID-238](BACKLOG.md).** That item decides what
+  triggers reading the report, so it is the item that will settle whether this
+  advisory check stays tolerated or gets switched off, which is what Rule 6 asks
+  an owner to be answerable for. (Naming no owner is what BK-329's round-5 review
+  disqualified a candidate register for; "whoever picks up a ranked reference"
+  was a description of the unowned state, not an owner.)
+  Deliberately absent from `lint`, `preflight`, `docs-gate` and `all`. What keeps
+  it executable rather than rotting is its own test suite, including a
+  live-corpus run — **locally**. In CI the qualifier matters: `CODE_PAT` does not
+  match `^sdd/`, so a trace-only change, the very class that grows the corpus
+  this report reads, skips the `test` job. Exposure is thin (schema validity is
+  gated in `docs-gate`, and the live-corpus test asserts structural invariants a
+  new trace is unlikely to break) but the claim is bounded here rather than left
+  to a future maintainer to discover.
+  **The two decided constraints held, and both stated rationales were
+  imprecise** — worth recording because they are the reason the tests look the
+  way they do. Under a parsed-YAML reader a looser glob moves the corpus
+  *denominator* only, not the tag count: `_schema.yml` has no top-level `phases`
+  and its examples carry `outcome: ok`. And a nearest-preceding-key text scan
+  produces byte-identical results to the parser against every committed trace.
+  Both hazards are therefore **latent, not live**, so neither is demonstrable
+  against real data; each is tested with a synthetic schema-valid corpus **plus a
+  positive control** (a naive scanner kept in the test module, asserted to get
+  the fixtures wrong) proving the fixture discriminates at all. The legal YAML
+  that breaks a text scan: a step listing `outcome` before `file`, and a
+  block-scalar `extract` containing a line reading `file: ...`.
+  **The glob is now one driver, not two copies.** `scripts/_trace_corpus.py`
+  holds it; `check_traces.py` and the report both import it
+  ([Rule 1](DRIFT-RULES.md#one-driver)). The report does not import the gate
+  directly, which was the first choice: `check_traces` imports `jsonschema` at
+  module scope, and a report that only parses YAML should not acquire a
+  schema-validation dependency to borrow a five-character string.
+  **The item's own headline count was wrong, which is the thesis in miniature.**
+  It claimed 187 tags across 102 files. That was exactly right for the tree
+  *before* the commit that wrote it (`79d0382`) and already false when that
+  commit landed, because the same PR added its own trace: `d9a2d3d` measured
+  190 across 103. At `83e22a3` it was **193 across 104**, and this PR moves it
+  again by adding its own trace. Hence no restated number here: run
+  `hatch run report-trace-outcomes`. The figure came from research finding 7,
+  which flagged itself as "exact and already perishable" and named this report
+  as its successor — the qualification did not survive being copied into the
+  backlog.
+  **A bug caught by cross-checking the first live run** against an independent
+  count, recorded because it is the same defect class the item exists to retire:
+  citations accumulated per trace `id`, and `id` is pattern-constrained but not
+  unique — at `83e22a3`, 13 traces shared `ID-127` and two shared `BK-181` — so
+  an id-keyed accumulator silently dropped tags. Re-keyed on the trace filename.
+  The consistency assertion had not caught it because the corpus totals were
+  summed back from the rows; they are now counted during the scan, so the two
+  derivations can actually disagree. The load-bearing fact is that `id` is not
+  unique, and `sdd/traces/_schema.yml` was the artifact asserting otherwise while
+  mandating the convention that produces the duplicates — so it now says so and
+  is the authority the code sites cite. **The counts** are what was consolidated
+  to a single home: they appear once, above, SHA-pinned, and no longer in code.
+  The rule itself is restated in the three code sites that depend on it, each
+  citing the schema — a deliberate copy, because a keying decision is unreadable
+  without the reason beside it, and the ranking this report ships is what would
+  surface the restatements drifting.
+  **Reads and rate.** The ranking measures exposure at least as much as failure
+  rate: `CLAUDE.md` makes opening the backlog item step one of nearly every
+  trace, so `sdd/BACKLOG.md` accumulates tags across an order of magnitude more
+  reads than a spec only a handful of traces open. The report now carries `reads`
+  (every citing step, tagged or not) and `rate` beside the count.
+  **The sort key stays the absolute count**, and that is the decision worth
+  recording: a rate sort's head is single-read noise, because most ranked
+  references carry exactly one tag and a large minority of those were read
+  exactly once, so they render at 100% and outrank everything real. Rescuing a
+  rate sort needs a minimum-reads threshold, which reintroduces the "no correct
+  threshold" problem that makes this a report rather than a gate. No figures are
+  restated here — this entry's own headline finding is that a hand-copied count
+  of a growing corpus is stale before its commit lands, and a branch-head anchor
+  stops meaning anything once the branch merges. Run
+  `hatch run report-trace-outcomes`.
+  Three bounds were added with it — drain files, `rate`'s denominator mixing
+  assessed with never-assessed reads, and unattributed tags. Each is stated in
+  the module docstring; this entry points rather than restating, because a bound
+  copied here is a second thing to keep true and the first attempt at copying
+  one already drifted from its original within a round.
+  **Declined, so it is not re-litigated:** a `--format json` mode. No consumer
+  exists, and the collection API returns dataclasses that a future one can call
+  directly.
+  **No CHANGELOG entry:** `audience` is `contributor.tooling` only, and the
+  schema's derived rule requires one iff an audience starts with `user.` or
+  `contributor.process` introduces a new user-facing framework or spec.
+
 - [x] **BK-329 — Declare the attribution rule for prose vs Dafny vs conformance**
   spec: — · effort: S · audience: contributor.process, contributor.tooling
   Step 5.1 of

@@ -1,0 +1,198 @@
+id: BK-330
+title: "Aggregate trace outcome tags into a drift report"
+trigger: "193 unclear / misleading tags across 104 trace files were committed, attributed and never aggregated — a drift detector the repo had already paid for. Research § 9 step 3 named the script, the glob and the extraction method; nothing had built them."
+source_items:
+  - BK-330
+  - BK-328
+  - BK-329
+audience:
+  - contributor.tooling
+discovery_followups:
+  - ID-238
+  - BK-334
+  - ID-239
+  - BK-335
+  - BK-336
+  - BK-337
+expected_ripples:
+  - sdd/backlogid.json
+# The .claude/** entries are claimed as genuinely unanticipated, not as an
+# authoring miss. The ripple rows that name those paths fire on "New
+# authoritative process doc in sdd/" and "Authority direction amended";
+# this PR did neither — it widened an existing doc's scope sentence, and no
+# row fires on that. Per the schema's own guidance a recurring entry here
+# points at a missing ripple-check row: the widening took four rounds and
+# was one copy short in three of them, and that gap is now filed as
+# BK-337 rather than left as a diagnosis in a comment.
+surprising_ripples:
+  - sdd/traces/_schema.yml
+  - sdd/DRIFT-RULES.md
+  - sdd/CLAUDE-REFERENCE.md
+  - scripts/check_traces.py
+  - CLAUDE.md
+  - sdd/CONTENT-RULES.md
+  - sdd/CI-OPERATIONS.md
+  - .claude/skills/rvw-pr/SKILL.md
+  - .claude/skills/audit/SKILL.md
+  - .claude/agents/sdd-expert.md
+  - .claude/agents/documentation-expert.md
+review_rounds: 4
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Cross-Artifact Consistency (preamble + BK-330)"
+        read_type: gate
+        extract: "Scope, the two decided extraction constraints (glob + parsed YAML), and the three BK-328/BK-329 findings the section preamble carries forward"
+        outcome: misleading
+      - file: sdd/DRIFT-RULES.md
+        section: "Intent & Scope, Rules"
+        read_type: gate
+        extract: "Rule 5 (record why a check is advisory), Rule 2 (localize), Rule 3 (state granularity), Rule 6 (register with an owner), Rule 7 (state the bound), Rule 8 (derivation path). Rules 4 and 9 did not resolve from the document and were escalated to review: whether Rule 4 binds when there is no artifact pair, and whether Rule 9 obliges this PR to commit a period. The scope sentence is also narrower than the rule set — it enumerates three triggers and a non-gating report is none of them, so a literal reader skips the rules Rule 5 plainly intends to cover"
+        outcome: unclear
+      - file: sdd/traces/_schema.yml
+        section: "$defs/step, outcome enum, description"
+        read_type: gate
+        extract: "file and outcome are siblings of one step mapping with additionalProperties:false — the guarantee that makes attribution structural; the aggregator glob note; the coverage-gap signal"
+        outcome: ok
+      - file: scripts/check_traces.py
+        section: "(full)"
+        read_type: gate
+        extract: "The [!_]*.yml glob and iter_trace_files to reuse, and the exit-code 1 contract to deliberately not copy"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Pre-work index"
+        read_type: gate
+        extract: "Rows that fire: Backlog item touched, New or changed cross-artifact check, CHANGELOG entry, New test file, Source/test/spec counts. No row covers adding an alias to pyproject's [tool.hatch.envs.default.scripts], which is the one pyproject edit this item makes and the edit that decides whether a new script is reachable by anything. 'New or changed cross-artifact check' got me to the gating question anyway, so the gap is partly covered for a check and uncovered for any other script. Filed as BK-334 after review: the instance is n=1 but the trigger class fires on every new scripts/*.py, so the n=1 argument measured the wrong thing. Kept distinct from BK-333, which is bounded to three CI-path-filter instances with a docs-gate fix shape"
+        outcome: unclear
+      - file: sdd/TESTING.md
+        section: "Test Subpackage Placement, Rules, A green test can be vacuous"
+        read_type: gate
+        extract: "tests/scripts/test_<script>.py placement, and the no-positive-control failure mode that the latent-hazard tests depend on"
+        outcome: ok
+      - file: sdd/research/research-inconsistency-detection-multi-artifact.md
+        section: "9 (Step 3)"
+        read_type: reference
+        extract: "The report-not-gate reasoning and the argument that the extraction method is load-bearing rather than incidental"
+        outcome: ok
+      - file: sdd/research/research-inconsistency-detection-multi-artifact.md
+        section: "5 (Finding 7)"
+        read_type: reference
+        extract: "The ranked-table shape to reproduce, the dated-measurement framing, and the tie-drop that motivates a documented tie-break"
+        outcome: ok
+
+  - id: design
+    name: Design and measure
+    steps:
+      - file: sdd/traces/
+        section: "(full)"
+        read_type: verify
+        extract: "Measure the corpus directly: negative tags at HEAD and at the commit that wrote the item's figure, and whether a nearest-preceding-key text scan actually disagrees with parsed YAML today"
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules"
+        read_type: reference
+        extract: "Rule 3 bans pseudo-precise values in narrative — drives recording the corrected count as a SHA-pinned measurement rather than a bare number"
+        outcome: ok
+      - file: sdd/CI-OPERATIONS.md
+        section: "Rules, Inventory at a glance"
+        read_type: reference
+        extract: "The durable-TODO principle DRIFT-RULES Rule 5 cites; scoped to scheduled workflows, so a manually-run report owes no inventory row"
+        outcome: ok
+      - file: scripts/drift_report.py
+        section: "_render_body"
+        read_type: reference
+        extract: "Markdown-rendering structure for a report script: section per finding class, table per detail block"
+        outcome: ok
+      - file: scripts/run_mutate.py
+        section: "module imports"
+        read_type: reference
+        extract: "The sys.path.insert + noqa E402 cross-import precedent for scripts/, which decided the shared-module split over importing the gate directly"
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts]"
+        read_type: reference
+        extract: "Where the alias goes, and which aggregates (lint, preflight, docs-gate, all) deliberately do not gain it"
+        outcome: ok
+
+  - id: tests
+    name: Tests first
+    steps:
+      - file: tests/scripts/test_check_traces.py
+        section: "(full)"
+        read_type: reference
+        extract: "Hermetic tmp_path fixtures plus one live-repo test; importlib.util.spec_from_file_location module loading for a scripts/ module"
+        outcome: ok
+      - file: tests/scripts/test_report_trace_outcomes.py
+        section: "(full)"
+        read_type: verify
+        extract: "Write the failing tests first and observe them fail: ranking, tie-break, the _schema.yml glob carve-out with its positive control, the text-scan attribution hazard with a naive-scan positive control, and the never-a-gate exit code"
+        outcome: ok
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: scripts/_trace_corpus.py
+        section: "(full)"
+        read_type: verify
+        extract: "Extract the glob and file enumeration into one driver both the gate and the report import, rather than importing the gate (which would pull jsonschema into a report that needs only PyYAML)"
+        outcome: ok
+      - file: scripts/report_trace_outcomes.py
+        section: "(full)"
+        read_type: verify
+        extract: "Collect, rank and render; docstring carries the why-not-a-gate reason, the stated bound, the granularity and the exclusion rules"
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "properties/id"
+        read_type: verify
+        extract: "Cross-checking the first live run against an independent count found the report one tag short. Cause: citations accumulated per trace `id`, and `id` is pattern-constrained but NOT unique — 13 traces share ID-127, two share BK-181, so an id-keyed accumulator dropped all but the last. Re-keyed on the trace filename, and the corpus totals are now counted during the scan rather than summed back from the rows, which is what made the consistency assertion able to fail"
+        outcome: misleading
+
+  - id: verify
+    name: Ripple-check and gate
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Detailed checklist"
+        read_type: verify
+        extract: "Confirm every fired row is discharged and no code-surface row was missed. My pass returned a false positive: I recorded the 'New test file' row as discharged while pytestmark = pytest.mark.os_sensitive was absent, and round one had to catch it. The row is not at fault — it names 'local filesystem' explicitly and links the marker's rationale, so nothing it said was wrong, stale or contradictory. An authoring error, not a read that failed to deliver, so it belongs in this extract and carries no outcome tag"
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "Confirm the schema's derived rule: audience is contributor.tooling only, so no entry is owed"
+        outcome: ok
+
+  - id: review
+    name: Review rounds
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Pre-work index"
+        read_type: reference
+        extract: "Round one: the missing row for a hatch script alias, filed as BK-334 once the n=1 argument was shown to measure the instance rather than the trigger class, which fires on every new scripts/*.py"
+        outcome: ok
+      - file: scripts/report_trace_outcomes.py
+        section: "rank_citation, _citation_summary"
+        read_type: verify
+        extract: "Round two: the test added in round one to close a vacuity finding was itself vacuous for the exact claim in its own comment — a collected fixture cannot discriminate the filename tie-break, because collect_outcomes already returns citations sorted by trace_file and Python's sort is stable, so any tying key reproduces the expected order. Rebuilt on hand-made Citations equal on total and misleading, supplied in reverse filename order, and verified by mutation rather than by reading"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Detailed checklist"
+        read_type: verify
+        extract: "Rounds two and three: my misleading tag for the mis-discharged ripple row landed on two blameless artifacts in turn — first this PR's own test module, then this row — before the right answer surfaced. Neither told me anything wrong; my verification pass returned a false positive. An agent's own miss belongs in an extract, not in an outcome, and a tag that self-corrects during review must not earn its own trace a row: that would make sdd/traces/*.yml accumulate in the ranking in proportion to review diligence, which is noise the reporting mechanism generates about itself"
+        outcome: ok
+      - file: scripts/report_trace_outcomes.py
+        section: "render_markdown Detail section"
+        read_type: verify
+        extract: "Round three: extract and section were interpolated raw into Markdown list items while the corpus holds hundreds of block-scalar extract values, so the Detail section fragmented and a continuation line beginning ### or | would render as a heading or table inside the report. Flattened both. Found by a reviewer reading the default output, not by any test — every fixture used a single-line extract"
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "$defs/step.extract"
+        read_type: verify
+        extract: "Round four: three artifacts gave three answers about what `extract` is for. The schema said short imperative phrase, CLAUDE.md (as amended in round three) said put your own misses there, and this report's own Rule 7 bound called that unsanctioned. Resolved by moving the schema: the field genuinely carries two registers, the retrospective one is where an agent's own miss belongs precisely so `outcome` is not used to blame a document for a reader's error, and rounds two to four directed exactly that. The bound now describes two registers rather than an unsanctioned practice"
+        outcome: ok
+      - file: scripts/report_trace_outcomes.py
+        section: "_one_line, _classification_legend"
+        read_type: verify
+        extract: "Round four: every fix round had shipped a correct change beside a new addition nothing asserted — the section half of the Markdown fix, and the classification legend, both deletable with the suite green. The root cause is reacting only on the lines a comment names instead of searching own work for the same pattern, which also produced the tracker-ID and trigger-copy sweeps two rounds earlier; filed as BK-336 against /fix-pr Step 2. Mutation is the right technique for the test-vacuity class only — the two sweeps were greps"
+        outcome: ok

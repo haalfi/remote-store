@@ -47,7 +47,7 @@ the failing test, run it, see it fail** before implementing the fix.
 When working on a backlog item, maintain `sdd/traces/<id>-<slug>.yml` as you work, not after merge. Schema: `sdd/traces/_schema.yml`. **"Working on" means implementing or closing the item.** A pure advisory annotation to a body (e.g. recording a verification-run result) that neither implements nor closes the item does not require a trace; the trace is authored when implementation begins.
 
 - **Before starting:** open the trace if it exists, otherwise create one from the schema example.
-- **As you read:** record each gate and reference read as a step. Tag `outcome: unclear | misleading` on any read that did not deliver.
+- **As you read:** record each gate and reference read as a step. Tag `outcome: unclear | misleading` on any read that did not deliver — these are aggregated by `hatch run report-trace-outcomes`, which ranks the documents that failed readers, so tag the artifact that actually misled and put your own misses in the `extract`.
 - **As events occur:** fill `discovery_followups` (new backlog IDs born during the work), `surprising_ripples` (paths the ripple-check table did not anticipate), `co_shipped_items` (other items closed by the same PR).
 - **Before submitting:** tag `audience` priority-sorted; the CHANGELOG-required rule derives from it.
 - **Ship the trace in the same PR as the work.** Not a separate later commit.
@@ -122,9 +122,9 @@ spec tracing). Applies to all new or changed tests.
 
 ## Drift checks
 
-See [`sdd/DRIFT-RULES.md`](sdd/DRIFT-RULES.md) for the rules governing checks that
-compare two descriptions of the same thing. Applies to any new or changed
-cross-artifact check; that file states its own scope.
+See [`sdd/DRIFT-RULES.md`](sdd/DRIFT-RULES.md) for the rules governing mechanisms
+that detect artifacts disagreeing with each other. Applies to any new or changed
+cross-artifact check or drift report; that file states its own scope.
 
 ## GitHub operations
 

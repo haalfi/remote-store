@@ -31,11 +31,16 @@ properties:
     type: string
     pattern: "^(BK|BUG|ID|AF|BL|UC)-[0-9]+[a-z]?$"
     description: |
-      Unique identifier for the use case. Backlog-derived traces reuse the
-      backlog ID (BK-NNN, BUG-NNN, ID-NNN, AF-NNN, BL-NNN per
+      Identifier for the use case — **not unique**. Backlog-derived traces
+      reuse the backlog ID (BK-NNN, BUG-NNN, ID-NNN, AF-NNN, BL-NNN per
       sdd/BACKLOG.md "ID prefixes"); hypothetical / generic use cases use
       UC-NNN. The trailing letter form (BK-167a, BK-167b) is allowed for
       split items.
+
+      Because that convention reuses the backlog ID, an item worked across
+      several PRs produces several traces carrying the same id. Aggregators
+      must key on the trace **filename**, which the filesystem guarantees
+      unique; keying on `id` silently collapses those traces into one.
 
   title:
     type: string
@@ -286,6 +291,20 @@ $defs:
           motivation here too rather than splitting it into a separate
           field. Pair with `outcome` when the read did not deliver
           what was hoped for.
+
+          The field therefore carries two registers, and both are
+          licensed: the prospective phrase above, and a retrospective
+          clause recording how the step actually landed. The
+          retrospective half is where an agent's **own** miss goes — a
+          verification that returned a false pass, a conclusion drawn
+          from the wrong artifact — because `outcome` names which
+          document failed a reader and must not be used to blame a
+          document for the reader's error. A retrospective clause may
+          be a sentence rather than a phrase and past tense rather than
+          imperative; keep it to what a later reader needs.
+
+          Aggregators: nothing marks which register a given `extract`
+          is in, so it cannot be read as a description of the failure.
 
       outcome:
         type: string

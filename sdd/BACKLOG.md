@@ -79,6 +79,170 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Lint / CI Completeness
 
+- [ ] **BK-334 — No ripple-check row covers adding a `hatch` script alias**
+  spec: — · effort: S · audience: contributor.process
+  The [Pre-work index](CLAUDE-REFERENCE.md#pre-work-index) has no trigger for
+  adding an entry to `pyproject.toml`'s `[tool.hatch.envs.default.scripts]`.
+  That edit is what decides whether a new `scripts/*.py` is reachable by
+  anything — whether it joins `lint` / `preflight` / `docs-gate` / `all`, or is
+  deliberately left out — and the table is silent on it.
+  **The trigger class, not the instance, is what makes this worth a row.** It
+  fires on every new script in `scripts/`, of which the repo has dozens and every
+  one carries an alias. Surfaced by the PR #944 review: BK-330 reasoned to the
+  right answer only via the adjacent cross-artifact row — which this same PR then
+  widened to name drift reports, so it now covers the report case and still says
+  nothing about a `gen_*`, a `bench-*`, or any other script.
+  Fix shape: one trigger row in **both** presentations of the ripple-check table
+  (`check_ripple_parity.py` enforces trigger-parity, so a row added to one and
+  not the other fails `lint`), naming the reachability question and the
+  `docs-gate`-vs-`lint` choice `check_traces` documents three lines above the
+  `report-trace-outcomes` alias.
+  **Distinct from BK-333**, which is scoped to three gates that CI *path filters*
+  misroute and whose fix is a `docs-gate` entry. This is a missing row in a
+  documentation table; different artifact, different fix, different verification.
+  BK-333's enumeration of exactly three is load-bearing and should not absorb it.
+
+- [ ] **BK-337 — Widening an authority doc's scope reaches no row that finds its restating copies**
+  spec: — · effort: S/M · audience: contributor.process
+  The [Pre-work index](CLAUDE-REFERENCE.md#pre-work-index) has a row for a **new**
+  authoritative process doc, and one for an authority **direction** amended (which
+  side governs). Neither fires on the commonest amendment: an existing authority
+  doc's **scope or subject sentence** widening. Nothing then finds the copies that
+  restate that scope to route readers in.
+  **Measured target set — six live restating copies** of one direction, at the
+  time of filing: `CLAUDE.md` § Drift checks, `sdd/CI-OPERATIONS.md`,
+  `sdd/CLAUDE-REFERENCE.md` in both ripple presentations,
+  `.claude/agents/sdd-expert.md` and `documentation-expert.md`, and
+  `.claude/skills/rvw-pr/SKILL.md` and `audit/SKILL.md`.
+  **Demonstrated recurrence:** PR #944 widened `DRIFT-RULES.md`'s scope sentence
+  and took four review rounds to find them all, being one copy short in three of
+  those rounds. `scripts/check_ripple_parity.py` structurally cannot help — it
+  enforces parity between the two ripple presentations, not between them and the
+  copies scattered through `.claude/**`.
+  **Two candidate dispositions, and choosing between them is the first half.**
+  Add a trigger row keyed on "an authority doc's scope or subject sentence is
+  widened", naming the `.claude/**` step lists and agent FOUNDATION blocks as
+  targets — or attack the cause and **delete the restatements**, leaving each
+  reader to link to the doc that states its own scope, as `CLAUDE.md` § Drift
+  checks already half-does ("that file states its own scope"). The second is
+  strictly better if it is achievable: a row keeps N copies synchronised, while
+  deletion removes the synchronisation problem. The obstacle is that agent-facing
+  files are read cold by a process that may not follow a link, which is the
+  reasoning BK-329 recorded when it accepted the copies in the first place.
+  **Distinct from BK-334**, which is scoped to `hatch` script aliases — a
+  different trigger with a different target set — and from BK-333's CI path
+  filters. Surfaced by the PR #944 review, which noted the diagnosis had been
+  recorded in that PR's trace and filed nowhere.
+
+- [ ] **BK-336 — `/fix-pr` must find a finding's siblings, not just fix the lines it names**
+  spec: — · effort: S/M · audience: contributor.process
+  **Root cause:** the author fixes, tests and reacts only on the exact lines a
+  review comment mentions, and does not recheck whether the same pattern occurs
+  elsewhere in their own work.
+  **Principle:** a review finding is a concrete instance. Identify the root cause
+  behind it, and search for other occurrences with the same root cause that the
+  reviewer has not flagged yet.
+  **Home:** `.claude/skills/fix-pr/SKILL.md` **Step 2**, which today says "Be
+  critical. Verify each claim against the code — comments can be wrong or already
+  fixed." That is half of triage. The missing half is *and find its siblings*.
+  **Detection technique is selected by the class of finding, not fixed** — this
+  is why the item is not "mutation-verify every addition". Evidence from PR #944,
+  where every row's siblings were found only after a later round flagged them
+  separately:
+
+  | Finding as flagged | Unflagged siblings | What would have found them |
+  |---|---|---|
+  | Tracker ID at `pyproject.toml:358` | a worse instance in the module docstring, plus three more files | grep |
+  | DRIFT-RULES trigger, one copy | three more copies, then three more again | grep |
+  | Test vacuity at a named symbol | adjacent additions in the same commit, four rounds running | mutation |
+  | Header `misleading` counter | `unclear` on the same format string | reading the line |
+
+  Two of the four are greps, and they carried most of the cost: the trigger sweep
+  took four rounds and three separate one-copy-short fixes. A rule phrased around
+  mutation would have missed both.
+  **The principle is known to work, because it was applied once.** Round four's
+  fix note: *"The streak was the signal, so I swept for the pattern instead of
+  the instance."* That round produced the only complete fix in five — three
+  copies nobody had named, one of which a previous reviewer had explicitly
+  cleared.
+  **Sub-case worth keeping, because it is the subtlest instance:** for test
+  vacuity the sibling search must enumerate at **claim** granularity, not symbol
+  granularity — "which claim does this assertion make", not "which symbol did the
+  finding name". Round five found two survivors hiding inside symbols round four
+  had already enumerated, because two claims shared one format string.
+  Also consider the same obligation in `/rvw-pr`'s reviewer brief: every instance
+  above was found by a reviewer rather than the author, so the reviewer's sweep
+  is currently the only one happening.
+  **Audience stays `contributor.process`** rather than gaining
+  `contributor.tooling`: the change is prose in a skill's step list, with no
+  script, hook or hatch alias moving.
+
+- [ ] **BK-335 — `check_links.py` cannot see Markdown links inside Python docstrings**
+  spec: — · effort: S/M · audience: contributor.tooling
+  [`scripts/docs/check_links.py`](../scripts/docs/check_links.py) walks git-tracked
+  `.md` only, and guards on `tgt_path.suffix != ".md"`. So a
+  `](../sdd/DRIFT-RULES.md#anchor)` link written inside a `scripts/*.py` docstring
+  is validated by nothing: rename the anchor and every reference to it breaks
+  silently.
+  Measured, not hypothetical: at the time of filing, `scripts/report_trace_outcomes.py`
+  and `scripts/_trace_corpus.py` carry several such links between them, pointing at
+  anchors minted three PRs earlier in `sdd/DRIFT-RULES.md`. All resolve today —
+  this is an unchecked surface, not a live break. `scripts/check_test_placement.py`
+  had the pattern first, so BK-330 multiplied it rather than introducing it.
+  **Why it was not fixed in BK-330:** the remedy is a new cross-artifact check in
+  its own right — it needs a claim space, a stated bound and a decision about what
+  counts as a link in Python source, and it will surface pre-existing breakage
+  across `scripts/` unrelated to the PR that found it. Adding that inside a review
+  round is how a check ships without the design [`DRIFT-RULES.md`](DRIFT-RULES.md#rules)
+  requires of it.
+  Fix shape: extend the walk to extract links from `.py` docstrings (or a narrower
+  "repo-relative Markdown link in any tracked text file" pass), and expect a first
+  run that reports existing breakage — decide up front whether that is fixed or
+  baselined, since [Rule 6](DRIFT-RULES.md#tolerated) wants tolerated divergence
+  registered rather than unnoticed.
+
+- [ ] **ID-239 — Sweep backlog IDs used as provenance anchors out of durable artifacts**
+  spec: — · effort: — · audience: contributor.process
+  A backlog ID is a short-lived coordinate; the code, config and comments it gets
+  stamped into are long-lived. `pyproject.toml` alone carries dozens of
+  `# BK-NNN:` / `# ID-NNN:` comment prefixes, and source docstrings across
+  `scripts/` open the same way. Once the item is closed the ID explains nothing a
+  reader can act on — it points at an archive entry rather than describing the
+  thing in front of them.
+  Surfaced by the PR #944 review, where the user objected to a
+  `# BK-330.`-prefixed `pyproject.toml` comment. That PR's own new and modified
+  files were fixed in place; the pre-existing sites were explicitly left out of
+  its scope, since the sweep needs its own verification.
+  **Preserve the distinction that makes this tractable:** an ID used as a
+  *provenance anchor* ("BK-330: rank references by…") is what goes — rewrite the
+  sentence to describe the thing on its own terms. An ID that is *data* stays: a
+  comment recording that several traces share `id: ID-127`, a test fixture using
+  an ID as a literal trace identifier, or a backlog/CHANGELOG cross-reference are
+  all load-bearing. Where a fact like that is kept, pin it rather than restating
+  it loose.
+  **Open, and the reason this is not purely mechanical.** The carve-out lives in
+  exactly one place: the ripple-check
+  ["Tracker ID in published prose" row](CLAUDE-REFERENCE.md#pre-work-index),
+  whose "Out of scope" clause names `sdd/**`, CHANGELOG, DEVELOPMENT_STORY and
+  source `#` comments. [`CONTENT-RULES.md`](CONTENT-RULES.md) carries **no**
+  tracker-ID carve-out — its scope line says the opposite ("Applies to all
+  content: README, guides, docstrings, and inline doc comments"), so there is
+  nothing to narrow there and an implementer should not go looking.
+  A sharper form of the question than "should the carve-out narrow", because it
+  does not need a policy judgement to be a defect: `DRIFT-RULES.md`,
+  `CONTENT-RULES.md` and `000-process.md` all carry `<!-- doc: dual dest=... -->`
+  and `scripts/gen_pages.py` renders them into the published site — so parts of
+  `sdd/**` **are** published prose, and "Out of scope: `sdd/**`" already
+  contradicts the dual-dest mechanism today. Settle that first; it bounds
+  everything else.
+  **Why ID, not BK:** the same reasoning ID-238 states under Cross-Artifact
+  Consistency. The
+  scope question above is unevaluated and the item's own body says deciding it
+  "bounds everything else", so the size of the committed half is unknown — which
+  is also why `effort:` is `—` rather than a guess. Contrast BK-334 above, which
+  has a stated fix shape, a named enforcement mechanism and a stated
+  verification, and is `BK` for exactly those reasons.
+
 - [ ] **ID-235 — Structural lint for BACKLOG files (entry-header integrity)**
   spec: — · effort: S · audience: contributor.tooling
   A string-anchored edit swallowed an entry header in `BACKLOG-DONE.md`
@@ -133,13 +297,13 @@ this section carries the work.
 [the file's default](#how-this-file-works), because its items form a dependency
 chain. Position therefore says nothing about importance, and dependencies are
 stated by ID inside each item so re-sequencing cannot silently invalidate them.
-BK-330 and BK-331 are independent and cheap. BK-324 comes next with its
+BK-331 is independent and cheap. BK-324 comes next with its
 *attribution* blocker cleared, but BK-331 still comes before it: facet 3 cannot be
 decided against 037's current table. ID-207 is unblocked but reads better after
 BK-324, which decides the orphan behaviours its day-one allowlist would otherwise
 enumerate blind. BK-332, ID-236 and ID-237 are follow-ons
-that get cheaper once the earlier work lands. BK-327 is independent of the chain
-and can be taken at any point.
+that get cheaper once the earlier work lands. BK-327 and ID-238 are independent
+of the chain and can be taken at any point; both sit at the section's tail.
 
 On importance, the research doc's designation, which this section adopts rather
 than restates: the two items that build what is actually missing are the authority
@@ -149,27 +313,16 @@ canonical claim space). BK-324 is the item they unblock and the evidence that th
 gap is real, not itself one of the two.
 
 Shipped so far: step 1 (Dafny twin parity) as BK-328, step 5.1 (the attribution
-rule) as BK-329; see [BACKLOG-DONE.md](BACKLOG-DONE.md). Three findings from them
+rule) as BK-329, and **step 3's report half** as BK-330; see
+[BACKLOG-DONE.md](BACKLOG-DONE.md). Step 3 asked for a report *and* a review
+cadence — the cadence is open as ID-238 at the tail of this section, so step 3
+is not closed. Four findings from them
 apply to what follows: a documented gap statement is not a measured one, pinning
-what an exemption covers beats exempting the whole item, and an authority rule is
+what an exemption covers beats exempting the whole item, an authority rule is
 worth exactly the live disagreements it decides — run a proposed one against them
 before believing it, because the case that does *not* resolve is the informative
-one.
-
-- [ ] **BK-330 — Aggregate trace outcome tags into a drift report**
-  spec: — · effort: S · audience: contributor.tooling
-  Research § 9 step 3. 187 `unclear` / `misleading` tags across 102 trace files
-  are committed, attributed, and never aggregated — a drift detector the repo
-  already paid for. Add `scripts/report_trace_outcomes.py`: references ranked by
-  negative-outcome count, with the citing traces.
-  **A report, not a gate**, per [`DRIFT-RULES.md` Rule 5](DRIFT-RULES.md#mandatory-path)'s
-  requirement to say why: there is no correct threshold, and gating it would
-  manufacture the false-positive fatigue that defeats rule checkers elsewhere.
-  Extraction method is decided, not open: reuse `check_traces.py`'s
-  `sdd/traces/[!_]*.yml` glob and read `phases[].steps[]` as parsed YAML, taking
-  `file` from the same mapping as `outcome`. A looser glob reintroduces the
-  `_schema.yml` off-by-one; a nearest-preceding-key text scan reintroduces an
-  attribution imprecision that already cost the research doc a review round.
+one — and a hand-counted figure about a growing corpus is stale before the commit
+that writes it lands, so cite the generator instead.
 
 - [ ] **BK-331 — Generate spec 037's per-backend table, then sweep for its siblings**
   spec: 037 · effort: S/M · audience: library.maintainer
@@ -355,6 +508,40 @@ one.
   raising `nav.omitted_files` to WARNING covers the nav half only.
   Surfaced by the PR #938 review; an unstated bound on `docs-gate` being trusted
   past its range ([`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)).
+
+- [ ] **ID-238 — Decide whether the trace-outcome report gets a review trigger, and what fires it**
+  spec: — · effort: S · audience: contributor.process
+  Independent of the chain, like BK-327 above — take it whenever, though it is
+  only actionable now that BK-330's report exists.
+  Research § 9 step 3 asked for two things: the report, and "review the top of the
+  list at the same cadence as the TLA+ status revisit". BK-330 shipped the report;
+  its item body dropped the cadence sentence, so the report exists and nothing
+  causes anyone to read it. **That gap between what the research asked for and
+  what the item scoped is this item's whole justification** — recorded here rather
+  than folded into BK-330, which deliberately shipped a tool and left the practice
+  question open.
+  This item is also the **named owner of BK-330's
+  [Rule 6](DRIFT-RULES.md#tolerated) register entry**: the decision it takes is
+  what settles whether that advisory check stays tolerated or gets switched off.
+  The analogy the research offered is `sdd/formal/README.md`'s TLA+ status revisit
+  (every 6 months or every 10 spec amendments, whichever first, each revisit
+  tracked as a backlog entry — the ID-150 pattern).
+  **The analogy is not the decision.** [`DRIFT-RULES.md` Rule 9](DRIFT-RULES.md#period)
+  says set the period from the drift rate and anchor a recurring check to the
+  events that can invalidate the artifact, not to a date — so an event trigger
+  ("a reference crosses N tags", "at each release", "when a ranked file is next
+  edited") is as admissible as a calendar one, and choosing between those shapes
+  is most of the work.
+  Input to that argument, not the answer: BK-330's
+  [BACKLOG-DONE entry](BACKLOG-DONE.md) measured the corpus growing by roughly
+  +3 negative tags and +1 tagged trace per merged PR across `79d0382` →
+  `d9a2d3d` → `83e22a3`. Re-measure with `hatch run report-trace-outcomes`
+  rather than trusting that figure — its going stale is the finding BK-330
+  shipped.
+  **Why ID, not BK:** the question was filed, not a period committed to. Whether
+  a scheduled review is the right mechanism at all is unevaluated, and Rule 9
+  makes "no recurring trigger, act on the report when a ranked file is next
+  touched" a legitimate outcome.
 
 ---
 
