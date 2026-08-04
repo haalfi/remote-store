@@ -269,9 +269,9 @@ class S3Boto3Backend(Backend):
     # region: path helpers
 
     def native_path(self, path: str) -> str:
-        if path:
-            return f"{self._bucket}/{path}"
-        return self._bucket
+        if is_root(path):
+            return self._bucket
+        return f"{self._bucket}/{path}"
 
     def to_key(self, native_path: str) -> str:
         prefix = f"{self._bucket}/"
@@ -390,6 +390,7 @@ class S3Boto3Backend(Backend):
         """
         # BufferedReader batches a sequential consume into ~1 GET per
         # _READ_BUFFER_SIZE rather than one per RawIOBase.readall() chunk.
+        self._reject_root_as_file(path)
         with self._file_op_errors(path):
             inner = self._open_range_stream(path)
             buffered = _safe_wrap(inner, lambda s: io.BufferedReader(s, buffer_size=_READ_BUFFER_SIZE))
@@ -402,7 +403,8 @@ class S3Boto3Backend(Backend):
         # refetching overlapping ranges. Returning the bare Range reader keeps
         # each read_at to one ranged GET. Matches the Azure / S3PyArrow "no
         # BufferedReader on the seekable path" contract.
-        with self._boto_errors(path):
+        self._reject_root_as_file(path)
+        with self._file_op_errors(path):
             return cast(BinaryIO, self._open_range_stream(path))  # noqa: TC006
 
     def read_bytes(self, path: str) -> bytes:
@@ -413,6 +415,7 @@ class S3Boto3Backend(Backend):
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
+        self._reject_root_as_file(path)
         with self._file_op_errors(path):
             resp = self._client.get_object(Bucket=self._bucket, Key=path)
             return bytes(resp["Body"].read())
@@ -543,6 +546,7 @@ class S3Boto3Backend(Backend):
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
+        self._reject_root_as_file(path)
         with self._boto_errors(path):
             if self._head_or_none(path) is None:
                 # BE-012: type mismatch outranks missing-path tolerance.
@@ -593,6 +597,7 @@ class S3Boto3Backend(Backend):
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
+        self._reject_root_as_file(path)
         with self._file_op_errors(path):
             raw = self._client.head_object(Bucket=self._bucket, Key=path, ChecksumMode="ENABLED")
             return self._head_to_fileinfo(raw, path)
@@ -730,6 +735,7 @@ class S3Boto3Backend(Backend):
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
+        self._reject_root_as_file(src)
         with self._boto_errors(src):
             if self._head_or_none(src) is None:
                 self._reject_folder(src)
@@ -760,6 +766,7 @@ class S3Boto3Backend(Backend):
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
+        self._reject_root_as_file(src)
         with self._boto_errors(src):
             if self._head_or_none(src) is None:
                 self._reject_folder(src)
@@ -974,6 +981,18 @@ class S3Boto3Backend(Backend):
             MaxKeys=1,
         )
         return bool(resp.get("KeyCount", 0)) or bool(resp.get("CommonPrefixes"))
+
+    def _reject_root_as_file(self, path: str) -> None:
+        """Pre-check: the store root is a folder, so a file op on it is a type error.
+
+        Costs no round trip and keeps the root out of the SDK, where a
+        zero-length ``Key`` is rejected at parameter validation and would
+        surface as ``BackendUnavailable`` -- a retryable classification for a
+        permanently wrong request.
+        """
+        from remote_store.backends._flat_ns import _reject_root_as_file
+
+        _reject_root_as_file(path, self.name)
 
     def _reject_folder(self, path: str) -> None:
         """Error path: raise ``InvalidPath`` if *path* is a virtual folder.

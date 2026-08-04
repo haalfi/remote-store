@@ -206,6 +206,17 @@ class _S3Base(Backend):
             return False
         return bool(resp.get("KeyCount", 0)) or bool(resp.get("CommonPrefixes"))
 
+    def _reject_root_as_file(self, path: str) -> None:
+        """Pre-check: the store root is a folder, so a file op on it is a type error.
+
+        Costs no round trip (root-ness is decidable from the string) and keeps
+        the root out of the SDK, where a zero-length ``Key`` is rejected at
+        parameter validation and surfaces as a transport-shaped error.
+        """
+        from remote_store.backends._flat_ns import _reject_root_as_file
+
+        _reject_root_as_file(path, self.name)
+
     def _reject_folder(self, path: str) -> None:
         """Error path: raise ``InvalidPath`` if *path* is a virtual folder.
 

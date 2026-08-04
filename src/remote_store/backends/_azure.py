@@ -26,7 +26,7 @@ from remote_store._errors import (
     RemoteStoreError,
 )
 from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
-from remote_store._path import RemotePath
+from remote_store._path import RemotePath, is_root
 from remote_store._stream import _ErrorMappingStream
 from remote_store.backends._azure_common import (
     _build_azure_write_result,
@@ -351,6 +351,17 @@ class AzureBackend(Backend):
             return False
         return True
 
+    def _reject_root_as_file(self, path: str) -> None:
+        """Pre-check: the store root is a folder, so a file op on it is a type error.
+
+        Runs on HNS accounts too, unlike the probe-backed rejections below:
+        root-ness needs no round trip and no namespace knowledge, and the
+        alternative is handing an empty blob name to the SDK.
+        """
+        from remote_store.backends._flat_ns import _reject_root_as_file
+
+        _reject_root_as_file(path, self.name)
+
     def _reject_folder(self, path: str) -> None:
         """Error path: raise ``InvalidPath`` if *path* is a virtual folder.
 
@@ -429,9 +440,9 @@ class AzureBackend(Backend):
         return native_path
 
     def native_path(self, path: str) -> str:
-        if path:
-            return f"{self._container}/{path}"
-        return self._container
+        if is_root(path):
+            return self._container
+        return f"{self._container}/{path}"
 
     def resolve(self, path: str) -> ResolutionPlan:
         """Return a ``ResolutionPlan`` with Azure-specific details.
@@ -553,6 +564,7 @@ class AzureBackend(Backend):
             PermissionDenied: If credentials are rejected or lack access (401/403).
             BackendUnavailable: On throttling (429), 5xx, or transport failure.
         """
+        self._reject_root_as_file(path)
         with self._file_op_errors(path):
             bc = self._blob_client(path)
             if self._hns:  # pragma: no cover -- HNS only
@@ -596,7 +608,8 @@ class AzureBackend(Backend):
             PermissionDenied: If credentials are rejected or lack access (401/403).
             BackendUnavailable: On throttling (429), 5xx, or transport failure.
         """
-        with self._errors(path):
+        self._reject_root_as_file(path)
+        with self._file_op_errors(path):
             bc = self._blob_client(path)
             props = bc.get_blob_properties()
             blob_meta = getattr(props, "metadata", None) or {}
@@ -621,6 +634,7 @@ class AzureBackend(Backend):
             PermissionDenied: If credentials are rejected or lack access (401/403).
             BackendUnavailable: On throttling (429), 5xx, or transport failure.
         """
+        self._reject_root_as_file(path)
         with self._file_op_errors(path):
             bc = self._blob_client(path)
             downloader = bc.download_blob(max_concurrency=self._max_concurrency)
@@ -927,6 +941,7 @@ class AzureBackend(Backend):
             PermissionDenied: If credentials are rejected or lack access (401/403).
             BackendUnavailable: On throttling (429), 5xx, or transport failure.
         """
+        self._reject_root_as_file(path)
         with self._errors(path):
             bc = self._blob_client(path)
             if self._hns:
@@ -1198,6 +1213,7 @@ class AzureBackend(Backend):
             NotFound: If the file does not exist.
             InvalidPath: If ``path`` names a directory (HNS: ``hdi_isfolder=true``).
         """
+        self._reject_root_as_file(path)
         with self._file_op_errors(path):
             bc = self._blob_client(path)
             props = bc.get_blob_properties()
@@ -1304,6 +1320,7 @@ class AzureBackend(Backend):
         # non-canonical paths ("a//b" vs "a/b") that name the same blob once
         # azure_path collapses them; without normalising, the copy+delete
         # branch below would delete the sole copy (AZ-017 data-loss edge).
+        self._reject_root_as_file(src)
         if self._azure_path(src) == self._azure_path(dst):
             with self._errors(src):
                 src_bc = self._blob_client(src)
@@ -1389,6 +1406,7 @@ class AzureBackend(Backend):
         # Compare normalised keys: a direct-backend caller can pass
         # non-canonical paths ("a//b" vs "a/b") that name the same blob once
         # azure_path collapses them (AZ-018 self-op edge).
+        self._reject_root_as_file(src)
         if self._azure_path(src) == self._azure_path(dst):
             with self._errors(src):
                 src_bc = self._blob_client(src)

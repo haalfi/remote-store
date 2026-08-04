@@ -142,9 +142,16 @@ def test_delete_folder_non_recursive_non_empty(mb: MemoryBackend) -> None:
 
 
 @pytest.mark.spec("BE-016")
-def test_get_file_info_empty_path(mb: MemoryBackend) -> None:
-    with pytest.raises(NotFound, match="empty path"):
-        mb.get_file_info("")
+@pytest.mark.spec("BE-029")
+@pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+def test_get_file_info_on_root_raises_invalid_path(mb: MemoryBackend, root: str) -> None:
+    """The root is a folder, so this is a type error and not a miss.
+
+    Was ``NotFound``, which made this the one backend where the root's verdict
+    depended on which file-shaped method you asked.
+    """
+    with pytest.raises(InvalidPath, match="Not a file"):
+        mb.get_file_info(root)
 
 
 @pytest.mark.spec("MEM-015")

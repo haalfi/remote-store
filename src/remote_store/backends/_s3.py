@@ -16,7 +16,7 @@ from remote_store._errors import (
     NotFound,
 )
 from remote_store._models import WriteResult
-from remote_store._path import RemotePath
+from remote_store._path import RemotePath, is_root
 from remote_store._stream import _ErrorMappingStream, _safe_wrap
 from remote_store.backends._flat_ns import _folder_not_file
 from remote_store.backends._s3_base import (
@@ -128,9 +128,9 @@ class S3Backend(_S3Base):
             self._fs.call_s3("head_bucket", Bucket=self._bucket)
 
     def native_path(self, path: str) -> str:
-        if path:
-            return f"{self._bucket}/{path}"
-        return self._bucket
+        if is_root(path):
+            return self._bucket
+        return f"{self._bucket}/{path}"
 
     def exists(self, path: str) -> bool:
         """Return ``True`` if an object or prefix exists at *path*; never ``NotFound``.
@@ -181,6 +181,7 @@ class S3Backend(_S3Base):
             PermissionDenied: If the credentials lack access.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
+        self._reject_root_as_file(path)
         with self._s3fs_file_errors(path):
             f: BinaryIO = self._fs.open(self._s3_path(path), "rb")
             # BE-021: s3fs resolves a bare common prefix to a synthetic
@@ -204,6 +205,7 @@ class S3Backend(_S3Base):
             PermissionDenied: If the credentials lack access.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
+        self._reject_root_as_file(path)
         with self._s3fs_file_errors(path):
             return bytes(self._fs.cat_file(self._s3_path(path)))
 
@@ -352,6 +354,7 @@ class S3Backend(_S3Base):
             PermissionDenied: If the credentials lack access.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
+        self._reject_root_as_file(path)
         with self._s3fs_errors(path):
             # BE-012: the narrow object probe (not s3fs.exists, which also
             # answers True for a bare prefix) so a folder falls through to the
@@ -409,6 +412,7 @@ class S3Backend(_S3Base):
             PermissionDenied: If the credentials lack access.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
+        self._reject_root_as_file(path)
         with self._s3fs_file_errors(path):
             raw = self._fs.call_s3(
                 "head_object",
@@ -433,6 +437,7 @@ class S3Backend(_S3Base):
             PermissionDenied: If the credentials lack access.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
+        self._reject_root_as_file(src)
         with self._s3fs_errors(src):
             # BE-018/BE-019: narrow object probe on the source so a prefix
             # surfaces as InvalidPath rather than silently copying nothing.
@@ -464,6 +469,7 @@ class S3Backend(_S3Base):
             PermissionDenied: If the credentials lack access.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
+        self._reject_root_as_file(src)
         with self._s3fs_errors(src):
             # BE-018/BE-019: narrow object probe on the source so a prefix
             # surfaces as InvalidPath rather than silently copying nothing.

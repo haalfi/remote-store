@@ -99,6 +99,26 @@ For `path` in `{"", "."}`:
 | `is_file(path)` | `False` — and it does **not** raise |
 | `get_folder_info(path)` | aggregates the whole store (never `NotFound`) |
 | `list_files(path)` / `list_folders(path)` / `iter_children(path)` | enumerate from the root |
+| `native_path(path)` / `resolve(path).native_path` | the backend's bare root |
+| every file-shaped operation | `InvalidPath` — see below |
+
+**A file-shaped operation on the root raises `InvalidPath`.** The root is a
+folder, so BE-021's first row applies to it exactly as to any other folder
+path: `read`, `read_bytes`, `read_seekable`, `get_file_info`, `delete` (with or
+without `missing_ok`) and the `move`/`copy` **source** all raise `InvalidPath`.
+Backends MUST decide this **before** calling their SDK. Root-ness is decidable
+from the string with no round trip, and handing an empty object key to an SDK
+that rejects zero-length keys at parameter validation turns a permanently wrong
+request into a transport-shaped, retryable-looking error.
+
+**One predicate, both spellings.** `remote_store._path.is_root` is the shared
+test; `strip_root` is its normalising form. A backend that asks `if path`
+instead sends the dot spelling down the non-root arm, because `"."` is truthy —
+which is how one backend came to answer `NotFound` for `delete("")` and
+`InvalidPath` for `delete(".")` on the same store. Path concatenation is the
+same trap from the other side: `"./"` is a real and permanently empty prefix on
+a flat namespace, so a listing built by concatenation silently answers for
+nothing and reports success.
 
 **The root exists by definition, not by observation.** An empty store still
 has a root: `is_folder("")` is `True` before anything is written. Backends that
@@ -117,15 +137,19 @@ surface as `BackendUnavailable`.
 never depends on this clause. It binds the layer below, which has its own
 callers: the adapter surface, `unwrap()` consumers, anything round-tripping a
 `FolderInfo.path` (rendered `"."` by `RemotePath.ROOT`) back into a query, and
-the conformance suite itself. `remote_store._path.is_root` is the shared
-predicate; backends that build a listing prefix by concatenation must consult it
-rather than test `if path`, because `"./"` is a real and permanently empty
-prefix on a flat namespace.
+the conformance suite itself.
 
-**Out of scope:** mutating the root. `delete("")` / `delete_folder("")` are
-governed at the `Store` layer (STORE-002); backend behaviour for them is
-undefined by this clause. Writing *to* the root path is a malformed file path
-and is rejected by path validation, not by this clause.
+**Round-trip consequence.** Because both spellings share one native path,
+BE-025's `to_key(native_path(k)) == k` identity returns the *canonical* root
+key: `to_key(native_path("."))` is `""`, not `"."`. The identity holds verbatim
+for every other key. This is forced, not a concession — an inverse cannot
+return two spellings from one input.
+
+**Out of scope:** `delete_folder("")` and writes *to* the root. `delete_folder`
+on the root is governed at the `Store` layer (STORE-002); backend behaviour for
+it is undefined by this clause. Writing to the root path is a malformed file
+path, rejected by path validation. Note `delete("")` is **not** out of scope —
+it is a file-shaped operation on a folder, and the row above governs it.
 
 **Conformance:** `tests/backends/conformance/test_io.py::TestBackendRootPath`
 and its async sibling in `test_async_extended.py`, both parametrised over both
@@ -417,16 +441,30 @@ error, the same posture the file-ancestor walk takes (see BE-008 / ID-211).
 
 Because the probe fires on failure, the obligation reaches exactly the
 operations that *can* fail on a wrong-type path: `read`, `read_bytes`,
-`delete`, `get_file_info`, `delete_folder`, `get_folder_info`, and the
-`move`/`copy` **source**. It does not reach `write`, `write_atomic`, or the
-`move`/`copy` **destination** — a flat-namespace write to a key that shadows a
-prefix succeeds, so there is no error to reclassify. Those stay under BE-008's
-flat-namespace exemption, which is unchanged.
+`read_seekable`, `delete`, `get_file_info`, `delete_folder`, `get_folder_info`,
+and the `move`/`copy` **source**. It does not reach `write`, `write_atomic`, or
+the `move`/`copy` **destination** — a flat-namespace write to a key that
+shadows a prefix succeeds, so there is no error to reclassify. Those stay under
+BE-008's flat-namespace exemption, which is unchanged.
+
+`read_seekable` is in the list, not exempt from it. `SEEKABLE_READ` is a
+CAP-007 *quality flag*: it describes the stream `read()` hands back, not a
+different contract, and the ABC default implementation delegates to `read()`.
+Only a backend that overrides `read_seekable` for an optimised range reader
+could diverge — so excluding it would make the error contract depend on whether
+a backend optimised its seekable path, which is exactly the undeclared
+divergence this clause exists to remove.
 
 Type mismatch outranks `missing_ok`: `delete(folder, missing_ok=True)` and
 `delete_folder(file, missing_ok=True)` raise `InvalidPath`, because the
 tolerance is for a *missing* path, not a wrong-typed one. This is the same rule
 BE-012 already states for hierarchical backends, now uniform.
+
+**The store root is decided before the probe, not by it.** A probe answer about
+the root is meaningless — it is a folder whether or not it has children — so
+every file-shaped operation rejects it up front (BE-029) and the probes below
+exempt it. That pre-check is also the only one that costs nothing, which is why
+it is the single exception to the error-path-only rule above.
 
 **Conformance:** `tests/backends/conformance/test_errors.py` and its async
 sibling `test_async_extended.py` carry no flat-namespace skip on these cells.
@@ -455,6 +493,7 @@ raising `InvalidPath`. All other operations MUST raise appropriate errors.
 ### BE-025: native_path()
 
 **Invariant:** `native_path(path)` converts a backend-relative key to the backend-native path. The inverse of `to_key()`: `backend.to_key(backend.native_path(key)) == key`. The default implementation is the identity function — backends with a native root **must** override.
+**Root spellings:** `native_path("")` and `native_path(".")` return the same value, the bare backend root (BE-029). The round-trip identity therefore returns the canonical root key — `to_key(native_path("."))` is `""` — since one native path cannot invert to two spellings. Every non-root key round-trips verbatim. The identity-default implementation normalises both spellings for the same reason.
 **Postconditions:** Pure, deterministic, total (never raises). The returned path is usable with the native handle from `unwrap()`.
 **Overrides:** `LocalBackend` (prepends root dir), `S3Backend` (prepends bucket), `S3PyArrowBackend` (prepends bucket), `SFTPBackend` (prepends base_path), `AzureBackend` (prepends container).
 **Example:** `S3PyArrowBackend(bucket="lake").native_path("data/file.parquet")` returns `"lake/data/file.parquet"`.

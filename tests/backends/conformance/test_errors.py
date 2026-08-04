@@ -86,6 +86,22 @@ class TestReadErrorFidelity:
             backend.read_bytes("rbdir")
         assert exc.value.path == "rbdir"
 
+    @pytest.mark.spec("SEEK-003")
+    @pytest.mark.spec("BE-021")
+    def test_read_seekable_on_directory_raises_error(self, backend: Backend) -> None:
+        """read_seekable(dir): same contract as read().
+
+        ``SEEKABLE_READ`` is a quality flag on the stream, not a different
+        error contract, and the ABC default delegates straight to ``read()``.
+        Only a backend that overrides ``read_seekable`` for a range reader can
+        diverge — which two did, answering ``NotFound`` for a folder path that
+        ``read`` on the same instance called ``InvalidPath``.
+        """
+        backend.write("rsdir/file.txt", b"x")
+        with pytest.raises(InvalidPath, match="rsdir") as exc:
+            backend.read_seekable("rsdir").read()
+        assert exc.value.path == "rsdir"
+
     @pytest.mark.spec("BE-006")
     def test_read_missing_raises_not_found(self, backend: Backend) -> None:
         """!PathExists ==> NotFound."""

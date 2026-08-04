@@ -35,6 +35,7 @@ from remote_store._errors import (
     NotFound,
 )
 from remote_store._models import FileInfo, FolderEntry, WriteResult
+from remote_store._path import is_root
 from tests.backends.conformance._helpers import _depth, _fixture_record, _skip_unless_large_write_distinct
 from tests.backends.conformance.test_atomic import _FIELD_CAPABILITY, _LARGE_WRITE_SIZE
 from tests.backends.fixtures import fixture_params
@@ -1347,6 +1348,31 @@ class TestOperationalConsistency:
         assert info.size == len(data)
 
 
+async def _drain_async_read(backend: AsyncBackend, path: str) -> bytes:
+    """Consume an async ``read`` fully, so a lazy handle is not mistaken for success."""
+    return b"".join([chunk async for chunk in backend.read(path)])
+
+
+_ASYNC_ROOT_FILE_OPS = [
+    pytest.param("read", Capability.READ, id="read"),
+    pytest.param("read_bytes", Capability.READ, id="read_bytes"),
+    pytest.param("get_file_info", Capability.METADATA, id="get_file_info"),
+    pytest.param("delete", Capability.DELETE, id="delete"),
+    pytest.param("move", Capability.MOVE, id="move_src"),
+    pytest.param("copy", Capability.COPY, id="copy_src"),
+]
+"""No ``read_seekable``: the async Backend surface does not declare one."""
+
+_ASYNC_ROOT_FILE_OP_CALLS = {
+    "read": _drain_async_read,
+    "read_bytes": lambda b, p: b.read_bytes(p),
+    "get_file_info": lambda b, p: b.get_file_info(p),
+    "delete": lambda b, p: b.delete(p),
+    "move": lambda b, p: b.move(p, "rootop_dst.txt"),
+    "copy": lambda b, p: b.copy(p, "rootop_dst.txt"),
+}
+
+
 class TestBackendRootPath:
     """BE-029 (async mirror of ``test_io.py::TestBackendRootPath``).
 
@@ -1384,6 +1410,37 @@ class TestBackendRootPath:
         info = await async_backend.get_folder_info(root)
         assert info.file_count == 2
         assert info.total_size == 5
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize(("op", "cap"), _ASYNC_ROOT_FILE_OPS)
+    async def test_file_operation_on_root_raises_invalid_path(
+        self, async_backend: AsyncBackend, root: str, op: str, cap: Capability
+    ) -> None:
+        """Async mirror of ``test_io.py``: a file op on the root is a type error.
+
+        Both spellings must reach ``InvalidPath`` by the same route. ``is_root``
+        rather than equality on ``.path``, because a backend may echo the root
+        in its own canonical spelling.
+        """
+        _require(async_backend, Capability.WRITE, cap)
+        await async_backend.write("rootop/a.txt", b"x")
+        with pytest.raises(InvalidPath) as exc:
+            await _ASYNC_ROOT_FILE_OP_CALLS[op](async_backend, root)
+        assert is_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("ASYNC-012")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    async def test_delete_root_with_missing_ok_still_raises(self, async_backend: AsyncBackend, root: str) -> None:
+        """``missing_ok`` tolerates a missing path, never a wrong-typed one."""
+        _require(async_backend, Capability.WRITE, Capability.DELETE)
+        await async_backend.write("rootmok/a.txt", b"x")
+        with pytest.raises(InvalidPath) as exc:
+            await async_backend.delete(root, missing_ok=True)
+        assert is_root(exc.value.path)
+        assert await async_backend.exists("rootmok/a.txt") is True
 
 
 class TestBackendQueryMethodsTypeConflicts:

@@ -14,7 +14,8 @@ from typing import TYPE_CHECKING
 import pytest
 
 from remote_store._capabilities import Capability
-from remote_store._errors import AlreadyExists, NotFound
+from remote_store._errors import AlreadyExists, InvalidPath, NotFound
+from remote_store._path import is_root
 from tests.backends.conformance._helpers import _fixture_record, _require, _seed
 from tests.backends.fixtures import fixture_params
 
@@ -64,6 +65,35 @@ class TestBackendFileFolder:
     )
     def test_false_for_missing(self, backend: Backend, method: str) -> None:
         assert getattr(backend, method)("nope") is False
+
+
+_ROOT_FILE_OPS = [
+    pytest.param("read", Capability.READ, id="read"),
+    pytest.param("read_bytes", Capability.READ, id="read_bytes"),
+    pytest.param("read_seekable", Capability.READ, id="read_seekable"),
+    pytest.param("get_file_info", Capability.METADATA, id="get_file_info"),
+    pytest.param("delete", Capability.DELETE, id="delete"),
+    pytest.param("move", Capability.MOVE, id="move_src"),
+    pytest.param("copy", Capability.COPY, id="copy_src"),
+]
+"""The file-shaped surface BE-021's first row governs, as (method, capability).
+
+``read_seekable`` is in the list because it is a read whose *stream* differs,
+not a read whose *contract* differs — the ABC default delegates to ``read()``,
+so only the two optimised overrides could ever have diverged.
+"""
+
+_ROOT_FILE_OP_CALLS = {
+    "read": lambda b, p: b.read(p).read(),
+    "read_bytes": lambda b, p: b.read_bytes(p),
+    "read_seekable": lambda b, p: b.read_seekable(p).read(),
+    "get_file_info": lambda b, p: b.get_file_info(p),
+    "delete": lambda b, p: b.delete(p),
+    "move": lambda b, p: b.move(p, "rootop_dst.txt"),
+    "copy": lambda b, p: b.copy(p, "rootop_dst.txt"),
+}
+"""Invocation per op. ``read``/``read_seekable`` are drained so a backend that
+defers its verdict to first byte is not credited with a lazy handle."""
 
 
 @pytest.mark.parametrize("backend", fixture_params(Capability.WRITE), indirect=True)
@@ -117,6 +147,53 @@ class TestBackendRootPath:
         info = backend.get_folder_info(root)
         assert info.file_count == 2
         assert info.total_size == 5
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize(("op", "cap"), _ROOT_FILE_OPS)
+    def test_file_operation_on_root_raises_invalid_path(
+        self, backend: Backend, root: str, op: str, cap: Capability
+    ) -> None:
+        """A file-shaped operation on the root is a type error, not a miss.
+
+                The root is a folder (BE-029), so BE-021's first row applies and the
+                answer is ``InvalidPath`` — the same answer these operations give for
+                any other folder path. Both spellings must reach it, and by the same
+                route: the class of defect this pins is one spelling taking a
+                different code path from the other, which produced ``NotFound`` for
+                ``""`` and ``InvalidPath`` for ``"."`` on the same backend and call.
+
+        The raised error must be *about the root*: a backend that let the root
+                through to its SDK and mapped the resulting zero-length-key rejection
+                would name something else, or raise a retryable class for a permanent
+                condition. ``is_root`` rather than equality, because a backend may
+                echo the root in its own canonical spelling — the verified oracle maps
+                ``""`` to ``"."`` at its type boundary by design.
+        """
+        _require(backend, cap)
+        backend.write("rootop/a.txt", b"x")
+        with pytest.raises(InvalidPath) as exc:
+            _ROOT_FILE_OP_CALLS[op](backend, root)
+        assert is_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-012")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_delete_root_with_missing_ok_still_raises(self, backend: Backend, root: str) -> None:
+        """``missing_ok`` tolerates a missing path, never a wrong-typed one.
+
+        Without this cell a backend can satisfy the sibling test and still
+        silently no-op on ``delete(root, missing_ok=True)`` — which one did,
+        returning ``None`` and reporting success for a call that deleted
+        nothing.
+        """
+        _require(backend, Capability.DELETE)
+        backend.write("rootmok/a.txt", b"x")
+        with pytest.raises(InvalidPath) as exc:
+            backend.delete(root, missing_ok=True)
+        assert is_root(exc.value.path)
+        assert backend.exists("rootmok/a.txt") is True
 
 
 @pytest.mark.parametrize("backend", fixture_params(Capability.WRITE), indirect=True)

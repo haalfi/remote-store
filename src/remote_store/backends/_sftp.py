@@ -643,11 +643,11 @@ class SFTPBackend(Backend):
         return native_path
 
     def native_path(self, path: str) -> str:
-        if path:
-            if self._base_path == "/":
-                return f"/{path}"
-            return f"{self._base_path}/{path}"
-        return self._base_path
+        if is_root(path):
+            return self._base_path
+        if self._base_path == "/":
+            return f"/{path}"
+        return f"{self._base_path}/{path}"
 
     def resolve(self, path: str) -> ResolutionPlan:
         """Return a ``ResolutionPlan`` with SFTP-specific details.

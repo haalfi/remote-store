@@ -24,7 +24,7 @@ from remote_store._errors import (
     RemoteStoreError,
 )
 from remote_store._models import FileInfo, WriteResult
-from remote_store._path import RemotePath
+from remote_store._path import RemotePath, is_root
 from remote_store._retry import RETRYABLE_STATUSES, apply_retry_after, budget_exhausted, equal_jitter_delay
 from remote_store._retry import parse_retry_after as _parse_retry_after
 from remote_store._stream import _ErrorMappingStream
@@ -440,7 +440,7 @@ class ReadOnlyHttpBackend(Backend):
 
     def native_path(self, path: str) -> str:
         """Return the full URL for a backend-relative key."""
-        if not path:
+        if is_root(path):
             return self._base_url
         return self._base_url + urllib.parse.quote(path, safe="/")
 

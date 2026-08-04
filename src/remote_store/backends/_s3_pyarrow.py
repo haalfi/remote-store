@@ -22,7 +22,7 @@ from remote_store._errors import (
     _permission_denied,
 )
 from remote_store._models import WriteResult
-from remote_store._path import RemotePath
+from remote_store._path import RemotePath, is_root
 from remote_store._stream import _ErrorMappingStream, _safe_wrap
 from remote_store.backends._s3_base import (
     _S3_CA_ENV_VARS,
@@ -223,6 +223,7 @@ class S3PyArrowBackend(_S3Base):
             PermissionDenied: If the credentials lack access.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
+        self._reject_root_as_file(path)
         with self._pyarrow_file_errors(path):
             pa_file = self._pa_fs.open_input_file(self._pa_path(path))
             stream = _safe_wrap(pa_file, _PyArrowBinaryIO, lambda s: _ErrorMappingStream(s, self._classify_error, path))
@@ -236,6 +237,7 @@ class S3PyArrowBackend(_S3Base):
             PermissionDenied: If the credentials lack access.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
+        self._reject_root_as_file(path)
         with self._pyarrow_file_errors(path):
             stream = self._pa_fs.open_input_stream(self._pa_path(path))
             return bytes(stream.read())
@@ -380,6 +382,7 @@ class S3PyArrowBackend(_S3Base):
             buf.close()
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
+        self._reject_root_as_file(path)
         with self._s3fs_errors(path):
             # BE-012: narrow object probe (see _S3Base._s3_is_object); the
             # type mismatch outranks missing_ok.
@@ -413,6 +416,7 @@ class S3PyArrowBackend(_S3Base):
                     )
 
     def get_file_info(self, path: str) -> FileInfo:
+        self._reject_root_as_file(path)
         with self._s3fs_file_errors(path):
             raw = self._s3fs.call_s3(
                 "head_object",
@@ -438,6 +442,7 @@ class S3PyArrowBackend(_S3Base):
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
         # Existence checks via s3fs, copy via pyarrow, delete via s3fs
+        self._reject_root_as_file(src)
         with self._s3fs_errors(src):
             # BE-018/BE-019: narrow object probe on the source so a prefix
             # surfaces as InvalidPath rather than a bare NotFound.
@@ -468,6 +473,7 @@ class S3PyArrowBackend(_S3Base):
             PermissionDenied: If the credentials lack access.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
+        self._reject_root_as_file(src)
         with self._s3fs_errors(src):
             # BE-018/BE-019: narrow object probe on the source so a prefix
             # surfaces as InvalidPath rather than a bare NotFound.
@@ -584,9 +590,9 @@ class S3PyArrowBackend(_S3Base):
 
     def _pa_path(self, path: str) -> str:
         """Build bucket/key path for PyArrow."""
-        if path:
-            return f"{self._bucket}/{path}"
-        return self._bucket
+        if is_root(path):
+            return self._bucket
+        return f"{self._bucket}/{path}"
 
     @contextmanager
     def _pyarrow_file_errors(self, path: str) -> Iterator[None]:

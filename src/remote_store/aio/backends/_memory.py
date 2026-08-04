@@ -454,7 +454,8 @@ class AsyncMemoryBackend(AsyncBackend):
         """
         segments = _split_path(path)
         if not segments:
-            raise NotFound("File not found: (empty path)", path=path, backend="async-memory")
+            # The root is a folder: type error, not a miss. Mirrors the sync twin.
+            raise InvalidPath(f"Not a file: {path}", path=path, backend="async-memory")
         async with self._lock:
             node = self._traverse(segments)
             if isinstance(node, _DirNode):

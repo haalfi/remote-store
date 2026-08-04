@@ -26,6 +26,7 @@ from remote_store.backends._flat_ns import (
     _awrong_type_if_file,
     _awrong_type_if_folder,
     _check_no_file_ancestor,
+    _reject_root_as_file,
     _wrong_type_if_file,
     _wrong_type_if_folder,
 )
@@ -214,15 +215,34 @@ class TestWrongTypeSync:
 
         assert calls == ["some/missing"], "probe must run exactly once, on the queried path"
 
-    def test_root_is_never_reclassified(self) -> None:
-        """The root is a folder by definition, so it must not even be probed."""
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_root_is_never_reclassified(self, root: str) -> None:
+        """The root is a folder by definition, so it must not even be probed.
+
+        Both spellings, one predicate. A truthiness test (``if path``) exempts
+        ``""`` and lets ``"."`` through, where the probe answers about the
+        whole store and turns the caller's error into a bogus type verdict.
+        """
         calls: list[str] = []
 
         def has_children(key: str) -> bool:
             calls.append(key)
             return True
 
-        _wrong_type_if_folder("", has_children=has_children, backend="stub")
+        _wrong_type_if_folder(root, has_children=has_children, backend="stub")
+
+        assert calls == []
+
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_file_probe_skips_both_root_spellings(self, root: str) -> None:
+        """Folder-shaped mirror: the root is never an object, so never probed."""
+        calls: list[str] = []
+
+        def is_object(key: str) -> bool:
+            calls.append(key)
+            return True
+
+        _wrong_type_if_file(root, is_object=is_object, backend="stub")
 
         assert calls == []
 
@@ -274,14 +294,27 @@ class TestWrongTypeAsync:
 
         assert calls == ["some/missing"]
 
-    async def test_root_is_never_reclassified(self) -> None:
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    async def test_root_is_never_reclassified(self, root: str) -> None:
         calls: list[str] = []
 
         async def has_children(key: str) -> bool:
             calls.append(key)
             return True
 
-        await _awrong_type_if_folder("", has_children=has_children, backend="stub")
+        await _awrong_type_if_folder(root, has_children=has_children, backend="stub")
+
+        assert calls == []
+
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    async def test_file_probe_skips_both_root_spellings(self, root: str) -> None:
+        calls: list[str] = []
+
+        async def is_object(key: str) -> bool:
+            calls.append(key)
+            return True
+
+        await _awrong_type_if_file(root, is_object=is_object, backend="stub")
 
         assert calls == []
 
@@ -304,3 +337,24 @@ class TestWrongTypeAsync:
         await _awrong_type_if_file("some/missing", is_object=is_object, backend="stub")
 
         assert calls == ["some/missing"]
+
+
+class TestRejectRootAsFile:
+    """The pre-check that keeps the root out of file-shaped operations."""
+
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_both_spellings_raise_invalid_path(self, root: str) -> None:
+        with pytest.raises(InvalidPath, match="is a folder, not a file") as exc_info:
+            _reject_root_as_file(root, "stub")
+
+        assert exc_info.value.path == root
+        assert exc_info.value.backend == "stub"
+
+    @pytest.mark.parametrize("path", ["a.txt", "a/b.txt", "dot.txt", "a/./b"], ids=range(4))
+    def test_non_root_paths_pass_through(self, path: str) -> None:
+        """Only the root itself is rejected -- an interior dot segment is not root.
+
+        The guard runs ahead of every file-shaped operation, so over-matching
+        here would reject ordinary keys before any I/O.
+        """
+        assert _reject_root_as_file(path, "stub") is None

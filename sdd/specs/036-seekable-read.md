@@ -35,6 +35,13 @@ into a `SpooledTemporaryFile(max_size=8_388_608)` and returns it
 positioned at byte 0.
 **Postconditions:** All backends support `read_seekable()` without
 overriding. Backends MAY override for optimization.
+**Error contract:** identical to `read()`, and that is not incidental — the
+default *is* `read()`. `read_seekable` on a folder path raises `InvalidPath`
+and on a missing path raises `NotFound`, per the BE-021 canonical mapping,
+which lists it alongside `read` / `read_bytes`. An overriding backend inherits
+the obligation rather than escaping it: a range reader that answers `NotFound`
+where the same instance's `read()` answers `InvalidPath` makes the error
+contract depend on which of the two the caller happened to use.
 
 ## SEEK-004: Passthrough for Seekable Backends
 

@@ -188,6 +188,7 @@ TWINS: tuple[Twin, ...] = (
                 "_flat_is_blob",
                 "_reject_file",
                 "_reject_folder",
+                "_reject_root_as_file",
                 "_src_props",
                 "check_health",
                 "delete_folder",

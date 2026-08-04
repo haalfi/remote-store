@@ -431,12 +431,15 @@ class MemoryBackend(Backend):
         """Return metadata for the file at *path* from the in-memory node.
 
         Raises:
-            NotFound: If no file exists at *path* (including the empty path).
-            InvalidPath: If *path* names a folder.
+            NotFound: If no file exists at *path*.
+            InvalidPath: If *path* names a folder, including the store root.
         """
         segments = self._split_path(path)
         if not segments:
-            raise NotFound("File not found: (empty path)", path=path, backend="memory")
+            # The root is a folder, so this is a type error and not a miss --
+            # the same verdict the ``_DirNode`` branch below reaches, and the
+            # one every other operation here already gave the root.
+            raise InvalidPath(f"Not a file: {path}", path=path, backend="memory")
         with self._lock:
             node = self._traverse(segments)
             if isinstance(node, _DirNode):

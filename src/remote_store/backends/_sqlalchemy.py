@@ -1522,7 +1522,7 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
             raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
 
         return FolderInfo(
-            path=RemotePath.from_backend_path(path) if path and path != "." else RemotePath.ROOT,
+            path=RemotePath.from_backend_path(path),
             file_count=file_count,
             total_size=0,
             modified_at=None,

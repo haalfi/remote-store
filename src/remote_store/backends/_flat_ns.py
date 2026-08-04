@@ -73,6 +73,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from remote_store._errors import InvalidPath
+from remote_store._path import is_root
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -159,6 +160,29 @@ def _file_not_folder(path: str, backend: str) -> InvalidPath:
     return InvalidPath(f"Path is a file, not a folder: {path!r}", path=path, backend=backend)
 
 
+def _reject_root_as_file(path: str, backend: str) -> None:
+    """Raise ``InvalidPath`` when a file-shaped operation is handed the store root.
+
+    The root is a folder, so ``read``, ``read_bytes``, ``read_seekable``,
+    ``get_file_info``, ``delete`` and the ``move``/``copy`` source all owe it
+    the same answer they owe any other folder path — and owe it under both
+    spellings.
+
+    This is a **pre**-check, unlike the probes below, and it is the one case
+    where that costs nothing: root-ness is decidable from the string, with no
+    round trip. Running it first is also what keeps the root out of the SDK,
+    where a zero-length object key is rejected at parameter validation and
+    surfaces as a transport-shaped error — a retryable classification for a
+    permanently wrong request.
+
+    Not a mutation guard: deleting or writing *the root itself* is a
+    ``Store``-layer concern, and this says nothing about ``delete_folder`` or
+    ``get_folder_info``, which are folder-shaped and legitimately accept it.
+    """
+    if is_root(path):
+        raise _folder_not_file(path, backend)
+
+
 def _wrong_type_if_folder(path: str, *, has_children: Callable[[str], bool], backend: str) -> None:
     """Raise ``InvalidPath`` when *path* names a virtual folder.
 
@@ -173,11 +197,14 @@ def _wrong_type_if_folder(path: str, *, has_children: Callable[[str], bool], bac
     never reaches here, so a normal operation pays nothing; the extra listing
     is charged only to calls that were going to raise anyway.
 
-    The root (``""``) is exempt: it is always a folder, and every caller that
-    reaches here with an empty path has already rejected it for another
-    reason.
+    Both spellings of the root are exempt, and by the same predicate: the
+    root is a folder whether or not it has children, so a probe answer about
+    it is meaningless. Callers reject it up front via ``_reject_root_as_file``
+    instead. Testing ``if path`` here rather than ``is_root`` is what let the
+    dot spelling reach the probe, where on a flat namespace it answered for
+    the whole bucket.
     """
-    if path and has_children(path):
+    if not is_root(path) and has_children(path):
         raise _folder_not_file(path, backend)
 
 
@@ -189,19 +216,19 @@ def _wrong_type_if_file(path: str, *, is_object: Callable[[str], bool], backend:
     came back empty, so the single ``is_object`` probe (one HEAD / one exact
     key lookup) is charged only to a call that was already failing.
     """
-    if path and is_object(path):
+    if not is_root(path) and is_object(path):
         raise _file_not_folder(path, backend)
 
 
 async def _awrong_type_if_folder(path: str, *, has_children: Callable[[str], Awaitable[bool]], backend: str) -> None:
     """Async sibling of ``_wrong_type_if_folder``; ``has_children`` is awaitable."""
-    if path and await has_children(path):
+    if not is_root(path) and await has_children(path):
         raise _folder_not_file(path, backend)
 
 
 async def _awrong_type_if_file(path: str, *, is_object: Callable[[str], Awaitable[bool]], backend: str) -> None:
     """Async sibling of ``_wrong_type_if_file``; ``is_object`` is awaitable."""
-    if path and await is_object(path):
+    if not is_root(path) and await is_object(path):
         raise _file_not_folder(path, backend)
 
 
@@ -212,6 +239,7 @@ __all__ = [
     "_check_no_file_ancestor",
     "_file_not_folder",
     "_folder_not_file",
+    "_reject_root_as_file",
     "_wrong_type_if_file",
     "_wrong_type_if_folder",
 ]

@@ -24,7 +24,7 @@ from remote_store._errors import (
     RemoteStoreError,
 )
 from remote_store._models import FileInfo, FolderEntry, FolderInfo
-from remote_store._path import RemotePath
+from remote_store._path import RemotePath, is_root
 from remote_store.aio._async_backend import AsyncBackend
 from remote_store.backends._azure import _AZURE_BLOCK_SIZE, AzureBackend
 from remote_store.backends._azure_common import (
@@ -214,6 +214,17 @@ class AsyncAzureBackend(AsyncBackend):
             return False
         return True
 
+    def _reject_root_as_file(self, path: str) -> None:
+        """Pre-check: the store root is a folder, so a file op on it is a type error.
+
+        Runs on HNS accounts too, unlike the probe-backed rejections below:
+        root-ness needs no round trip and no namespace knowledge, and the
+        alternative is handing an empty blob name to the SDK.
+        """
+        from remote_store.backends._flat_ns import _reject_root_as_file
+
+        _reject_root_as_file(path, self.name)
+
     async def _reject_folder(self, path: str) -> None:
         """Error path: raise ``InvalidPath`` if *path* is a virtual folder.
 
@@ -377,9 +388,9 @@ class AsyncAzureBackend(AsyncBackend):
         Returns:
             Backend-native path (``container/path``).
         """
-        if path:
-            return f"{self._container}/{path}"
-        return self._container
+        if is_root(path):
+            return self._container
+        return f"{self._container}/{path}"
 
     def resolve(self, path: str) -> ResolutionPlan:
         """Return a ``ResolutionPlan`` with Azure-specific details.
@@ -496,6 +507,7 @@ class AsyncAzureBackend(AsyncBackend):
             NotFound: If the file does not exist.
             InvalidPath: If ``path`` names a directory (HNS accounts only).
         """
+        self._reject_root_as_file(path)
         try:
             bc = self._blob_client(path)
             downloader = await bc.download_blob(max_concurrency=self._max_concurrency)
@@ -543,6 +555,7 @@ class AsyncAzureBackend(AsyncBackend):
             NotFound: If the file does not exist.
             InvalidPath: If ``path`` names a directory (HNS accounts only).
         """
+        self._reject_root_as_file(path)
         async with self._file_op_errors(path):
             bc = self._blob_client(path)
             downloader = await bc.download_blob(max_concurrency=self._max_concurrency)
@@ -779,6 +792,7 @@ class AsyncAzureBackend(AsyncBackend):
             NotFound: If the file is missing and ``missing_ok`` is ``False``.
             InvalidPath: If ``path`` names a directory (HNS accounts only).
         """
+        self._reject_root_as_file(path)
         async with self._errors(path):
             bc = self._blob_client(path)
             if self._hns:
@@ -1058,6 +1072,7 @@ class AsyncAzureBackend(AsyncBackend):
             InvalidPath: If ``path`` names a directory (HNS: ``hdi_isfolder=true``).
             NotFound: If the file does not exist.
         """
+        self._reject_root_as_file(path)
         async with self._file_op_errors(path):
             bc = self._blob_client(path)
             props = await bc.get_blob_properties()
@@ -1160,6 +1175,7 @@ class AsyncAzureBackend(AsyncBackend):
         # non-canonical paths ("a//b" vs "a/b") that name the same blob once
         # azure_path collapses them; without normalising, the copy+delete
         # branch below would delete the sole copy (AZ-017 data-loss edge).
+        self._reject_root_as_file(src)
         if _azure_path_fn(src) == _azure_path_fn(dst):
             async with self._errors(src):
                 src_bc = self._blob_client(src)
@@ -1243,6 +1259,7 @@ class AsyncAzureBackend(AsyncBackend):
         # Compare normalised keys: a direct-backend caller can pass
         # non-canonical paths ("a//b" vs "a/b") that name the same blob once
         # azure_path collapses them (AZ-018 self-op edge).
+        self._reject_root_as_file(src)
         if _azure_path_fn(src) == _azure_path_fn(dst):
             async with self._errors(src):
                 src_bc = self._blob_client(src)
