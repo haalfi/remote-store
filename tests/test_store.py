@@ -107,19 +107,27 @@ class TestStoreBasics:
         """STORE-002: the rejection is a *Store-layer* rule, not a backend one.
 
         The sibling test above passes even with ``_require_file_path``'s guard
-        deleted entirely — for 14 of the 16 methods a deeper layer (``RemotePath``
-        normalisation, or the backend's own defensive check) raises the same
-        ``InvalidPath``. Asserting the exception type therefore cannot tell
-        whether the Store enforces this at all, which is exactly the claim
-        BK-324 facet 4 is about: the rule is specced one layer above the
-        backend tree.
+        deleted entirely — measured: 15 of its 16 methods still raise the same
+        ``InvalidPath`` from a deeper layer (``RemotePath`` normalisation, or
+        the backend's own defensive check), and only ``open_atomic`` goes red.
+        Asserting the exception type therefore cannot tell whether the Store
+        enforces this at all, which is exactly the claim BK-324 facet 4 is
+        about: the rule is specced one layer above the backend tree.
 
-        So this asserts what only the Store layer can provide — that no I/O
-        method reaches the backend. Deleting the guard makes this fail while
-        leaving the type-only assertions green.
+        So this asserts what only the Store layer can provide — that no method
+        on the backend is reached at all. Deleting the guard makes this fail
+        while leaving the type-only assertions green.
+
+        ``capabilities`` and ``name`` are *properties* on ``Backend``, so on a
+        ``spec=`` mock they are attributes, not calls: assigning a real
+        ``CapabilitySet`` (rather than a ``return_value``, which nothing would
+        ever read) is what puts ``Store._gate`` on the real capability check.
+        Without it the gate passes vacuously against a child mock, and a
+        ``CapabilityNotSupported`` raised before the root guard would read as
+        proof of a rejection the Store never performed.
         """
         backend = Mock(spec=Backend)
-        backend.capabilities.return_value = CapabilitySet(set(Capability))
+        backend.capabilities = CapabilitySet(set(Capability))
         backend.name = "mock"
         store = Store(backend=backend, root_path="data")
 
@@ -128,8 +136,7 @@ class TestStoreBasics:
         with pytest.raises(InvalidPath):
             store.delete(root)
 
-        assert backend.read_bytes.call_count == 0
-        assert backend.delete.call_count == 0
+        assert backend.method_calls == []
 
     @pytest.mark.spec("STORE-003")
     def test_root_path_prepended(self, store: Store) -> None:

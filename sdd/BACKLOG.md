@@ -79,6 +79,28 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Lint / CI Completeness
 
+- [ ] **BUG-240 — ASYNC-014 and DEPTH-003 state opposite rules, and `GraphBackend` implements the async one**
+  spec: ASYNC-014, DEPTH-003 · effort: S/M · audience: user.api
+  [ASYNC-014](specs/029-async-store-backend-api.md) says "`max_depth` limits
+  traversal depth (when set, `recursive` is ignored)" **while citing DEPTH-003**,
+  which states the opposite for the Backend ABC: `max_depth` applies only when
+  `recursive=True`. `GraphBackend.list_files` follows ASYNC-014 and pins it at
+  `tests/backends/graph/aio/test_list.py:183` — `recursive=False, max_depth=2`
+  returns depth-2 files, where a sync backend returns immediate children only.
+  **Both readings are asserted by a passing test, on different backends.** That
+  is the state Rule 7 calls a live disagreement rather than a defect in one side,
+  so which way it resolves is a decision, not a lookup.
+  **Why nothing caught it:** there is no async twin of
+  `test_list_files_non_recursive_ignores_max_depth`, so conformance never
+  cross-checks the two; and both `Store` and `AsyncStore` normalise `max_depth`
+  into `recursive` before delegating, so the divergence is invisible to every
+  caller above the ABC. Reachable only by a direct backend call.
+  **Predates BK-324** — the two clauses already disagreed; BK-324 only made
+  DEPTH-003 explicit enough for the contradiction to surface. Surfaced by the
+  PR #945 round-3 fix pass.
+  **Whichever way it goes, the async conformance cell is part of the fix** —
+  without it the next divergence is equally invisible.
+
 - [ ] **BK-336 — `/fix-pr` should find a finding's siblings, not just the lines it names**
   spec: — · effort: S · audience: contributor.process
   A review names the instances it happened to see. Fixing only those leaves the

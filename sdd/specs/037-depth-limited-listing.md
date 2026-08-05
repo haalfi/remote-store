@@ -102,9 +102,13 @@ others yield the full recursive result and the Store filters client-side.
 **`max_depth` applies only when `recursive=True`.** With `recursive=False` the
 bound is inert for every value: the backend MUST yield the immediate children,
 identical to omitting `max_depth`. This is the Backend-ABC rule for direct
-callers and differs deliberately from DEPTH-001, where depth takes full control
-— `Store.list_files()` normalizes `max_depth` into `recursive` before
-delegating, so the combination never reaches a backend through the `Store`.
+callers and differs deliberately from DEPTH-001, where depth takes full control.
+`Store.list_files()` normalizes `max_depth` into `recursive` before delegating
+(`recursive = max_depth > 0`) and passes `max_depth` through unchanged, so the
+one combination it can emit is `recursive=False, max_depth=0` — where the two
+readings agree, both yielding the immediate children. Every other
+`recursive=False` + `max_depth` pair reaches a backend only from a direct
+caller, which is who this rule is for.
 
 **Store delegation:** `Store.list_files()` passes `max_depth` through to the
 backend call. The existing client-side depth filter remains as a no-op safety

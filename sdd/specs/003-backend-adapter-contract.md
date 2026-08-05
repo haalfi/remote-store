@@ -113,11 +113,13 @@ exists. For `path` in `{"", "."}`:
 | every file-shaped operation | `InvalidPath` — see below |
 
 **A file-shaped operation on the root raises `InvalidPath`.** The root is a
-folder, so BE-021's first row applies to it exactly as to any other folder
-path: `read`, `read_bytes`, `read_seekable`, `get_file_info`, `delete` (with or
-without `missing_ok`) and the `move`/`copy` **source** all raise `InvalidPath`.
-That **outcome** binds every backend in scope, whatever route it takes to get
-there.
+folder, so BE-021's first row governs it exactly as it governs any other folder
+path — the row's subject is a *file operation*, and its list is illustrative,
+not the roster. In full: `read`, `read_bytes`, `read_seekable`,
+`get_file_info`, `delete` (with or without `missing_ok`) and the `move`/`copy`
+**source** all raise `InvalidPath`. The folder-shaped calls are not in that set;
+they legitimately accept the root. That **outcome** binds every backend in
+scope, whatever route it takes to get there.
 
 **Where a backend has to decide it.** A backend whose native root is itself an
 addressable node — a filesystem directory, a drive-root item — MAY hand the
@@ -464,14 +466,23 @@ map to the specified error type regardless of backend:
 
 | Scenario | Required error type |
 |----------|---------------------|
-| File operation (`read`, `write`, `delete`, `get_file_info`, `move`/`copy` src) on a path that is a directory | `InvalidPath` |
-| Directory operation (`delete_folder`, `move`/`copy` dst) on a path that is a file | `InvalidPath` |
+| File operation (e.g. `read`, `write`, `delete`, `get_file_info`, `move`/`copy` src) on a path that is a directory | `InvalidPath` |
+| Directory operation (e.g. `delete_folder`, `move`/`copy` dst) on a path that is a file | `InvalidPath` |
 | Operation on a non-existent path | `NotFound` |
 | Operation denied by credentials or ACL | `PermissionDenied` |
 | Parent directory creation fails (permissions) | `PermissionDenied` |
 | Parent directory creation fails (path conflict) | `InvalidPath` |
 
 The type-mismatch rule (`InvalidPath`) takes precedence over the existence rule (`NotFound`) — a directory path is not "missing", it is the wrong type. This is machine-verified in `sdd/formal/BackendContract.dfy` (`Read`, `Delete`, `DeleteFolder`, `GetFileInfo`, `GetFolderInfo`, `Move`, `Copy` postconditions).
+
+**Backend scope of the two type-mismatch rows.** They bind every backend on the
+operations that can *fail* on a wrong-typed path: the read- and delete-shaped
+calls, `get_file_info` / `get_folder_info`, and the `move`/`copy` **source**.
+Their write half — `write`, `write_atomic`, and the `move`/`copy`
+**destination** — binds hierarchical backends only. On a flat namespace a write
+to a key that shadows a prefix succeeds, so there is no error to reclassify;
+BE-008's flat-namespace exemption governs there instead. The mechanism behind
+the split, and what it costs, is below.
 
 **Scope note:** This table covers *cross-cutting* scenarios that apply to multiple operations. Method-specific errors (e.g. `DirectoryNotEmpty` from `delete_folder`, `CapabilityNotSupported` from capability-gated operations) are documented per-method and intentionally omitted here.
 
@@ -482,8 +493,9 @@ made the two type-mismatch rows above quietly optional on S3, Azure non-HNS
 and SQL for a long time: those backends answered `NotFound`, or worse
 succeeded (a bare prefix read as a zero-length object, a `delete` that no-oped,
 a `get_folder_info` that counted the file as its own content). BK-324 settled
-it in favour of the contract: **the two rows hold on every backend**, and the
-divergence is a defect rather than a declared variation.
+it in favour of the contract: **the two rows hold on every backend wherever an
+operation can fail on a wrong-typed path** — the scope stated with the rows
+above — and the divergence is a defect rather than a declared variation.
 
 The obligation is discharged on the **error path only**. A backend derives the
 type verdict when the operation has already failed to find what it needed — one
@@ -492,16 +504,23 @@ for "is this a file?" — and converts the miss into `InvalidPath`. A call that
 *finds its target* never runs the probe, so the guarantee costs nothing on the
 hot path.
 
-**One case both fails and succeeds**, and it is the idempotent-delete idiom:
-`delete(path, missing_ok=True)` against an absent key. The lookup misses, so
-the probe runs; the call then returns cleanly because `missing_ok` tolerates the
-miss. That costs one extra listing per absent key — in a delete loop, one per
-key. It is not avoidable by testing `missing_ok` first: `delete(folder,
-missing_ok=True)` must still raise `InvalidPath` (the row above says "with or
-without `missing_ok`"), and after a missed lookup the probe is the only thing
-separating *this is a folder* from *this is genuinely absent*. Skipping it would
-restore the silent success this clause exists to remove, so the cost is the
-price of the verdict, not an oversight.
+**Two cases both fail and succeed**, and both are the idempotent-delete idiom.
+They cost different things, because each spends the probe its own type verdict
+needs:
+
+| Call | Miss that triggers the probe | Probe spent |
+|------|------------------------------|-------------|
+| `delete(path, missing_ok=True)` on an absent key | the exact-key lookup finds no object | one `MaxKeys=1` prefix listing — "is this a folder?" |
+| `delete_folder(path, missing_ok=True)` on an absent prefix | the prefix listing comes back empty | one HEAD / exact-key lookup — "is this a file?" |
+
+In both the probe runs and the call then returns cleanly, because `missing_ok`
+tolerates the miss; in a delete loop that is one extra round trip per absent
+path. Neither is avoidable by testing `missing_ok` first: `delete(folder,
+missing_ok=True)` and `delete_folder(file, missing_ok=True)` must still raise
+`InvalidPath` (see "Type mismatch outranks `missing_ok`" below), and after a
+miss the probe is the only thing separating *this is the wrong type* from *this
+is genuinely absent*. Skipping it would restore the silent success this clause
+exists to remove, so the cost is the price of the verdict, not an oversight.
 The probe is **fail-open**: if it errors (503, throttling, network blip) the
 operation's original error stands rather than being replaced by a transport
 error, the same posture the file-ancestor walk takes (see BE-008 / ID-211).

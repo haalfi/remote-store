@@ -37,11 +37,14 @@ positioned at byte 0.
 overriding. Backends MAY override for optimization.
 **Error contract:** identical to `read()`, and that is not incidental — the
 default *is* `read()`. `read_seekable` on a folder path raises `InvalidPath`
-and on a missing path raises `NotFound`, per the BE-021 canonical mapping,
-which lists it alongside `read` / `read_bytes`. An overriding backend inherits
-the obligation rather than escaping it: a range reader that answers `NotFound`
-where the same instance's `read()` answers `InvalidPath` makes the error
-contract depend on which of the two the caller happened to use.
+and on a missing path raises `NotFound`, per BE-021. Its canonical mapping
+table makes any *file operation* on a directory path `InvalidPath` — the row
+lists examples, not the roster — and its error-path clause names
+`read_seekable` explicitly, alongside `read` and `read_bytes`, as an operation
+that owes the verdict. An overriding backend inherits the obligation rather
+than escaping it: a range reader that answers `NotFound` where the same
+instance's `read()` answers `InvalidPath` makes the error contract depend on
+which of the two the caller happened to use.
 
 ## SEEK-004: Passthrough for Seekable Backends
 

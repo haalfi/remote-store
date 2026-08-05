@@ -253,9 +253,12 @@ class TestListFilesCompleteness:
         0 coincides with the correct answer: a backend that wrongly lets
         depth take precedence still passes at 0 and only diverges from 1 up.
 
-        The ``Store`` never emits this combination (DEPTH-001 normalises
-        ``max_depth`` into ``recursive`` first), so this is the Backend-ABC
-        contract for direct callers, and the reason the rule needed stating:
+        ``Store.list_files`` emits exactly one of these combinations:
+        ``max_depth=0``, because it derives ``recursive = max_depth > 0`` and
+        passes the bound through unchanged. That is the value where the two
+        readings agree, per the paragraph above — a ``max_depth >= 1`` with
+        ``recursive=False`` only ever arrives from a direct caller, which is
+        who this Backend-ABC rule is for, and the reason it needed stating:
         the SQL backends honoured the bound here while Memory and Local
         ignored it (BK-324 facet 3).
         """

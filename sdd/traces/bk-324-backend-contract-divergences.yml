@@ -16,6 +16,7 @@ discovery_followups:
   - ID-240
   - BK-340
   - ID-241
+  - BUG-240
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
@@ -26,7 +27,7 @@ surprising_ripples:
   - sdd/specs/036-seekable-read.md
   - scripts/check_docstring_parity.py
   - tests/backends/sqlquery/test_config.py
-review_rounds: 3
+review_rounds: 5
 phases:
   - id: orient
     name: Orient
@@ -139,6 +140,21 @@ phases:
           Replacing the sweep question with coverage then found two further
           defects no reviewer flagged. For a cross-backend rule the sibling
           sweep is a coverage question, not a grep.
+        outcome: misleading
+      - file: sdd/specs/037-depth-limited-listing.md
+        section: "DEPTH-003, vs DEPTH-001 and ASYNC-014"
+        read_type: verify
+        extract: >-
+          Round-3 review caught the facet-3 clause asserting something false:
+          it said the recursive=False + max_depth combination never reaches a
+          backend through the Store, when _store.py computes effective_recursive
+          = max_depth > 0 and so emits exactly (False, 0) for max_depth=0 —
+          which DEPTH-001 already documented. A spec sentence contradicting
+          another clause in the same repo, written by the item whose whole
+          subject is that defect class. No test caught it because at max_depth=0
+          both readings return the immediate children. The same false claim had
+          been copied into the conformance docstring. Filed BUG-240 for the
+          live ASYNC-014 disagreement the check then exposed.
         outcome: misleading
       - file: sdd/specs/010-native-path-resolution.md
         section: "NPR-005, NPR-021"
