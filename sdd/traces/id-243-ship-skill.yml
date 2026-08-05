@@ -14,7 +14,12 @@ audience:
 expected_ripples:
   - sdd/backlogid.json
   - sdd/adrs/DIGEST.md
-review_rounds: 0
+# Two review rounds on PR #946, both pre-merge: the first found 8 issues (6 in
+# the skill itself), the second 7. The first round's fixes were amended into the
+# single commit because renumbering ID-244 to ID-243 forced a squash, so no
+# separate fix commit exists for it — counted here anyway, per the schema's rule
+# that pre-open feedback counts when it changed the branch.
+review_rounds: 2
 phases:
   - id: orient
     name: Orient

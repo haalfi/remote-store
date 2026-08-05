@@ -84,25 +84,18 @@ what lens rounds find, making the diversity redundant.
 
 **Reviewers are read-only and never resumed; fixers may decline with evidence.**
 A resumed reviewer inherits its own prior conclusions and stops being an
-independent check. A fixer that measures and finds the instruction wrong reports
-that instead of implementing it. *Reverse if* declining is used to avoid work
-rather than to correct it.
+independent check. *Reverse if* declining is used to avoid work rather than to
+correct it.
 
 **Factual disputes are settled by measurement; contested decisions still go to
-the user.** When a reviewer and a fixer disagree about what the code does, the
-answer is an experiment, not an adjudication. ADR-0020's "user is the sole
-tie-breaker" is unchanged and continues to govern disagreements about what the
-code *should* do. *Reverse only* as a deliberate authority change, per ADR-0020.
+the user.** A disagreement about what the code does is an experiment, not an
+adjudication. ADR-0020's "user is the sole tie-breaker" is unchanged and still
+governs what the code *should* do. *Reverse only* as a deliberate authority
+change, per ADR-0020.
 
-**Scope: `/ship` for costly-to-be-wrong work; `/orchestrate` otherwise.** Use
-`/ship` when a defect reaching `master` is expensive: contract and spec
-changes, cross-backend work, published surfaces. Use `/orchestrate` for
-multi-domain work where the two-round cap is proportionate. *Reverse if* one
-model serves both in practice, collapsing them.
-
-The concrete step sequence, lens menu, brief requirements and triage table are
-operational contract, not decision rationale, and live in
-`.claude/skills/ship/SKILL.md`.
+Which skill to reach for is a use decision, not one this record makes. That,
+with the step sequence, lens menu, brief requirements and triage table, is
+operational contract and lives in `.claude/skills/ship/SKILL.md`.
 
 ## Consequences
 
@@ -114,11 +107,11 @@ operational contract, not decision rationale, and live in
   structurally unable to see; lens rounds reach surface a repeated broad review
   does not.
 - **Negative:** substantially more expensive than `/orchestrate`, by roughly the
-  factor the Context records. The scope clause exists to keep that cost where it
-  pays.
+  factor the Context records. Keeping that cost where it pays is left to the
+  skill's own guidance on when not to use it.
 - **Negative:** termination now depends on a judgement (is this finding
   must-fix?) rather than a counter. Miscalibration either ships defects or
   loops longer than needed; the soft ceiling bounds the second failure mode
   only.
-- **Neutral:** the repo now has two review-loop models. The scope clause is the
-  single place that says which applies.
+- **Neutral:** the repo now has two review-loop models, and choosing between
+  them is a judgement the skills document rather than one this record fixes.

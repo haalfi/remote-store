@@ -75,7 +75,7 @@ push → reply and resolve.
 
 | Round | Lens | Model |
 |---|---|---|
-| 1 | **Broad, unprimed** | A different model than the author's, Fable preferred |
+| 1 | **Broad, unprimed** | A different model than the author's. Fable preferred; Opus when the author was Fable |
 | 2..N | One scoped lens per round | Repo domain experts, or general-purpose |
 | Final | Whatever the last fix pass touched | Fresh general reviewer |
 
