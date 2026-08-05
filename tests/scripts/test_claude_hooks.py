@@ -16,8 +16,13 @@ in the repo would notice a regression.
    green — and the hook calls it the primary channel.
 4. Falls back to its ``$1`` label whenever the event carries no question
    headers, which covers Notification payloads and unparseable stdin alike.
-5. Strips ``"`` and ``\\`` from headers before they reach the ``osascript``
-   string literal, pinned on the ``osascript`` branch itself.
+5. Strips the characters that would break the ``osascript`` string literal —
+   quote, backslash, and newline, since an AppleScript string cannot span lines
+   — pinned on the ``osascript`` branch itself. Not a general sanitiser: other
+   characters pass through, harmlessly, because the message is a single shell
+   word that the shell does not re-expand.
+6. The wiring in ``.claude/settings.json`` names a hook script that exists, so
+   renaming the script cannot leave the hooks silently pointing at nothing.
 
 All three notification backends are exercised through stubs on ``PATH`` rather
 than mocks (``sdd/TESTING.md`` Rule 6): the hook resolves them with
@@ -36,6 +41,8 @@ an unstated one reads the same as a forgotten one.
 
 from __future__ import annotations
 
+import json
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -54,7 +61,7 @@ _ASK_PAYLOAD = (
     '"tool_input":{"questions":[{"header":"Scope"},{"header":"Strength"}]}}'
 )
 _IDLE_PAYLOAD = '{"hook_event_name":"Notification","notification_type":"idle_prompt"}'
-_INJECTION_PAYLOAD = r'{"tool_input":{"questions":[{"header":"say \"hi\" \\ now"}]}}'
+_INJECTION_PAYLOAD = r'{"tool_input":{"questions":[{"header":"say \"hi\" \\ now\nnext"}]}}'
 
 
 def _backend_stub(bin_dir: Path, name: str, log: Path) -> None:
@@ -144,7 +151,7 @@ def _run(payload: str, label: str, bin_dir: Path) -> subprocess.CompletedProcess
         pytest.param(_IDLE_PAYLOAD, "your next prompt", "your next prompt", id="no-questions-field"),
         pytest.param("not json at all", "a decision", "a decision", id="unparseable-stdin"),
         pytest.param("", "a decision", "a decision", id="empty-stdin"),
-        pytest.param(_INJECTION_PAYLOAD, "a decision", "say hi  now", id="quotes-stripped"),
+        pytest.param(_INJECTION_PAYLOAD, "a decision", "say hi  nownext", id="literal-breakers-stripped"),
     ],
 )
 def test_notification_message(payload: str, label: str, expected: str, stub_bin: Path) -> None:
@@ -181,7 +188,7 @@ def test_osascript_literal_survives_quote_injection(osascript_bin: Path) -> None
     assert result.returncode == 0
     assert result.stderr == ""
     delivered = (osascript_bin.parent / "notify.log").read_text().strip()
-    assert delivered == '-e display notification "Waiting on you: say hi  now" with title "Claude Code"'
+    assert delivered == '-e display notification "Waiting on you: say hi  nownext" with title "Claude Code"'
 
 
 def test_powershell_arm_is_reached_when_it_is_the_only_backend(powershell_bin: Path) -> None:
@@ -196,6 +203,39 @@ def test_powershell_arm_is_reached_when_it_is_the_only_backend(powershell_bin: P
     assert result.stderr == ""
     delivered = (powershell_bin.parent / "notify.log").read_text().strip()
     assert delivered == "-Command [System.Console]::Beep(880, 300)"
+
+
+def test_settings_hook_commands_point_at_files_that_exist() -> None:
+    """Contract point 6: the wiring names a script that is really there.
+
+    The tests above run the hook by path, so they all keep passing if
+    ``settings.json`` is left pointing at a renamed or deleted script — the
+    wiring is the one part of the mechanism nothing else here touches. A hook
+    with a bad path fails silently at runtime, which is the whole reason this
+    module exists.
+
+    Deliberately checks paths only, not matchers: a matcher's validity is a fact
+    about Claude Code, not about this repo, so asserting it here would pin our
+    guess rather than the product's behaviour.
+    """
+    settings = json.loads((_HOOK.parents[1] / "settings.json").read_text(encoding="utf-8"))
+    commands = [
+        handler["command"]
+        for event in settings["hooks"].values()
+        for entry in event
+        for handler in entry["hooks"]
+        if handler.get("type") == "command"
+    ]
+    referenced = {
+        Path(match.group(1))
+        for command in commands
+        if (match := re.search(r'"\$CLAUDE_PROJECT_DIR"/(\S+\.sh)', command))
+    }
+
+    assert referenced, "expected settings.json to reference at least one hook script"
+    project_dir = _HOOK.parents[2]
+    missing = sorted(str(p) for p in referenced if not (project_dir / p).is_file())
+    assert not missing, f"settings.json references hook scripts that do not exist: {missing}"
 
 
 def test_bell_rings_when_a_terminal_is_present(tmp_path: Path) -> None:
@@ -221,9 +261,16 @@ def test_bell_rings_when_a_terminal_is_present(tmp_path: Path) -> None:
 
     pid, master_fd = pty.fork()
     if pid == 0:  # pragma: no cover - child is replaced by execve
-        fd = os.open(str(payload_file), os.O_RDONLY)
-        os.dup2(fd, 0)
-        os.execve("/bin/bash", ["bash", str(_HOOK), "a decision"], {"PATH": str(bin_dir)})
+        # Everything here must exit the child rather than raise. An escaping
+        # exception would unwind into pytest's own machinery *in the forked
+        # child*, which then reports and tears down a second time — turning a
+        # missing file into unreadable double output.
+        try:
+            fd = os.open(str(payload_file), os.O_RDONLY)
+            os.dup2(fd, 0)
+            os.execve("/bin/bash", ["bash", str(_HOOK), "a decision"], {"PATH": str(bin_dir)})
+        except BaseException:  # noqa: BLE001 -- in a forked child, nothing may escape
+            os._exit(127)
         os._exit(127)
 
     chunks = []

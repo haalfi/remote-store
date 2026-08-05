@@ -59,6 +59,7 @@ Read this before starting. One line per trigger.
 | Trigger                       | Ripples (at a glance) |
 |-------------------------------|-----------------------|
 | New test file                 | OS-sensitive code? Add `pytestmark = pytest.mark.os_sensitive`; periodically re-audit |
+| Test whose subject is outside `src/` or `scripts/` | Is the subject's path in CI's `CODE_PAT`/`HOOKS_PAT` and the local mechanical-gate list? A guard the path filters cannot reach never runs on the edits most likely to break it |
 
 #### Docs
 
@@ -187,6 +188,18 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | suites). Periodically re-audit existing files for          |
 |                            | correctness — see `@pytest.mark.os_sensitive` in          |
 |                            | `pyproject.toml` for rationale.                           |
+| **Test whose subject is outside `src/` or `scripts/`** | The suite is |
+|                            | reached by path filters, so a test whose subject lives    |
+|                            | elsewhere may never run on a diff that changes only that  |
+|                            | subject. Check the subject's path against CI's            |
+|                            | `CODE_PAT` and `HOOKS_PAT` in `.github/workflows/ci.yml`, |
+|                            | and against the mechanical-gate list in                   |
+|                            | [PR validation gates](#pr-validation-gates). Widen        |
+|                            | whichever does not match, preferring a narrow output over |
+|                            | `CODE_PAT` when the subject has one test job as its only  |
+|                            | consumer. Missed twice in one PR (BK-341): first for      |
+|                            | `.claude/hooks/`, then again when a test's subject widened|
+|                            | to `.claude/settings.json`.                               |
 
 #### Docs
 

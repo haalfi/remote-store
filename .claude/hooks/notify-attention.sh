@@ -19,8 +19,10 @@ case "$HEADERS" in
   ""|null) HEADERS="$LABEL" ;;
 esac
 
-# Strip characters that would break the osascript string literal below.
-HEADERS=$(printf '%s' "$HEADERS" | tr -d '"\\')
+# Strip the characters that would break the osascript string literal below:
+# quote and backslash end or escape it, and an AppleScript string cannot span
+# lines, so a newline in a header is a syntax error rather than a stray glyph.
+HEADERS=$(printf '%s' "$HEADERS" | tr -d '"\\\n\r')
 MSG="Waiting on you: $HEADERS"
 
 # Manual debugging aid: set CLAUDE_NOTIFY_DEBUG=1 to print the composed message

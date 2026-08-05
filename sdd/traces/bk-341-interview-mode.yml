@@ -20,12 +20,14 @@ expected_ripples:
   - sdd/backlogid.json
   - .gitignore
 surprising_ripples:
-  # The ripple-check has no row for "adds a test whose subject lives outside
+  # The ripple-check had no row for "adds a test whose subject lives outside
   # src/ or scripts/". Both CI and the local mechanical gate classify by path,
   # and neither knew .claude/ could carry a tested artifact, so the guard added
   # here would not have run on the edits most likely to break it. Found twice:
   # once for the hook scripts, then again for settings.json after the test's
-  # subject widened to the Stop prompt.
+  # subject widened to the Stop prompt. Closed in this PR by adding that row to
+  # both ripple-check presentations, so the next person is asked the question
+  # rather than discovering it in review.
   - .github/workflows/ci.yml
   - sdd/CLAUDE-REFERENCE.md
 review_rounds: 5
@@ -162,7 +164,8 @@ phases:
         read_type: verify
         extract: >-
           asks for an os_sensitive decision; recorded as deliberately unmarked.
-          The row does not ask the question that mattered here — whether the
-          new test's subject is reachable by the path filters that decide
-          whether it runs
+          The row did not ask the question that mattered here — whether the new
+          test's subject is reachable by the path filters that decide whether it
+          runs — which is why that gap was missed twice. A companion row now
+          asks it
         outcome: unclear
