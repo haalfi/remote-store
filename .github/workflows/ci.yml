@@ -76,9 +76,15 @@ jobs:
           # concurrency block above and ADR-0032's 20-job cap. The CODE_PAT
           # members that look like precedent are not: a bumped .python-version
           # or a rewritten .test_durations_pass1 can change what every shard
-          # does, whereas a bash hook under .claude/hooks/ can only change the
-          # result of tooling-tests, its single consumer.
-          HOOKS_PAT='^\.claude/hooks/|^\.github/workflows/ci\.yml$'
+          # does, whereas these can only change the result of tooling-tests,
+          # their single consumer.
+          # Covers .claude/settings.json as well as the hook scripts: the Stop
+          # hook's prompt lives inline in that file and is guarded by the same
+          # tests/scripts/test_claude_hooks.py. Editing that prompt is the
+          # documented way to change what counts as a blocking question, so it
+          # is exactly the diff the clause guard exists to catch — and a
+          # settings-only diff matches no other pattern here.
+          HOOKS_PAT='^\.claude/(hooks/|settings\.json$)|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$HOOKS_PAT"; then echo "hooks=true" >> "$GITHUB_OUTPUT"
           else echo "hooks=false" >> "$GITHUB_OUTPUT"; fi
       - name: Resolve Python versions

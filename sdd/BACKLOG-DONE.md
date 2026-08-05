@@ -8,6 +8,35 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-341 — Interview mode: route decision questions through `AskUserQuestion`**
+  spec: — · effort: M · audience: contributor.process, contributor.tooling
+  A question asked in prose ends the turn and sits in scrollback, so it gets
+  overlooked; `AskUserQuestion` renders a dialog that blocks until answered.
+  Three layers in `.claude/` push decision questions out of prose into that tool:
+  an output style saying when a decision is the user's to make and how to shape
+  the options, a `Stop` hook returning a turn that ended on a prose decision
+  question, and a bell plus desktop notification when a dialog opens or the
+  session goes idle. Wiring:
+  [`CLAUDE-REFERENCE.md` § Interview mode](CLAUDE-REFERENCE.md#interview-mode-wiring);
+  the rule alone lives in `CLAUDE.md`, which loads into every session.
+  **What the review rounds actually bought**, since the shipped diff does not
+  show it: the `/dev/tty` assertion was vacuous on any machine with a terminal,
+  and fixing that removed the bell's only coverage; the `osascript` branch the
+  quote stripping exists for was dead in every test; the first CI fix made
+  `.claude/hooks/` a 15-job full-fan-out trigger on a precedent that did not
+  carry; and the clause guard on the `Stop` prompt pinned a substring occurring
+  three times, so it stayed green with the scoping sentence deleted — the exact
+  regression it was added to catch. Each was found only because the round that
+  introduced it was itself reviewed, which is [ID-243](BACKLOG-DONE.md)'s
+  "may not end on an unreviewed fix pass" rule paying out.
+  **Standing limit, not a defect:** a `type: "prompt"` hook is judged by a model,
+  so its false-positive rate is not measurable offline and CI never exercises it.
+  The tests pin that the instructions are present, not that the judgment is
+  right; `test_stop_clause_substrings_are_unique` keeps "present" from decaying
+  back into "some other occurrence matched".
+  Follow-up left open: [ID-244](BACKLOG.md) — no drift check binds the layer
+  table to `.claude/settings.json`.
+
 - [x] **ID-243 — `/ship` skill: deliver a task as one convergence-reviewed PR**
   spec: — · effort: M · audience: contributor.process, contributor.tooling
   Codifies the working mode that emerged while delivering BK-324 / BK-331

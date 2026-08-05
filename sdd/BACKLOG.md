@@ -692,13 +692,13 @@ that writes it lands, so cite the generator instead.
 - [ ] **ID-244 — Gate the interview-mode layer table against `.claude/settings.json`**
   spec: — · effort: S · audience: contributor.tooling
   [`CLAUDE-REFERENCE.md` § Interview mode](CLAUDE-REFERENCE.md#interview-mode-wiring)
-  describes three layers whose wiring lives in `.claude/settings.json`. PR #947
-  trimmed that table down to what each layer *does*, precisely so the config
-  values would live in one place — but the pair is still hand-maintained. Delete
-  the `Notification` block or rename the `Stop` hook and the table still claims
-  three layers, with nothing detecting the disagreement.
-  (The table started in `CLAUDE.md` and moved to the reference in the same PR, to
-  keep the always-loaded file to the rule alone. Same pair, new address.)
+  describes three layers whose wiring lives in `.claude/settings.json`.
+  [BK-341](BACKLOG-DONE.md) trimmed that table down to what each layer *does*,
+  precisely so the config values would live in one place — but the pair is still
+  hand-maintained. Delete the `Notification` block or rename the `Stop` hook and
+  the table still claims three layers, with nothing detecting the disagreement.
+  (The table started in `CLAUDE.md` and moved to the reference in the same work,
+  to keep the always-loaded file to the rule alone. Same pair, new address.)
   This entry is the [Rule 6](DRIFT-RULES.md#tolerated) register entry for that
   tolerated divergence. Owner: whoever takes this item. Rationale for tolerating
   it meanwhile: the surviving claim space is three rows deep and changes rarely,
@@ -709,9 +709,9 @@ that writes it lands, so cite the generator instead.
   record the derivation path, because the table was written *from* the same
   settings file it would be checked against, so the two are not independent and a
   shared misreading would pass.
-  **Why ID, not BK:** offered during the PR #947 self-audit and declined in favour
-  of the trim alone; whether a three-row table warrants a gate at all is
-  unevaluated.
+  **Why ID, not BK:** offered during [BK-341](BACKLOG-DONE.md)'s self-audit and
+  declined in favour of the trim alone; whether a three-row table warrants a gate
+  at all is unevaluated.
 
 ---
 
