@@ -10,8 +10,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 - [x] **BK-336 — `/fix-pr` should find a finding's siblings, not just the lines it names**
   spec: — · effort: S · audience: contributor.process
-  Six lines in `/fix-pr`: one Rules bullet stating the principle, and a clause on
-  Step 6's existing report line that makes it observable. A review names the
+  Two statements in `/fix-pr`: one Rules bullet stating the principle, and a
+  clause on Step 6's existing report line that makes it observable, with the
+  matching pair in `/ship`. A review names the
   instances it happened to see, so fixing only those leaves the class alive —
   measured twice in one PR ([BK-324](BACKLOG-DONE.md)), the second time three
   lines from a line the first fix had edited.
@@ -43,7 +44,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   while `/ship` Step 5 already reported the *other* half of the new Step 6
   clause. Closed by widening that citation rather than copying the rule: a
   sibling gets a pointer, because two homes for one principle is what
-  [principle 4](../CLAUDE.md#principles) forbids.
+  [principle 4](../CLAUDE.md#principles) forbids. The *artifact* is not
+  importable the same way, so `/ship`'s own Step 5 report gained the sweep half
+  to sit beside the coverage half it already had — a rule without the report
+  that proves it ran is the shape this item exists to close, and a pointer
+  cannot supply a report another skill does not ask for.
+  **The class outlived the first sweep here too, which is the entry's own
+  evidence.** Round 1's fix reached `/ship`; round 2 found the rule's other
+  half still missing from `/ship`'s report, and a stale "BK-336 in `BACKLOG.md`
+  is where it would be written down" 158 lines below the new entry, in the file
+  this PR was already editing. The first grep listed that file as a hit and only
+  its sibling was opened.
   **[BK-338](BACKLOG.md) stays open.** The reverted attempt bundled the
   review-roster question and a single-session model pin into the same commit;
   neither is touched here.
@@ -171,8 +182,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `NotFound` rather than a wrong-type error for root file-ops on an untouched
   store.
   **For a cross-backend rule, a sibling sweep is a coverage question, not a
-  grep.** That is the lesson this item earns (BK-336 in `BACKLOG.md` is where it
-  would be written down), and the two structural holes it exposed are filed as
+  grep.** That is the lesson this item earns; it is written down as
+  **BK-336** above, and the two structural holes it exposed are filed as
   **[BK-340](BACKLOG.md)** (`SQLQueryBackend` has no conformance fixture at all)
   and **[ID-241](BACKLOG.md)** (the replay hook skips cells by test name even
   when the cell makes no HTTP call).

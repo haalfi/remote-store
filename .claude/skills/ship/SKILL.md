@@ -11,8 +11,7 @@ been reviewed a fixed number of times.
 
 Composes the existing skills rather than reimplementing them: [`/pr`](../pr/SKILL.md)
 creates the PR, [`/rvw-pr`](../rvw-pr/SKILL.md) is the reviewer's instruction set,
-[`/fix-pr`](../fix-pr/SKILL.md) owns comment-fetch and thread-resolve mechanics
-and the rules a fix pass follows.
+[`/fix-pr`](../fix-pr/SKILL.md) owns comment-fetch and thread-resolve mechanics.
 [`/orchestrate`](../orchestrate/SKILL.md) remains the choice when you want expert
 fan-out **without** the convergence loop.
 
@@ -198,8 +197,9 @@ condemned it.
 1. Ripple-check audit: [`sdd/CLAUDE-REFERENCE.md` § Detailed checklist](../../../sdd/CLAUDE-REFERENCE.md#detailed-checklist).
 2. CHANGELOG, BACKLOG/BACKLOG-DONE, and the trace, including `review_rounds`,
    `discovery_followups`, and `surprising_ripples`.
-3. Report: rounds run, findings per round with their character, what was filed
-   rather than fixed, and any surface the gate never executed locally.
+3. Report: rounds run, findings per round with their character, the class swept
+   per must-fix finding and what it caught, what was filed rather than fixed,
+   and any surface the gate never executed locally.
 
 Then stop. **`/ship` never merges.** It hands over a PR that is ready to be.
 

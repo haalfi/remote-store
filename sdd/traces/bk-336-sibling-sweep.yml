@@ -15,7 +15,7 @@ audience:
   - contributor.process
 surprising_ripples:
   - .claude/skills/ship/SKILL.md
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -28,7 +28,7 @@ phases:
           and the constraint the reverted attempt produced — state the principle,
           no enumerated lists, no pseudo-detail, nothing the skill already
           carries, and shorter than what it replaces. Treating the constraint as
-          binding is what kept the change to six lines.
+          binding is what kept the change to two statements.
         outcome: ok
       - file: .claude/skills/fix-pr/SKILL.md
         section: "Step 2, Step 6, Rules"
@@ -110,4 +110,24 @@ phases:
           widening the citation, not by copying the rule: two homes for one
           principle is what `CLAUDE.md` principle 4 forbids. No ripple-check row
           anticipates one skill's rule binding another's delegated step.
+          Round 2 then found that fix incomplete: a pointer imports the rule but
+          cannot import the *artifact*, because `/ship` owns its own Step 5
+          report and nothing there asked for a sweep. So the sweep half was
+          added to that report beside the coverage half it already carried. Two
+          rounds to close one class in one sibling file is the item's own thesis
+          holding against its author.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-324 (closing paragraph)"
+        read_type: verify
+        extract: >-
+          The miss that matters most, because it is the item's failure mode
+          committed while writing the item. BK-324's entry said "BK-336 in
+          `BACKLOG.md` is where it would be written down" — false on both counts
+          once BK-336 moved to `BACKLOG-DONE.md`, and 158 lines below the new
+          entry in the same file the PR was editing. The orienting grep for
+          `BK-336` had listed this file among its hits; only `BACKLOG.md`'s hit
+          was opened, on the assumption that a DONE-file match was the new entry
+          itself. A file-level match list is not a sweep, which is exactly the
+          distinction the shipped rule draws.
         outcome: ok
