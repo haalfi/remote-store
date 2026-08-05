@@ -90,22 +90,29 @@ The suite uses **no GPU**. GPU saturation during a test run comes from concurren
 
 Decision questions go through the `AskUserQuestion` tool, never prose. A prose
 question ends the turn and sits in scrollback; a tool question renders a
-blocking dialog that cannot be scrolled past. Three layers enforce this, all in
-`.claude/`:
+blocking dialog that cannot be scrolled past. Three layers enforce this:
 
-| Layer | Mechanism | What it covers |
-| --- | --- | --- |
-| Steering | `output-styles/interview.md`, selected via `outputStyle` in `settings.json` | When and how to ask |
-| Enforcement | `Stop` hook, `type: "prompt"` | A turn that ends on a prose decision question is sent back to re-ask via the tool |
-| Notification | `hooks/notify-attention.sh` on `PreToolUse(AskUserQuestion)` and `Notification(idle_prompt)` | Bell plus desktop notification when a dialog opens or the session goes idle |
+| Layer | What it does |
+| --- | --- |
+| Steering | An output style saying when a decision is the user's to make, and how to shape the options |
+| Enforcement | Returns a turn that ended on a prose decision question, to be re-asked through the tool |
+| Notification | Bell plus desktop notification when a dialog opens or the session goes idle |
 
-The output style is read once at session start: `/clear` or restart after
-editing it. The `Stop` hook returns `ok: true` when `stop_hook_active` is set,
-so it cannot trip the eight-block consecutive cap. To loosen or tighten what
-counts as a blocking question, edit that hook's `prompt` in `settings.json`.
+Which events fire which layer is declared in `.claude/settings.json`. Read it
+there; a second copy here would rot. To change what counts as a blocking
+question, edit the `Stop` hook's `prompt`. That hook returns `ok: true` when
+`stop_hook_active` is set, so a blocked turn cannot loop against Claude Code's
+consecutive-block cap.
 
-Leave `askUserQuestionTimeout` unset. It defaults to `never`, which is what
-keeps a dialog open until answered, and it is read from user settings only.
+Two failure modes worth knowing. An output style is read once at session start,
+so `/clear` or restart after editing one. And `/config` writes `outputStyle` to
+`.claude/settings.local.json`, which outranks the committed
+`.claude/settings.json`: picking a style from that menu silently overrides the
+repo default.
+
+Leave `askUserQuestionTimeout` unset; its default is what keeps a dialog open
+until answered. For hook events, settings precedence, and that setting's
+scope, see the [Claude Code hooks reference](https://code.claude.com/docs/en/hooks).
 
 <a id="response-style"></a>
 ## Response style
