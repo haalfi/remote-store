@@ -15,7 +15,7 @@ audience:
   - contributor.process
 surprising_ripples:
   - .claude/skills/ship/SKILL.md
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -124,10 +124,16 @@ phases:
           The miss that matters most, because it is the item's failure mode
           committed while writing the item. BK-324's entry said "BK-336 in
           `BACKLOG.md` is where it would be written down" — false on both counts
-          once BK-336 moved to `BACKLOG-DONE.md`, and 158 lines below the new
-          entry in the same file the PR was editing. The orienting grep for
+          once BK-336 moved to `BACKLOG-DONE.md`, and sitting further down the
+          same file the PR was editing. The orienting grep for
           `BK-336` had listed this file among its hits; only `BACKLOG.md`'s hit
           was opened, on the assumption that a DONE-file match was the new entry
           itself. A file-level match list is not a sweep, which is exactly the
-          distinction the shipped rule draws.
+          distinction the shipped rule draws. Round 3 then caught the fix for
+          this one importing a reviewer's hand-counted "158 lines" verbatim,
+          in the same commit that removed a different hand-count — a figure
+          about a file that grows, in a durable artifact, which
+          [CONTENT-RULES rule 3](../CONTENT-RULES.md) exists to stop. Numbers
+          quoted from a review are not measurements; this one matched no anchor
+          at any revision.
         outcome: ok

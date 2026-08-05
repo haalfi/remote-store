@@ -21,7 +21,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   item exists to close; reporting the sweep's result per finding cannot be
   satisfied without running one. It asks for the sweeps that found nothing too,
   because a check that found nothing reads exactly like one that never ran — and
-  for any changed path the gate could not execute, since a green gate is silent
+  for any changed surface the gate never executed, since a green gate is silent
   about what it never ran at all.
   **The sweep question is coverage, not spelling.** Siblings share a failure
   mode, not a wording, so for a rule spanning backends what matters is which
@@ -52,9 +52,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   **The class outlived the first sweep here too, which is the entry's own
   evidence.** Round 1's fix reached `/ship`; round 2 found the rule's other
   half still missing from `/ship`'s report, and a stale "BK-336 in `BACKLOG.md`
-  is where it would be written down" 158 lines below the new entry, in the file
-  this PR was already editing. The first grep listed that file as a hit and only
-  its sibling was opened.
+  is where it would be written down" further down this same file — inside the
+  BK-324 entry the new one cites. The first grep listed this file among its hits
+  and only its sibling was opened.
   **[BK-338](BACKLOG.md) stays open.** The reverted attempt bundled the
   review-roster question and a single-session model pin into the same commit;
   neither is touched here.
