@@ -79,6 +79,23 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Lint / CI Completeness
 
+- [ ] **ID-242 — Four `moto doesn't raise PermissionError` pragmas are coverage holes, not exemptions**
+  spec: — · effort: S · audience: contributor
+  `_s3_base.py` 510/540/573 and `_s3_pyarrow.py:626` each carry
+  `# pragma: no cover -- moto doesn't raise PermissionError`. The mappings are
+  correct and the pragmas are accurate statements about the fixture, which is
+  exactly the problem: **BUG-242 was a defect living behind the fifth instance
+  of this same pragma**, on the one branch that mattered, invisible to a suite
+  of 7976 passing tests.
+  A true "the fixture cannot reach this" is a coverage hole wearing an
+  exemption's clothes. It is indistinguishable from a real exemption at read
+  time, so it never gets revisited.
+  **Now cheap to close:** `tests/backends/s3/test_denied_probe.py` established a
+  `pytest-httpserver` harness that serves real 403s at Stage 1, no Docker and no
+  credentials. Each remaining pragma is a few params on that harness.
+  Surfaced by the PR #945 round-6 review, which noted the commit's own
+  "permanent hole" argument applies verbatim to the four it left behind.
+
 - [ ] **BUG-241 — SQL prefix probes build `LIKE` patterns without escaping `_` and `%`**
   spec: — · effort: S · audience: user.api
   `SQLBlobBackend._reject_folder` builds `LIKE key + "/%"`, and every other
