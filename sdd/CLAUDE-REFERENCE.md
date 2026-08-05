@@ -416,6 +416,45 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
 
 ---
 
+<a id="interview-mode-wiring"></a>
+## Interview mode
+
+The rule ("decision questions go through `AskUserQuestion`, never prose") lives
+in [`CLAUDE.md` § Interview mode](../CLAUDE.md#interview-mode). This section is
+the wiring behind it, kept out of `CLAUDE.md` because that file loads into every
+session and this is maintenance detail.
+
+| Layer | What it does |
+| --- | --- |
+| Steering | An output style saying when a decision is the user's to make, and how to shape the options |
+| Enforcement | A `Stop` hook returns a turn that ended on a prose decision question, to be re-asked through the tool |
+| Notification | Bell plus desktop notification when a dialog opens or the session goes idle |
+
+Which events fire which layer is declared in `.claude/settings.json`. Read it
+there; a second copy here would rot. To change what counts as a blocking
+question, edit the `Stop` hook's `prompt`. That hook returns `ok: true` when
+`stop_hook_active` is set, so a blocked turn cannot loop against Claude Code's
+consecutive-block cap.
+
+Three failure modes worth knowing:
+
+- An output style is read once at session start, so `/clear` or restart after
+  editing one.
+- `/config` writes `outputStyle` to `.claude/settings.local.json`, which outranks
+  the committed `.claude/settings.json`: picking a style from that menu silently
+  overrides the repo default.
+- The enforcement layer is unproven. It produced a false positive on its first
+  real firing, blocking a turn that only reported completed work — reproduction
+  and diagnosis in BUG-244.
+
+Leave `askUserQuestionTimeout` unset; its default is what keeps a dialog open
+until answered. That setting, its scope, and settings precedence are defined in
+the [Claude Code settings reference](https://code.claude.com/docs/en/settings).
+Hook events and their payloads are in the
+[hooks reference](https://code.claude.com/docs/en/hooks).
+
+---
+
 <a id="local-toolchain"></a>
 ## Local toolchain
 

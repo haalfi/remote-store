@@ -715,14 +715,16 @@ that writes it lands, so cite the generator instead.
   makes "no recurring trigger, act on the report when a ranked file is next
   touched" a legitimate outcome.
 
-- [ ] **ID-244 — Gate the CLAUDE.md interview-mode table against `.claude/settings.json`**
+- [ ] **ID-244 — Gate the interview-mode layer table against `.claude/settings.json`**
   spec: — · effort: S · audience: contributor.tooling
-  [`CLAUDE.md` § Interview mode](../CLAUDE.md#interview-mode) describes three
-  layers whose wiring lives in `.claude/settings.json`. PR #947 trimmed that table
-  down to what each layer *does*, precisely so the config values would live in one
-  place — but the pair is still hand-maintained. Delete the `Notification` block
-  or rename the `Stop` hook and the table still claims three layers, with nothing
-  detecting the disagreement.
+  [`CLAUDE-REFERENCE.md` § Interview mode](CLAUDE-REFERENCE.md#interview-mode-wiring)
+  describes three layers whose wiring lives in `.claude/settings.json`. PR #947
+  trimmed that table down to what each layer *does*, precisely so the config
+  values would live in one place — but the pair is still hand-maintained. Delete
+  the `Notification` block or rename the `Stop` hook and the table still claims
+  three layers, with nothing detecting the disagreement.
+  (The table started in `CLAUDE.md` and moved to the reference in the same PR, to
+  keep the always-loaded file to the rule alone. Same pair, new address.)
   This entry is the [Rule 6](DRIFT-RULES.md#tolerated) register entry for that
   tolerated divergence. Owner: whoever takes this item. Rationale for tolerating
   it meanwhile: the surviving claim space is three rows deep and changes rarely,

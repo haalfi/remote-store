@@ -89,34 +89,12 @@ The suite uses **no GPU**. GPU saturation during a test run comes from concurren
 ## Interview mode
 
 Decision questions go through the `AskUserQuestion` tool, never prose. A prose
-question ends the turn and sits in scrollback; a tool question renders a
-blocking dialog that cannot be scrolled past. Three layers enforce this:
+question ends the turn and sits in scrollback; a tool question blocks until
+answered. A `Stop` hook enforces this, but it is unproven and has produced a
+false positive (BUG-244), so treat a block as advisory until that item closes.
 
-| Layer | What it does |
-| --- | --- |
-| Steering | An output style saying when a decision is the user's to make, and how to shape the options |
-| Enforcement | Returns a turn that ended on a prose decision question, to be re-asked through the tool |
-| Notification | Bell plus desktop notification when a dialog opens or the session goes idle |
-
-Which events fire which layer is declared in `.claude/settings.json`. Read it
-there; a second copy here would rot. To change what counts as a blocking
-question, edit the `Stop` hook's `prompt`. That hook returns `ok: true` when
-`stop_hook_active` is set, so a blocked turn cannot loop against Claude Code's
-consecutive-block cap.
-
-Three failure modes worth knowing. An output style is read once at session start,
-so `/clear` or restart after editing one. `/config` writes `outputStyle` to
-`.claude/settings.local.json`, which outranks the committed
-`.claude/settings.json`: picking a style from that menu silently overrides the
-repo default. And the enforcement layer is unproven: it produced a false positive
-on its first real firing, blocking a turn that only reported completed work
-(BUG-244). Treat a block as advisory until that item closes.
-
-Leave `askUserQuestionTimeout` unset; its default is what keeps a dialog open
-until answered. That setting, its scope, and settings precedence are defined in
-the [Claude Code settings reference](https://code.claude.com/docs/en/settings).
-Hook events and their payloads are in the
-[hooks reference](https://code.claude.com/docs/en/hooks).
+Wiring, maintenance, and failure modes: [`sdd/CLAUDE-REFERENCE.md` § Interview
+mode](sdd/CLAUDE-REFERENCE.md#interview-mode-wiring).
 
 <a id="response-style"></a>
 ## Response style
