@@ -2,7 +2,7 @@
 
 <!-- doc: repo-only -->
 
-Compiled from 32 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
+Compiled from 33 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
 
 ## Accepted
 
@@ -1007,6 +1007,43 @@ live-backend-only regression actually slips past the per-PR gate and reaches a
 release — or the account gains merge-queue/larger-runner capacity (e.g. moves to
 an organization), at which point the full matrix can return to the per-PR gate
 directly.
+
+### [ADR-0033](0033-ship-convergence-driven-review.md): Convergence-Driven Review for Single-PR Delivery
+
+- **Terminate the review loop on convergence, not on a round count.** Stop when
+  a round yields zero must-fix findings, where must-fix means wrong once merged:
+  incorrect behaviour, a false statement in a durable artifact, or a shipping
+  gap. A soft ceiling of five finding-rounds triggers escalation to the user
+  rather than silent termination. *Reverse if* loops routinely run long without
+  the extra rounds changing what ships, so a fixed cap costs less than it saves.
+
+- **The loop may not end on an unreviewed fix pass.** Whatever the last round
+  changed is itself reviewed before the PR is declared ready; that verification
+  round does not count toward the ceiling. This is the concrete form of "a fix
+  pass is not trusted work". *Reverse if* verification rounds over fix passes
+  stop finding anything across a meaningful sample of deliveries.
+
+- **Diversify reviewers rather than repeating one.** The first round is
+  *unprimed*, receiving the diff, the goal and repo conventions but never the
+  author's areas of concern, and runs on a different model from the author's so
+  its blind spots differ. Later rounds each take one scoped lens, chosen by what
+  earlier rounds did not examine. *Reverse if* unprimed rounds reliably
+  duplicate what lens rounds find, making the diversity redundant.
+
+- **Reviewers are read-only and never resumed; fixers may decline with
+  evidence.** A resumed reviewer inherits its own prior conclusions and stops
+  being an independent check. *Reverse if* declining is used to avoid work
+  rather than to correct it.
+
+- **Factual disputes are settled by measurement; contested decisions still go
+  to the user.** A disagreement about what the code does is an experiment, not
+  an adjudication. ADR-0020's "user is the sole tie-breaker" is unchanged and
+  still governs what the code *should* do. *Reverse only* as a deliberate
+  authority change, per ADR-0020.
+
+Which skill to reach for is a use decision, not one this record makes. That,
+with the step sequence, lens menu, brief requirements and triage table, is
+operational contract and lives in `.claude/skills/ship/SKILL.md`.
 
 ## Superseded
 
