@@ -12,28 +12,34 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   spec: — · effort: M · audience: contributor.process, contributor.tooling
   A question asked in prose ends the turn and sits in scrollback, so it gets
   overlooked; `AskUserQuestion` renders a dialog that blocks until answered.
-  Three layers in `.claude/` push decision questions out of prose into that tool:
+  Two layers in `.claude/` push decision questions out of prose into that tool:
   an output style saying when a decision is the user's to make and how to shape
-  the options, a `Stop` hook returning a turn that ended on a prose decision
-  question, and a bell plus desktop notification when a dialog opens or the
+  the options, and a bell plus desktop notification when a dialog opens or the
   session goes idle. Wiring:
   [`CLAUDE-REFERENCE.md` § Interview mode](CLAUDE-REFERENCE.md#interview-mode-wiring);
   the rule alone lives in `CLAUDE.md`, which loads into every session.
-  **What the review rounds actually bought**, since the shipped diff does not
-  show it: the `/dev/tty` assertion was vacuous on any machine with a terminal,
-  and fixing that removed the bell's only coverage; the `osascript` branch the
-  quote stripping exists for was dead in every test; the first CI fix made
+  **A third layer was built and deliberately dropped.** A `Stop` hook of
+  `type: "prompt"` would have returned any turn ending on a prose decision
+  question. It charges every contributor a model round-trip on every turn, its
+  benefit cannot be measured offline (a prompt hook is judged by a model; CI has
+  no credential), and its one real firing was a false positive that blocked a
+  completion report. Certain recurring cost against an unmeasurable benefit is
+  not a default worth taking; the reversal condition is evidence that steering
+  alone lets a question slip, not a better argument about the mechanism.
+  **What the review rounds bought**, since the shipped diff does not show it:
+  the `/dev/tty` assertion was vacuous on any machine with a terminal, and fixing
+  that removed the bell's only coverage; the `osascript` branch the quote
+  stripping exists for was dead in every test; the first CI fix made
   `.claude/hooks/` a 15-job full-fan-out trigger on a precedent that did not
-  carry; and the clause guard on the `Stop` prompt pinned a substring occurring
-  three times, so it stayed green with the scoping sentence deleted — the exact
-  regression it was added to catch. Each was found only because the round that
-  introduced it was itself reviewed, which is [ID-243](BACKLOG-DONE.md)'s
-  "may not end on an unreviewed fix pass" rule paying out.
-  **Standing limit, not a defect:** a `type: "prompt"` hook is judged by a model,
-  so its false-positive rate is not measurable offline and CI never exercises it.
-  The tests pin that the instructions are present, not that the judgment is
-  right; `test_stop_clause_substrings_are_unique` keeps "present" from decaying
-  back into "some other occurrence matched".
+  carry. Each was found only because the round that introduced it was itself
+  reviewed, which is [ID-243](BACKLOG-DONE.md)'s "may not end on an unreviewed
+  fix pass" rule paying out.
+  **The cost of that discipline is also on the record.** Five rounds and
+  nineteen findings, nearly all of them defects in the verification apparatus
+  rather than in the ~50-line hook it guards; the one real bug in the hook was
+  found by a throwaway harness before any permanent test existed. The rounds
+  never asked whether a component should exist — that question came from the
+  user and removed the layer four rounds had been polishing.
   Follow-up left open: [ID-244](BACKLOG.md) — no drift check binds the layer
   table to `.claude/settings.json`.
 

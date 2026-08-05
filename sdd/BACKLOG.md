@@ -692,11 +692,12 @@ that writes it lands, so cite the generator instead.
 - [ ] **ID-244 — Gate the interview-mode layer table against `.claude/settings.json`**
   spec: — · effort: S · audience: contributor.tooling
   [`CLAUDE-REFERENCE.md` § Interview mode](CLAUDE-REFERENCE.md#interview-mode-wiring)
-  describes three layers whose wiring lives in `.claude/settings.json`.
+  describes two layers whose wiring lives in `.claude/settings.json`.
   [BK-341](BACKLOG-DONE.md) trimmed that table down to what each layer *does*,
   precisely so the config values would live in one place — but the pair is still
-  hand-maintained. Delete the `Notification` block or rename the `Stop` hook and
-  the table still claims three layers, with nothing detecting the disagreement.
+  hand-maintained. Delete the `Notification` block or rename the
+  `PreToolUse(AskUserQuestion)` matcher and the table still claims two layers,
+  with nothing detecting the disagreement.
   (The table started in `CLAUDE.md` and moved to the reference in the same work,
   to keep the always-loaded file to the rule alone. Same pair, new address.)
   This entry is the [Rule 6](DRIFT-RULES.md#tolerated) register entry for that

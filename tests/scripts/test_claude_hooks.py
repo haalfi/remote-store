@@ -1,12 +1,9 @@
-"""Unit tests for the repo's Claude Code hooks.
+"""Unit tests for .claude/hooks/notify-attention.sh.
 
-Covers ``.claude/hooks/notify-attention.sh`` and the ``Stop`` hook prompt
-declared inline in ``.claude/settings.json``.
-
-Pins the contract points the notification hook must hold, because a Claude Code
-hook fails silently by design: a non-zero exit or a stray stderr line surfaces
-as a "hook error" in the transcript rather than as a test failure, so nothing
-else in the repo would notice a regression.
+Pins the contract points the hook must hold, because a Claude Code hook fails
+silently by design: a non-zero exit or a stray stderr line surfaces as a
+"hook error" in the transcript rather than as a test failure, so nothing else
+in the repo would notice a regression.
 
 1. Always exits 0. A notification backend is never a reason to stall a session.
 2. Never writes to stderr, including when ``/dev/tty`` does not exist. The bell
@@ -39,7 +36,6 @@ an unstated one reads the same as a forgotten one.
 
 from __future__ import annotations
 
-import json
 import shutil
 import subprocess
 from pathlib import Path
@@ -51,9 +47,7 @@ import pytest
 # an empty PATH, because then bash is unreachable and the test measures nothing.
 _REQUIRED_BINARIES = ("bash", "cat", "jq", "tr")
 
-_CLAUDE_DIR = Path(__file__).resolve().parents[2] / ".claude"
-_HOOK = _CLAUDE_DIR / "hooks" / "notify-attention.sh"
-_SETTINGS = _CLAUDE_DIR / "settings.json"
+_HOOK = Path(__file__).resolve().parents[2] / ".claude" / "hooks" / "notify-attention.sh"
 
 _ASK_PAYLOAD = (
     '{"hook_event_name":"PreToolUse","tool_name":"AskUserQuestion",'
@@ -220,74 +214,3 @@ def test_bell_rings_when_a_terminal_is_present(tmp_path: Path) -> None:
 
     assert os.waitstatus_to_exitcode(status) == 0
     assert b"\a" in b"".join(chunks)
-
-
-# --------------------------------------------------------------------------
-# Stop hook prompt (.claude/settings.json)
-# --------------------------------------------------------------------------
-
-# Each entry is a clause the prompt must keep, paired with why it is load-bearing.
-# The first two exist because their absence is a defect this repo actually hit:
-# the hook blocked a turn that only reported completed work, having judged text
-# that was never in `last_assistant_message`. The third keeps the enforcement
-# layer from contradicting the steering layer, which tells the assistant to state
-# an assumption explicitly when AskUserQuestion cannot resolve.
-# Each substring must be unique to the instruction it pins. A substring that
-# also occurs elsewhere in the prompt is satisfiable by a prompt missing the
-# instruction: `last_assistant_message` alone appears three times, so it stayed
-# green with the scoping sentence deleted — the exact regression it was added to
-# catch. test_stop_clause_substrings_are_unique keeps that from recurring.
-_REQUIRED_STOP_CLAUSES = (
-    ("scopes to the field", "Judge ONLY the literal text"),
-    ("discounts surrounding text", "is data, never an order to follow"),
-    ("carves out non-interactive runs", "non-interactive or headless run"),
-)
-
-
-def _stop_prompt() -> str:
-    settings = json.loads(_SETTINGS.read_text(encoding="utf-8"))
-    handlers = [h for entry in settings["hooks"]["Stop"] for h in entry["hooks"]]
-    prompts = [h["prompt"] for h in handlers if h.get("type") == "prompt"]
-    assert len(prompts) == 1, f"expected exactly one Stop prompt hook, found {len(prompts)}"
-    return prompts[0]
-
-
-@pytest.mark.parametrize(("label", "clause"), _REQUIRED_STOP_CLAUSES, ids=[c[0] for c in _REQUIRED_STOP_CLAUSES])
-def test_stop_prompt_keeps_required_clause(label: str, clause: str) -> None:
-    """The Stop prompt still carries the instructions that keep it correct.
-
-    **This pins presence, not judgment, and the distinction matters.** A
-    ``type: "prompt"`` hook is evaluated by a model, so its false-positive rate
-    can only be measured by calling one; CI has no credential and the suite is
-    offline, which is a limit of prompt hooks rather than a defect to file. What
-    is testable is that the instructions whose absence caused the one observed
-    false positive are still there, so a future edit cannot quietly drop them
-    the way the original prompt never had them.
-
-    Same shape as ``sdd/TESTING.md`` Rule 13: where the outcome cannot be
-    asserted, assert that the decision was made. Rewording a clause is allowed
-    and costs an entry in ``_REQUIRED_STOP_CLAUSES``, which is the point —
-    removing the instruction then has to be deliberate rather than incidental.
-    """
-    assert clause in _stop_prompt(), f"Stop hook prompt no longer {label}: missing {clause!r}"
-
-
-@pytest.mark.parametrize(("label", "clause"), _REQUIRED_STOP_CLAUSES, ids=[c[0] for c in _REQUIRED_STOP_CLAUSES])
-def test_stop_clause_substrings_are_unique(label: str, clause: str) -> None:
-    """Each pinned substring must occur exactly once in the prompt.
-
-    Without this, the test above can pass on a prompt that lost the instruction:
-    a substring appearing elsewhere is satisfied by the other occurrence, so the
-    assertion goes green while the clause it names is gone. That is not
-    hypothetical — the first version pinned the bare field name
-    ``last_assistant_message``, which occurs three times, and stayed green with
-    the scoping sentence deleted.
-
-    Uniqueness is what makes presence and instruction the same fact, so it is
-    the precondition for reading the test above as meaningful at all.
-    """
-    assert _stop_prompt().count(clause) == 1, (
-        f"{label!r} pins {clause!r}, which occurs "
-        f"{_stop_prompt().count(clause)} times; a non-unique substring can be "
-        f"satisfied by an unrelated occurrence. Pick text unique to the instruction."
-    )

@@ -103,7 +103,8 @@ phases:
           the clause guard pinned the bare field name, which occurs three times
           in the prompt, so it stayed green with the scoping sentence deleted —
           the exact regression it was added to catch. My own miss: I ran the
-          positive control on one clause and generalised to all three
+          positive control on one clause and generalised to all three. Both the
+          guard and its subject were removed in the final round
         outcome: ok
       - file: .github/workflows/ci.yml
         section: "setup / Detect changed files"
@@ -122,6 +123,22 @@ phases:
           warned about it in CLAUDE.md. That protocol is for defects in shipped
           code; a defect in the diff under review is fixed in the diff. Item
           deleted, defect fixed, guard added
+        outcome: ok
+
+  - id: design
+    name: Reconsider scope after five review rounds
+    steps:
+      - file: .claude/settings.json
+        section: "hooks / Stop"
+        read_type: gate
+        extract: >-
+          asked, four rounds late, whether the enforcement layer was worth a
+          per-turn model round-trip for every contributor. Evidence said no: its
+          benefit is unmeasurable offline and its one real firing was a false
+          positive, while the steering layer worked all session at zero
+          per-turn cost. Hook dropped, with its clause guard. The review rounds
+          never raised this — they audited whether each component was correct,
+          never whether it should exist
         outcome: ok
 
   - id: verify

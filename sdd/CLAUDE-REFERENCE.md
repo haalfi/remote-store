@@ -373,21 +373,18 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
   `git diff origin/<BASE>...HEAD --name-only`, then run the matching target. Fix
   failures, re-run until clean.
     - **Touches `src/`, `tests/`, `examples/`, `scripts/`, `.claude/hooks/`,
-      `.claude/settings.json`, `pyproject.toml`, or `.python-version`** → run
-      `hatch run all`, the full
+      `pyproject.toml`, or `.python-version`** → run `hatch run all`, the full
       pre-PR superset (its constituent scripts are the source of truth in
       `pyproject.toml`). All but the last are the test-bearing and
       interpreter-defining members of CI's `CODE_PAT`;
       `scripts/` is among them because its guards live under `tests/scripts/`, which
       only the suite runs (a `scripts/`-only diff must still run it).
-      `.claude/hooks/` and `.claude/settings.json` are here for the same reason:
-      both are guarded by `tests/scripts/test_claude_hooks.py` (the hook scripts,
-      and the `Stop` hook prompt declared inline in the settings), so a diff
-      touching only those that skipped the suite would validate nothing. They are
-      deliberately **not** in `CODE_PAT`: CI gates them through a separate
-      `hooks` output so they run
+      `.claude/hooks/` is here for the same reason — its guard is
+      `tests/scripts/test_claude_hooks.py`, so a hook-only diff that skipped the
+      suite would validate nothing — but it is deliberately **not** in
+      `CODE_PAT`: CI gates it through a separate `hooks` output so it runs
       `tooling-tests` alone rather than the 15 jobs `code` drives. Locally there
-      is no such split, so either edit takes the same `hatch run all` as code.
+      is no such split, so a hook edit takes the same `hatch run all` as code.
       The remaining `CODE_PAT` members are
       generated artefacts (FEATURES, the graph data — drift
       caught by `preflight` on this path) and CI config (workflows, actions —
@@ -434,33 +431,28 @@ session and this is maintenance detail.
 | Layer | What it does |
 | --- | --- |
 | Steering | An output style saying when a decision is the user's to make, and how to shape the options |
-| Enforcement | A `Stop` hook returns a turn that ended on a prose decision question, to be re-asked through the tool |
 | Notification | Bell plus desktop notification when a dialog opens or the session goes idle |
 
 Which events fire which layer is declared in `.claude/settings.json`. Read it
-there; a second copy here would rot. To change what counts as a blocking
-question, edit the `Stop` hook's `prompt`. That hook returns `ok: true` when
-`stop_hook_active` is set, so a blocked turn cannot loop against Claude Code's
-consecutive-block cap.
+there; a second copy here would rot.
 
-Three things worth knowing — two failure modes and one standing limit:
+**There is deliberately no enforcement layer.** A `Stop` hook of
+`type: "prompt"` was built, reviewed and then dropped: it charges every
+contributor an extra model round-trip on every turn, its benefit is not
+measurable offline (a prompt hook is judged by a model, and CI has no
+credential), and the one real firing observed was a false positive that blocked
+a turn reporting completed work. A certain per-turn cost against an unmeasurable
+benefit, on that evidence, is not a trade worth making by default. Before
+rebuilding it, get evidence that steering alone is insufficient — a prose
+question that actually slipped past — rather than reasoning from the mechanism.
+
+Two failure modes worth knowing:
 
 - An output style is read once at session start, so `/clear` or restart after
   editing one.
 - `/config` writes `outputStyle` to `.claude/settings.local.json`, which outranks
   the committed `.claude/settings.json`: picking a style from that menu silently
   overrides the repo default.
-- A `type: "prompt"` hook is judged by a model, so its false-positive rate is
-  not measurable offline and CI never exercises it. **This is a standing limit
-  of prompt hooks, not an open defect.** The one false positive seen in practice
-  came from a missing instruction rather than from model variance: the prompt
-  said to read `last_assistant_message` but not to read *only* that, so the
-  evaluator judged surrounding scaffolding as part of the turn and blocked a
-  completion report. The instruction is now present, and
-  `tests/scripts/test_claude_hooks.py` pins it against silent removal. What that
-  test cannot do is tell you how often the model is wrong when the instructions
-  are right; treat a surprising block as worth investigating rather than as
-  proof the hook is broken.
 
 Leave `askUserQuestionTimeout` unset; its default is what keeps a dialog open
 until answered. That setting, its scope, and settings precedence are defined in
