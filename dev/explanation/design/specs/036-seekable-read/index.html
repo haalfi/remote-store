@@ -10672,7 +10672,17 @@ seekable, returns it directly (zero-copy passthrough). Otherwise, spools
 into a <code>SpooledTemporaryFile(max_size=8_388_608)</code> and returns it
 positioned at byte 0.
 <strong>Postconditions:</strong> All backends support <code>read_seekable()</code> without
-overriding. Backends MAY override for optimization.</p>
+overriding. Backends MAY override for optimization.
+<strong>Error contract:</strong> identical to <code>read()</code>, and that is not incidental — the
+default <em>is</em> <code>read()</code>. <code>read_seekable</code> on a folder path raises <code>InvalidPath</code>
+and on a missing path raises <code>NotFound</code>, per BE-021. Its canonical mapping
+table makes any <em>file operation</em> on a directory path <code>InvalidPath</code> — the row
+lists examples, not the roster — and its error-path clause names
+<code>read_seekable</code> explicitly, alongside <code>read</code> and <code>read_bytes</code>, as an operation
+that owes the verdict. An overriding backend inherits the obligation rather
+than escaping it: a range reader that answers <code>NotFound</code> where the same
+instance's <code>read()</code> answers <code>InvalidPath</code> makes the error contract depend on
+which of the two the caller happened to use.</p>
 <h2 id="seek-004-passthrough-for-seekable-backends">SEEK-004: Passthrough for Seekable Backends<a class="headerlink" href="#seek-004-passthrough-for-seekable-backends" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> When <code>self.read(path)</code> returns a seekable stream,
 <code>read_seekable()</code> returns the same stream instance with no copying.

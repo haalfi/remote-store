@@ -11139,7 +11139,10 @@ input unchanged (best-effort).</p>
 <p><strong>Bare root:</strong> The bare backend root (the root itself, with no trailing key)
 maps to the empty key <code>""</code>. This is the inverse of <code>native_path("")</code> returning
 the bare root (NPR-021), so the round-trip <code>to_key(native_path(k)) == k</code> holds
-for <code>k == ""</code> as well as every non-empty key. All backends with a native root
+for <code>k == ""</code> as well as every non-empty key — except the other root spelling
+<code>"."</code>, which shares one native path with <code>""</code> and therefore round-trips to the
+canonical <code>""</code>. See <a href="../003-backend-adapter-contract/">BE-029</a> for why one native
+path cannot invert to two spellings. All backends with a native root
 (Local, SFTP, S3, Azure) special-case the bare root to <code>""</code>; see BK-234.</p>
 <h3 id="npr-006-localbackendto_key">NPR-006: LocalBackend.to_key<a class="headerlink" href="#npr-006-localbackendto_key" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>LocalBackend.to_key(native_path)</code> strips the backend's
@@ -11262,7 +11265,9 @@ per NPR-001.</p>
 <strong>Postconditions:</strong> The default is the identity function. Backends with a native
 root (bucket, base_path, filesystem root) <strong>must</strong> override to prepend their
 prefix. This is the inverse of <code>to_key</code>:
-<code>backend.to_key(backend.native_path(key)) == key</code> for all valid keys.
+<code>backend.to_key(backend.native_path(key)) == key</code> for all valid keys except the
+root spelling <code>"."</code>, which returns the canonical <code>""</code>
+(<a href="../003-backend-adapter-contract/">BE-029</a>).
 <strong>Overrides:</strong> <code>LocalBackend</code> (prepends root dir), <code>S3Backend</code> (prepends bucket),
 <code>S3PyArrowBackend</code> (prepends bucket), <code>SFTPBackend</code> (prepends base_path),
 <code>AzureBackend</code> (prepends container). <code>MemoryBackend</code> inherits the identity default.</p>

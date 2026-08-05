@@ -638,6 +638,8 @@ Convert a backend-relative key to the backend-native path.
 
 The inverse of `to_key()`. The default implementation is the identity function — backends with a native root (bucket, base_path) override this to prepend their prefix.
 
+Both spellings of the store root collapse to the canonical `""`: they name one path, so they must produce one native path. That is also why the `to_key(native_path(k)) == k` identity returns the canonical spelling rather than the one passed in.
+
 Parameters:
 
 - **`path`** (`str`) – Backend-relative key.

@@ -13300,6 +13300,10 @@ above.</p>
 <p>The inverse of <code>to_key()</code>. The default implementation is the
 identity function — backends with a native root (bucket, base_path)
 override this to prepend their prefix.</p>
+<p>Both spellings of the store root collapse to the canonical <code>""</code>:
+they name one path, so they must produce one native path. That is
+also why the <code>to_key(native_path(k)) == k</code> identity returns the
+canonical spelling rather than the one passed in.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

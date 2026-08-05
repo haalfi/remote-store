@@ -1139,7 +1139,7 @@ def _has_children(self, path: str) -> bool:
 - `""` and `"."` are root aliases. Root always exists and is always a folder.
 - `is_file("")` is always `False`. `is_folder("")` is always `True`.
 
-A layer note on the alias rules: `Store` normalizes `"."` to `""` before your backend runs, so your backend never sees `"."` through `Store` — an unscoped store's root arrives as `""`, and a scoped store prepends its `root_path`, so root arrives as that prefix instead. The rule to follow: implement the root invariants in terms of `""`, and treat `"."` handling as optional defense for direct backend callers — the tutorial guards both, which is the safe shape. The precise backend-layer obligations live in the [Backend Adapter Contract](https://docs.remotestore.dev/stable/explanation/design/specs/003-backend-adapter-contract/index.md).
+A layer note on the alias rules: `Store` normalizes `"."` to `""` before your backend runs, so through `Store` your backend only ever sees `""` (or, for a scoped store, its `root_path` prefix). Handling `"."` is nonetheless **required**, not optional defense: the backend surface has callers of its own — adapters, `unwrap()` consumers, anything that feeds a `FolderInfo.path` back into a query, since that renders the root as `"."` — and the conformance suite exercises both spellings. Answer both from one predicate rather than testing `if path`: on a flat namespace `"./"` is a real and permanently empty key prefix, so a backend that treats `"."` as an ordinary key answers for nothing and reports it as success. The precise backend-layer obligations live in the [Backend Adapter Contract](https://docs.remotestore.dev/stable/explanation/design/specs/003-backend-adapter-contract/index.md).
 
 ______________________________________________________________________
 
@@ -1902,12 +1902,20 @@ The conformance suite reads this from the per-backend `flat_namespace` flag decl
 
 Key behavioral differences that the conformance tests check:
 
-| Behavior                                             | Hierarchical (Local, SFTP, Memory) | Flat-namespace (S3, Azure, HTTP)             |
-| ---------------------------------------------------- | ---------------------------------- | -------------------------------------------- |
-| Write to a path that is an existing directory        | Raises `InvalidPath`               | Typically allowed (no real directory)        |
-| `delete_folder(recursive=False)` on non-empty folder | Raises `DirectoryNotEmpty`         | Behaviour varies; some tests are skipped     |
-| Explicit directory creation                          | Required (mkdir semantics)         | Not needed; folders emerge from key prefixes |
-| `is_folder(path)` for a prefix with no keys          | `False`                            | `False`                                      |
+| Behavior                                                      | Hierarchical (Local, SFTP, Memory) | Flat-namespace (S3, Azure, SQL)                  |
+| ------------------------------------------------------------- | ---------------------------------- | ------------------------------------------------ |
+| Write to a path that is an existing directory                 | Raises `InvalidPath`               | Allowed — the write has no error to reclassify   |
+| Read / delete / stat / move-source on a path that is a folder | Raises `InvalidPath`               | Raises `InvalidPath` — derived on the error path |
+| `delete_folder` / `get_folder_info` on a path that is a file  | Raises `InvalidPath`               | Raises `InvalidPath` — derived on the error path |
+| `delete_folder(recursive=False)` on non-empty folder          | Raises `DirectoryNotEmpty`         | Raises `DirectoryNotEmpty`                       |
+| Explicit directory creation                                   | Required (mkdir semantics)         | Not needed; folders emerge from key prefixes     |
+| `is_folder(path)` for a prefix with no keys                   | `False`                            | `False`                                          |
+
+**Wrong-type errors are not a variation.** Rows two and three hold on every backend. A flat namespace cannot answer "is this a directory?" directly, so it derives the answer *after* the operation has already failed — one bounded prefix listing, or one HEAD — and converts the miss into `InvalidPath`. Do the same in your backend rather than letting a `NotFound` stand: the probe costs nothing on the success path, because a successful call never reaches it.
+
+**Fail-open belongs to that call site, not to the probe.** On the error path a probe that cannot answer may return "no", because the operation's own error is still there to stand. Do not build that swallow into the probe itself: the same HEAD or listing usually also serves as the plain existence check at the head of `delete`, `delete_folder` and the `move`/`copy` source, and there it is the *determinant* with no prior error to fall back on — swallowing invents a verdict, and a denied HEAD reaches the caller as "the object is absent". Keep the probe strict and wrap it at the error-path call site; the [Backend Adapter Contract](https://docs.remotestore.dev/stable/explanation/design/specs/003-backend-adapter-contract/index.md) states the rule and the reasoning behind it.
+
+What flat-namespace backends *are* exempt from is the write side — a write to a key that shadows a prefix succeeds, so there is no error to reclassify, and the same applies to a move/copy destination.
 
 If your backend is hierarchical (the common case), no action is needed — the full extended suite applies.
 
@@ -1959,8 +1967,8 @@ If you are building a backend outside the remote-store repository, write focused
 
 #### Edge cases
 
-- Empty path (`""`) and root alias (`"."`) — root always exists and is always a folder
-- `is_file("")` always returns `False`; `exists("")` never raises (test these through `Store` — see the layer note in Step 5)
+- Empty path (`""`) and root alias (`"."`) — root always exists and is always a folder, under both spellings, and on a store nothing has been written to yet
+- `is_file("")` always returns `False`; `exists("")` never raises — including when the SDK rejects a zero-length key (answer it yourself, before the call)
 - Deeply nested paths (`"a/b/c/d/e/file.txt"`)
 - Non-existent paths to `list_files` / `list_folders` yield nothing (no exception)
 - `repr(backend)` does not expose credentials or secrets
@@ -4737,7 +4745,7 @@ is_file(path: str) -> bool
 
 Return `True` if *path* is an existing blob (not an HNS directory marker).
 
-One HEAD round-trip; a missing blob or an `hdi_isfolder` directory returns `False`.
+The root is a folder under both spellings, so it answers `False` without a round trip. Otherwise one HEAD; a missing blob or an `hdi_isfolder` directory returns `False`.
 
 Raises:
 
@@ -6875,8 +6883,8 @@ Return metadata for the file at *path* from the in-memory node.
 
 Raises:
 
-- `NotFound` – If no file exists at path (including the empty path).
-- `InvalidPath` – If path names a folder.
+- `NotFound` – If no file exists at path.
+- `InvalidPath` – If path names a folder, including the store root.
 
 ### get_folder_info
 
@@ -9091,6 +9099,25 @@ Returns:
 
 - `ResolutionPlan` – Plan with kind="sql-query" and details containing
 - `ResolutionPlan` – source and format.
+
+### list_files
+
+```
+list_files(
+    path: str,
+    *,
+    recursive: bool = False,
+    max_depth: int | None = None,
+) -> Iterator[FileInfo]
+```
+
+Yield files under *path*, one `FileInfo` at a time.
+
+The key set is the configured query registry, held in memory, so a listing issues no database round trip. Folder structure is derived from `/` in the key suffix, and `recursive` / `max_depth` filter client-side — there is no traversal to prune. A prefix matching no registered key yields nothing.
+
+Raises:
+
+- `InvalidPath` – If path is absolute, contains a null byte, or contains a .. segment.
 # Reference
 
 # API Reference
@@ -9962,6 +9989,8 @@ Convert a backend-relative key to the backend-native path.
 
 The inverse of `to_key()`. The default implementation is the identity function — backends with a native root (bucket, base_path) override this to prepend their prefix.
 
+Both spellings of the store root collapse to the canonical `""`: they name one path, so they must produce one native path. That is also why the `to_key(native_path(k)) == k` identity returns the canonical spelling rather than the one passed in.
+
 Parameters:
 
 - **`path`** (`str`) – Backend-relative key.
@@ -10578,9 +10607,9 @@ Mirrors `pathlib.PurePath.as_posix`. The path is always stored with forward slas
 from_backend_path(path: str) -> RemotePath
 ```
 
-Create a RemotePath, using ROOT for empty paths.
+Create a RemotePath, using ROOT for the root spellings.
 
-Backends use this in `get_folder_info` to avoid duplicating the `RemotePath(path) if path else RemotePath.ROOT` pattern.
+Backends use this in `get_folder_info` to avoid duplicating the `RemotePath(path) if path else RemotePath.ROOT` pattern. Both root spellings map to `ROOT`; `_normalize` would otherwise reject `"."` for normalising to nothing, which is the right answer for a *file* path and the wrong one for the root folder.
 
 ## PathEntry
 
@@ -13130,6 +13159,8 @@ Convert a backend-relative key to the backend-native path.
 
 The inverse of `to_key()`. The default implementation is the identity function -- backends with a native root (bucket, base_path) override this to prepend their prefix.
 
+Both spellings of the store root collapse to the canonical `""`: they name one path, so they must produce one native path. Mirrors the sync `Backend` default.
+
 Parameters:
 
 - **`path`** (`str`) – Backend-relative key.
@@ -14132,7 +14163,7 @@ Return `True` if `path` is an existing file.
 
 Parameters:
 
-- **`path`** (`str`) – Backend-relative key.
+- **`path`** (`str`) – Backend-relative key, or a root spelling ("" / "."), which is a folder and answers False without a round trip.
 
 Returns:
 
@@ -14321,7 +14352,7 @@ Parameters:
 
 - **`path`** (`str`) – Backend-relative folder key, or "" for the root.
 - **`recursive`** (`bool`, default: `False` ) – If True, include files in all subdirectories.
-- **`max_depth`** (`int | None`, default: `None` ) – Optional maximum folder depth to traverse.
+- **`max_depth`** (`int | None`, default: `None` ) – Optional maximum folder depth. The whole prefix is listed and depth is filtered client-side, so the bound trims results without reducing I/O.
 
 Returns:
 
@@ -14930,7 +14961,7 @@ Parameters:
 
 - **`path`** (`str`) – Backend-relative folder key, or "" for the root.
 - **`recursive`** (`bool`, default: `False` ) – If True, include files in all subdirectories.
-- **`max_depth`** (`int | None`, default: `None` ) – Optional maximum folder depth to traverse.
+- **`max_depth`** (`int | None`, default: `None` ) – Optional maximum folder depth. The walk is pruned at the bound rather than filtered afterwards.
 
 Returns:
 
@@ -15254,7 +15285,7 @@ is_file(path: str) -> bool
 
 Return `True` if *path* is an existing blob (not an HNS directory marker).
 
-One HEAD round-trip; a missing blob or an `hdi_isfolder` directory returns `False`.
+The root is a folder under both spellings, so it answers `False` without a round trip. Otherwise one HEAD; a missing blob or an `hdi_isfolder` directory returns `False`.
 
 Raises:
 
@@ -16307,8 +16338,8 @@ Return metadata for the file at *path* from the in-memory node.
 
 Raises:
 
-- `NotFound` – If no file exists at path (including the empty path).
-- `InvalidPath` – If path names a folder.
+- `NotFound` – If no file exists at path.
+- `InvalidPath` – If path names a folder, including the store root.
 
 ### get_folder_info
 
@@ -17604,6 +17635,25 @@ Returns:
 
 - `ResolutionPlan` – Plan with kind="sql-query" and details containing
 - `ResolutionPlan` – source and format.
+
+### list_files
+
+```
+list_files(
+    path: str,
+    *,
+    recursive: bool = False,
+    max_depth: int | None = None,
+) -> Iterator[FileInfo]
+```
+
+Yield files under *path*, one `FileInfo` at a time.
+
+The key set is the configured query registry, held in memory, so a listing issues no database round trip. Folder structure is derived from `/` in the key suffix, and `recursive` / `max_depth` filter client-side — there is no traversal to prune. A prefix matching no registered key yields nothing.
+
+Raises:
+
+- `InvalidPath` – If path is absolute, contains a null byte, or contains a .. segment.
 
 ## Serialization
 

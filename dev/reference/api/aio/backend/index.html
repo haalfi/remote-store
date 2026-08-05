@@ -13080,6 +13080,9 @@ above.</p>
 <p>The inverse of <code>to_key()</code>. The default implementation is the
 identity function -- backends with a native root (bucket, base_path)
 override this to prepend their prefix.</p>
+<p>Both spellings of the store root collapse to the canonical <code>""</code>:
+they name one path, so they must produce one native path. Mirrors the
+sync <code>Backend</code> default.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

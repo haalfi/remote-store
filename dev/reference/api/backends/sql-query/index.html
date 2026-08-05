@@ -4272,6 +4272,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#remote_store.backends.SQLQueryBackend.list_files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;list_files
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -10460,6 +10471,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#remote_store.backends.SQLQueryBackend.list_files" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;list_files
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -10667,6 +10689,54 @@ extension (Parquet, CSV, or Arrow IPC).</p>
           –
           <div class="doc-md-description">
             <p><code>source</code> and <code>format</code>.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="remote_store.backends.SQLQueryBackend.list_files" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">list_files</span>
+
+
+<a href="#remote_store.backends.SQLQueryBackend.list_files" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">list_files</span><span class="p">(</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">recursive</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">max_depth</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Iterator">Iterator</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            FileInfo
+
+
+  
+      dataclass
+   (remote_store._models.FileInfo)" href="../../models/#remote_store.FileInfo">FileInfo</a></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Yield files under <em>path</em>, one <code>FileInfo</code> at a time.</p>
+<p>The key set is the configured query registry, held in memory, so a
+listing issues no database round trip. Folder structure is derived from
+<code>/</code> in the key suffix, and <code>recursive</code> / <code>max_depth</code> filter
+client-side — there is no traversal to prune. A prefix matching no
+registered key yields nothing.</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>path</em> is absolute, contains a null byte, or
+contains a <code>..</code> segment.</p>
           </div>
         </li>
     </ul>

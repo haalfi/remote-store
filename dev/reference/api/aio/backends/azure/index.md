@@ -146,7 +146,7 @@ Return `True` if `path` is an existing file.
 
 Parameters:
 
-- **`path`** (`str`) – Backend-relative key.
+- **`path`** (`str`) – Backend-relative key, or a root spelling ("" / "."), which is a folder and answers False without a round trip.
 
 Returns:
 
@@ -335,7 +335,7 @@ Parameters:
 
 - **`path`** (`str`) – Backend-relative folder key, or "" for the root.
 - **`recursive`** (`bool`, default: `False` ) – If True, include files in all subdirectories.
-- **`max_depth`** (`int | None`, default: `None` ) – Optional maximum folder depth to traverse.
+- **`max_depth`** (`int | None`, default: `None` ) – Optional maximum folder depth. The whole prefix is listed and depth is filtered client-side, so the bound trims results without reducing I/O.
 
 Returns:
 

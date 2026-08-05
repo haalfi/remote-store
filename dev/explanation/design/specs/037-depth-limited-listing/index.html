@@ -10498,46 +10498,27 @@ serves as a correctness safety net.</p>
 <p><strong>Default behavior:</strong> <code>max_depth=None</code> preserves existing <code>recursive</code> semantics.
 When <code>max_depth</code> is set, backends that support it prune traversal natively;
 others yield the full recursive result and the Store filters client-side.</p>
+<p><strong><code>max_depth</code> applies only when <code>recursive=True</code>.</strong> With <code>recursive=False</code> the
+bound is inert for every value: the backend MUST yield the immediate children,
+identical to omitting <code>max_depth</code>. This is the Backend-ABC rule for direct
+callers and differs deliberately from DEPTH-001, where depth takes full control.
+<code>Store.list_files()</code> normalizes <code>max_depth</code> into <code>recursive</code> before delegating
+(<code>recursive = max_depth &gt; 0</code>) and passes <code>max_depth</code> through unchanged, so the
+one combination it can emit is <code>recursive=False, max_depth=0</code> — where the two
+readings agree, both yielding the immediate children. Every other
+<code>recursive=False</code> + <code>max_depth</code> pair reaches a backend only from a direct
+caller, which is who this rule is for.</p>
 <p><strong>Store delegation:</strong> <code>Store.list_files()</code> passes <code>max_depth</code> through to the
 backend call. The existing client-side depth filter remains as a no-op safety
 net when the backend already filtered natively.</p>
 <p><strong>No capability flag:</strong> Unlike glob, depth filtering produces identical results
 whether done natively or client-side. The optimization is purely performance.</p>
-<p><strong>Backend strategies:</strong></p>
-<table>
-<thead>
-<tr>
-<th>Backend</th>
-<th>Native strategy</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Local</strong></td>
-<td><code>os.walk()</code> with depth counter; skip dirs beyond limit.</td>
-</tr>
-<tr>
-<td><strong>SFTP</strong></td>
-<td>Depth tracking in recursive calls; stop recursing at limit.</td>
-</tr>
-<tr>
-<td><strong>Memory</strong></td>
-<td>DFS stack depth tracking; don't push beyond limit.</td>
-</tr>
-<tr>
-<td><strong>S3</strong></td>
-<td>Accept parameter, no native optimization (flat scan + client filter).</td>
-</tr>
-<tr>
-<td><strong>Azure</strong></td>
-<td>Accept parameter, no native optimization (flat scan + client filter).</td>
-</tr>
-<tr>
-<td><strong>HTTP</strong></td>
-<td>Accept parameter; raises <code>CapabilityNotSupported</code> (listing not supported).</td>
-</tr>
-</tbody>
-</table>
+<p><strong>Backend strategy is implementation detail, not contract.</strong> A backend either
+prunes traversal natively or yields the full recursive result for the Store-level
+filter to trim. The two differ only in I/O cost, never in result — the reason
+this section declares no capability flag — so the spec states no per-backend
+strategy. Which one a backend uses is documented in its own <code>list_files()</code>
+docstring, next to the code that decides it.</p>
 
 
 

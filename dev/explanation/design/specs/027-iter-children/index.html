@@ -10750,44 +10750,12 @@ method with a default implementation that chains <code>list_files()</code> and
 <h3 id="iter-005-backend-overrides">ITER-005: Backend Overrides<a class="headerlink" href="#iter-005-backend-overrides" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> Backends that can fetch files and folders in a single I/O
 operation override <code>iter_children()</code> for efficiency.</p>
-<table>
-<thead>
-<tr>
-<th>Backend</th>
-<th>Override strategy</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Local</td>
-<td>Single <code>iterdir()</code>, yield <code>FileInfo</code> or <code>FolderEntry</code></td>
-</tr>
-<tr>
-<td>S3</td>
-<td>Single <code>ls(detail=True)</code>, partition by <code>type</code></td>
-</tr>
-<tr>
-<td>S3-PyArrow</td>
-<td>Single <code>ls(detail=True)</code>, partition by <code>type</code></td>
-</tr>
-<tr>
-<td>SFTP</td>
-<td>Single <code>listdir_attr()</code>, partition by <code>st_mode</code></td>
-</tr>
-<tr>
-<td>Azure non-HNS</td>
-<td>Single <code>walk_blobs()</code>, partition by <code>prefix</code> attribute</td>
-</tr>
-<tr>
-<td>Azure HNS</td>
-<td>Single <code>get_paths(recursive=False)</code>, partition by <code>is_directory</code></td>
-</tr>
-<tr>
-<td>Memory</td>
-<td>Single tree traversal under lock</td>
-</tr>
-</tbody>
-</table>
+<p>Whether a backend overrides, and which single call it uses, is implementation
+detail rather than contract: the default composition and a single-call override
+yield the same children. They may yield them in a different order, and ITER-004
+guarantees none — conformance compares children as sets — so the strategy is not
+a contract difference. Each backend documents its own in its <code>iter_children()</code>
+docstring; the spec states no per-backend table.</p>
 <hr />
 <h2 id="extension-integration">Extension Integration<a class="headerlink" href="#extension-integration" title="Permanent link">&para;</a></h2>
 <h3 id="iter-006-extobserve">ITER-006: ext.observe<a class="headerlink" href="#iter-006-extobserve" title="Permanent link">&para;</a></h3>

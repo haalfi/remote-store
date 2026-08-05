@@ -11275,8 +11275,9 @@ root always exists.</p>
     <div class="doc doc-contents ">
 
         <p>Return <code>True</code> if <em>path</em> is an existing blob (not an HNS directory marker).</p>
-<p>One HEAD round-trip; a missing blob or an <code>hdi_isfolder</code> directory
-returns <code>False</code>.</p>
+<p>The root is a folder under both spellings, so it answers <code>False</code>
+without a round trip. Otherwise one HEAD; a missing blob or an
+<code>hdi_isfolder</code> directory returns <code>False</code>.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>

@@ -38,6 +38,25 @@ Returns:
 - `ResolutionPlan` – Plan with kind="sql-query" and details containing
 - `ResolutionPlan` – source and format.
 
+### list_files
+
+```
+list_files(
+    path: str,
+    *,
+    recursive: bool = False,
+    max_depth: int | None = None,
+) -> Iterator[FileInfo]
+```
+
+Yield files under *path*, one `FileInfo` at a time.
+
+The key set is the configured query registry, held in memory, so a listing issues no database round trip. Folder structure is derived from `/` in the key suffix, and `recursive` / `max_depth` filter client-side — there is no traversal to prune. A prefix matching no registered key yields nothing.
+
+Raises:
+
+- `InvalidPath` – If path is absolute, contains a null byte, or contains a .. segment.
+
 ## Serialization
 
 ## ResultSerializer

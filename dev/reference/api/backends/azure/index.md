@@ -99,7 +99,7 @@ is_file(path: str) -> bool
 
 Return `True` if *path* is an existing blob (not an HNS directory marker).
 
-One HEAD round-trip; a missing blob or an `hdi_isfolder` directory returns `False`.
+The root is a folder under both spellings, so it answers `False` without a round trip. Otherwise one HEAD; a missing blob or an `hdi_isfolder` directory returns `False`.
 
 Raises:
 

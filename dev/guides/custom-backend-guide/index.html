@@ -11529,13 +11529,15 @@ traceback for debugging.</p>
 <li><code>is_file("")</code> is always <code>False</code>. <code>is_folder("")</code> is always <code>True</code>.</li>
 </ul>
 <p>A layer note on the alias rules: <code>Store</code> normalizes <code>"."</code> to <code>""</code> before
-your backend runs, so your backend never sees <code>"."</code> through <code>Store</code> — an
-unscoped store's root arrives as <code>""</code>, and a scoped store prepends its
-<code>root_path</code>, so root arrives as that prefix instead. The rule to follow:
-implement the root invariants in terms of <code>""</code>, and treat <code>"."</code> handling
-as optional defense for direct backend callers — the tutorial guards
-both, which is the safe shape. The precise backend-layer obligations live
-in the
+your backend runs, so through <code>Store</code> your backend only ever sees <code>""</code> (or,
+for a scoped store, its <code>root_path</code> prefix). Handling <code>"."</code> is nonetheless
+<strong>required</strong>, not optional defense: the backend surface has callers of its own
+— adapters, <code>unwrap()</code> consumers, anything that feeds a <code>FolderInfo.path</code> back
+into a query, since that renders the root as <code>"."</code> — and the conformance suite
+exercises both spellings. Answer both from one predicate rather than testing
+<code>if path</code>: on a flat namespace <code>"./"</code> is a real and permanently empty key
+prefix, so a backend that treats <code>"."</code> as an ordinary key answers for nothing
+and reports it as success. The precise backend-layer obligations live in the
 <a href="../../explanation/design/specs/003-backend-adapter-contract/">Backend Adapter Contract</a>.</p>
 <hr />
 <h2 id="step-6-reading">Step 6: Reading<a class="headerlink" href="#step-6-reading" title="Permanent link">&para;</a></h2>
@@ -12423,19 +12425,29 @@ conformance indirect fixture; no identity-set lookup is needed.</p>
 <tr>
 <th>Behavior</th>
 <th>Hierarchical (Local, SFTP, Memory)</th>
-<th>Flat-namespace (S3, Azure, HTTP)</th>
+<th>Flat-namespace (S3, Azure, SQL)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>Write to a path that is an existing directory</td>
 <td>Raises <code>InvalidPath</code></td>
-<td>Typically allowed (no real directory)</td>
+<td>Allowed — the write has no error to reclassify</td>
+</tr>
+<tr>
+<td>Read / delete / stat / move-source on a path that is a folder</td>
+<td>Raises <code>InvalidPath</code></td>
+<td>Raises <code>InvalidPath</code> — derived on the error path</td>
+</tr>
+<tr>
+<td><code>delete_folder</code> / <code>get_folder_info</code> on a path that is a file</td>
+<td>Raises <code>InvalidPath</code></td>
+<td>Raises <code>InvalidPath</code> — derived on the error path</td>
 </tr>
 <tr>
 <td><code>delete_folder(recursive=False)</code> on non-empty folder</td>
 <td>Raises <code>DirectoryNotEmpty</code></td>
-<td>Behaviour varies; some tests are skipped</td>
+<td>Raises <code>DirectoryNotEmpty</code></td>
 </tr>
 <tr>
 <td>Explicit directory creation</td>
@@ -12449,6 +12461,25 @@ conformance indirect fixture; no identity-set lookup is needed.</p>
 </tr>
 </tbody>
 </table>
+<p><strong>Wrong-type errors are not a variation.</strong> Rows two and three hold on every
+backend. A flat namespace cannot answer "is this a directory?" directly, so it
+derives the answer <em>after</em> the operation has already failed — one bounded
+prefix listing, or one HEAD — and converts the miss into <code>InvalidPath</code>. Do the
+same in your backend rather than letting a <code>NotFound</code> stand: the probe costs
+nothing on the success path, because a successful call never reaches it.</p>
+<p><strong>Fail-open belongs to that call site, not to the probe.</strong> On the error path a
+probe that cannot answer may return "no", because the operation's own error is
+still there to stand. Do not build that swallow into the probe itself: the same
+HEAD or listing usually also serves as the plain existence check at the head of
+<code>delete</code>, <code>delete_folder</code> and the <code>move</code>/<code>copy</code> source, and there it is the
+<em>determinant</em> with no prior error to fall back on — swallowing invents a
+verdict, and a denied HEAD reaches the caller as "the object is absent". Keep
+the probe strict and wrap it at the error-path call site; the
+<a href="../../explanation/design/specs/003-backend-adapter-contract/">Backend Adapter Contract</a>
+states the rule and the reasoning behind it.</p>
+<p>What flat-namespace backends <em>are</em> exempt from is the write side — a write to
+a key that shadows a prefix succeeds, so there is no error to reclassify, and
+the same applies to a move/copy destination.</p>
 <p>If your backend is hierarchical (the common case), no action is needed — the
 full extended suite applies.</p>
 <hr />
@@ -12533,9 +12564,10 @@ focused tests covering the same categories the conformance suite verifies:</p>
 </ul>
 <h4 id="edge-cases">Edge cases<a class="headerlink" href="#edge-cases" title="Permanent link">&para;</a></h4>
 <ul>
-<li>Empty path (<code>""</code>) and root alias (<code>"."</code>) — root always exists and is always a folder</li>
-<li><code>is_file("")</code> always returns <code>False</code>; <code>exists("")</code> never raises
-  (test these through <code>Store</code> — see the layer note in Step 5)</li>
+<li>Empty path (<code>""</code>) and root alias (<code>"."</code>) — root always exists and is always
+  a folder, under both spellings, and on a store nothing has been written to yet</li>
+<li><code>is_file("")</code> always returns <code>False</code>; <code>exists("")</code> never raises — including
+  when the SDK rejects a zero-length key (answer it yourself, before the call)</li>
 <li>Deeply nested paths (<code>"a/b/c/d/e/file.txt"</code>)</li>
 <li>Non-existent paths to <code>list_files</code> / <code>list_folders</code> yield nothing (no exception)</li>
 <li><code>repr(backend)</code> does not expose credentials or secrets</li>

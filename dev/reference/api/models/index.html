@@ -10997,9 +10997,12 @@ every platform. <code>RemotePath.ROOT.as_posix()</code> returns <code>"."</code>
 
     <div class="doc doc-contents ">
 
-        <p>Create a RemotePath, using ROOT for empty paths.</p>
+        <p>Create a RemotePath, using ROOT for the root spellings.</p>
 <p>Backends use this in <code>get_folder_info</code> to avoid duplicating
-the <code>RemotePath(path) if path else RemotePath.ROOT</code> pattern.</p>
+the <code>RemotePath(path) if path else RemotePath.ROOT</code> pattern.
+Both root spellings map to <code>ROOT</code>; <code>_normalize</code> would otherwise
+reject <code>"."</code> for normalising to nothing, which is the right answer
+for a <em>file</em> path and the wrong one for the root folder.</p>
 
 
     </div>

@@ -11519,7 +11519,8 @@ Default <code>False</code>.</p>
               (<code><span title="str">str</span></code>)
           –
           <div class="doc-md-description">
-            <p>Backend-relative key.</p>
+            <p>Backend-relative key, or a root spelling (<code>""</code> / <code>"."</code>),
+which is a folder and answers <code>False</code> without a round trip.</p>
           </div>
         </li>
     </ul>
@@ -12219,7 +12220,9 @@ For HNS accounts, write to temp file via DFS then atomic rename.</p>
 )
           –
           <div class="doc-md-description">
-            <p>Optional maximum folder depth to traverse.</p>
+            <p>Optional maximum folder depth. The whole prefix is
+listed and depth is filtered client-side, so the bound trims
+results without reducing I/O.</p>
           </div>
         </li>
     </ul>

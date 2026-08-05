@@ -230,7 +230,7 @@ Parameters:
 
 - **`path`** (`str`) – Backend-relative folder key, or "" for the root.
 - **`recursive`** (`bool`, default: `False` ) – If True, include files in all subdirectories.
-- **`max_depth`** (`int | None`, default: `None` ) – Optional maximum folder depth to traverse.
+- **`max_depth`** (`int | None`, default: `None` ) – Optional maximum folder depth. The walk is pruned at the bound rather than filtered afterwards.
 
 Returns:
 

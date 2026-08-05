@@ -310,8 +310,8 @@ Return metadata for the file at *path* from the in-memory node.
 
 Raises:
 
-- `NotFound` – If no file exists at path (including the empty path).
-- `InvalidPath` – If path names a folder.
+- `NotFound` – If no file exists at path.
+- `InvalidPath` – If path names a folder, including the store root.
 
 ### get_folder_info
 

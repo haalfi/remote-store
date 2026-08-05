@@ -9141,6 +9141,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#be-029-root-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BE-029: Root Path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#be-006-read" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10962,6 +10973,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#be-029-root-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        BE-029: Root Path
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#be-006-read" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11305,7 +11327,163 @@
 <h3 id="be-004-exists">BE-004: exists()<a class="headerlink" href="#be-004-exists" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>exists(path)</code> returns <code>bool</code>. Returns <code>False</code> for missing paths — never raises <code>NotFound</code>. Also returns <code>False</code> for paths whose ancestors contain a file (file-as-directory-component), where traversal cannot proceed; these are treated as non-existent.</p>
 <h3 id="be-005-is_file-is_folder">BE-005: is_file() / is_folder()<a class="headerlink" href="#be-005-is_file-is_folder" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> <code>is_file(path)</code> returns <code>True</code> only if <code>path</code> is a file. <code>is_folder(path)</code> returns <code>True</code> only if <code>path</code> is a folder. Both return <code>False</code> for non-existent paths and for paths whose ancestors contain a file (file-as-directory-component); in both cases, the path cannot be accessed, so <code>False</code> is the semantically correct response.</p>
+<p><strong>Invariant:</strong> <code>is_file(path)</code> returns <code>True</code> only if <code>path</code> is a file. <code>is_folder(path)</code> returns <code>True</code> only if <code>path</code> is a folder. Both return <code>False</code> for non-existent paths and for paths whose ancestors contain a file (file-as-directory-component); in both cases, the path cannot be accessed, so <code>False</code> is the semantically correct response.
+<strong>Root:</strong> the store root (<code>""</code> or <code>"."</code>) is always a folder — see BE-029.</p>
+<h3 id="be-029-root-path">BE-029: Root Path<a class="headerlink" href="#be-029-root-path" title="Permanent link">&para;</a></h3>
+<p><strong>Applies to:</strong> backends declaring <code>Capability.LIST</code>. "The root is a folder"
+presupposes a backend that <em>has</em> folders, and LIST is how a backend declares
+that it enumerates them. A backend without LIST exposes a flat set of
+addressable objects with no root to speak of, and its answers for <code>""</code> are
+whatever its own contract says — <code>ReadOnlyHttpBackend</code>, for instance, resolves
+the empty key to its base URL and reads that. The boundary is the declared
+capability, never a named backend: naming one would reintroduce exactly the
+undeclared divergence this clause removes, and a future LIST-less backend
+would inherit the right treatment for free.</p>
+<p><strong>Invariant:</strong> Every LIST-capable backend accepts both spellings of the store
+root — <code>""</code> and <code>"."</code> — and treats them as the same path: a folder that always
+exists. For <code>path</code> in <code>{"", "."}</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Query</th>
+<th>Answer</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>exists(path)</code></td>
+<td><code>True</code></td>
+</tr>
+<tr>
+<td><code>is_folder(path)</code></td>
+<td><code>True</code></td>
+</tr>
+<tr>
+<td><code>is_file(path)</code></td>
+<td><code>False</code> — and it does <strong>not</strong> raise</td>
+</tr>
+<tr>
+<td><code>get_folder_info(path)</code></td>
+<td>aggregates the whole store (never <code>NotFound</code>)</td>
+</tr>
+<tr>
+<td><code>list_files(path)</code> / <code>list_folders(path)</code> / <code>iter_children(path)</code></td>
+<td>enumerate from the root</td>
+</tr>
+<tr>
+<td><code>native_path(path)</code> / <code>resolve(path).native_path</code></td>
+<td>the backend's bare root</td>
+</tr>
+<tr>
+<td>every file-shaped operation</td>
+<td><code>InvalidPath</code> — see below</td>
+</tr>
+</tbody>
+</table>
+<p><strong>A file-shaped operation on the root raises <code>InvalidPath</code>.</strong> The root is a
+folder, so BE-021's first row governs it exactly as it governs any other folder
+path — the row's subject is a <em>file operation</em>, and its list is illustrative,
+not the roster. In full: <code>read</code>, <code>read_bytes</code>, <code>read_seekable</code>,
+<code>get_file_info</code>, <code>delete</code> (with or without <code>missing_ok</code>) and the <code>move</code>/<code>copy</code>
+<strong>source</strong> all raise <code>InvalidPath</code>. The folder-shaped calls are not in that set;
+they legitimately accept the root. That <strong>outcome</strong> binds every backend in
+scope, whatever route it takes to get there.</p>
+<p><strong>Where a backend has to decide it.</strong> A backend whose native root is itself an
+addressable node — a filesystem directory, a drive-root item — MAY hand the
+root to its SDK and read the verdict off the answer: the store answers
+<em>correctly</em>, merely later, and an <code>IsADirectoryError</code> or a <code>folder</code> facet is
+the same verdict a string test would have produced. The MUST is for the
+backends without that property: <strong>a backend whose SDK cannot answer correctly
+for its own native spelling of the root MUST decide root-ness from the key,
+before the call.</strong> The shape that fails is a flat namespace whose root key is
+the empty string, and it fails in both directions — an SDK that rejects a
+zero-length key at parameter validation turns a permanently wrong request into
+a transport-shaped, retryable-looking error, while one that accepts it reads
+the bare prefix back as a zero-length object and <em>succeeds</em>. Root-ness is
+decidable from the string with no round trip, so neither outcome has to be
+risked to learn it.</p>
+<p><strong>Conformance pins the outcome, not the order</strong> — and does not need to pin
+both: a backend that gets the order wrong is observable as exactly the wrong
+error class or a spurious success, which is what the cells below assert.</p>
+<p><strong>BE-020 outranks this check.</strong> On a backend with <code>close_is_terminal = True</code>,
+a file-shaped call on the root <em>after</em> <code>close()</code> raises <code>BackendUnavailable</code>,
+not <code>InvalidPath</code>: BE-020 states its guarantee without exception, and a closed
+backend is the more fundamental error. A root pre-check is cheap and so
+naturally wants to run first — a backend that has one MUST still run the closed
+guard ahead of it, or the answer depends on which guard the implementer
+happened to write first. Pinned by
+<code>test_close_posture_outranks_root_rejection</code> in
+<code>tests/backends/conformance/test_close_posture.py</code> and its <code>aio/</code> sibling.</p>
+<p><strong>One predicate, both spellings.</strong> <code>remote_store._path.is_root</code> is the shared
+test; <code>strip_root</code> is its normalising form. A backend that asks <code>if path</code>
+instead sends the dot spelling down the non-root arm, because <code>"."</code> is truthy —
+which is how one backend came to answer <code>NotFound</code> for <code>delete("")</code> and
+<code>InvalidPath</code> for <code>delete(".")</code> on the same store. Path concatenation is the
+same trap from the other side: <code>"./"</code> is a real and permanently empty prefix on
+a flat namespace, so a listing built by concatenation silently answers for
+nothing and reports success.</p>
+<p><strong>The root exists by definition, not by observation.</strong> An empty store still
+has a root: <code>is_folder("")</code> is <code>True</code> before anything is written. Backends that
+would otherwise answer from a stat or a listing must short-circuit — otherwise
+"nothing has been written yet" is indistinguishable from "there is no root",
+a distinction no backend can act on and none of them exposes anywhere else.</p>
+<p><strong>Why <code>is_file("")</code> may not raise.</strong> BE-021 already forbids <code>exists()</code>,
+<code>is_file()</code> and <code>is_folder()</code> from raising on an inaccessible path; the root is
+the same rule at the boundary. A backend whose SDK rejects a zero-length key at
+parameter validation must answer <code>False</code> itself rather than let the rejection
+surface as <code>BackendUnavailable</code>.</p>
+<p><strong>Layering.</strong> <code>Store</code> normalises <code>"."</code> and refuses a root delete (STORE-002 in
+<a href="../001-store-api/">001-store-api.md</a>), so an application going through <code>Store</code>
+never depends on this clause. It binds the layer below, which has its own
+callers: the adapter surface, <code>unwrap()</code> consumers, anything round-tripping a
+<code>FolderInfo.path</code> (rendered <code>"."</code> by <code>RemotePath.ROOT</code>) back into a query, and
+the conformance suite itself.</p>
+<p><strong>Round-trip consequence.</strong> Because both spellings share one native path,
+BE-025's <code>to_key(native_path(k)) == k</code> identity returns the <em>canonical</em> root
+key: <code>to_key(native_path("."))</code> is <code>""</code>, not <code>"."</code>. The identity holds verbatim
+for every other key. This is forced, not a concession — an inverse cannot
+return two spellings from one input.</p>
+<p><strong>Out of scope:</strong> <code>delete_folder("")</code> and writes <em>to</em> the root. <code>delete_folder</code>
+on the root is governed at the <code>Store</code> layer (STORE-002); backend behaviour for
+it is undefined by this clause. Writing to the root path is a malformed file
+path, rejected by path validation. Note <code>delete("")</code> is <strong>not</strong> out of scope —
+it is a file-shaped operation on a folder, and the row above governs it.</p>
+<p><strong>Conformance:</strong> <code>tests/backends/conformance/test_io.py::TestBackendRootPath</code>
+and its async sibling in <code>test_async_extended.py</code>, both gated on
+<code>Capability.LIST</code> and parametrised over both spellings; addressing is covered by
+<code>test_identity.py::TestBackendNativePath</code> (sync) and
+<code>test_async_extended.py::TestAsyncBackendNativePath</code> (async).</p>
+<p><strong>Coverage note.</strong> Two LIST-capable backends are not reachable from those
+cells: <code>SQLQueryBackend</code> has no fixture-registry entry (BK-340), and the Graph
+backend's conformance cells are skipped for want of a recorded cassette
+(ID-241). Their per-backend homes pin <strong>part</strong> of this clause, not all of it:</p>
+<table>
+<thead>
+<tr>
+<th>Backend</th>
+<th>Pinned in its per-backend home</th>
+<th>Pinned nowhere</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SQLQueryBackend</code> — <code>tests/backends/sqlquery/test_config.py::TestRootPath</code></td>
+<td>the query rows (<code>exists</code> / <code>is_folder</code> / <code>is_file</code>, empty store included), <code>get_folder_info</code> on the root, and <code>native_path</code> agreeing on both spellings</td>
+<td>the file-shaped-operation row: <code>read</code>, <code>read_bytes</code>, <code>read_seekable</code>, <code>get_file_info</code> on the root</td>
+</tr>
+<tr>
+<td>Graph — <code>tests/backends/graph/aio/test_backend.py</code></td>
+<td>addressing only: <code>native_path</code> agreeing on both spellings (also under <code>base_path</code>), <code>to_key</code> returning the canonical root key, and every root spelling refused by <code>_require_writable_key</code></td>
+<td>the query rows and the file-shaped-operation row</td>
+</tr>
+</tbody>
+</table>
+<p>A clause that binds every LIST-capable backend needs its coverage checked per
+backend, not per source site — both defects this clause was written from
+survived a source-wide sweep because no cell executed against them. The
+per-backend cells pin the sites that sweep found; the right-hand column is what
+is still asserted by nobody, and closing it structurally is what BK-340 and
+ID-241 are for.</p>
 <h3 id="be-006-read">BE-006: read()<a class="headerlink" href="#be-006-read" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>read(path)</code> returns a <code>BinaryIO</code> stream for the file content.
 <strong>Raises:</strong> <code>NotFound</code> if the path does not exist. <code>InvalidPath</code> if the path names a directory (type mismatch, not a missing file). See BE-021.
@@ -11467,6 +11645,8 @@ discharged structurally. Verified in <code>MemoryBackend.dfy</code>. See ID-151.
 <h3 id="be-017-get_folder_info">BE-017: get_folder_info()<a class="headerlink" href="#be-017-get_folder_info" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>get_folder_info(path)</code> returns <code>FolderInfo</code>.
 <strong>Raises:</strong> <code>NotFound</code> if the path does not exist. <code>InvalidPath</code> if the path names a file (wrong type — use <code>get_file_info</code> instead). See BE-021.
+<strong>Flat-namespace backends are not exempt</strong> (BK-324): when the prefix listing comes back empty they probe the exact key and raise <code>InvalidPath</code> rather than <code>NotFound</code>. See <a href="#be-021-error-mapping">BE-021</a> for the shared error-path rule and its cost model.
+<strong>Root:</strong> <code>get_folder_info("")</code> aggregates over the whole store rather than raising — see BE-029.
 <strong>Formal coverage:</strong> <code>get_folder_info()</code> is modelled in <code>sdd/formal/BackendContract.dfy</code> as <code>GetFolderInfo</code> with postconditions <code>IsFile → InvalidPath</code>, <code>!PathExists → NotFound</code>, <code>IsDir → Ok</code>, <code>file_count == |ChildFiles(fs, path)|</code>, and <code>total_size == SumSizes(fs, ChildFiles(fs, path))</code>. Verified in <code>MemoryBackend.dfy</code>. Property-based aggregate coverage against the compiled Dafny oracle lives in <code>tests/test_pbt_folder_info_aggregates.py</code>. See ID-130, ID-134, ID-187.</p>
 <h3 id="be-018-move">BE-018: move()<a class="headerlink" href="#be-018-move" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>move(src, dst, overwrite=False)</code> renames/moves a file.
@@ -11532,11 +11712,11 @@ map to the specified error type regardless of backend:</p>
 </thead>
 <tbody>
 <tr>
-<td>File operation (<code>read</code>, <code>write</code>, <code>delete</code>, <code>get_file_info</code>, <code>move</code>/<code>copy</code> src) on a path that is a directory</td>
+<td>File operation (e.g. <code>read</code>, <code>write</code>, <code>delete</code>, <code>get_file_info</code>, <code>move</code>/<code>copy</code> src) on a path that is a directory</td>
 <td><code>InvalidPath</code></td>
 </tr>
 <tr>
-<td>Directory operation (<code>delete_folder</code>, <code>move</code>/<code>copy</code> dst) on a path that is a file</td>
+<td>Directory operation (e.g. <code>delete_folder</code>, <code>move</code>/<code>copy</code> dst) on a path that is a file</td>
 <td><code>InvalidPath</code></td>
 </tr>
 <tr>
@@ -11558,7 +11738,101 @@ map to the specified error type regardless of backend:</p>
 </tbody>
 </table>
 <p>The type-mismatch rule (<code>InvalidPath</code>) takes precedence over the existence rule (<code>NotFound</code>) — a directory path is not "missing", it is the wrong type. This is machine-verified in <code>sdd/formal/BackendContract.dfy</code> (<code>Read</code>, <code>Delete</code>, <code>DeleteFolder</code>, <code>GetFileInfo</code>, <code>GetFolderInfo</code>, <code>Move</code>, <code>Copy</code> postconditions).</p>
+<p><strong>Backend scope of the two type-mismatch rows.</strong> They bind every backend on the
+operations that can <em>fail</em> on a wrong-typed path: <code>read</code>, <code>read_bytes</code>,
+<code>read_seekable</code>, <code>delete</code>, <code>get_file_info</code>, <code>delete_folder</code>,
+<code>get_folder_info</code>, and the <code>move</code>/<code>copy</code> <strong>source</strong>. Their write half —
+<code>write</code>, <code>write_atomic</code>, <code>open_atomic</code>, and the <code>move</code>/<code>copy</code> <strong>destination</strong> —
+binds hierarchical backends only. On a flat namespace a write to a key that
+shadows a prefix succeeds, so there is no error to reclassify; BE-008's
+flat-namespace exemption governs there instead, unchanged. This is the single
+roster for both halves; the clauses below explain the mechanism behind the
+split and what it costs, and do not restate it.</p>
 <p><strong>Scope note:</strong> This table covers <em>cross-cutting</em> scenarios that apply to multiple operations. Method-specific errors (e.g. <code>DirectoryNotEmpty</code> from <code>delete_folder</code>, <code>CapabilityNotSupported</code> from capability-gated operations) are documented per-method and intentionally omitted here.</p>
+<p><strong>Flat-namespace backends: no exemption, but an error-path obligation.</strong> A
+flat namespace stores keys, not nodes, so "this path is a directory" is not an
+answer the store returns — it has to be derived from a prefix listing. That
+made the two type-mismatch rows above quietly optional on S3, Azure non-HNS
+and SQL for a long time: those backends answered <code>NotFound</code>, or worse
+succeeded (a bare prefix read as a zero-length object, a <code>delete</code> that no-oped,
+a <code>get_folder_info</code> that counted the file as its own content). BK-324 settled
+it in favour of the contract: <strong>the two rows hold on every backend wherever an
+operation can fail on a wrong-typed path</strong> — the scope stated with the rows
+above — and the divergence is a defect rather than a declared variation.</p>
+<p>The obligation is discharged on the <strong>error path only</strong>. A backend derives the
+type verdict when the operation has already failed to find what it needed — one
+<code>MaxKeys=1</code> prefix listing for "is this a folder?", one HEAD / exact-key lookup
+for "is this a file?" — and converts the miss into <code>InvalidPath</code>. A call that
+<em>finds its target</em> never runs the probe, so the guarantee costs nothing on the
+hot path.</p>
+<p><strong>Two cases both fail and succeed</strong>, and both are the idempotent-delete idiom.
+They cost different things, because each spends the probe its own type verdict
+needs:</p>
+<table>
+<thead>
+<tr>
+<th>Call</th>
+<th>Miss that triggers the probe</th>
+<th>Probe spent</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>delete(path, missing_ok=True)</code> on an absent key</td>
+<td>the exact-key lookup finds no object</td>
+<td>one <code>MaxKeys=1</code> prefix listing — "is this a folder?"</td>
+</tr>
+<tr>
+<td><code>delete_folder(path, missing_ok=True)</code> on an absent prefix</td>
+<td>the prefix listing comes back empty</td>
+<td>one HEAD / exact-key lookup — "is this a file?"</td>
+</tr>
+</tbody>
+</table>
+<p>In both the probe runs and the call then returns cleanly, because <code>missing_ok</code>
+tolerates the miss; in a delete loop that is one extra round trip per absent
+path. Neither is avoidable by testing <code>missing_ok</code> first: <code>delete(folder,
+missing_ok=True)</code> and <code>delete_folder(file, missing_ok=True)</code> must still raise
+<code>InvalidPath</code> (see "Type mismatch outranks <code>missing_ok</code>" below), and after a
+miss the probe is the only thing separating <em>this is the wrong type</em> from <em>this
+is genuinely absent</em>. Skipping it would restore the silent success this clause
+exists to remove, so the cost is the price of the verdict, not an oversight.
+The probe is <strong>fail-open</strong>: if it errors (503, throttling, network blip) the
+operation's original error stands rather than being replaced by a transport
+error, the same posture the file-ancestor walk takes (see BE-008 / ID-211).</p>
+<p><strong>Fail-open is a property of that call site, not of the probe as a mechanism.</strong>
+The same HEAD or prefix listing usually also serves as the plain <em>existence</em>
+check at the head of <code>delete</code>, <code>delete_folder</code>, the <code>move</code>/<code>copy</code> source and
+<code>get_folder_info</code>. There it is the <strong>determinant</strong>, and there it MUST fail
+closed: an error-path probe that cannot answer still has the operation's own
+error to preserve, but a determinant that cannot answer has nothing — swallowing
+its failure does not keep a truthful verdict, it invents one. A denied HEAD
+reported as <code>NotFound</code> both contradicts the ACL row above and tells the caller an
+object is absent when it exists and they may not see it. A backend that shares
+one helper across the two roles therefore wraps it <em>at the error-path call site</em>
+rather than widening the helper itself.</p>
+<p>The probe firing on failure is <em>why</em> the roster splits where it does: the
+obligation reaches exactly the operations that <em>can</em> fail on a wrong-type path
+— the list stated with the rows above — and the write half offers it no failure
+to reclassify.</p>
+<p><code>read_seekable</code> is in the list, not exempt from it. <code>SEEKABLE_READ</code> is a
+CAP-007 <em>quality flag</em>: it describes the stream <code>read()</code> hands back, not a
+different contract, and the ABC default implementation delegates to <code>read()</code>.
+Only a backend that overrides <code>read_seekable</code> for an optimised range reader
+could diverge — so excluding it would make the error contract depend on whether
+a backend optimised its seekable path, which is exactly the undeclared
+divergence this clause exists to remove.</p>
+<p>Type mismatch outranks <code>missing_ok</code>: <code>delete(folder, missing_ok=True)</code> and
+<code>delete_folder(file, missing_ok=True)</code> raise <code>InvalidPath</code>, because the
+tolerance is for a <em>missing</em> path, not a wrong-typed one. This is the same rule
+BE-012 already states for hierarchical backends, now uniform.</p>
+<p><strong>The store root is decided before the probe, not by it.</strong> A probe answer about
+the root is meaningless — it is a folder whether or not it has children — so
+every file-shaped operation rejects it up front (BE-029) and the probes below
+exempt it. That pre-check is also the only one that costs nothing, which is why
+it is the single exception to the error-path-only rule above.</p>
+<p><strong>Conformance:</strong> <code>tests/backends/conformance/test_errors.py</code> and its async
+sibling <code>test_async_extended.py</code> carry no flat-namespace skip on these cells.</p>
 <p><strong>Broad exception handler rule:</strong> Backends MUST NOT use bare <code>except OSError</code>
 or <code>except Exception</code> handlers that map all errors to a single type. Handlers
 MUST discriminate by <code>errno</code>, exception type, or HTTP status code before
@@ -11577,6 +11851,7 @@ raising <code>InvalidPath</code>. All other operations MUST raise appropriate er
 <strong>See also:</strong> <a href="../010-native-path-resolution/">010-native-path-resolution.md</a> (NPR-003 through NPR-009), <a href="../../adrs/0005-native-path-resolution/">ADR-0005</a>.</p>
 <h3 id="be-025-native_path">BE-025: native_path()<a class="headerlink" href="#be-025-native_path" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>native_path(path)</code> converts a backend-relative key to the backend-native path. The inverse of <code>to_key()</code>: <code>backend.to_key(backend.native_path(key)) == key</code>. The default implementation is the identity function — backends with a native root <strong>must</strong> override.
+<strong>Root spellings:</strong> <code>native_path("")</code> and <code>native_path(".")</code> return the same value, the bare backend root (BE-029). The round-trip identity therefore returns the canonical root key — <code>to_key(native_path("."))</code> is <code>""</code> — since one native path cannot invert to two spellings. Every non-root key round-trips verbatim. The identity-default implementation normalises both spellings for the same reason.
 <strong>Postconditions:</strong> Pure, deterministic, total (never raises). The returned path is usable with the native handle from <code>unwrap()</code>.
 <strong>Overrides:</strong> <code>LocalBackend</code> (prepends root dir), <code>S3Backend</code> (prepends bucket), <code>S3PyArrowBackend</code> (prepends bucket), <code>SFTPBackend</code> (prepends base_path), <code>AzureBackend</code> (prepends container).
 <strong>Example:</strong> <code>S3PyArrowBackend(bucket="lake").native_path("data/file.parquet")</code> returns <code>"lake/data/file.parquet"</code>.

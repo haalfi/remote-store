@@ -66,9 +66,9 @@ Mirrors `pathlib.PurePath.as_posix`. The path is always stored with forward slas
 from_backend_path(path: str) -> RemotePath
 ```
 
-Create a RemotePath, using ROOT for empty paths.
+Create a RemotePath, using ROOT for the root spellings.
 
-Backends use this in `get_folder_info` to avoid duplicating the `RemotePath(path) if path else RemotePath.ROOT` pattern.
+Backends use this in `get_folder_info` to avoid duplicating the `RemotePath(path) if path else RemotePath.ROOT` pattern. Both root spellings map to `ROOT`; `_normalize` would otherwise reject `"."` for normalising to nothing, which is the right answer for a *file* path and the wrong one for the root folder.
 
 ## PathEntry
 

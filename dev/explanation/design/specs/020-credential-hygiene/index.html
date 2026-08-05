@@ -10731,32 +10731,10 @@ does not re-enumerate it, so a future widening cannot leave the prose stale.</p>
 credential parameters and call <code>_reveal()</code> to unwrap them. Backends store
 revealed plain strings internally — they already have AF-008 <code>__repr__</code>
 masking, and SDK clients need plain strings.</p>
-<table>
-<thead>
-<tr>
-<th>Backend</th>
-<th>Parameters</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>S3</td>
-<td><code>key</code>, <code>secret</code></td>
-</tr>
-<tr>
-<td>S3-PyArrow</td>
-<td><code>key</code>, <code>secret</code></td>
-</tr>
-<tr>
-<td>SFTP</td>
-<td><code>password</code></td>
-</tr>
-<tr>
-<td>Azure</td>
-<td><code>account_key</code>, <code>sas_token</code>, <code>connection_string</code></td>
-</tr>
-</tbody>
-</table>
+<p>Which parameters this covers for a given backend is that backend's
+constructor signature intersected with the SEC-003 set. For the same reason
+SEC-003 gives, this spec does not re-enumerate the pairing: a table here went
+stale as soon as the set gained the Graph client-credentials entries.</p>
 <h3 id="sec-005-sftp-host-key-policy-enum-coercion">SEC-005: SFTP Host Key Policy Enum Coercion<a class="headerlink" href="#sec-005-sftp-host-key-policy-enum-coercion" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>SFTPBackend.__init__</code> accepts <code>host_key_policy</code> as either a
 <code>HostKeyPolicy</code> enum member or a string value (<code>"strict"</code>, <code>"tofu"</code>,
