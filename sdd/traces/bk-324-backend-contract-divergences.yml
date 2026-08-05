@@ -18,6 +18,8 @@ discovery_followups:
   - ID-241
   - BUG-240
   - BUG-241
+  - ID-242
+  - BUG-243
 co_shipped_items:
   - BUG-242
 expected_ripples:
@@ -30,7 +32,7 @@ surprising_ripples:
   - sdd/specs/036-seekable-read.md
   - scripts/check_docstring_parity.py
   - tests/backends/sqlquery/test_config.py
-review_rounds: 5
+review_rounds: 6
 phases:
   - id: orient
     name: Orient
@@ -207,6 +209,18 @@ phases:
           Fixed as BUG-242; the rule that fail-open is a property of the call
           site rather than of the probe is now in BE-021.
         outcome: ok
+      - file: docs-src/guides/custom-backend-guide.md
+        section: "fail-open probe advice"
+        read_type: verify
+        extract: >-
+          Round 6 found this PR shipping a guide line that told third-party
+          backend authors to make the probe fail-open, unqualified — one commit
+          after the same PR diagnosed that exact conflation as BUG-242's root
+          cause. Fixing a defect and simultaneously publishing instructions to
+          reproduce it. Only reachable by reading the fix against the PR's own
+          other additions, which is why five rounds of reviewing the spec and
+          the conformance suite did not surface it.
+        outcome: misleading
       - file: tests/backends/fixtures/registry.py
         section: "Docker-gated fixtures"
         read_type: verify

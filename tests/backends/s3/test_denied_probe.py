@@ -1,4 +1,7 @@
-"""A real 403 on an S3 *type probe* maps to ``PermissionDenied``, never ``NotFound``.
+"""What the S3 *type probes* do when the wire refuses to answer them.
+
+The 403 case first (a denial is never ``NotFound``), then the missing-bucket
+404 case, which is the other shape a probe can meet instead of an answer.
 
 BE-021. BK-324 promoted the narrow type probes
 (``_S3Base._s3_is_object`` / ``_s3_has_children``) from error-path-only
@@ -45,6 +48,29 @@ The two postures, and why the second test exists
 regressed — its ``_head_or_none`` / ``_prefix_has_children`` are strict and the
 swallowing closures live inside its ``_reject_*`` pair — so it doubles as the
 in-suite positive control for the shape the other two now match.
+
+The missing-bucket half (``TestMissingBucketVerdict``)
+------------------------------------------------------
+
+Narrowing the two probes to ``FileNotFoundError`` left them catching *different*
+exceptions, which reads as an inconsistency and is not one — it is the wire
+shape. Each probe treats "the thing you asked about is not there" as an answer
+and propagates everything else:
+
+* ``HeadObject`` gives that answer as a 404, and a HEAD response carries no
+  body, so a missing **bucket** is indistinguishable from a missing key.
+  ``delete(key, missing_ok=True)`` therefore tolerates it.
+* ``ListObjectsV2`` gives that answer as ``200 KeyCount=0``, never as an error.
+  The only ``FileNotFoundError`` it can raise is a missing bucket — a 404 whose
+  body *does* carry ``NoSuchBucket``, i.e. a different question — so it
+  propagates and ``delete_folder(path, missing_ok=True)`` raises ``NotFound``.
+
+BUG-242 moved the two s3fs backends onto this split; ``S3Boto3Backend`` was
+already there (``NoSuchBucket`` sits in its ``_NOT_FOUND_CODES``, so its HEAD
+tolerates a missing bucket, while its ``_prefix_has_children`` propagates), as
+is Azure non-HNS. Both halves are asserted so neither drifts: making the HEAD
+probe strict about bucket 404s would break the first, re-widening the listing
+probe's catch would break the second.
 """
 
 from __future__ import annotations
@@ -82,6 +108,12 @@ _ACCESS_DENIED_XML = (
 _NO_SUCH_KEY_XML = (
     b'<?xml version="1.0" encoding="UTF-8"?>'
     b"<Error><Code>NoSuchKey</Code><Message>The specified key does not exist.</Message>"
+    b"<RequestId>rq</RequestId><HostId>hi</HostId></Error>"
+)
+_NO_SUCH_BUCKET_XML = (
+    b'<?xml version="1.0" encoding="UTF-8"?>'
+    b"<Error><Code>NoSuchBucket</Code><Message>The specified bucket does not exist.</Message>"
+    b"<BucketName>" + _BUCKET.encode() + b"</BucketName>"
     b"<RequestId>rq</RequestId><HostId>hi</HostId></Error>"
 )
 _EMPTY_LISTING_XML = (
@@ -155,6 +187,26 @@ def _serve_s3_stub(httpserver: HTTPServer, *, object_denied: bool, listing_denie
         if _is_listing(request):
             return Response(_EMPTY_LISTING_XML, status=200, content_type="application/xml")
         return Response(_NO_SUCH_KEY_XML, status=404, content_type="application/xml")
+
+    httpserver.expect_request(re.compile("^/.*$")).respond_with_handler(handler)
+    return httpserver.url_for("/").rstrip("/")
+
+
+def _serve_missing_bucket_stub(httpserver: HTTPServer) -> str:
+    """Answer every S3 request the way a *missing bucket* does; return the endpoint.
+
+    The two shapes differ, and the difference is the whole point of
+    ``TestMissingBucketVerdict``: ``ListObjectsV2`` (a GET) answers 404 with a
+    ``NoSuchBucket`` body, while ``HeadObject`` answers a bodyless 404 — HTTP
+    forbids a body on a HEAD response, so the bucket-level cause never reaches
+    the client and the probe cannot tell it from a missing key.
+    """
+    from werkzeug.wrappers import Response
+
+    def handler(request: Any) -> Any:
+        if request.method == "HEAD":
+            return Response(b"", status=404, content_type="application/xml")
+        return Response(_NO_SUCH_BUCKET_XML, status=404, content_type="application/xml")
 
     httpserver.expect_request(re.compile("^/.*$")).respond_with_handler(handler)
     return httpserver.url_for("/").rstrip("/")
@@ -263,3 +315,40 @@ class TestErrorPathProbeStaysFailOpen:
         endpoint = _serve_s3_stub(httpserver, object_denied=object_denied, listing_denied=listing_denied)
         with _backend_at(dotted, endpoint) as backend:
             assert call(backend) is None
+
+
+class TestMissingBucketVerdict:
+    """A missing bucket splits the two tolerant deletes, and the split is the wire shape.
+
+    Not an inconsistency to be smoothed over: each probe tolerates exactly the
+    404 that means "what you asked about is not there", and only ``HeadObject``
+    can be *given* that 404 for a missing bucket, because its response has no
+    body to carry ``NoSuchBucket`` in. See the module docstring.
+
+    Both halves are asserted together so the pair cannot drift in either
+    direction — a strict-about-bucket-404s HEAD probe breaks the first, a
+    re-widened listing catch breaks the second.
+    """
+
+    @pytest.mark.spec("BE-021", "BE-012", "S3-016")
+    @pytest.mark.parametrize("dotted", _BACKEND_PARAMS)
+    def test_missing_bucket_is_tolerated_by_delete(self, httpserver: HTTPServer, dotted: str) -> None:
+        """``delete(missing_ok=True)`` returns cleanly: the HEAD 404 is undiscriminated."""
+        endpoint = _serve_missing_bucket_stub(httpserver)
+        with _backend_at(dotted, endpoint) as backend:
+            assert backend.delete(_KEY, missing_ok=True) is None
+
+    @pytest.mark.spec("BE-021", "BE-013", "S3-016")
+    @pytest.mark.parametrize("dotted", _BACKEND_PARAMS)
+    def test_missing_bucket_is_not_tolerated_by_delete_folder(self, httpserver: HTTPServer, dotted: str) -> None:
+        """``delete_folder(missing_ok=True)`` raises: the listing 404 is not an empty prefix.
+
+        An absent prefix answers ``200 KeyCount=0``. This 404 says something
+        else entirely, so ``missing_ok`` — tolerance for a missing *path* — does
+        not cover it.
+        """
+        endpoint = _serve_missing_bucket_stub(httpserver)
+        with _backend_at(dotted, endpoint) as backend:
+            with pytest.raises(NotFound) as exc_info:
+                backend.delete_folder(_FOLDER, recursive=True, missing_ok=True)
+            assert exc_info.value.backend == _BACKEND_NAMES[dotted]

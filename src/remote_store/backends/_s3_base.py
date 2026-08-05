@@ -188,6 +188,21 @@ class _S3Base(Backend):
     # it with a transport error. Same split as ``S3Boto3Backend``, where
     # ``_head_or_none`` / ``_prefix_has_children`` are strict and the swallowing
     # closures live inside its ``_reject_*`` pair.
+    #
+    # The two strict probes catch *different* exceptions, and that is the wire
+    # shape rather than an inconsistency: each treats "the thing you asked about
+    # is not there" as an answer and propagates everything else. For
+    # ``HeadObject`` that answer is a 404, which s3fs surfaces as
+    # ``FileNotFoundError`` — and a HEAD response carries no body, so a missing
+    # *bucket* is indistinguishable from a missing key and is tolerated
+    # alongside it. For ``ListObjectsV2`` the same answer arrives as
+    # ``200 KeyCount=0``, never as an error, so the only ``FileNotFoundError``
+    # that call can raise is a missing bucket (a 404 whose body *does* carry
+    # ``NoSuchBucket``) — a different question, correctly propagated.
+    # Consequence: against a missing bucket ``delete(key, missing_ok=True)``
+    # returns silently while ``delete_folder(path, missing_ok=True)`` raises
+    # ``NotFound``. ``S3Boto3Backend`` and Azure non-HNS land the same way;
+    # pinned for all three S3 backends by ``tests/backends/s3/test_denied_probe.py``.
 
     def _s3_is_object(self, path: str) -> bool:
         """One ``HeadObject``: ``True`` iff an object exists at exactly *path*.

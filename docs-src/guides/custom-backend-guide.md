@@ -702,9 +702,18 @@ backend. A flat namespace cannot answer "is this a directory?" directly, so it
 derives the answer *after* the operation has already failed — one bounded
 prefix listing, or one HEAD — and converts the miss into `InvalidPath`. Do the
 same in your backend rather than letting a `NotFound` stand: the probe costs
-nothing on the success path, because a successful call never reaches it. Make
-it fail-open, so a probe that itself errors leaves the operation's original
-error intact.
+nothing on the success path, because a successful call never reaches it.
+
+**Fail-open belongs to that call site, not to the probe.** On the error path a
+probe that cannot answer may return "no", because the operation's own error is
+still there to stand. Do not build that swallow into the probe itself: the same
+HEAD or listing usually also serves as the plain existence check at the head of
+`delete`, `delete_folder` and the `move`/`copy` source, and there it is the
+*determinant* with no prior error to fall back on — swallowing invents a
+verdict, and a denied HEAD reaches the caller as "the object is absent". Keep
+the probe strict and wrap it at the error-path call site; the
+[Backend Adapter Contract](../../sdd/specs/003-backend-adapter-contract.md)
+states the rule and the reasoning behind it.
 
 What flat-namespace backends *are* exempt from is the write side — a write to
 a key that shadows a prefix succeeds, so there is no error to reclassify, and
