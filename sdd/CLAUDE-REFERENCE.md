@@ -437,6 +437,18 @@ session and this is maintenance detail.
 Which events fire which layer is declared in `.claude/settings.json`. Read it
 there; a second copy here would rot.
 
+**Ungated on purpose** — this table and `settings.json` are a hand-maintained
+pair, and no check binds them. It is therefore a tolerated divergence, and this
+paragraph is its [DRIFT-RULES Rule 6](DRIFT-RULES.md#tolerated) register entry.
+Owner: whoever next edits either side. Rationale: the claim space is two rows
+that change about once a year, so a gate costs more to build and maintain than
+the drift it would catch — a gate here would be the tail wagging the dog, which
+is the mistake this feature's own history is a record of. If it is ever built,
+[Rule 3](DRIFT-RULES.md#claim-space) requires the enumeration be *derived* from
+`settings.json` rather than maintained beside it, and
+[Rule 8](DRIFT-RULES.md#independence) requires recording the derivation path,
+since the table was written from the same file it would be checked against.
+
 **There is deliberately no enforcement layer.** A `Stop` hook of
 `type: "prompt"` was built, reviewed and then dropped: it charges every
 contributor an extra model round-trip on every turn, its benefit is not

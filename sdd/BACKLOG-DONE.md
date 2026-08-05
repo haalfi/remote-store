@@ -40,8 +40,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   found by a throwaway harness before any permanent test existed. The rounds
   never asked whether a component should exist — that question came from the
   user and removed the layer four rounds had been polishing.
-  Follow-up left open: [ID-244](BACKLOG.md) — no drift check binds the layer
-  table to `.claude/settings.json`.
+  No follow-up left open. A drift check binding the layer table to
+  `.claude/settings.json` was filed and then dropped as not worth building: two
+  rows that change about once a year do not earn a gate. The tolerated
+  divergence keeps its
+  [Rule 6](CLAUDE-REFERENCE.md#interview-mode-wiring) register entry in the doc
+  that owns the table, which is a durable home with an owner and a rationale.
 
 - [x] **ID-243 — `/ship` skill: deliver a task as one convergence-reviewed PR**
   spec: — · effort: M · audience: contributor.process, contributor.tooling

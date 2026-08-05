@@ -11,8 +11,11 @@ audience:
   - contributor.process
   - contributor.tooling
   - infra.ci
-discovery_followups:
-  - ID-244
+# No discovery_followups: one was born (a drift check binding the layer table to
+# settings.json, briefly ID-244) and dropped in the same PR as not worth
+# building, so recording it here would be a pointer to an item the repo never
+# kept. The tolerated divergence it described keeps a DRIFT-RULES Rule 6 register
+# entry in sdd/CLAUDE-REFERENCE.md instead.
 expected_ripples:
   - sdd/backlogid.json
   - .gitignore
@@ -81,7 +84,12 @@ phases:
       - file: sdd/DRIFT-RULES.md
         section: "Rules 3, 6, 8"
         read_type: gate
-        extract: "a tolerated divergence needs a register entry with an owner and a rationale, which became ID-244"
+        extract: >-
+          a tolerated divergence needs a register entry with an owner and a
+          rationale. Filed as a backlog item first, then dropped: Rule 6 accepts
+          any durable home, and the doc owning the table is a better one than an
+          item nobody would take
+
         outcome: ok
 
   - id: fix
