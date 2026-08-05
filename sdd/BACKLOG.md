@@ -79,6 +79,24 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Lint / CI Completeness
 
+- [ ] **BUG-241 — SQL prefix probes build `LIKE` patterns without escaping `_` and `%`**
+  spec: — · effort: S · audience: user.api
+  `SQLBlobBackend._reject_folder` builds `LIKE key + "/%"`, and every other
+  prefix probe in `_sqlalchemy.py` follows the same convention. In SQL `LIKE`,
+  `_` matches any single character and `%` matches any sequence, so a key
+  containing either over-matches: probing `a_b` also matches `axb/...`, and a
+  key containing `%` matches far more.
+  **Consequence:** the wrong-type probe can report a folder that does not
+  exist, turning a `NotFound` into an `InvalidPath` for a sibling key whose
+  name merely resembles the target. Underscores in object keys are common.
+  **Not a blocker for the work that surfaced it** — it predates BK-324 and the
+  convention is file-wide, so fixing one site without the rest would be the
+  inconsistency this section exists to remove. Fix them together with
+  `ESCAPE`, or a dialect-appropriate equivalent.
+  **Test shape:** seed sibling keys that differ only in a `LIKE` metacharacter
+  position and assert the probe does not confuse them. Surfaced by the PR #945
+  round-5 review, which considered and deliberately did not block on it.
+
 - [ ] **BUG-240 — ASYNC-014 and DEPTH-003 state opposite rules, and `GraphBackend` implements the async one**
   spec: ASYNC-014, DEPTH-003 · effort: S/M · audience: user.api
   [ASYNC-014](specs/029-async-store-backend-api.md) says "`max_depth` limits
