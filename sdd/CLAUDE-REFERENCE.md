@@ -375,7 +375,7 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
     - **Touches `src/`, `tests/`, `examples/`, `scripts/`, `.claude/hooks/`,
       `pyproject.toml`, or `.python-version`** → run `hatch run all`, the full
       pre-PR superset (its constituent scripts are the source of truth in
-      `pyproject.toml`). All but the last are the test-bearing and
+      `pyproject.toml`). All but `.claude/hooks/` are the test-bearing and
       interpreter-defining members of CI's `CODE_PAT`;
       `scripts/` is among them because its guards live under `tests/scripts/`, which
       only the suite runs (a `scripts/`-only diff must still run it).
@@ -383,7 +383,8 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
       `tests/scripts/test_claude_hooks.py`, so a hook-only diff that skipped the
       suite would validate nothing — but it is deliberately **not** in
       `CODE_PAT`: CI gates it through a separate `hooks` output so it runs
-      `tooling-tests` alone rather than the 15 jobs `code` drives. Locally there
+      `tooling-tests` alone rather than the full code fan-out (the reasoning, and
+      the job count behind it, live beside `HOOKS_PAT` in `ci.yml`). Locally there
       is no such split, so a hook edit takes the same `hatch run all` as code.
       The remaining `CODE_PAT` members are
       generated artefacts (FEATURES, the graph data — drift

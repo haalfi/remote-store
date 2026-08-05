@@ -19,11 +19,11 @@ in the repo would notice a regression.
 5. Strips ``"`` and ``\\`` from headers before they reach the ``osascript``
    string literal, pinned on the ``osascript`` branch itself.
 
-Both notification backends are exercised through stubs on ``PATH`` rather than
-mocks (``sdd/TESTING.md`` Rule 6): the hook resolves them with ``command -v``,
-so a real executable is the only thing that tests the branch it actually takes.
-Which stub is on ``PATH`` selects the branch, so the ``osascript`` arm is
-reachable here without a macOS runner.
+All three notification backends are exercised through stubs on ``PATH`` rather
+than mocks (``sdd/TESTING.md`` Rule 6): the hook resolves them with
+``command -v``, so a real executable is the only thing that tests the branch it
+actually takes. Which stub is on ``PATH`` selects the arm, so the ``osascript``
+and PowerShell arms are reachable here without a macOS or Windows runner.
 
 Deliberately **not** marked ``pytest.mark.os_sensitive``, though it is plainly
 OS-specific (bash, ``jq``, symlinks, ``/dev/tty``, POSIX ``PATH``). That marker
@@ -90,6 +90,18 @@ def osascript_bin(tmp_path: Path) -> Path:
     """
     bin_dir = _bare_bin(tmp_path)
     _backend_stub(bin_dir, "osascript", tmp_path / "notify.log")
+    return bin_dir
+
+
+@pytest.fixture
+def powershell_bin(tmp_path: Path) -> Path:
+    """A PATH entry with only ``powershell.exe``, the last arm of the chain.
+
+    Reachable here because selection is by ``command -v``, not by platform, so
+    withholding the first two arms picks the third on any runner.
+    """
+    bin_dir = _bare_bin(tmp_path)
+    _backend_stub(bin_dir, "powershell.exe", tmp_path / "notify.log")
     return bin_dir
 
 
@@ -170,6 +182,20 @@ def test_osascript_literal_survives_quote_injection(osascript_bin: Path) -> None
     assert result.stderr == ""
     delivered = (osascript_bin.parent / "notify.log").read_text().strip()
     assert delivered == '-e display notification "Waiting on you: say hi  now" with title "Claude Code"'
+
+
+def test_powershell_arm_is_reached_when_it_is_the_only_backend(powershell_bin: Path) -> None:
+    """The last arm of the chain fires, so no backend is dead in the suite.
+
+    It beeps rather than showing the message, so there is nothing to assert about
+    ``$MSG`` here — the contract is only that the arm is selected and invoked.
+    """
+    result = _run(_ASK_PAYLOAD, "a decision", powershell_bin)
+
+    assert result.returncode == 0
+    assert result.stderr == ""
+    delivered = (powershell_bin.parent / "notify.log").read_text().strip()
+    assert delivered == "-Command [System.Console]::Beep(880, 300)"
 
 
 def test_bell_rings_when_a_terminal_is_present(tmp_path: Path) -> None:

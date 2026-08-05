@@ -9,7 +9,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 ## Unreleased
 
 - [x] **BK-341 — Interview mode: route decision questions through `AskUserQuestion`**
-  spec: — · effort: M · audience: contributor.process, contributor.tooling
+  spec: — · effort: M · audience: contributor.process, contributor.tooling, infra.ci
   A question asked in prose ends the turn and sits in scrollback, so it gets
   overlooked; `AskUserQuestion` renders a dialog that blocks until answered.
   Two layers in `.claude/` push decision questions out of prose into that tool:
