@@ -10,22 +10,28 @@ in the repo would notice a regression.
    redirect is brace-wrapped for exactly this: a bare ``>/dev/tty 2>/dev/null``
    still leaks the shell's own "no such device" error, which is the container
    and CI case. See ``_run`` for why this pin needs ``start_new_session``.
-3. Falls back to its ``$1`` label whenever the event carries no question
+3. The bell actually rings when a terminal *is* present. Pinned separately
+   under a real pty, because point 2 detaches the terminal in every other test
+   and would otherwise let the bell be deleted outright with the suite still
+   green — and the hook calls it the primary channel.
+4. Falls back to its ``$1`` label whenever the event carries no question
    headers, which covers Notification payloads and unparseable stdin alike.
-4. Strips ``"`` and ``\\`` from headers before they reach the ``osascript``
-   string literal.
+5. Strips ``"`` and ``\\`` from headers before they reach the ``osascript``
+   string literal, pinned on the ``osascript`` branch itself.
 
-The notification backend is exercised through a stub on ``PATH`` rather than a
-mock (``sdd/TESTING.md`` Rule 6): the hook resolves it with ``command -v``, so
-a real executable is the only thing that tests the branch it actually takes.
+Both notification backends are exercised through stubs on ``PATH`` rather than
+mocks (``sdd/TESTING.md`` Rule 6): the hook resolves them with ``command -v``,
+so a real executable is the only thing that tests the branch it actually takes.
+Which stub is on ``PATH`` selects the branch, so the ``osascript`` arm is
+reachable here without a macOS runner.
 
 Deliberately **not** marked ``pytest.mark.os_sensitive``, though it is plainly
 OS-specific (bash, ``jq``, symlinks, ``/dev/tty``, POSIX ``PATH``). That marker
-means "run on macOS and Windows CI" (``pyproject.toml``), and the subject is a
-bash hook that only ever executes on the developer's own machine under a
-POSIX shell; the Windows leg would fail on the first ``bash``. Recorded here
-because the ripple-check "New test file" row asks for the decision, and an
-unstated one reads the same as a forgotten one.
+means "run on macOS and Windows CI" (``pyproject.toml``). Windows would fail on
+the first ``bash``; macOS would add only a real ``osascript``, which point 5
+already covers via a stub, so the leg would buy coverage this file already has.
+Recorded because the ripple-check "New test file" row asks for the decision, and
+an unstated one reads the same as a forgotten one.
 """
 
 from __future__ import annotations
@@ -51,6 +57,13 @@ _IDLE_PAYLOAD = '{"hook_event_name":"Notification","notification_type":"idle_pro
 _INJECTION_PAYLOAD = r'{"tool_input":{"questions":[{"header":"say \"hi\" \\ now"}]}}'
 
 
+def _backend_stub(bin_dir: Path, name: str, log: Path) -> None:
+    """Put an executable named *name* on *bin_dir* that records its argv to *log*."""
+    stub = bin_dir / name
+    stub.write_text(f'#!/bin/bash\nprintf "%s\\n" "$*" >> {log}\n')
+    stub.chmod(0o755)
+
+
 @pytest.fixture
 def stub_bin(tmp_path: Path) -> Path:
     """A PATH entry whose ``notify-send`` records its arguments instead of firing.
@@ -59,10 +72,24 @@ def stub_bin(tmp_path: Path) -> Path:
     machine that has libnotify installed.
     """
     bin_dir = _bare_bin(tmp_path)
-    log = tmp_path / "notify.log"
-    stub = bin_dir / "notify-send"
-    stub.write_text(f'#!/bin/bash\nprintf "%s\\n" "$*" >> {log}\n')
-    stub.chmod(0o755)
+    _backend_stub(bin_dir, "notify-send", tmp_path / "notify.log")
+    return bin_dir
+
+
+@pytest.fixture
+def osascript_bin(tmp_path: Path) -> Path:
+    """A PATH entry with ``osascript`` but no ``notify-send``.
+
+    The hook picks its backend with ``command -v`` in ``notify-send`` →
+    ``osascript`` → PowerShell order, so withholding the first is what selects
+    the second. That makes the macOS arm reachable on any POSIX runner, which is
+    the only way the quote stripping is tested where it actually matters:
+    ``osascript`` interpolates the message into a quoted AppleScript literal,
+    while ``notify-send`` takes it as a plain argv element where a stray quote
+    is harmless.
+    """
+    bin_dir = _bare_bin(tmp_path)
+    _backend_stub(bin_dir, "osascript", tmp_path / "notify.log")
     return bin_dir
 
 
@@ -128,3 +155,62 @@ def test_survives_missing_notification_backend(tmp_path: Path) -> None:
 
     assert result.returncode == 0
     assert result.stderr == ""
+
+
+def test_osascript_literal_survives_quote_injection(osascript_bin: Path) -> None:
+    """Contract point 5, pinned on the branch that actually builds a quoted literal.
+
+    Asserts the whole argument rather than that the stripped text appears: a
+    leaked ``"`` would still leave the text present while splitting the literal
+    into a different AppleScript statement, which a substring check would pass.
+    """
+    result = _run(_INJECTION_PAYLOAD, "a decision", osascript_bin)
+
+    assert result.returncode == 0
+    assert result.stderr == ""
+    delivered = (osascript_bin.parent / "notify.log").read_text().strip()
+    assert delivered == '-e display notification "Waiting on you: say hi  now" with title "Claude Code"'
+
+
+def test_bell_rings_when_a_terminal_is_present(tmp_path: Path) -> None:
+    """Contract point 3: the hook's primary channel actually fires.
+
+    Every other test detaches the controlling terminal to pin point 2, which
+    leaves the bell unexercised — delete the ``/dev/tty`` line outright and they
+    all still pass. This is the paired case, so the guard is asserted from both
+    sides: bell present with a terminal, no stderr without one.
+
+    ``pty.fork`` rather than ``openpty``: the child needs the pty as its
+    *controlling* terminal for ``/dev/tty`` to resolve, which takes a new
+    session plus TIOCSCTTY, not merely an inherited fd. Imported inside the
+    function because ``pty`` is POSIX-only, and a module-level import would
+    break collection on the Windows leg of ``test-cross-platform``.
+    """
+    import os
+    import pty
+
+    bin_dir = _bare_bin(tmp_path)
+    payload_file = tmp_path / "payload.json"
+    payload_file.write_text(_ASK_PAYLOAD)
+
+    pid, master_fd = pty.fork()
+    if pid == 0:  # pragma: no cover - child is replaced by execve
+        fd = os.open(str(payload_file), os.O_RDONLY)
+        os.dup2(fd, 0)
+        os.execve("/bin/bash", ["bash", str(_HOOK), "a decision"], {"PATH": str(bin_dir)})
+        os._exit(127)
+
+    chunks = []
+    while True:
+        try:
+            data = os.read(master_fd, 1024)
+        except OSError:  # EIO on Linux once the child closes the slave side
+            break
+        if not data:
+            break
+        chunks.append(data)
+    os.close(master_fd)
+    _, status = os.waitpid(pid, 0)
+
+    assert os.waitstatus_to_exitcode(status) == 0
+    assert b"\a" in b"".join(chunks)

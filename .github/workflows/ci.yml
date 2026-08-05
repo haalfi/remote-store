@@ -28,6 +28,7 @@ jobs:
       docs: ${{ steps.filter.outputs.docs }}
       formal: ${{ steps.filter.outputs.formal }}
       tla: ${{ steps.filter.outputs.tla }}
+      hooks: ${{ steps.filter.outputs.hooks }}
       primary: ${{ steps.versions.outputs.primary }}
       test-matrix: ${{ steps.versions.outputs.test-matrix }}
       typecheck-matrix: ${{ steps.versions.outputs.typecheck-matrix }}
@@ -53,12 +54,7 @@ jobs:
           # json.load-ed by every shard at collection; a lone refresh of it (or a
           # truncated write) must re-run the gate, else code=false skips every
           # shard and gate goes green having validated nothing (BK-319 review).
-          # .claude/hooks/ is exercised only by tests/scripts/test_claude_hooks.py,
-          # which runs in tooling-tests behind this same gate. A hook-only edit
-          # would otherwise set code=false, skip that job, and go green having
-          # never run the test that pins the hook's contract. Scoped to hooks/:
-          # the rest of .claude/ (agents, skills, output styles) has no suite.
-          CODE_PAT='^(src|tests|examples|scripts)/|^pyproject\.toml$|^\.python-version$|^\.test_durations_pass1$|^docs-src/reference/FEATURES\.md$|^docs-src/_data/graph/|^\.github/workflows/|^\.github/actions/|^\.claude/hooks/'
+          CODE_PAT='^(src|tests|examples|scripts)/|^pyproject\.toml$|^\.python-version$|^\.test_durations_pass1$|^docs-src/reference/FEATURES\.md$|^docs-src/_data/graph/|^\.github/workflows/|^\.github/actions/'
           DOCS_PAT='^(docs-src|src)/|^mkdocs\.yml$|^README\.md$|^CHANGELOG\.md$|^sdd/|^scripts/(docs/|check_docs_framework\.py$)|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$CODE_PAT"; then echo "code=true" >> "$GITHUB_OUTPUT"
           else echo "code=false" >> "$GITHUB_OUTPUT"; fi
@@ -73,6 +69,18 @@ jobs:
           TLA_PAT='^sdd/formal/tla/|^scripts/tlc(_check\.sh|\.Dockerfile)$|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$TLA_PAT"; then echo "tla=true" >> "$GITHUB_OUTPUT"
           else echo "tla=false" >> "$GITHUB_OUTPUT"; fi
+          # HOOKS_PAT gates tooling-tests alone, deliberately NOT folded into
+          # CODE_PAT. `code` drives 15 jobs (Docker image prep, the SFTP and
+          # Azurite backends, the pyarrow matrix, the windows/macos legs), and
+          # this repo treats job budget as a live constraint — see the
+          # concurrency block above and ADR-0032's 20-job cap. The CODE_PAT
+          # members that look like precedent are not: a bumped .python-version
+          # or a rewritten .test_durations_pass1 can change what every shard
+          # does, whereas a bash hook under .claude/hooks/ can only change the
+          # result of tooling-tests, its single consumer.
+          HOOKS_PAT='^\.claude/hooks/|^\.github/workflows/ci\.yml$'
+          if echo "$FILES" | grep -qE "$HOOKS_PAT"; then echo "hooks=true" >> "$GITHUB_OUTPUT"
+          else echo "hooks=false" >> "$GITHUB_OUTPUT"; fi
       - name: Resolve Python versions
         id: versions
         env:
@@ -413,12 +421,16 @@ jobs:
 
   # tests/scripts/ exercises scripts/ and .claude/hooks/, not remote_store: no
   # backends, no coverage. Mostly pure-Python, but test_claude_hooks.py shells
-  # out, so this job needs bash and jq on the runner (ubuntu-latest has both);
-  # that is also why it stays off the windows/macos legs. Runs once on the
-  # primary Python in its own job, off test-primary's critical path.
+  # out, so this job needs bash and jq on the runner (ubuntu-latest has both).
+  # It is not what keeps tests/scripts/ off the windows/macos legs — those run
+  # `pytest -m os_sensitive` and so select by marker, not by directory; nothing
+  # under tests/scripts/ carries that marker. Marking a test there os_sensitive
+  # would put it on Windows regardless of this job.
+  # Gated on `hooks` as well as `code` so a .claude/hooks/-only edit still runs
+  # the suite that pins those hooks, without making it a full-fan-out trigger.
   tooling-tests:
     needs: [setup]
-    if: needs.setup.outputs.code == 'true'
+    if: needs.setup.outputs.code == 'true' || needs.setup.outputs.hooks == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

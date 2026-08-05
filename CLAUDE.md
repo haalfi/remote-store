@@ -90,8 +90,9 @@ The suite uses **no GPU**. GPU saturation during a test run comes from concurren
 
 Decision questions go through the `AskUserQuestion` tool, never prose. A prose
 question ends the turn and sits in scrollback; a tool question blocks until
-answered. A `Stop` hook enforces this, but it is unproven and has produced a
-false positive (BUG-244), so treat a block as advisory until that item closes.
+answered. A `Stop` hook enforces this; its one observed false positive is fixed
+but nothing measures it yet (BUG-244), so treat a block as advisory until that
+item closes.
 
 Wiring, maintenance, and failure modes: [`sdd/CLAUDE-REFERENCE.md` § Interview
 mode](sdd/CLAUDE-REFERENCE.md#interview-mode-wiring).
