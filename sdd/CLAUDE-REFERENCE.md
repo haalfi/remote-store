@@ -462,6 +462,16 @@ is the mistake this feature's own history is a record of. If it is ever built,
 [Rule 8](DRIFT-RULES.md#independence) requires recording the derivation path,
 since the table was written from the same file it would be checked against.
 
+The same register entry covers the **hook matcher values** in `settings.json`
+(`AskUserQuestion`, `idle_prompt`). Those name events in Claude Code, not in this
+repo, so nothing here can confirm them: a typo is indistinguishable from a hook
+that never fires, and the failure mode is silence — on a feature whose whole
+purpose is to stop questions being silent. What *is* gated is that every
+`command` in `settings.json` points at a hook script that exists
+(`tests/scripts/test_claude_hooks.py`), which catches the renamed-script failure
+but not the mistyped-matcher one. Verify a matcher change by observing the hook
+fire in a live session; there is no offline substitute.
+
 **There is deliberately no enforcement layer.** A `Stop` hook of
 `type: "prompt"` was built, reviewed and then dropped: it charges every
 contributor an extra model round-trip on every turn, its benefit is not
