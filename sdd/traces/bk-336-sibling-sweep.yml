@@ -13,8 +13,9 @@ source_items:
   - BK-324
 audience:
   - contributor.process
-expected_ripples:
-  - sdd/backlogid.json
+surprising_ripples:
+  - .claude/skills/ship/SKILL.md
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -79,9 +80,14 @@ phases:
         extract: >-
           Only "Backlog item touched" fires — trace plus backlogid regen. A
           `.claude/skills/` prose edit has no row of its own, and needs none.
+          `gen-backlogid` left `sdd/backlogid.json` byte-identical, because it
+          tracks the max *done* ID and BK-341 was already done: running the
+          generator is the obligation, a changed file is not the evidence of it.
+          Claiming the path as an expected ripple was therefore wrong, and review
+          caught it.
         outcome: ok
       - file: sdd/BACKLOG.md
-        section: "Lint / CI Completeness (§ 9 preamble)"
+        section: "Cross-Artifact Consistency"
         read_type: verify
         extract: >-
           The ripple the item's own text did not point at. A programme paragraph
@@ -89,4 +95,19 @@ phases:
           claim about the backlog, so closing one item falsified a sentence
           elsewhere in the same file. Found by grepping the ID across the repo
           rather than by any checklist row.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Composition preamble, Step 4 / Close each round, Step 5"
+        read_type: verify
+        extract: >-
+          The PR exhibited its own failure class, and only review caught it. The
+          new rule was written into `/fix-pr` alone, but `/ship` runs fix passes
+          under its own triage and cited `/fix-pr` for "comment-fetch and
+          thread-resolve mechanics" only, so the rule did not reach the skill
+          that most needs it. `/ship` Step 5 already reported the *other* half —
+          "any surface the gate never executed locally" — which made the gap
+          visibly partial to a reader and invisible to the author. Closed by
+          widening the citation, not by copying the rule: two homes for one
+          principle is what `CLAUDE.md` principle 4 forbids. No ripple-check row
+          anticipates one skill's rule binding another's delegated step.
         outcome: ok

@@ -36,6 +36,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   refactor code you merely read" restates the `Fix what was asked` rule that the
   new bullet now sits directly beneath, so adjacency carries the bound without a
   second copy of it.
+  **The PR exhibited its own failure class, and review caught it.** The rule was
+  written into `/fix-pr` alone, but `/ship` runs fix passes under its own triage
+  and cited `/fix-pr` for comment-fetch and thread-resolve mechanics only — so
+  the rule did not reach the skill whose whole shape is repeated fix passes,
+  while `/ship` Step 5 already reported the *other* half of the new Step 6
+  clause. Closed by widening that citation rather than copying the rule: a
+  sibling gets a pointer, because two homes for one principle is what
+  [principle 4](../CLAUDE.md#principles) forbids.
   **[BK-338](BACKLOG.md) stays open.** The reverted attempt bundled the
   review-roster question and a single-session model pin into the same commit;
   neither is touched here.

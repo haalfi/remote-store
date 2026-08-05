@@ -124,7 +124,7 @@ do not create a new trace here.
 Stage, commit (`fix: address PR #$ARGUMENTS review`), push. Report: comments
 fixed/resolved, skipped with reasons, and per finding the class swept with what
 it caught — a sweep that found nothing reads exactly like one that never ran —
-plus any changed path the gate could not execute.
+plus any changed surface the gate never executed.
 
 ## Rules
 

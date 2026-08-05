@@ -11,7 +11,8 @@ been reviewed a fixed number of times.
 
 Composes the existing skills rather than reimplementing them: [`/pr`](../pr/SKILL.md)
 creates the PR, [`/rvw-pr`](../rvw-pr/SKILL.md) is the reviewer's instruction set,
-[`/fix-pr`](../fix-pr/SKILL.md) owns comment-fetch and thread-resolve mechanics.
+[`/fix-pr`](../fix-pr/SKILL.md) owns comment-fetch and thread-resolve mechanics
+and the rules a fix pass follows.
 [`/orchestrate`](../orchestrate/SKILL.md) remains the choice when you want expert
 fan-out **without** the convergence loop.
 
@@ -138,8 +139,9 @@ accepting every finding degrades the work, so verify before fixing.
 
 `hatch run all` green → commit → push → reply to **every** thread and resolve
 it. Use [`/fix-pr`](../fix-pr/SKILL.md)'s comment-fetch and thread-resolve
-mechanics. Never start the next round against unpushed code: the reviewer would
-target stale lines.
+mechanics, and its Rules — a fix pass here owes the finding's class exactly as
+one run under that skill does. Never start the next round against unpushed code:
+the reviewer would target stale lines.
 
 Replies carry the reasoning that does not belong in the diff: what was measured,
 what was refuted and why. The PR record is where that survives.
