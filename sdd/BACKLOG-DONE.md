@@ -8,6 +8,45 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-341 — Interview mode: route decision questions through `AskUserQuestion`**
+  spec: — · effort: M · audience: contributor.process, contributor.tooling, infra.ci
+  A question asked in prose ends the turn and sits in scrollback, so it gets
+  overlooked; `AskUserQuestion` renders a dialog that blocks until answered.
+  Two layers in `.claude/` push decision questions out of prose into that tool:
+  an output style saying when a decision is the user's to make and how to shape
+  the options, and a bell plus desktop notification when a dialog opens or the
+  session goes idle. Wiring:
+  [`CLAUDE-REFERENCE.md` § Interview mode](CLAUDE-REFERENCE.md#interview-mode-wiring);
+  the rule alone lives in `CLAUDE.md`, which loads into every session.
+  **A third layer was built and deliberately dropped.** A `Stop` hook of
+  `type: "prompt"` would have returned any turn ending on a prose decision
+  question. It charges every contributor a model round-trip on every turn, its
+  benefit cannot be measured offline (a prompt hook is judged by a model; CI has
+  no credential), and its one real firing was a false positive that blocked a
+  completion report. Certain recurring cost against an unmeasurable benefit is
+  not a default worth taking; the reversal condition is evidence that steering
+  alone lets a question slip, not a better argument about the mechanism.
+  **What the review rounds bought**, since the shipped diff does not show it:
+  the `/dev/tty` assertion was vacuous on any machine with a terminal, and fixing
+  that removed the bell's only coverage; the `osascript` branch the quote
+  stripping exists for was dead in every test; the first CI fix made
+  `.claude/hooks/` a 15-job full-fan-out trigger on a precedent that did not
+  carry. Each was found only because the round that introduced it was itself
+  reviewed, which is [ID-243](BACKLOG-DONE.md)'s "may not end on an unreviewed
+  fix pass" rule paying out.
+  **The cost of that discipline is also on the record.** Five rounds and
+  nineteen findings, nearly all of them defects in the verification apparatus
+  rather than in the ~50-line hook it guards; the one real bug in the hook was
+  found by a throwaway harness before any permanent test existed. The rounds
+  never asked whether a component should exist — that question came from the
+  user and removed the layer four rounds had been polishing.
+  No follow-up left open. A drift check binding the layer table to
+  `.claude/settings.json` was filed and then dropped as not worth building: two
+  rows that change about once a year do not earn a gate. The tolerated
+  divergence keeps its
+  [Rule 6](CLAUDE-REFERENCE.md#interview-mode-wiring) register entry in the doc
+  that owns the table, which is a durable home with an owner and a rationale.
+
 - [x] **ID-243 — `/ship` skill: deliver a task as one convergence-reviewed PR**
   spec: — · effort: M · audience: contributor.process, contributor.tooling
   Codifies the working mode that emerged while delivering BK-324 / BK-331

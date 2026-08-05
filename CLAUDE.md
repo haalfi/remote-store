@@ -85,6 +85,16 @@ The suite uses **no GPU**. GPU saturation during a test run comes from concurren
 - Branch naming: `id-021-store-child`, `fix-streaming-io`, `af-008-credential-masking`, etc.
 - Push the feature branch; the user will create PRs or ask you to.
 
+<a id="interview-mode"></a>
+## Interview mode
+
+Decision questions go through the `AskUserQuestion` tool, never prose. A prose
+question ends the turn and sits in scrollback; a tool question blocks until
+answered.
+
+Wiring, maintenance, and failure modes: [`sdd/CLAUDE-REFERENCE.md` § Interview
+mode](sdd/CLAUDE-REFERENCE.md#interview-mode-wiring).
+
 <a id="response-style"></a>
 ## Response style
 

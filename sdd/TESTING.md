@@ -34,6 +34,7 @@ the invariant in lookup form.
 | HTTP cassettes (BK-181 onward; HTTP-transport backends only) | `tests/backends/cassettes/<backend>/` | — |
 | End-to-end workflow tests (require Docker services) | `tests/e2e/` | — |
 | `scripts/` utilities and build tooling | `tests/scripts/` | `test_<script>.py` |
+| Claude Code hooks (`.claude/hooks/<x>.sh`) | `tests/scripts/` | `test_claude_hooks.py` (one home for all hooks) |
 
 The `check-test-placement` lint
 ([`scripts/check_test_placement.py`](../scripts/check_test_placement.py))

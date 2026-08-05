@@ -1,0 +1,171 @@
+id: BK-341
+title: "Interview mode: route decision questions through AskUserQuestion"
+trigger: >-
+  Sessions asked decision questions in prose during planning and implementation.
+  A prose question ends the turn and sits in scrollback, so it was routinely
+  overlooked; the AskUserQuestion tool renders a dialog that blocks until
+  answered, but nothing made the session prefer it.
+source_items:
+  - BK-341
+audience:
+  - contributor.process
+  - contributor.tooling
+  - infra.ci
+# No discovery_followups: one was born (a drift check binding the layer table to
+# settings.json, briefly ID-244) and dropped in the same PR as not worth
+# building, so recording it here would be a pointer to an item the repo never
+# kept. The tolerated divergence it described keeps a DRIFT-RULES Rule 6 register
+# entry in sdd/CLAUDE-REFERENCE.md instead.
+expected_ripples:
+  - sdd/backlogid.json
+  - .gitignore
+surprising_ripples:
+  # The ripple-check had no row for "adds a test whose subject lives outside
+  # src/ or scripts/". Both CI and the local mechanical gate classify by path,
+  # and neither knew .claude/ could carry a tested artifact, so the guard added
+  # here would not have run on the edits most likely to break it. Found twice:
+  # once for the hook scripts, then again for settings.json after the test's
+  # subject widened to the Stop prompt. Closed in this PR by adding that row to
+  # both ripple-check presentations, so the next person is asked the question
+  # rather than discovering it in review.
+  - .github/workflows/ci.yml
+  - sdd/CLAUDE-REFERENCE.md
+review_rounds: 5
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .claude/settings.json
+        section: "hooks"
+        read_type: reference
+        extract: "existing hook wiring and the exit-2 convention the repo already uses"
+        outcome: ok
+      - file: .gitignore
+        section: "Claude Code — ignore user-specific files, keep shared assets"
+        read_type: gate
+        extract: >-
+          .claude/* is a denylist with per-directory allowances; a new
+          .claude/output-styles/ needs its own negation or the file is
+          silently untracked. Found only because git status omitted the new
+          file, not by anticipating it
+        outcome: ok
+
+  - id: implement
+    name: Implement the three layers
+    steps:
+      - file: .claude/output-styles/interview.md
+        section: "(full)"
+        read_type: reference
+        extract: "steering layer: when a decision is the user's, how to shape options"
+        outcome: ok
+      - file: .claude/hooks/notify-attention.sh
+        section: "(full)"
+        read_type: reference
+        extract: "notification layer: bell plus desktop notification, always exit 0"
+        outcome: ok
+
+  - id: audit
+    name: Self-audit against the authority docs
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 1, 3, 4, 5"
+        read_type: gate
+        extract: >-
+          the CLAUDE.md section duplicated config values whose home is
+          settings.json, and hardcoded upstream constants (a block cap, a
+          setting default) that rot silently
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "A green test can be vacuous"
+        read_type: gate
+        extract: >-
+          positive control before trusting a green result. Applied it, and it
+          caught a real /dev/tty stderr leak — then applied it too narrowly
+          twice more, see the fix phase
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 3, 6, 8"
+        read_type: gate
+        extract: >-
+          a tolerated divergence needs a register entry with an owner and a
+          rationale. Filed as a backlog item first, then dropped: Rule 6 accepts
+          any durable home, and the doc owning the table is a better one than an
+          item nobody would take
+
+        outcome: ok
+
+  - id: fix
+    name: Review rounds
+    steps:
+      - file: tests/scripts/test_claude_hooks.py
+        section: "_run"
+        read_type: verify
+        extract: >-
+          the /dev/tty assertion was vacuous wherever a terminal exists, since
+          subprocess inherits it; start_new_session made it real. Fixing it then
+          removed the bell's only coverage, caught the following round — the
+          pin moved rather than closed
+        outcome: ok
+      - file: tests/scripts/test_claude_hooks.py
+        section: "_REQUIRED_STOP_CLAUSES"
+        read_type: verify
+        extract: >-
+          the clause guard pinned the bare field name, which occurs three times
+          in the prompt, so it stayed green with the scoping sentence deleted —
+          the exact regression it was added to catch. My own miss: I ran the
+          positive control on one clause and generalised to all three. Both the
+          guard and its subject were removed in the final round
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "setup / Detect changed files"
+        read_type: verify
+        extract: >-
+          first fix folded .claude/hooks/ into CODE_PAT, making a hook edit a
+          15-job fan-out on a precedent that did not carry; a separate hooks
+          output is the file's own vocabulary. Then missed settings.json when
+          the test's subject widened to the Stop prompt
+        outcome: ok
+      - file: sdd/000-process.md
+        section: "Rule 6 (bug-fix protocol)"
+        read_type: gate
+        extract: >-
+          an earlier revision filed BUG-244 against this PR's own Stop hook and
+          warned about it in CLAUDE.md. That protocol is for defects in shipped
+          code; a defect in the diff under review is fixed in the diff. Item
+          deleted, defect fixed, guard added
+        outcome: ok
+
+  - id: design
+    name: Reconsider scope after five review rounds
+    steps:
+      - file: .claude/settings.json
+        section: "hooks / Stop"
+        read_type: gate
+        extract: >-
+          asked, four rounds late, whether the enforcement layer was worth a
+          per-turn model round-trip for every contributor. Evidence said no: its
+          benefit is unmeasurable offline and its one real firing was a false
+          positive, while the steering layer worked all session at zero
+          per-turn cost. Hook dropped, with its clause guard. The review rounds
+          never raised this — they audited whether each component was correct,
+          never whether it should exist
+        outcome: ok
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "PR validation gates"
+        read_type: verify
+        extract: "mechanical gate by diff classification, local-machine reference grep, qualitative TESTING/CONTENT review"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / New test file"
+        read_type: verify
+        extract: >-
+          asks for an os_sensitive decision; recorded as deliberately unmarked.
+          The row did not ask the question that mattered here — whether the new
+          test's subject is reachable by the path filters that decide whether it
+          runs — which is why that gap was missed twice. A companion row now
+          asks it
+        outcome: unclear

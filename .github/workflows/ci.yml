@@ -28,6 +28,7 @@ jobs:
       docs: ${{ steps.filter.outputs.docs }}
       formal: ${{ steps.filter.outputs.formal }}
       tla: ${{ steps.filter.outputs.tla }}
+      hooks: ${{ steps.filter.outputs.hooks }}
       primary: ${{ steps.versions.outputs.primary }}
       test-matrix: ${{ steps.versions.outputs.test-matrix }}
       typecheck-matrix: ${{ steps.versions.outputs.typecheck-matrix }}
@@ -68,6 +69,23 @@ jobs:
           TLA_PAT='^sdd/formal/tla/|^scripts/tlc(_check\.sh|\.Dockerfile)$|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$TLA_PAT"; then echo "tla=true" >> "$GITHUB_OUTPUT"
           else echo "tla=false" >> "$GITHUB_OUTPUT"; fi
+          # HOOKS_PAT gates tooling-tests alone, deliberately NOT folded into
+          # CODE_PAT. `code` drives 15 jobs (Docker image prep, the SFTP and
+          # Azurite backends, the pyarrow matrix, the windows/macos legs), and
+          # this repo treats job budget as a live constraint — see the
+          # concurrency block above and ADR-0032's 20-job cap. The CODE_PAT
+          # members that look like precedent are not: a bumped .python-version
+          # or a rewritten .test_durations_pass1 can change what every shard
+          # does, whereas a bash hook under .claude/hooks/ can only change the
+          # result of tooling-tests, its single consumer.
+          # Scope note: this covers the hook scripts because they are the part of
+          # .claude/ with a test. If a tested artifact is ever added elsewhere in
+          # that tree — a prompt in settings.json, a script under skills/ — widen
+          # this pattern with it, or the guard will not run on the edits most
+          # likely to break it.
+          HOOKS_PAT='^\.claude/hooks/|^\.github/workflows/ci\.yml$'
+          if echo "$FILES" | grep -qE "$HOOKS_PAT"; then echo "hooks=true" >> "$GITHUB_OUTPUT"
+          else echo "hooks=false" >> "$GITHUB_OUTPUT"; fi
       - name: Resolve Python versions
         id: versions
         env:
@@ -406,12 +424,18 @@ jobs:
         with:
           files: ./coverage.xml
 
-  # tests/scripts/ exercises scripts/, not remote_store: pure-Python, no
-  # backends, no coverage. Runs once on the primary Python in its own job,
-  # off test-primary's critical path.
+  # tests/scripts/ exercises scripts/ and .claude/hooks/, not remote_store: no
+  # backends, no coverage. Mostly pure-Python, but test_claude_hooks.py shells
+  # out, so this job needs bash and jq on the runner (ubuntu-latest has both).
+  # This job's runs-on does not decide what reaches the windows/macos legs:
+  # test-cross-platform runs `pytest -m os_sensitive`, selecting by marker
+  # rather than directory, and several tests/scripts/ modules are marked and do
+  # run there. test_claude_hooks.py deliberately is not — see its docstring.
+  # Gated on `hooks` as well as `code` so a .claude/hooks/-only edit still runs
+  # the suite that pins those hooks, without making it a full-fan-out trigger.
   tooling-tests:
     needs: [setup]
-    if: needs.setup.outputs.code == 'true'
+    if: needs.setup.outputs.code == 'true' || needs.setup.outputs.hooks == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

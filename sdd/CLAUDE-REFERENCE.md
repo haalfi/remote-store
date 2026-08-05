@@ -59,6 +59,7 @@ Read this before starting. One line per trigger.
 | Trigger                       | Ripples (at a glance) |
 |-------------------------------|-----------------------|
 | New test file                 | OS-sensitive code? Add `pytestmark = pytest.mark.os_sensitive`; periodically re-audit |
+| Test whose subject is outside `src/` or `scripts/` | Is the subject's path in CI's `CODE_PAT`/`HOOKS_PAT` and the local mechanical-gate list? A guard the path filters cannot reach never runs on the edits most likely to break it |
 
 #### Docs
 
@@ -187,6 +188,18 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | suites). Periodically re-audit existing files for          |
 |                            | correctness — see `@pytest.mark.os_sensitive` in          |
 |                            | `pyproject.toml` for rationale.                           |
+| **Test whose subject is outside `src/` or `scripts/`** | The suite is |
+|                            | reached by path filters, so a test whose subject lives    |
+|                            | elsewhere may never run on a diff that changes only that  |
+|                            | subject. Check the subject's path against CI's            |
+|                            | `CODE_PAT` and `HOOKS_PAT` in `.github/workflows/ci.yml`, |
+|                            | and against the mechanical-gate list in                   |
+|                            | [PR validation gates](#pr-validation-gates). Widen        |
+|                            | whichever does not match, preferring a narrow output over |
+|                            | `CODE_PAT` when the subject has one test job as its only  |
+|                            | consumer. Missed twice in one PR (BK-341): first for      |
+|                            | `.claude/hooks/`, then again when a test's subject widened|
+|                            | to `.claude/settings.json`.                               |
 
 #### Docs
 
@@ -372,13 +385,22 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
 - **Mechanical gate.** Classify the diff with
   `git diff origin/<BASE>...HEAD --name-only`, then run the matching target. Fix
   failures, re-run until clean.
-    - **Touches `src/`, `tests/`, `examples/`, `scripts/`, `pyproject.toml`, or
-      `.python-version`** → run `hatch run all`, the full pre-PR superset (its
-      constituent scripts are the source of truth in `pyproject.toml`). These
-      are the test-bearing and interpreter-defining members of CI's `CODE_PAT`;
+    - **Touches `src/`, `tests/`, `examples/`, `scripts/`, `.claude/hooks/`,
+      `pyproject.toml`, or `.python-version`** → run `hatch run all`, the full
+      pre-PR superset (its constituent scripts are the source of truth in
+      `pyproject.toml`). All but `.claude/hooks/` are the test-bearing and
+      interpreter-defining members of CI's `CODE_PAT`;
       `scripts/` is among them because its guards live under `tests/scripts/`, which
-      only the suite runs (a `scripts/`-only diff must still run it). The remaining
-      `CODE_PAT` members are generated artefacts (FEATURES, the graph data — drift
+      only the suite runs (a `scripts/`-only diff must still run it).
+      `.claude/hooks/` is here for the same reason — its guard is
+      `tests/scripts/test_claude_hooks.py`, so a hook-only diff that skipped the
+      suite would validate nothing — but it is deliberately **not** in
+      `CODE_PAT`: CI gates it through a separate `hooks` output so it runs
+      `tooling-tests` alone rather than the full code fan-out (the reasoning, and
+      the job count behind it, live beside `HOOKS_PAT` in `ci.yml`). Locally there
+      is no such split, so a hook edit takes the same `hatch run all` as code.
+      The remaining `CODE_PAT` members are
+      generated artefacts (FEATURES, the graph data — drift
       caught by `preflight` on this path) and CI config (workflows, actions —
       validated only by CI, which re-runs itself on those paths).
       `all` uses the no-Docker `test-cov-s1` variant (no 95% floor); that floor is
@@ -409,6 +431,70 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
   (prose longevity), and any new or changed cross-artifact check or drift report against
   [`DRIFT-RULES.md`](DRIFT-RULES.md) (claim space, declared authority, stated
   bounds). Report violations before finishing.
+
+---
+
+<a id="interview-mode-wiring"></a>
+## Interview mode
+
+The rule ("decision questions go through `AskUserQuestion`, never prose") lives
+in [`CLAUDE.md` § Interview mode](../CLAUDE.md#interview-mode). This section is
+the wiring behind it, kept out of `CLAUDE.md` because that file loads into every
+session and this is maintenance detail.
+
+| Layer | What it does |
+| --- | --- |
+| Steering | An output style saying when a decision is the user's to make, and how to shape the options |
+| Notification | Bell plus desktop notification when a dialog opens or the session goes idle |
+
+Which events fire which layer is declared in `.claude/settings.json`. Read it
+there; a second copy here would rot.
+
+**Ungated on purpose** — this table and `settings.json` are a hand-maintained
+pair, and no check binds them. It is therefore a tolerated divergence, and this
+paragraph is its [DRIFT-RULES Rule 6](DRIFT-RULES.md#tolerated) register entry.
+Owner: whoever next edits either side. Rationale: the claim space is two rows
+that change about once a year, so a gate costs more to build and maintain than
+the drift it would catch — a gate here would be the tail wagging the dog, which
+is the mistake this feature's own history is a record of. If it is ever built,
+[Rule 3](DRIFT-RULES.md#claim-space) requires the enumeration be *derived* from
+`settings.json` rather than maintained beside it, and
+[Rule 8](DRIFT-RULES.md#independence) requires recording the derivation path,
+since the table was written from the same file it would be checked against.
+
+The same register entry covers the **hook matcher values** in `settings.json`
+(`AskUserQuestion`, `idle_prompt`). Those name events in Claude Code, not in this
+repo, so nothing here can confirm them: a typo is indistinguishable from a hook
+that never fires, and the failure mode is silence — on a feature whose whole
+purpose is to stop questions being silent. What *is* gated is that every
+`command` in `settings.json` points at a hook script that exists
+(`tests/scripts/test_claude_hooks.py`), which catches the renamed-script failure
+but not the mistyped-matcher one. Verify a matcher change by observing the hook
+fire in a live session; there is no offline substitute.
+
+**There is deliberately no enforcement layer.** A `Stop` hook of
+`type: "prompt"` was built, reviewed and then dropped: it charges every
+contributor an extra model round-trip on every turn, its benefit is not
+measurable offline (a prompt hook is judged by a model, and CI has no
+credential), and the one real firing observed was a false positive that blocked
+a turn reporting completed work. A certain per-turn cost against an unmeasurable
+benefit, on that evidence, is not a trade worth making by default. Before
+rebuilding it, get evidence that steering alone is insufficient — a prose
+question that actually slipped past — rather than reasoning from the mechanism.
+
+Two failure modes worth knowing:
+
+- An output style is read once at session start, so `/clear` or restart after
+  editing one.
+- `/config` writes `outputStyle` to `.claude/settings.local.json`, which outranks
+  the committed `.claude/settings.json`: picking a style from that menu silently
+  overrides the repo default.
+
+Leave `askUserQuestionTimeout` unset; its default is what keeps a dialog open
+until answered. That setting, its scope, and settings precedence are defined in
+the [Claude Code settings reference](https://code.claude.com/docs/en/settings).
+Hook events and their payloads are in the
+[hooks reference](https://code.claude.com/docs/en/hooks).
 
 ---
 
