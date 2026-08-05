@@ -440,18 +440,24 @@ question, edit the `Stop` hook's `prompt`. That hook returns `ok: true` when
 `stop_hook_active` is set, so a blocked turn cannot loop against Claude Code's
 consecutive-block cap.
 
-Three failure modes worth knowing:
+Three things worth knowing — two failure modes and one standing limit:
 
 - An output style is read once at session start, so `/clear` or restart after
   editing one.
 - `/config` writes `outputStyle` to `.claude/settings.local.json`, which outranks
   the committed `.claude/settings.json`: picking a style from that menu silently
   overrides the repo default.
-- The enforcement layer is unmeasured. It produced a false positive on its first
-  real firing, blocking a turn that only reported completed work; that specific
-  defect is fixed (the prompt now judges only `last_assistant_message`), but no
-  test distinguishes the fixed prompt from the broken one — reproduction
-  and diagnosis in BUG-244.
+- A `type: "prompt"` hook is judged by a model, so its false-positive rate is
+  not measurable offline and CI never exercises it. **This is a standing limit
+  of prompt hooks, not an open defect.** The one false positive seen in practice
+  came from a missing instruction rather than from model variance: the prompt
+  said to read `last_assistant_message` but not to read *only* that, so the
+  evaluator judged surrounding scaffolding as part of the turn and blocked a
+  completion report. The instruction is now present, and
+  `tests/scripts/test_claude_hooks.py` pins it against silent removal. What that
+  test cannot do is tell you how often the model is wrong when the instructions
+  are right; treat a surprising block as worth investigating rather than as
+  proof the hook is broken.
 
 Leave `askUserQuestionTimeout` unset; its default is what keeps a dialog open
 until answered. That setting, its scope, and settings precedence are defined in

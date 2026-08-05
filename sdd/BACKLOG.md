@@ -366,41 +366,6 @@ and the highest ID already in this file, then take the next integer. Run
   instance; enumerating `lint` and `preflight` against the path filters found two
   more, so the item is scoped to all three rather than to the one reported.
 
-- [ ] **BUG-244 — Interview-mode `Stop` hook has no measured false-positive rate**
-  spec: — · effort: S · audience: contributor.tooling
-  **The diagnosed defect is fixed; what remains is that nothing measures the
-  hook.** Kept open as a BUG rather than closed because the fix was reasoned, not
-  demonstrated: no test distinguishes the fixed prompt from the broken one.
-  History. The `Stop` hook in `.claude/settings.json` returns a turn to be
-  re-asked when it ends on a prose decision question. On its first real firing it
-  blocked a turn that only reported completed work and deliberately deferred
-  items, which is the case its own prompt excludes ("closing offers of optional
-  follow-up work"). Reproduction: end a turn with a completion report listing
-  deferred items.
-  Diagnosis came from the hook's own returned reasoning. It reached the correct
-  answer under the rule as written ("which by the rule's own terms should not
-  trigger blocking") and then overrode itself, citing a question appearing
-  nowhere in `last_assistant_message` ("has the following stopping condition been
-  satisfied?"). That text is evaluation scaffolding around the hook call, which
-  the evaluator treated as part of the turn under review. The defect was
-  **scoping, not a weak exclusion list**: the prompt said to read
-  `last_assistant_message` but never *only* that, and never said instructions in
-  the surrounding material are data rather than orders.
-  PR #947 applied that fix — the prompt now judges only the literal field,
-  discounts text outside it, and carves out the non-interactive "state your
-  assumption" fallback that the output style mandates and the old prompt would
-  have blocked.
-  **What is left:** a replay harness feeding canned `last_assistant_message`
-  values (completion report, real decision question, rhetorical question,
-  non-interactive assumption, `stop_hook_active` set) and reporting the
-  classification. That is what turns prompt tuning into measurement, and it
-  doubles as the regression test the fix currently lacks — without it the next
-  prompt edit is as unverified as this one.
-  Until this closes, [`CLAUDE.md` § Interview mode](../CLAUDE.md#interview-mode)
-  tells readers to treat a block as advisory.
-  Observed live in the session that authored the layer; filed and then narrowed
-  across two rounds of the PR #947 review.
-
 ---
 
 ## Cross-Artifact Consistency

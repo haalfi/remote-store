@@ -422,10 +422,10 @@ jobs:
   # tests/scripts/ exercises scripts/ and .claude/hooks/, not remote_store: no
   # backends, no coverage. Mostly pure-Python, but test_claude_hooks.py shells
   # out, so this job needs bash and jq on the runner (ubuntu-latest has both).
-  # It is not what keeps tests/scripts/ off the windows/macos legs — those run
-  # `pytest -m os_sensitive` and so select by marker, not by directory; nothing
-  # under tests/scripts/ carries that marker. Marking a test there os_sensitive
-  # would put it on Windows regardless of this job.
+  # This job's runs-on does not decide what reaches the windows/macos legs:
+  # test-cross-platform runs `pytest -m os_sensitive`, selecting by marker
+  # rather than directory, and several tests/scripts/ modules are marked and do
+  # run there. test_claude_hooks.py deliberately is not — see its docstring.
   # Gated on `hooks` as well as `code` so a .claude/hooks/-only edit still runs
   # the suite that pins those hooks, without making it a full-fan-out trigger.
   tooling-tests:
