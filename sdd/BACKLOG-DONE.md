@@ -8,6 +8,38 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-242 — S3 probes reported a 403 as `NotFound`, and a tolerant delete swallowed it entirely**
+  spec: BE-021 · effort: S · audience: user.api
+  Introduced by BK-324 and caught by PR #945's fifth review round. `_s3_is_object`
+  and `_s3_has_children` swallowed every SDK error including `PermissionError` —
+  a 403 arrives as one from `s3fs.call_s3`, being an `OSError`. That was correct
+  while they were error-path probes, where swallowing preserves the operation's
+  own error. BK-324 promoted them to the **primary existence determinant** on
+  `delete`, `move`/`copy` source, `delete_folder` and `get_folder_info` without
+  changing their posture, so a denial became "the object is not there".
+  **Measured over a real 403** (a `pytest-httpserver` stub speaking S3 wire
+  protocol, nothing patched), across merge-base, PR head and fix:
+  `S3Backend` and `S3PyArrowBackend` went `PermissionDenied` → **`NotFound`** →
+  `PermissionDenied`; `S3Boto3Backend` was never affected and served as the
+  in-suite control. **The review under-reported it:** `delete(path,
+  missing_ok=True)` under a 403 returned *silently*, telling the caller there
+  was nothing to delete.
+  **Fail-open is a property of the call site, not of the probe.** That is the
+  transferable rule, now in BE-021: an error-path probe that cannot answer still
+  has the operation's own error to preserve, while a determinant that cannot
+  answer has nothing — so swallowing invents a verdict instead of keeping one. A
+  backend sharing one helper across both roles wraps it at the error-path site
+  rather than widening the helper. The spec had described fail-open as a property
+  of the mechanism, which put it in silent tension with BE-021's own ACL row, and
+  that tension is what let this land.
+  **No green gate could have caught it.** The `PermissionError` branch carried
+  `# pragma: no cover -- moto doesn't raise PermissionError` — a true statement
+  that had become a coverage hole. Removed, and the branch is now genuinely
+  executed. The new test is Stage 1, needs no Docker or credentials, and pins the
+  routing rather than encoding it; mutation-verified at 14 red on revert, with
+  the fail-open half asserted separately so a blanket "make everything strict"
+  fix would fail it.
+
 - [x] **BK-324 — Reconcile backend-contract divergences (root/alias, wrong-type errors, depth semantics, empty paths)**
   spec: 003, 010, 029, 036, 037, 001 · effort: L · audience: user.api, library.maintainer
   Research § 9 step 5.2. All four facets settled: the user decided 1, 2 and 3;

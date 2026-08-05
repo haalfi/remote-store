@@ -26,7 +26,7 @@ from remote_store._path import RemotePath, is_root
 from remote_store.backends._fileinfo import _clean_etag, _name_from_path, _normalize_modified
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
 
     from remote_store._config import RetryPolicy
     from remote_store._resolution import ResolutionPlan
@@ -168,6 +168,27 @@ class _S3Base(Backend):
 
     # region: shared — wrong-type reclassification (BE-021, BK-324 facet 2)
 
+    # Two postures live in this region, and the split is load-bearing.
+    #
+    # ``_s3_is_object`` / ``_s3_has_children`` are **strict**: they answer the
+    # question or raise. They are the *determinant* at the head of ``delete``,
+    # ``delete_folder``, ``move``/``copy`` source and ``get_folder_info``, where
+    # they stand in for the ``s3fs.exists`` call those operations used before
+    # BK-324 — and ``s3fs._exists`` catches only ``FileNotFoundError``, so a 403
+    # always propagated and mapped to ``PermissionDenied``. Swallowing an error
+    # in a determinant does not preserve a truthful answer, it invents one: a 403
+    # (``s3fs.translate_boto_error`` turns both ``403`` and ``AccessDenied`` into
+    # ``PermissionError``, an ``OSError``) would be reported to the caller as
+    # ``NotFound`` — "the object is absent" when it exists and they cannot see
+    # it. BE-021's ACL row says ``PermissionDenied``.
+    #
+    # ``_reject_folder`` / ``_reject_file`` wrap the same probes in **fail-open**
+    # closures, because there the probe runs only after the operation has already
+    # failed: swallowing keeps that original error standing instead of replacing
+    # it with a transport error. Same split as ``S3Boto3Backend``, where
+    # ``_head_or_none`` / ``_prefix_has_children`` are strict and the swallowing
+    # closures live inside its ``_reject_*`` pair.
+
     def _s3_is_object(self, path: str) -> bool:
         """One ``HeadObject``: ``True`` iff an object exists at exactly *path*.
 
@@ -175,14 +196,17 @@ class _S3Base(Backend):
         common prefix. The file-shaped operations need the narrow answer so
         that a prefix falls through to the type-mismatch branch instead of
         being mistaken for a file.
-        """
-        from botocore.exceptions import BotoCoreError, ClientError
 
+        Strict: only the 404 (which s3fs surfaces as ``FileNotFoundError``) is
+        an *answer* — "no object here". Every other failure propagates to the
+        enclosing ``_s3fs_errors`` for classification. See the region comment
+        above for why, and ``_reject_file`` for the fail-open wrapper.
+        """
         if is_root(path):
             return False  # the root is a folder, never an object
         try:
             self._s3fs.call_s3("head_object", Bucket=self._bucket, Key=path)
-        except (FileNotFoundError, ClientError, BotoCoreError, OSError):
+        except FileNotFoundError:
             return False
         return True
 
@@ -192,18 +216,17 @@ class _S3Base(Backend):
         Goes through ``call_s3`` rather than ``s3fs.ls`` so the answer is never
         served from the fsspec directory cache — a stale ``True`` here would
         turn a legitimate ``NotFound`` into a spurious ``InvalidPath``.
-        """
-        from botocore.exceptions import BotoCoreError, ClientError
 
-        try:
-            resp = self._s3fs.call_s3(
-                "list_objects_v2",
-                Bucket=self._bucket,
-                Prefix="" if is_root(path) else f"{path.rstrip('/')}/",
-                MaxKeys=1,
-            )
-        except (FileNotFoundError, ClientError, BotoCoreError, OSError):
-            return False
+        Strict, for the same reason as ``_s3_is_object``: an empty listing is an
+        answer, a failed listing is not. ``_reject_folder`` supplies the
+        fail-open wrapper for the error-path call sites.
+        """
+        resp = self._s3fs.call_s3(
+            "list_objects_v2",
+            Bucket=self._bucket,
+            Prefix="" if is_root(path) else f"{path.rstrip('/')}/",
+            MaxKeys=1,
+        )
         return bool(resp.get("KeyCount", 0)) or bool(resp.get("CommonPrefixes"))
 
     def _reject_root_as_file(self, path: str) -> None:
@@ -222,22 +245,53 @@ class _S3Base(Backend):
         self._raise_if_closed()
         _reject_root_as_file(path, self.name)
 
+    def _probe_fail_open(self, probe: Callable[[str], bool], key: str) -> bool:
+        """Answer ``False`` when a strict type probe could not answer at all.
+
+        Only for the ``_reject_*`` error path, where the operation has already
+        raised and the probe exists solely to *reclassify* that error. A failure
+        here means the reclassification cannot be made, so the original error is
+        the best answer available — returning ``False`` leaves it standing.
+
+        Narrowed to the SDK's environmental shapes, matching ``_head_one`` in
+        ``_flat_ns``: programmer errors (``TypeError``, ``AttributeError``)
+        propagate as the integration bugs they are. ``FileNotFoundError`` and
+        ``PermissionError`` are both ``OSError`` subclasses and so are covered.
+
+        Never call this from a determinant — see the region comment above.
+        """
+        from botocore.exceptions import BotoCoreError, ClientError
+
+        try:
+            return probe(key)
+        except (ClientError, BotoCoreError, OSError):
+            return False
+
     def _reject_folder(self, path: str) -> None:
         """Error path: raise ``InvalidPath`` if *path* is a virtual folder.
 
-        Fail-open on probe failures (the closures above swallow their own SDK
-        error shapes), so a transient listing failure leaves the operation's
-        original error standing rather than replacing it with a transport one.
+        Fail-open on probe failures, so a transient listing failure leaves the
+        operation's original error standing rather than replacing it with a
+        transport one.
         """
         from remote_store.backends._flat_ns import _wrong_type_if_folder
 
-        _wrong_type_if_folder(path, has_children=self._s3_has_children, backend=self.name)
+        def _has_children(key: str) -> bool:
+            return self._probe_fail_open(self._s3_has_children, key)
+
+        _wrong_type_if_folder(path, has_children=_has_children, backend=self.name)
 
     def _reject_file(self, path: str) -> None:
-        """Error path: raise ``InvalidPath`` if *path* is an object."""
+        """Error path: raise ``InvalidPath`` if *path* is an object.
+
+        Same fail-open posture as ``_reject_folder``.
+        """
         from remote_store.backends._flat_ns import _wrong_type_if_file
 
-        _wrong_type_if_file(path, is_object=self._s3_is_object, backend=self.name)
+        def _is_object(key: str) -> bool:
+            return self._probe_fail_open(self._s3_is_object, key)
+
+        _wrong_type_if_file(path, is_object=_is_object, backend=self.name)
 
     @contextmanager
     def _s3fs_file_errors(self, path: str) -> Iterator[None]:
@@ -614,7 +668,9 @@ class _S3Base(Backend):
             raise
         except FileNotFoundError:
             raise _not_found(path, self.name) from None
-        except PermissionError:  # pragma: no cover -- moto doesn't raise PermissionError
+        except PermissionError:
+            # Covered by the stub-endpoint 403 suite, not by moto (which
+            # enforces no IAM and so never produces one).
             raise _permission_denied(path, self.name) from None
         except Exception as exc:  # noqa: BLE001
             raise self._classify_error(exc, path) from None

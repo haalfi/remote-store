@@ -17,6 +17,9 @@ discovery_followups:
   - BK-340
   - ID-241
   - BUG-240
+  - BUG-241
+co_shipped_items:
+  - BUG-242
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
@@ -189,6 +192,21 @@ phases:
           and failed it. The commit gate would not have caught it either — it
           runs lint. Future agent briefs must name format-check explicitly.
         outcome: misleading
+      - file: src/remote_store/backends/_s3_base.py
+        section: "_s3_is_object, _s3_has_children"
+        read_type: verify
+        extract: >-
+          Round 5 found the only behavioural regression this work introduced,
+          and the one a green gate structurally could not: the probes swallowed
+          every SDK error including the PermissionError a 403 arrives as, which
+          was correct while they ran on the error path and wrong once this item
+          promoted them to the primary existence determinant. A denial became
+          NotFound, and delete(missing_ok=True) returned silently. The
+          PermissionError branch carried a pragma saying moto does not raise it
+          — true, and therefore a coverage hole rather than an exemption.
+          Fixed as BUG-242; the rule that fail-open is a property of the call
+          site rather than of the probe is now in BE-021.
+        outcome: ok
       - file: tests/backends/fixtures/registry.py
         section: "Docker-gated fixtures"
         read_type: verify

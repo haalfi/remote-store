@@ -528,6 +528,18 @@ The probe is **fail-open**: if it errors (503, throttling, network blip) the
 operation's original error stands rather than being replaced by a transport
 error, the same posture the file-ancestor walk takes (see BE-008 / ID-211).
 
+**Fail-open is a property of that call site, not of the probe as a mechanism.**
+The same HEAD or prefix listing usually also serves as the plain *existence*
+check at the head of `delete`, `delete_folder`, the `move`/`copy` source and
+`get_folder_info`. There it is the **determinant**, and there it MUST fail
+closed: an error-path probe that cannot answer still has the operation's own
+error to preserve, but a determinant that cannot answer has nothing — swallowing
+its failure does not keep a truthful verdict, it invents one. A denied HEAD
+reported as `NotFound` both contradicts the ACL row above and tells the caller an
+object is absent when it exists and they may not see it. A backend that shares
+one helper across the two roles therefore wraps it *at the error-path call site*
+rather than widening the helper itself.
+
 The probe firing on failure is *why* the roster splits where it does: the
 obligation reaches exactly the operations that *can* fail on a wrong-type path
 — the list stated with the rows above — and the write half offers it no failure

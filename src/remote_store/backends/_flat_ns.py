@@ -197,6 +197,13 @@ def _wrong_type_if_folder(path: str, *, has_children: Callable[[str], bool], bac
     never reaches here, so a normal operation pays nothing; the extra listing
     is charged only to calls that were going to raise anyway.
 
+    Because it is error-path-only, ``has_children`` MAY fail open — answer
+    ``False`` when the listing itself failed — since the operation's own error
+    is still there to stand. Fail-open belongs to *this* call site, not to the
+    probe: a backend that also uses the same listing as its plain existence
+    check must not swallow failures there, where there is no prior error to
+    preserve and a swallowed denial would be reported as a missing path.
+
     Both spellings of the root are exempt, and by the same predicate: the
     root is a folder whether or not it has children, so a probe answer about
     it is meaningless. Callers reject it up front via ``_reject_root_as_file``
