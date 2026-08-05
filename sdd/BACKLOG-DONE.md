@@ -62,6 +62,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   arriving inside a correct finding inherits that finding's credibility. Every
   other claim in the comment was checked; the decoration was not, because
   decoration does not look like a claim.
+  **The last instance came from a refutation, and it is the sharpest.** Round 1
+  flagged that `/fix-pr`'s new clause dropped the "locally" qualifier `/ship`
+  carried. That was refuted on the grounds that `/ship` "can say *locally*
+  because it also runs CI and knows the difference" — a premise asserted and
+  never checked. `/ship` runs `hatch run all` and hands the PR over; it never
+  consults CI. So the qualifier had the defect the reviewer named, in the skill
+  whose report is the handoff document, and it survived four rounds *because*
+  the refutation looked settled. Dropped. **A refuted finding is not a closed
+  one**: refutation is where a sibling hides best, since the reasoning that
+  dismisses it is never swept against the code the way a fix is.
   **[BK-338](BACKLOG.md) stays open.** The reverted attempt bundled the
   review-roster question and a single-session model pin into the same commit;
   neither is touched here.

@@ -115,7 +115,16 @@ phases:
           report and nothing there asked for a sweep. So the sweep half was
           added to that report beside the coverage half it already carried. Two
           rounds to close one class in one sibling file is the item's own thesis
-          holding against its author.
+          holding against its author. The last instance was found by the user,
+          not by a round, and came from a *refutation*: round 1's objection that
+          the new clause dropped `/ship`'s "locally" qualifier was refuted on the
+          asserted premise that `/ship` also runs CI. It does not — `hatch run
+          all` then hand over, `:60` and `:139` — so the qualifier carried the
+          defect the reviewer named, in the skill whose report is the handoff.
+          It survived four rounds because a refuted thread reads as settled and
+          no later round re-examines it. Refutation is where a sibling hides
+          best: the reasoning that dismisses a finding is never checked against
+          the code the way a fix is.
         outcome: ok
       - file: sdd/BACKLOG-DONE.md
         section: "BK-324 (closing paragraph)"

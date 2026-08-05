@@ -199,7 +199,7 @@ condemned it.
    `discovery_followups`, and `surprising_ripples`.
 3. Report: rounds run, findings per round with their character, the class swept
    per must-fix finding and what it caught, what was filed rather than fixed,
-   and any surface the gate never executed locally.
+   and any surface the gate never executed.
 
 Then stop. **`/ship` never merges.** It hands over a PR that is ready to be.
 
