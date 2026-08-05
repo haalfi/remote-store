@@ -8,6 +8,11 @@ argument-hint: "[BACKLOG-ID] [optional: task description]"
 Orchestrate a complex task by delegating to 5 domain experts.
 See ADR-0020 for architecture rationale.
 
+Reviews here are capped at two rounds. When a defect reaching `master` would be
+costly enough to justify reviewing to convergence instead, [`/ship`](../ship/SKILL.md)
+delivers the whole task as one PR and stops on findings rather than on a count;
+its "When not to use this" section is the authority on which to pick.
+
 Parse `$ARGUMENTS`: first token is the backlog ID (e.g., `BK-123`, `ID-120`),
 remainder is optional task description. Ask if missing.
 

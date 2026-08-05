@@ -14,12 +14,13 @@ audience:
 expected_ripples:
   - sdd/backlogid.json
   - sdd/adrs/DIGEST.md
-# Two review rounds on PR #946, both pre-merge: the first found 8 issues (6 in
-# the skill itself), the second 7. The first round's fixes were amended into the
-# single commit because renumbering ID-244 to ID-243 forced a squash, so no
-# separate fix commit exists for it — counted here anyway, per the schema's rule
-# that pre-open feedback counts when it changed the branch.
-review_rounds: 2
+# Three rounds on PR #946, all post-creation: 8 findings, then 7, then a
+# verification round over the fix pass (run twice, independently, which is why
+# two sessions raised the same ADR-preamble defect). Round 1's fixes were
+# amended into the single commit, because renumbering ID-244 to ID-243 forced a
+# squash, so this count cannot be re-derived from git log. The schema leaves it
+# to the trace author's judgement.
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -31,9 +32,11 @@ phases:
           Establish what already exists before adding a skill. /orchestrate
           owns plan → execute → review with five domain experts and a hard
           two-round review cap. The overlap is real, so /ship had to justify
-          itself against it rather than duplicate it — which is what produced
-          the scope clause (costly-to-be-wrong work vs everything else)
-          instead of a second general-purpose orchestrator.
+          itself against it rather than duplicate it, which is what produced a
+          scope split (costly-to-be-wrong work vs everything else) instead of a
+          second general-purpose orchestrator. Review later moved that split out
+          of the ADR as a use decision; it now lives in the skill's "When not to
+          use this".
         outcome: ok
       - file: .claude/skills/rvw-pr/SKILL.md
         section: "(full)"

@@ -11,9 +11,9 @@
 
 Introduces a second review-loop model, in the `/ship` skill, alongside the one
 [ADR-0020](0020-orchestrate-iterative-convergence.md) defines for `/orchestrate`.
-ADR-0020 is unaffected and keeps its fixed cap; this record adds the rule for
-choosing between them, and preserves ADR-0020's user-as-tie-breaker clause
-unchanged.
+ADR-0020 is unaffected and keeps its fixed cap, and its user-as-tie-breaker
+clause is preserved unchanged. Which model to reach for on a given task is a use
+decision the `/ship` skill documents, not one this record makes.
 
 ## Context
 
@@ -54,7 +54,8 @@ Under a two-round cap this PR would have merged carrying an incomplete
 root-spelling fix, the `NotFound`-for-denial regression, and a published guide
 instructing third-party authors to reproduce it.
 
-The cost is real and bounds where this applies. That delivery's six rounds ran
+The cost is real, and it is why the skill carries its own guidance on when not
+to reach for this loop. That delivery's six rounds ran
 roughly a million subagent tokens and eight full `hatch run all` gates: the
 review loop, not the implementation, dominated. This paragraph is the single
 home for that measurement; the `/ship` skill links here rather than restating
@@ -62,36 +63,36 @@ it, since the figure is one delivery's history and not a forward estimate.
 
 ## Decision
 
-**Terminate the review loop on convergence, not on a round count.** Stop when a
-round yields zero must-fix findings, where must-fix means wrong once merged:
-incorrect behaviour, a false statement in a durable artifact, or a shipping gap.
-A soft ceiling of five finding-rounds triggers escalation to the user rather
-than silent termination. *Reverse if* loops routinely run long without the extra
-rounds changing what ships, so a fixed cap costs less than it saves.
+- **Terminate the review loop on convergence, not on a round count.** Stop when
+  a round yields zero must-fix findings, where must-fix means wrong once merged:
+  incorrect behaviour, a false statement in a durable artifact, or a shipping
+  gap. A soft ceiling of five finding-rounds triggers escalation to the user
+  rather than silent termination. *Reverse if* loops routinely run long without
+  the extra rounds changing what ships, so a fixed cap costs less than it saves.
 
-**The loop may not end on an unreviewed fix pass.** Whatever the last round
-changed is itself reviewed before the PR is declared ready; that verification
-round does not count toward the ceiling. This is the concrete form of "a fix
-pass is not trusted work". *Reverse if* verification rounds over fix passes
-stop finding anything across a meaningful sample of deliveries.
+- **The loop may not end on an unreviewed fix pass.** Whatever the last round
+  changed is itself reviewed before the PR is declared ready; that verification
+  round does not count toward the ceiling. This is the concrete form of "a fix
+  pass is not trusted work". *Reverse if* verification rounds over fix passes
+  stop finding anything across a meaningful sample of deliveries.
 
-**Diversify reviewers rather than repeating one.** The first round is *unprimed*,
-receiving the diff, the goal and repo conventions but never the author's areas
-of concern, and runs on a different model from the author's so its blind spots
-differ. Later rounds each take one scoped lens, chosen by what earlier rounds
-did not examine. *Reverse if* unprimed rounds reliably duplicate
-what lens rounds find, making the diversity redundant.
+- **Diversify reviewers rather than repeating one.** The first round is
+  *unprimed*, receiving the diff, the goal and repo conventions but never the
+  author's areas of concern, and runs on a different model from the author's so
+  its blind spots differ. Later rounds each take one scoped lens, chosen by what
+  earlier rounds did not examine. *Reverse if* unprimed rounds reliably
+  duplicate what lens rounds find, making the diversity redundant.
 
-**Reviewers are read-only and never resumed; fixers may decline with evidence.**
-A resumed reviewer inherits its own prior conclusions and stops being an
-independent check. *Reverse if* declining is used to avoid work rather than to
-correct it.
+- **Reviewers are read-only and never resumed; fixers may decline with
+  evidence.** A resumed reviewer inherits its own prior conclusions and stops
+  being an independent check. *Reverse if* declining is used to avoid work
+  rather than to correct it.
 
-**Factual disputes are settled by measurement; contested decisions still go to
-the user.** A disagreement about what the code does is an experiment, not an
-adjudication. ADR-0020's "user is the sole tie-breaker" is unchanged and still
-governs what the code *should* do. *Reverse only* as a deliberate authority
-change, per ADR-0020.
+- **Factual disputes are settled by measurement; contested decisions still go
+  to the user.** A disagreement about what the code does is an experiment, not
+  an adjudication. ADR-0020's "user is the sole tie-breaker" is unchanged and
+  still governs what the code *should* do. *Reverse only* as a deliberate
+  authority change, per ADR-0020.
 
 Which skill to reach for is a use decision, not one this record makes. That,
 with the step sequence, lens menu, brief requirements and triage table, is
@@ -113,5 +114,6 @@ operational contract and lives in `.claude/skills/ship/SKILL.md`.
   must-fix?) rather than a counter. Miscalibration either ships defects or
   loops longer than needed; the soft ceiling bounds the second failure mode
   only.
-- **Neutral:** the repo now has two review-loop models, and choosing between
-  them is a judgement the skills document rather than one this record fixes.
+- **Neutral:** the repo now has two review-loop models. Choosing between them is
+  a judgement the `/ship` skill documents rather than one this record fixes, and
+  `/orchestrate` carries a pointer to it so the incumbent path is not a dead end.
