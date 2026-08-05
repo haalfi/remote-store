@@ -377,11 +377,19 @@ class TestListFiles:
         assert files[0].name == "total.parquet"
 
     def test_list_max_depth(self, backend: SQLQueryBackend) -> None:
-        files = list(backend.list_files("", max_depth=0))
-        assert len(files) == 0  # all files are at depth 1
+        """DEPTH-003: the bound applies only when ``recursive=True``.
 
-        files = list(backend.list_files("", max_depth=1))
-        assert len(files) == 5  # all files are at depth 1
+        Previously this asserted ``list_files("", max_depth=1) == 5`` — depth
+        taking precedence over the default ``recursive=False``. BK-324 facet 3
+        settled the Backend-ABC rule the other way, so that combination is now
+        inert and the recursive form carries the depth assertions.
+        """
+        assert len(list(backend.list_files("", recursive=True, max_depth=0))) == 0  # all files are at depth 1
+        assert len(list(backend.list_files("", recursive=True, max_depth=1))) == 5
+
+        # recursive=False ignores the bound rather than letting it take
+        # precedence: only depth-0 files, and every file here is one level down.
+        assert len(list(backend.list_files("", max_depth=1))) == 0
 
     def test_file_info_sentinel_values(self, backend: SQLQueryBackend) -> None:
         files = list(backend.list_files("reports"))
@@ -597,3 +605,59 @@ class TestSQLQueryResolve:
     def test_csv_format(self, backend: SQLQueryBackend) -> None:
         plan = backend.resolve("reports/sales.csv")
         assert plan.details["format"] == "csv"
+
+
+# ---------------------------------------------------------------------------
+# Root path (BE-029)
+# ---------------------------------------------------------------------------
+
+
+class TestRootPath:
+    """BE-029 on a LIST-capable, WRITE-less backend.
+
+    These cells live here rather than in the conformance suite because
+    ``SQLQueryBackend`` has no entry in the fixture registry, so no
+    conformance cell executes against it at all. That is the gap that let a
+    root-spelling defect survive a source-wide sweep: the sweep found the
+    sites, nothing ran them. Registering a fixture is the durable fix and is
+    tracked separately; this pins the behaviour meanwhile.
+    """
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_root_is_a_folder(self, backend: SQLQueryBackend, root: str) -> None:
+        assert backend.exists(root) is True
+        assert backend.is_folder(root) is True
+        assert backend.is_file(root) is False
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_root_is_a_folder_with_no_queries(self, engine: sa.Engine, root: str) -> None:
+        """An empty mapping still has a root.
+
+        The empty store is where a truthiness test shows: ``""`` short-circuits
+        before the lookup, ``"."`` falls through to it and finds nothing.
+        """
+        empty = SQLQueryBackend(engine=engine, queries={})
+        assert empty.exists(root) is True
+        assert empty.is_folder(root) is True
+        assert empty.is_file(root) is False
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-017")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_get_folder_info_on_root_aggregates(self, backend: SQLQueryBackend, root: str) -> None:
+        assert backend.get_folder_info(root).file_count == 5
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-017")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_get_folder_info_on_empty_root_does_not_raise(self, engine: sa.Engine, root: str) -> None:
+        """Zero registered queries aggregates to zero, not ``NotFound``."""
+        empty = SQLQueryBackend(engine=engine, queries={})
+        assert empty.get_folder_info(root).file_count == 0
+
+    @pytest.mark.spec("BE-025")
+    @pytest.mark.spec("BE-029")
+    def test_native_path_agrees_on_both_root_spellings(self, backend: SQLQueryBackend) -> None:
+        assert backend.native_path(".") == backend.native_path("")

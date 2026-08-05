@@ -93,7 +93,10 @@ input unchanged (best-effort).
 **Bare root:** The bare backend root (the root itself, with no trailing key)
 maps to the empty key `""`. This is the inverse of `native_path("")` returning
 the bare root (NPR-021), so the round-trip `to_key(native_path(k)) == k` holds
-for `k == ""` as well as every non-empty key. All backends with a native root
+for `k == ""` as well as every non-empty key — except the other root spelling
+`"."`, which shares one native path with `""` and therefore round-trips to the
+canonical `""`. See [BE-029](003-backend-adapter-contract.md) for why one native
+path cannot invert to two spellings. All backends with a native root
 (Local, SFTP, S3, Azure) special-case the bare root to `""`; see BK-234.
 
 ### NPR-006: LocalBackend.to_key
@@ -269,7 +272,9 @@ def native_path(self, path: str) -> str:
 **Postconditions:** The default is the identity function. Backends with a native
 root (bucket, base_path, filesystem root) **must** override to prepend their
 prefix. This is the inverse of `to_key`:
-`backend.to_key(backend.native_path(key)) == key` for all valid keys.
+`backend.to_key(backend.native_path(key)) == key` for all valid keys except the
+root spelling `"."`, which returns the canonical `""`
+([BE-029](003-backend-adapter-contract.md)).
 **Overrides:** `LocalBackend` (prepends root dir), `S3Backend` (prepends bucket),
 `S3PyArrowBackend` (prepends bucket), `SFTPBackend` (prepends base_path),
 `AzureBackend` (prepends container). `MemoryBackend` inherits the identity default.

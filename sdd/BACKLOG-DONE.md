@@ -8,6 +8,167 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-242 — S3 probes reported a 403 as `NotFound`, and a tolerant delete swallowed it entirely**
+  spec: BE-021 · effort: S · audience: user.api
+  Introduced by BK-324 and caught by PR #945's fifth review round. `_s3_is_object`
+  and `_s3_has_children` swallowed every SDK error including `PermissionError` —
+  a 403 arrives as one from `s3fs.call_s3`, being an `OSError`. That was correct
+  while they were error-path probes, where swallowing preserves the operation's
+  own error. BK-324 promoted them to the **primary existence determinant** on
+  `delete`, `move`/`copy` source, `delete_folder` and `get_folder_info` without
+  changing their posture, so a denial became "the object is not there".
+  **Measured over a real 403** (a `pytest-httpserver` stub speaking S3 wire
+  protocol, nothing patched), across merge-base, PR head and fix:
+  `S3Backend` and `S3PyArrowBackend` went `PermissionDenied` → **`NotFound`** →
+  `PermissionDenied`; `S3Boto3Backend` was never affected and served as the
+  in-suite control. **The review under-reported it:** `delete(path,
+  missing_ok=True)` under a 403 returned *silently*, telling the caller there
+  was nothing to delete.
+  **Fail-open is a property of the call site, not of the probe.** That is the
+  transferable rule, now in BE-021: an error-path probe that cannot answer still
+  has the operation's own error to preserve, while a determinant that cannot
+  answer has nothing — so swallowing invents a verdict instead of keeping one. A
+  backend sharing one helper across both roles wraps it at the error-path site
+  rather than widening the helper. The spec had described fail-open as a property
+  of the mechanism, which put it in silent tension with BE-021's own ACL row, and
+  that tension is what let this land.
+  **No green gate could have caught it.** The `PermissionError` branch carried
+  `# pragma: no cover -- moto doesn't raise PermissionError` — a true statement
+  that had become a coverage hole. Removed, and the branch is now genuinely
+  executed. The new test is Stage 1, needs no Docker or credentials, and pins the
+  routing rather than encoding it; mutation-verified at 14 red on revert, with
+  the fail-open half asserted separately so a blanket "make everything strict"
+  fix would fail it.
+
+- [x] **BK-324 — Reconcile backend-contract divergences (root/alias, wrong-type errors, depth semantics, empty paths)**
+  spec: 003, 010, 029, 036, 037, 001 · effort: L · audience: user.api, library.maintainer
+  Research § 9 step 5.2. All four facets settled: the user decided 1, 2 and 3;
+  facet 4 carried its own disposition. Facets 1 and 2 delegated to the
+  store-backend expert across three fix rounds, facets 3 and 4 done inline.
+  New **BE-029** (root path); BE-017, BE-021, BE-025, SEEK-003, DEPTH-003 and
+  spec 010's NPR-005/NPR-021 amended. 7450 → 7908 tests.
+  **Every facet's stated premise was wrong, and only measurement caught it.**
+
+  | Facet | Item said | Measured |
+  |---|---|---|
+  | 1 | an S3-family problem | `get_folder_info(".")` raised on Memory, Local, SFTP **and the Dafny oracle**; SFTP's root did not exist until first write |
+  | 2 | flat-NS backends "raise `NotFound` instead" | S3 did not raise **at all** for four of six governed ops — silent no-op or silent success |
+  | 2 | "S3 family and Azure" | SQLBlob and SQLQuery are equally flat-NS and equally divergent |
+  | 4 | absent from BE-018/BE-019, untested | **specified** in STORE-002, which names `move` and `copy`; only the test was missing |
+
+  **The defect class outlived three sweeps, and how it was finally caught is the
+  transferable result.** Round 1 review found five defects in code that had just
+  passed a green gate. The fix swept eleven sites and declared the class closed;
+  round 2 found it **still live in `SQLQueryBackend`, three lines from a line
+  that fix had edited**. It survived because the sweep asked *which source lines
+  match* — the root cells were gated on `Capability.WRITE`, `SQLQuery` is
+  read-only, and `GraphBackend` is absent from the sync fixture registry, so no
+  test reached either. Round 3 replaced the question with **which backends do
+  these cells actually execute against**, built as a script mapping each
+  parametrize token to the fixture registry, and immediately found two more
+  defects no reviewer had flagged: `AsyncBackend.native_path` carried the
+  identical truthiness bug as the sync ABC default (invisible to a grep scoped
+  to `backends/`, since the async ABC lives elsewhere), and SFTP answered
+  `NotFound` rather than a wrong-type error for root file-ops on an untouched
+  store.
+  **For a cross-backend rule, a sibling sweep is a coverage question, not a
+  grep.** That is the lesson this item earns (BK-336 in `BACKLOG.md` is where it
+  would be written down), and the two structural holes it exposed are filed as
+  **[BK-340](BACKLOG.md)** (`SQLQueryBackend` has no conformance fixture at all)
+  and **[ID-241](BACKLOG.md)** (the replay hook skips cells by test name even
+  when the cell makes no HTTP call).
+  **BE-029's boundary is derived, not named.** It binds backends declaring
+  `Capability.LIST`; `ReadOnlyHttpBackend` declares none and is correctly outside
+  it. Writing "except ReadOnlyHttpBackend" would have reintroduced precisely the
+  undeclared divergence this item exists to remove — the same reasoning that
+  made facet 2 a fix rather than a carve-out.
+  **Neither facet needed a Dafny edit, and the reason inverts the framing.** The
+  type-mismatch postconditions carry no namespace carve-out, so facet 2 is a
+  Python defect fix; and `const Root := "."` with the adapter mapping `""` onto
+  it was already the model's position, so facet 1 aligned Python to Dafny. The
+  one unmodelled half — `Valid()` never asserts `Root in fs` — is
+  **[ID-240](BACKLOG.md)**.
+  **Round-trip consequence, recorded in all four homes.** `native_path(".")` and
+  `native_path("")` share one native path, so `to_key(native_path("."))` is `""`.
+  Forced — an inverse cannot return two spellings. BE-025 and BE-029 took it in
+  the fix round; specs 010 NPR-005 and NPR-021 state the same identity and were
+  false as written until caught separately.
+  **Coverage bound, stated because a green gate would otherwise mislead.**
+  `azurite`, `azurite_async`, `s3_pyarrow_moto` and `s3_pyarrow_minio` need a
+  Docker daemon unavailable in this environment, so the **Azure non-HNS and
+  S3-PyArrow branches were implemented and typechecked but never executed
+  here**. `azure_replay` (HNS) runs green, confirming the HNS short-circuit adds
+  no requests to recorded cassettes.
+  **The bound paid out on the first CI run: two real defects, both Azure
+  non-HNS.** `is_file(root)` handed the SDK an empty blob name, which
+  `ContainerClient` rejects at client construction; `get_folder_info(root)` fell
+  into the not-found branch on an empty container — the same defect fixed on
+  SFTP one round earlier and missed in its sibling. Both reproduced offline once
+  known, since the SDK rejects before any HTTP: the barrier was never Docker,
+  it was not knowing where to look. Worth stating plainly — a declared coverage
+  bound found what a green local gate of 7908 tests did not.
+
+- [x] **BK-331 — Delete spec 037's per-backend table, and its two siblings**
+  spec: 037, 027, 020 · effort: S/M · audience: library.maintainer, user.api_docs
+  Research § 9 step 4; closes the mechanical half of BK-324 facet 3. The item
+  offered two dispositions — derive the table, or delete it and link the
+  generated surface. **Neither table was derivable, and the reason is in the
+  spec that owns it.** DEPTH-003 declares no capability flag because native
+  pruning and client-side filtering "produce identical results"; the conformance
+  suite and the Dafny postcondition both bound the *result*, per BK-324 facet
+  3's corrected premise. So no declaration carries the property, and generating
+  one would mean adding the capability flag 037 deliberately refused. Deletion,
+  with the contract kept and the strategy left to the backend docstrings that
+  already state it.
+  **Measured before deciding**, against every shipped `list_files`:
+
+  | Row | Table said | Code does |
+  |---|---|---|
+  | S3 | flat scan + client filter | prunes natively (`_s3_base.py` BFS, stops queueing past the bound) |
+  | Local, SFTP, Memory, Azure, HTTP | as listed | confirmed accurate |
+  | S3-boto3, SQLAlchemy, Graph, async Memory, async Azure | *absent* | four prune natively, one filters client-side |
+
+  One row wrong and five implementations missing — the drift is the omissions,
+  not the error. The same count holds for 027 ITER-005 (seven rows; SQLAlchemy,
+  HTTP, S3-boto3 and the async family never added).
+  **The replacement is better than the table it removes.** Every sync backend's
+  `iter_children` docstring already opens "Overrides the base two-pass default
+  with a single …", and every sync `list_files` docstring states its own depth
+  strategy — co-located with the code, rendered into the API reference, and
+  complete where the tables were not. Two async `list_files` docstrings named
+  the parameter without its strategy; both now state it, which is what makes the
+  pointer true rather than aspirational.
+  **Third sibling: 020 SEC-004.** SEC-003 names `_SENSITIVE_KEYS` as the single
+  source of truth and says the spec "does not re-enumerate it, so a future
+  widening cannot leave the prose stale" — and SEC-004 re-enumerated it one
+  section later, then went stale exactly as predicted when the set gained
+  `client_secret` and `client_certificate`. A spec stating the principle and
+  violating it in the next section is the strongest available evidence that the
+  rule needs to bind tables, not just prose.
+  **Deliberately no new gate.** A check for "table whose first column is backend
+  names" would fire on legitimate ones, and [`DRIFT-RULES.md`
+  Rule 5](DRIFT-RULES.md#mandatory-path) wants the gate-or-report reasoning
+  recorded rather than assumed. The three tables are gone; whether the *class*
+  needs a detector is left open rather than answered with a noisy regex.
+  **A fourth sibling was found and deliberately left**, filed as
+  **[BK-339](BACKLOG.md)**. `docs-src/reference/api/store.md`'s Backend Behavior
+  Matrix is the same class on the user-facing surface, with one measured error
+  (Memory's `copy()` does preserve metadata; the row says it does not). It is not
+  swept here because "delete and point at the docstring" is the wrong
+  disposition for a reference page: some rows duplicate the capabilities matrix,
+  some carry information available nowhere else, and one publishes an ordering
+  the specs do not guarantee. That is a decision, not a sweep.
+  **The sweep itself was widened after a miss.** The first pass grepped for
+  tables with backend names in the *first column* and found 037, 027 and 020.
+  Transposed tables — backends as column headers — matched nothing in that
+  pattern, and the user-facing instance is transposed. Both shapes were then
+  swept across `sdd/specs/` and `docs-src/`.
+  **Ripple caught by the sweep:** `tests/backends/azure/test_depth_listing.py`
+  cited "Per spec 037 DEPTH-003, Azure has no native pruning" — a claim sourced
+  from the deleted table. Still true, but its authority moved; re-pointed at the
+  backend docstring. Its S3 twin was checked for the same shape and cites only
+  the ABC signature, so it needed nothing.
+
 - [x] **BK-330 — Aggregate trace outcome tags into a drift report**
   spec: — · effort: S · audience: contributor.tooling
   Step 3 of

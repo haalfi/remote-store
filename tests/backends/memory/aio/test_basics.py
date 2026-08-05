@@ -684,10 +684,13 @@ class TestAsyncMemoryGetFileInfoEdgeCases:
     """Cover get_file_info empty path (line 391)."""
 
     @pytest.mark.spec("ASYNC-016")
-    async def test_get_file_info_empty_path_raises(self) -> None:
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    async def test_get_file_info_on_root_raises_invalid_path(self, root: str) -> None:
+        """The root is a folder: type error, not a miss. Mirrors the sync twin."""
         backend = AsyncMemoryBackend()
-        with pytest.raises(NotFound, match="not found"):
-            await backend.get_file_info("")
+        with pytest.raises(InvalidPath, match="Not a file"):
+            await backend.get_file_info(root)
 
 
 class TestAsyncMemoryMoveEdgeCases:

@@ -22,7 +22,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from remote_store._capabilities import Capability
 from remote_store._errors import BackendUnavailable
+from tests.backends.conformance._helpers import _require
 
 if TYPE_CHECKING:
     from remote_store._backend import Backend
@@ -50,3 +52,35 @@ def test_close_posture(backend: Backend) -> None:
         except BackendUnavailable as exc:  # pragma: no cover -- only the in-memory SQL fixture
             error = exc
         assert error is None or "is closed" not in str(error)
+
+
+@pytest.mark.spec("BE-020")
+@pytest.mark.spec("BE-029")
+@pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+def test_close_posture_outranks_root_rejection(backend: Backend, root: str) -> None:
+    """A closed backend refuses before it classifies the path type.
+
+    The root pre-check that BE-029 requires is a cheap string test, so it
+    naturally wants to run first — and on a terminal backend that made
+    ``read_bytes("")`` after ``close()`` answer ``InvalidPath`` instead of
+    ``BackendUnavailable``. BE-020 states its guarantee without exception, so
+    the closed check wins; otherwise the answer depends on which guard the
+    implementer happened to write first, which is the undeclared-divergence
+    shape this whole item exists to remove.
+
+    The plain-path sibling above does not reach this: ``exists()`` carries no
+    root pre-check, so the ordering only shows on a file-shaped op.
+    """
+    _require(backend, Capability.READ)
+    backend.close()
+    if backend.close_is_terminal:
+        with pytest.raises(BackendUnavailable, match="is closed"):
+            backend.read_bytes(root)
+    else:
+        # Reusable: whatever it answers, it must not be the terminal guard.
+        error: Exception | None = None
+        try:
+            backend.read_bytes(root)
+        except Exception as exc:  # noqa: BLE001 -- any typed error is acceptable here
+            error = exc
+        assert "is closed" not in str(error)

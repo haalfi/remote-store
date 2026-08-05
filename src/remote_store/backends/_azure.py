@@ -26,7 +26,7 @@ from remote_store._errors import (
     RemoteStoreError,
 )
 from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
-from remote_store._path import RemotePath
+from remote_store._path import RemotePath, is_root
 from remote_store._stream import _ErrorMappingStream
 from remote_store.backends._azure_common import (
     _build_azure_write_result,
@@ -329,6 +329,96 @@ class AzureBackend(Backend):
 
     # endregion
 
+    # region: private — wrong-type reclassification (BE-021, BK-324 facet 2)
+
+    def _flat_has_children(self, path: str) -> bool:
+        """Non-HNS: one one-item prefix listing; ``True`` iff ``path/`` has blobs."""
+        from azure.core.exceptions import AzureError
+
+        prefix = self._azure_path(path).rstrip("/") + "/"
+        try:
+            return any(True for _ in self._cc.list_blobs(name_starts_with=prefix, results_per_page=1))
+        except (AzureError, OSError):
+            return False
+
+    def _flat_is_blob(self, path: str) -> bool:
+        """Non-HNS: one HEAD; ``True`` iff a blob exists at exactly *path*."""
+        from azure.core.exceptions import AzureError
+
+        try:
+            self._blob_client(path).get_blob_properties()
+        except (AzureError, OSError):
+            return False
+        return True
+
+    def _reject_root_as_file(self, path: str) -> None:
+        """Pre-check: the store root is a folder, so a file op on it is a type error.
+
+        Runs on HNS accounts too, unlike the probe-backed rejections below:
+        root-ness needs no round trip and no namespace knowledge, and the
+        alternative is handing an empty blob name to the SDK.
+
+        The closed-backend guard outranks this check and so runs first: a
+        closed backend refuses before it classifies the path. Otherwise the
+        answer would depend on which guard happens to be written first.
+        """
+        from remote_store.backends._flat_ns import _reject_root_as_file
+
+        self._raise_if_closed()
+        _reject_root_as_file(path, self.name)
+
+    def _reject_folder(self, path: str) -> None:
+        """Error path: raise ``InvalidPath`` if *path* is a virtual folder.
+
+        **Non-HNS only.** On HNS the type verdict is already available from
+        ``hdi_isfolder`` on the operation's own response, and every caller
+        below reads it there — so this returns immediately rather than
+        spending a listing to re-derive an answer the account already gave.
+        """
+        if self._hns:
+            return
+        from remote_store.backends._flat_ns import _wrong_type_if_folder
+
+        _wrong_type_if_folder(path, has_children=self._flat_has_children, backend=self.name)
+
+    def _reject_file(self, path: str) -> None:
+        """Error path: raise ``InvalidPath`` if *path* is a blob. Non-HNS only."""
+        if self._hns:
+            return
+        from remote_store.backends._flat_ns import _wrong_type_if_file
+
+        _wrong_type_if_file(path, is_object=self._flat_is_blob, backend=self.name)
+
+    def _src_props(self, src_bc: Any, src: str) -> Any:
+        """Fetch move/copy source properties, reclassifying a folder miss.
+
+        The ``ResourceNotFoundError`` is re-raised unchanged so the enclosing
+        ``_errors`` block maps it to ``NotFound`` as before; only a *folder*
+        source diverts to ``InvalidPath``.
+        """
+        try:
+            return src_bc.get_blob_properties()
+        except ResourceNotFoundError:
+            self._reject_folder(src)
+            raise
+
+    @contextmanager
+    def _file_op_errors(self, path: str) -> Iterator[None]:
+        """``_errors`` plus wrong-type reclassification of a missing blob.
+
+        The prefix probe runs only once the mapped error is ``NotFound``, so a
+        successful call issues no extra request — and on HNS it never runs at
+        all (see ``_reject_folder``).
+        """
+        try:
+            with self._errors(path):
+                yield
+        except NotFound:
+            self._reject_folder(path)
+            raise
+
+    # endregion
+
     # region: public methods
 
     def check_health(self) -> None:
@@ -355,9 +445,9 @@ class AzureBackend(Backend):
         return native_path
 
     def native_path(self, path: str) -> str:
-        if path:
-            return f"{self._container}/{path}"
-        return self._container
+        if is_root(path):
+            return self._container
+        return f"{self._container}/{path}"
 
     def resolve(self, path: str) -> ResolutionPlan:
         """Return a ``ResolutionPlan`` with Azure-specific details.
@@ -420,14 +510,23 @@ class AzureBackend(Backend):
     def is_file(self, path: str) -> bool:
         """Return ``True`` if *path* is an existing blob (not an HNS directory marker).
 
-        One HEAD round-trip; a missing blob or an ``hdi_isfolder`` directory
-        returns ``False``.
+        The root is a folder under both spellings, so it answers ``False``
+        without a round trip. Otherwise one HEAD; a missing blob or an
+        ``hdi_isfolder`` directory returns ``False``.
 
         Raises:
             PermissionDenied: If credentials are rejected or lack access (401/403).
             BackendUnavailable: On throttling (429), 5xx, or transport failure.
         """
         with self._errors(path):
+            # BE-029: the root is a folder, never a blob, and the answer is
+            # decidable from the string. It must be, on either namespace: both
+            # spellings alias to an empty blob name, which the Blob SDK rejects
+            # at BlobClient construction ("Please specify a container name and
+            # blob name"), turning a legitimate query into a transport-shaped
+            # error that BE-021 forbids is_file from raising at all.
+            if is_root(path):
+                return False
             bc = self._blob_client(path)
             try:
                 props = bc.get_blob_properties()
@@ -479,7 +578,8 @@ class AzureBackend(Backend):
             PermissionDenied: If credentials are rejected or lack access (401/403).
             BackendUnavailable: On throttling (429), 5xx, or transport failure.
         """
-        with self._errors(path):
+        self._reject_root_as_file(path)
+        with self._file_op_errors(path):
             bc = self._blob_client(path)
             if self._hns:  # pragma: no cover -- HNS only
                 # Sync read() returns a lazy stream the caller may never iterate,
@@ -522,7 +622,8 @@ class AzureBackend(Backend):
             PermissionDenied: If credentials are rejected or lack access (401/403).
             BackendUnavailable: On throttling (429), 5xx, or transport failure.
         """
-        with self._errors(path):
+        self._reject_root_as_file(path)
+        with self._file_op_errors(path):
             bc = self._blob_client(path)
             props = bc.get_blob_properties()
             blob_meta = getattr(props, "metadata", None) or {}
@@ -547,7 +648,8 @@ class AzureBackend(Backend):
             PermissionDenied: If credentials are rejected or lack access (401/403).
             BackendUnavailable: On throttling (429), 5xx, or transport failure.
         """
-        with self._errors(path):
+        self._reject_root_as_file(path)
+        with self._file_op_errors(path):
             bc = self._blob_client(path)
             downloader = bc.download_blob(max_concurrency=self._max_concurrency)
             data = bytes(downloader.readall())
@@ -853,6 +955,7 @@ class AzureBackend(Backend):
             PermissionDenied: If credentials are rejected or lack access (401/403).
             BackendUnavailable: On throttling (429), 5xx, or transport failure.
         """
+        self._reject_root_as_file(path)
         with self._errors(path):
             bc = self._blob_client(path)
             if self._hns:
@@ -873,6 +976,10 @@ class AzureBackend(Backend):
             except Exception as exc:  # noqa: BLE001
                 mapped = self._classify(exc, path)
                 if isinstance(mapped, NotFound):
+                    # BE-012: a non-HNS virtual folder is a type mismatch, not a
+                    # missing blob, and outranks missing_ok. No-op on HNS, which
+                    # already answered from hdi_isfolder above.
+                    self._reject_folder(path)
                     if not missing_ok:
                         raise mapped from None
                     return
@@ -943,8 +1050,12 @@ class AzureBackend(Backend):
                         raise DirectoryNotEmpty(f"Folder not empty: {path}", path=path, backend=self.name)
                     for blob in self._cc.list_blobs(name_starts_with=prefix):
                         self._cc.get_blob_client(blob.name).delete_blob()
-                elif not missing_ok:
-                    raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
+                else:
+                    # BE-013: a blob at *path* is a type mismatch, not a missing
+                    # folder, and outranks missing_ok.
+                    self._reject_file(path)
+                    if not missing_ok:
+                        raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
 
     def list_files(
         self,
@@ -1116,7 +1227,8 @@ class AzureBackend(Backend):
             NotFound: If the file does not exist.
             InvalidPath: If ``path`` names a directory (HNS: ``hdi_isfolder=true``).
         """
-        with self._errors(path):
+        self._reject_root_as_file(path)
+        with self._file_op_errors(path):
             bc = self._blob_client(path)
             props = bc.get_blob_properties()
             meta = getattr(props, "metadata", None) or {}
@@ -1187,7 +1299,14 @@ class AzureBackend(Backend):
                             modified = modified.replace(tzinfo=timezone.utc)
                         if latest_modified is None or modified > latest_modified:
                             latest_modified = modified
-                if file_count == 0:
+                # BE-029: the root exists by definition, not by observation. An
+                # empty container yields no blobs, which is "nothing has been
+                # written yet" and not "there is no root" -- a distinction no
+                # caller can act on. Only a non-root prefix can be genuinely
+                # missing. (``_reject_file`` already exempts the root, so this
+                # guard is about the NotFound below.)
+                if file_count == 0 and not is_root(path):
+                    self._reject_file(path)
                     raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
 
             return FolderInfo(
@@ -1221,10 +1340,11 @@ class AzureBackend(Backend):
         # non-canonical paths ("a//b" vs "a/b") that name the same blob once
         # azure_path collapses them; without normalising, the copy+delete
         # branch below would delete the sole copy (AZ-017 data-loss edge).
+        self._reject_root_as_file(src)
         if self._azure_path(src) == self._azure_path(dst):
             with self._errors(src):
                 src_bc = self._blob_client(src)
-                src_props = src_bc.get_blob_properties()  # raises NotFound if missing
+                src_props = self._src_props(src_bc, src)
                 src_meta = getattr(src_props, "metadata", None) or {}
                 if src_meta.get("hdi_isfolder"):
                     raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
@@ -1233,7 +1353,7 @@ class AzureBackend(Backend):
         with self._errors(src):
             hns = self._hns
             src_bc = self._blob_client(src)
-            src_props = src_bc.get_blob_properties()  # raises NotFound if missing
+            src_props = self._src_props(src_bc, src)
             src_meta = getattr(src_props, "metadata", None) or {}
             if src_meta.get("hdi_isfolder"):
                 raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
@@ -1306,10 +1426,11 @@ class AzureBackend(Backend):
         # Compare normalised keys: a direct-backend caller can pass
         # non-canonical paths ("a//b" vs "a/b") that name the same blob once
         # azure_path collapses them (AZ-018 self-op edge).
+        self._reject_root_as_file(src)
         if self._azure_path(src) == self._azure_path(dst):
             with self._errors(src):
                 src_bc = self._blob_client(src)
-                src_props = src_bc.get_blob_properties()  # raises NotFound if missing
+                src_props = self._src_props(src_bc, src)
                 src_meta = getattr(src_props, "metadata", None) or {}
                 if src_meta.get("hdi_isfolder"):
                     raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)
@@ -1318,7 +1439,7 @@ class AzureBackend(Backend):
         with self._errors(src):
             hns = self._hns
             src_bc = self._blob_client(src)
-            src_props = src_bc.get_blob_properties()  # raises NotFound if missing
+            src_props = self._src_props(src_bc, src)
             src_meta = getattr(src_props, "metadata", None) or {}
             if src_meta.get("hdi_isfolder"):
                 raise InvalidPath(f"Source is a directory: {src}", path=src, backend=self.name)

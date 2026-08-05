@@ -99,6 +99,17 @@ def list_files(
 When `max_depth` is set, backends that support it prune traversal natively;
 others yield the full recursive result and the Store filters client-side.
 
+**`max_depth` applies only when `recursive=True`.** With `recursive=False` the
+bound is inert for every value: the backend MUST yield the immediate children,
+identical to omitting `max_depth`. This is the Backend-ABC rule for direct
+callers and differs deliberately from DEPTH-001, where depth takes full control.
+`Store.list_files()` normalizes `max_depth` into `recursive` before delegating
+(`recursive = max_depth > 0`) and passes `max_depth` through unchanged, so the
+one combination it can emit is `recursive=False, max_depth=0` — where the two
+readings agree, both yielding the immediate children. Every other
+`recursive=False` + `max_depth` pair reaches a backend only from a direct
+caller, which is who this rule is for.
+
 **Store delegation:** `Store.list_files()` passes `max_depth` through to the
 backend call. The existing client-side depth filter remains as a no-op safety
 net when the backend already filtered natively.
@@ -106,13 +117,9 @@ net when the backend already filtered natively.
 **No capability flag:** Unlike glob, depth filtering produces identical results
 whether done natively or client-side. The optimization is purely performance.
 
-**Backend strategies:**
-
-| Backend    | Native strategy                                       |
-|------------|-------------------------------------------------------|
-| **Local**  | `os.walk()` with depth counter; skip dirs beyond limit. |
-| **SFTP**   | Depth tracking in recursive calls; stop recursing at limit. |
-| **Memory** | DFS stack depth tracking; don't push beyond limit.    |
-| **S3**     | Accept parameter, no native optimization (flat scan + client filter). |
-| **Azure**  | Accept parameter, no native optimization (flat scan + client filter). |
-| **HTTP**   | Accept parameter; raises `CapabilityNotSupported` (listing not supported). |
+**Backend strategy is implementation detail, not contract.** A backend either
+prunes traversal natively or yields the full recursive result for the Store-level
+filter to trim. The two differ only in I/O cost, never in result — the reason
+this section declares no capability flag — so the spec states no per-backend
+strategy. Which one a backend uses is documented in its own `list_files()`
+docstring, next to the code that decides it.

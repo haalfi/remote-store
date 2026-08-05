@@ -1,4 +1,13 @@
-"""Shared file-ancestor pre-check for flat-namespace backends.
+"""Shared path-type helpers for flat-namespace backends.
+
+Two contracts live here, both about the same blind spot: a flat namespace
+stores keys, not nodes, so "this path is a directory" is never an answer
+the store gives back — it has to be inferred from a prefix listing.
+
+* **File-ancestor pre-check** — an opt-in *pre*-check on the write path,
+  documented immediately below.
+* **Wrong-type reclassification** — a mandatory *post*-check on the error
+  path, documented at ``_wrong_type_if_folder``.
 
 Hierarchical backends (Local, SFTP, Memory) detect a file-ancestor path on
 ``write`` / ``move`` / ``copy`` for free because their native APIs cannot
@@ -64,6 +73,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from remote_store._errors import InvalidPath
+from remote_store._path import is_root
 
 if TYPE_CHECKING:
     from collections.abc import Awaitable, Callable
@@ -134,4 +144,109 @@ async def _acheck_no_file_ancestor(
             )
 
 
-__all__ = ["_acheck_no_file_ancestor", "_check_no_file_ancestor"]
+def _folder_not_file(path: str, backend: str) -> InvalidPath:
+    """Build the "wrong type: folder where a file was expected" error.
+
+    Constructed rather than raised so a backend that discovers the type
+    conflict some other way — s3fs hands back a synthetic directory entry
+    instead of failing, Azure HNS reads it off ``hdi_isfolder`` — can raise
+    the same error without paying for the prefix probe it does not need.
+    """
+    return InvalidPath(f"Path is a folder, not a file: {path!r}", path=path, backend=backend)
+
+
+def _file_not_folder(path: str, backend: str) -> InvalidPath:
+    """Build the "wrong type: file where a folder was expected" error."""
+    return InvalidPath(f"Path is a file, not a folder: {path!r}", path=path, backend=backend)
+
+
+def _reject_root_as_file(path: str, backend: str) -> None:
+    """Raise ``InvalidPath`` when a file-shaped operation is handed the store root.
+
+    The root is a folder, so ``read``, ``read_bytes``, ``read_seekable``,
+    ``get_file_info``, ``delete`` and the ``move``/``copy`` source all owe it
+    the same answer they owe any other folder path — and owe it under both
+    spellings.
+
+    This is a **pre**-check, unlike the probes below, and it is the one case
+    where that costs nothing: root-ness is decidable from the string, with no
+    round trip. Running it first is also what keeps the root out of the SDK,
+    where a zero-length object key is rejected at parameter validation and
+    surfaces as a transport-shaped error — a retryable classification for a
+    permanently wrong request.
+
+    Not a mutation guard: deleting or writing *the root itself* is a
+    ``Store``-layer concern, and this says nothing about ``delete_folder`` or
+    ``get_folder_info``, which are folder-shaped and legitimately accept it.
+    """
+    if is_root(path):
+        raise _folder_not_file(path, backend)
+
+
+def _wrong_type_if_folder(path: str, *, has_children: Callable[[str], bool], backend: str) -> None:
+    """Raise ``InvalidPath`` when *path* names a virtual folder.
+
+    Call this **only from an error path** — after a file-shaped operation
+    (``read``, ``read_bytes``, ``delete``, ``get_file_info``, ``move``/``copy``
+    source) has already failed to find an object at *path*. The type-mismatch
+    rule outranks the existence rule, so a miss that is really a folder must
+    surface as ``InvalidPath``, not ``NotFound``.
+
+    ``has_children`` performs one prefix listing bounded to a single key and
+    returns ``True`` iff any key lives under ``path + "/"``. The success path
+    never reaches here, so a normal operation pays nothing; the extra listing
+    is charged only to calls that were going to raise anyway.
+
+    Because it is error-path-only, ``has_children`` MAY fail open — answer
+    ``False`` when the listing itself failed — since the operation's own error
+    is still there to stand. Fail-open belongs to *this* call site, not to the
+    probe: a backend that also uses the same listing as its plain existence
+    check must not swallow failures there, where there is no prior error to
+    preserve and a swallowed denial would be reported as a missing path.
+
+    Both spellings of the root are exempt, and by the same predicate: the
+    root is a folder whether or not it has children, so a probe answer about
+    it is meaningless. Callers reject it up front via ``_reject_root_as_file``
+    instead. Testing ``if path`` here rather than ``is_root`` is what let the
+    dot spelling reach the probe, where on a flat namespace it answered for
+    the whole bucket.
+    """
+    if not is_root(path) and has_children(path):
+        raise _folder_not_file(path, backend)
+
+
+def _wrong_type_if_file(path: str, *, is_object: Callable[[str], bool], backend: str) -> None:
+    """Raise ``InvalidPath`` when *path* names a file.
+
+    Mirror of ``_wrong_type_if_folder`` for the folder-shaped operations
+    (``delete_folder``, ``get_folder_info``): call it after the prefix listing
+    came back empty, so the single ``is_object`` probe (one HEAD / one exact
+    key lookup) is charged only to a call that was already failing.
+    """
+    if not is_root(path) and is_object(path):
+        raise _file_not_folder(path, backend)
+
+
+async def _awrong_type_if_folder(path: str, *, has_children: Callable[[str], Awaitable[bool]], backend: str) -> None:
+    """Async sibling of ``_wrong_type_if_folder``; ``has_children`` is awaitable."""
+    if not is_root(path) and await has_children(path):
+        raise _folder_not_file(path, backend)
+
+
+async def _awrong_type_if_file(path: str, *, is_object: Callable[[str], Awaitable[bool]], backend: str) -> None:
+    """Async sibling of ``_wrong_type_if_file``; ``is_object`` is awaitable."""
+    if not is_root(path) and await is_object(path):
+        raise _file_not_folder(path, backend)
+
+
+__all__ = [
+    "_acheck_no_file_ancestor",
+    "_awrong_type_if_file",
+    "_awrong_type_if_folder",
+    "_check_no_file_ancestor",
+    "_file_not_folder",
+    "_folder_not_file",
+    "_reject_root_as_file",
+    "_wrong_type_if_file",
+    "_wrong_type_if_folder",
+]

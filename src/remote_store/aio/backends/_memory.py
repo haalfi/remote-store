@@ -349,7 +349,8 @@ class AsyncMemoryBackend(AsyncBackend):
         Args:
             path: Backend-relative folder key, or ``""`` for the root.
             recursive: If ``True``, include files in all subdirectories.
-            max_depth: Optional maximum folder depth to traverse.
+            max_depth: Optional maximum folder depth. The walk is pruned at the
+                bound rather than filtered afterwards.
 
         Returns:
             An async iterator of ``FileInfo`` objects.
@@ -453,7 +454,8 @@ class AsyncMemoryBackend(AsyncBackend):
         """
         segments = _split_path(path)
         if not segments:
-            raise NotFound("File not found: (empty path)", path=path, backend="async-memory")
+            # The root is a folder: type error, not a miss. Mirrors the sync twin.
+            raise InvalidPath(f"Not a file: {path}", path=path, backend="async-memory")
         async with self._lock:
             node = self._traverse(segments)
             if isinstance(node, _DirNode):

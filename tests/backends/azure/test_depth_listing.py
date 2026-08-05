@@ -4,9 +4,12 @@ The behavioural DEPTH-003 invariant for Azure (`list_files(max_depth=…)`
 returns files at depth <= N) is owned by
 `tests/backends/conformance/test_listing.py::TestListFilesCompleteness::test_list_files_recursive_max_depth`,
 which parametrises depth filtering over the full fixture registry; the
-Azurite fixture covers Azure behaviourally at Stage 2. Per spec 037
-DEPTH-003, Azure has no native pruning -- it accepts the parameter and the
-Store-level client-side filter does the work.
+Azurite fixture covers Azure behaviourally at Stage 2. Azure has no native
+pruning -- it accepts the parameter and filters client-side, as
+`AzureBackend.list_files`'s own docstring states. Spec 037 DEPTH-003
+deliberately does not classify backends this way: the two strategies are
+indistinguishable through the API, which is why it declares no capability
+flag.
 
 This file pins the Stage-1 signature contract: `AzureBackend.list_files`
 must declare the `max_depth` keyword. The check is static

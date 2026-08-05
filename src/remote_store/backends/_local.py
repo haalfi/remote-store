@@ -15,7 +15,7 @@ from remote_store._backend import _COPY_BUFSIZE, Backend
 from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._errors import AlreadyExists, DirectoryNotEmpty, InvalidPath, NotFound, PermissionDenied
 from remote_store._models import FileInfo, FolderEntry, FolderInfo, WriteResult
-from remote_store._path import RemotePath
+from remote_store._path import RemotePath, is_root
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -96,9 +96,9 @@ class LocalBackend(Backend):
 
     def native_path(self, path: str) -> str:
         root_str = str(self._root).replace("\\", "/")
-        if path:
-            return f"{root_str}/{path}"
-        return root_str
+        if is_root(path):
+            return root_str
+        return f"{root_str}/{path}"
 
     def resolve(self, path: str) -> ResolutionPlan:
         """Return a ``ResolutionPlan`` with local filesystem details.

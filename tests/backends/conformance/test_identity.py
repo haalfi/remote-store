@@ -126,6 +126,39 @@ class TestBackendNativePath:
         """native_path('') returns the backend's root (NPR-021)."""
         assert isinstance(backend.native_path(""), str)
 
+    @pytest.mark.spec("BE-025")
+    @pytest.mark.spec("BE-029")
+    def test_native_path_agrees_on_both_root_spellings(self, backend: Backend) -> None:
+        """``""`` and ``"."`` are one path, so they resolve to one native path.
+
+        A backend that branches on ``if path:`` sends the dot spelling down
+        the non-root arm and produces ``<root>/.`` — a native path addressing
+        a literal ``./`` component that no write ever creates. That value is
+        handed to callers verbatim through ``resolve()``, so the defect
+        escapes the library rather than staying internal.
+        """
+        assert backend.native_path(".") == backend.native_path("")
+
+    @pytest.mark.spec("BE-025")
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("RES-035")
+    def test_resolve_agrees_on_both_root_spellings(self, backend: Backend) -> None:
+        """The ``resolve()`` plan carries the same native path for both spellings."""
+        assert backend.resolve(".").native_path == backend.resolve("").native_path
+
+    @pytest.mark.spec("BE-025")
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("NPR-005")
+    def test_to_key_of_root_is_the_canonical_spelling(self, backend: Backend) -> None:
+        """Round-tripping the root yields ``""`` — the canonical key spelling.
+
+        The BE-025 identity ``to_key(native_path(k)) == k`` holds verbatim for
+        every key except the non-canonical root spelling, where it necessarily
+        cannot: two spellings share one native path, so the inverse can return
+        only one of them. It returns the canonical one.
+        """
+        assert backend.to_key(backend.native_path(".")) == ""
+
 
 _RESOLVE_PATHS = [
     pytest.param("simple.txt", id="simple"),

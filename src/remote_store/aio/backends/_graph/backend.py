@@ -158,6 +158,17 @@ def _split_parent(path: str) -> tuple[str, str]:
     return parent, name
 
 
+def _key_segments(path: str) -> list[str]:
+    """Split a backend key into addressable Graph path segments.
+
+    Drops empty and ``"."`` segments, matching ``RemotePath``'s own
+    normalisation. Both spellings of the store root therefore yield ``[]`` —
+    which is what makes ``native_path("")`` and ``native_path(".")`` the same
+    address, and what makes the drive root unwritable under every spelling.
+    """
+    return [s for s in path.split("/") if s and s != "."]
+
+
 class GraphBackend(AsyncBackend):
     """Async Microsoft Graph backend over OneDrive / SharePoint / Teams files.
 
@@ -306,7 +317,7 @@ class GraphBackend(AsyncBackend):
         ``base_path`` is prepended so every key is scoped under it.
         """
         root = f"/drives/{self._drive_id}/root:"
-        segments = self._base_segments + [s for s in path.split("/") if s]
+        segments = self._base_segments + _key_segments(path)
         if not segments:
             return root
         encoded = "/".join(_encode_segment(s) for s in segments)
@@ -919,8 +930,13 @@ class GraphBackend(AsyncBackend):
             )
 
     def _require_writable_key(self, path: str) -> None:
-        """Reject a write at the drive root — a file needs a name (path validity)."""
-        if not path.strip("/"):
+        """Reject a write at the drive root — a file needs a name (path validity).
+
+        Uses the same segment split as ``native_path``, so every spelling that
+        addresses the root is rejected. A ``strip("/")`` test accepted ``"."``,
+        which then wrote an item literally named ``.`` at the drive root.
+        """
+        if not _key_segments(path):
             raise InvalidPath(f"Cannot write to the drive root: {path!r}", path=path, backend=self.name)
 
     async def write(

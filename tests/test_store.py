@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 from typing import TYPE_CHECKING
+from unittest.mock import Mock
 
 import pytest
 
@@ -11,7 +12,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
     from pathlib import Path
 
-from remote_store._capabilities import Capability
+from remote_store._backend import Backend
+from remote_store._capabilities import Capability, CapabilitySet
 from remote_store._errors import (
     AlreadyExists,
     CapabilityNotSupported,
@@ -51,6 +53,90 @@ class TestStoreBasics:
         store.write("file.txt", b"data")
         assert store.is_folder("")
         assert list(store.list_files("")) == list(store.list_files("", recursive=False))
+
+    @pytest.mark.spec("STORE-002")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize(
+        "call",
+        [
+            pytest.param(lambda s, p: s.read(p), id="read"),
+            pytest.param(lambda s, p: s.read_bytes(p), id="read_bytes"),
+            pytest.param(lambda s, p: s.read_text(p), id="read_text"),
+            pytest.param(lambda s, p: s.read_seekable(p), id="read_seekable"),
+            pytest.param(lambda s, p: s.write(p, b"x"), id="write"),
+            pytest.param(lambda s, p: s.write_text(p, "x"), id="write_text"),
+            pytest.param(lambda s, p: s.write_atomic(p, b"x"), id="write_atomic"),
+            pytest.param(lambda s, p: s.open_atomic(p).__enter__(), id="open_atomic"),
+            pytest.param(lambda s, p: s.delete(p), id="delete"),
+            pytest.param(lambda s, p: s.get_file_info(p), id="get_file_info"),
+            pytest.param(lambda s, p: s.head(p), id="head"),
+            pytest.param(lambda s, p: s.move(p, "dst.txt"), id="move_src"),
+            pytest.param(lambda s, p: s.move("src.txt", p), id="move_dst"),
+            pytest.param(lambda s, p: s.copy(p, "dst.txt"), id="copy_src"),
+            pytest.param(lambda s, p: s.copy("src.txt", p), id="copy_dst"),
+            pytest.param(lambda s, p: s.delete_folder(p), id="delete_folder"),
+        ],
+    )
+    def test_file_targeted_methods_reject_root(
+        self, store: Store, call: Callable[[Store, str], object], root: str
+    ) -> None:
+        """STORE-002: file-targeted methods raise InvalidPath on ``""`` and ``"."``.
+
+        The clause's *folder* half is covered by
+        ``test_empty_path_resolves_to_root`` above; this is the other half,
+        which had no test (BK-324 facet 4). Every method STORE-002 names is
+        enumerated, and both root spellings are exercised — ``_require_file_path``
+        rejects them in one condition, so a regression that dropped either
+        arm would otherwise pass on the surviving one.
+
+        ``move`` and ``copy`` appear twice each: the guard applies to *both*
+        operands, and a fix that validated only ``src`` would leave the
+        destination unchecked.
+
+        ``delete_folder`` is included because STORE-002 gives it the same
+        rejection for a different reason — preventing accidental root
+        deletion, not file-targeting.
+        """
+        store.write("src.txt", b"data")
+        with pytest.raises(InvalidPath):
+            call(store, root)
+
+    @pytest.mark.spec("STORE-002")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_root_rejection_happens_before_backend_dispatch(self, root: str) -> None:
+        """STORE-002: the rejection is a *Store-layer* rule, not a backend one.
+
+        The sibling test above passes even with ``_require_file_path``'s guard
+        deleted entirely — measured: 15 of its 16 methods still raise the same
+        ``InvalidPath`` from a deeper layer (``RemotePath`` normalisation, or
+        the backend's own defensive check), and only ``open_atomic`` goes red.
+        Asserting the exception type therefore cannot tell whether the Store
+        enforces this at all, which is exactly the claim BK-324 facet 4 is
+        about: the rule is specced one layer above the backend tree.
+
+        So this asserts what only the Store layer can provide — that no method
+        on the backend is reached at all. Deleting the guard makes this fail
+        while leaving the type-only assertions green.
+
+        ``capabilities`` and ``name`` are *properties* on ``Backend``, so on a
+        ``spec=`` mock they are attributes, not calls: assigning a real
+        ``CapabilitySet`` (rather than a ``return_value``, which nothing would
+        ever read) is what puts ``Store._gate`` on the real capability check.
+        Without it the gate passes vacuously against a child mock, and a
+        ``CapabilityNotSupported`` raised before the root guard would read as
+        proof of a rejection the Store never performed.
+        """
+        backend = Mock(spec=Backend)
+        backend.capabilities = CapabilitySet(set(Capability))
+        backend.name = "mock"
+        store = Store(backend=backend, root_path="data")
+
+        with pytest.raises(InvalidPath):
+            store.read_bytes(root)
+        with pytest.raises(InvalidPath):
+            store.delete(root)
+
+        assert backend.method_calls == []
 
     @pytest.mark.spec("STORE-003")
     def test_root_path_prepended(self, store: Store) -> None:

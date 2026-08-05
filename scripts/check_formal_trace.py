@@ -357,13 +357,25 @@ def _print_matrix(
     conformance: dict[str, list[str]],
     declared: set[str],
 ) -> None:
-    """Print the spec↔Dafny↔test coverage matrix for the Dafny-backed clauses."""
+    """Print the spec↔Dafny↔test coverage matrix for the Dafny-backed clauses.
+
+    ``dafny`` is keyed by **spec ID**, not by clause — several tagged
+    ``ensures`` routinely share one ID. Both counts are printed because
+    conflating them understates the gap this matrix exists to show: the
+    ID count is what F1 keys on, while the tag-site count is the number of
+    postconditions actually carrying a citation. The per-ID tag count in
+    the listing exists so an item arguing about clause granularity can cite
+    this generator rather than restate a hand count that goes stale (the
+    lesson BK-330 recorded).
+    """
+    tag_sites = sum(len(v) for v in dafny.values())
     print("spec <-> Dafny <-> test traceability matrix (ID-206)")
     print(f"  declared spec sections : {len(declared)}")
-    print(f"  Dafny-backed clauses   : {len(dafny)}")
+    print(f"  Dafny-tagged spec IDs  : {len(dafny)}")
+    print(f"  Dafny @spec tag sites  : {tag_sites}")
     print(f"  conformance-cited IDs  : {len(conformance)}")
     print()
-    print("Dafny-backed clauses (D) and their conformance status:")
+    print("Dafny-tagged spec IDs (D), tag-site count, and conformance status:")
     for spec_id in sorted(dafny):
         if spec_id not in declared:
             status = "NO SPEC SECTION"
@@ -371,7 +383,7 @@ def _print_matrix(
             status = "tested"
         else:
             status = "UNTESTED"
-        print(f"  {spec_id:<12} {status}")
+        print(f"  {spec_id:<12} {len(dafny[spec_id]):>3} tag(s)  {status}")
     print()
 
 

@@ -1,13 +1,21 @@
 """Error fidelity conformance: read/write/delete/move/copy paths.
 
 Each class targets a specific Dafny postcondition section. Class-level
-filters apply the minimum capability; ``_skip_flat_namespace()`` keeps
-identity-based skipping for backends with no real directory entries.
+filters apply the minimum capability; ``_skip_flat_namespace()`` skips the
+cases that backends with no real directory entries are exempt from.
+
+Since BK-324 facet 2 that exemption is narrow. Wrong-type errors on the
+*queried* path — read, delete, get_file_info, get_folder_info,
+delete_folder, and the move/copy source — are required of every backend,
+so those tests carry no flat-NS skip. What stays exempt is what BE-008's
+flat-namespace exemption covers: type conflicts on a write or move/copy
+*destination*, plus the file-ancestor walk, which is an opt-in (ID-211)
+gated on ``rejects_write_under_file_ancestor`` rather than on namespace
+shape.
 """
 
 from __future__ import annotations
 
-import contextlib
 import io
 from typing import TYPE_CHECKING
 
@@ -18,12 +26,10 @@ from remote_store._errors import (
     DirectoryNotEmpty,
     InvalidPath,
     NotFound,
-    RemoteStoreError,
 )
 from tests.backends.conformance._helpers import (
     _MOVE_COPY_PARAMS,
     _do_op,
-    _fixture_record,
     _require,
     _seed,
     _skip_flat_namespace,
@@ -55,20 +61,46 @@ class TestReadErrorFidelity:
     """
 
     @pytest.mark.spec("BE-006")
+    @pytest.mark.spec("BE-021")
     def test_read_on_directory_raises_error(self, backend: Backend) -> None:
-        """Read(dir) ==> InvalidPath.  Flat-NS backends have no real dirs."""
-        _skip_flat_namespace(backend)
+        """Read(dir) ==> InvalidPath, on every backend (BK-324 facet 2).
+
+        Flat-namespace backends have no directory entry to stat, so they
+        reach the same verdict from the error path: the file lookup misses,
+        one prefix probe finds children, and the miss is reclassified from
+        ``NotFound`` to ``InvalidPath``. The ``.path`` assertion pins that the
+        error names the *queried* path rather than a child key the probe
+        happened to see.
+        """
         backend.write("rdir/file.txt", b"x")
-        with pytest.raises(InvalidPath, match="rdir"):
+        with pytest.raises(InvalidPath, match="rdir") as exc:
             backend.read("rdir")
+        assert exc.value.path == "rdir"
 
     @pytest.mark.spec("BE-007")
+    @pytest.mark.spec("BE-021")
     def test_read_bytes_on_directory_raises_error(self, backend: Backend) -> None:
         """read_bytes(dir): same contract as read()."""
-        _skip_flat_namespace(backend)
         backend.write("rbdir/file.txt", b"x")
-        with pytest.raises(InvalidPath, match="rbdir"):
+        with pytest.raises(InvalidPath, match="rbdir") as exc:
             backend.read_bytes("rbdir")
+        assert exc.value.path == "rbdir"
+
+    @pytest.mark.spec("SEEK-003")
+    @pytest.mark.spec("BE-021")
+    def test_read_seekable_on_directory_raises_error(self, backend: Backend) -> None:
+        """read_seekable(dir): same contract as read().
+
+        ``SEEKABLE_READ`` is a quality flag on the stream, not a different
+        error contract, and the ABC default delegates straight to ``read()``.
+        Only a backend that overrides ``read_seekable`` for a range reader can
+        diverge — which two did, answering ``NotFound`` for a folder path that
+        ``read`` on the same instance called ``InvalidPath``.
+        """
+        backend.write("rsdir/file.txt", b"x")
+        with pytest.raises(InvalidPath, match="rsdir") as exc:
+            backend.read_seekable("rsdir").read()
+        assert exc.value.path == "rsdir"
 
     @pytest.mark.spec("BE-006")
     def test_read_missing_raises_not_found(self, backend: Backend) -> None:
@@ -251,17 +283,26 @@ class TestDeleteErrorFidelity:
     """BackendContract.Delete postconditions: dir->InvalidPath."""
 
     @pytest.mark.spec("BE-012")
+    @pytest.mark.spec("BE-021")
     def test_delete_on_directory_raises_error(self, backend: Backend) -> None:
-        """IsDir(path) ==> InvalidPath (no native exception leak)."""
-        _skip_flat_namespace(backend)
+        """IsDir(path) ==> InvalidPath (no native exception leak).
+
+        Runs on flat-namespace backends too (BK-324 facet 2), where the
+        pre-fix answers were a silent no-op or a prefix delete. The
+        "child survived" half of the contract is asserted by the
+        ``missing_ok`` sibling below rather than here, so that this test
+        issues no post-raise request — its cassette-replay cell has a fixed
+        recorded request list.
+        """
         backend.write("ddir/file.txt", b"x")
-        with pytest.raises(InvalidPath, match="ddir"):
+        with pytest.raises(InvalidPath, match="ddir") as exc:
             backend.delete("ddir")
+        assert exc.value.path == "ddir"
 
     @pytest.mark.spec("BE-012")
+    @pytest.mark.spec("BE-021")
     def test_delete_on_directory_missing_ok_still_raises(self, backend: Backend) -> None:
         """IsDir(path) with missing_ok: type mismatch is not 'missing', still InvalidPath."""
-        _skip_flat_namespace(backend)
         backend.write("ddir2/file.txt", b"x")
         with pytest.raises(InvalidPath, match="ddir2"):
             backend.delete("ddir2", missing_ok=True)
@@ -293,25 +334,22 @@ class TestDeleteFolderErrorFidelity:
     """BackendContract.DeleteFolder postconditions."""
 
     @pytest.mark.spec("BE-013")
+    @pytest.mark.spec("BE-021")
     def test_delete_folder_on_file_raises_error(self, backend: Backend) -> None:
-        """IsFile(path) ==> InvalidPath (Dafny: InvalidPath)."""
-        _require(backend, Capability.WRITE)
-        _skip_flat_namespace(backend, "flat-namespace backends cannot distinguish file vs folder")
-        backend.write("dffile.txt", b"x")
-        with pytest.raises(InvalidPath, match="dffile"):
-            backend.delete_folder("dffile.txt")
+        """IsFile(path) ==> InvalidPath (Dafny: InvalidPath).
 
-    @pytest.mark.spec("BE-013")
-    def test_delete_folder_on_file_no_native_leak(self, backend: Backend) -> None:
-        """Flat-namespace backends: delete_folder(file) must not leak native exceptions."""
+        Runs on flat-namespace backends too (BK-324 facet 2): the prefix
+        listing finds no children, and the error path then probes the exact
+        key and reclassifies the miss. Before the fix the flat-NS answers
+        were ``NotFound`` or ``DirectoryNotEmpty`` (the file's own key read
+        as prefix content), so the raised type is the discriminating signal
+        and not a formality.
+        """
         _require(backend, Capability.WRITE)
-        if not _fixture_record(backend).flat_namespace:
-            pytest.skip("hierarchical backend; covered by test_delete_folder_on_file_raises_error")
-        backend.write("dffile_flat.txt", b"x")
-        with contextlib.suppress(RemoteStoreError):
-            backend.delete_folder("dffile_flat.txt")
-        # File may or may not still exist; the test passed if no non-RemoteStoreError leaked.
-        assert True  # explicit: survived without native exception leak
+        backend.write("dffile.txt", b"x")
+        with pytest.raises(InvalidPath, match="dffile") as exc:
+            backend.delete_folder("dffile.txt")
+        assert exc.value.path == "dffile.txt"
 
     @pytest.mark.spec("BE-013")
     @pytest.mark.spec("SFTP-016")
@@ -369,12 +407,13 @@ class TestGetFileInfoErrorFidelity:
     """BackendContract.GetFileInfo postconditions."""
 
     @pytest.mark.spec("BE-016")
+    @pytest.mark.spec("BE-021")
     def test_get_file_info_on_directory_raises_error(self, backend: Backend) -> None:
-        """IsDir(path) ==> InvalidPath (Dafny: InvalidPath)."""
-        _skip_flat_namespace(backend)
+        """IsDir(path) ==> InvalidPath (Dafny: InvalidPath). All backends (BK-324 facet 2)."""
         backend.write("gfid/file.txt", b"x")
-        with pytest.raises(InvalidPath, match="gfid"):
+        with pytest.raises(InvalidPath, match="gfid") as exc:
             backend.get_file_info("gfid")
+        assert exc.value.path == "gfid"
 
     @pytest.mark.spec("BE-016")
     def test_get_file_info_missing_raises_not_found(self, backend: Backend) -> None:
@@ -399,12 +438,19 @@ class TestGetFolderInfoErrorFidelity:
     """BackendContract.GetFolderInfo postconditions."""
 
     @pytest.mark.spec("BE-017")
+    @pytest.mark.spec("BE-021")
     def test_get_folder_info_on_file_raises_error(self, backend: Backend) -> None:
-        """IsFile(path) ==> InvalidPath (Dafny: InvalidPath)."""
-        _skip_flat_namespace(backend)
+        """IsFile(path) ==> InvalidPath (Dafny: InvalidPath). All backends (BK-324 facet 2).
+
+        On a flat namespace the pre-fix answer was not an error at all on
+        some backends — the file's own key satisfied the prefix scan and a
+        ``FolderInfo`` came back. Nothing but the raise distinguishes those,
+        so the type assertion here is load-bearing rather than incidental.
+        """
         backend.write("gfof.txt", b"x")
-        with pytest.raises(InvalidPath, match="gfof"):
+        with pytest.raises(InvalidPath, match="gfof") as exc:
             backend.get_folder_info("gfof.txt")
+        assert exc.value.path == "gfof.txt"
 
     @pytest.mark.spec("BE-017")
     def test_get_folder_info_missing_raises_not_found(self, backend: Backend) -> None:
@@ -428,22 +474,35 @@ class TestMoveCopyErrorFidelity:
 
     @pytest.mark.spec("BE-018")
     @pytest.mark.spec("BE-019")
+    @pytest.mark.spec("BE-021")
     @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
     def test_source_is_directory_raises_error(self, backend: Backend, op: str, cap: Capability) -> None:
-        """IsDir(src) ==> InvalidPath (Dafny: InvalidPath)."""
+        """IsDir(src) ==> InvalidPath (Dafny: InvalidPath). All backends (BK-324 facet 2).
+
+        Source-side only. The destination-side type conflict stays under
+        BE-008's flat-namespace exemption because it is a pre-I/O check on an
+        operation that otherwise *succeeds* there — see the sibling test.
+        """
         _require(backend, cap)
-        _skip_flat_namespace(backend)
         backend.write(f"mcds/{op}/file.txt", b"x")
-        with pytest.raises(InvalidPath, match=f"mcds/{op}(?!_dst)"):
+        with pytest.raises(InvalidPath, match=f"mcds/{op}(?!_dst)") as exc:
             _do_op(backend, op, f"mcds/{op}", f"mcds/{op}_dst.txt")
+        assert exc.value.path == f"mcds/{op}"
 
     @pytest.mark.spec("BE-018")
     @pytest.mark.spec("BE-019")
     @pytest.mark.parametrize(("op", "cap"), _MOVE_COPY_PARAMS)
     def test_destination_is_directory_raises_error(self, backend: Backend, op: str, cap: Capability) -> None:
-        """IsFile(src) && IsDir(dst) ==> InvalidPath (Dafny: InvalidPath)."""
+        """IsFile(src) && IsDir(dst) ==> InvalidPath (Dafny: InvalidPath).
+
+        Still flat-NS-exempt after BK-324 facet 2: this is a *destination*
+        type conflict, which BE-008's flat-namespace exemption removes from
+        the precondition chain. Facet 2 reclassifies error paths, and on a
+        flat namespace this operation has no error path to reclassify — the
+        copy to the prefix key succeeds.
+        """
         _require(backend, cap)
-        _skip_flat_namespace(backend)
+        _skip_flat_namespace(backend, "dst-side type conflict is flat-NS-exempt (BE-008)")
         backend.write(f"mcdd/{op}_src.txt", b"src")
         backend.write(f"mcdd/{op}_dstdir/file.txt", b"x")
         with pytest.raises(InvalidPath, match=f"mcdd/{op}_dstdir"):

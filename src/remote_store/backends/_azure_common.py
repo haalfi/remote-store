@@ -25,7 +25,7 @@ from remote_store._errors import (
     RemoteStoreError,
 )
 from remote_store._models import ContentDigest, FileInfo, WriteResult
-from remote_store._path import RemotePath
+from remote_store._path import RemotePath, is_root
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -129,12 +129,18 @@ def build_blob_service(
 def azure_path(path: str) -> str:
     """Normalize path for Azure (strip leading ``/``, collapse double separators).
 
+    Both spellings of the store root collapse to ``""``: Azure names the root
+    by the empty string, and letting ``"."`` through would make it an ordinary
+    (and permanently empty) blob-name prefix.
+
     Args:
         path: Backend-relative key.
 
     Returns:
         Normalized Azure blob/path name.
     """
+    if is_root(path):
+        return ""
     return re.sub(r"/+", "/", path).lstrip("/")
 
 

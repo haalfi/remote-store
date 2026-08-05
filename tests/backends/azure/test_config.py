@@ -50,6 +50,7 @@ from remote_store._errors import (  # noqa: E402
 )
 from remote_store._models import FileInfo, WriteResult  # noqa: E402
 from remote_store.backends._azure import AzureBackend, AzureUtils, _AzureBinaryIO, _ByteCountingIO  # noqa: E402
+from remote_store.backends._azure_common import azure_path as _azure_path_fn  # noqa: E402
 from tests.backends.azure._materialization_guard import (  # noqa: E402
     FULL_PAYLOAD,
     ReadSizeSpy,
@@ -832,6 +833,84 @@ class TestAzureNonHnsFolderMarkers:
             assert not str(key).endswith("/")
 
 
+class TestAzureRootPathNonHns:
+    """BE-029 on a flat (non-HNS) account, without Azurite.
+
+    ``azure_path`` aliases both root spellings to an empty blob name, and
+    ``ContainerClient.get_blob_client("")`` rejects that at *client
+    construction* -- ``ValueError("Please specify a container name and blob
+    name.")``, raised before any HTTP. That is what makes this clause testable
+    with no container: the failure mode BE-029 exists to prevent is reachable
+    offline, so these cells run in every lane rather than only under Docker.
+
+    The conformance suite states the same contract, but its Azure cells are
+    gated on the ``azurite`` fixtures; both defects these pin shipped green
+    through a Docker-less run.
+    """
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_is_file_on_root_is_false_and_never_reaches_the_sdk(self, root: str) -> None:
+        """Answered from the string, against a *real* ContainerClient.
+
+        Deliberately unmocked: a ``MagicMock`` accepts an empty blob name and
+        returns a properties object, so a mocked twin of this cell would pass
+        for a backend that reached the SDK -- the exact defect. The real client
+        is the oracle, and the first assertion pins the SDK precondition the
+        short-circuit exists for, so a future SDK that relaxed it would say so
+        here rather than silently making the guard look unmotivated.
+        """
+        backend = _make_backend()
+        assert isinstance(backend._cc, ContainerClient), "must exercise a real client, not a stub"
+        with pytest.raises(ValueError, match="specify a container name and blob name"):
+            backend._cc.get_blob_client(_azure_path_fn(root))
+
+        assert backend.is_file(root) is False
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-017")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_get_folder_info_on_empty_root_aggregates_to_zero(self, root: str) -> None:
+        """An empty container is an empty root, not a missing one.
+
+        ``file_count == 0`` is "nothing written yet"; only a non-root prefix can
+        be genuinely absent. Asserting the listing prefix as well, because
+        ``"./"`` is a real -- and permanently empty -- blob prefix, so a
+        backend that concatenated the dot spelling would also report zero and
+        pass a count-only assertion.
+        """
+        backend = _make_backend()
+        cc = MagicMock(spec=["list_blobs", "get_blob_client"])
+        cc.list_blobs.return_value = iter(())
+        backend._cc_instance = cc
+
+        info = backend.get_folder_info(root)
+
+        assert info.file_count == 0
+        assert info.total_size == 0
+        assert cc.list_blobs.call_args.kwargs["name_starts_with"] == ""
+        # The root has no blob form, so the wrong-type probe must not be spent.
+        cc.get_blob_client.assert_not_called()
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-017")
+    def test_get_folder_info_on_missing_non_root_still_raises_not_found(self) -> None:
+        """The root carve-out must not swallow a genuinely missing prefix."""
+        from azure.core.exceptions import ResourceNotFoundError
+
+        backend = _make_backend()
+        bc = MagicMock(spec=BlobClient)
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
+        cc = MagicMock(spec=["list_blobs", "get_blob_client"])
+        cc.list_blobs.return_value = iter(())
+        cc.get_blob_client.return_value = bc
+        backend._cc_instance = cc
+
+        with pytest.raises(NotFound, match="Folder not found"):
+            backend.get_folder_info("nope")
+
+
 class TestAzureSelfOpNormalisation:
     """BK-301 / L1: the self-op (src == dst) short-circuit compares *normalised*
     keys, so a direct-backend caller passing non-canonical paths that name the
@@ -1226,8 +1305,13 @@ class TestAzureHNSPaths:
         backend._hns = False
         bc = MagicMock(spec=BlobClient)
         bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
-        backend._cc_instance = MagicMock(spec=["get_blob_client"])
+        # BK-324 facet 2: on a flat namespace the source miss is reclassified to
+        # InvalidPath when the prefix has children, so the container client must
+        # also answer the probe. Empty listing == genuinely missing, so NotFound
+        # stands — which is what this test pins.
+        backend._cc_instance = MagicMock(spec=["get_blob_client", "list_blobs"])
         backend._cc_instance.get_blob_client.return_value = bc
+        backend._cc_instance.list_blobs.return_value = []
 
         with pytest.raises(NotFound, match="not found|Not found"):
             getattr(backend, op)("missing.txt", "missing.txt")

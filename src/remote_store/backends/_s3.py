@@ -16,8 +16,9 @@ from remote_store._errors import (
     NotFound,
 )
 from remote_store._models import WriteResult
-from remote_store._path import RemotePath
+from remote_store._path import RemotePath, is_root
 from remote_store._stream import _ErrorMappingStream, _safe_wrap
+from remote_store.backends._flat_ns import _folder_not_file
 from remote_store.backends._s3_base import (
     _S3_CA_ENV_VARS,
     _normalize_endpoint_url,
@@ -127,9 +128,9 @@ class S3Backend(_S3Base):
             self._fs.call_s3("head_bucket", Bucket=self._bucket)
 
     def native_path(self, path: str) -> str:
-        if path:
-            return f"{self._bucket}/{path}"
-        return self._bucket
+        if is_root(path):
+            return self._bucket
+        return f"{self._bucket}/{path}"
 
     def exists(self, path: str) -> bool:
         """Return ``True`` if an object or prefix exists at *path*; never ``NotFound``.
@@ -180,8 +181,17 @@ class S3Backend(_S3Base):
             PermissionDenied: If the credentials lack access.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
-        with self._s3fs_errors(path):
+        self._reject_root_as_file(path)
+        with self._s3fs_file_errors(path):
             f: BinaryIO = self._fs.open(self._s3_path(path), "rb")
+            # BE-021: s3fs resolves a bare common prefix to a synthetic
+            # directory entry and hands back a zero-length handle rather than
+            # failing, so the miss never reaches the error mapper. The type is
+            # already in the handle's cached info -- no extra round trip.
+            if getattr(f, "details", {}).get("type") == "directory":
+                with suppress(Exception):
+                    f.close()
+                raise _folder_not_file(path, self.name)
             stream = _safe_wrap(f, lambda s: _ErrorMappingStream(s, self._classify_error, path))
             return cast(BinaryIO, stream)  # noqa: TC006
 
@@ -195,7 +205,8 @@ class S3Backend(_S3Base):
             PermissionDenied: If the credentials lack access.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
-        with self._s3fs_errors(path):
+        self._reject_root_as_file(path)
+        with self._s3fs_file_errors(path):
             return bytes(self._fs.cat_file(self._s3_path(path)))
 
     def write(
@@ -343,8 +354,13 @@ class S3Backend(_S3Base):
             PermissionDenied: If the credentials lack access.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
+        self._reject_root_as_file(path)
         with self._s3fs_errors(path):
-            if not self._fs.exists(self._s3_path(path)):
+            # BE-012: the narrow object probe (not s3fs.exists, which also
+            # answers True for a bare prefix) so a folder falls through to the
+            # type-mismatch branch. The mismatch outranks missing_ok.
+            if not self._s3_is_object(path):
+                self._reject_folder(path)
                 if not missing_ok:
                     raise NotFound(f"File not found: {path}", path=path, backend=self.name)
                 return
@@ -366,7 +382,10 @@ class S3Backend(_S3Base):
         """
         with self._s3fs_errors(path):
             s3_path = self._s3_path(path)
-            if not self._fs.exists(s3_path):
+            if not self._s3_has_children(path):
+                # BE-013: an object at *path* is a type mismatch, not a missing
+                # folder, and outranks missing_ok.
+                self._reject_file(path)
                 if not missing_ok:
                     raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
                 return
@@ -393,7 +412,8 @@ class S3Backend(_S3Base):
             PermissionDenied: If the credentials lack access.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
-        with self._s3fs_errors(path):
+        self._reject_root_as_file(path)
+        with self._s3fs_file_errors(path):
             raw = self._fs.call_s3(
                 "head_object",
                 Bucket=self._bucket,
@@ -417,8 +437,12 @@ class S3Backend(_S3Base):
             PermissionDenied: If the credentials lack access.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
+        self._reject_root_as_file(src)
         with self._s3fs_errors(src):
-            if not self._fs.exists(self._s3_path(src)):
+            # BE-018/BE-019: narrow object probe on the source so a prefix
+            # surfaces as InvalidPath rather than silently copying nothing.
+            if not self._s3_is_object(src):
+                self._reject_folder(src)
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
             if self._s3_path(src) == self._s3_path(dst):
                 return  # self-move is a no-op
@@ -445,8 +469,12 @@ class S3Backend(_S3Base):
             PermissionDenied: If the credentials lack access.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
+        self._reject_root_as_file(src)
         with self._s3fs_errors(src):
-            if not self._fs.exists(self._s3_path(src)):
+            # BE-018/BE-019: narrow object probe on the source so a prefix
+            # surfaces as InvalidPath rather than silently copying nothing.
+            if not self._s3_is_object(src):
+                self._reject_folder(src)
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
             if self._s3_path(src) == self._s3_path(dst):
                 return  # self-copy is a no-op

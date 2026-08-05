@@ -79,6 +79,133 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Lint / CI Completeness
 
+- [ ] **BUG-243 — `missing_ok` has no stated obligation when the *container* is absent**
+  spec: BE-012, BE-013, BE-021 · effort: M · audience: user.api
+  Every clause speaks of "the path" and none of the bucket, container, or table
+  holding it. So what a tolerant delete owes against a **missing store** is
+  undecided, and each backend answers from whatever its wire protocol happens to
+  reveal rather than from a rule.
+  Current state, measured (all four flat-NS implementations, so nothing is
+  inconsistent *today* — the gap is that the agreement is accidental):
+  | Operation | S3 (all three) | Azure non-HNS | SQL |
+  | --- | --- | --- | --- |
+  | `delete(missing_ok=True)` | returns silently | returns silently | raises |
+  | `delete_folder(missing_ok=True)` | raises `NotFound` | raises `NotFound` | raises |
+  **The split is protocol accident, not design.** `HeadObject` answers 404 with
+  no body, so `NoSuchBucket` never reaches the client and a missing bucket is
+  indistinguishable from a missing key; `ListObjectsV2` answers `200
+  KeyCount=0`, so the only 404 it can raise is the bucket's, and that one *does*
+  carry a code. Azure lands in the same place by a different route. A caller
+  writing an idempotent cleanup loop cannot predict which they get.
+  **Decide it once, for all flat-namespace backends**, and say so in BE-012 /
+  BE-013. Whichever way it goes, note that making S3's `delete` strict costs a
+  second `HeadBucket` on every miss, against a spec that budgets exactly one
+  probe per miss — so "tolerate the missing container" may be the cheaper rule
+  as well as the kinder one.
+  Surfaced while fixing BUG-242 (PR #945 round 6).
+
+- [ ] **ID-242 — Four `moto doesn't raise PermissionError` pragmas are coverage holes, not exemptions**
+  spec: — · effort: S · audience: contributor
+  `_s3_base.py` 510/540/573 and `_s3_pyarrow.py:626` each carry
+  `# pragma: no cover -- moto doesn't raise PermissionError`. The mappings are
+  correct and the pragmas are accurate statements about the fixture, which is
+  exactly the problem: **BUG-242 was a defect living behind the fifth instance
+  of this same pragma**, on the one branch that mattered, invisible to a suite
+  of 7976 passing tests.
+  A true "the fixture cannot reach this" is a coverage hole wearing an
+  exemption's clothes. It is indistinguishable from a real exemption at read
+  time, so it never gets revisited.
+  **Now cheap to close:** `tests/backends/s3/test_denied_probe.py` established a
+  `pytest-httpserver` harness that serves real 403s at Stage 1, no Docker and no
+  credentials. Each remaining pragma is a few params on that harness.
+  Surfaced by the PR #945 round-6 review, which noted the commit's own
+  "permanent hole" argument applies verbatim to the four it left behind.
+
+- [ ] **BUG-241 — SQL prefix probes build `LIKE` patterns without escaping `_` and `%`**
+  spec: — · effort: S · audience: user.api
+  `SQLBlobBackend._reject_folder` builds `LIKE key + "/%"`, and every other
+  prefix probe in `_sqlalchemy.py` follows the same convention. In SQL `LIKE`,
+  `_` matches any single character and `%` matches any sequence, so a key
+  containing either over-matches: probing `a_b` also matches `axb/...`, and a
+  key containing `%` matches far more.
+  **Consequence:** the wrong-type probe can report a folder that does not
+  exist, turning a `NotFound` into an `InvalidPath` for a sibling key whose
+  name merely resembles the target. Underscores in object keys are common.
+  **Not a blocker for the work that surfaced it** — it predates BK-324 and the
+  convention is file-wide, so fixing one site without the rest would be the
+  inconsistency this section exists to remove. Fix them together with
+  `ESCAPE`, or a dialect-appropriate equivalent.
+  **Test shape:** seed sibling keys that differ only in a `LIKE` metacharacter
+  position and assert the probe does not confuse them. Surfaced by the PR #945
+  round-5 review, which considered and deliberately did not block on it.
+
+- [ ] **BUG-240 — ASYNC-014 and DEPTH-003 state opposite rules, and `GraphBackend` implements the async one**
+  spec: ASYNC-014, DEPTH-003 · effort: S/M · audience: user.api
+  [ASYNC-014](specs/029-async-store-backend-api.md) says "`max_depth` limits
+  traversal depth (when set, `recursive` is ignored)" **while citing DEPTH-003**,
+  which states the opposite for the Backend ABC: `max_depth` applies only when
+  `recursive=True`. `GraphBackend.list_files` follows ASYNC-014 and pins it at
+  `tests/backends/graph/aio/test_list.py:183` — `recursive=False, max_depth=2`
+  returns depth-2 files, where a sync backend returns immediate children only.
+  **Both readings are asserted by a passing test, on different backends.** That
+  is the state Rule 7 calls a live disagreement rather than a defect in one side,
+  so which way it resolves is a decision, not a lookup.
+  **The split is inside the async lane, not between the lanes.**
+  `AsyncMemoryBackend` and `AsyncAzureBackend` implement DEPTH-003's reading;
+  `GraphBackend` implements ASYNC-014's. So this is not "sync says one thing,
+  async says another" — two async backends already disagree with a third.
+  The practical consequence: **the missing async conformance cell cannot be
+  added neutrally.** Whichever way it asserts, it turns a currently-green
+  backend red, which is why the cell's absence is load-bearing rather than an
+  oversight, and why this needs deciding before it can be closed.
+  **Three artifacts assert the ASYNC-014 reading, not one.** ASYNC-014 itself,
+  `tests/backends/graph/aio/test_list.py:183`, and `GraphBackend.list_files`'s
+  own docstring — which BK-331 made *authoritative* for depth strategy in this
+  same PR, by replacing spec 037's per-backend table with a pointer to each
+  backend's docstring. So closing this means changing a doc BK-331 just
+  promoted to source of truth.
+  **Why nothing caught it:** there is no async twin of
+  `test_list_files_non_recursive_ignores_max_depth`, so conformance never
+  cross-checks the two; and both `Store` and `AsyncStore` normalise `max_depth`
+  into `recursive` before delegating, so the divergence is invisible to every
+  caller above the ABC. Reachable only by a direct backend call.
+  **Predates BK-324** — the two clauses already disagreed; BK-324 only made
+  DEPTH-003 explicit enough for the contradiction to surface. Surfaced by the
+  PR #945 round-3 fix pass.
+  **Whichever way it goes, the async conformance cell is part of the fix** —
+  without it the next divergence is equally invisible. Expect it to turn a
+  backend red on arrival; that is the item working, not a regression.
+
+- [ ] **BK-336 — `/fix-pr` should find a finding's siblings, not just the lines it names**
+  spec: — · effort: S · audience: contributor.process
+  A review names the instances it happened to see. Fixing only those leaves the
+  class alive. Measured twice in one PR: a root-spelling defect was fixed across
+  eleven sites and declared closed, then found still live in a backend three
+  lines from a line that same fix had edited — and again in a second backend the
+  conformance suite never reaches. For a rule spanning backends, the sweep
+  question is which backends the tests actually execute against, not which
+  source lines match a grep.
+  **A first attempt was reverted in PR #945 as over-specified.** The review
+  feedback is the design constraint: state the principle, no enumerated lists,
+  no pseudo-detail, and do not restate obligations the skill already carries by
+  being the author's skill. Whatever lands should be shorter than what it
+  replaces.
+
+- [ ] **BK-338 — Decide what a PR review roster should be**
+  spec: — · effort: S · audience: contributor.process
+  Open question, not a committed design. Evidence from PR #944: the only
+  user-facing bug found came from the pass that ran the tool rather than reading
+  the diff, and expert-persona reviewers each reported findings inside their own
+  lens while the defect sat between lenses.
+  **A first attempt was reverted in PR #945.** It replaced the expert roster
+  with a single unguided reviewer and pinned a specific model — the pin was
+  proposed for one session only and had no business in a shared skill, and the
+  roster change was made on one PR's evidence. Reopened as a question:
+  `/rvw-pr` and `/orchestrate` should select the experts a change actually
+  requires rather than run a fixed numbered list, and whether the author or an
+  expert applies a fix is a separate question the reverted attempt conflated
+  with it. Do not pin a model in a repo skill.
+
 - [ ] **BK-334 — No ripple-check row covers adding a `hatch` script alias**
   spec: — · effort: S · audience: contributor.process
   The [Pre-work index](CLAUDE-REFERENCE.md#pre-work-index) has no trigger for
@@ -133,49 +260,6 @@ and the highest ID already in this file, then take the next integer. Run
   different trigger with a different target set — and from BK-333's CI path
   filters. Surfaced by the PR #944 review, which noted the diagnosis had been
   recorded in that PR's trace and filed nowhere.
-
-- [ ] **BK-336 — `/fix-pr` must find a finding's siblings, not just fix the lines it names**
-  spec: — · effort: S/M · audience: contributor.process
-  **Root cause:** the author fixes, tests and reacts only on the exact lines a
-  review comment mentions, and does not recheck whether the same pattern occurs
-  elsewhere in their own work.
-  **Principle:** a review finding is a concrete instance. Identify the root cause
-  behind it, and search for other occurrences with the same root cause that the
-  reviewer has not flagged yet.
-  **Home:** `.claude/skills/fix-pr/SKILL.md` **Step 2**, which today says "Be
-  critical. Verify each claim against the code — comments can be wrong or already
-  fixed." That is half of triage. The missing half is *and find its siblings*.
-  **Detection technique is selected by the class of finding, not fixed** — this
-  is why the item is not "mutation-verify every addition". Evidence from PR #944,
-  where every row's siblings were found only after a later round flagged them
-  separately:
-
-  | Finding as flagged | Unflagged siblings | What would have found them |
-  |---|---|---|
-  | Tracker ID at `pyproject.toml:358` | a worse instance in the module docstring, plus three more files | grep |
-  | DRIFT-RULES trigger, one copy | three more copies, then three more again | grep |
-  | Test vacuity at a named symbol | adjacent additions in the same commit, four rounds running | mutation |
-  | Header `misleading` counter | `unclear` on the same format string | reading the line |
-
-  Two of the four are greps, and they carried most of the cost: the trigger sweep
-  took four rounds and three separate one-copy-short fixes. A rule phrased around
-  mutation would have missed both.
-  **The principle is known to work, because it was applied once.** Round four's
-  fix note: *"The streak was the signal, so I swept for the pattern instead of
-  the instance."* That round produced the only complete fix in five — three
-  copies nobody had named, one of which a previous reviewer had explicitly
-  cleared.
-  **Sub-case worth keeping, because it is the subtlest instance:** for test
-  vacuity the sibling search must enumerate at **claim** granularity, not symbol
-  granularity — "which claim does this assertion make", not "which symbol did the
-  finding name". Round five found two survivors hiding inside symbols round four
-  had already enumerated, because two claims shared one format string.
-  Also consider the same obligation in `/rvw-pr`'s reviewer brief: every instance
-  above was found by a reviewer rather than the author, so the reviewer's sweep
-  is currently the only one happening.
-  **Audience stays `contributor.process`** rather than gaining
-  `contributor.tooling`: the change is prose in a skill's step list, with no
-  script, hook or hatch alias moving.
 
 - [ ] **BK-335 — `check_links.py` cannot see Markdown links inside Python docstrings**
   spec: — · effort: S/M · audience: contributor.tooling
@@ -297,23 +381,39 @@ this section carries the work.
 [the file's default](#how-this-file-works), because its items form a dependency
 chain. Position therefore says nothing about importance, and dependencies are
 stated by ID inside each item so re-sequencing cannot silently invalidate them.
-BK-331 is independent and cheap. BK-324 comes next with its
-*attribution* blocker cleared, but BK-331 still comes before it: facet 3 cannot be
-decided against 037's current table. ID-207 is unblocked but reads better after
-BK-324, which decides the orphan behaviours its day-one allowlist would otherwise
-enumerate blind. BK-332, ID-236 and ID-237 are follow-ons
-that get cheaper once the earlier work lands. BK-327 and ID-238 are independent
-of the chain and can be taken at any point; both sit at the section's tail.
+**BK-340 and ID-241 come first**, then ID-207's steps 3 and 4. This is a
+re-sequencing on measured evidence, not the original plan: BK-324 was expected to
+clear the way for ID-207 step 2, and instead supplied four instances of the drift
+this programme exists to detect — none of which step 2 would have caught. BK-340
+and ID-241 are what those four actually exhibited (a rule gated so no fixture ever
+runs it), and ID-207 step 3 is the other half (a citation is not an assertion).
+Step 2 keeps its L cost and its ~2.5% reach; it follows rather than leads, and
+ID-207 states the evidence. BK-332, ID-236 and ID-237 are follow-ons that get
+cheaper once the earlier work lands. BK-327 and ID-238 are independent of the
+chain and can be taken at any point; both sit at the section's tail.
 
 On importance, the research doc's designation, which this section adopts rather
 than restates: the two items that build what is actually missing are the authority
 model — shipped as BK-329, now
 [`000-process.md` Rule 7](000-process.md#intent-attribution) — and **ID-207** (the
-canonical claim space). BK-324 is the item they unblock and the evidence that the
+canonical claim space). BK-324 was the item they unblock and the evidence that the
 gap is real, not itself one of the two.
 
+**That designation now has a measured qualification, recorded here because the
+research doc is point-in-time and does not get rewritten.** ID-207 builds a
+*canonical claim space* — an omission detector, research § 1 class E. BK-324's
+four instances were class A/C/D: one claim restated in several homes and updated
+in one. So ID-207 remains the strategic item, and it is **not** the item that
+would have caught what this programme has actually caught so far. Detecting those
+needs semantic comparison of prose, which § 1 marks as having no general oracle.
+The mechanisms that did catch them were an author-side sibling sweep and running
+the code rather than reading the diff — neither in the research doc's ranking,
+and neither yet shipped (BK-336 and BK-338 are open under Lint / CI
+Completeness). Weigh a future step-2 argument against that.
+
 Shipped so far: step 1 (Dafny twin parity) as BK-328, step 5.1 (the attribution
-rule) as BK-329, and **step 3's report half** as BK-330; see
+rule) as BK-329, step 4 (037's per-backend table) as BK-331, and **step 3's
+report half** as BK-330; see
 [BACKLOG-DONE.md](BACKLOG-DONE.md). Step 3 asked for a report *and* a review
 cadence — the cadence is open as ID-238 at the tail of this section, so step 3
 is not closed. Four findings from them
@@ -324,95 +424,61 @@ before believing it, because the case that does *not* resolve is the informative
 one — and a hand-counted figure about a growing corpus is stale before the commit
 that writes it lands, so cite the generator instead.
 
-- [ ] **BK-331 — Generate spec 037's per-backend table, then sweep for its siblings**
-  spec: 037 · effort: S/M · audience: library.maintainer
-  Research § 9 step 4; closes the mechanical half of BK-324 facet 3. A
-  hand-maintained table making per-backend behavioural claims is the artifact
-  class that must never be hand-maintained, and 037's is wrong about S3 and
-  Azure today. Either derive it from capability declarations plus conformance
-  results — `FEATURES.md` from `graph.json` is the working precedent — or delete
-  it and link the generated surface. Then sweep for other hand-written
-  per-backend claim tables and treat each the same way.
-  **Before BK-324** so the depth-semantics decision is taken against a derived
-  table instead of restating a wrong one.
+- [ ] **BK-340 — `SQLQueryBackend` has no conformance fixture, so no cross-backend rule reaches it**
+  spec: — · effort: M · audience: infra.test
+  `tests/backends/fixtures/registry.py` has no entry for `SQLQueryBackend`, so
+  **nothing in `tests/backends/conformance/` executes against it** — not the
+  capability-gated cells, not the ungated ones. Every cross-backend invariant is
+  asserted for it by nobody.
+  **This is not hypothetical: it is how BK-324's round-2 miss survived.** The
+  root-spelling class was fixed across eleven sites and declared closed; review
+  round 3 found it still live in `SQLQueryBackend`, three lines from a line that
+  same fix had edited. A source sweep found the other backends because they are
+  reachable; this one was invisible to the tests and therefore to the sweep.
+  Root behaviour is now pinned in `tests/backends/sqlquery/test_config.py`, which
+  is a per-backend patch over a structural hole, not a fix for it.
+  **Why M, not S:** registering a fixture runs the *entire* conformance surface
+  against a read-only query-mapping backend, and the expected skip set — WRITE,
+  DELETE, MOVE, COPY, ATOMIC_* — has to be established deliberately rather than
+  discovered by failure. That sizing is the whole item.
+  **Check `ReadOnlyHttpBackend` at the same time**: it *is* registered, so the
+  question there is whether its gates are right, not whether it is reachable.
 
-- [ ] **BK-324 — Reconcile backend-contract divergences (root/alias, wrong-type errors, depth semantics, empty paths)**
-  spec: 003, 029, 037 · effort: L · audience: library.maintainer, user.site
-  Research § 9 step 5.2. **Attribution blocker cleared**: the authority rule it
-  waited on is [`000-process.md` Rule 7](000-process.md#intent-attribution).
-  **Still after BK-331**, which facet 3 below needs rather than merely prefers.
-  Four facets of one problem, surfaced by PR #932's guide
-  validation: contract prose, the Dafny model, the conformance suite, and
-  shipped backends disagree; the guide currently hedges by deferring to spec
-  003. Decide each rule once, then align spec prose, model, conformance
-  coverage, docstrings, and backends together:
-  1. Root/alias layer attribution — `Store` normalizes `"."` and rejects
-     root deletes; backend-layer obligations for `""`/`"."` are unspec'd
-     (`is_file("")` raises on the S3 family; no conformance coverage).
-  2. Wrong-type errors — BE-017/BE-021 demand `InvalidPath` regardless of
-     backend; flat-NS backends raise `NotFound`. Spec a flat-NS carve-out
-     or fix the backends. If the variation is legitimate, make it a
-     **declared capability** so the conformance suite parameterizes on it —
-     that converts an undeclared divergence into a declared one, which is the
-     pattern the repo already uses.
-  3. Depth semantics — spec 037 prose licenses ignoring `max_depth`, and 037's
-     table is wrong **about S3 only**: the shipped S3 backend *does* prune
-     natively (`_s3_base.py`, BFS that stops queueing past the limit) where the
-     table claims a flat scan plus client filter. The Azure row is accurate —
-     Azure does list the prefix and filter client-side, which its docstring also
-     states — so shipped behaviour is non-uniform. `recursive=False` +
-     `max_depth` precedence splits the sync model vs ASYNC-014 vs the SQL
-     backends vs the `Store` facade.
-     **Corrected premise:** this facet used to read "the Dafny model and DEPTH-003
-     tests require native pruning". Neither does. `BackendContract.dfy`'s
-     DEPTH-003 postcondition bounds `Depth(path, fi.path) <= max_depth` over the
-     *result*, and the conformance suite owns the same result invariant; only the
-     comment above the postcondition says "backend-native", and that comment is
-     what misled an earlier classification of this facet. Native pruning is a
-     performance property nothing in the intent domain currently requires.
-  4. Empty-path `InvalidPath` on move/copy — Store-enforced convention,
-     guarded defensively by every backend, absent from BE-018/BE-019 and
-     untested (mind the Dafny coupling). This is the orphan-realization
-     facet: enforced behaviour with no parent spec section, and the live
-     instance ID-207's `Impl ⊆ S` direction exists to catch mechanically.
-  Rule 7 was run against these four before it landed. It **decides two and puts
-  the other two in its declared residue** — the honest result rather than the
-  flattering one. Residue means no defeater has an observation to fire on, so the
-  contract was never decided; it does not mean prose governs by default:
-  - **Facet 4 — under-determined.** Prose is silent where behaviour is uniform, so
-    prose adopts it and gains the test it never had; because the uniformity is
-    defensive duplication of a `Store`-layer rule, it specs one layer above the
-    backend tree, which is the disposition this facet already reasoned its way to.
-  - **Facet 2 — unenforced**, on the row's backend-scope axis: the clause *is*
-    asserted for the hierarchical backends and never was for the flat-NS family,
-    which is what "unenforced for the backends in question" means. So the prose
-    claim is not the default for that family, and the carve-out and the fix start
-    level. The defeater strips the presumption; it does not pick.
-  - **Facet 1 — residue.** Prose is absent *and* the backends disagree, so no
-    defeater applies and the contract is undecided rather than
-    misattributed. Deciding it is still spec work under
-    [Rule 1](000-process.md#rules), with a conformance cell alongside the new
-    section — not a cell instead of one.
-  - **Facet 3 — residue too, and the facet's own description is why.** No
-    defeater fits: prose *permits* rather than demands (so not unenforced), and
-    shipped behaviour is *not* uniform (so not under-determined) — the shipped S3
-    backend prunes natively, one prefix listing at a time, while Azure lists the
-    prefix and filters client-side. The classification was first built on this
-    facet's own "requires native pruning" premise, now corrected above: nothing in
-    the intent domain requires it. Settle the content first — that is BK-331's
-    derived table — then attribute.
-  Evidence trail: PR #932 review threads and `sdd/traces/bk-320-*.yml`.
-  **Filed here, not under Docs & Discoverability**, where it originally sat:
-  facets 2 and 3 change runtime behaviour or spec semantics and may be
-  breaking. It was found via docs; it is not a docs item, and the old filing
-  risked it reading as cosmetic.
+- [ ] **ID-241 — Conformance cells that make no HTTP call still skip on a missing cassette**
+  spec: — · effort: S · audience: infra.test
+  The missing-cassette hook fires **per test name**, regardless of whether the
+  test issues a request. So `graph_replay` and `azure_replay_async` skip
+  pure-addressing cells — `native_path` / `to_key` / `resolve`, which are string
+  manipulation with no I/O — purely because no cassette was recorded for that
+  test name.
+  **Cost, measured:** BK-324 added `TestAsyncBackendNativePath` to conformance,
+  and it immediately caught a truthiness defect in the `AsyncBackend.native_path`
+  default that a source sweep had missed (the async ABC sits outside
+  `src/remote_store/backends/`, where the sweep looked). That cell earned its
+  place and is nonetheless skipped on both replay fixtures; Graph's root
+  addressing is pinned in `tests/backends/graph/aio/test_backend.py` instead.
+  **Fix shape:** let a cell declare it makes no HTTP call, and have the hook
+  honour that instead of skipping by name. The alternative — recording empty
+  cassettes per test name — scales with the test count and reintroduces the
+  hand-maintained-parallel-artifact problem.
+  **Why ID:** whether the marker belongs on the test, the fixture, or the hook is
+  unmade, and the answer decides how much of the replay lane changes.
 
 - [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**
   spec: — · effort: L · audience: contributor.tooling
   Research § 9 step 2, the programme's strategic half: a canonical claim space,
-  extended toward the implementation and below identifier granularity. Best
-  taken after BK-324, which decides the orphan behaviours this item's day-one
-  allowlist would otherwise have to enumerate blind.
+  extended toward the implementation and below identifier granularity.
+  **Re-sequenced after BK-324, on measured evidence — take steps 3 and 4 before
+  step 2.** BK-324 was expected to clear the way for step 2; instead it supplied
+  four instances of the drift this programme targets, and a design investigation
+  found step 2 would have caught none of them (see the step 2 bullet). What the
+  four exhibited was **coverage reachability** — a rule can be gated so no
+  fixture ever runs it, which is BK-340 and ID-241 in this file — and
+  **citation ≠ assertion**, which is this item's own **step 3**. Both are cheaper than L and
+  both have measured instances behind them; step 2 has an L cost, a ~2.5% reach,
+  and no instance. Step 2 is not abandoned: after 3 and 4 land, its unresolved
+  scope question ("Dafny-backed only, or corpus-wide?") will have been answered
+  by what those two find.
   ID-206 shipped `scripts/check_formal_trace.py`; a PR #663 review
   confirmed it certifies *citation hygiene at spec-ID granularity*, not
   clause-level enforcement (its docstring was narrowed to say so). Four
@@ -424,12 +490,44 @@ that writes it lands, so cite the generator instead.
      `ensures` (e.g. `SlashCountZero`, the Safe/Unsafe pairs) that encode
      no spec clause. (Research step 2b.)
   2. **Clause granularity, not ID granularity.** D/T/S key on spec ID, so
-     one marker clears F1 for every `ensures` sharing that ID (~10 share
-     `BE-014`). Per-clause sub-IDs, or a tag→test-name link, would gate
-     each postcondition individually. The research doc argues this is the
-     **binding** constraint rather than one hardening step among four,
-     since omission detection is identifier-keyed while BK-324's claims are
-     sub-ID clauses.
+     one marker clears F1 for every `ensures` sharing that ID. Run
+     `hatch run python scripts/check_formal_trace.py` for the live per-ID
+     tag counts — do not restate them here, per BK-330's finding that a
+     hand-counted figure about a growing corpus is stale before the commit
+     that writes it lands. (This bullet previously claimed "~10 share
+     `BE-014`"; BE-014 carries 6 and the maximum is BE-018, so the count
+     and the exemplar were both wrong.) Per-clause sub-IDs, or a
+     tag→test-name link, would gate each postcondition individually.
+     **Read [`DRIFT-RULES.md` Rule 3](DRIFT-RULES.md#rules) before
+     choosing between them** — it requires the enumeration be *derived*
+     from the authoritative artifact rather than maintained beside it, and
+     that decides more of the question than either candidate's own framing.
+     **The binding-constraint claim is narrower than it was written.** The
+     research doc argued clause granularity is binding "since omission
+     detection is identifier-keyed while BK-324's claims are sub-ID
+     clauses." That holds for **facet 4 only** — an E-class orphan, spec'd
+     and unasserted. It does **not** transfer to the restatement instances
+     BK-324 actually kept hitting, and a design investigation measured why:
+     **neither candidate would have caught any of the four.** F1 is an
+     omission detector; the four were contradictions (research § 1 classes
+     A/C/D), one claim restated in several homes and updated in one.
+     Finer identifiers make omission detection finer; they do not convert
+     it into a contradiction detector. The decisive case is review findings
+     1/3/4 — BE-021's F1 was **green for the entire life of the
+     divergence**, because the tests existed, cited the right ID, and were
+     enabled, while carrying per-fixture skips and capability gates.
+     Sub-IDs leave that green.
+     **Scope reality:** the Dafny model reaches 26 of 933 declared sections
+     and 94 tag sites of a corpus estimated near 3,600 clauses. Step 2 as
+     written is a granularity improvement over roughly 2.5% of the claim
+     space, and the four motivating instances are not inside it. Corpus-wide
+     is the only scope under which any of them becomes reachable, and that
+     is a different, larger item.
+     **Needs an ADR before implementation, either way**: sub-IDs change the
+     spec-ID grammar that [`000-process.md` Rule 5](000-process.md#rules)
+     governs and on which ~11,800 citations across 518 files depend; a
+     tag→test-name link promotes pytest node IDs to a contract surface and
+     takes a Rule 3 exemption.
   3. **Push T past citation.** A marker only cites an ID; it does not
      prove the test asserts the clause, is enabled, or cites the *right*
      ID — a wrong-but-real ID passes F2 and even satisfies F1.
@@ -489,6 +587,54 @@ that writes it lands, so cite the generator instead.
   curated mapping, and a curated mapping is precisely the
   parallel-artifact-that-drifts problem this item would exist to close. That
   decision is unmade.
+
+- [ ] **BK-339 — Decide what replaces `store.md`'s hand-maintained Backend Behavior Matrix**
+  spec: — · effort: M · audience: user.site
+  Found by BK-331's sibling sweep and deliberately not swept with it: the same
+  defect class as 037/027/020, but on the **user-facing** surface, where
+  deletion needs a replacement decision rather than a pointer.
+  `docs-src/reference/api/store.md` § Backend Behavior Matrix hand-maintains five
+  behavioural rows across ten backends, and carries the line *"Verify against
+  actual code before relying on these in production"* — a reference page telling
+  readers not to trust it, which is the admission that it drifts.
+  **One measured error, not a suspicion.** The `copy()` preserves metadata` row
+  says `—` for Memory, but `MemoryBackend.copy` constructs the destination with
+  `metadata=src_node.metadata` (`src/remote_store/backends/_memory.py`), so user
+  metadata survives a copy. The row is also **ambiguous in a way that hides the
+  error**: Local's cell reads "Yes (`copy2`)", which is filesystem metadata,
+  while Memory's concerns user metadata — one row conflating two different
+  properties, which is why a reader cannot tell a wrong cell from an
+  out-of-scope one. Fixing the cell without splitting the row re-hides it.
+  **The disposition is the work, and it is not the one BK-331 used.** Rows
+  divide three ways: derivable from capability declarations (`Native glob()`
+  duplicates the capabilities matrix's GLOB row — the two currently agree, so
+  this is duplication rather than contradiction); genuinely useful user
+  information available nowhere else (`move()` atomicity, `write_atomic()`
+  mechanism); and under-specified (`list_files()` ordering, which the specs do
+  not guarantee — publishing per-backend orderings invites reliance on an
+  unguaranteed property). Deleting outright would remove real value; deriving
+  needs declarations that do not exist for the middle group.
+  **Check `capabilities-matrix.md` at the same time** — it is the neighbouring
+  ten-backend table and a candidate home for the derivable rows, but whether it
+  is generated or hand-maintained was not established by this sweep.
+
+- [ ] **ID-240 — Model "the root always exists" in the Dafny contract**
+  spec: BE-029 · effort: S · audience: contributor.process
+  Surfaced by BK-324 facet 1, and the only half of it the formal model does not
+  already carry. `BackendContract.dfy` declares `const Root: Path := "."` and
+  PATH-015 makes `"."` well-formed, so the *aliasing* half was Dafny's position
+  before it was Python's. But nothing in `Valid()` asserts `Root in fs`, so
+  BE-029's other clause — the root is a folder **even on an empty store**, which
+  is where SFTP was actually wrong (`base_path` is created lazily by the first
+  write) — has no formal twin.
+  **Why ID rather than BK:** the change itself is small, but adding a conjunct
+  to `Valid()` obliges every existing lemma and method postcondition to
+  re-establish it, and whether that proof cost is worth one clause is exactly
+  the judgement `sdd/formal/README.md` asks to be made deliberately rather than
+  by reflex. Measure the proof delta before committing.
+  **Do not treat the Python fix as the gap.** The conformance suite already
+  covers the empty-store case across the fixture registry; this item is about
+  the model, and closing it changes no runtime behaviour.
 
 - [ ] **BK-327 — Gate dual-doc nav reachability and index listing**
   spec: — · effort: S · audience: contributor.tooling

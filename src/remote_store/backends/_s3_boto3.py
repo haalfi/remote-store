@@ -61,7 +61,7 @@ from remote_store._errors import (
     _permission_denied,
 )
 from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo, WriteResult
-from remote_store._path import RemotePath
+from remote_store._path import RemotePath, is_root
 from remote_store._stream import _ErrorMappingStream, _safe_wrap
 from remote_store.backends._fileinfo import _clean_etag, _name_from_path, _normalize_modified
 from remote_store.backends._s3_base import (
@@ -269,9 +269,9 @@ class S3Boto3Backend(Backend):
     # region: path helpers
 
     def native_path(self, path: str) -> str:
-        if path:
-            return f"{self._bucket}/{path}"
-        return self._bucket
+        if is_root(path):
+            return self._bucket
+        return f"{self._bucket}/{path}"
 
     def to_key(self, native_path: str) -> str:
         prefix = f"{self._bucket}/"
@@ -300,8 +300,12 @@ class S3Boto3Backend(Backend):
 
     @staticmethod
     def _prefix_of(path: str) -> str:
-        """Folder listing prefix for ``path`` (``""`` for the bucket root)."""
-        return f"{path.rstrip('/')}/" if path else ""
+        """Folder listing prefix for ``path`` (``""`` for the bucket root).
+
+        Both spellings of the store root yield the empty prefix; ``"./"``
+        would be a literal prefix that no write ever creates.
+        """
+        return "" if is_root(path) else f"{path.rstrip('/')}/"
 
     # endregion
 
@@ -318,7 +322,7 @@ class S3Boto3Backend(Backend):
                 ``close()``.
         """
         with self._boto_errors(path):
-            if path == "":
+            if is_root(path):
                 return True
             if self._head_or_none(path) is not None:
                 return True
@@ -332,6 +336,11 @@ class S3Boto3Backend(Backend):
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
         with self._boto_errors(path):
+            # The root is a folder, never an object -- and HeadObject rejects a
+            # zero-length Key at parameter validation, so this must short-circuit
+            # rather than let the SDK turn a legitimate query into an error.
+            if is_root(path):
+                return False
             return self._head_or_none(path) is not None
 
     def is_folder(self, path: str) -> bool:
@@ -345,7 +354,7 @@ class S3Boto3Backend(Backend):
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
         with self._boto_errors(path):
-            if path == "":
+            if is_root(path):
                 return True
             if self._head_or_none(path) is not None:
                 return False  # a file shadows a same-named prefix (flat-NS)
@@ -381,7 +390,8 @@ class S3Boto3Backend(Backend):
         """
         # BufferedReader batches a sequential consume into ~1 GET per
         # _READ_BUFFER_SIZE rather than one per RawIOBase.readall() chunk.
-        with self._boto_errors(path):
+        self._reject_root_as_file(path)
+        with self._file_op_errors(path):
             inner = self._open_range_stream(path)
             buffered = _safe_wrap(inner, lambda s: io.BufferedReader(s, buffer_size=_READ_BUFFER_SIZE))
             return cast(BinaryIO, buffered)  # noqa: TC006
@@ -393,7 +403,8 @@ class S3Boto3Backend(Backend):
         # refetching overlapping ranges. Returning the bare Range reader keeps
         # each read_at to one ranged GET. Matches the Azure / S3PyArrow "no
         # BufferedReader on the seekable path" contract.
-        with self._boto_errors(path):
+        self._reject_root_as_file(path)
+        with self._file_op_errors(path):
             return cast(BinaryIO, self._open_range_stream(path))  # noqa: TC006
 
     def read_bytes(self, path: str) -> bytes:
@@ -404,7 +415,8 @@ class S3Boto3Backend(Backend):
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
-        with self._boto_errors(path):
+        self._reject_root_as_file(path)
+        with self._file_op_errors(path):
             resp = self._client.get_object(Bucket=self._bucket, Key=path)
             return bytes(resp["Body"].read())
 
@@ -534,8 +546,11 @@ class S3Boto3Backend(Backend):
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
+        self._reject_root_as_file(path)
         with self._boto_errors(path):
             if self._head_or_none(path) is None:
+                # BE-012: type mismatch outranks missing-path tolerance.
+                self._reject_folder(path)
                 if not missing_ok:
                     raise NotFound(f"File not found: {path}", path=path, backend=self.name)
                 return
@@ -558,6 +573,8 @@ class S3Boto3Backend(Backend):
         with self._boto_errors(path):
             prefix = self._prefix_of(path)
             if not self._prefix_has_children(path):
+                # BE-013: a file at *path* is a type mismatch, not a missing folder.
+                self._reject_file(path)
                 if not missing_ok:
                     raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
                 return
@@ -580,7 +597,8 @@ class S3Boto3Backend(Backend):
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
-        with self._boto_errors(path):
+        self._reject_root_as_file(path)
+        with self._file_op_errors(path):
             raw = self._client.head_object(Bucket=self._bucket, Key=path, ChecksumMode="ENABLED")
             return self._head_to_fileinfo(raw, path)
 
@@ -597,7 +615,8 @@ class S3Boto3Backend(Backend):
         """
         with self._boto_errors(path):
             prefix = self._prefix_of(path)
-            if path and not self._prefix_has_children(path):
+            if not is_root(path) and not self._prefix_has_children(path):
+                self._reject_file(path)
                 raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
             file_count = 0
             total_size = 0
@@ -716,8 +735,10 @@ class S3Boto3Backend(Backend):
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
+        self._reject_root_as_file(src)
         with self._boto_errors(src):
             if self._head_or_none(src) is None:
+                self._reject_folder(src)
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
             if src == dst:
                 return  # self-move is a no-op
@@ -745,8 +766,10 @@ class S3Boto3Backend(Backend):
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
+        self._reject_root_as_file(src)
         with self._boto_errors(src):
             if self._head_or_none(src) is None:
+                self._reject_folder(src)
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
             if src == dst:
                 return  # self-copy is a no-op
@@ -820,6 +843,22 @@ class S3Boto3Backend(Backend):
             raise
         except Exception as exc:  # noqa: BLE001
             raise self._classify_error(exc, path) from None
+
+    @contextmanager
+    def _file_op_errors(self, path: str) -> Iterator[None]:
+        """``_boto_errors`` plus wrong-type reclassification of a miss.
+
+        For the file-shaped operations whose miss surfaces as a 404 from the
+        SDK rather than from an explicit pre-check. The prefix probe runs only
+        once the mapped error is already ``NotFound``, so a successful call
+        issues no extra request.
+        """
+        try:
+            with self._boto_errors(path):
+                yield
+        except NotFound:
+            self._reject_folder(path)
+            raise
 
     def _classify_error(self, exc: Exception, path: str) -> RemoteStoreError:
         """Classify a botocore exception by its ``Error.Code``, then HTTP status."""
@@ -942,6 +981,63 @@ class S3Boto3Backend(Backend):
             MaxKeys=1,
         )
         return bool(resp.get("KeyCount", 0)) or bool(resp.get("CommonPrefixes"))
+
+    def _reject_root_as_file(self, path: str) -> None:
+        """Pre-check: the store root is a folder, so a file op on it is a type error.
+
+        Costs no round trip and keeps the root out of the SDK, where a
+        zero-length ``Key`` is rejected at parameter validation and would
+        surface as ``BackendUnavailable`` -- a retryable classification for a
+        permanently wrong request.
+
+        The closed-backend guard outranks this check and so runs first: a
+        closed backend refuses before it classifies the path. Otherwise the
+        answer would depend on which guard happens to be written first.
+        """
+        from remote_store.backends._flat_ns import _reject_root_as_file
+
+        self._raise_if_closed()
+        _reject_root_as_file(path, self.name)
+
+    def _reject_folder(self, path: str) -> None:
+        """Error path: raise ``InvalidPath`` if *path* is a virtual folder.
+
+        One ``MaxKeys=1`` listing, spent only after a file-shaped operation
+        has already missed. See ``_flat_ns._wrong_type_if_folder``.
+
+        Fail-open on probe failures, matching ``_head_one`` in ``_flat_ns``: a
+        503 or a network blip leaves the original ``NotFound`` standing rather
+        than replacing a truthful error with a transport error.
+        """
+        from botocore.exceptions import BotoCoreError, ClientError  # type: ignore[import-untyped]
+
+        from remote_store.backends._flat_ns import _wrong_type_if_folder
+
+        def _has_children(key: str) -> bool:
+            try:
+                return self._prefix_has_children(key)
+            except (ClientError, BotoCoreError, OSError):
+                return False
+
+        _wrong_type_if_folder(path, has_children=_has_children, backend=self.name)
+
+    def _reject_file(self, path: str) -> None:
+        """Error path: raise ``InvalidPath`` if *path* is an object.
+
+        One HEAD, spent only after a folder-shaped operation has already
+        found the prefix empty. Same fail-open posture as ``_reject_folder``.
+        """
+        from botocore.exceptions import BotoCoreError, ClientError  # type: ignore[import-untyped]
+
+        from remote_store.backends._flat_ns import _wrong_type_if_file
+
+        def _is_object(key: str) -> bool:
+            try:
+                return self._head_or_none(key) is not None
+            except (ClientError, BotoCoreError, OSError):
+                return False
+
+        _wrong_type_if_file(path, is_object=_is_object, backend=self.name)
 
     def _delete_prefix(self, prefix: str) -> None:
         batch: list[dict[str, str]] = []

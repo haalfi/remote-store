@@ -33,9 +33,9 @@ from remote_store._errors import (
     DirectoryNotEmpty,
     InvalidPath,
     NotFound,
-    RemoteStoreError,
 )
 from remote_store._models import FileInfo, FolderEntry, WriteResult
+from remote_store._path import is_root
 from tests.backends.conformance._helpers import _depth, _fixture_record, _skip_unless_large_write_distinct
 from tests.backends.conformance.test_atomic import _FIELD_CAPABILITY, _LARGE_WRITE_SIZE
 from tests.backends.fixtures import fixture_params
@@ -150,21 +150,27 @@ class TestReadErrorFidelity:
 
     @pytest.mark.spec("ASYNC-006")
     async def test_read_on_directory_raises_error(self, async_backend: AsyncBackend) -> None:
-        """Read(dir) ==> InvalidPath. Flat-NS backends have no real dirs."""
+        """Read(dir) ==> InvalidPath, on every backend (BK-324 facet 2).
+
+        Async mirror of ``test_errors.py::TestReadErrorFidelity``. Flat-NS
+        backends reach the verdict from the error path: the blob lookup
+        misses, one prefix probe finds children, and the miss is
+        reclassified.
+        """
         _require(async_backend, Capability.WRITE)
-        _skip_flat_namespace(async_backend)
         await async_backend.write("rdir/file.txt", b"x")
-        with pytest.raises(InvalidPath, match="rdir"):
+        with pytest.raises(InvalidPath, match="rdir") as exc:
             await _drain_read(async_backend, "rdir")
+        assert exc.value.path == "rdir"
 
     @pytest.mark.spec("ASYNC-007")
     async def test_read_bytes_on_directory_raises_error(self, async_backend: AsyncBackend) -> None:
         """read_bytes(dir): same contract as read()."""
         _require(async_backend, Capability.WRITE)
-        _skip_flat_namespace(async_backend)
         await async_backend.write("rbdir/file.txt", b"x")
-        with pytest.raises(InvalidPath, match="rbdir"):
+        with pytest.raises(InvalidPath, match="rbdir") as exc:
             await async_backend.read_bytes("rbdir")
+        assert exc.value.path == "rbdir"
 
     @pytest.mark.spec("ASYNC-006")
     async def test_read_missing_raises_not_found(self, async_backend: AsyncBackend) -> None:
@@ -335,14 +341,13 @@ class TestDeleteErrorFidelity:
 
     async def test_delete_on_directory_raises_invalid_path(self, async_backend: AsyncBackend) -> None:
         _require(async_backend, Capability.DELETE, Capability.WRITE)
-        _skip_flat_namespace(async_backend)
         await async_backend.write("ddir/file.txt", b"x")
-        with pytest.raises(InvalidPath, match="ddir"):
+        with pytest.raises(InvalidPath, match="ddir") as exc:
             await async_backend.delete("ddir")
+        assert exc.value.path == "ddir"
 
     async def test_delete_on_directory_missing_ok_still_raises(self, async_backend: AsyncBackend) -> None:
         _require(async_backend, Capability.DELETE, Capability.WRITE)
-        _skip_flat_namespace(async_backend)
         await async_backend.write("ddir2/file.txt", b"x")
         with pytest.raises(InvalidPath, match="ddir2"):
             await async_backend.delete("ddir2", missing_ok=True)
@@ -370,33 +375,21 @@ class TestDeleteFolderErrorFidelity:
 
     @pytest.mark.spec("ASYNC-013")
     async def test_delete_folder_on_file_raises_error(self, async_backend: AsyncBackend) -> None:
-        """IsFile(path) ==> InvalidPath."""
+        """IsFile(path) ==> InvalidPath. All backends (BK-324 facet 2)."""
         _require(async_backend, Capability.DELETE, Capability.WRITE)
-        _skip_flat_namespace(async_backend, "flat-namespace backends cannot distinguish file vs folder")
         await async_backend.write("dffile.txt", b"x")
-        with pytest.raises(InvalidPath, match="dffile"):
+        with pytest.raises(InvalidPath, match="dffile") as exc:
             await async_backend.delete_folder("dffile.txt")
+        assert exc.value.path == "dffile.txt"
 
     @pytest.mark.spec("ASYNC-013")
     async def test_delete_folder_on_file_missing_ok_still_raises(self, async_backend: AsyncBackend) -> None:
         """IsFile(path) && missing_ok ==> InvalidPath (type mismatch is not 'missing')."""
         _require(async_backend, Capability.DELETE, Capability.WRITE)
-        _skip_flat_namespace(async_backend, "flat-namespace backends cannot distinguish file vs folder")
         await async_backend.write("dffile_mok.txt", b"x")
         with pytest.raises(InvalidPath, match="dffile_mok"):
             await async_backend.delete_folder("dffile_mok.txt", missing_ok=True)
         assert await async_backend.exists("dffile_mok.txt"), "file silently deleted under missing_ok=True"
-
-    @pytest.mark.spec("ASYNC-013")
-    async def test_delete_folder_on_file_no_native_leak(self, async_backend: AsyncBackend) -> None:
-        """Flat-namespace backends: delete_folder(file) must not leak native exceptions."""
-        _require(async_backend, Capability.DELETE, Capability.WRITE)
-        if not _fixture_record(async_backend).flat_namespace:
-            pytest.skip("hierarchical backend: covered by test_delete_folder_on_file_raises_error")
-        await async_backend.write("dffile_flat.txt", b"x")
-        with contextlib.suppress(RemoteStoreError):
-            await async_backend.delete_folder("dffile_flat.txt")
-        assert True  # explicit: survived without native exception leak
 
     @pytest.mark.spec("ASYNC-013")
     async def test_delete_folder_missing_raises_not_found(self, async_backend: AsyncBackend) -> None:
@@ -449,12 +442,12 @@ class TestGetFileInfoErrorFidelity:
 
     @pytest.mark.spec("ASYNC-016")
     async def test_get_file_info_on_directory_raises_error(self, async_backend: AsyncBackend) -> None:
-        """IsDir(path) ==> InvalidPath."""
+        """IsDir(path) ==> InvalidPath. All backends (BK-324 facet 2)."""
         _require(async_backend, Capability.WRITE)
-        _skip_flat_namespace(async_backend)
         await async_backend.write("gfid/file.txt", b"x")
-        with pytest.raises(InvalidPath, match="gfid"):
+        with pytest.raises(InvalidPath, match="gfid") as exc:
             await async_backend.get_file_info("gfid")
+        assert exc.value.path == "gfid"
 
     @pytest.mark.spec("ASYNC-016")
     async def test_get_file_info_missing_raises_not_found(self, async_backend: AsyncBackend) -> None:
@@ -481,12 +474,12 @@ class TestGetFolderInfoErrorFidelity:
 
     @pytest.mark.spec("ASYNC-017")
     async def test_get_folder_info_on_file_raises_error(self, async_backend: AsyncBackend) -> None:
-        """IsFile(path) ==> InvalidPath."""
+        """IsFile(path) ==> InvalidPath. All backends (BK-324 facet 2)."""
         _require(async_backend, Capability.WRITE)
-        _skip_flat_namespace(async_backend)
         await async_backend.write("gfof.txt", b"x")
-        with pytest.raises(InvalidPath, match="gfof"):
+        with pytest.raises(InvalidPath, match="gfof") as exc:
             await async_backend.get_folder_info("gfof.txt")
+        assert exc.value.path == "gfof.txt"
 
     @pytest.mark.spec("ASYNC-017")
     async def test_get_folder_info_missing_raises_not_found(self, async_backend: AsyncBackend) -> None:
@@ -723,12 +716,16 @@ class TestMoveCopyErrorFidelity:
     async def test_source_is_directory_raises_error(
         self, async_backend: AsyncBackend, op: str, cap: Capability
     ) -> None:
-        """IsDir(src) ==> InvalidPath."""
+        """IsDir(src) ==> InvalidPath. All backends (BK-324 facet 2).
+
+        Source side only; the destination-side conflict stays flat-NS-exempt
+        under BE-008, as in the sync sibling.
+        """
         _require(async_backend, cap, Capability.WRITE)
-        _skip_flat_namespace(async_backend)
         await async_backend.write(f"mcds/{op}/file.txt", b"x")
-        with pytest.raises(InvalidPath, match=f"mcds/{op}(?!_dst)"):
+        with pytest.raises(InvalidPath, match=f"mcds/{op}(?!_dst)") as exc:
             await _do_op(async_backend, op, f"mcds/{op}", f"mcds/{op}_dst.txt")
+        assert exc.value.path == f"mcds/{op}"
 
     @pytest.mark.spec("ASYNC-018")
     @pytest.mark.spec("ASYNC-019")
@@ -736,9 +733,13 @@ class TestMoveCopyErrorFidelity:
     async def test_destination_is_directory_raises_error(
         self, async_backend: AsyncBackend, op: str, cap: Capability
     ) -> None:
-        """IsFile(src) && IsDir(dst) ==> InvalidPath(dst)."""
+        """IsFile(src) && IsDir(dst) ==> InvalidPath(dst).
+
+        Still flat-NS-exempt after BK-324 facet 2 — see the sync sibling in
+        ``test_errors.py``.
+        """
         _require(async_backend, cap, Capability.WRITE)
-        _skip_flat_namespace(async_backend)
+        _skip_flat_namespace(async_backend, "dst-side type conflict is flat-NS-exempt (BE-008)")
         await async_backend.write(f"mcdd/{op}_src.txt", b"src")
         await async_backend.write(f"mcdd/{op}_dstdir/file.txt", b"x")
         # match= pinned to the dst-only fragment so a regression that flipped
@@ -1345,6 +1346,161 @@ class TestOperationalConsistency:
         await async_backend.write("ec_gfis.txt", data)
         info = await async_backend.get_file_info("ec_gfis.txt")
         assert info.size == len(data)
+
+
+async def _drain_async_read(backend: AsyncBackend, path: str) -> bytes:
+    """Consume an async ``read`` fully, so a lazy handle is not mistaken for success."""
+    return b"".join([chunk async for chunk in backend.read(path)])
+
+
+_ASYNC_ROOT_FILE_OPS = [
+    pytest.param("read", Capability.READ, id="read"),
+    pytest.param("read_bytes", Capability.READ, id="read_bytes"),
+    pytest.param("get_file_info", Capability.METADATA, id="get_file_info"),
+    pytest.param("delete", Capability.DELETE, id="delete"),
+    pytest.param("move", Capability.MOVE, id="move_src"),
+    pytest.param("copy", Capability.COPY, id="copy_src"),
+]
+"""No ``read_seekable``: the async Backend surface does not declare one."""
+
+_ASYNC_ROOT_FILE_OP_CALLS = {
+    "read": _drain_async_read,
+    "read_bytes": lambda b, p: b.read_bytes(p),
+    "get_file_info": lambda b, p: b.get_file_info(p),
+    "delete": lambda b, p: b.delete(p),
+    "move": lambda b, p: b.move(p, "rootop_dst.txt"),
+    "copy": lambda b, p: b.copy(p, "rootop_dst.txt"),
+}
+
+
+class TestBackendRootPath:
+    """BE-029 (async mirror of ``test_io.py::TestBackendRootPath``).
+
+    The root is a folder on every backend and under both spellings. Async
+    ``Store`` normalises ``"."`` before delegating, so this binds the
+    ``AsyncBackend`` surface rather than any application path.
+    """
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    async def test_root_is_a_folder(self, async_backend: AsyncBackend, root: str) -> None:
+        """exists → True, is_folder → True, is_file → False; never raises.
+
+        No seed, so this is also the empty-store case — the harder one for a
+        flat namespace, where there is no object to find and the answer must
+        come from the definition rather than a listing. Requiring a written
+        file to ask the question is what kept read-only backends out.
+        """
+        _require(async_backend, Capability.LIST)
+        assert await async_backend.exists(root) is True
+        assert await async_backend.is_folder(root) is True
+        assert await async_backend.is_file(root) is False
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    async def test_root_is_a_folder_with_content(self, async_backend: AsyncBackend, root: str) -> None:
+        """Same three answers once the store is non-empty."""
+        _require(async_backend, Capability.LIST, Capability.WRITE)
+        await async_backend.write("rootprobe/a.txt", b"x")
+        assert await async_backend.exists(root) is True
+        assert await async_backend.is_folder(root) is True
+        assert await async_backend.is_file(root) is False
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("ASYNC-017")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    async def test_get_folder_info_on_root_aggregates(self, async_backend: AsyncBackend, root: str) -> None:
+        """get_folder_info(root) aggregates the store instead of raising."""
+        _require(async_backend, Capability.LIST, Capability.WRITE, Capability.METADATA)
+        await async_backend.write("rootinfo/a.txt", b"aa")
+        await async_backend.write("rootinfo/b.txt", b"bbb")
+        info = await async_backend.get_folder_info(root)
+        assert info.file_count == 2
+        assert info.total_size == 5
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("ASYNC-017")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    async def test_get_folder_info_on_empty_root_does_not_raise(self, async_backend: AsyncBackend, root: str) -> None:
+        """The root aggregates to zero rather than reporting itself missing.
+
+        Separate from the seeded sibling because an empty store is where a
+        truthiness-based root test shows: ``""`` short-circuits to a
+        ``FolderInfo`` while ``"."`` falls through to the not-found branch.
+        The sync twin carries the same cell; its absence here is why an
+        async-only ``get_folder_info`` defect shipped and was caught by a
+        per-backend test rather than by conformance.
+        """
+        _require(async_backend, Capability.LIST, Capability.METADATA)
+        info = await async_backend.get_folder_info(root)
+        assert info.file_count == 0
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize(("op", "cap"), _ASYNC_ROOT_FILE_OPS)
+    async def test_file_operation_on_root_raises_invalid_path(
+        self, async_backend: AsyncBackend, root: str, op: str, cap: Capability
+    ) -> None:
+        """Async mirror of ``test_io.py``: a file op on the root is a type error.
+
+        Both spellings must reach ``InvalidPath`` by the same route. ``is_root``
+        rather than equality on ``.path``, because a backend may echo the root
+        in its own canonical spelling.
+        """
+        _require(async_backend, Capability.LIST, cap)
+        with pytest.raises(InvalidPath) as exc:
+            await _ASYNC_ROOT_FILE_OP_CALLS[op](async_backend, root)
+        assert is_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("ASYNC-012")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    async def test_delete_root_with_missing_ok_still_raises(self, async_backend: AsyncBackend, root: str) -> None:
+        """``missing_ok`` tolerates a missing path, never a wrong-typed one."""
+        _require(async_backend, Capability.LIST, Capability.WRITE, Capability.DELETE)
+        await async_backend.write("rootmok/a.txt", b"x")
+        with pytest.raises(InvalidPath) as exc:
+            await async_backend.delete(root, missing_ok=True)
+        assert is_root(exc.value.path)
+        assert await async_backend.exists("rootmok/a.txt") is True
+
+
+class TestAsyncBackendNativePath:
+    """BE-025 / BE-029 addressing, on the async surface.
+
+    The sync equivalents live in ``test_identity.py``, which parametrises over
+    sync fixtures only — so an async-native backend could not be reached by
+    them at all. That gap is why a root-spelling defect in an async backend's
+    ``native_path`` survived a source-wide sweep: the sweep found the sites,
+    but no cell executed against that backend.
+    """
+
+    @pytest.mark.spec("BE-025")
+    @pytest.mark.spec("BE-029")
+    async def test_native_path_agrees_on_both_root_spellings(self, async_backend: AsyncBackend) -> None:
+        """``""`` and ``"."`` are one path, so they resolve to one native path."""
+        assert async_backend.native_path(".") == async_backend.native_path("")
+
+    @pytest.mark.spec("BE-025")
+    @pytest.mark.spec("BE-029")
+    async def test_resolve_agrees_on_both_root_spellings(self, async_backend: AsyncBackend) -> None:
+        """The ``resolve()`` plan carries the same native path for both spellings."""
+        assert async_backend.resolve(".").native_path == async_backend.resolve("").native_path
+
+    @pytest.mark.spec("BE-025")
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("NPR-005")
+    async def test_to_key_of_root_is_the_canonical_spelling(self, async_backend: AsyncBackend) -> None:
+        """Round-tripping the root yields ``""`` — the canonical key spelling."""
+        assert async_backend.to_key(async_backend.native_path(".")) == ""
+
+    @pytest.mark.spec("BE-025")
+    @pytest.mark.spec("NPR-020")
+    @pytest.mark.parametrize("key", ["some/key", ""], ids=["nested", "empty"])
+    async def test_native_path_round_trip(self, async_backend: AsyncBackend, key: str) -> None:
+        """native_path is the inverse of to_key for every canonical key."""
+        assert async_backend.to_key(async_backend.native_path(key)) == key
 
 
 class TestBackendQueryMethodsTypeConflicts:

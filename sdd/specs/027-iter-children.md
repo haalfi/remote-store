@@ -81,15 +81,12 @@ def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
 **Invariant:** Backends that can fetch files and folders in a single I/O
 operation override `iter_children()` for efficiency.
 
-| Backend      | Override strategy                                         |
-|------------- |-----------------------------------------------------------|
-| Local        | Single `iterdir()`, yield `FileInfo` or `FolderEntry`     |
-| S3           | Single `ls(detail=True)`, partition by `type`             |
-| S3-PyArrow   | Single `ls(detail=True)`, partition by `type`             |
-| SFTP         | Single `listdir_attr()`, partition by `st_mode`           |
-| Azure non-HNS | Single `walk_blobs()`, partition by `prefix` attribute  |
-| Azure HNS    | Single `get_paths(recursive=False)`, partition by `is_directory` |
-| Memory       | Single tree traversal under lock                          |
+Whether a backend overrides, and which single call it uses, is implementation
+detail rather than contract: the default composition and a single-call override
+yield the same children. They may yield them in a different order, and ITER-004
+guarantees none — conformance compares children as sets — so the strategy is not
+a contract difference. Each backend documents its own in its `iter_children()`
+docstring; the spec states no per-backend table.
 
 ---
 

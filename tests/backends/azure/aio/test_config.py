@@ -57,6 +57,7 @@ from remote_store._errors import (  # noqa: E402
 from remote_store._models import FileInfo, FolderEntry, WriteResult  # noqa: E402
 from remote_store.aio.backends._azure import AsyncAzureBackend  # noqa: E402
 from remote_store.backends import AzureUtils  # noqa: E402
+from remote_store.backends._azure_common import azure_path as _azure_path_fn  # noqa: E402
 from remote_store.backends._azure_common import (  # noqa: E402
     build_azure_retry,
     classify_azure_error,
@@ -847,6 +848,10 @@ class TestAsyncAzureDeleteOperations:
     async def test_delete_folder_not_found(self) -> None:
         backend, cc, bc = _setup_non_hns_backend()
         cc.list_blobs.return_value = _async_iter([])
+        # BK-324 facet 2: an empty prefix listing alone no longer implies
+        # "missing" — a blob at the same key would make this a type mismatch.
+        # Pin the genuinely-absent case so NotFound is the right verdict.
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
 
         with pytest.raises(NotFound, match="not found|Folder not found"):
             await backend.delete_folder("dir")
@@ -855,6 +860,7 @@ class TestAsyncAzureDeleteOperations:
     async def test_delete_folder_missing_ok(self) -> None:
         backend, cc, bc = _setup_non_hns_backend()
         cc.list_blobs.return_value = _async_iter([])
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
 
         result = await backend.delete_folder("dir", missing_ok=True)
         assert result is None
@@ -1144,6 +1150,7 @@ class TestAsyncAzureMetadata:
     async def test_get_folder_info_not_found(self) -> None:
         backend, cc, bc = _setup_non_hns_backend()
         cc.list_blobs.return_value = _async_iter([])
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
 
         with pytest.raises(NotFound, match="not found|Folder not found"):
             await backend.get_folder_info("empty")
@@ -1215,6 +1222,76 @@ class TestAsyncAzureMetadata:
     async def test_is_folder_empty_root(self) -> None:
         backend, cc, bc = _setup_non_hns_backend()
         assert await backend.is_folder("") is True
+
+
+# =============================================================================
+# Root path, flat namespace (BE-029)
+# =============================================================================
+
+
+class TestAsyncAzureRootPathNonHns:
+    """BE-029 on a flat (non-HNS) account -- async twin of
+    ``tests/backends/azure/test_config.py::TestAzureRootPathNonHns``.
+
+    ``azure_path`` aliases both root spellings to an empty blob name, and the
+    async ``ContainerClient.get_blob_client("")`` rejects that at client
+    construction with the same ``ValueError`` as the sync SDK -- before any
+    HTTP, which is what makes the clause testable with no emulator.
+
+    The async conformance suite states the same contract, but its Azure cells
+    are gated on the ``azurite_async`` fixture and so run only under Docker;
+    these run in every lane. That is how the defect they pin shipped green.
+    """
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    async def test_is_file_on_root_is_false_and_never_reaches_the_sdk(self, root: str) -> None:
+        """Answered from the string, against a *real* async ContainerClient.
+
+        Deliberately unmocked: an ``AsyncMock`` accepts an empty blob name and
+        returns a properties object, so a mocked twin would pass for a backend
+        that reached the SDK -- the exact defect. The first assertion pins the
+        SDK precondition the short-circuit exists for.
+        """
+        backend = _make_backend()
+        assert isinstance(backend._cc, ContainerClient), "must exercise a real client, not a stub"
+        with pytest.raises(ValueError, match="specify a container name and blob name"):
+            backend._cc.get_blob_client(_azure_path_fn(root))
+
+        assert await backend.is_file(root) is False
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("ASYNC-017")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    async def test_get_folder_info_on_empty_root_aggregates_to_zero(self, root: str) -> None:
+        """An empty container is an empty root, not a missing one.
+
+        Asserting the listing prefix as well, because ``"./"`` is a real -- and
+        permanently empty -- blob prefix, so a backend that concatenated the
+        dot spelling would also report zero and pass a count-only assertion.
+        """
+        backend, cc, bc = _setup_non_hns_backend()
+        cc.list_blobs.return_value = _async_iter([])
+
+        info = await backend.get_folder_info(root)
+
+        assert info.file_count == 0
+        assert info.total_size == 0
+        assert cc.list_blobs.call_args.kwargs["name_starts_with"] == ""
+        # The root has no blob form, so the wrong-type probe must not be spent.
+        cc.get_blob_client.assert_not_called()
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("ASYNC-017")
+    async def test_get_folder_info_on_missing_non_root_still_raises_not_found(self) -> None:
+        """The root carve-out must not swallow a genuinely missing prefix."""
+        backend, cc, bc = _setup_non_hns_backend()
+        cc.list_blobs.return_value = _async_iter([])
+        bc.get_blob_properties.side_effect = ResourceNotFoundError("nope")
+
+        with pytest.raises(NotFound, match="Folder not found"):
+            await backend.get_folder_info("nope")
 
 
 # =============================================================================

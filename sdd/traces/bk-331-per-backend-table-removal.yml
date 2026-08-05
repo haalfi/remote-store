@@ -1,0 +1,176 @@
+id: BK-331
+title: "Delete spec 037's per-backend table, and its two siblings"
+trigger: >-
+  Spec 037's DEPTH-003 "Backend strategies" table claimed S3 had no native
+  depth pruning while the shipped S3 backend prunes natively, and had never
+  gained rows for the SQL, Graph, S3-boto3 or async backends.
+source_items:
+  - BK-331
+  - BK-324
+audience:
+  - library.maintainer
+  - user.api_docs
+discovery_followups:
+  - BK-339
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+surprising_ripples:
+  - sdd/specs/020-credential-hygiene.md
+  - tests/backends/azure/test_depth_listing.py
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Cross-Artifact Consistency (preamble), BK-331"
+        read_type: gate
+        extract: >-
+          Two offered dispositions (derive, or delete and link) and the claim
+          that 037's table is wrong about S3 and Azure
+        outcome: misleading
+      - file: sdd/specs/037-depth-limited-listing.md
+        section: "DEPTH-003"
+        read_type: gate
+        extract: >-
+          The table, and the "No capability flag" paragraph directly above it —
+          which turns out to decide the disposition, since it states native and
+          client-side produce identical results
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BK-324 facet 3 (corrected premise)"
+        read_type: gate
+        extract: >-
+          The Azure row is accurate and only S3 is wrong. The BK-331 body still
+          said "wrong about S3 and Azure", the pre-correction wording; facet 3
+          carried the corrected version. Trusting the item body over the
+          cross-reference would have produced a wrong fix to the Azure row.
+        outcome: misleading
+  - id: reproduce
+    name: Measure the table against the code
+    steps:
+      - file: src/remote_store/backends/_s3_base.py
+        section: "list_files"
+        read_type: verify
+        extract: >-
+          BFS queue appends only while depth < max_depth — native pruning,
+          contradicting the table's "flat scan + client filter"
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "list_files"
+        read_type: verify
+        extract: >-
+          Lists the whole prefix and filters on rel.count("/") — the table's
+          Azure row is accurate
+        outcome: ok
+      - file: src/remote_store/backends/
+        section: "_local, _sftp, _memory, _http, _sqlalchemy, _s3_boto3"
+        read_type: verify
+        extract: >-
+          Local/SFTP/Memory prune natively as listed; HTTP raises as listed;
+          SQLAlchemy filters client-side and S3-boto3 prunes natively, and
+          neither was ever in the table
+        outcome: ok
+      - file: src/remote_store/aio/backends/
+        section: "_memory, _azure, _graph/backend"
+        read_type: verify
+        extract: >-
+          Async family absent from the table entirely; memory and Graph prune,
+          async Azure filters client-side
+        outcome: ok
+  - id: design
+    name: Decide derive vs delete
+    steps:
+      - file: sdd/specs/037-depth-limited-listing.md
+        section: "DEPTH-003 (No capability flag)"
+        read_type: gate
+        extract: >-
+          Decides it: the property is deliberately undeclared because it is
+          unobservable through the API, so there is no source to derive from and
+          deriving would mean adding the flag the spec refused
+        outcome: ok
+      - file: docs-src/explanation/performance.md
+        section: "(headings)"
+        read_type: reference
+        extract: >-
+          Considered as a relocation target for the performance content per
+          principle 8. Rejected: the page is benchmark-measured throughout, so a
+          hand-written strategy table there would recreate the defect on a
+          user-facing surface.
+        outcome: ok
+      - file: src/remote_store/backends/
+        section: "iter_children docstrings"
+        read_type: verify
+        extract: >-
+          Every sync backend already opens "Overrides the base two-pass default
+          with a single …", so 027's replacement pointer is true on arrival and
+          covers the three backends its table never had
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/specs/037-depth-limited-listing.md
+        section: "DEPTH-003"
+        read_type: reference
+        extract: Table replaced with the contract statement and a docstring pointer
+        outcome: ok
+      - file: sdd/specs/027-iter-children.md
+        section: "ITER-005"
+        read_type: reference
+        extract: Same treatment; the ITER-004 equivalence is what makes it non-contractual
+        outcome: ok
+      - file: sdd/specs/020-credential-hygiene.md
+        section: "SEC-003, SEC-004"
+        read_type: reference
+        extract: >-
+          Third sibling, found by the sweep. SEC-003 names _SENSITIVE_KEYS as
+          single source and warns prose must not re-enumerate it; SEC-004
+          re-enumerates it one section later and had gone stale on the Graph
+          client-credentials entries.
+        outcome: ok
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "list_files docstring"
+        read_type: reference
+        extract: >-
+          Async Azure and async Memory named max_depth without its strategy;
+          both now state it, which is what makes 037's new pointer true
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: scripts/check_docstring_parity.py
+        section: "TWINS"
+        read_type: gate
+        extract: >-
+          AzureBackend/AsyncAzureBackend is a registered twin, so confirm
+          list_files sits in its divergent set before editing one side alone
+        outcome: ok
+      - file: tests/backends/azure/test_depth_listing.py
+        section: "module docstring"
+        read_type: verify
+        extract: >-
+          Sibling sweep: cited "Per spec 037 DEPTH-003, Azure has no native
+          pruning", sourced from the deleted table. Still true but re-pointed at
+          the backend docstring. Its S3 twin was checked for the same shape and
+          cites only the ABC signature.
+        outcome: ok
+      - file: docs-src/
+        section: "reference/api/store.md, reference/capabilities-matrix.md"
+        read_type: verify
+        extract: >-
+          Sweep widened after a miss: the first pass matched only tables with
+          backends in the first column, and the user-facing instance is
+          transposed. Found store.md's Backend Behavior Matrix, verified one
+          wrong cell against MemoryBackend.copy, and filed BK-339 rather than
+          sweeping it — a reference page needs a replacement decision, not a
+          docstring pointer.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "Cross-Artifact Consistency preamble, BK-324"
+        read_type: verify
+        extract: >-
+          BK-331 shipped a deletion, not the derived table BK-324 facet 3 and
+          the section preamble both promised. Three references rewritten so the
+          section does not describe an artifact that no longer exists.
+        outcome: ok

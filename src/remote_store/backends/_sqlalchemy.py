@@ -23,7 +23,7 @@ from remote_store._errors import (
 )
 from remote_store._glob import extract_prefix, pattern_to_regex
 from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInfo, WriteResult
-from remote_store._path import RemotePath
+from remote_store._path import RemotePath, is_root
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping, Sequence
@@ -378,6 +378,44 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
     # endregion
 
+    # region: private — wrong-type reclassification (BE-021, BK-324 facet 2)
+
+    def _reject_folder(self, conn: sa.Connection, path: str) -> None:
+        """Error path: raise ``InvalidPath`` if *path* is a virtual folder.
+
+        Called from the file-shaped operations right before they would raise
+        ``NotFound``, so the extra prefix ``SELECT`` is charged only to calls
+        that were already failing. Runs on the caller's ``Connection`` so it
+        joins whatever transaction the operation opened, rather than racing
+        it from a second pool checkout.
+        """
+        from remote_store.backends._flat_ns import _wrong_type_if_folder
+
+        t = self._table
+
+        def _has_children(key: str) -> bool:
+            query = sa.select(sa.literal(1)).where(t.c.key.like(key + "/%")).limit(1)
+            return conn.execute(query).first() is not None
+
+        _wrong_type_if_folder(path, has_children=_has_children, backend=self.name)
+
+    def _reject_file(self, conn: sa.Connection, path: str) -> None:
+        """Error path: raise ``InvalidPath`` if *path* is an exact key.
+
+        Folder-shaped mirror of ``_reject_folder``; one exact-key ``SELECT``
+        on the connection the caller already holds.
+        """
+        from remote_store.backends._flat_ns import _wrong_type_if_file
+
+        t = self._table
+
+        def _is_object(key: str) -> bool:
+            return conn.execute(sa.select(sa.literal(1)).where(t.c.key == key)).first() is not None
+
+        _wrong_type_if_file(path, is_object=_is_object, backend=self.name)
+
+    # endregion
+
     # region: interop
 
     def resolve(self, path: str) -> ResolutionPlan:
@@ -484,6 +522,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             t = self._table
             row = conn.execute(sa.select(t.c.data).where(t.c.key == path)).first()
             if row is None:
+                self._reject_folder(conn, path)
                 raise NotFound(f"File not found: {path}", path=path, backend=self.name)
             data = row[0]
         return io.BytesIO(data)
@@ -503,6 +542,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             t = self._table
             row = conn.execute(sa.select(t.c.data).where(t.c.key == path)).first()
             if row is None:
+                self._reject_folder(conn, path)
                 raise NotFound(f"File not found: {path}", path=path, backend=self.name)
             return bytes(row[0])
 
@@ -641,8 +681,12 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         with self._map_errors(path), self._engine.begin() as conn:
             t = self._table
             result = conn.execute(t.delete().where(t.c.key == path))
-            if result.rowcount == 0 and not missing_ok:
-                raise NotFound(f"File not found: {path}", path=path, backend=self.name)
+            if result.rowcount == 0:
+                # BE-012: the type mismatch outranks missing-path tolerance, so
+                # the folder probe runs before the ``missing_ok`` short-circuit.
+                self._reject_folder(conn, path)
+                if not missing_ok:
+                    raise NotFound(f"File not found: {path}", path=path, backend=self.name)
 
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
         """Delete every key under the virtual folder *path*.
@@ -667,6 +711,9 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             has_children = conn.execute(sa.select(sa.literal(1)).where(t.c.key.like(prefix + "%")).limit(1)).first()
 
             if has_children is None:
+                # BE-013: a file at *path* is a type mismatch, not a missing
+                # folder, so it outranks ``missing_ok`` exactly as in delete().
+                self._reject_file(conn, path)
                 if not missing_ok:
                     raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
                 return
@@ -698,7 +745,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
                 iteration.
         """
         self._validate_path(path, allow_empty=True)
-        prefix = (path + "/") if path else ""
+        prefix = "" if is_root(path) else path + "/"
 
         cols = self._select_info_columns()
         with self._map_errors(path), self._engine.connect() as conn:
@@ -711,8 +758,10 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             key = row[0]
             suffix = key[len(prefix) :]
 
-            if not recursive and max_depth is None:
-                # Non-recursive: only direct children
+            # DEPTH-003: max_depth applies only when recursive=True, so a
+            # non-recursive listing ignores the bound rather than letting it
+            # take precedence (BK-324 facet 3).
+            if not recursive:
                 if "/" in suffix:
                     continue
             elif max_depth is not None:
@@ -734,7 +783,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
                 iteration.
         """
         self._validate_path(path, allow_empty=True)
-        prefix = (path + "/") if path else ""
+        prefix = "" if is_root(path) else path + "/"
 
         with self._map_errors(path), self._engine.connect() as conn:
             t = self._table
@@ -765,7 +814,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
                 iteration.
         """
         self._validate_path(path, allow_empty=True)
-        prefix = (path + "/") if path else ""
+        prefix = "" if is_root(path) else path + "/"
 
         cols = self._select_info_columns()
         with self._map_errors(path), self._engine.connect() as conn:
@@ -806,6 +855,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             t = self._table
             row = conn.execute(sa.select(*cols).where(t.c.key == path)).first()
             if row is None:
+                self._reject_folder(conn, path)
                 raise NotFound(f"File not found: {path}", path=path, backend=self.name)
             return self._row_to_file_info(row)
 
@@ -822,7 +872,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             BackendUnavailable: If the database is unreachable.
         """
         self._validate_path(path, allow_empty=True)
-        prefix = (path + "/") if path else ""
+        prefix = "" if is_root(path) else path + "/"
 
         with self._map_errors(path), self._engine.connect() as conn:
             t = self._table
@@ -850,7 +900,8 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             total_size = row[1] or 0
             max_modified = row[2]
 
-            if file_count == 0 and path:
+            if file_count == 0 and not is_root(path):
+                self._reject_file(conn, path)
                 raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
 
             modified_at: datetime | None = None
@@ -892,6 +943,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             with self._map_errors(src), self._engine.connect() as conn:
                 t = self._table
                 if conn.execute(sa.select(sa.literal(1)).where(t.c.key == src)).first() is None:
+                    self._reject_folder(conn, src)
                     raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
             return
 
@@ -899,6 +951,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             t = self._table
             # Verify source exists
             if conn.execute(sa.select(sa.literal(1)).where(t.c.key == src)).first() is None:
+                self._reject_folder(conn, src)
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
 
             # Check destination
@@ -934,6 +987,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             with self._map_errors(src), self._engine.connect() as conn:
                 t = self._table
                 if conn.execute(sa.select(sa.literal(1)).where(t.c.key == src)).first() is None:
+                    self._reject_folder(conn, src)
                     raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
             return
 
@@ -944,6 +998,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
             # Check source exists
             if conn.execute(sa.select(sa.literal(1)).where(t.c.key == src)).first() is None:
+                self._reject_folder(conn, src)
                 raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
 
             # Check destination
@@ -1293,7 +1348,7 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
 
     def exists(self, path: str) -> bool:
         self._validate_path(path, allow_empty=True)
-        if not path:
+        if is_root(path):
             return True
         # Check file (exact key match)
         if path in self._queries:
@@ -1304,13 +1359,13 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
 
     def is_file(self, path: str) -> bool:
         self._validate_path(path, allow_empty=True)
-        if not path:
-            return False
+        if is_root(path):
+            return False  # the root is a folder, never a registered query
         return path in self._queries
 
     def is_folder(self, path: str) -> bool:
         self._validate_path(path, allow_empty=True)
-        if not path:
+        if is_root(path):
             return True
         prefix = path + "/"
         return any(k.startswith(prefix) for k in self._queries)
@@ -1390,15 +1445,29 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
         recursive: bool = False,
         max_depth: int | None = None,
     ) -> Iterator[FileInfo]:
+        """Yield files under *path*, one ``FileInfo`` at a time.
+
+        The key set is the configured query registry, held in memory, so a
+        listing issues no database round trip. Folder structure is derived from
+        ``/`` in the key suffix, and ``recursive`` / ``max_depth`` filter
+        client-side — there is no traversal to prune. A prefix matching no
+        registered key yields nothing.
+
+        Raises:
+            InvalidPath: If *path* is absolute, contains a null byte, or
+                contains a ``..`` segment.
+        """
         self._validate_path(path, allow_empty=True)
-        prefix = (path + "/") if path else ""
+        prefix = "" if is_root(path) else path + "/"
 
         for key in sorted(self._queries):
             if prefix and not key.startswith(prefix):
                 continue
             suffix = key[len(prefix) :]
 
-            if not recursive and max_depth is None:
+            # DEPTH-003: max_depth applies only when recursive=True (BK-324
+            # facet 3) — same rule as SQLBlobBackend.list_files above.
+            if not recursive:
                 if "/" in suffix:
                     continue
             elif max_depth is not None:
@@ -1410,7 +1479,7 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
         self._validate_path(path, allow_empty=True)
-        prefix = (path + "/") if path else ""
+        prefix = "" if is_root(path) else path + "/"
 
         seen: set[str] = set()
         for key in sorted(self._queries):
@@ -1426,7 +1495,7 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         self._validate_path(path, allow_empty=True)
-        prefix = (path + "/") if path else ""
+        prefix = "" if is_root(path) else path + "/"
 
         seen_folders: set[str] = set()
         for key in sorted(self._queries):
@@ -1454,18 +1523,18 @@ class SQLQueryBackend(_SQLAlchemyBaseBackend):
 
     def get_folder_info(self, path: str) -> FolderInfo:
         self._validate_path(path, allow_empty=True)
-        prefix = (path + "/") if path else ""
+        prefix = "" if is_root(path) else path + "/"
 
         file_count = 0
         for key in self._queries:
             if not prefix or key.startswith(prefix):
                 file_count += 1
 
-        if file_count == 0 and path:
+        if file_count == 0 and not is_root(path):
             raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
 
         return FolderInfo(
-            path=RemotePath.from_backend_path(path) if path and path != "." else RemotePath.ROOT,
+            path=RemotePath.from_backend_path(path),
             file_count=file_count,
             total_size=0,
             modified_at=None,

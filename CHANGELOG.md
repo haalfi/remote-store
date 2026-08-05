@@ -7,6 +7,10 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BUG-242: **Fix** — `S3Backend` and `S3PyArrowBackend` reported a 403 as `NotFound` on `delete`, `move`/`copy` source, `delete_folder` and `get_folder_info`, and `delete(missing_ok=True)` returned silently; all now raise `PermissionDenied`
+- BUG-242: **Change** — `delete_folder(path, missing_ok=True)` on `S3Backend` and `S3PyArrowBackend` now raises `NotFound` when the *bucket* does not exist, matching `S3Boto3Backend` and Azure, which always have. `delete(path, missing_ok=True)` still returns silently in that situation on every backend: a `HeadObject` 404 carries no body, so a missing bucket cannot be distinguished from a missing key
+- BK-324: **Breaking** — flat-namespace backends (S3 family, Azure non-HNS, SQLBlob) now raise `InvalidPath` for wrong-type paths instead of silently succeeding: `delete(folder)` no longer no-ops and `move`/`copy` from a folder source no longer succeed. Also makes `""` / `"."` the root folder on every backend (`is_file("")` returns `False` rather than raising), and fixes `max_depth` to apply only when `recursive=True` at the Backend ABC
+- BK-331: Document each backend's depth-listing strategy in its own `list_files()` docstring, and drop the stale per-backend strategy tables from specs 037, 027 and 020
 - BK-320: Refresh the custom-backend guide's conformance-registration section to the registry-driven fixture system and add a CI drift gate keeping the guide in sync with the Backend ABC
 - BUG-235: Fix custom-backend guide snippets that broke at runtime (`list_files` missing `max_depth`, nonexistent `RegistryConfig.from_yaml` and `observe(hooks=)` APIs)
 - BK-317: Fix stale Context7 repo entry (folders cap, OneDrive tagline) and claim the docs-root entry
