@@ -54,7 +54,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   half still missing from `/ship`'s report, and a stale "BK-336 in `BACKLOG.md`
   is where it would be written down" further down this same file — inside the
   BK-324 entry the new one cites. The first grep listed this file among its hits
-  and only its sibling was opened.
+  and only its sibling was opened — a file-level match list read as a sweep.
+  Round 3 then found the fix for *that* had copied the reviewer's hand-counted
+  "158 lines" into two durable artifacts, in the same commit that removed a
+  different hand-count for the same reason. The figure matched no anchor at any
+  revision, and the reason it survived is the transferable one: a number
+  arriving inside a correct finding inherits that finding's credibility. Every
+  other claim in the comment was checked; the decoration was not, because
+  decoration does not look like a claim.
   **[BK-338](BACKLOG.md) stays open.** The reverted attempt bundled the
   review-roster question and a single-session model pin into the same commit;
   neither is touched here.
