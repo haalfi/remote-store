@@ -1,7 +1,6 @@
 ---
 name: rvw-pr
 description: Post inline review comments on a GitHub PR. Find real issues only.
-disable-model-invocation: true
 context: fork
 argument-hint: "[PR number] [optional context]"
 allowed-tools: Read, Grep, Glob, Bash, mcp__MCP_DOCKER__pull_request_read, mcp__MCP_DOCKER__list_pull_requests, mcp__MCP_DOCKER__list_commits, mcp__MCP_DOCKER__get_file_contents, mcp__MCP_DOCKER__pull_request_review_write, mcp__MCP_DOCKER__add_comment_to_pending_review

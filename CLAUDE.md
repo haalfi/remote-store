@@ -131,6 +131,11 @@ cross-artifact check or drift report; that file states its own scope.
 PR workflows are codified as skills: `/pr`, `/rvw-pr`, `/fix-pr`. Use those instead of ad-hoc `gh` commands.
 Use `/rvw-pr` for PR reviews, not the built-in `/review` CLI command.
 
+`/ship` delivers a whole task as one merge-ready PR — plan, build, then review to
+convergence rather than to a round count. Use it when a defect reaching `master`
+is costly (contract or spec changes, cross-backend work, published surfaces);
+`/orchestrate` stays the cheaper choice otherwise. Rationale: [ADR-0033](sdd/adrs/0033-ship-convergence-driven-review.md).
+
 For lookup tables, detailed procedures, and repo layout see `sdd/CLAUDE-REFERENCE.md`.
 
 ## Repo skills

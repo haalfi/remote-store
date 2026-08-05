@@ -1,0 +1,99 @@
+id: ID-243
+title: "/ship skill: deliver a task as one convergence-reviewed PR"
+trigger: >-
+  A six-round review on PR #945 (BK-324 / BK-331) converged on a working mode
+  that no repo skill encoded: review terminating on finding severity rather
+  than a round count, and never terminating on an unreviewed fix pass. The
+  existing /orchestrate skill caps review at two rounds, which that delivery
+  showed would have shipped three defects.
+source_items:
+  - ID-243
+audience:
+  - contributor.process
+  - contributor.tooling
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/adrs/DIGEST.md
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Establish what already exists before adding a skill. /orchestrate
+          owns plan → execute → review with five domain experts and a hard
+          two-round review cap. The overlap is real, so /ship had to justify
+          itself against it rather than duplicate it — which is what produced
+          the scope clause (costly-to-be-wrong work vs everything else)
+          instead of a second general-purpose orchestrator.
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Confirm the reviewer contract /ship delegates to. Its `context: fork`
+          and lack of a model override are why /ship spawns an Agent that reads
+          and executes this file rather than invoking the skill directly — the
+          unprimed first round needs a model different from the author's.
+        outcome: ok
+      - file: .claude/skills/pr/SKILL.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Validation gates, trace gate and PR template belong to /pr; /ship
+          calls it rather than restating them.
+        outcome: ok
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Step 1, Step 4"
+        read_type: reference
+        extract: >-
+          Comment-fetch across four sources and GraphQL thread resolution are
+          non-obvious and already solved here; /ship points at them.
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: sdd/adrs/0020-orchestrate-iterative-convergence.md
+        section: "Decision"
+        read_type: gate
+        extract: >-
+          The step that changed the shape of the work. ADR-0020 explicitly
+          decides "bound review to a fixed maximum number of rounds", so
+          shipping a convergence-terminated skill silently would have
+          contradicted an Accepted ADR. Found only by reading the ADR behind
+          the skill rather than the skill alone — the skill states the cap as
+          operational contract without signalling that a decision record owns
+          it. Also caught that ADR-0020 reserves tie-breaking to the user,
+          which forced narrowing /ship's "settle it by measurement" rule to
+          factual disputes only.
+        outcome: ok
+      - file: sdd/adrs/0031-expert-personas-as-subagent-files.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Structural model for an ADR that adds to a neighbouring record
+          without superseding it, including how to state the relationship in
+          a preamble under the status table.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Detailed checklist"
+        read_type: verify
+        extract: "New skill plus new ADR: CLAUDE.md pointer, ADR digest regen, backlog ID regen"
+        outcome: ok
+      - file: sdd/backlogid.json
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Review caught the item numbered ID-244 when the next free ID was 243,
+          leaving a silent gap in a repo whose backlog is the authoritative
+          record. The gate does not catch this: gen_backlogid --check compares
+          the stored value against the max *done* ID, so skipping ahead passes.
+          Renumbering meant rewriting the commit subjects too, since the /pr
+          trace gate resolves the trace filename from them.
+        outcome: ok

@@ -8,6 +8,26 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-243 — `/ship` skill: deliver a task as one convergence-reviewed PR**
+  spec: — · effort: M · audience: contributor.process, contributor.tooling
+  Codifies the working mode that emerged while delivering BK-324 / BK-331
+  (PR #945): plan → build → review to convergence, one PR, never merged by the
+  skill itself. Composes `/pr`, `/rvw-pr` and `/fix-pr` rather than
+  reimplementing them; `/orchestrate` remains the cheaper path when the
+  two-round cap is proportionate.
+  **The two rules worth the file:** the loop terminates on severity rather than
+  round count, and it **may not end on an unreviewed fix pass** — in PR #945,
+  rounds 2, 3 and 4 each found defects in the previous round's fixes, so a model
+  that reviews the original diff N times and never reviews the corrections has
+  an unbounded blind spot.
+  Reviewer diversity is the other half: an unprimed first round on a different
+  model (a reviewer handed conclusions confirms them), then one scoped lens per
+  round aimed at what earlier rounds did not examine. That is what surfaced
+  PR #945's only behavioural regression, at round 5, in code four rounds had
+  walked past.
+  Rationale, the measured cost, and the reversal conditions:
+  [ADR-0033](adrs/0033-ship-convergence-driven-review.md).
+
 - [x] **BUG-242 — S3 probes reported a 403 as `NotFound`, and a tolerant delete swallowed it entirely**
   spec: BE-021 · effort: S · audience: user.api
   Introduced by BK-324 and caught by PR #945's fifth review round. `_s3_is_object`
