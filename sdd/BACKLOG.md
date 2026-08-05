@@ -90,6 +90,20 @@ and the highest ID already in this file, then take the next integer. Run
   **Both readings are asserted by a passing test, on different backends.** That
   is the state Rule 7 calls a live disagreement rather than a defect in one side,
   so which way it resolves is a decision, not a lookup.
+  **The split is inside the async lane, not between the lanes.**
+  `AsyncMemoryBackend` and `AsyncAzureBackend` implement DEPTH-003's reading;
+  `GraphBackend` implements ASYNC-014's. So this is not "sync says one thing,
+  async says another" — two async backends already disagree with a third.
+  The practical consequence: **the missing async conformance cell cannot be
+  added neutrally.** Whichever way it asserts, it turns a currently-green
+  backend red, which is why the cell's absence is load-bearing rather than an
+  oversight, and why this needs deciding before it can be closed.
+  **Three artifacts assert the ASYNC-014 reading, not one.** ASYNC-014 itself,
+  `tests/backends/graph/aio/test_list.py:183`, and `GraphBackend.list_files`'s
+  own docstring — which BK-331 made *authoritative* for depth strategy in this
+  same PR, by replacing spec 037's per-backend table with a pointer to each
+  backend's docstring. So closing this means changing a doc BK-331 just
+  promoted to source of truth.
   **Why nothing caught it:** there is no async twin of
   `test_list_files_non_recursive_ignores_max_depth`, so conformance never
   cross-checks the two; and both `Store` and `AsyncStore` normalise `max_depth`
@@ -99,7 +113,8 @@ and the highest ID already in this file, then take the next integer. Run
   DEPTH-003 explicit enough for the contradiction to surface. Surfaced by the
   PR #945 round-3 fix pass.
   **Whichever way it goes, the async conformance cell is part of the fix** —
-  without it the next divergence is equally invisible.
+  without it the next divergence is equally invisible. Expect it to turn a
+  backend red on arrival; that is the item working, not a regression.
 
 - [ ] **BK-336 — `/fix-pr` should find a finding's siblings, not just the lines it names**
   spec: — · effort: S · audience: contributor.process
