@@ -121,9 +121,16 @@ do not create a new trace here.
 
 ## Step 6: Commit and push
 
-Stage, commit (`fix: address PR #$ARGUMENTS review`), push. Report: comments fixed/resolved, skipped with reasons.
+Stage, commit (`fix: address PR #$ARGUMENTS review`), push. Report: comments
+fixed/resolved, skipped with reasons, and per finding the class swept with what
+it caught — a sweep that found nothing reads exactly like one that never ran —
+plus any changed surface the gate never executed.
 
 ## Rules
 
 - Do not merge, close, or approve the PR.
 - Fix what was asked — don't refactor surrounding code.
+- Fix the finding's class, not only the lines it names: a review names the
+  instances it happened to see. Siblings share a failure mode, not a spelling,
+  so for a rule spanning backends the question is which backends the tests
+  execute against, not which lines match a grep.

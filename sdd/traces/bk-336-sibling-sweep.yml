@@ -1,0 +1,148 @@
+id: BK-336
+title: "/fix-pr should find a finding's siblings, not just the lines it names"
+trigger: >-
+  A review names the instances it happened to see, and PR #945 measured the cost
+  twice: a root-spelling defect fixed across eleven sites and declared closed was
+  found still live in SQLQueryBackend three lines from a line that fix had
+  edited, and again in a backend the conformance suite never reaches. No repo
+  skill told the author to sweep for the class. A first attempt to write one was
+  reverted in the same PR as over-specified, so the item carried a design
+  constraint as well as a gap.
+source_items:
+  - BK-336
+  - BK-324
+audience:
+  - contributor.process
+surprising_ripples:
+  - .claude/skills/ship/SKILL.md
+review_rounds: 4
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item)"
+        read_type: gate
+        extract: >-
+          The item is two things, and only reading it establishes that: the gap,
+          and the constraint the reverted attempt produced — state the principle,
+          no enumerated lists, no pseudo-detail, nothing the skill already
+          carries, and shorter than what it replaces. Treating the constraint as
+          binding is what kept the change to two statements.
+        outcome: ok
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Step 2, Step 6, Rules"
+        read_type: gate
+        extract: >-
+          Establish what the skill already obliges before adding to it. Step 2
+          already says "Be critical"; Rules already says "Fix what was asked —
+          don't refactor surrounding code". The second is what let the candidate
+          text's closing clause be cut rather than rewritten.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-324, BUG-242"
+        read_type: reference
+        extract: >-
+          The evidence the principle is written from. BK-324's entry states the
+          transferable form directly — round 3 replaced "which source lines
+          match" with "which backends do these cells execute against" and
+          immediately found two defects no reviewer had flagged — and names
+          BK-336 as where it would be written down.
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "(reverted revision, PR #945 commit e5c9813b)"
+        read_type: gate
+        extract: >-
+          The single most useful read, and it is not in the working tree — the
+          attempt exists only in an intermediate PR commit, reverted before
+          merge. Recovering it via the commits API showed what "over-specified"
+          meant concretely: ~34 added lines, a three-row table pairing classes of
+          finding with sweep techniques, and a Rules bullet restating the
+          don't-refactor rule two lines above it. Reasoning about the constraint
+          without seeing the artifact it came from would have reproduced it.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience"
+        read_type: gate
+        extract: >-
+          contributor.process alone, with no new user-facing framework, so the
+          derived rule excludes a CHANGELOG entry
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Pre-work index"
+        read_type: verify
+        extract: >-
+          Only "Backlog item touched" fires — trace plus backlogid regen. A
+          `.claude/skills/` prose edit has no row of its own, and needs none.
+          `gen-backlogid` left `sdd/backlogid.json` byte-identical, because it
+          tracks the max *done* ID and BK-341 was already done: running the
+          generator is the obligation, a changed file is not the evidence of it.
+          Claiming the path as an expected ripple was therefore wrong, and review
+          caught it.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "Cross-Artifact Consistency"
+        read_type: verify
+        extract: >-
+          The ripple the item's own text did not point at. A programme paragraph
+          asserted "neither yet shipped (BK-336 and BK-338 are open)" as a live
+          claim about the backlog, so closing one item falsified a sentence
+          elsewhere in the same file. Found by grepping the ID across the repo
+          rather than by any checklist row.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Composition preamble, Step 4 / Close each round, Step 5"
+        read_type: verify
+        extract: >-
+          The PR exhibited its own failure class, and only review caught it. The
+          new rule was written into `/fix-pr` alone, but `/ship` runs fix passes
+          under its own triage and cited `/fix-pr` for "comment-fetch and
+          thread-resolve mechanics" only, so the rule did not reach the skill
+          that most needs it. `/ship` Step 5 already reported the *other* half —
+          "any surface the gate never executed locally" — which made the gap
+          visibly partial to a reader and invisible to the author. Closed by
+          widening the citation, not by copying the rule: two homes for one
+          principle is what `CLAUDE.md` principle 4 forbids. No ripple-check row
+          anticipates one skill's rule binding another's delegated step.
+          Round 2 then found that fix incomplete: a pointer imports the rule but
+          cannot import the *artifact*, because `/ship` owns its own Step 5
+          report and nothing there asked for a sweep. So the sweep half was
+          added to that report beside the coverage half it already carried. Two
+          rounds to close one class in one sibling file is the item's own thesis
+          holding against its author. The last instance was found by the user,
+          not by a round, and came from a *refutation*: round 1's objection that
+          the new clause dropped `/ship`'s "locally" qualifier was refuted on the
+          asserted premise that `/ship` also runs CI. It does not — `hatch run
+          all` then hand over, `:60` and `:139` — so the qualifier carried the
+          defect the reviewer named, in the skill whose report is the handoff.
+          It survived four rounds because a refuted thread reads as settled and
+          no later round re-examines it. Refutation is where a sibling hides
+          best: the reasoning that dismisses a finding is never checked against
+          the code the way a fix is.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-324 (closing paragraph)"
+        read_type: verify
+        extract: >-
+          The miss that matters most, because it is the item's failure mode
+          committed while writing the item. BK-324's entry said "BK-336 in
+          `BACKLOG.md` is where it would be written down" — false on both counts
+          once BK-336 moved to `BACKLOG-DONE.md`, and sitting further down the
+          same file the PR was editing. The orienting grep for
+          `BK-336` had listed this file among its hits; only `BACKLOG.md`'s hit
+          was opened, on the assumption that a DONE-file match was the new entry
+          itself. A file-level match list is not a sweep, which is exactly the
+          distinction the shipped rule draws. Round 3 then caught the fix for
+          this one importing a reviewer's hand-counted "158 lines" verbatim,
+          in the same commit that removed a different hand-count — a figure
+          about a file that grows, in a durable artifact, which
+          [CONTENT-RULES rule 3](../CONTENT-RULES.md) exists to stop. Numbers
+          quoted from a review are not measurements; this one matched no anchor
+          at any revision.
+        outcome: ok

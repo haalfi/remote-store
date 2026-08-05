@@ -8,6 +8,74 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-336 — `/fix-pr` should find a finding's siblings, not just the lines it names**
+  spec: — · effort: S · audience: contributor.process
+  Two statements in `/fix-pr`: one Rules bullet stating the principle, and a
+  clause on Step 6's existing report line that makes it observable, with the
+  matching pair in `/ship`. A review names the
+  instances it happened to see, so fixing only those leaves the class alive —
+  measured twice in one PR ([BK-324](BACKLOG-DONE.md)), the second time three
+  lines from a line the first fix had edited.
+  **The report clause is the load-bearing half.** A rule with no artifact it must
+  produce is the shape that gets skipped in silence, which is the failure this
+  item exists to close; reporting the sweep's result per finding cannot be
+  satisfied without running one. It asks for the sweeps that found nothing too,
+  because a check that found nothing reads exactly like one that never ran — and
+  for any changed surface the gate never executed, since a green gate is silent
+  about what it never ran at all.
+  **The sweep question is coverage, not spelling.** Siblings share a failure
+  mode, not a wording, so for a rule spanning backends what matters is which
+  backends the tests execute against, not which source lines match a grep. That
+  is why BK-324's class survived in `SQLQueryBackend`, which no conformance
+  fixture reaches ([BK-340](BACKLOG.md)).
+  **The first attempt, reverted in PR #945 as over-specified, is why the entry is
+  longer than the change.** It added ~34 lines to `/fix-pr`, including a
+  three-row table pairing classes of finding with sweep techniques — pseudo-detail
+  that dates faster than the principle and reads as an exhaustive list when it is
+  three examples. A candidate solution from a downstream repo was evaluated and
+  adopted in substance with its closing clause cut: "that is not licence to
+  refactor code you merely read" restates the `Fix what was asked` rule that the
+  new bullet now sits directly beneath, so adjacency carries the bound without a
+  second copy of it.
+  **The PR exhibited its own failure class, and review caught it.** The rule was
+  written into `/fix-pr` alone, but `/ship` runs fix passes under its own triage
+  and cited `/fix-pr` for comment-fetch and thread-resolve mechanics only — so
+  the rule did not reach the skill whose whole shape is repeated fix passes,
+  while `/ship` Step 5 already reported the *other* half of the new Step 6
+  clause. Closed by widening that citation rather than copying the rule: a
+  sibling gets a pointer, because two homes for one principle is what
+  [principle 4](../CLAUDE.md#principles) forbids. The *artifact* is not
+  importable the same way, so `/ship`'s own Step 5 report gained the sweep half
+  to sit beside the coverage half it already had — a rule without the report
+  that proves it ran is the shape this item exists to close, and a pointer
+  cannot supply a report another skill does not ask for.
+  **The class outlived the first sweep here too, which is the entry's own
+  evidence.** Round 1's fix reached `/ship`; round 2 found the rule's other
+  half still missing from `/ship`'s report, and a stale "BK-336 in `BACKLOG.md`
+  is where it would be written down" further down this same file — inside the
+  BK-324 entry the new one cites. The first grep listed this file among its hits
+  and only its sibling was opened — a file-level match list read as a sweep.
+  Round 3 then found the fix for *that* had copied the reviewer's hand-counted
+  "158 lines" into two durable artifacts, in the same commit that removed a
+  different hand-count for the same reason. The figure matched no anchor at any
+  revision, and the reason it survived is the transferable one: a number
+  arriving inside a correct finding inherits that finding's credibility. Every
+  other claim in the comment was checked; the decoration was not, because
+  decoration does not look like a claim.
+  **The last instance came from a refutation, and it is the sharpest.** Round 1
+  flagged that `/fix-pr`'s new clause dropped the "locally" qualifier `/ship`
+  carried. That was refuted on the grounds that `/ship` "can say *locally*
+  because it also runs CI and knows the difference" — a premise asserted and
+  never checked. `/ship` runs `hatch run all` and hands the PR over; it never
+  consults CI. So the qualifier had the defect the reviewer named, in the skill
+  whose report is the handoff document, and it survived four rounds *because*
+  the refutation looked settled. Dropped. **A refuted finding is not a closed
+  one**: refutation is where a sibling hides best, since the reasoning that
+  dismisses it is never swept against the code the way a fix is.
+  **[BK-338](BACKLOG.md) stays open.** The reverted attempt bundled the
+  review-roster question and a single-session model pin into the same commit;
+  neither is touched here.
+
 - [x] **BK-341 — Interview mode: route decision questions through `AskUserQuestion`**
   spec: — · effort: M · audience: contributor.process, contributor.tooling, infra.ci
   A question asked in prose ends the turn and sits in scrollback, so it gets
@@ -131,8 +199,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `NotFound` rather than a wrong-type error for root file-ops on an untouched
   store.
   **For a cross-backend rule, a sibling sweep is a coverage question, not a
-  grep.** That is the lesson this item earns (BK-336 in `BACKLOG.md` is where it
-  would be written down), and the two structural holes it exposed are filed as
+  grep.** That is the lesson this item earns; it is written down as
+  **BK-336** above, and the two structural holes it exposed are filed as
   **[BK-340](BACKLOG.md)** (`SQLQueryBackend` has no conformance fixture at all)
   and **[ID-241](BACKLOG.md)** (the replay hook skips cells by test name even
   when the cell makes no HTTP call).

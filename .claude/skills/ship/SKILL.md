@@ -138,8 +138,9 @@ accepting every finding degrades the work, so verify before fixing.
 
 `hatch run all` green → commit → push → reply to **every** thread and resolve
 it. Use [`/fix-pr`](../fix-pr/SKILL.md)'s comment-fetch and thread-resolve
-mechanics. Never start the next round against unpushed code: the reviewer would
-target stale lines.
+mechanics, and its Rules — a fix pass here owes the finding's class exactly as
+one run under that skill does. Never start the next round against unpushed code:
+the reviewer would target stale lines.
 
 Replies carry the reasoning that does not belong in the diff: what was measured,
 what was refuted and why. The PR record is where that survives.
@@ -196,8 +197,9 @@ condemned it.
 1. Ripple-check audit: [`sdd/CLAUDE-REFERENCE.md` § Detailed checklist](../../../sdd/CLAUDE-REFERENCE.md#detailed-checklist).
 2. CHANGELOG, BACKLOG/BACKLOG-DONE, and the trace, including `review_rounds`,
    `discovery_followups`, and `surprising_ripples`.
-3. Report: rounds run, findings per round with their character, what was filed
-   rather than fixed, and any surface the gate never executed locally.
+3. Report: rounds run, findings per round with their character, the class swept
+   per must-fix finding and what it caught, what was filed rather than fixed,
+   and any surface the gate never executed.
 
 Then stop. **`/ship` never merges.** It hands over a PR that is ready to be.
 
