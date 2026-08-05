@@ -61,12 +61,16 @@ async def test_close_posture_outranks_root_rejection(async_backend: AsyncBackend
     The plain-path sibling above does not reach this: ``exists()`` carries no
     root pre-check, so the ordering only shows on a file-shaped op.
 
-    Where the terminal branch actually runs: no Stage-1 async fixture is
-    terminal — ``azure_replay_async`` and ``graph_replay`` are, but the
-    missing-cassette hook skips them at collection, and the assertion needs no
-    recorded interaction only in the sense that a cassette would be empty.
-    ``azurite_async`` (Stage 2, the CI Docker lane) is the fixture that
-    executes it; Stage 1 exercises the reusable branch only.
+    Where the terminal branch actually runs: no Stage-1 async fixture
+    *executes* it. ``azure_replay_async`` and ``graph_replay`` are both Stage 1
+    and terminal, but this cell is a new test name and no cassette has been
+    recorded under it, so the missing-cassette hook skips them at collection —
+    even though the terminal guard short-circuits before any request and the
+    cassette would be empty. The four Stage-1 fixtures that do run
+    (``memory_async_native``, ``memory_async_adapted``, ``local_async_adapted``,
+    ``dafny_oracle_async``) are all reusable, so Stage 1 exercises the reusable
+    branch only. ``azurite_async`` (Stage 2, the CI Docker lane) is the fixture
+    that executes the terminal branch.
     """
     _require(async_backend, Capability.READ)
     await async_backend.aclose()

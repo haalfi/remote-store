@@ -147,7 +147,8 @@ backend is the more fundamental error. A root pre-check is cheap and so
 naturally wants to run first — a backend that has one MUST still run the closed
 guard ahead of it, or the answer depends on which guard the implementer
 happened to write first. Pinned by
-`tests/backends/conformance/test_close_posture.py::test_close_posture_outranks_root_rejection`.
+`test_close_posture_outranks_root_rejection` in
+`tests/backends/conformance/test_close_posture.py` and its `aio/` sibling.
 
 **One predicate, both spellings.** `remote_store._path.is_root` is the shared
 test; `strip_root` is its normalising form. A backend that asks `if path`
@@ -476,13 +477,15 @@ map to the specified error type regardless of backend:
 The type-mismatch rule (`InvalidPath`) takes precedence over the existence rule (`NotFound`) — a directory path is not "missing", it is the wrong type. This is machine-verified in `sdd/formal/BackendContract.dfy` (`Read`, `Delete`, `DeleteFolder`, `GetFileInfo`, `GetFolderInfo`, `Move`, `Copy` postconditions).
 
 **Backend scope of the two type-mismatch rows.** They bind every backend on the
-operations that can *fail* on a wrong-typed path: the read- and delete-shaped
-calls, `get_file_info` / `get_folder_info`, and the `move`/`copy` **source**.
-Their write half — `write`, `write_atomic`, and the `move`/`copy`
-**destination** — binds hierarchical backends only. On a flat namespace a write
-to a key that shadows a prefix succeeds, so there is no error to reclassify;
-BE-008's flat-namespace exemption governs there instead. The mechanism behind
-the split, and what it costs, is below.
+operations that can *fail* on a wrong-typed path: `read`, `read_bytes`,
+`read_seekable`, `delete`, `get_file_info`, `delete_folder`,
+`get_folder_info`, and the `move`/`copy` **source**. Their write half —
+`write`, `write_atomic`, `open_atomic`, and the `move`/`copy` **destination** —
+binds hierarchical backends only. On a flat namespace a write to a key that
+shadows a prefix succeeds, so there is no error to reclassify; BE-008's
+flat-namespace exemption governs there instead, unchanged. This is the single
+roster for both halves; the clauses below explain the mechanism behind the
+split and what it costs, and do not restate it.
 
 **Scope note:** This table covers *cross-cutting* scenarios that apply to multiple operations. Method-specific errors (e.g. `DirectoryNotEmpty` from `delete_folder`, `CapabilityNotSupported` from capability-gated operations) are documented per-method and intentionally omitted here.
 
@@ -525,13 +528,10 @@ The probe is **fail-open**: if it errors (503, throttling, network blip) the
 operation's original error stands rather than being replaced by a transport
 error, the same posture the file-ancestor walk takes (see BE-008 / ID-211).
 
-Because the probe fires on failure, the obligation reaches exactly the
-operations that *can* fail on a wrong-type path: `read`, `read_bytes`,
-`read_seekable`, `delete`, `get_file_info`, `delete_folder`, `get_folder_info`,
-and the `move`/`copy` **source**. It does not reach `write`, `write_atomic`, or
-the `move`/`copy` **destination** — a flat-namespace write to a key that
-shadows a prefix succeeds, so there is no error to reclassify. Those stay under
-BE-008's flat-namespace exemption, which is unchanged.
+The probe firing on failure is *why* the roster splits where it does: the
+obligation reaches exactly the operations that *can* fail on a wrong-type path
+— the list stated with the rows above — and the write half offers it no failure
+to reclassify.
 
 `read_seekable` is in the list, not exempt from it. `SEEKABLE_READ` is a
 CAP-007 *quality flag*: it describes the stream `read()` hands back, not a
