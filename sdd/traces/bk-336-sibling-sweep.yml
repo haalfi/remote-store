@@ -1,0 +1,92 @@
+id: BK-336
+title: "/fix-pr should find a finding's siblings, not just the lines it names"
+trigger: >-
+  A review names the instances it happened to see, and PR #945 measured the cost
+  twice: a root-spelling defect fixed across eleven sites and declared closed was
+  found still live in SQLQueryBackend three lines from a line that fix had
+  edited, and again in a backend the conformance suite never reaches. No repo
+  skill told the author to sweep for the class. A first attempt to write one was
+  reverted in the same PR as over-specified, so the item carried a design
+  constraint as well as a gap.
+source_items:
+  - BK-336
+  - BK-324
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item)"
+        read_type: gate
+        extract: >-
+          The item is two things, and only reading it establishes that: the gap,
+          and the constraint the reverted attempt produced — state the principle,
+          no enumerated lists, no pseudo-detail, nothing the skill already
+          carries, and shorter than what it replaces. Treating the constraint as
+          binding is what kept the change to six lines.
+        outcome: ok
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Step 2, Step 6, Rules"
+        read_type: gate
+        extract: >-
+          Establish what the skill already obliges before adding to it. Step 2
+          already says "Be critical"; Rules already says "Fix what was asked —
+          don't refactor surrounding code". The second is what let the candidate
+          text's closing clause be cut rather than rewritten.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-324, BUG-242"
+        read_type: reference
+        extract: >-
+          The evidence the principle is written from. BK-324's entry states the
+          transferable form directly — round 3 replaced "which source lines
+          match" with "which backends do these cells execute against" and
+          immediately found two defects no reviewer had flagged — and names
+          BK-336 as where it would be written down.
+        outcome: ok
+  - id: design
+    name: Design
+    steps:
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "(reverted revision, PR #945 commit e5c9813b)"
+        read_type: gate
+        extract: >-
+          The single most useful read, and it is not in the working tree — the
+          attempt exists only in an intermediate PR commit, reverted before
+          merge. Recovering it via the commits API showed what "over-specified"
+          meant concretely: ~34 added lines, a three-row table pairing classes of
+          finding with sweep techniques, and a Rules bullet restating the
+          don't-refactor rule two lines above it. Reasoning about the constraint
+          without seeing the artifact it came from would have reproduced it.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience"
+        read_type: gate
+        extract: >-
+          contributor.process alone, with no new user-facing framework, so the
+          derived rule excludes a CHANGELOG entry
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Pre-work index"
+        read_type: verify
+        extract: >-
+          Only "Backlog item touched" fires — trace plus backlogid regen. A
+          `.claude/skills/` prose edit has no row of its own, and needs none.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "Lint / CI Completeness (§ 9 preamble)"
+        read_type: verify
+        extract: >-
+          The ripple the item's own text did not point at. A programme paragraph
+          asserted "neither yet shipped (BK-336 and BK-338 are open)" as a live
+          claim about the backlog, so closing one item falsified a sentence
+          elsewhere in the same file. Found by grepping the ID across the repo
+          rather than by any checklist row.
+        outcome: ok

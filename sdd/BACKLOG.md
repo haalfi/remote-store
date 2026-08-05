@@ -176,21 +176,6 @@ and the highest ID already in this file, then take the next integer. Run
   without it the next divergence is equally invisible. Expect it to turn a
   backend red on arrival; that is the item working, not a regression.
 
-- [ ] **BK-336 — `/fix-pr` should find a finding's siblings, not just the lines it names**
-  spec: — · effort: S · audience: contributor.process
-  A review names the instances it happened to see. Fixing only those leaves the
-  class alive. Measured twice in one PR: a root-spelling defect was fixed across
-  eleven sites and declared closed, then found still live in a backend three
-  lines from a line that same fix had edited — and again in a second backend the
-  conformance suite never reaches. For a rule spanning backends, the sweep
-  question is which backends the tests actually execute against, not which
-  source lines match a grep.
-  **A first attempt was reverted in PR #945 as over-specified.** The review
-  feedback is the design constraint: state the principle, no enumerated lists,
-  no pseudo-detail, and do not restate obligations the skill already carries by
-  being the author's skill. Whatever lands should be shorter than what it
-  replaces.
-
 - [ ] **BK-338 — Decide what a PR review roster should be**
   spec: — · effort: S · audience: contributor.process
   Open question, not a committed design. Evidence from PR #944: the only
@@ -407,9 +392,10 @@ in one. So ID-207 remains the strategic item, and it is **not** the item that
 would have caught what this programme has actually caught so far. Detecting those
 needs semantic comparison of prose, which § 1 marks as having no general oracle.
 The mechanisms that did catch them were an author-side sibling sweep and running
-the code rather than reading the diff — neither in the research doc's ranking,
-and neither yet shipped (BK-336 and BK-338 are open under Lint / CI
-Completeness). Weigh a future step-2 argument against that.
+the code rather than reading the diff — neither in the research doc's ranking.
+The sweep is now shipped as [BK-336](BACKLOG-DONE.md); the second is still open
+as BK-338 under Lint / CI Completeness. Weigh a future step-2 argument against
+that.
 
 Shipped so far: step 1 (Dafny twin parity) as BK-328, step 5.1 (the attribution
 rule) as BK-329, step 4 (037's per-backend table) as BK-331, and **step 3's

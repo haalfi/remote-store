@@ -8,6 +8,38 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-336 — `/fix-pr` should find a finding's siblings, not just the lines it names**
+  spec: — · effort: S · audience: contributor.process
+  Six lines in `/fix-pr`: one Rules bullet stating the principle, and a clause on
+  Step 6's existing report line that makes it observable. A review names the
+  instances it happened to see, so fixing only those leaves the class alive —
+  measured twice in one PR ([BK-324](BACKLOG-DONE.md)), the second time three
+  lines from a line the first fix had edited.
+  **The report clause is the load-bearing half.** A rule with no artifact it must
+  produce is the shape that gets skipped in silence, which is the failure this
+  item exists to close; reporting the sweep's result per finding cannot be
+  satisfied without running one. It asks for the sweeps that found nothing too,
+  because a check that found nothing reads exactly like one that never ran — and
+  for any changed path the gate could not execute, since a green gate is silent
+  about what it never ran at all.
+  **The sweep question is coverage, not spelling.** Siblings share a failure
+  mode, not a wording, so for a rule spanning backends what matters is which
+  backends the tests execute against, not which source lines match a grep. That
+  is why BK-324's class survived in `SQLQueryBackend`, which no conformance
+  fixture reaches ([BK-340](BACKLOG.md)).
+  **The first attempt, reverted in PR #945 as over-specified, is why the entry is
+  longer than the change.** It added ~34 lines to `/fix-pr`, including a
+  three-row table pairing classes of finding with sweep techniques — pseudo-detail
+  that dates faster than the principle and reads as an exhaustive list when it is
+  three examples. A candidate solution from a downstream repo was evaluated and
+  adopted in substance with its closing clause cut: "that is not licence to
+  refactor code you merely read" restates the `Fix what was asked` rule that the
+  new bullet now sits directly beneath, so adjacency carries the bound without a
+  second copy of it.
+  **[BK-338](BACKLOG.md) stays open.** The reverted attempt bundled the
+  review-roster question and a single-session model pin into the same commit;
+  neither is touched here.
+
 - [x] **BK-341 — Interview mode: route decision questions through `AskUserQuestion`**
   spec: — · effort: M · audience: contributor.process, contributor.tooling, infra.ci
   A question asked in prose ends the turn and sits in scrollback, so it gets
