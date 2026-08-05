@@ -1,5 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "outputStyle": "Interview",
   "permissions": {
     "deny": [
       "Read(./.env)",
@@ -105,6 +106,37 @@
           {
             "type": "command",
             "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/warn-direct-pr.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/notify-attention.sh 'a decision'"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "idle_prompt",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/notify-attention.sh 'your next prompt'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "prompt",
+            "timeout": 30,
+            "prompt": "You gate the end of a Claude Code turn. The hook input describes the turn that just ended. If its `stop_hook_active` field is true, return {\"ok\": true} immediately and stop. Otherwise read `last_assistant_message` and decide whether it ends by asking the user for a decision that the assistant cannot make on its own: a choice between approaches, an unresolved ambiguity in scope, an assumption offered up for correction, or a request for approval before proceeding. If it does, return {\"ok\": false, \"reason\": \"You ended the turn with a decision question in prose, where it is easy to miss. Ask it again now using the AskUserQuestion tool: one question per decision, 2-4 concrete mutually exclusive options each, consequences stated, your recommendation first and marked (Recommended). Do not repeat the question in prose alongside the dialog.\"}. Return {\"ok\": true} for everything else, including turns that only report completed work, rhetorical or self-answered questions, and closing offers of optional follow-up work such as asking whether to commit or what to do next."
           }
         ]
       }

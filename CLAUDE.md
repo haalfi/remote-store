@@ -85,6 +85,28 @@ The suite uses **no GPU**. GPU saturation during a test run comes from concurren
 - Branch naming: `id-021-store-child`, `fix-streaming-io`, `af-008-credential-masking`, etc.
 - Push the feature branch; the user will create PRs or ask you to.
 
+<a id="interview-mode"></a>
+## Interview mode
+
+Decision questions go through the `AskUserQuestion` tool, never prose. A prose
+question ends the turn and sits in scrollback; a tool question renders a
+blocking dialog that cannot be scrolled past. Three layers enforce this, all in
+`.claude/`:
+
+| Layer | Mechanism | What it covers |
+| --- | --- | --- |
+| Steering | `output-styles/interview.md`, selected via `outputStyle` in `settings.json` | When and how to ask |
+| Enforcement | `Stop` hook, `type: "prompt"` | A turn that ends on a prose decision question is sent back to re-ask via the tool |
+| Notification | `hooks/notify-attention.sh` on `PreToolUse(AskUserQuestion)` and `Notification(idle_prompt)` | Bell plus desktop notification when a dialog opens or the session goes idle |
+
+The output style is read once at session start: `/clear` or restart after
+editing it. The `Stop` hook returns `ok: true` when `stop_hook_active` is set,
+so it cannot trip the eight-block consecutive cap. To loosen or tighten what
+counts as a blocking question, edit that hook's `prompt` in `settings.json`.
+
+Leave `askUserQuestionTimeout` unset. It defaults to `never`, which is what
+keeps a dialog open until answered, and it is read from user settings only.
+
 <a id="response-style"></a>
 ## Response style
 
