@@ -23,8 +23,10 @@ esac
 HEADERS=$(printf '%s' "$HEADERS" | tr -d '"\\')
 MSG="Waiting on you: $HEADERS"
 
-# Set CLAUDE_NOTIFY_DEBUG=1 to see the composed message instead of guessing
-# which backend fired. Used by tmp/test-notify-hook.sh.
+# Manual debugging aid: set CLAUDE_NOTIFY_DEBUG=1 to print the composed message
+# instead of guessing which backend fired. No automated caller, by design — the
+# test suite asserts against the notify-send stub's own output, which exercises
+# the real delivery path rather than this bypass of it.
 if [ -n "$CLAUDE_NOTIFY_DEBUG" ]; then
   printf 'notify: %s\n' "$MSG"
 fi

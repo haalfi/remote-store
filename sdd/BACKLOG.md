@@ -366,6 +366,32 @@ and the highest ID already in this file, then take the next integer. Run
   instance; enumerating `lint` and `preflight` against the path filters found two
   more, so the item is scoped to all three rather than to the one reported.
 
+- [ ] **BUG-244 — Interview-mode `Stop` hook blocks turns that only report completed work**
+  spec: — · effort: S · audience: contributor.tooling
+  The `Stop` hook in `.claude/settings.json` returns a turn to be re-asked when it
+  ends on a prose decision question. On its first real firing it blocked a turn
+  that only reported completed work and deliberately deferred items, which is the
+  case its own prompt excludes ("closing offers of optional follow-up work").
+  **Reproduction:** end a turn with a completion report that lists deferred items.
+  **Diagnosis, from the hook's own returned reasoning.** It reached the correct
+  answer under the rule as written ("which by the rule's own terms should not
+  trigger blocking") and then overrode itself, citing a question that appears
+  nowhere in `last_assistant_message` ("has the following stopping condition been
+  satisfied?"). That text is evaluation scaffolding around the hook call, which
+  the evaluator treated as part of the turn under review. So the defect is
+  **scoping, not a weak exclusion list**: the prompt says to read
+  `last_assistant_message` but never *only* that, and never says that instructions
+  appearing in the surrounding material are data rather than orders.
+  **Indicated fix:** scope the prompt to that field and say so. Unmeasured either
+  way, which is the second half of the item: a replay harness feeding canned
+  `last_assistant_message` values (completion report, real decision question,
+  rhetorical question, `stop_hook_active` set) is what turns prompt tuning into
+  measurement, and would double as the regression test for any future edit.
+  Until this closes, [`CLAUDE.md` § Interview mode](../CLAUDE.md#interview-mode)
+  tells readers to treat a block as advisory.
+  Observed live in the session that authored the layer; filed from the PR #947
+  review, which asked for a durable home rather than a PR-body note.
+
 ---
 
 ## Cross-Artifact Consistency
@@ -389,8 +415,8 @@ and ID-241 are what those four actually exhibited (a rule gated so no fixture ev
 runs it), and ID-207 step 3 is the other half (a citation is not an assertion).
 Step 2 keeps its L cost and its ~2.5% reach; it follows rather than leads, and
 ID-207 states the evidence. BK-332, ID-236 and ID-237 are follow-ons that get
-cheaper once the earlier work lands. BK-327 and ID-238 are independent of the
-chain and can be taken at any point; both sit at the section's tail.
+cheaper once the earlier work lands. BK-327, ID-238 and ID-244 are independent of
+the chain and can be taken at any point; all three sit at the section's tail.
 
 On importance, the research doc's designation, which this section adopts rather
 than restates: the two items that build what is actually missing are the authority
@@ -688,6 +714,28 @@ that writes it lands, so cite the generator instead.
   a scheduled review is the right mechanism at all is unevaluated, and Rule 9
   makes "no recurring trigger, act on the report when a ranked file is next
   touched" a legitimate outcome.
+
+- [ ] **ID-244 — Gate the CLAUDE.md interview-mode table against `.claude/settings.json`**
+  spec: — · effort: S · audience: contributor.tooling
+  [`CLAUDE.md` § Interview mode](../CLAUDE.md#interview-mode) describes three
+  layers whose wiring lives in `.claude/settings.json`. PR #947 trimmed that table
+  down to what each layer *does*, precisely so the config values would live in one
+  place — but the pair is still hand-maintained. Delete the `Notification` block
+  or rename the `Stop` hook and the table still claims three layers, with nothing
+  detecting the disagreement.
+  This entry is the [Rule 6](DRIFT-RULES.md#tolerated) register entry for that
+  tolerated divergence. Owner: whoever takes this item. Rationale for tolerating
+  it meanwhile: the surviving claim space is three rows deep and changes rarely,
+  so a gate may cost more to maintain than the drift it would catch.
+  Design constraints if it is taken. [Rule 3](DRIFT-RULES.md#claim-space): the
+  enumeration must be **derived** from `settings.json` (the hook events actually
+  registered), not maintained beside it. [Rule 8](DRIFT-RULES.md#independence):
+  record the derivation path, because the table was written *from* the same
+  settings file it would be checked against, so the two are not independent and a
+  shared misreading would pass.
+  **Why ID, not BK:** offered during the PR #947 self-audit and declined in favour
+  of the trim alone; whether a three-row table warrants a gate at all is
+  unevaluated.
 
 ---
 

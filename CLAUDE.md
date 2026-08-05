@@ -104,15 +104,19 @@ question, edit the `Stop` hook's `prompt`. That hook returns `ok: true` when
 `stop_hook_active` is set, so a blocked turn cannot loop against Claude Code's
 consecutive-block cap.
 
-Two failure modes worth knowing. An output style is read once at session start,
-so `/clear` or restart after editing one. And `/config` writes `outputStyle` to
+Three failure modes worth knowing. An output style is read once at session start,
+so `/clear` or restart after editing one. `/config` writes `outputStyle` to
 `.claude/settings.local.json`, which outranks the committed
 `.claude/settings.json`: picking a style from that menu silently overrides the
-repo default.
+repo default. And the enforcement layer is unproven: it produced a false positive
+on its first real firing, blocking a turn that only reported completed work
+(BUG-244). Treat a block as advisory until that item closes.
 
 Leave `askUserQuestionTimeout` unset; its default is what keeps a dialog open
-until answered. For hook events, settings precedence, and that setting's
-scope, see the [Claude Code hooks reference](https://code.claude.com/docs/en/hooks).
+until answered. That setting, its scope, and settings precedence are defined in
+the [Claude Code settings reference](https://code.claude.com/docs/en/settings).
+Hook events and their payloads are in the
+[hooks reference](https://code.claude.com/docs/en/hooks).
 
 <a id="response-style"></a>
 ## Response style

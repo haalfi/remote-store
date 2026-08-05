@@ -372,13 +372,17 @@ trace step (`/pr` verifies a trace exists, `/fix-pr` updates it).
 - **Mechanical gate.** Classify the diff with
   `git diff origin/<BASE>...HEAD --name-only`, then run the matching target. Fix
   failures, re-run until clean.
-    - **Touches `src/`, `tests/`, `examples/`, `scripts/`, `pyproject.toml`, or
-      `.python-version`** → run `hatch run all`, the full pre-PR superset (its
-      constituent scripts are the source of truth in `pyproject.toml`). These
+    - **Touches `src/`, `tests/`, `examples/`, `scripts/`, `.claude/hooks/`,
+      `pyproject.toml`, or `.python-version`** → run `hatch run all`, the full
+      pre-PR superset (its constituent scripts are the source of truth in
+      `pyproject.toml`). These
       are the test-bearing and interpreter-defining members of CI's `CODE_PAT`;
       `scripts/` is among them because its guards live under `tests/scripts/`, which
-      only the suite runs (a `scripts/`-only diff must still run it). The remaining
-      `CODE_PAT` members are generated artefacts (FEATURES, the graph data — drift
+      only the suite runs (a `scripts/`-only diff must still run it), and
+      `.claude/hooks/` for the same reason: its guard is
+      `tests/scripts/test_claude_hooks.py`, so a hook-only diff that skipped the
+      suite would validate nothing. The remaining `CODE_PAT` members are
+      generated artefacts (FEATURES, the graph data — drift
       caught by `preflight` on this path) and CI config (workflows, actions —
       validated only by CI, which re-runs itself on those paths).
       `all` uses the no-Docker `test-cov-s1` variant (no 95% floor); that floor is
