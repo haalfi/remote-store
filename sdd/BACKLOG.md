@@ -351,6 +351,43 @@ and the highest ID already in this file, then take the next integer. Run
   instance; enumerating `lint` and `preflight` against the path filters found two
   more, so the item is scoped to all three rather than to the one reported.
 
+- [ ] **ID-246 — No gate verifies that a tracker ID cited under `sdd/` resolves**
+  spec: — · effort: S · audience: contributor.tooling
+  Specs cite backlog coordinates as provenance — the clause says what it binds,
+  the ID says which work produced it. `check_no_tracker_refs.py` is built to
+  *push* IDs here: it fails a docstring or `docs-src/` page and tells the author
+  to "move the coordinate into the corresponding `sdd/specs/` or
+  `sdd/BACKLOG-DONE.md` entry", and lists `sdd/**` as out of scope because "the
+  trackers are how those documents are addressed". So the citations are correct
+  by design. **Nothing checks that they resolve.**
+  **Measured** (all 50 specs): 166 citations, 80 distinct IDs, 28 files, **zero
+  dangling** — 69 resolve into `BACKLOG-DONE.md`, the rest into `BACKLOG.md`.
+  The invariant holds today by discipline, not by construction: no script
+  validates sdd-internal tracker citations (`check_no_tracker_refs` looks away
+  by design, `check_formal_trace` covers spec IDs not backlog IDs), and
+  [`DRIFT-RULES.md`](DRIFT-RULES.md) does not mention the backlog at all.
+  **Failure mode:** `BACKLOG-DONE.md` is ~8,000 lines and append-only *by
+  convention*. A prune, a bad merge, or a renumber silently rots every spec
+  clause pointing into it, and the rot is invisible — a reader meets an ID that
+  resolves nowhere and cannot tell whether the evidence was deleted or never
+  existed.
+  **Fix shape:** extend `check_no_tracker_refs.py` — it already parses the ID
+  pattern and already knows both backlog files — with a second, inverted pass:
+  every `PREFIX-NNN` under `sdd/` must appear as an item in `BACKLOG.md` or
+  `BACKLOG-DONE.md`, failing with the citing file and line
+  ([DRIFT-RULES Rule 2](DRIFT-RULES.md#rules): localize, don't merely fail).
+  Rule 3 is what makes this cheap and worth doing: the claim space is *derived*
+  from the citing documents rather than maintained beside them, and the
+  identifiers are already stable. Rule 4 needs a decision the item does not
+  presuppose — when a spec cites an ID no backlog file carries, which side is
+  wrong. Note the wiring trap BK-333 above documents: a check reading `sdd/`
+  must reach a gate an `sdd/`-only change actually runs.
+  Surfaced during the ID-241 review by the question "why do specs carry backlog
+  IDs at all, aren't they temporary?" The premise turned out to be wrong —
+  completed items migrate to `BACKLOG-DONE.md` rather than being deleted, per
+  this file's own § Completing work — but the question exposed that nothing
+  enforces the migration's promise.
+
 ---
 
 ## Cross-Artifact Consistency

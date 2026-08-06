@@ -237,6 +237,7 @@ phases:
 
 discovery_followups:
   - ID-245
+  - ID-246
 
 expected_ripples:
   - sdd/specs/003-backend-adapter-contract.md
