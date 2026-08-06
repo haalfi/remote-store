@@ -366,13 +366,14 @@ this section carries the work.
 [the file's default](#how-this-file-works), because its items form a dependency
 chain. Position therefore says nothing about importance, and dependencies are
 stated by ID inside each item so re-sequencing cannot silently invalidate them.
-**ID-241 and ID-244 come first**, then ID-207's steps 3 and 4. This is a
+**ID-244 comes first** (ID-241, its sibling, has shipped), then ID-207's steps 3
+and 4. This is a
 re-sequencing on measured evidence, not the original plan: BK-324 was expected to
 clear the way for ID-207 step 2, and instead supplied four instances of the drift
-this programme exists to detect — none of which step 2 would have caught. BK-340
-(shipped), ID-241 and ID-244 are what those four actually exhibited (a rule gated
-so no fixture ever runs it), and ID-207 step 3 is the other half (a citation is
-not an assertion).
+this programme exists to detect — none of which step 2 would have caught. BK-340,
+ID-241 (both shipped) and ID-244 are what those four actually exhibited (a rule
+gated so no fixture ever runs it), and ID-207 step 3 is the other half (a
+citation is not an assertion).
 Step 2 keeps its L cost and its ~2.5% reach; it follows rather than leads, and
 ID-207 states the evidence. BK-332, ID-236 and ID-237 are follow-ons that get
 cheaper once the earlier work lands. BK-327 and ID-238 are independent of the
@@ -388,6 +389,15 @@ rather than the whole surface. The `ReadOnlyHttpBackend` audit BK-340 also asked
 for found the same gate excluding the registry's only read-only LAZY_READ
 declarer from SIO-009, plus a vacuous assertion in that cell — shipped alongside
 it as [BUG-244](BACKLOG-DONE.md).
+
+**ID-241 shipped and produced ID-245, the same way.** Making the missing-cassette
+skip fire per unplayable request rather than per test name moved 52 conformance
+cells from skipped to executing — and the act of measuring that moved spec 003's
+hand-counted coverage table for the second time, which is ID-245 at the head of
+this section. The pattern is now three for three: closing a reachability gate
+measures the next thing underneath it. Read the measured numbers in
+[BACKLOG-DONE.md](BACKLOG-DONE.md) before sizing further work here, because
+"skipped" and "unreachable" turned out not to be the same set.
 
 On importance, the research doc's designation, which this section adopts rather
 than restates: the two items that build what is actually missing are the authority
@@ -422,25 +432,29 @@ before believing it, because the case that does *not* resolve is the informative
 one — and a hand-counted figure about a growing corpus is stale before the commit
 that writes it lands, so cite the generator instead.
 
-- [ ] **ID-241 — Conformance cells that make no HTTP call still skip on a missing cassette**
-  spec: — · effort: S · audience: infra.test
-  The missing-cassette hook fires **per test name**, regardless of whether the
-  test issues a request. So `graph_replay` and `azure_replay_async` skip
-  pure-addressing cells — `native_path` / `to_key` / `resolve`, which are string
-  manipulation with no I/O — purely because no cassette was recorded for that
-  test name.
-  **Cost, measured:** BK-324 added `TestAsyncBackendNativePath` to conformance,
-  and it immediately caught a truthiness defect in the `AsyncBackend.native_path`
-  default that a source sweep had missed (the async ABC sits outside
-  `src/remote_store/backends/`, where the sweep looked). That cell earned its
-  place and is nonetheless skipped on both replay fixtures; Graph's root
-  addressing is pinned in `tests/backends/graph/aio/test_backend.py` instead.
-  **Fix shape:** let a cell declare it makes no HTTP call, and have the hook
-  honour that instead of skipping by name. The alternative — recording empty
-  cassettes per test name — scales with the test count and reintroduces the
-  hand-maintained-parallel-artifact problem.
-  **Why ID:** whether the marker belongs on the test, the fixture, or the hook is
-  unmade, and the answer decides how much of the replay lane changes.
+- [ ] **ID-245 — Spec 003's per-backend cassette-reachability table is hand-counted**
+  spec: — · effort: M · audience: infra.test
+  [`003-backend-adapter-contract.md`](specs/003-backend-adapter-contract.md)
+  BE-029's coverage note tabulates, per backend, which root-path conformance
+  cells execute and which are pinned only in a per-backend home. Every figure in
+  it was counted by hand, against a corpus that grows — the exact shape BK-330
+  warned about and this section's preamble quotes: *"a hand-counted figure about
+  a growing corpus is stale before the commit that writes it lands, so cite the
+  generator instead."* ID-241 has already rewritten the table once for the same
+  reason, which is the second data point.
+  **Fix shape:** a script that runs the conformance suite (or its collection plus
+  the replay guard's verdict) and emits, per replay fixture, which cells execute
+  and which skip for want of a cassette; spec 003 then cites the generator rather
+  than a count. The reachability figure is not derivable from collection alone —
+  whether a cell needs a cassette depends on whether the backend issues a request,
+  which only running it answers (ID-241).
+  **Design obligations:** [`DRIFT-RULES.md`](DRIFT-RULES.md#rules) applies in
+  full — Rule 3 (the claim space must be *derived*, and its granularity stated),
+  Rule 4 (which of spec and generator governs), Rule 5 (gating or advisory, and
+  why).
+  Filed by ID-241 rather than built: that item's own diff was the mechanism, and
+  a report over a surface it was in the middle of changing would have measured a
+  moving target.
 
 - [ ] **ID-244 — A read-only backend cannot reach any WRITE-gated contract cell**
   spec: — · effort: M · audience: infra.test

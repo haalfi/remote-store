@@ -191,8 +191,9 @@ class CassetteProfile:
 
     Registering a fixture with a profile (``BackendFixture.cassette_profile``)
     is the single registration act: directory routing, cassette-name aliasing,
-    the missing-cassette skip, scrub config, and audit inclusion all derive
-    from the profile — there is no second table to extend. A fixture id
+    scrub config, and audit inclusion all derive from the profile — there is no
+    second table to extend. (The missing-cassette skip derives from nothing: it
+    fires on an unplayable request against an absent file.) A fixture id
     carrying a profile must appear in that profile's ``fixture_aliases``;
     the conformance conftest fails loud at routing-map build otherwise.
     """

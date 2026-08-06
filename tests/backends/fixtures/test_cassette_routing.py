@@ -1,11 +1,15 @@
 """Tests for registry-driven cassette routing (spec 049, REC-007).
 
 Registering a fixture with ``cassette_profile=<PROFILE>`` is the single act
-that opts it into directory routing, cassette-name aliasing, the
-missing-cassette skip, and the scrub config. These tests pin that contract
-from both sides: the registry invariants every profile-bearing fixture must
-satisfy, and the shared cassette-routing core's fail-loud guards
-(``tests/backends/fixtures/_cassette_pytest.py``) for fixtures that break it.
+that opts it into directory routing, cassette-name aliasing, and the scrub
+config. These tests pin that contract from both sides: the registry invariants
+every profile-bearing fixture must satisfy, and the shared cassette-routing
+core's fail-loud guards (``tests/backends/fixtures/_cassette_pytest.py``) for
+fixtures that break it.
+
+The missing-cassette skip is not part of that contract and is not tested here;
+it derives from the request rather than the registry, and its home is
+``test_missing_cassette_guard.py``.
 """
 
 from __future__ import annotations
@@ -44,8 +48,9 @@ class TestCassetteRouting:
             )
 
     def test_replay_fixtures_carry_a_profile(self) -> None:
-        """A replay fixture without a profile would silently lose routing,
-        scrubbing, and the missing-cassette skip."""
+        """A replay fixture without a profile would silently lose routing and
+        scrubbing — it would read and write a cassette in the wrong place,
+        unscrubbed."""
         for fixture in all_fixtures():
             if fixture.kind == "replay":
                 assert fixture.cassette_profile is not None, fixture.name

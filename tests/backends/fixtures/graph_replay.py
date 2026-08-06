@@ -11,7 +11,9 @@ replay fixture — no ``AsyncioRequestsTransport`` is injected.
 
 Until GR-READ / GR-WRITE / GR-MUTATE record cassettes (and implement the
 data-plane ops), the conformance suite's missing-cassette skip keeps every
-graph_replay slice inert.
+graph_replay slice that issues a request inert. The addressing and
+close-posture slices are not among them: they answer from the key alone, so
+they execute with no cassette (ID-241).
 """
 
 from __future__ import annotations

@@ -176,8 +176,10 @@ redaction rules, the optional pre-signed policy, the forbidden-pattern
 additions, and the optional vcrpy matcher override.
 
 In return the core provides: cassette-directory routing, cassette-name
-normalisation, the missing-cassette skip (TEST-007), the scrub config,
-and inclusion in both audit gates (REC-006). There is no second
+normalisation, the scrub config, and inclusion in both audit gates
+(REC-006). The missing-cassette skip (TEST-007) needs no registration at
+all — it keys on an unplayable request against an absent cassette file,
+which every replay transport reaches regardless of profile. There is no second
 registration point; the one cross-check — a profile-bearing fixture must
 appear in its profile's aliases — fails loud at routing-map build, and a
 vcr-marked test whose fixture carries no profile fails loud rather than

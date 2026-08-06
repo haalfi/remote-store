@@ -301,9 +301,17 @@ HTTP transport stubbed by recorded cassette files in
 
 **Postcondition:** A test that originally required a live cloud
 account to validate runs at zero cost in every default CI run, while
-the live fixture remains the source of truth. If a cassette is
-missing for a test, the replay fixture skips that parametrize id
-rather than failing.
+the live fixture remains the source of truth. A parametrize id whose
+cassette is missing skips at the point it needs one — when the replay
+transport is asked for a request it cannot play — rather than failing.
+
+**The skip is per request, not per test name.** A cell that issues no
+request needs no cassette and therefore runs, on every replay fixture
+where that holds of it. That is a per-(cell, backend) property, not a
+per-cell one: one backend may answer from the key alone where another
+resolves it over the wire first, so the trigger has to be the request.
+A cassette that *is* present and cannot serve the request is a stale
+recording — a failure, not a skip.
 
 **Implementation choice** (cassette tech, scrubbing rules, async
 pipeline coverage) is specified separately: this spec fixes the

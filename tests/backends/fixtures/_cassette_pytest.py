@@ -2,7 +2,7 @@
 
 The generic, registry-driven half of the cassette machinery: cassette
 directory routing, live/replay name aliasing, the scrub-config fixture, the
-plugin guard, the missing-cassette skip, and the scrub-fire manifest dump.
+plugin guard, the missing-cassette guard, and the scrub-fire manifest dump.
 None of it is conformance-specific — every routing decision derives from a
 fixture's ``cassette_profile`` (REC-007) — so it is hosted here and imported by
 both conftests that need it:
@@ -20,19 +20,17 @@ indirect fixtures, and the real-Azure xfail roster.
 Usage in a conftest::
 
     from tests.backends.fixtures._cassette_pytest import (
-        apply_missing_cassette_skips,
         cassette_plugin_guard,
         default_cassette_name,  # noqa: F401 — re-exported as a pytest fixture
         dump_scrub_manifest,
+        install_missing_cassette_guard,
         vcr_cassette_dir,       # noqa: F401 — re-exported as a pytest fixture
         vcr_config,             # noqa: F401 — re-exported as a pytest fixture
     )
 
     def pytest_configure(config):
         cassette_plugin_guard(config)
-
-    def pytest_collection_modifyitems(config, items):
-        apply_missing_cassette_skips(config, items)
+        install_missing_cassette_guard(config)
 
     def pytest_sessionfinish(session, exitstatus):
         dump_scrub_manifest()
@@ -47,18 +45,22 @@ import functools
 import importlib.util
 import os
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
+from vcr.cassette import Cassette
 
 from tests.backends.fixtures import all_fixtures
 from tests.backends.fixtures._cassettes import CassetteProfile, build_profile_vcr_config, dump_scrub_manifest
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
 __all__ = [
-    "apply_missing_cassette_skips",
     "cassette_plugin_guard",
     "default_cassette_name",
     "dump_scrub_manifest",
+    "install_missing_cassette_guard",
     "vcr_cassette_dir",
     "vcr_config",
 ]
@@ -76,8 +78,9 @@ _CASSETTES_ROOT: Path = Path(__file__).resolve().parent.parent / "cassettes"
 
 # All cassette routing derives from the fixture registry: a fixture
 # registered with ``cassette_profile=<PROFILE>`` opts into directory routing,
-# name aliasing, the missing-cassette skip, and the scrub config in that one
-# act. A node id carrying no profile-bearing fixture has no cassette.
+# name aliasing, and the scrub config in that one act. A node id carrying no
+# profile-bearing fixture has no cassette. The missing-cassette guard needs no
+# registry lookup at all — it reads the path off the live cassette.
 
 
 @functools.cache
@@ -145,8 +148,8 @@ def _normalise_cassette_name(node_name: str, cls: type | None) -> str:
     """Return a cassette name with backend-fixture suffixes normalised.
 
     Applies the same class-prefix and forbidden-char replacement logic as
-    ``pytest_recording.plugin.get_default_cassette_name`` so the skip hook
-    and the ``default_cassette_name`` fixture compute the same path.
+    ``pytest_recording.plugin.get_default_cassette_name``, so a live and a
+    replay id resolve to one cassette file.
 
     Handles ids where the backend fixture appears at any position within the
     parametrize bracket group — first (``[azure_replay-write-no-overwrite]``),
@@ -165,21 +168,6 @@ def _normalise_cassette_name(node_name: str, cls: type | None) -> str:
     for ch in _FORBIDDEN_CASSETTE_CHARS:
         cassette_name = cassette_name.replace(ch, "-")
     return cassette_name
-
-
-def _cassette_path_for_item(item: pytest.Item) -> None | Any:
-    """Return the expected cassette ``Path`` for a vcr-marked test.
-
-    Returns ``None`` when the item's parametrize id carries no cassette-bearing
-    fixture (and therefore has no cassette path to check). The directory is the
-    fixture's per-backend cassette dir (``azure`` / ``graph``), per TEST-007.
-    """
-    profile = _profile_for_node_name(item.name)
-    if profile is None:
-        return None
-    cls = getattr(item, "cls", None)
-    cassette_name = _normalise_cassette_name(item.name, cls)
-    return profile.cassette_dir / f"{cassette_name}.yaml"
 
 
 # ---------------------------------------------------------------------------
@@ -277,32 +265,96 @@ def vcr_config(request: pytest.FixtureRequest, record_mode: str) -> dict[str, An
 
 
 # ---------------------------------------------------------------------------
-# Missing-cassette skip (TEST-007)
+# Missing-cassette guard (TEST-007)
 # ---------------------------------------------------------------------------
 
+# vcrpy's native behaviour in ``record_mode=none`` is to *raise* on a request it
+# cannot play. TEST-007 requires a *skip* instead, so that a backend whose
+# cassettes have not been recorded yet leaves a visible gap rather than a red
+# suite.
+#
+# The trigger is the request, not the test name (ID-241). The former hook ran at
+# collection time and skipped every vcr-marked item whose cassette file was
+# absent — including cells that issue no request at all, which a recording could
+# never help. Whether a cell needs the network is also **per backend**: Graph
+# resolves the root over HTTP before rejecting it while Azure rejects locally, so
+# one conformance cell can need a cassette on one fixture and not on another. No
+# declaration on the test, the fixture, or a roster can state that; only the
+# request can.
+#
+# Two private vcrpy surfaces are load-bearing here, and both are covered by the
+# ``vcrpy`` minor-version tripwire in ``pyproject.toml``:
+#
+# * ``Cassette.can_play_response_for`` — the single gate every transport stub
+#   consults before playing, and the only point common to urllib3 (sync Azure),
+#   aiohttp (async Azure) and httpx (Graph).
+#   ``test_missing_cassette_guard.py`` drives all three end to end.
+# * ``Cassette._path`` — the cassette file vcrpy resolved. Reading it here is
+#   what lets the guard drop the old node-id → path reconstruction; the guard
+#   asks the cassette rather than recomputing what pytest-recording already
+#   decided.
 
-def apply_missing_cassette_skips(config: pytest.Config, items: list[pytest.Item]) -> None:
-    """Skip vcr-marked tests whose cassette is absent (TEST-007).
+_GUARD_INSTALLED = "_rs_missing_cassette_guard"
 
-    vcrpy's native behaviour in ``record_mode=none`` is to *raise* on an
-    unmatched request.  The spec requires a *skip* instead.  This checks at
-    collection time and adds ``pytest.mark.skip`` for any vcr-marked test whose
-    cassette file does not exist yet.
 
-    Only relevant during replay: in record mode the cassette is being written,
-    so its absence is expected. Idempotent — safe to call from more than one
-    conftest's ``pytest_collection_modifyitems`` over the same item list.
+def _make_missing_cassette_guard(
+    original: Callable[[Cassette, Any], bool], rootpath: Path
+) -> Callable[[Cassette, Any], bool]:
+    """Wrap ``Cassette.can_play_response_for`` so an absent cassette skips.
+
+    Skips **only** when the cassette file does not exist. A cassette that is
+    present but cannot serve the request is a stale recording — a real failure,
+    and the guard leaves it alone.
+
+    The skip is raised, not returned, and ``pytest.skip`` raises ``Skipped``,
+    which derives from ``BaseException``. That is deliberate: the guard fires
+    deep inside backend code that maps ``except Exception`` into library errors
+    (``AsyncAzureBackend`` translates vcrpy's own exception into
+    ``RemoteStoreError``), so an ordinary exception would be swallowed and a cell
+    asserting an error would pass vacuously.
     """
+
+    @functools.wraps(original)
+    def can_play_response_for(cassette: Cassette, request: Any) -> bool:
+        if original(cassette, request):
+            return True
+        path = Path(cassette._path)
+        if cassette.write_protected and not path.exists():
+            rel = os.path.relpath(path, rootpath)
+            pytest.skip(f"replay cassette missing ({rel}); record with pytest --stage=3 --record")
+        return False
+
+    return can_play_response_for
+
+
+def install_missing_cassette_guard(config: pytest.Config) -> None:
+    """Install the missing-cassette guard for this session (TEST-007).
+
+    Only during replay: while recording, the cassettes are being written, and a
+    replay fixture that pins ``record_mode="none"`` on its own marker must still
+    fail loudly inside a recording session rather than let
+    ``scripts/record_cassettes.py`` report success over a cassette it never
+    wrote.
+
+    **Both record flags are checked, not just ``--record-mode``.** The root
+    conftest maps ``--record`` onto ``record_mode="rewrite"`` in its own
+    ``pytest_configure``, and ``pytest_configure`` is a historic hook whose
+    impls pluggy calls in reverse registration order — so this can run *before*
+    that mapping. Reading ``--record`` directly makes the answer independent of
+    which conftest configures first; the hook this replaced ran at collection
+    time and never had to care.
+
+    Idempotent — both the conformance conftest and the sibling
+    ``tests/backends/azure/`` deviation conftest call it in their own
+    ``pytest_configure``, and only the first wraps.
+    """
+    if config.getoption("--record", default=False):
+        return
     record_mode = config.getoption("--record-mode", default=None) or "none"
     if record_mode != "none":
         return
-    for item in items:
-        if item.get_closest_marker("vcr") is None:
-            continue
-        cassette = _cassette_path_for_item(item)
-        if cassette is None or cassette.exists():
-            continue
-        rel = os.path.relpath(cassette, config.rootpath)
-        item.add_marker(
-            pytest.mark.skip(reason=f"replay cassette missing ({rel}); record with pytest --stage=3 --record")
-        )
+    if getattr(Cassette.can_play_response_for, _GUARD_INSTALLED, False):
+        return
+    guard = _make_missing_cassette_guard(Cassette.can_play_response_for, config.rootpath)
+    setattr(guard, _GUARD_INSTALLED, True)
+    Cassette.can_play_response_for = guard  # type: ignore[method-assign]

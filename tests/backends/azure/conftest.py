@@ -11,7 +11,7 @@ This conftest:
 
 * reuses the generic cassette wiring from
   ``tests/backends/fixtures/_cassette_pytest.py`` — the same routing, scrub
-  config, plugin guard, missing-cassette skip, and manifest dump the
+  config, plugin guard, missing-cassette guard, and manifest dump the
   conformance conftest uses — so HNS cassettes land in ``cassettes/azure/`` and
   the recorder's Step-4 audit sees their scrub fires;
 * parametrises the HNS suite over the ``azure_live_hns`` / ``azure_replay_hns``
@@ -37,10 +37,10 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 from tests.backends.fixtures._cassette_pytest import (
-    apply_missing_cassette_skips,
     cassette_plugin_guard,
     default_cassette_name,  # noqa: F401 — imported so pytest resolves it as a fixture
     dump_scrub_manifest,
+    install_missing_cassette_guard,
     vcr_cassette_dir,  # noqa: F401 — imported so pytest resolves it as a fixture
     vcr_config,  # noqa: F401 — imported so pytest resolves it as a fixture
 )
@@ -69,13 +69,13 @@ _LOG = logging.getLogger(__name__)
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """Fail fast if pytest-recording is not installed (TEST-007)."""
+    """Fail fast if pytest-recording is missing; arm the missing-cassette guard (TEST-007).
+
+    The guard is installed once per session; whichever of this conftest and the
+    conformance one configures first wraps, and the other is a no-op.
+    """
     cassette_plugin_guard(config)
-
-
-def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
-    """Skip HNS replay tests whose cassette is absent (TEST-007)."""
-    apply_missing_cassette_skips(config, items)
+    install_missing_cassette_guard(config)
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
@@ -93,8 +93,8 @@ def hns_record_params(*, is_async: bool) -> list[Any]:
 
     The parametrize id is the fixture name (``azure_live_hns`` /
     ``azure_replay_hns``) so the root conftest's dynamic ``vcr`` mark, the
-    profile's ``fixture_aliases``, the recorder ``-k`` filter, and the
-    missing-cassette skip all key on it. Each record's own marks ride along —
+    profile's ``fixture_aliases`` and the recorder ``-k`` filter all key on it.
+    Each record's own marks ride along —
     ``pytest.mark.live`` on the live record, ``pytest.mark.vcr(record_mode="none")``
     on the replay record.
     """

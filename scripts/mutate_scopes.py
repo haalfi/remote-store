@@ -104,13 +104,17 @@ def _cassettes_recorded(backend_name: str) -> bool:
     recorded cassette.
 
     A ``kind="replay"`` fixture whose cassette tree has not been recorded yet
-    skips *every* conformance test (missing-cassette skip). A mutation scope
-    built solely around such a fixture therefore collects zero coverage, and
-    pytest-gremlins aborts its baseline pass with ``CoverageWarning: No data
-    was collected`` (exit 3) — which is exactly how the weekly
-    ``conformance-async-extended-graph`` shard failed. This predicate keeps a
-    not-yet-cassetted replay backend out of those scopes until its cassettes
-    land (graph: BK-260), at which point the scope self-generates again.
+    skips every conformance test that issues a request (missing-cassette skip),
+    which is every test that touches the backend's request path. A mutation
+    scope built solely around such a fixture therefore has nothing to mutate,
+    and pytest-gremlins aborted its baseline pass with ``CoverageWarning: No
+    data was collected`` (exit 3) — which is exactly how the weekly
+    ``conformance-async-extended-graph`` shard failed. Since ID-241 a handful of
+    request-free cells do run, so the symptom would now be a near-empty baseline
+    rather than an empty one; either way the scope is not worth generating. This
+    predicate keeps a not-yet-cassetted replay backend out of those scopes until
+    its cassettes land (graph: BK-260), at which point the scope self-generates
+    again.
     """
     cassette_dir = _TESTS_ROOT / "backends" / "cassettes" / backend_name
     return cassette_dir.is_dir() and any(cassette_dir.iterdir())

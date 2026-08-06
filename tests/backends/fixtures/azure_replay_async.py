@@ -28,7 +28,7 @@ policy still runs; only the bottom transport leaf differs.
 not be caught by replay.  ``azure_live_async`` (real ``AioHttpTransport``,
 Stage 3) remains the source of truth for such defects.
 
-Cassette naming and missing-cassette skip are identical to ``azure_replay``.
+Cassette naming is identical to ``azure_replay``.
 """
 
 from __future__ import annotations

@@ -166,8 +166,14 @@ dev = [
   # evidence: 8.2.0 rewrote the aiohttp stub inside a *minor*, and the cassette
   # fixtures pin private vcrpy behaviour (`filters.replace_headers`,
   # `VCR._build_before_record_request` composition order in
-  # `tests/backends/fixtures/test_cassettes.py`), so a minor is exactly the size
-  # of release that can break us. Floor-only would leave the failure this pin
+  # `tests/backends/fixtures/test_cassettes.py`; `Cassette.can_play_response_for`
+  # and `Cassette._path`, wrapped by the missing-cassette guard in
+  # `tests/backends/fixtures/_cassette_pytest.py`), so a minor is exactly the size
+  # of release that can break us. The guard is the one whose failure would be
+  # quiet — a stub that stopped consulting `can_play_response_for` would turn
+  # skips into errors for one backend only, which is why
+  # `test_missing_cassette_guard.py` drives all three transports rather than the
+  # wrapper alone. Floor-only would leave the failure this pin
   # exists to prevent (a fragile release landing silently on whichever PR
   # resolves next) wide open on the library that actually caused it.
   # All test-only; the published package constrains neither.
