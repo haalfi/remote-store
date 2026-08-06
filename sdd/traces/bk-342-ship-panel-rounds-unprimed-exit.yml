@@ -1,0 +1,336 @@
+id: BK-342
+title: "Adapt /ship from PR #949's review evidence"
+trigger: >-
+  ADR-0033's convergence loop was derived from one delivery. The second (PR #949,
+  BK-340) produced two signals the record did not anticipate: five stale-sibling
+  defects all created by mid-loop fixes that no sweep obligation covered, and an
+  unprimed round 6 finding what four scoped rounds had read past. BK-342
+  deliberately recorded the evidence and withheld a prescription so the
+  implementer would not be primed.
+source_items:
+  - BK-342
+  - BK-340
+  - BK-336
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/adrs/DIGEST.md
+surprising_ripples:
+  # The panel design makes /ship's reviewers non-posting, but the posting
+  # contract lives in rvw-pr — a file the diff never touched until review
+  # round 2 forced the analyze-only mode to be defined where the posting
+  # rules it excepts are stated.
+  - .claude/skills/rvw-pr/SKILL.md
+review_rounds: 6
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Maintenance / Long-horizon / BK-342"
+        read_type: gate
+        extract: >-
+          The evidence without a prescription: findings 2/6/4/4/2/3, the
+          fix-generated stale-sibling shape, the unprimed round-6 catch. The
+          withholding worked as intended — the design conversation started from
+          the signals, not a named fix.
+        outcome: ok
+      - file: sdd/traces/bk-340-sqlquery-conformance-fixture.yml
+        section: "review phase"
+        read_type: gate
+        extract: >-
+          Round-by-round record: rounds 2-5 each aimed at the previous fix pass
+          and each found something; round 6 unprimed found the docstring three
+          lines from a same-commit edit; all five sibling defects were
+          fix-generated, where BK-336's finding-attached sweep cannot fire
+        outcome: ok
+      - file: sdd/adrs/0033-ship-convergence-driven-review.md
+        section: "Decision"
+        read_type: gate
+        extract: >-
+          The clauses being amended: unprimed is round 1 only (positional, so it
+          runs before any mid-loop fix exists); termination has no unprimed
+          requirement; reviewer diversity is one-lens-per-round serial
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Step 4: Review loop"
+        read_type: gate
+        extract: >-
+          Operational contract to amend: round composition table, brief
+          requirements, stop rule. The /fix-pr citation BK-336 widened is the
+          import path for the new fix-sibling sweep — no second copy needed
+        outcome: ok
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Rules; Step 6"
+        read_type: gate
+        extract: >-
+          BK-336's class-sweep bullet and its report clause — the pattern the
+          fix-sibling sweep extends: principle in Rules, observability in the
+          Step 6 report
+        outcome: ok
+  - id: design
+    name: Design (with user)
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-336"
+        read_type: reference
+        extract: >-
+          The report clause is the load-bearing half; a rule with no artifact it
+          must produce gets skipped in silence. Applied to the new sweep: it
+          gains a report clause in the same sentence as the class sweep's.
+          Also the caution against inventing a process rule from inside the PR
+          that motivated it — answered here by user sign-off on each decision.
+        outcome: ok
+      - file: sdd/adrs/0031-expert-personas-as-subagent-files.md
+        section: "Status; preamble"
+        read_type: reference
+        extract: >-
+          Amendment convention: a new ADR carries Amends in its Status table and
+          a preamble scoping what it touches; ADR-0014 shows the amended record
+          gets an inline "*Amended by ADR-NNNN:*" note at the amended clause.
+          Chosen over editing ADR-0033's decisions in place.
+        outcome: ok
+      - file: sdd/adrs/0020-orchestrate-iterative-convergence.md
+        section: "(via ADR-0033's preamble)"
+        read_type: reference
+        extract: >-
+          Panels move /ship toward /orchestrate's multi-reviewer shape; the
+          boundary preserved is capped consolidation vs open-ended convergence,
+          stated in ADR-0034's consequences
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Four decisions, each with its own reverse-if; the n=2 split stated
+          explicitly — exit gate and fix-sweep follow measured failures, cadence
+          and panel sizing are defaults chosen ahead of the evidence
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Round composition; Stop rule; Rules"
+        read_type: reference
+        extract: >-
+          Panel mechanics (parallel, blind, one triage/fix per round), unprimed
+          brief = PR number only, third stop-rule clause with the append-a-pass
+          mechanism mirroring the verification-round ceiling exemption
+        outcome: ok
+  - id: ripple
+    name: Ripple-check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Docs / ADR row; Release & meta rows"
+        read_type: verify
+        extract: >-
+          ADR row: regenerate DIGEST via gen-adr-digest. Backlog rows: move item
+          to BACKLOG-DONE, run gen-backlogid, live trace. Authority-direction
+          row: the sweep rule's only other live copy is /ship's citation
+          sentence, widened in place; CLAUDE.md's /ship summary stays true.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience"
+        read_type: verify
+        extract: >-
+          contributor.process without a new user-facing framework: no CHANGELOG
+          entry
+  - id: review
+    name: Review round
+    steps:
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Step 4: Post review"
+        read_type: verify
+        extract: >-
+          Round 1's Bug finding, confirmed against this file: the pending-review
+          flow attaches to "the requester's latest pending review" and all
+          subagents share the owner token, so parallel panel members posting
+          concurrently would cross-contaminate one pending review and drop
+          findings while the totalCount verification still reads success. Fixed
+          by making panel members analysts (Steps 0-3, findings returned, no
+          posting) with the orchestrator as single writer; solo rounds keep the
+          full flow. The defect was invisible when the panel paragraph was
+          written because the posting mechanics live in a file the diff never
+          touched — an instance of the unnamed-surface blindness this very PR
+          is about.
+      - file: .claude/skills/ship/SKILL.md
+        section: "When not to use this; Roles"
+        read_type: verify
+        extract: >-
+          Round 1 also found two stale sibling descriptions of "a round" (the
+          cost sentence /orchestrate cites as the choosing authority, and the
+          Roles table's per-round reviewer cardinality) left behind by the
+          round-composition change — the exact fix-generated defect class this
+          PR extends the sweep rule to catch, caught here by a reviewer because
+          the skill change was authored before the rule it adds existed.
+      - file: sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md
+        section: "Consequences"
+        read_type: verify
+        extract: >-
+          Round 1's third finding: the record stated the panel's wall-clock win
+          and triage load but neither cost axis in compute terms, leaving the
+          exit gate's reverse-if unevaluable later. Added the missing Negative;
+          also hardened panel read-only from instruction to tooling
+          (write-free subagent_type) after the fourth finding showed
+          instruction-only enforcement changes shape under concurrency.
+      - file: .claude/agents/
+        section: "(frontmatter, all five)"
+        read_type: verify
+        extract: >-
+          Round 2 refuted round 1's tooling fix: no agent declares a tools:
+          restriction, the built-in read-only types keep Bash, and no
+          restriction that leaves a reviewer able to read PR content removes
+          the posting path — Edit/Write were never the posting tools. The
+          promised write-free subagent_type does not exist, and scoping the
+          instruction fallback to solo spawns had replaced weak-but-real
+          enforcement with none. Reverted to instruction-in-every-prompt,
+          stated honestly, plus a git status --porcelain check before triage
+          so a moved working tree fails the round instead of being trusted.
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "ROLE; Step 4; Step 5; Rules"
+        read_type: verify
+        extract: >-
+          Round 2 found /ship instructing a mode rvw-pr forbids four separate
+          times, and that Steps 0-3 dropped Step 5's Subject line, which
+          /ship's own clean-round check names as its mechanism. Fixed at the
+          source per the BK-336 shape: analyze-only mode defined once in
+          rvw-pr (Steps 0-3 plus Step 5's report, Step 4 skipped, one stated
+          exception in its Rules), cited from /ship. rvw-pr thereby became
+          this delivery's surprising ripple.
+      - file: sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md
+        section: "Consequences, panel Positive"
+        read_type: verify
+        extract: >-
+          Round 2's deepest finding: the wall-clock Positive treated serial
+          review-fix cycles as interchangeable with parallel reviewer slots,
+          against ADR-0033's observation 1 — serial rounds are what caught
+          each round's fix defects, and this PR's own two rounds demonstrated
+          the mechanism while its ADR undervalued it. Narrowed the Positive
+          and added the fix-pass-review-depth Negative. Round 2 also asked
+          for ADR links in Decision bullets (the digest lifts Decision text,
+          so bare mentions lose navigability there) and no backlog IDs in
+          Decision sections (short-lived coordinates in long-lived content);
+          both classes swept across the file.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-243"
+        read_type: verify
+        extract: >-
+          Round 3 caught a false clean from round 1's own sweep: the reply had
+          reported BACKLOG-DONE checked with none describing per-round
+          reviewer cardinality, but only BK-342's new entry was read — ID-243's
+          entry, which does describe the pre-panel composition, was the
+          sibling the sweep was aimed at and missed. Annotated in place per
+          the file's since-shipped convention. A sweep that reports a file
+          clean after reading one entry in it is the file-level-match-list
+          failure BK-336 already recorded once.
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "CHECKPOINT; Step 5 template"
+        read_type: verify
+        extract: >-
+          Round 3 found round 2's four-site enumeration had a fifth site: the
+          Step 2 CHECKPOINT self-affirmation, an imperative ritual directing
+          members to Step 4 and affirming the exact behaviour analyze-only
+          forbids, sitting between the mode definition and the decision
+          point. Also the Step 5 header reads "X comments posted", false for
+          members that post nothing. Made the checkpoint mode-aware and gave
+          the mode its own header variant.
+      - file: .claude/skills/ship/SKILL.md
+        section: "Round composition, Closing row"
+        read_type: verify
+        extract: >-
+          Round 3's sharpest catch: the exit gate's appended pass was the one
+          reviewer with no stated model requirement — the Closing row's em
+          dash declared Model not-applicable, the unprimed paragraph's
+          enumeration did not reach the appended pass, and ADR-0034's
+          exit-gate bullet inherited model terms from the cadence bullet only
+          by proximity, so the load-bearing gate could quietly run on the
+          author's own model and certify with the author's blind spots.
+          Enumeration widened, row renamed Closing gate (not a round in the
+          sequence) with explicit model terms, ADR bullet states same
+          briefing and model terms.
+      - file: .claude/skills/ship/SKILL.md
+        section: "Step 4, panel constraints; Step 3; Stop rule"
+        read_type: verify
+        extract: >-
+          Round 4 was run deliberately UNPRIMED per the user's decision — a
+          fresh reviewer on a different model, handed the PR number only,
+          after three primed rounds — and it found six defects, all in the
+          operational contract the primed rounds had been editing: the
+          orchestrator inherited the posting job without the pending-review
+          mechanics or totalCount verification (a silently empty round reads
+          clean to the stop rule); the porcelain check was a single sample
+          that misses a member that commits (fixed by pinning rev-parse HEAD
+          alongside); "a panel of one" dropped the scoped qualifier and would
+          have let a quiet round 2 skip round 3's mandatory unprimed member;
+          the clean-round Subject check was still singular with a
+          round-scoped remedy; Step 3's body rule protected round 1 only
+          while the closing gate's reader is the most exposed to accumulated
+          round history; and /ship's report clause said per fix pass where
+          /fix-pr and BK-336's rationale require per fix. The delivery
+          thereby reproduced, on itself, both BK-342 signals: fix-generated
+          defects landing where no sweep pointed, and a scoped-round sequence
+          converging while unnamed surface stayed unexamined until an
+          unprimed pass read it cold.
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Step 1"
+        read_type: verify
+        extract: >-
+          Round 5 (second unprimed pass, verifying round 4's fixes; the soft
+          ceiling was reached and the user chose fix-plus-final-gate) found
+          the exit gate's isolation resting on an unstated property: rvw-pr
+          happened to fetch diff and files only, with no rule saying so, one
+          directory from /fix-pr's four-comment-source machinery. Step 1 now
+          states the prohibition and why it is load-bearing. Round 5 also
+          widened the HEAD/porcelain check from panel spawns to every
+          reviewer pass — the appended solo pass whose silence ends the loop
+          had instruction-only enforcement with no detection.
+      - file: .claude/skills/ship/SKILL.md
+        section: "Round composition; spawn checklist"
+        read_type: verify
+        extract: >-
+          Round 5's consistency findings were all round-4-fix siblings: "an
+          odd round is never solo" contradicted round 1 being odd and solo
+          (scoped to round 3 on — and sweeping that fix caught the width
+          paragraph carrying the same ambiguity); "pass the number and
+          nothing else" collided with the mandatory analyze-only and
+          read-only boilerplate (resolved: unprimed excludes priming, not
+          constraints); the direct-/rvw-pr shortcut could not form a panel
+          yet claimed generality (scoped to solo passes); and round 3's edit
+          had recreated the overlong-line class round 2 swept, plus four
+          ragged wraps in ADR-0034 that the digest copies verbatim. Fifth
+          consecutive round in which a fix pass seeded the next round's
+          findings.
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Step 4 verification; CHECKPOINT; analyze-only payload"
+        read_type: verify
+        extract: >-
+          Round 6 (third unprimed pass, the bounded final gate) found the
+          verification /ship had just been pointed at was itself vacuous:
+          get_review_comments totalCount is PR-scoped, so on any PR carrying
+          earlier rounds' comments a non-zero count proves nothing — the
+          reviewer confirmed it live against this PR. Rewritten as a delta
+          (capture before, require rise-by-attached after), with /ship's two
+          citations reworded. Also: round 3's CHECKPOINT routing skipped
+          Step 3's consolidation for both modes (rerouted through it), and
+          the analyze-only payload could not express FILE-level or
+          deleted-line findings (payload now mirrors what Step 4 needs).
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "GitHub PR I/O split"
+        read_type: verify
+        extract: >-
+          Round 6's Ripple finding: the new never-fetch-feedback rule's
+          sibling — the I/O split preamble still governed /rvw-pr including
+          the feedback-read row. Scoped: /rvw-pr uses content-read and write
+          rows only; the feedback row governs /fix-pr and the main session.
+          Also stated the dirty-at-spawn escape for the HEAD/porcelain check
+          (failed precondition, not tampering) and fixed the odd-panels
+          plural in /ship's Step 3. CLOSE-OUT, recorded honestly: the loop
+          ran six rounds against a soft ceiling of five; the user bounded it
+          at this gate, so round 6's fix pass ships unreviewed and no
+          unprimed reviewer has seen the final state — a deliberate,
+          user-decided exception to the stop rule this PR itself introduces,
+          accepted because six rounds of monotonically narrowing findings
+          (mechanism holes to scoping and wraps) all lay in process prose no
+          gate executes.

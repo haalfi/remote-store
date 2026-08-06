@@ -69,6 +69,9 @@ it, since the figure is one delivery's history and not a forward estimate.
   gap. A soft ceiling of five finding-rounds triggers escalation to the user
   rather than silent termination. *Reverse if* loops routinely run long without
   the extra rounds changing what ships, so a fixed cap costs less than it saves.
+  *Amended by [ADR-0034](0034-ship-panel-rounds-and-unprimed-exit.md):* a
+  third stop clause — no ending until an unprimed reviewer has seen the final
+  state clean.
 
 - **The loop may not end on an unreviewed fix pass.** Whatever the last round
   changed is itself reviewed before the PR is declared ready; that verification
@@ -82,6 +85,8 @@ it, since the figure is one delivery's history and not a forward estimate.
   its blind spots differ. Later rounds each take one scoped lens, chosen by what
   earlier rounds did not examine. *Reverse if* unprimed rounds reliably
   duplicate what lens rounds find, making the diversity redundant.
+  *Amended by [ADR-0034](0034-ship-panel-rounds-and-unprimed-exit.md):* rounds
+  may widen to panels from round 3, with an unprimed member every odd round.
 
 - **Reviewers are read-only and never resumed; fixers may decline with
   evidence.** A resumed reviewer inherits its own prior conclusions and stops

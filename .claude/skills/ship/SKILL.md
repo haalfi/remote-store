@@ -12,14 +12,19 @@ been reviewed a fixed number of times.
 Composes the existing skills rather than reimplementing them: [`/pr`](../pr/SKILL.md)
 creates the PR, [`/rvw-pr`](../rvw-pr/SKILL.md) is the reviewer's instruction set,
 [`/fix-pr`](../fix-pr/SKILL.md) owns comment-fetch and thread-resolve mechanics.
-[`/orchestrate`](../orchestrate/SKILL.md) remains the choice when you want expert
-fan-out **without** the convergence loop.
+[`/orchestrate`](../orchestrate/SKILL.md) remains the choice when you want a
+capped, consolidate-and-decide review rather than an open-ended convergence
+loop.
 
 ## When not to use this
 
-The loop is the dominant cost: every round is a reviewer pass, a fix pass, and a
-full `hatch run all`. What that came to on a large delivery is recorded in
-[ADR-0033](../../../sdd/adrs/0033-ship-convergence-driven-review.md).
+The loop is the dominant cost: every round is one or more reviewer passes — a
+panel, from round 3 — plus a fix pass and a full `hatch run all`, and the
+unprimed exit gate can append a further reviewer pass at the close. What the
+pre-panel shape came to on a large delivery is recorded in
+[ADR-0033](../../../sdd/adrs/0033-ship-convergence-driven-review.md); the cost
+the panel and exit gate add on top is recorded in
+[ADR-0034](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md).
 
 Use `/orchestrate` or plain implementation when the change is small, mechanical,
 or easily reverted. Use `/ship` when a defect that reaches `master` is costly:
@@ -33,7 +38,7 @@ surface.
 | Orchestrator | main loop | **Never delegated.** It holds the convergence judgement |
 | Designer / planner | main loop, plan mode | One role, not two, unless the task is architectural |
 | Author, fixer | domain-expert subagents | May decline an instruction **with evidence** |
-| Reviewer | fresh subagent per round | **Never resumed.** A resumed reviewer inherits its own prior conclusions |
+| Reviewer | fresh subagents — one per panel member | **Never resumed.** A resumed reviewer inherits its own prior conclusions |
 
 ## Step 1: Frame
 
@@ -61,10 +66,17 @@ Implement, delegating to domain experts where the work is theirs. Then:
 2. Commit with the item ID prefix; push the feature branch.
 3. Run [`/pr`](../pr/SKILL.md), which owns the validation gates, the trace gate, and the template.
 
-**The PR body states what changed and why, not what to doubt.** Round 1 reads
-the body as part of PR content, so anything you would flag as risky primes the
-round that must not be primed. Doubts belong in the round-2 and later briefs,
-where priming is the point.
+**The PR body states what changed and why, not what to doubt.** Every
+unprimed reviewer — round 1, each odd panel's unprimed member, and the
+closing gate's appended pass — reads the body as part of PR content, so
+anything you would
+flag as risky primes the passes that must not be primed, and the body must
+stay doubt-free for the life of the loop, not only at round 1. Doubts belong
+in scoped briefs, where priming is the point. The same discipline covers
+round history: by the closing gate the PR carries every round's findings and
+replies, and the appended pass stays unprimed only because `rvw-pr` Step 1
+fetches diff and files, not comments — do not defeat that by restating round
+history in the body.
 
 ## Step 4: Review loop
 
@@ -73,37 +85,100 @@ push → reply and resolve.
 
 ### Round composition
 
-| Round | Lens | Model |
+| Round | Composition | Model |
 |---|---|---|
-| 1 | **Broad, unprimed** | A different model than the author's. Fable preferred; Opus when the author was Fable |
-| 2..N | One scoped lens per round | Repo domain experts, or general-purpose |
-| Final | Whatever the last fix pass touched | Fresh general reviewer |
+| 1 | One reviewer: **broad, unprimed** | A different model than the author's. Fable preferred; Opus when the author was Fable |
+| 2 | One reviewer, one scoped lens | Repo domain experts, or general-purpose |
+| 3..N | Panel sized by the diff's breadth and the prior round's yield, one scoped lens per member. **Odd rounds add one unprimed member** | Scoped members: domain experts or general-purpose. Unprimed member: a different model than the author's, same tier or higher |
+| Closing gate | Not a round in the sequence: whichever round ends the loop must review the last fix pass **and** satisfy the unprimed exit gate; a missing unprimed member is supplied by one appended pass (see Stop rule) | Appended pass: a different model than the author's, same tier or higher — the unprimed rule, unchanged |
 
-**Round 1 is unprimed on purpose.** It receives the diff, the goal, and repo
-conventions, never your areas of concern: a reviewer handed conclusions confirms
-them. Use a different model so its blind spots differ from the author's.
+**Panels run in parallel against the same pushed state.** Each member is
+fresh and blind to the others: scoped members get briefs per the requirements
+below; the unprimed member's prompt carries no content beyond the PR number
+and the constraint boilerplate every spawn requires (below) — being unprimed
+excludes areas, findings and history, not mode and tool constraints. Two
+constraints keep that parallelism sound:
+
+- **Members are analysts, not posters.** Every subagent shares the owner
+  token, and GitHub allows one pending review per user per PR — concurrent
+  members running `rvw-pr`'s posting step would cross-contaminate a single
+  pending review and drop findings while that skill's posting verification
+  still reads success. Panel members run `rvw-pr` in its
+  **analyze-only mode** (defined in that skill): Steps 0–3, Step 4 skipped,
+  Step 5's report — `Subject:` line included, which the Stop rule's
+  clean-round check needs — plus consolidated findings returned as the final
+  message. The orchestrator merges, dedups (two members reporting one defect
+  is one finding), posts the round's findings as one review — **via `rvw-pr`
+  Step 4's pending-review flow and its posted-count delta verification**, which
+  bind the poster, not just reviewers: the single create-with-`comments:`
+  call that flow forbids drops findings silently, and the members who would
+  have caught it no longer post — and runs a single triage and fix pass. A
+  round with exactly one reviewer — rounds 1 and 2, an **even** round
+  narrowed to a single scoped member, or the closing gate's appended pass —
+  keeps `rvw-pr`'s full posting flow: one reviewer, no contention. From
+  round 3 on, an odd round is never solo; it always carries its unprimed
+  member.
+- **Member enforcement is by instruction, and honestly so.** No tool
+  restriction that leaves a reviewer functional removes the hazards: reading
+  PR content needs `gh`/MCP, so the posting path cannot be tool-stripped, and
+  no spawnable `subagent_type` is write-free — the repo's agents declare no
+  tool restriction and the built-in read-only types keep `Bash`, which can
+  mutate the shared working tree. So the read-only and analyze-only
+  constraints are restated in **every** member's prompt, panel and solo
+  alike, and **every reviewer pass — panel, solo, and the closing gate's
+  appended pass** — carries a cheap check: capture `git rev-parse HEAD` when
+  the reviewers spawn (the just-pushed, gate-green state — the premise that
+  makes the check meaningful), then require an unchanged HEAD **and** a clean
+  `git status --porcelain` before triage. Dirtiness or a moved HEAD means the
+  reviewers did not see the state being certified, and the pass is re-run,
+  not trusted. A tree already dirty at spawn is a failed precondition, not
+  tampering — clean it and re-push before spawning, since the check cannot
+  tell the two apart. The appended pass is the reviewer whose silence ends
+  the loop; it is the last place to skip the check, not the first.
+
+Width is a judgement, not a formula: a quiet previous round keeps the next
+narrow — a panel of one scoped member is still a round, though from round 3
+on an odd round's unprimed sibling always rides along — and a broad diff or
+a loud round widens the next.
+
+**Unprimed reviewers — round 1, one member of every odd panel, and the exit
+gate's appended pass — are unprimed on purpose.** They receive the diff, the
+goal, and repo conventions, never your areas of concern, prior findings, or
+round history: a reviewer handed conclusions confirms them, and the second
+delivery's evidence for what that costs is in
+[ADR-0034](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md).
+Use a different model so its blind spots differ from the author's.
 
 Spawn an `Agent` with `model:` set and a prompt instructing it to read and
-execute `.claude/skills/rvw-pr/SKILL.md`. Two things the prompt must carry,
+execute `.claude/skills/rvw-pr/SKILL.md`. Things the prompt must carry,
 because the spawn path does not supply them:
 
 - **The PR number.** `rvw-pr/SKILL.md` read as a file still contains a literal
   `$ARGUMENTS`; only slash invocation substitutes it. Without the number the
   agent falls through to that skill's ask-the-user branch, which a subagent
-  cannot answer. Pass the number and nothing else, per the unprimed rule.
-- **The read-only constraint, restated.** `rvw-pr`'s `allowed-tools` frontmatter
-  grants no `Edit` or `Write`, and that guarantee is *lost* when a general agent
-  merely reads the file: it keeps its own full tool set. Restate the constraint
-  in the prompt, and prefer a `subagent_type` without write tools where one
-  fits. Until then "reviewers are read-only" is enforced by instruction rather
-  than by tooling, which is weaker than the frontmatter it stands in for.
+  cannot answer. An unprimed reviewer's prompt carries the number plus the
+  two constraint bullets below and no other content — the unprimed rule
+  excludes priming, not constraints; a scoped member's prompt adds its brief.
+- **For panel members: the word `analyze-only`.** `rvw-pr` defines the mode:
+  Steps 0–3, Step 4 skipped, Step 5's report plus findings returned as the
+  final message.
+- **The read-only constraint, restated — in every member's prompt.**
+  `rvw-pr`'s `allowed-tools` frontmatter grants no `Edit` or `Write`, and that
+  guarantee is *lost* when a general agent merely reads the file: it keeps its
+  own full tool set, and no spawnable `subagent_type` closes the gap (see the
+  panel constraints above). Enforcement is by instruction, which is weaker
+  than the frontmatter it stands in for — restate it every time, panel and
+  solo alike.
 
 Invoking `/rvw-pr` directly keeps both guarantees and is the right choice
-whenever model diversity does not matter; it cannot take a model override.
+for a **solo** pass when model diversity does not matter; it cannot take a
+model override, and it cannot form a panel — a round that owes an unprimed
+member (any odd round from 3 on) still spawns via `Agent`.
 
 ### Lens menu
 
-Pick per round, by what the work is and what previous rounds missed:
+Pick one per scoped reviewer, by what the work is and what previous rounds
+missed:
 
 - **Neglected surface.** What have prior rounds *not* looked at? Historically the
   highest-yield lens; behavioural bugs hide where review attention has not gone.
@@ -114,14 +189,17 @@ Pick per round, by what the work is and what previous rounds missed:
   gate proves the *covered* code works; it never says what is covered.
 - **Consumer.** Docs, guides, and API read from outside.
 
-### Every brief must carry
+### Every scoped brief must carry
 
 1. **Areas as areas, not conclusions:** "verify or refute each independently."
 2. **What the previous fix pass changed**, so it gets reviewed.
 3. **What previous rounds have not examined.**
 4. **Explicit permission to find nothing**, or round N manufactures a finding.
-   On the final round, add: weight toward what would be *wrong once merged*,
+   On the closing round, add: weight toward what would be *wrong once merged*,
    away from stylistic refinement.
+
+An unprimed member's brief carries none of this — the PR number only, per the
+unprimed rule above.
 
 ### Triage each finding
 
@@ -138,21 +216,30 @@ accepting every finding degrades the work, so verify before fixing.
 
 `hatch run all` green → commit → push → reply to **every** thread and resolve
 it. Use [`/fix-pr`](../fix-pr/SKILL.md)'s comment-fetch and thread-resolve
-mechanics, and its Rules — a fix pass here owes the finding's class exactly as
-one run under that skill does. Never start the next round against unpushed code:
-the reviewer would target stale lines.
+mechanics, and its Rules — a fix pass here owes the finding's class and the
+sibling sweep of its own changes exactly as one run under that skill does.
+Never start the next round against unpushed code: the reviewer would target
+stale lines.
 
 Replies carry the reasoning that does not belong in the diff: what was measured,
 what was refuted and why. The PR record is where that survives.
 
 ### Stop rule
 
-> **Stop when the most recent round yields zero must-fix findings *and* that
-> round reviewed the most recent fix pass.**
+> **Stop when the most recent round yields zero must-fix findings, that round
+> reviewed the most recent fix pass, *and* an unprimed reviewer has seen the
+> final state and found nothing must-fix.**
 
-The second clause is the one that matters: **the loop cannot end on an
-unreviewed fix pass.** A fix pass is not trusted work. It is new code written
-under time pressure by someone who has already been wrong once in this file.
+The second and third clauses close the loop's two measured blind spots. **The
+loop cannot end on an unreviewed fix pass**: a fix pass is not trusted work —
+it is new code written under time pressure by someone who has already been
+wrong once in this file. And **it cannot end on a state no unprimed reviewer
+has seen**: scoped rounds confirm what they are pointed at, and the defects a
+loop creates are created by its fixes, after round 1's unprimed pass has come
+and gone. If the would-be closing round had no unprimed member, append one
+unprimed pass; like a verification round, it counts toward the ceiling only if
+it finds something. A clean unprimed round 1 on a diff warranting no other
+lens satisfies all three clauses at once — stopping there is still correct.
 
 - **Floor: lens coverage, not a round count.** Every lens the diff *warrants*
   must have been applied. A one-surface change may warrant only the broad round,
@@ -171,16 +258,24 @@ under time pressure by someone who has already been wrong once in this file.
 - **A round that fixed nothing leaves nothing unreviewed.** The fix-pass clause
   is satisfied vacuously, so a clean round needs no successor to verify it.
 
-**Check a clean round before trusting it.** `/rvw-pr` makes its reviewer state
-the PR's subject in its own words precisely so this is cheap: if that line does
-not match what the PR does, the reviewer reviewed the wrong thing and its
-silence is worthless. Re-run the round; do not count it.
+**Check a clean round before trusting it.** `/rvw-pr` makes every reviewer
+state the PR's subject in its own words precisely so this is cheap — a solo
+reviewer posts it, a panel member returns it in its analyze-only report.
+Check **every** member's line: a panel's clean verdict is the conjunction of
+its members' silences, so one mismatched line makes that member's silence
+worthless and the clean unvalidated. The remedy is member-scoped — re-spawn
+the mis-aimed member, keep the valid passes; a solo round is re-run whole. Do
+not count an unvalidated clean.
 
 The delivery this rule was derived from is tabulated in
 [ADR-0033](../../../sdd/adrs/0033-ship-convergence-driven-review.md), round by
-round. Read it before tuning any of the above: it is the evidence that finding
-counts plateau while severity keeps falling, and that consecutive rounds each
-found defects in the previous round's fixes.
+round, and the second delivery — the one that added the panel structure and
+the unprimed exit gate — in
+[ADR-0034](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md).
+Read both before tuning any of the above: they are the evidence that finding
+counts plateau while severity keeps falling, that consecutive rounds each
+found defects in the previous round's fixes, and that scoped rounds leave
+unnamed surface unexamined.
 
 **Divergence check:** if a round finds something *more severe* than the previous
 round **in code the fix passes changed**, the corrections are spawning worse
@@ -198,8 +293,9 @@ condemned it.
 2. CHANGELOG, BACKLOG/BACKLOG-DONE, and the trace, including `review_rounds`,
    `discovery_followups`, and `surprising_ripples`.
 3. Report: rounds run, findings per round with their character, the class swept
-   per must-fix finding and what it caught, what was filed rather than fixed,
-   and any surface the gate never executed.
+   per must-fix finding and the sibling sweep per fix — each with what it
+   caught — what was filed rather than fixed, and any surface the gate never
+   executed.
 
 Then stop. **`/ship` never merges.** It hands over a PR that is ready to be.
 
@@ -207,6 +303,7 @@ Then stop. **`/ship` never merges.** It hands over a PR that is ready to be.
 
 - Never push to master.
 - Never end the loop on an unreviewed fix pass.
+- Never end the loop on a state no unprimed reviewer has seen.
 - Reviewers are read-only and fresh each round; fixers may decline with evidence.
 - Findings that are real but out of scope get filed, not silently dropped.
 - If a reviewer and a fixer disagree on fact, **measure**. Neither wins by assertion.
