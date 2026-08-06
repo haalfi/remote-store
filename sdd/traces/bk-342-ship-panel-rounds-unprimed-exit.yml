@@ -22,7 +22,7 @@ surprising_ripples:
   # round 2 forced the analyze-only mode to be defined where the posting
   # rules it excepts are stated.
   - .claude/skills/rvw-pr/SKILL.md
-review_rounds: 5
+review_rounds: 6
 phases:
   - id: orient
     name: Orient
@@ -302,3 +302,35 @@ phases:
           ragged wraps in ADR-0034 that the digest copies verbatim. Fifth
           consecutive round in which a fix pass seeded the next round's
           findings.
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Step 4 verification; CHECKPOINT; analyze-only payload"
+        read_type: verify
+        extract: >-
+          Round 6 (third unprimed pass, the bounded final gate) found the
+          verification /ship had just been pointed at was itself vacuous:
+          get_review_comments totalCount is PR-scoped, so on any PR carrying
+          earlier rounds' comments a non-zero count proves nothing — the
+          reviewer confirmed it live against this PR. Rewritten as a delta
+          (capture before, require rise-by-attached after), with /ship's two
+          citations reworded. Also: round 3's CHECKPOINT routing skipped
+          Step 3's consolidation for both modes (rerouted through it), and
+          the analyze-only payload could not express FILE-level or
+          deleted-line findings (payload now mirrors what Step 4 needs).
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "GitHub PR I/O split"
+        read_type: verify
+        extract: >-
+          Round 6's Ripple finding: the new never-fetch-feedback rule's
+          sibling — the I/O split preamble still governed /rvw-pr including
+          the feedback-read row. Scoped: /rvw-pr uses content-read and write
+          rows only; the feedback row governs /fix-pr and the main session.
+          Also stated the dirty-at-spawn escape for the HEAD/porcelain check
+          (failed precondition, not tampering) and fixed the odd-panels
+          plural in /ship's Step 3. CLOSE-OUT, recorded honestly: the loop
+          ran six rounds against a soft ceiling of five; the user bounded it
+          at this gate, so round 6's fix pass ships unreviewed and no
+          unprimed reviewer has seen the final state — a deliberate,
+          user-decided exception to the stop rule this PR itself introduces,
+          accepted because six rounds of monotonically narrowing findings
+          (mechanism holes to scoping and wraps) all lay in process prose no
+          gate executes.

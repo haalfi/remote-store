@@ -338,7 +338,10 @@ skill (`/rvw-pr`, `/fix-pr`) — split by direction and tool availability. The
 fork-vs-main distinction does **not** change the read tool; the only axis that
 does is whether `gh` is on `PATH`. (`/pr` is out of scope here: it gathers
 context from local git, not the PR API, and its only GitHub call is the
-`create_pull_request` write — already on the MCP write path below.)
+`create_pull_request` write — already on the MCP write path below.
+`/rvw-pr` uses the content-read and write rows only: its Step 1 forbids
+fetching review feedback — load-bearing for `/ship`'s unprimed reviewers —
+so the feedback row governs `/fix-pr` and the main session alone.)
 
 | Direction | Tool |
 |-----------|------|

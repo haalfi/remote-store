@@ -67,8 +67,9 @@ Implement, delegating to domain experts where the work is theirs. Then:
 3. Run [`/pr`](../pr/SKILL.md), which owns the validation gates, the trace gate, and the template.
 
 **The PR body states what changed and why, not what to doubt.** Every
-unprimed reviewer — round 1, the odd panels' members, and the closing gate's
-appended pass — reads the body as part of PR content, so anything you would
+unprimed reviewer — round 1, each odd panel's unprimed member, and the
+closing gate's appended pass — reads the body as part of PR content, so
+anything you would
 flag as risky primes the passes that must not be primed, and the body must
 stay doubt-free for the life of the loop, not only at round 1. Doubts belong
 in scoped briefs, where priming is the point. The same discipline covers
@@ -101,14 +102,14 @@ constraints keep that parallelism sound:
 - **Members are analysts, not posters.** Every subagent shares the owner
   token, and GitHub allows one pending review per user per PR — concurrent
   members running `rvw-pr`'s posting step would cross-contaminate a single
-  pending review and drop findings while that skill's `totalCount`
-  verification still reads success. Panel members run `rvw-pr` in its
+  pending review and drop findings while that skill's posting verification
+  still reads success. Panel members run `rvw-pr` in its
   **analyze-only mode** (defined in that skill): Steps 0–3, Step 4 skipped,
   Step 5's report — `Subject:` line included, which the Stop rule's
   clean-round check needs — plus consolidated findings returned as the final
   message. The orchestrator merges, dedups (two members reporting one defect
   is one finding), posts the round's findings as one review — **via `rvw-pr`
-  Step 4's pending-review flow and its `totalCount` verification**, which
+  Step 4's pending-review flow and its posted-count delta verification**, which
   bind the poster, not just reviewers: the single create-with-`comments:`
   call that flow forbids drops findings silently, and the members who would
   have caught it no longer post — and runs a single triage and fix pass. A
@@ -130,8 +131,10 @@ constraints keep that parallelism sound:
   makes the check meaningful), then require an unchanged HEAD **and** a clean
   `git status --porcelain` before triage. Dirtiness or a moved HEAD means the
   reviewers did not see the state being certified, and the pass is re-run,
-  not trusted. The appended pass is the reviewer whose silence ends the loop;
-  it is the last place to skip the check, not the first.
+  not trusted. A tree already dirty at spawn is a failed precondition, not
+  tampering — clean it and re-push before spawning, since the check cannot
+  tell the two apart. The appended pass is the reviewer whose silence ends
+  the loop; it is the last place to skip the check, not the first.
 
 Width is a judgement, not a formula: a quiet previous round keeps the next
 narrow — a panel of one scoped member is still a round, though from round 3
