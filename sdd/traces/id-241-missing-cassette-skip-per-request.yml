@@ -151,13 +151,18 @@ phases:
         section: "REC-007"
         read_type: reference
         extract: >-
-          The missing-cassette skip was listed among what a cassette_profile
-          registration buys. It no longer derives from registration at all, so it
-          comes off that list — as it does in the four other places that restated
-          it (registry.py twice, _cassettes.py, test_cassette_routing.py,
-          test_examples.py). One claim, six homes: exactly the class this
-          section's programme exists to catch, found by grepping the claim rather
-          than the file.
+          The missing-cassette skip is listed among what a cassette_profile
+          registration buys, and is restated in five other homes (registry.py
+          twice, _cassettes.py, test_cassette_routing.py, test_examples.py) —
+          one claim, six homes, exactly the class this section's programme
+          exists to catch, and found by grepping the claim rather than the file.
+          I first rewrote all six to say the skip no longer derives from
+          registration, which was wrong: a round-1 reviewer showed the deleted
+          hook had bounded itself by the registry, so commit 2 restored the six
+          with the mechanism corrected — the profile's ``cassette_dir`` is what
+          bounds the skip, while the request is what fires it. Grepping the
+          claim found every home both times; what it could not tell me was
+          whether the claim I was replacing them with was true.
       - file: tests/backends/conformance/aio/test_close_posture.py
         section: "test_close_posture_outranks_root_rejection docstring"
         read_type: reference
@@ -173,11 +178,26 @@ phases:
         section: "(full suite, guard installed)"
         read_type: verify
         extract: >-
-          105 missing-cassette skips → 47; 52 cells newly executing (52 pass, the
-          other 6 fall through to the large-payload skip); zero failures and zero
-          previously-passing cells changed. Compared cell-by-cell against the
-          pre-change JUnit baseline rather than by totals, because equal totals
-          can hide an offsetting pair.
+          105 missing-cassette skips → 47; 52 cells newly executing and passing;
+          zero failures and zero previously-passing cells changed. Compared
+          cell-by-cell against the pre-change JUnit baseline rather than by
+          totals, because equal totals can hide an offsetting pair. The
+          remaining 6 of the 105 land on the ``large_write_distinct`` opt-in
+          gate (``conformance/_helpers.py``), not on BK-305's large-payload
+          carve-out — I attributed them to BK-305 from the test names alone and
+          a round-2 reviewer read the actual skip reason, which is the same
+          "ran it, did not read it" mistake in miniature.
+      - file: tests/backends/fixtures/graph_replay.py
+        section: "module docstring; fixtures.toml Graph block"
+        read_type: verify
+        extract: >-
+          Both said the Graph data-plane ops were stubbed and their cassettes
+          unrecorded "until GR-READ/WRITE/MUTATE". Those shipped; 119 cassettes
+          are committed and 118 graph_replay conformance cells execute. I edited
+          the sentence *around* that premise in both files without checking the
+          premise, twice, and a round-2 reviewer caught it. The sweep rule I was
+          applying — grep the claim you are changing — does not reach a false
+          statement you are merely standing next to.
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check / Detailed checklist"
         read_type: verify
@@ -196,6 +216,5 @@ surprising_ripples:
   - tests/backends/fixtures/registry.py
   - tests/backends/fixtures/_cassettes.py
   - tests/backends/fixtures/fixtures.toml
-  - tests/backends/conformance/test_examples.py
   - tests/backends/conformance/test_close_posture.py
   - tests/backends/conformance/aio/test_close_posture.py
