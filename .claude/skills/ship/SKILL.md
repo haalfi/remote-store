@@ -73,15 +73,30 @@ push → reply and resolve.
 
 ### Round composition
 
-| Round | Lens | Model |
+| Round | Composition | Model |
 |---|---|---|
-| 1 | **Broad, unprimed** | A different model than the author's. Fable preferred; Opus when the author was Fable |
-| 2..N | One scoped lens per round | Repo domain experts, or general-purpose |
-| Final | Whatever the last fix pass touched | Fresh general reviewer |
+| 1 | One reviewer: **broad, unprimed** | A different model than the author's. Fable preferred; Opus when the author was Fable |
+| 2 | One reviewer, one scoped lens | Repo domain experts, or general-purpose |
+| 3..N | Panel sized by the diff's breadth and the prior round's yield, one scoped lens per member. **Odd rounds add one unprimed member** | Scoped members: domain experts or general-purpose. Unprimed member: a different model than the author's, same tier or higher |
+| Closing | Must review the last fix pass **and** satisfy the unprimed exit gate (see Stop rule) | — |
 
-**Round 1 is unprimed on purpose.** It receives the diff, the goal, and repo
-conventions, never your areas of concern: a reviewer handed conclusions confirms
-them. Use a different model so its blind spots differ from the author's.
+**Panels run in parallel against the same pushed state.** Each member is
+fresh, read-only, and blind to the others: scoped members get briefs per the
+requirements below; the unprimed member gets the PR number and nothing else.
+The orchestrator merges the members' findings, dedups (two members reporting
+one defect is one finding), and runs a single triage and fix pass for the
+round. Width is a judgement, not a formula: a quiet previous round keeps the
+next narrow — a panel of one scoped reviewer is still a round — and a broad
+diff or a loud round widens the next.
+
+**Unprimed reviewers — round 1, and one member of every odd panel — are
+unprimed on purpose.** They receive the diff, the goal, and repo conventions,
+never your areas of concern, prior findings, or round history: a reviewer
+handed conclusions confirms them, and PR #949's five scoped rounds each
+confirmed what they were pointed at while a stale docstring sat three lines
+from an edited comment until an unprimed pass read the function cold
+([ADR-0034](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md)).
+Use a different model so its blind spots differ from the author's.
 
 Spawn an `Agent` with `model:` set and a prompt instructing it to read and
 execute `.claude/skills/rvw-pr/SKILL.md`. Two things the prompt must carry,
@@ -114,7 +129,7 @@ Pick per round, by what the work is and what previous rounds missed:
   gate proves the *covered* code works; it never says what is covered.
 - **Consumer.** Docs, guides, and API read from outside.
 
-### Every brief must carry
+### Every scoped brief must carry
 
 1. **Areas as areas, not conclusions:** "verify or refute each independently."
 2. **What the previous fix pass changed**, so it gets reviewed.
@@ -122,6 +137,9 @@ Pick per round, by what the work is and what previous rounds missed:
 4. **Explicit permission to find nothing**, or round N manufactures a finding.
    On the final round, add: weight toward what would be *wrong once merged*,
    away from stylistic refinement.
+
+An unprimed member's brief carries none of this — the PR number only, per the
+unprimed rule above.
 
 ### Triage each finding
 
@@ -138,8 +156,8 @@ accepting every finding degrades the work, so verify before fixing.
 
 `hatch run all` green → commit → push → reply to **every** thread and resolve
 it. Use [`/fix-pr`](../fix-pr/SKILL.md)'s comment-fetch and thread-resolve
-mechanics, and its Rules — a fix pass here owes the finding's class exactly as
-one run under that skill does. Never start the next round against unpushed code:
+mechanics, and its Rules — a fix pass here owes the finding's class and the
+sibling sweep of its own changes exactly as one run under that skill does. Never start the next round against unpushed code:
 the reviewer would target stale lines.
 
 Replies carry the reasoning that does not belong in the diff: what was measured,
@@ -147,12 +165,20 @@ what was refuted and why. The PR record is where that survives.
 
 ### Stop rule
 
-> **Stop when the most recent round yields zero must-fix findings *and* that
-> round reviewed the most recent fix pass.**
+> **Stop when the most recent round yields zero must-fix findings, that round
+> reviewed the most recent fix pass, *and* an unprimed reviewer has seen the
+> final state and found nothing must-fix.**
 
-The second clause is the one that matters: **the loop cannot end on an
-unreviewed fix pass.** A fix pass is not trusted work. It is new code written
-under time pressure by someone who has already been wrong once in this file.
+The second and third clauses close the loop's two measured blind spots. **The
+loop cannot end on an unreviewed fix pass**: a fix pass is not trusted work —
+it is new code written under time pressure by someone who has already been
+wrong once in this file. And **it cannot end on a state no unprimed reviewer
+has seen**: scoped rounds confirm what they are pointed at, and the defects a
+loop creates are created by its fixes, after round 1's unprimed pass has come
+and gone. If the would-be closing round had no unprimed member, append one
+unprimed pass; like a verification round, it counts toward the ceiling only if
+it finds something. A clean unprimed round 1 on a diff warranting no other
+lens satisfies all three clauses at once — stopping there is still correct.
 
 - **Floor: lens coverage, not a round count.** Every lens the diff *warrants*
   must have been applied. A one-surface change may warrant only the broad round,
@@ -178,9 +204,13 @@ silence is worthless. Re-run the round; do not count it.
 
 The delivery this rule was derived from is tabulated in
 [ADR-0033](../../../sdd/adrs/0033-ship-convergence-driven-review.md), round by
-round. Read it before tuning any of the above: it is the evidence that finding
-counts plateau while severity keeps falling, and that consecutive rounds each
-found defects in the previous round's fixes.
+round, and the second delivery — the one that added the panel structure and
+the unprimed exit gate — in
+[ADR-0034](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md).
+Read both before tuning any of the above: they are the evidence that finding
+counts plateau while severity keeps falling, that consecutive rounds each
+found defects in the previous round's fixes, and that scoped rounds leave
+unnamed surface unexamined.
 
 **Divergence check:** if a round finds something *more severe* than the previous
 round **in code the fix passes changed**, the corrections are spawning worse
@@ -198,8 +228,9 @@ condemned it.
 2. CHANGELOG, BACKLOG/BACKLOG-DONE, and the trace, including `review_rounds`,
    `discovery_followups`, and `surprising_ripples`.
 3. Report: rounds run, findings per round with their character, the class swept
-   per must-fix finding and what it caught, what was filed rather than fixed,
-   and any surface the gate never executed.
+   per must-fix finding and the sibling sweep per fix pass — each with what it
+   caught — what was filed rather than fixed, and any surface the gate never
+   executed.
 
 Then stop. **`/ship` never merges.** It hands over a PR that is ready to be.
 
@@ -207,6 +238,7 @@ Then stop. **`/ship` never merges.** It hands over a PR that is ready to be.
 
 - Never push to master.
 - Never end the loop on an unreviewed fix pass.
+- Never end the loop on a state no unprimed reviewer has seen.
 - Reviewers are read-only and fresh each round; fixers may decline with evidence.
 - Findings that are real but out of scope get filed, not silently dropped.
 - If a reviewer and a fixer disagree on fact, **measure**. Neither wins by assertion.

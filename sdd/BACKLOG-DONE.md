@@ -8,6 +8,35 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-342 — Adapt `/ship` from PR #949's review evidence**
+  spec: — · effort: M · audience: contributor.process
+  The item recorded PR #949's evidence and deliberately withheld a prescription —
+  its own lesson being that direction narrows attention — so the design was
+  chosen against the evidence, with the user, before anything was written.
+  **The two signals, and where each fix landed.** Five stale-sibling defects all
+  arose from fixes the author generated mid-loop, where BK-336's finding-attached
+  sweep could not see them → the sweep obligation now extends to a fixer's own
+  changes, stated once in `/fix-pr`'s Rules with its report clause (the
+  load-bearing half, per BK-336) and inherited by `/ship` through the citation
+  BK-336 already widened. An unprimed round 6 found what four scoped rounds had
+  read past → unprimed coverage is now structural rather than positional.
+  **Shipped as [ADR-0034](adrs/0034-ship-panel-rounds-and-unprimed-exit.md),
+  amending ADR-0033**: from round 3 a round may widen to a panel of parallel
+  single-lens reviewers sized by the diff's breadth and the prior round's yield;
+  every odd round carries one unprimed member (different model than the author's,
+  same tier or higher); and the stop rule gains a third clause — the loop cannot
+  end until an unprimed reviewer has seen the final state clean. The exit gate is
+  the load-bearing half: #949's defects were created mid-loop by fixes, so
+  ADR-0033's round-1-only unprimed pass ran before any of them existed.
+  **What n = 2 licenses is split explicitly.** The exit gate and the fix-sibling
+  sweep follow from measured failures; the odd-round cadence and panel sizing are
+  defaults chosen ahead of the evidence. Each decision carries its own *reverse
+  if* so the third delivery can prune what does not pay.
+  **Deliberately not changed:** the soft ceiling (severity fell to zero while
+  counts held, so the ceiling-plus-escalation shape worked as designed) and the
+  convergence-over-round-count core, which the second delivery confirmed rather
+  than contradicted.
+
 - [x] **BUG-244 — `test_read_is_lazy`'s BytesIO assertion was vacuous for every backend that wraps its stream**
   spec: SIO-009 · effort: S · audience: infra.test
   `conformance/test_streaming.py::test_read_is_lazy` peeled buffering layers with

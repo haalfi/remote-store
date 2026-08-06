@@ -984,36 +984,6 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 
 ## Maintenance / Long-horizon
 
-- [ ] **BK-342 — Adapt `/ship` from PR #949's review evidence**
-  spec: — · effort: M · audience: contributor.process
-  ADR-0033 derived the convergence loop from one delivery. PR #949 is the second,
-  and it disagrees with the first in ways the skill does not currently account for.
-  **This item deliberately records the evidence and withholds a prescription.** The
-  measured lesson of the run is that direction narrows attention, so an item that
-  named the fix would prime whoever picks it up — the same failure, one layer up.
-  Read the trace (`sdd/traces/bk-340-sqlquery-conformance-fixture.yml`) and the PR
-  threads before deciding anything.
-  **What the run produced**, findings per round: 2, 6, 4, 4, 2, 3. Severity fell to
-  zero bugs across the last two rounds while counts held. Rounds 2–5 were scoped
-  passes, each aimed at the previous fix pass; each found something.
-  **Two signals that neither ADR-0033 nor the skill anticipates:**
-  1. Five findings shared one shape — a thing changed, one description of it
-     updated, a sibling description left stale. Every one arose from a *fix the
-     author generated*, not from the original work. BK-336's sweep rule attaches to
-     review findings, so nothing pointed a sweep at any of them.
-  2. Round 6 was run **unprimed** (no areas, no prior findings, no round history) at
-     the user's instruction, after the loop had already passed its soft ceiling. It
-     found a stale docstring three lines above an inline comment the author had
-     edited in the same commit — inside a function four scoped rounds had read. A
-     primed reviewer confirms what it is pointed at; the surface nobody named stayed
-     unexamined through five rounds.
-  **The open question** is what, if anything, `/ship` should change: where the sweep
-  obligation attaches, whether the round sequence should interleave unprimed passes
-  rather than ending on one, whether the ceiling is measuring the right thing, or
-  none of these. n = 2 deliveries. Weigh whether the evidence supports a change at
-  all before designing one, and update ADR-0033 (or supersede it) with whatever the
-  second data point actually licenses.
-
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
   spec: GR-033 · effort: M · audience: user.api
   BUG-225 capped the `graph` and `httpx` extras at `httpx>=0.24.0,<1.0`

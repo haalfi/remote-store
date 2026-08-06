@@ -1,0 +1,132 @@
+id: BK-342
+title: "Adapt /ship from PR #949's review evidence"
+trigger: >-
+  ADR-0033's convergence loop was derived from one delivery. The second (PR #949,
+  BK-340) produced two signals the record did not anticipate: five stale-sibling
+  defects all created by mid-loop fixes that no sweep obligation covered, and an
+  unprimed round 6 finding what four scoped rounds had read past. BK-342
+  deliberately recorded the evidence and withheld a prescription so the
+  implementer would not be primed.
+source_items:
+  - BK-342
+  - BK-340
+  - BK-336
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/adrs/DIGEST.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Maintenance / Long-horizon / BK-342"
+        read_type: gate
+        extract: >-
+          The evidence without a prescription: findings 2/6/4/4/2/3, the
+          fix-generated stale-sibling shape, the unprimed round-6 catch. The
+          withholding worked as intended — the design conversation started from
+          the signals, not a named fix.
+        outcome: ok
+      - file: sdd/traces/bk-340-sqlquery-conformance-fixture.yml
+        section: "review phase"
+        read_type: gate
+        extract: >-
+          Round-by-round record: rounds 2-5 each aimed at the previous fix pass
+          and each found something; round 6 unprimed found the docstring three
+          lines from a same-commit edit; all five sibling defects were
+          fix-generated, where BK-336's finding-attached sweep cannot fire
+        outcome: ok
+      - file: sdd/adrs/0033-ship-convergence-driven-review.md
+        section: "Decision"
+        read_type: gate
+        extract: >-
+          The clauses being amended: unprimed is round 1 only (positional, so it
+          runs before any mid-loop fix exists); termination has no unprimed
+          requirement; reviewer diversity is one-lens-per-round serial
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Step 4: Review loop"
+        read_type: gate
+        extract: >-
+          Operational contract to amend: round composition table, brief
+          requirements, stop rule. The /fix-pr citation BK-336 widened is the
+          import path for the new fix-sibling sweep — no second copy needed
+        outcome: ok
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Rules; Step 6"
+        read_type: gate
+        extract: >-
+          BK-336's class-sweep bullet and its report clause — the pattern the
+          fix-sibling sweep extends: principle in Rules, observability in the
+          Step 6 report
+        outcome: ok
+  - id: design
+    name: Design (with user)
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-336"
+        read_type: reference
+        extract: >-
+          The report clause is the load-bearing half; a rule with no artifact it
+          must produce gets skipped in silence. Applied to the new sweep: it
+          gains a report clause in the same sentence as the class sweep's.
+          Also the caution against inventing a process rule from inside the PR
+          that motivated it — answered here by user sign-off on each decision.
+        outcome: ok
+      - file: sdd/adrs/0031-expert-personas-as-subagent-files.md
+        section: "Status; preamble"
+        read_type: reference
+        extract: >-
+          Amendment convention: a new ADR carries Amends in its Status table and
+          a preamble scoping what it touches; ADR-0014 shows the amended record
+          gets an inline "*Amended by ADR-NNNN:*" note at the amended clause.
+          Chosen over editing ADR-0033's decisions in place.
+        outcome: ok
+      - file: sdd/adrs/0020-orchestrate-iterative-convergence.md
+        section: "(via ADR-0033's preamble)"
+        read_type: reference
+        extract: >-
+          Panels move /ship toward /orchestrate's multi-reviewer shape; the
+          boundary preserved is capped consolidation vs open-ended convergence,
+          stated in ADR-0034's consequences
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Four decisions, each with its own reverse-if; the n=2 split stated
+          explicitly — exit gate and fix-sweep follow measured failures, cadence
+          and panel sizing are defaults chosen ahead of the evidence
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Round composition; Stop rule; Rules"
+        read_type: reference
+        extract: >-
+          Panel mechanics (parallel, blind, one triage/fix per round), unprimed
+          brief = PR number only, third stop-rule clause with the append-a-pass
+          mechanism mirroring the verification-round ceiling exemption
+        outcome: ok
+  - id: ripple
+    name: Ripple-check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Docs / ADR row; Release & meta rows"
+        read_type: verify
+        extract: >-
+          ADR row: regenerate DIGEST via gen-adr-digest. Backlog rows: move item
+          to BACKLOG-DONE, run gen-backlogid, live trace. Authority-direction
+          row: the sweep rule's only other live copy is /ship's citation
+          sentence, widened in place; CLAUDE.md's /ship summary stays true.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience"
+        read_type: verify
+        extract: >-
+          contributor.process without a new user-facing framework: no CHANGELOG
+          entry
+        outcome: ok

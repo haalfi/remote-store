@@ -2,7 +2,7 @@
 
 <!-- doc: repo-only -->
 
-Compiled from 33 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
+Compiled from 34 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
 
 ## Accepted
 
@@ -1016,6 +1016,9 @@ directly.
   gap. A soft ceiling of five finding-rounds triggers escalation to the user
   rather than silent termination. *Reverse if* loops routinely run long without
   the extra rounds changing what ships, so a fixed cap costs less than it saves.
+  *Amended by [ADR-0034](0034-ship-panel-rounds-and-unprimed-exit.md):* a
+  third stop clause — no ending until an unprimed reviewer has seen the final
+  state clean.
 
 - **The loop may not end on an unreviewed fix pass.** Whatever the last round
   changed is itself reviewed before the PR is declared ready; that verification
@@ -1029,6 +1032,8 @@ directly.
   its blind spots differ. Later rounds each take one scoped lens, chosen by what
   earlier rounds did not examine. *Reverse if* unprimed rounds reliably
   duplicate what lens rounds find, making the diversity redundant.
+  *Amended by [ADR-0034](0034-ship-panel-rounds-and-unprimed-exit.md):* rounds
+  may widen to panels from round 3, with an unprimed member every odd round.
 
 - **Reviewers are read-only and never resumed; fixers may decline with
   evidence.** A resumed reviewer inherits its own prior conclusions and stops
@@ -1044,6 +1049,43 @@ directly.
 Which skill to reach for is a use decision, not one this record makes. That,
 with the step sequence, lens menu, brief requirements and triage table, is
 operational contract and lives in `.claude/skills/ship/SKILL.md`.
+
+### [ADR-0034](0034-ship-panel-rounds-and-unprimed-exit.md): Panel Rounds and an Unprimed Exit Gate for `/ship` Review
+
+- **From round 3 a round may widen to a panel**: parallel single-lens
+  reviewers, each fresh and blind to the others, merged into one triage and
+  one fix pass. Width follows the diff's breadth and the prior round's yield.
+  This stays inside the convergence loop and its stop rule — it is not
+  `/orchestrate`'s capped fan-out, which ADR-0020 still owns. *Reverse if*
+  merging and deduplication cost more than the serial rounds they replace, or
+  members mostly duplicate one another.
+
+- **Every odd round carries one unprimed reviewer.** Round 1's sole reviewer
+  is that member, as ADR-0033 already required; from round 3 the odd-round
+  panel includes one, briefed with the PR alone, on a different model from the
+  author's, same tier or higher. The cadence half: unprimed eyes on mid-loop
+  state, not only the endpoints. *Reverse if* interleaved unprimed members
+  reliably find nothing the exit gate's terminal pass would not.
+
+- **The loop cannot end until an unprimed reviewer has seen the final state
+  and found nothing must-fix.** The load-bearing half: the second delivery's
+  defects were created mid-loop by fixes, so an earlier unprimed pass proves
+  nothing about what ships. A closing round with no unprimed member gets one
+  appended; like ADR-0033's verification round it counts toward the ceiling
+  only if it finds something. *Reverse if* terminal unprimed passes stop
+  finding anything across a meaningful sample of deliveries.
+
+- **A fix pass sweeps the sibling descriptions of what it changed.** BK-336's
+  sweep obligation extends from review findings to the fixer's own
+  corrections — a coverage question, not a grep. The obligation and its report
+  clause live in `/fix-pr`; `/ship` inherits them by citation. *Reverse if*
+  these sweeps stop catching anything the review rounds do not.
+
+The step sequence, panel mechanics, brief requirements and the amended stop
+rule are operational contract and live in `.claude/skills/ship/SKILL.md` and
+`.claude/skills/fix-pr/SKILL.md`.
+
+> amends ADR-0033 (clause).
 
 ## Superseded
 

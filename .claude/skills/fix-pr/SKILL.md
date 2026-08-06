@@ -122,9 +122,10 @@ do not create a new trace here.
 ## Step 6: Commit and push
 
 Stage, commit (`fix: address PR #$ARGUMENTS review`), push. Report: comments
-fixed/resolved, skipped with reasons, and per finding the class swept with what
-it caught — a sweep that found nothing reads exactly like one that never ran —
-plus any changed surface the gate never executed.
+fixed/resolved, skipped with reasons, per finding the class swept and per fix
+the sibling descriptions swept — each with what it caught, because a sweep
+that found nothing reads exactly like one that never ran — plus any changed
+surface the gate never executed.
 
 ## Rules
 
@@ -134,3 +135,11 @@ plus any changed surface the gate never executed.
   instances it happened to see. Siblings share a failure mode, not a spelling,
   so for a rule spanning backends the question is which backends the tests
   execute against, not which lines match a grep.
+- Sweep your own fixes the same way: a fix changes a thing, and every other
+  description of that thing — docstring, comment, spec table, guide — is now
+  suspect. The class sweep above fires on a review finding; nothing but this
+  rule points a sweep at the defects a fix itself creates, and that is where
+  they land
+  ([ADR-0034](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md)).
+  Same discipline: coverage, not a grep — the same claim appears in different
+  words.
