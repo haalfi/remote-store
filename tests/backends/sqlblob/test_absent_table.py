@@ -47,14 +47,15 @@ def backend(tmp_path: Path):  # noqa: ANN201 -- yields SQLBlobBackend
         instance.close()
 
 
-@pytest.mark.spec("BE-012", "BE-013", "SQL-BLOB-012")
 class TestContainerExistsByConstruction:
     """The two constructor paths, which together leave no absent-container case."""
 
+    @pytest.mark.spec("BE-012", "BE-013", "SQL-BLOB-010")
     def test_default_creates_the_table(self, backend: SQLBlobBackend) -> None:
         """``create_table=True`` means the container exists the moment the backend does."""
         assert sa.inspect(backend._engine).has_table(_TABLE)
 
+    @pytest.mark.spec("BE-012", "BE-013", "SQL-BLOB-012")
     def test_reflection_refuses_an_absent_table(self, tmp_path: Path) -> None:
         """``create_table=False`` cannot bind to a table that is not there."""
         engine = sa.create_engine(f"sqlite:///{tmp_path / 'empty.db'}")
@@ -65,7 +66,7 @@ class TestContainerExistsByConstruction:
             engine.dispose()
 
 
-@pytest.mark.spec("BE-012", "BE-013", "BE-021")
+@pytest.mark.spec("BE-012", "BE-013", "BE-021", "SQL-BLOB-050")
 class TestDroppedTableIsNotAMissingPath:
     """A table dropped mid-life is a torn-down store, and ``missing_ok`` does not cover it."""
 

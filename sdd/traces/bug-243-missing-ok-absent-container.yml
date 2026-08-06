@@ -82,7 +82,7 @@ phases:
     name: Failing tests first
     steps:
       - file: tests/backends/s3/test_denied_probe.py
-        section: "TestMissingBucketVerdict"
+        section: "TestMissingBucketVerdict (renamed by this work to TestAbsentBucketReadsAsAbsentPath)"
         read_type: gate
         extract: >-
           The old behaviour was pinned, by name, with a docstring arguing it was
@@ -124,6 +124,44 @@ phases:
           posture — strict except for one named shape — and it is routed only
           through delete_folder, not through get_folder_info, which has no
           missing_ok and would gain nothing from catching a 404 to re-raise it.
+        outcome: ok
+  - id: review
+    name: Review rounds
+    steps:
+      - file: sdd/specs/048-testing-architecture.md
+        section: "TEST-003 (Sync and async co-location)"
+        read_type: verify
+        extract: >-
+          Round-1 finding. The new Azure suite mixed sync and async test methods
+          in one file and inside the same classes, which TEST-003 forbids in as
+          many words; the async half belongs in the per-backend aio/ submodule
+          with shared logic in _helpers. Never read during authoring — the
+          ripple-check's "New test file" row asks about os_sensitive marks, not
+          placement, and check_test_placement.py enforces three other rules and
+          not this one, so nothing pointed here.
+        outcome: ok
+      - file: sdd/specs/012-azure-backend.md
+        section: "AZ-014, AZ-015, AZ-025, AZ-026"
+        read_type: verify
+        extract: >-
+          Round-1 finding, and the highest-value one: AZ-014 is Atomic Write,
+          so all six sync cells were traced to an unrelated clause. Picked from
+          memory of the number rather than read. check_spec_marks.py verifies
+          that a cited ID exists, not that it is the right one, so false
+          traceability passes every gate in the repo — the failure mode is
+          permanent and silent.
+        outcome: ok
+      - file: sdd/specs/008-s3-backend.md
+        section: "S3-011, S3-015, S3-016"
+        read_type: verify
+        extract: >-
+          The sibling sweep of the round-1 fix, and it paid: the same mistake
+          sat in the S3 file under a different number. S3-016 is PermissionDenied
+          Mapping, correct for the denial classes that already carried it and
+          wrong for the absent-bucket cells this work added, whose subject is
+          the NotFound mapping (S3-015). Two more in the SQL file: a class-level
+          SQL-BLOB-012 (Existing Table) stamped on a create_table=True cell.
+          Reviewer named one instance; the class had four.
         outcome: ok
   - id: verify
     name: Verify

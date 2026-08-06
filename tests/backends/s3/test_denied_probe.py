@@ -207,11 +207,12 @@ def _serve_s3_stub(httpserver: HTTPServer, *, object_denied: bool, listing_denie
 def _serve_missing_bucket_stub(httpserver: HTTPServer) -> str:
     """Answer every S3 request the way a *missing bucket* does; return the endpoint.
 
-    The two shapes differ, and the difference is the whole point of
-    ``TestMissingBucketVerdict``: ``ListObjectsV2`` (a GET) answers 404 with a
+    The two shapes differ: ``ListObjectsV2`` (a GET) answers 404 with a
     ``NoSuchBucket`` body, while ``HeadObject`` answers a bodyless 404 — HTTP
     forbids a body on a HEAD response, so the bucket-level cause never reaches
-    the client and the probe cannot tell it from a missing key.
+    the client and the probe cannot tell it from a missing key. Serving both
+    faithfully is what lets ``TestAbsentBucketReadsAsAbsentPath`` assert that
+    the difference no longer reaches the caller.
     """
     from werkzeug.wrappers import Response
 
@@ -343,7 +344,7 @@ class TestAbsentBucketReadsAsAbsentPath:
     strict case, which is the failure mode a tolerance-only test would miss.
     """
 
-    @pytest.mark.spec("BE-021", "BE-012", "BE-013", "S3-016")
+    @pytest.mark.spec("BE-012", "BE-013", "BE-021", "S3-015")
     @pytest.mark.parametrize("dotted", _BACKEND_PARAMS)
     @pytest.mark.parametrize("op_name", sorted(_TOLERANT_OPS))
     def test_absent_bucket_is_tolerated(self, httpserver: HTTPServer, dotted: str, op_name: str) -> None:
@@ -353,7 +354,7 @@ class TestAbsentBucketReadsAsAbsentPath:
         with _backend_at(dotted, endpoint) as backend:
             assert call(backend) is None
 
-    @pytest.mark.spec("BE-021", "BE-012", "BE-013", "S3-016")
+    @pytest.mark.spec("BE-012", "BE-013", "BE-021", "S3-015")
     @pytest.mark.parametrize("dotted", _BACKEND_PARAMS)
     @pytest.mark.parametrize("op_name", sorted(_STRICT_DELETES))
     def test_absent_bucket_raises_not_found_when_strict(
