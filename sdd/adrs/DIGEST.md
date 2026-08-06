@@ -1079,9 +1079,10 @@ operational contract and lives in `.claude/skills/ship/SKILL.md`.
   only if it finds something. *Reverse if* terminal unprimed passes stop
   finding anything across a meaningful sample of deliveries.
 
-- **A fix pass sweeps the sibling descriptions of what it changed.** The
+- **Every fix sweeps the sibling descriptions of what it changed.** The
   sibling-sweep obligation that already attaches to review findings extends
-  to the fixer's own corrections — a coverage question, not a grep. The
+  to the fixer's own corrections, fix by fix — a coverage question, not a
+  grep. The
   obligation and its report clause live in `/fix-pr`; `/ship` inherits them
   by citation. *Reverse if* these sweeps stop catching anything the review
   rounds do not.

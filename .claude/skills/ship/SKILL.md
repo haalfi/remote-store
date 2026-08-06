@@ -66,10 +66,16 @@ Implement, delegating to domain experts where the work is theirs. Then:
 2. Commit with the item ID prefix; push the feature branch.
 3. Run [`/pr`](../pr/SKILL.md), which owns the validation gates, the trace gate, and the template.
 
-**The PR body states what changed and why, not what to doubt.** Round 1 reads
-the body as part of PR content, so anything you would flag as risky primes the
-round that must not be primed. Doubts belong in the round-2 and later briefs,
-where priming is the point.
+**The PR body states what changed and why, not what to doubt.** Every
+unprimed reviewer — round 1, the odd panels' members, and the closing gate's
+appended pass — reads the body as part of PR content, so anything you would
+flag as risky primes the passes that must not be primed, and the body must
+stay doubt-free for the life of the loop, not only at round 1. Doubts belong
+in scoped briefs, where priming is the point. The same discipline covers
+round history: by the closing gate the PR carries every round's findings and
+replies, and the appended pass stays unprimed only because `rvw-pr` Step 1
+fetches diff and files, not comments — do not defeat that by restating round
+history in the body.
 
 ## Step 4: Review loop
 
@@ -99,9 +105,15 @@ constraints keep that parallelism sound:
   Step 5's report — `Subject:` line included, which the Stop rule's
   clean-round check needs — plus consolidated findings returned as the final
   message. The orchestrator merges, dedups (two members reporting one defect
-  is one finding), posts the round's findings as one review, and runs a
-  single triage and fix pass. A solo round — rounds 1 and 2, or a panel of
-  one — keeps `rvw-pr`'s full posting flow: one reviewer, no contention.
+  is one finding), posts the round's findings as one review — **via `rvw-pr`
+  Step 4's pending-review flow and its `totalCount` verification**, which
+  bind the poster, not just reviewers: the single create-with-`comments:`
+  call that flow forbids drops findings silently, and the members who would
+  have caught it no longer post — and runs a single triage and fix pass. A
+  round with exactly one reviewer — rounds 1 and 2, an **even** round
+  narrowed to a single scoped member, or the closing gate's appended pass —
+  keeps `rvw-pr`'s full posting flow: one reviewer, no contention. An odd
+  round is never solo; it always carries its unprimed member.
 - **Member enforcement is by instruction, and honestly so.** No tool
   restriction that leaves a reviewer functional removes the hazards: reading
   PR content needs `gh`/MCP, so the posting path cannot be tool-stripped, and
@@ -109,13 +121,17 @@ constraints keep that parallelism sound:
   tool restriction and the built-in read-only types keep `Bash`, which can
   mutate the shared working tree. So the read-only and analyze-only
   constraints are restated in **every** member's prompt, panel and solo
-  alike, and the round carries a cheap check: `git status --porcelain` before
-  triage — a working tree that moved mid-round means the members did not all
-  see the same state, and the round is re-run, not trusted.
+  alike, and the round carries a cheap check: capture `git rev-parse HEAD`
+  when the panel spawns (the just-pushed, gate-green state — the premise that
+  makes the check meaningful), then require an unchanged HEAD **and** a clean
+  `git status --porcelain` before triage. Dirtiness or a moved HEAD means the
+  members did not all see the same state, and the round is re-run, not
+  trusted.
 
 Width is a judgement, not a formula: a quiet previous round keeps the next
-narrow — a panel of one scoped reviewer is still a round — and a broad diff
-or a loud round widens the next.
+narrow — a panel of one scoped member is still a round, though on an odd
+round its unprimed sibling always rides along — and a broad diff or a loud
+round widens the next.
 
 **Unprimed reviewers — round 1, one member of every odd panel, and the exit
 gate's appended pass — are unprimed on purpose.** They receive the diff, the goal, and repo conventions,
@@ -231,10 +247,14 @@ lens satisfies all three clauses at once — stopping there is still correct.
 - **A round that fixed nothing leaves nothing unreviewed.** The fix-pass clause
   is satisfied vacuously, so a clean round needs no successor to verify it.
 
-**Check a clean round before trusting it.** `/rvw-pr` makes its reviewer state
-the PR's subject in its own words precisely so this is cheap: if that line does
-not match what the PR does, the reviewer reviewed the wrong thing and its
-silence is worthless. Re-run the round; do not count it.
+**Check a clean round before trusting it.** `/rvw-pr` makes every reviewer
+state the PR's subject in its own words precisely so this is cheap — a solo
+reviewer posts it, a panel member returns it in its analyze-only report.
+Check **every** member's line: a panel's clean verdict is the conjunction of
+its members' silences, so one mismatched line makes that member's silence
+worthless and the clean unvalidated. The remedy is member-scoped — re-spawn
+the mis-aimed member, keep the valid passes; a solo round is re-run whole. Do
+not count an unvalidated clean.
 
 The delivery this rule was derived from is tabulated in
 [ADR-0033](../../../sdd/adrs/0033-ship-convergence-driven-review.md), round by
@@ -262,7 +282,7 @@ condemned it.
 2. CHANGELOG, BACKLOG/BACKLOG-DONE, and the trace, including `review_rounds`,
    `discovery_followups`, and `surprising_ripples`.
 3. Report: rounds run, findings per round with their character, the class swept
-   per must-fix finding and the sibling sweep per fix pass — each with what it
+   per must-fix finding and the sibling sweep per fix — each with what it
    caught — what was filed rather than fixed, and any surface the gate never
    executed.
 

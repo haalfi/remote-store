@@ -22,7 +22,7 @@ surprising_ripples:
   # round 2 forced the analyze-only mode to be defined where the posting
   # rules it excepts are stated.
   - .claude/skills/rvw-pr/SKILL.md
-review_rounds: 3
+review_rounds: 4
 phases:
   - id: orient
     name: Orient
@@ -250,3 +250,26 @@ phases:
           Enumeration widened, row renamed Closing gate (not a round in the
           sequence) with explicit model terms, ADR bullet states same
           briefing and model terms.
+      - file: .claude/skills/ship/SKILL.md
+        section: "Step 4, panel constraints; Step 3; Stop rule"
+        read_type: verify
+        extract: >-
+          Round 4 was run deliberately UNPRIMED per the user's decision — a
+          fresh reviewer on a different model, handed the PR number only,
+          after three primed rounds — and it found six defects, all in the
+          operational contract the primed rounds had been editing: the
+          orchestrator inherited the posting job without the pending-review
+          mechanics or totalCount verification (a silently empty round reads
+          clean to the stop rule); the porcelain check was a single sample
+          that misses a member that commits (fixed by pinning rev-parse HEAD
+          alongside); "a panel of one" dropped the scoped qualifier and would
+          have let a quiet round 2 skip round 3's mandatory unprimed member;
+          the clean-round Subject check was still singular with a
+          round-scoped remedy; Step 3's body rule protected round 1 only
+          while the closing gate's reader is the most exposed to accumulated
+          round history; and /ship's report clause said per fix pass where
+          /fix-pr and BK-336's rationale require per fix. The delivery
+          thereby reproduced, on itself, both BK-342 signals: fix-generated
+          defects landing where no sweep pointed, and a scoped-round sequence
+          converging while unnamed surface stayed unexamined until an
+          unprimed pass read it cold.
