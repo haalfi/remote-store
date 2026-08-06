@@ -125,6 +125,34 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   reconsidered rather than defended. ID-238's release-anchored trigger, co-shipped
   here, is what causes that re-measurement to happen.
 
+- [x] **BUG-243 — `missing_ok` had no stated obligation when the *container* was absent**
+  spec: BE-012, BE-013, BE-021 · effort: M · audience: user.api
+  Every clause spoke of "the path" and none of the bucket, container or table
+  holding it, so each backend answered from whatever its wire protocol happened
+  to reveal: `delete(missing_ok=True)` returned silently against a missing
+  bucket while `delete_folder(missing_ok=True)` raised `NotFound` — same store,
+  same absent container, opposite answers.
+  **Decided: an absent container reads as an absent path.** Both tolerate it
+  under `missing_ok`, both raise `NotFound` without it, and no backend spends a
+  round trip telling the two apart. Stated in
+  [BE-021](specs/003-backend-adapter-contract.md#be-021-error-mapping)
+  § "An absent container reads as an absent path", cited from BE-012 and BE-013.
+  **Why this way round.** It costs nothing — `delete_folder` reads the
+  container 404 its listing already raises as "no children" — whereas strictness
+  would have cost `delete` a second `HeadBucket` on every miss, against a spec
+  budgeting one probe per miss. It also makes flat-namespace agree with the
+  hierarchical backends, where an absent store root has always been just an
+  absent path.
+  **`SQLBlobBackend` is vacuous, and that is asserted rather than assumed:** it
+  creates its table or reflects it and refuses to construct, so no live instance
+  is bound to an absent container. A table dropped mid-flight stays
+  `BackendUnavailable`. Measuring that carve-out surfaced BUG-245.
+  **Coverage:** the Azure half runs at Stage 1 on a `pytest-httpserver` Blob
+  stub rather than behind the Docker-gated `azurite` fixture — BK-324 shipped
+  two real Azure defects behind that gate. Reverses the unreleased second half
+  of BUG-242, whose CHANGELOG bullet was amended rather than left contradicting
+  this one in the same section.
+
 - [x] **ID-241 — Conformance cells that make no HTTP call still skip on a missing cassette**
   spec: TEST-007 · effort: S · audience: infra.test
   The missing-cassette skip fired **per test name**, at collection time: any
@@ -190,6 +218,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   rather than a live recording run, which needs credentials this PR did not have.
   Produced **ID-245** (generate spec 003's reachability table rather than count
   it) and left ID-244 as the next item in the section's chain.
+
 
 - [x] **BK-342 — Adapt `/ship` from PR #949's review evidence**
   spec: — · effort: M · audience: contributor.process

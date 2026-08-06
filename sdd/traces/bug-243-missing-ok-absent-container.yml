@@ -1,0 +1,149 @@
+id: BUG-243
+title: "missing_ok has no stated obligation when the container is absent"
+trigger: >-
+  BE-012, BE-013 and BE-021 all spoke of "the path" and none of the bucket,
+  container or table holding it, so each flat-namespace backend answered a
+  tolerant delete against an absent container from whatever its wire protocol
+  happened to reveal. delete(missing_ok=True) returned silently while
+  delete_folder(missing_ok=True) raised NotFound — same store, same absent
+  bucket, opposite answers.
+source_items:
+  - BUG-243
+  - BUG-242
+audience:
+  - user.api
+  - library.maintainer
+discovery_followups:
+  - BUG-245
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+  - docs-src/guides/custom-backend-guide.md
+surprising_ripples:
+  - tests/backends/s3/test_denied_probe.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-243 (item)"
+        read_type: gate
+        extract: >-
+          The measured 2x3 table and the cost note. The item withheld a
+          disposition but pre-argued one: strictness costs S3 a second
+          HeadBucket per miss against a one-probe budget, so "tolerate" is
+          likely both cheaper and kinder. That framing survived scrutiny and
+          became the decision.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-012, BE-013, BE-021"
+        read_type: gate
+        extract: >-
+          Confirms the gap is real: BE-021 already decides the sibling question
+          (type mismatch outranks missing_ok) in the same prose, which is where
+          the container rule then went — one home, pointers from BE-012/BE-013.
+        outcome: ok
+      - file: src/remote_store/backends/_local.py
+        section: "delete, delete_folder"
+        read_type: reference
+        extract: >-
+          The read that settled the decision, and it was not in the item's
+          frame. Local resolves the path and tests exists(), so an absent store
+          root is already just an absent path and missing_ok returns silently.
+          The hierarchical backends had answered this years ago; "tolerate" was
+          not a new rule but the flat-NS half catching up.
+        outcome: ok
+  - id: reproduce
+    name: Measure the three answers
+    steps:
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "SQLBlobBackend.__init__, delete, delete_folder"
+        read_type: verify
+        extract: >-
+          Measured rather than assumed, and it inverted the item's table. SQL
+          "raises" is BackendUnavailable, not NotFound, and it is only reachable
+          by dropping the table under a live backend: create_table=True creates
+          it, create_table=False reflects it and refuses to construct. So SQL
+          was never a third answer to the same question — it has no
+          absent-container state to answer for. The carve-out is stated in the
+          spec and asserted in tests rather than left to be rediscovered.
+        outcome: ok
+      - file: src/remote_store/backends/_s3_base.py
+        section: "wrong-type reclassification region comment"
+        read_type: reference
+        extract: >-
+          The comment explained the split as wire shape and named the divergent
+          outcome explicitly — an accurate description of behaviour the contract
+          had not decided. Reading it as settled would have closed the item as
+          working-as-intended; it is the code's own account of the accident the
+          item exists to remove, and it had to be rewritten by the fix.
+        outcome: ok
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: tests/backends/s3/test_denied_probe.py
+        section: "TestMissingBucketVerdict"
+        read_type: gate
+        extract: >-
+          The old behaviour was pinned, by name, with a docstring arguing it was
+          correct — so the failing-test step was flipping an existing assertion,
+          not adding one. Not anticipated by the ripple-check: "tests tagged
+          with the spec ID" finds tests that assert a clause, not tests whose
+          whole subject is the undecided question the clause now decides.
+          Added the missing_ok=False axis at the same time; tolerance-only cells
+          would have passed for a fix that swallowed the 404 outright.
+        outcome: ok
+      - file: tests/backends/fixtures/azurite.py
+        section: "requires_docker mark"
+        read_type: reference
+        extract: >-
+          Azure's only non-live fixture is Docker-gated and no daemon is
+          available here, which is exactly how BK-324 shipped two real Azure
+          defects. Built a Stage-1 pytest-httpserver Blob stub on the pattern
+          test_denied_probe.py established for S3 instead of stating a coverage
+          bound. It caught the async defect on the first run.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "module docstring, _wrong_type_if_folder"
+        read_type: reference
+        extract: >-
+          The module documents cross-backend contracts centrally and implements
+          the wire-shape-specific half per backend; the new rule follows that
+          shape as _children_or_absent_container, with the narrowing predicate
+          supplied per SDK.
+        outcome: ok
+      - file: src/remote_store/backends/_s3_base.py
+        section: "_s3_has_children, _probe_fail_open"
+        read_type: gate
+        extract: >-
+          BUG-242's split had to be preserved: the determinant stays strict and
+          only the error-path probe fails open. The new tolerance is a third
+          posture — strict except for one named shape — and it is routed only
+          through delete_folder, not through get_folder_info, which has no
+          missing_ok and would gain nothing from catching a 404 to re-raise it.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: >-
+          BUG-242's second bullet asserted the behaviour this item reverses, and
+          both are unreleased — so leaving it would have shipped a section
+          contradicting itself. Amended rather than appended to. The
+          ripple-check's CHANGELOG row says where a new entry goes, not that an
+          unreleased sibling entry may have been invalidated by it.
+        outcome: unclear
+      - file: sdd/formal/BackendContract.dfy
+        section: "fs map, Delete / DeleteFolder postconditions"
+        read_type: verify
+        extract: >-
+          No Dafny edit possible, and the reason is structural: the model is a
+          map that always exists, so an absent container has no representation
+          to verify against. Stated as an out-of-frame note on BE-012 rather
+          than left as a silent gap in formal coverage.
+        outcome: ok

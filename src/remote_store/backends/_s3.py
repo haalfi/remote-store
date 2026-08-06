@@ -374,15 +374,22 @@ class S3Backend(_S3Base):
         the prefix partially deleted. ``recursive=False`` removes the prefix only
         when it has no contents.
 
+        A bucket that does not exist counts as a missing folder, not as a
+        transport failure: ``missing_ok=True`` returns silently and
+        ``missing_ok=False`` raises ``NotFound``, matching ``delete``.
+
         Raises:
-            NotFound: If no object exists under *path* and ``missing_ok`` is ``False``.
+            NotFound: If no object exists under *path* (including when the bucket
+                itself is absent) and ``missing_ok`` is ``False``.
             DirectoryNotEmpty: If the prefix is non-empty and ``recursive`` is ``False``.
             PermissionDenied: If the credentials lack access.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
         with self._s3fs_errors(path):
             s3_path = self._s3_path(path)
-            if not self._s3_has_children(path):
+            # BE-013: an absent bucket is an absent path, so it lands here rather
+            # than escaping as the listing's NoSuchBucket 404.
+            if not self._s3_children_or_absent_bucket(path):
                 # BE-013: an object at *path* is a type mismatch, not a missing
                 # folder, and outranks missing_ok.
                 self._reject_file(path)

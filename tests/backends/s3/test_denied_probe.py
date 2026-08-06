@@ -49,28 +49,33 @@ regressed — its ``_head_or_none`` / ``_prefix_has_children`` are strict and th
 swallowing closures live inside its ``_reject_*`` pair — so it doubles as the
 in-suite positive control for the shape the other two now match.
 
-The missing-bucket half (``TestMissingBucketVerdict``)
-------------------------------------------------------
+The missing-bucket half (``TestAbsentBucketReadsAsAbsentPath``)
+--------------------------------------------------------------
 
-Narrowing the two probes to ``FileNotFoundError`` left them catching *different*
-exceptions, which reads as an inconsistency and is not one — it is the wire
-shape. Each probe treats "the thing you asked about is not there" as an answer
-and propagates everything else:
+The two probes still catch *different* exceptions, and that remains the wire
+shape rather than an inconsistency. What changed with BUG-243 is that the wire
+shape no longer decides what the caller sees:
 
-* ``HeadObject`` gives that answer as a 404, and a HEAD response carries no
-  body, so a missing **bucket** is indistinguishable from a missing key.
-  ``delete(key, missing_ok=True)`` therefore tolerates it.
-* ``ListObjectsV2`` gives that answer as ``200 KeyCount=0``, never as an error.
-  The only ``FileNotFoundError`` it can raise is a missing bucket — a 404 whose
-  body *does* carry ``NoSuchBucket``, i.e. a different question — so it
-  propagates and ``delete_folder(path, missing_ok=True)`` raises ``NotFound``.
+* ``HeadObject`` answers a bodyless 404, so a missing **bucket** is
+  indistinguishable from a missing key and ``delete`` cannot tell them apart
+  even if it wanted to.
+* ``ListObjectsV2`` answers an absent prefix with ``200 KeyCount=0``, so the
+  only 404 it can raise is the bucket's — a 404 whose body *does* carry
+  ``NoSuchBucket``.
 
-BUG-242 moved the two s3fs backends onto this split; ``S3Boto3Backend`` was
-already there (``NoSuchBucket`` sits in its ``_NOT_FOUND_CODES``, so its HEAD
-tolerates a missing bucket, while its ``_prefix_has_children`` propagates), as
-is Azure non-HNS. Both halves are asserted so neither drifts: making the HEAD
-probe strict about bucket 404s would break the first, re-widening the listing
-probe's catch would break the second.
+Left alone, that split gave ``delete(missing_ok=True)`` a silent return and
+``delete_folder(missing_ok=True)`` a ``NotFound`` against the very same absent
+bucket. BE-012/BE-013 now decide it instead of the protocol: **an absent
+container reads as an absent path**, so both tolerate it under ``missing_ok``
+and both raise ``NotFound`` without it. ``delete_folder`` reaches that answer by
+treating the bucket 404 its listing raises as "no children", which costs no
+extra request — the strict-discrimination alternative would have cost ``delete``
+a second ``HeadBucket`` on every miss.
+
+All four cells are asserted so neither half drifts: making the HEAD probe strict
+about bucket 404s breaks the tolerant ``delete``, dropping ``delete_folder``'s
+catch breaks the tolerant ``delete_folder``, and swallowing the 404 past
+``missing_ok`` breaks the two strict cells.
 """
 
 from __future__ import annotations
@@ -158,6 +163,13 @@ _TOLERANT_OPS: dict[str, tuple[Callable[[Backend], Any], bool, bool]] = {
         True,
         False,
     ),
+}
+# The same two deletes with tolerance *off*, for the absent-container cells: the
+# rule is that an absent container reads as an absent path, which still raises
+# under ``missing_ok=False``.
+_STRICT_DELETES: dict[str, Callable[[Backend], Any]] = {
+    "delete": lambda b: b.delete(_KEY),
+    "delete_folder": lambda b: b.delete_folder(_FOLDER, recursive=True),
 }
 _ALL_OPS: dict[str, Callable[[Backend], Any]] = {
     **_FILE_SHAPED_OPS,
@@ -317,38 +329,48 @@ class TestErrorPathProbeStaysFailOpen:
             assert call(backend) is None
 
 
-class TestMissingBucketVerdict:
-    """A missing bucket splits the two tolerant deletes, and the split is the wire shape.
+class TestAbsentBucketReadsAsAbsentPath:
+    """An absent bucket is an absent path, one level up — for *both* deletes.
 
-    Not an inconsistency to be smoothed over: each probe tolerates exactly the
-    404 that means "what you asked about is not there", and only ``HeadObject``
-    can be *given* that 404 for a missing bucket, because its response has no
-    body to carry ``NoSuchBucket`` in. See the module docstring.
+    BE-012/BE-013. The two probes meet a missing bucket in different shapes (a
+    bodyless HEAD 404 versus a ``NoSuchBucket`` listing 404), and letting that
+    difference reach the caller is what made one delete tolerant and its sibling
+    strict against the same absent bucket. The rule is decided at the contract
+    now, so the wire shape only determines how each backend *reaches* it.
 
-    Both halves are asserted together so the pair cannot drift in either
-    direction — a strict-about-bucket-404s HEAD probe breaks the first, a
-    re-widened listing catch breaks the second.
+    Both axes are asserted — tolerance under ``missing_ok=True`` and
+    ``NotFound`` without it — so the fix cannot overshoot into swallowing the
+    strict case, which is the failure mode a tolerance-only test would miss.
     """
 
-    @pytest.mark.spec("BE-021", "BE-012", "S3-016")
+    @pytest.mark.spec("BE-021", "BE-012", "BE-013", "S3-016")
     @pytest.mark.parametrize("dotted", _BACKEND_PARAMS)
-    def test_missing_bucket_is_tolerated_by_delete(self, httpserver: HTTPServer, dotted: str) -> None:
-        """``delete(missing_ok=True)`` returns cleanly: the HEAD 404 is undiscriminated."""
+    @pytest.mark.parametrize("op_name", sorted(_TOLERANT_OPS))
+    def test_absent_bucket_is_tolerated(self, httpserver: HTTPServer, dotted: str, op_name: str) -> None:
+        """``missing_ok=True`` returns cleanly for both deletes."""
+        call, _object_denied, _listing_denied = _TOLERANT_OPS[op_name]
         endpoint = _serve_missing_bucket_stub(httpserver)
         with _backend_at(dotted, endpoint) as backend:
-            assert backend.delete(_KEY, missing_ok=True) is None
+            assert call(backend) is None
 
-    @pytest.mark.spec("BE-021", "BE-013", "S3-016")
+    @pytest.mark.spec("BE-021", "BE-012", "BE-013", "S3-016")
     @pytest.mark.parametrize("dotted", _BACKEND_PARAMS)
-    def test_missing_bucket_is_not_tolerated_by_delete_folder(self, httpserver: HTTPServer, dotted: str) -> None:
-        """``delete_folder(missing_ok=True)`` raises: the listing 404 is not an empty prefix.
+    @pytest.mark.parametrize("op_name", sorted(_STRICT_DELETES))
+    def test_absent_bucket_raises_not_found_when_strict(
+        self,
+        httpserver: HTTPServer,
+        dotted: str,
+        op_name: str,
+    ) -> None:
+        """Without ``missing_ok`` the same absent bucket is a plain ``NotFound``.
 
-        An absent prefix answers ``200 KeyCount=0``. This 404 says something
-        else entirely, so ``missing_ok`` — tolerance for a missing *path* — does
-        not cover it.
+        The tolerance belongs to ``missing_ok``, not to the bucket 404: a
+        backend that simply stopped raising on the listing's ``NoSuchBucket``
+        would pass the tolerant cells above and silently turn a strict delete
+        into a no-op.
         """
         endpoint = _serve_missing_bucket_stub(httpserver)
         with _backend_at(dotted, endpoint) as backend:
             with pytest.raises(NotFound) as exc_info:
-                backend.delete_folder(_FOLDER, recursive=True, missing_ok=True)
+                _STRICT_DELETES[op_name](backend)
             assert exc_info.value.backend == _BACKEND_NAMES[dotted]

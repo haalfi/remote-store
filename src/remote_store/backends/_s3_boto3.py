@@ -564,15 +564,22 @@ class S3Boto3Backend(Backend):
         the prefix partially deleted. ``recursive=False`` refuses a non-empty
         prefix.
 
+        A bucket that does not exist counts as a missing folder, not as a
+        transport failure: ``missing_ok=True`` returns silently and
+        ``missing_ok=False`` raises ``NotFound``, matching ``delete``.
+
         Raises:
-            NotFound: If no object exists under *path* and ``missing_ok`` is ``False``.
+            NotFound: If no object exists under *path* (including when the bucket
+                itself is absent) and ``missing_ok`` is ``False``.
             DirectoryNotEmpty: If the prefix is non-empty and ``recursive`` is ``False``.
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
         with self._boto_errors(path):
             prefix = self._prefix_of(path)
-            if not self._prefix_has_children(path):
+            # BE-013: an absent bucket is an absent path, so it lands here rather
+            # than escaping as the listing's NoSuchBucket 404.
+            if not self._children_or_absent_bucket(path):
                 # BE-013: a file at *path* is a type mismatch, not a missing folder.
                 self._reject_file(path)
                 if not missing_ok:
@@ -981,6 +988,26 @@ class S3Boto3Backend(Backend):
             MaxKeys=1,
         )
         return bool(resp.get("KeyCount", 0)) or bool(resp.get("CommonPrefixes"))
+
+    def _children_or_absent_bucket(self, path: str) -> bool:
+        """``_prefix_has_children``, with a missing bucket answering "no children".
+
+        The ``delete_folder`` determinant. An absent container is an absent
+        path. Unlike the s3fs lane the shape here is a ``ClientError``
+        rather than a distinct exception type, so the predicate reuses
+        ``_is_404`` — which already treats ``NoSuchBucket`` as a not-found code,
+        the same reading that makes this backend's ``_head_or_none`` tolerate a
+        missing bucket on the ``delete`` side.
+        """
+        from botocore.exceptions import ClientError  # type: ignore[import-untyped]
+
+        from remote_store.backends._flat_ns import _children_or_absent_container
+
+        return _children_or_absent_container(
+            path,
+            has_children=self._prefix_has_children,
+            absent_container=lambda exc: isinstance(exc, ClientError) and self._is_404(exc),
+        )
 
     def _reject_root_as_file(self, path: str) -> None:
         """Pre-check: the store root is a folder, so a file op on it is a type error.

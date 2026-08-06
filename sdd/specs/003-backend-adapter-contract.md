@@ -341,11 +341,13 @@ postcondition-chain coverage as `write`. See ID-151.
 **Invariant:** `delete(path, missing_ok=False)` removes a file.
 **Raises:** `NotFound` if the file is missing and `missing_ok=False`. `InvalidPath` if `path` names a directory, regardless of `missing_ok` — type errors are not silenced by missing-path tolerance (Dafny: `Delete: IsDir → InvalidPath` unconditionally). See BE-021.
 **Postconditions:** If `missing_ok=True`, no error for missing files.
+**Absent container:** A missing bucket / container / table counts as a missing file, so `missing_ok=True` returns cleanly and `missing_ok=False` raises `NotFound` — see [BE-021](#be-021-error-mapping) § "An absent container reads as an absent path" for the rule, its cost model, and the construct-time carve-out. Outside the Dafny model's frame: `BackendContract.dfy` models the store as a map that always exists, so the absent-container case has no representation to verify against and is pinned in Python only (BUG-243).
 
 ### BE-013: delete_folder()
 
 **Invariant:** `delete_folder(path, recursive=False, missing_ok=False)` removes a folder.
 **Raises:** `NotFound` if the path does not exist and `missing_ok=False`. `InvalidPath` if `path` names a file (use `delete` instead). `DirectoryNotEmpty` if the folder is non-empty and `recursive=False`. See BE-021.
+**Absent container:** A missing bucket / container / table counts as a missing folder, on the same terms as BE-012 — see [BE-021](#be-021-error-mapping) § "An absent container reads as an absent path". This is the half the wire shape got wrong: an absent prefix is an empty listing, so the container's 404 is the only one a prefix listing can raise, and a backend MUST read it as "no children" rather than letting it escape past the `missing_ok` check.
 
 ### BE-014: list_files()
 
@@ -566,6 +568,41 @@ Type mismatch outranks `missing_ok`: `delete(folder, missing_ok=True)` and
 `delete_folder(file, missing_ok=True)` raise `InvalidPath`, because the
 tolerance is for a *missing* path, not a wrong-typed one. This is the same rule
 BE-012 already states for hierarchical backends, now uniform.
+
+**An absent container reads as an absent path.** `missing_ok` covers the case
+where the bucket, container or table holding the path does not exist, because a
+container that is not there holds no path either. `delete(path,
+missing_ok=True)` and `delete_folder(path, missing_ok=True)` MUST return
+cleanly against an absent container; with `missing_ok=False` both MUST raise
+`NotFound`. Backends MUST NOT spend an extra round trip to tell an absent
+container from an absent path — the two answers are the same, so the
+discrimination has no buyer.
+
+The rule exists because leaving it unstated let each backend answer from
+whatever its wire protocol happened to reveal. `HeadObject` answers a bodyless
+404, so a missing bucket is indistinguishable from a missing key and `delete`
+tolerated it without being asked to; `ListObjectsV2` answers an absent prefix
+with `200 KeyCount=0`, so the only 404 it can raise is the container's, and
+`delete_folder` raised where its sibling returned — against the same absent
+bucket, in the same store. The hierarchical backends had already settled it the
+other way by construction: on Local an absent store root is just an absent path,
+and `delete_folder(missing_ok=True)` returns silently. Tolerating is therefore
+what makes flat-namespace agree with them, and it is also the cheaper rule —
+making the pair strict instead would have cost `delete` a second `HeadBucket`
+on every miss, against the one-probe-per-miss budget above.
+
+Reading the container's 404 as "no children" does not shortcut the rest of the
+operation: the wrong-type probe still runs and `missing_ok=False` still raises.
+The catch MUST stay narrow to the one shape that means "the container is not
+there" — a denial stays `PermissionDenied` and a 503 stays
+`BackendUnavailable`, per the determinant rule above.
+
+**Backends whose container exists by construction satisfy this vacuously.**
+`SQLBlobBackend` creates its table or reflects it and refuses to construct, so
+no live instance is ever bound to an absent container and the clause has no case
+to govern. A table dropped out from under a running backend is a store torn down
+mid-flight, not a path that was never there: it stays `BackendUnavailable` under
+the transport row, and `missing_ok` does not convert it into a silent success.
 
 **The store root is decided before the probe, not by it.** A probe answer about
 the root is meaningless — it is a folder whether or not it has children — so

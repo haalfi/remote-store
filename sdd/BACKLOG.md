@@ -94,30 +94,24 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Lint / CI Completeness
 
-- [ ] **BUG-243 — `missing_ok` has no stated obligation when the *container* is absent**
-  spec: BE-012, BE-013, BE-021 · effort: M · audience: user.api
-  Every clause speaks of "the path" and none of the bucket, container, or table
-  holding it. So what a tolerant delete owes against a **missing store** is
-  undecided, and each backend answers from whatever its wire protocol happens to
-  reveal rather than from a rule.
-  Current state, measured (all four flat-NS implementations, so nothing is
-  inconsistent *today* — the gap is that the agreement is accidental):
-  | Operation | S3 (all three) | Azure non-HNS | SQL |
-  | --- | --- | --- | --- |
-  | `delete(missing_ok=True)` | returns silently | returns silently | raises |
-  | `delete_folder(missing_ok=True)` | raises `NotFound` | raises `NotFound` | raises |
-  **The split is protocol accident, not design.** `HeadObject` answers 404 with
-  no body, so `NoSuchBucket` never reaches the client and a missing bucket is
-  indistinguishable from a missing key; `ListObjectsV2` answers `200
-  KeyCount=0`, so the only 404 it can raise is the bucket's, and that one *does*
-  carry a code. Azure lands in the same place by a different route. A caller
-  writing an idempotent cleanup loop cannot predict which they get.
-  **Decide it once, for all flat-namespace backends**, and say so in BE-012 /
-  BE-013. Whichever way it goes, note that making S3's `delete` strict costs a
-  second `HeadBucket` on every miss, against a spec that budgets exactly one
-  probe per miss — so "tolerate the missing container" may be the cheaper rule
-  as well as the kinder one.
-  Surfaced while fixing BUG-242 (PR #945 round 6).
+- [ ] **BUG-245 — `SQLBlobBackend(create_table=False)` leaks `NoSuchTableError` from its constructor**
+  spec: BE-021, SQL-BLOB-012 · effort: S · audience: user.api
+  Reflection is unguarded: `sa.Table(name, meta, autoload_with=engine)` against an
+  absent table raises `sqlalchemy.exc.NoSuchTableError`, which reaches the caller
+  unmapped. Every other backend's constructor rejects bad configuration with
+  `ValueError` (`validate_azure_params`, the S3 bucket check), so a caller
+  wrapping construction in `except (RemoteStoreError, ValueError)` catches
+  every backend but this one — and the escaping type is a SQLAlchemy import the
+  caller may not have.
+  Reproduction: `SQLBlobBackend(engine=sa.create_engine("sqlite:///:memory:"),
+  table_name="nope", create_table=False)`.
+  BE-021's "backend-native exceptions never leak" is scoped to operations, so
+  this is a gap in the contract as much as in the code: decide whether
+  construction is in scope for the mapping rule, then map it. Note the behaviour
+  itself is right — refusing to bind to an absent table is what makes BE-012's
+  absent-container clause vacuous for this backend (pinned by
+  `tests/backends/sqlblob/test_absent_table.py`); only the error type is wrong.
+  Surfaced by BUG-243, which measured the constructor to establish that carve-out.
 
 - [ ] **ID-242 — Four `moto doesn't raise PermissionError` pragmas are coverage holes, not exemptions**
   spec: — · effort: S · audience: contributor
