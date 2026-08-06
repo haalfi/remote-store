@@ -271,7 +271,7 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
         # holds, for HTTP-CONC-001's reason instead: the posture-gated lane is
         # WRITE-gated (fixture_params_concurrent(Capability.WRITE, ...)), and
         # SQLQueryBackend is read-only, so no carve-out cell reaches it. The
-        # spec/fixture posture split is the same one SQL-BLOB-072 carries below.
+        # spec/fixture posture split is the same one SQL-BLOB-072 carries above.
         # (:memory: fixture is single_connection, as for SQL-BLOB-072.)
         "SQL-QUERY-092",  # 041 — SQLQueryBackend thread_safe; no WRITE -> not in carve-out
     }

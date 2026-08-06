@@ -260,9 +260,10 @@ class TestRegistryShape:
         is the failure the carve-out guards cannot catch on their own (research
         §6 #2: an undeclared posture must fail, not default). Pins the
         load-bearing split: the ``single_connection`` set is the two non-thread-safe
-        transports (SFTP shared socket, HTTP shared opener) **plus** the
-        ``sqlite:///:memory:`` SQLBlob fixture (SingletonThreadPool gives each
-        thread an isolated DB); everything else is ``thread_safe``. A backend that
+        transports (SFTP shared socket, HTTP shared opener) **plus** both
+        ``sqlite:///:memory:`` SQLAlchemy families — ``sqlblob`` and, since
+        BK-340 registered it, ``sqlquery`` (SingletonThreadPool gives each thread
+        an isolated DB); everything else is ``thread_safe``. A backend that
         silently flips posture — or a new family that forgets to declare one —
         trips here.
         """

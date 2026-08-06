@@ -97,9 +97,12 @@ transport = "sql"
 # single_connection for the TESTED config, on the same measured grounds as
 # sqlblob above: the fixture uses ``sqlite:///:memory:``, which SQLAlchemy backs
 # with a SingletonThreadPool, so a shared instance hands each thread its own
-# isolated (and empty) database. Only ``read()`` touches the connection at all —
-# the key set is an in-process dict — but the posture must describe the
-# substrate that is exercised, not the subset of methods that reach it.
+# isolated (and empty) database. Most of the surface never reaches the
+# connection — the key set is an in-process dict, so listing, globbing and the
+# existence checks are pure Python — but ``read()`` / ``read_bytes()`` execute
+# the mapped query, and the inherited ``check_health()`` issues ``SELECT 1``,
+# which the conformance suite does run against this fixture. The posture
+# describes the substrate, not how much of the surface reaches it.
 concurrency       = "single_connection"
 # Folders are inferred from ``/`` in the registered query keys; no directory
 # object exists, exactly as for S3/Azure-flat and HTTP.
