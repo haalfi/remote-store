@@ -94,18 +94,24 @@ constraints keep that parallelism sound:
   token, and GitHub allows one pending review per user per PR — concurrent
   members running `rvw-pr`'s posting step would cross-contaminate a single
   pending review and drop findings while that skill's `totalCount`
-  verification still reads success. Panel members execute `rvw-pr` Steps 0–3
-  only and **return their findings instead of posting**; the orchestrator
-  merges, dedups (two members reporting one defect is one finding), posts the
-  round's findings as one review, and runs a single triage and fix pass. A
-  solo round — rounds 1 and 2, or a panel of one — keeps `rvw-pr`'s full
-  posting flow: one reviewer, no contention.
-- **Members are read-only by tooling, not only by instruction.** Concurrent
-  write-capable agents share one working tree, so a single member that
-  ignores the instruction can mutate the state mid-round underneath the
-  others. Spawn panel members with a `subagent_type` that has no write tools
-  — they need no posting path — and keep the instruction-only fallback below
-  for solo spawns where model diversity forces a general agent.
+  verification still reads success. Panel members run `rvw-pr` in its
+  **analyze-only mode** (defined in that skill): Steps 0–3, Step 4 skipped,
+  Step 5's report — `Subject:` line included, which the Stop rule's
+  clean-round check needs — plus consolidated findings returned as the final
+  message. The orchestrator merges, dedups (two members reporting one defect
+  is one finding), posts the round's findings as one review, and runs a
+  single triage and fix pass. A solo round — rounds 1 and 2, or a panel of
+  one — keeps `rvw-pr`'s full posting flow: one reviewer, no contention.
+- **Member enforcement is by instruction, and honestly so.** No tool
+  restriction that leaves a reviewer functional removes the hazards: reading
+  PR content needs `gh`/MCP, so the posting path cannot be tool-stripped, and
+  no spawnable `subagent_type` is write-free — the repo's agents declare no
+  tool restriction and the built-in read-only types keep `Bash`, which can
+  mutate the shared working tree. So the read-only and analyze-only
+  constraints are restated in **every** member's prompt, panel and solo
+  alike, and the round carries a cheap check: `git status --porcelain` before
+  triage — a working tree that moved mid-round means the members did not all
+  see the same state, and the round is re-run, not trusted.
 
 Width is a judgement, not a formula: a quiet previous round keeps the next
 narrow — a panel of one scoped reviewer is still a round — and a broad diff
@@ -128,15 +134,16 @@ because the spawn path does not supply them:
   agent falls through to that skill's ask-the-user branch, which a subagent
   cannot answer. For an unprimed reviewer, pass the number and nothing else,
   per the unprimed rule; a scoped member's prompt adds its brief.
-- **For panel members: analyze only.** `rvw-pr` Steps 0–3, findings returned
-  as the final message, no posting — per the panel constraints above.
-- **The read-only constraint, restated.** `rvw-pr`'s `allowed-tools` frontmatter
-  grants no `Edit` or `Write`, and that guarantee is *lost* when a general agent
-  merely reads the file: it keeps its own full tool set. Panel members get the
-  guarantee from tooling (a write-free `subagent_type`, above); for a solo
-  spawn where model diversity forces a general agent, restate the constraint
-  in the prompt — enforcement by instruction, which is weaker than the
-  frontmatter it stands in for.
+- **For panel members: the word `analyze-only`.** `rvw-pr` defines the mode:
+  Steps 0–3, Step 4 skipped, Step 5's report plus findings returned as the
+  final message.
+- **The read-only constraint, restated — in every member's prompt.**
+  `rvw-pr`'s `allowed-tools` frontmatter grants no `Edit` or `Write`, and that
+  guarantee is *lost* when a general agent merely reads the file: it keeps its
+  own full tool set, and no spawnable `subagent_type` closes the gap (see the
+  panel constraints above). Enforcement is by instruction, which is weaker
+  than the frontmatter it stands in for — restate it every time, panel and
+  solo alike.
 
 Invoking `/rvw-pr` directly keeps both guarantees and is the right choice
 whenever model diversity does not matter; it cannot take a model override.
@@ -183,8 +190,9 @@ accepting every finding degrades the work, so verify before fixing.
 `hatch run all` green → commit → push → reply to **every** thread and resolve
 it. Use [`/fix-pr`](../fix-pr/SKILL.md)'s comment-fetch and thread-resolve
 mechanics, and its Rules — a fix pass here owes the finding's class and the
-sibling sweep of its own changes exactly as one run under that skill does. Never start the next round against unpushed code:
-the reviewer would target stale lines.
+sibling sweep of its own changes exactly as one run under that skill does.
+Never start the next round against unpushed code: the reviewer would target
+stale lines.
 
 Replies carry the reasoning that does not belong in the diff: what was measured,
 what was refuted and why. The PR record is where that survives.

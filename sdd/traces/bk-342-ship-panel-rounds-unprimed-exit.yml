@@ -16,7 +16,13 @@ audience:
 expected_ripples:
   - sdd/backlogid.json
   - sdd/adrs/DIGEST.md
-review_rounds: 1
+surprising_ripples:
+  # The panel design makes /ship's reviewers non-posting, but the posting
+  # contract lives in rvw-pr — a file the diff never touched until review
+  # round 2 forced the analyze-only mode to be defined where the posting
+  # rules it excepts are stated.
+  - .claude/skills/rvw-pr/SKILL.md
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -168,4 +174,42 @@ phases:
           also hardened panel read-only from instruction to tooling
           (write-free subagent_type) after the fourth finding showed
           instruction-only enforcement changes shape under concurrency.
+      - file: .claude/agents/
+        section: "(frontmatter, all five)"
+        read_type: verify
+        extract: >-
+          Round 2 refuted round 1's tooling fix: no agent declares a tools:
+          restriction, the built-in read-only types keep Bash, and no
+          restriction that leaves a reviewer able to read PR content removes
+          the posting path — Edit/Write were never the posting tools. The
+          promised write-free subagent_type does not exist, and scoping the
+          instruction fallback to solo spawns had replaced weak-but-real
+          enforcement with none. Reverted to instruction-in-every-prompt,
+          stated honestly, plus a git status --porcelain check before triage
+          so a moved working tree fails the round instead of being trusted.
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "ROLE; Step 4; Step 5; Rules"
+        read_type: verify
+        extract: >-
+          Round 2 found /ship instructing a mode rvw-pr forbids four separate
+          times, and that Steps 0-3 dropped Step 5's Subject line, which
+          /ship's own clean-round check names as its mechanism. Fixed at the
+          source per the BK-336 shape: analyze-only mode defined once in
+          rvw-pr (Steps 0-3 plus Step 5's report, Step 4 skipped, one stated
+          exception in its Rules), cited from /ship. rvw-pr thereby became
+          this delivery's surprising ripple.
+      - file: sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md
+        section: "Consequences, panel Positive"
+        read_type: verify
+        extract: >-
+          Round 2's deepest finding: the wall-clock Positive treated serial
+          review-fix cycles as interchangeable with parallel reviewer slots,
+          against ADR-0033's observation 1 — serial rounds are what caught
+          each round's fix defects, and this PR's own two rounds demonstrated
+          the mechanism while its ADR undervalued it. Narrowed the Positive
+          and added the fix-pass-review-depth Negative. Round 2 also asked
+          for ADR links in Decision bullets (the digest lifts Decision text,
+          so bare mentions lose navigability there) and no backlog IDs in
+          Decision sections (short-lived coordinates in long-lived content);
+          both classes swept across the file.
         outcome: ok

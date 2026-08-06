@@ -47,12 +47,14 @@ passes, which is how the decisions below are split.
   reviewers, each fresh and blind to the others, merged into one triage and
   one fix pass. Width follows the diff's breadth and the prior round's yield.
   This stays inside the convergence loop and its stop rule — it is not
-  `/orchestrate`'s capped fan-out, which ADR-0020 still owns. *Reverse if*
+  `/orchestrate`'s capped fan-out, which
+  [ADR-0020](0020-orchestrate-iterative-convergence.md) still owns. *Reverse if*
   merging and deduplication cost more than the serial rounds they replace, or
   members mostly duplicate one another.
 
 - **Every odd round carries one unprimed reviewer.** Round 1's sole reviewer
-  is that member, as ADR-0033 already required; from round 3 the odd-round
+  is that member, as [ADR-0033](0033-ship-convergence-driven-review.md)
+  already required; from round 3 the odd-round
   panel includes one, briefed with the PR alone, on a different model from the
   author's, same tier or higher. The cadence half: unprimed eyes on mid-loop
   state, not only the endpoints. *Reverse if* interleaved unprimed members
@@ -62,15 +64,17 @@ passes, which is how the decisions below are split.
   and found nothing must-fix.** The load-bearing half: the second delivery's
   defects were created mid-loop by fixes, so an earlier unprimed pass proves
   nothing about what ships. A closing round with no unprimed member gets one
-  appended; like ADR-0033's verification round it counts toward the ceiling
+  appended; like [ADR-0033](0033-ship-convergence-driven-review.md)'s
+  verification round it counts toward the ceiling
   only if it finds something. *Reverse if* terminal unprimed passes stop
   finding anything across a meaningful sample of deliveries.
 
-- **A fix pass sweeps the sibling descriptions of what it changed.** BK-336's
-  sweep obligation extends from review findings to the fixer's own
-  corrections — a coverage question, not a grep. The obligation and its report
-  clause live in `/fix-pr`; `/ship` inherits them by citation. *Reverse if*
-  these sweeps stop catching anything the review rounds do not.
+- **A fix pass sweeps the sibling descriptions of what it changed.** The
+  sibling-sweep obligation that already attaches to review findings extends
+  to the fixer's own corrections — a coverage question, not a grep. The
+  obligation and its report clause live in `/fix-pr`; `/ship` inherits them
+  by citation. *Reverse if* these sweeps stop catching anything the review
+  rounds do not.
 
 The step sequence, panel mechanics, brief requirements and the amended stop
 rule are operational contract and live in `.claude/skills/ship/SKILL.md` and
@@ -81,11 +85,18 @@ rule are operational contract and live in `.claude/skills/ship/SKILL.md` and
 - **Positive:** the two blind spots the second delivery measured — fixes
   nobody sweeps, surface nobody names — each get a structural interception
   where they arise, rather than a convention downstream of it.
-- **Positive:** panels compress wall-clock: PR #949's four serial scoped
-  rounds were four review-fix-gate cycles that plausibly fit in two panel
-  rounds.
+- **Positive:** panels compress wall-clock: several lenses read one pushed
+  state in a single round instead of queueing behind each other's fix passes.
+- **Negative:** the compression spends fix-pass review depth. Serial rounds
+  are what produced
+  [ADR-0033](0033-ship-convergence-driven-review.md)'s observation 1 — each
+  round finding defects in the previous round's fixes — and a panel that
+  replaces N serial rounds yields correspondingly fewer reviewed fix passes;
+  the stop rule's second clause backstops only the last of them. Weigh this
+  alongside the panel decision's *Reverse if*.
 - **Negative:** both amendments raise compute cost on independent axes, on
-  top of the bill ADR-0033's Context records. A panel multiplies reviewer
+  top of the bill [ADR-0033](0033-ship-convergence-driven-review.md)'s
+  Context records. A panel multiplies reviewer
   passes per round — tokens rise even as wall-clock compresses — and the exit
   gate appends a terminal unprimed pass whenever the closing round lacks one
   (by parity, roughly every other delivery), plus a further fix pass and gate

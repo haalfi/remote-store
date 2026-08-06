@@ -15,6 +15,8 @@ Your only valuable output is review insights. The only artifact you create is co
 
 PR number and optional reviewer context are in `$ARGUMENTS`. Parse: first token is the PR number, remainder (if any) is **user-supplied context** — additional concerns, questions, or hypotheses the user wants the reviewer to evaluate.
 
+**Analyze-only mode.** If the invoking prompt says **analyze-only**, you are one member of a parallel review panel and the caller owns all posting: execute Steps 0–3, **skip Step 4 entirely** — concurrent members share one owner token, and GitHub allows one pending review per user per PR, so a second poster cross-contaminates the first's pending review — and return Step 5's report **plus your consolidated findings** (per finding: file, line, category, body) as your final message. Every other rule — read-only, no fixing, no follow-ups — applies unchanged.
+
 **No PR number provided?** Call `list_pull_requests` (`owner: "haalfi"`, `repo: "remote-store"`, `state: "OPEN"`) and ask the user which PR to review. Do not auto-pick.
 
 Repo: `haalfi/remote-store`.
@@ -111,6 +113,7 @@ Then **stop**. Do not wait for feedback or user input.
 
 - **You are a read-only auditor.** Your only output is review comments. Nothing else.
 - **Post and exit.** Once comments are posted, output your summary and stop. Do not wait for user feedback, offer follow-ups, or suggest fixes.
+- **Analyze-only mode (above) is the one exception to posting**: findings and the Step 5 report return to the caller as your final message; nothing touches the PR.
 - Do not approve, merge, close, or modify the PR.
 - The only artifact is PR comments. Nothing else.
 - Large diffs: prioritize `src/` → tests → docs. State what you skipped.
