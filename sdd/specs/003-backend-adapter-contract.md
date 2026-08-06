@@ -196,22 +196,24 @@ and its async sibling in `test_async_extended.py`, both gated on
 `test_identity.py::TestBackendNativePath` (sync) and
 `test_async_extended.py::TestAsyncBackendNativePath` (async).
 
-**Coverage note.** Two LIST-capable backends are not reachable from those
-cells: `SQLQueryBackend` has no fixture-registry entry (BK-340), and the Graph
-backend's conformance cells are skipped for want of a recorded cassette
-(ID-241). Their per-backend homes pin **part** of this clause, not all of it:
+**Coverage note.** One LIST-capable backend is still unreachable from those
+cells: the Graph backend's conformance cells are skipped for want of a recorded
+cassette (ID-241). `SQLQueryBackend` was the other until BK-340 registered its
+fixture; the cells now execute against it, and what they cover is measured
+rather than assumed:
 
-| Backend | Pinned in its per-backend home | Pinned nowhere |
-|---------|-------------------------------|----------------|
-| `SQLQueryBackend` — `tests/backends/sqlquery/test_config.py::TestRootPath` | the query rows (`exists` / `is_folder` / `is_file`, empty store included), `get_folder_info` on the root, and `native_path` agreeing on both spellings | the file-shaped-operation row: `read`, `read_bytes`, `read_seekable`, `get_file_info` on the root |
-| Graph — `tests/backends/graph/aio/test_backend.py` | addressing only: `native_path` agreeing on both spellings (also under `base_path`), `to_key` returning the canonical root key, and every root spelling refused by `_require_writable_key` | the query rows and the file-shaped-operation row |
+| Backend | Reached by the conformance cells | Pinned only in its per-backend home | Pinned nowhere |
+|---------|----------------------------------|--------------------------------------|----------------|
+| `SQLQueryBackend` — fixture `sqlquery` | the query rows on the empty store (`exists` / `is_folder` / `is_file`, both spellings) and the **whole file-shaped-operation row** (`read`, `read_bytes`, `read_seekable`, `get_file_info`, both spellings) | the populated-store rows (`get_folder_info` aggregating a non-empty store), because the conformance fixture registers an empty query mapping and the suite seeds through `write` (ID-244) | — the rows it does not reach are `delete` / `move` / `copy`, which it declares no capability for |
+| Graph — `tests/backends/graph/aio/test_backend.py` | — | addressing only: `native_path` agreeing on both spellings (also under `base_path`), `to_key` returning the canonical root key, and every root spelling refused by `_require_writable_key` | the query rows and the file-shaped-operation row |
 
 A clause that binds every LIST-capable backend needs its coverage checked per
 backend, not per source site — both defects this clause was written from
-survived a source-wide sweep because no cell executed against them. The
-per-backend cells pin the sites that sweep found; the right-hand column is what
-is still asserted by nobody, and closing it structurally is what BK-340 and
-ID-241 are for.
+survived a source-wide sweep because no cell executed against them. BK-340
+closed the `SQLQueryBackend` half structurally; ID-241 is what closes Graph's.
+Note what registration did **not** buy: a read-only backend still cannot reach
+any cell that seeds through `write`, so the middle column is a second gate
+underneath capability filtering rather than a residue of the first (ID-244).
 
 ### BE-006: read()
 

@@ -64,7 +64,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   mode, not a wording, so for a rule spanning backends what matters is which
   backends the tests execute against, not which source lines match a grep. That
   is why BK-324's class survived in `SQLQueryBackend`, which no conformance
-  fixture reaches ([BK-340](BACKLOG.md)).
+  fixture reached at the time ([BK-340](#), since shipped).
   **The first attempt, reverted in PR #945 as over-specified, is why the entry is
   longer than the change.** It added ~34 lines to `/fix-pr`, including a
   three-row table pairing classes of finding with sweep techniques — pseudo-detail
@@ -237,10 +237,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   store.
   **For a cross-backend rule, a sibling sweep is a coverage question, not a
   grep.** That is the lesson this item earns; it is written down as
-  **BK-336** above, and the two structural holes it exposed are filed as
-  **[BK-340](BACKLOG.md)** (`SQLQueryBackend` has no conformance fixture at all)
-  and **[ID-241](BACKLOG.md)** (the replay hook skips cells by test name even
-  when the cell makes no HTTP call).
+  **BK-336** above, and the two structural holes it exposed were filed as
+  **BK-340** (`SQLQueryBackend` had no conformance fixture at all — since
+  shipped, above) and **[ID-241](BACKLOG.md)** (the replay hook skips cells by
+  test name even when the cell makes no HTTP call).
   **BE-029's boundary is derived, not named.** It binds backends declaring
   `Capability.LIST`; `ReadOnlyHttpBackend` declares none and is correctly outside
   it. Writing "except ReadOnlyHttpBackend" would have reintroduced precisely the

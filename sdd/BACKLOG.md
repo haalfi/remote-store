@@ -512,7 +512,8 @@ that writes it lands, so cite the generator instead.
   four instances of the drift this programme targets, and a design investigation
   found step 2 would have caught none of them (see the step 2 bullet). What the
   four exhibited was **coverage reachability** — a rule can be gated so no
-  fixture ever runs it, which is BK-340 and ID-241 in this file — and
+  fixture ever runs it, which is ID-241 and ID-244 in this file (and BK-340,
+  shipped) — and
   **citation ≠ assertion**, which is this item's own **step 3**. Both are cheaper than L and
   both have measured instances behind them; step 2 has an L cost, a ~2.5% reach,
   and no instance. Step 2 is not abandoned: after 3 and 4 land, its unresolved
