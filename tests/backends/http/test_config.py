@@ -187,13 +187,28 @@ class TestHttpRead:
             try:
                 inner = peel_to_body(stream)
                 # Contract first: a bare BytesIO peels to itself, so this is the
-                # assertion that must name the backend for it. The wrapper guard
-                # is about the *test* losing its way and must not pre-empt it.
+                # assertion that must name the backend for it. The guards below
+                # are about the *test* losing its way and must not pre-empt it.
                 assert not isinstance(inner, io.BytesIO), (
                     f"ReadOnlyHttpBackend({client!r}) declares LAZY_READ but read() "
                     f"returned a BytesIO-backed stream (peeled to {type(inner).__name__})"
                 )
                 assert not isinstance(inner, KNOWN_STREAM_WRAPPERS), PEEL_STOPPED_ON_WRAPPER
+                # Descent is required *here* though not cross-backend: ``read()``
+                # wraps in ``_ErrorMappingStream`` unconditionally (``_http.py``),
+                # so a peel that moved zero steps means the walk no longer follows
+                # this backend's wrapper — a *new* wrapper type, which
+                # KNOWN_STREAM_WRAPPERS cannot recognise and the BytesIO check
+                # cannot see through. That is BUG-244's shape returning green.
+                # The shared conformance cell rightly omits this: SIO-009 obliges
+                # laziness, not wrapping, and a backend may legitimately hand back
+                # an unwrapped body. This one may not.
+                assert inner is not stream, (
+                    f"peel did not descend for ReadOnlyHttpBackend({client!r}), which always wraps: "
+                    f"read() returned {type(stream).__name__} and the walk stopped on it, so the "
+                    f"BytesIO check above inspected the wrapper. Add the new layer's accessor to "
+                    f"tests._helpers.peel_to_body (BUG-244)."
+                )
                 # SIO-009's second half: the body layer honours the RawIOBase
                 # protocol, which is what makes the stream consumable without a
                 # full materialisation.

@@ -21,11 +21,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   six. Only `local` (BufferedReader → FileIO) terminated on a real body, and that
   was luck, not design. The defect shape that survived: a backend that materialises
   the body and then wraps it for error mapping declares LAZY_READ and passes green.
-  **Fixed** by `_peel_to_body`, a module-level helper following both accessors,
-  shared by `test_read_is_lazy` and `test_read_is_lazy_readinto`, plus a
-  `_KNOWN_WRAPPERS` guard asserting the walk did not terminate *on* a wrapping
-  layer — so an accessor that stops being reachable fails the test instead of
-  silently restoring the blindness.
+  **Fixed** by `tests/_helpers.py::peel_to_body`, which follows both accessors,
+  plus a `KNOWN_STREAM_WRAPPERS` guard asserting the walk did not terminate *on* a
+  wrapping layer — so an accessor that stops being reachable fails the test instead
+  of silently restoring the blindness. Three callers: `test_read_is_lazy`,
+  `test_read_is_lazy_readinto`, and the HTTP-specific
+  `test_read_is_lazy_not_bytesio`. One shared home rather than a copy per cell,
+  because the copy is what let the HTTP cell keep the broken form through a
+  review round after the shared cell was fixed.
   **Verified, with the bound stated** (`test_streaming.py`: 97 passed, 20
   skipped): the ten SIO-009 cells are green across `local`, `sftp_inproc`,
   `s3_moto`, `s3_boto3_moto` and `azure_replay`. That is **four of the five

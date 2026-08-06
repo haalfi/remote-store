@@ -30,7 +30,7 @@ surprising_ripples:
   - scripts/drift_smoke_map.py
   - scripts/check_spec_marks.py
   - sdd/specs/003-backend-adapter-contract.md
-review_rounds: 4
+review_rounds: 5
 phases:
   - id: orient
     name: Orient
@@ -219,7 +219,7 @@ phases:
           their pytest.skip("moto/s3fs not installed") messages are about the missing
           session fixture, not a missing dependency. Under pytest all five run. With the
           stated reason gone there was no reason to defer, so BUG-244 was fixed in the
-          same PR (_peel_to_body + the vacuity guard; 97 passed, 20 skipped).
+          same PR (peel_to_body + the wrapper guard; 97 passed, 20 skipped).
           Generalisable: running a fixture factory outside a pytest session tells you
           nothing about what the suite can exercise.
         outcome: ok
@@ -235,7 +235,7 @@ phases:
           as the original did.
         outcome: ok
       - file: tests/backends/conformance/test_streaming.py
-        section: "_peel_to_body, SIO-009 guard"
+        section: "peel_to_body, SIO-009 guard"
         read_type: verify
         extract: >-
           Round 3 found the round-2 fix had inverted its own diagnostic. My guard
@@ -263,4 +263,20 @@ phases:
           rather than its latest instance. BK-336's sweep rule fires on a finding;
           nothing fires on a fix I generate myself, and that is where these three
           landed.
+        outcome: ok
+      - file: tests/backends/http/test_config.py
+        section: "test_read_is_lazy_not_bytesio, descent assertion"
+        read_type: verify
+        extract: >-
+          Round 5 found the hoist had *dropped* an assertion rather than replacing
+          it. I removed the descent check from the HTTP cell because round 3 showed
+          it was wrong in the cross-backend cell — but the reason it was wrong there
+          (SIO-009 obliges laziness, not wrapping, so a backend may legitimately
+          return an unwrapped body) does not transfer to a single-backend cell whose
+          read() wraps unconditionally. There, a peel that moves zero steps means a
+          new wrapper type the walk does not follow, which neither the BytesIO check
+          nor KNOWN_STREAM_WRAPPERS can see — BUG-244's shape, green. Restored after
+          the contract assertion, with the backend-specific justification inline.
+          Generalisable: a correction justified cross-backend was applied to a
+          per-backend cell without re-deriving whether its justification held there.
         outcome: ok
