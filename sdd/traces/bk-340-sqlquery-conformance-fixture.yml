@@ -14,6 +14,7 @@ audience:
 discovery_followups:
   - BUG-244
   - ID-244
+  - BK-342
 co_shipped_items:
   - BUG-244
 expected_ripples:
