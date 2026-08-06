@@ -22,14 +22,15 @@ expected_ripples:
 surprising_ripples:
   # The ripple-check table has no "fixture registration" trigger, so nothing
   # anticipated that registering a backend falsifies every artifact asserting
-  # its absence. All five were found by sweeping the claim; the first three
-  # only after a PR review named two of them.
+  # its absence. The first two were found by the original ripple walk; the
+  # last three only after a PR review named two of them and the class was
+  # then swept.
   - tests/backends/http/test_config.py
   - tests/backends/sqlquery/test_config.py
   - scripts/drift_smoke_map.py
   - scripts/check_spec_marks.py
   - sdd/specs/003-backend-adapter-contract.md
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -232,4 +233,18 @@ phases:
           version credited. Rewriting a spec table from a fresh measurement is how a
           correction introduces its own errors — the fix pass needed the review as much
           as the original did.
+        outcome: ok
+      - file: tests/backends/conformance/test_streaming.py
+        section: "_peel_to_body, SIO-009 guard"
+        read_type: verify
+        extract: >-
+          Round 3 found the round-2 fix had inverted its own diagnostic. My guard
+          asserted the peel had descended (inner is not stream) and ran BEFORE the
+          BytesIO assertion — but a bare io.BytesIO, the exact violation SIO-009
+          exists to catch, peels to itself, so the canonical failure would have
+          blamed the test helper instead of the backend. It also made "read() returns
+          a wrapped stream" an obligation SIO-009 never states. Reordered so the
+          contract asserts first, and re-framed the guard as "did not terminate on a
+          known wrapper". A guard added to stop a check being vacuous made the check
+          wrong for the one input it most needed to handle.
         outcome: ok

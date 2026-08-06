@@ -23,20 +23,32 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   the body and then wraps it for error mapping declares LAZY_READ and passes green.
   **Fixed** by `_peel_to_body`, a module-level helper following both accessors,
   shared by `test_read_is_lazy` and `test_read_is_lazy_readinto`, plus a
-  `_PEEL_VACUOUS` guard asserting the peel actually descended — so a future
-  wrapping layer whose accessor is not handled fails the test instead of silently
-  restoring the blindness. Verified: `tests/backends/conformance/test_streaming.py`
-  97 passed, 20 skipped, with the ten SIO-009 cells green across `local`,
-  `sftp_inproc`, `s3_moto`, `s3_boto3_moto` and `azure_replay`.
+  `_KNOWN_WRAPPERS` guard asserting the walk did not terminate *on* a wrapping
+  layer — so an accessor that stops being reachable fails the test instead of
+  silently restoring the blindness.
+  **Verified, with the bound stated** (`test_streaming.py`: 97 passed, 20
+  skipped): the ten SIO-009 cells are green across `local`, `sftp_inproc`,
+  `s3_moto`, `s3_boto3_moto` and `azure_replay`. That is **four of the five
+  wrapping backends**. `s3_pyarrow` is the fifth and it did **not** run —
+  `s3_pyarrow_moto` skips unconditionally at pyarrow ≥ 24 (which CI pins), so
+  `_PyArrowBinaryIO` is reachable only at `--stage=2` against MinIO. Its wrap
+  site was checked by reading, not by execution.
   **The filing decision was reversed on measurement, and the reason is the
   lesson.** This was first filed rather than fixed, on the stated grounds that
   s3 / sftp / azure were not installable here. That was **wrong**: the probe behind
   it ran the fixture factories in a bare `python` process, where `INFRA` is
   unpopulated, and their `pytest.skip("moto/s3fs not installed")` messages were
-  read as missing dependencies rather than a missing session fixture. Under pytest
-  all five run. A PR review challenged the claim, re-measuring settled it, and the
-  item was fixed in the same PR instead. Running a fixture factory outside a pytest
-  session does not tell you what the suite can exercise.
+  read as missing dependencies rather than a missing session fixture. A PR review
+  challenged the claim, re-measuring settled it, and the item was fixed in the same
+  PR instead. Running a fixture factory outside a pytest session does not tell you
+  what the suite can exercise.
+  **A later round then caught the fix's own defect**, which is why the guard is
+  shaped as it is. The first version asserted the peel had *descended* (`inner is
+  not stream`) and ran that check **before** the BytesIO assertion — so a bare
+  `io.BytesIO`, the canonical SIO-009 violation, peels to itself and would have
+  failed with a message blaming the test helper rather than the backend. It also
+  made "`read()` returns a wrapped stream" an obligation SIO-009 never states.
+  Reordered (contract first) and re-framed as "did not stop on a known wrapper".
   Surfaced by BK-340's `ReadOnlyHttpBackend` gate audit; shipped with it.
 
 - [x] **BK-340 — `SQLQueryBackend` has no conformance fixture, so no cross-backend rule reaches it**

@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from remote_store._capabilities import Capability
+from remote_store._stream import _ErrorMappingStream
 from tests.backends.conformance._helpers import _require
 from tests.backends.fixtures import fixture_params
 
@@ -21,10 +22,17 @@ if TYPE_CHECKING:
     from remote_store._backend import Backend
 
 
-_PEEL_VACUOUS = (
-    "peel never descended past the returned stream, so the assertion below "
-    "would inspect the wrapper instead of the body and pass for any content. "
-    "A new wrapping layer needs its accessor added to _peel_to_body (BUG-244)."
+_KNOWN_WRAPPERS: tuple[type, ...] = (io.BufferedReader, _ErrorMappingStream)
+"""Wrapping layers ``_peel_to_body`` knows how to see through.
+
+Terminating on one of these means the walk lost track of an accessor it is
+supposed to follow, which is the BUG-244 failure mode.
+"""
+
+_PEEL_STOPPED_ON_WRAPPER = (
+    "peel terminated on a known wrapping layer instead of the body, so the "
+    "BytesIO check above inspected the wrapper and would pass for any content. "
+    "The layer's accessor is no longer reachable from _peel_to_body (BUG-244)."
 )
 
 
@@ -42,14 +50,22 @@ def _peel_to_body(stream: object) -> object:
     and ``isinstance(wrapper, io.BytesIO)`` is false whatever the wrapper
     contains — so the SIO-009 laziness assertion passed without ever inspecting
     a body. Every LAZY_READ declarer that reaches the cell wraps in
-    ``_ErrorMappingStream`` except ``local``, so the check was vacuous for five
-    of the six (BUG-244, found while auditing the read-only HTTP fixture's
-    capability gates under BK-340).
+    ``_ErrorMappingStream`` except ``local``, so the check was vacuous for the
+    backends that wrap (BUG-244, found while auditing the read-only HTTP
+    fixture's capability gates under BK-340).
 
-    Callers pair this with the ``_PEEL_VACUOUS`` guard: if the returned object
-    *is* the stream passed in, no descent happened and the caller's assertion
-    proves nothing. That turns a future re-introduction of the blindness into a
-    failure rather than a silent pass.
+    An **unwrapped** stream is returned unchanged, and that is deliberate: a
+    backend handing back a bare body has nothing to peel, and a bare
+    ``io.BytesIO`` — the exact SIO-009 violation the caller is looking for — is
+    the case that must reach the caller's own assertion rather than being
+    intercepted here.
+
+    **Bound** (DRIFT-RULES Rule 7): callers pair this with
+    ``_KNOWN_WRAPPERS`` / ``_PEEL_STOPPED_ON_WRAPPER``, which catches the walk
+    losing an accessor it already knows about. It does **not** detect a
+    *new* wrapper type introduced later — that object is indistinguishable from
+    a body here, and no general test separates the two. Adding a wrapping layer
+    means adding it to ``_KNOWN_WRAPPERS`` and to the walk below.
     """
     while True:
         if hasattr(stream, "raw"):
@@ -80,10 +96,13 @@ class TestStreamingConformance:
         backend.write("lazy_test.bin", b"lazy read test")
         stream = backend.read("lazy_test.bin")
         inner = _peel_to_body(stream)
-        assert inner is not stream, _PEEL_VACUOUS
+        # The contract first: a bare BytesIO peels to itself, and this is the
+        # assertion that must name the backend for it. The wrapper guard below
+        # is about the *test* losing its way, so it must not pre-empt this one.
         assert not isinstance(inner, io.BytesIO), (
             f"Backend declares LAZY_READ but read() returned a BytesIO-backed stream (peeled to {type(inner).__name__})"
         )
+        assert not isinstance(inner, _KNOWN_WRAPPERS), _PEEL_STOPPED_ON_WRAPPER
         assert stream.read() == b"lazy read test"
         stream.close()
 
@@ -126,7 +145,7 @@ class TestStreamingConformance:
         # Reach the body for readinto(); BufferedReader handles readinto at the
         # buffered level, but we want to exercise the stream underneath it.
         raw = _peel_to_body(stream)
-        assert raw is not stream, _PEEL_VACUOUS
+        assert not isinstance(raw, _KNOWN_WRAPPERS), _PEEL_STOPPED_ON_WRAPPER
         buf = bytearray(len(content))
         n = raw.readinto(buf)  # type: ignore[attr-defined]
         assert isinstance(n, int), f"readinto() must return int, got {type(n).__name__}"

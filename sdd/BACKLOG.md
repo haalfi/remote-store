@@ -386,8 +386,8 @@ content-bearing contract sits behind `Capability.WRITE` and no read-only backend
 can reach any of it. That is ID-244, and it is why `sqlquery` reaches 77 cells
 rather than the whole surface. The `ReadOnlyHttpBackend` audit BK-340 also asked
 for found the same gate excluding the registry's only read-only LAZY_READ
-declarer from SIO-009, plus a vacuous assertion in that cell (BUG-244, filed
-under Lint / CI Completeness).
+declarer from SIO-009, plus a vacuous assertion in that cell — shipped alongside
+it as [BUG-244](BACKLOG-DONE.md).
 
 On importance, the research doc's designation, which this section adopts rather
 than restates: the two items that build what is actually missing are the authority
