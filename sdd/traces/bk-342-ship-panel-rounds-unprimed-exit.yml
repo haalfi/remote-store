@@ -16,6 +16,7 @@ audience:
 expected_ripples:
   - sdd/backlogid.json
   - sdd/adrs/DIGEST.md
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -129,4 +130,42 @@ phases:
         extract: >-
           contributor.process without a new user-facing framework: no CHANGELOG
           entry
+  - id: review
+    name: Review round
+    steps:
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Step 4: Post review"
+        read_type: verify
+        extract: >-
+          Round 1's Bug finding, confirmed against this file: the pending-review
+          flow attaches to "the requester's latest pending review" and all
+          subagents share the owner token, so parallel panel members posting
+          concurrently would cross-contaminate one pending review and drop
+          findings while the totalCount verification still reads success. Fixed
+          by making panel members analysts (Steps 0-3, findings returned, no
+          posting) with the orchestrator as single writer; solo rounds keep the
+          full flow. The defect was invisible when the panel paragraph was
+          written because the posting mechanics live in a file the diff never
+          touched — an instance of the unnamed-surface blindness this very PR
+          is about.
+      - file: .claude/skills/ship/SKILL.md
+        section: "When not to use this; Roles"
+        read_type: verify
+        extract: >-
+          Round 1 also found two stale sibling descriptions of "a round" (the
+          cost sentence /orchestrate cites as the choosing authority, and the
+          Roles table's per-round reviewer cardinality) left behind by the
+          round-composition change — the exact fix-generated defect class this
+          PR extends the sweep rule to catch, caught here by a reviewer because
+          the skill change was authored before the rule it adds existed.
+      - file: sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md
+        section: "Consequences"
+        read_type: verify
+        extract: >-
+          Round 1's third finding: the record stated the panel's wall-clock win
+          and triage load but neither cost axis in compute terms, leaving the
+          exit gate's reverse-if unevaluable later. Added the missing Negative;
+          also hardened panel read-only from instruction to tooling
+          (write-free subagent_type) after the fourth finding showed
+          instruction-only enforcement changes shape under concurrency.
         outcome: ok

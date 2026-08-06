@@ -84,6 +84,12 @@ rule are operational contract and live in `.claude/skills/ship/SKILL.md` and
 - **Positive:** panels compress wall-clock: PR #949's four serial scoped
   rounds were four review-fix-gate cycles that plausibly fit in two panel
   rounds.
+- **Negative:** both amendments raise compute cost on independent axes, on
+  top of the bill ADR-0033's Context records. A panel multiplies reviewer
+  passes per round — tokens rise even as wall-clock compresses — and the exit
+  gate appends a terminal unprimed pass whenever the closing round lacks one
+  (by parity, roughly every other delivery), plus a further fix pass and gate
+  run when that pass finds something.
 - **Negative:** triage and dedup load on the orchestrator grows with panel
   width, and width itself is a new judgement that can be miscalibrated in
   either direction.

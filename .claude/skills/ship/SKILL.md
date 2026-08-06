@@ -12,14 +12,19 @@ been reviewed a fixed number of times.
 Composes the existing skills rather than reimplementing them: [`/pr`](../pr/SKILL.md)
 creates the PR, [`/rvw-pr`](../rvw-pr/SKILL.md) is the reviewer's instruction set,
 [`/fix-pr`](../fix-pr/SKILL.md) owns comment-fetch and thread-resolve mechanics.
-[`/orchestrate`](../orchestrate/SKILL.md) remains the choice when you want expert
-fan-out **without** the convergence loop.
+[`/orchestrate`](../orchestrate/SKILL.md) remains the choice when you want a
+capped, consolidate-and-decide review rather than an open-ended convergence
+loop.
 
 ## When not to use this
 
-The loop is the dominant cost: every round is a reviewer pass, a fix pass, and a
-full `hatch run all`. What that came to on a large delivery is recorded in
-[ADR-0033](../../../sdd/adrs/0033-ship-convergence-driven-review.md).
+The loop is the dominant cost: every round is one or more reviewer passes — a
+panel, from round 3 — plus a fix pass and a full `hatch run all`, and the
+unprimed exit gate can append a further reviewer pass at the close. What the
+pre-panel shape came to on a large delivery is recorded in
+[ADR-0033](../../../sdd/adrs/0033-ship-convergence-driven-review.md); the cost
+the panel and exit gate add on top is recorded in
+[ADR-0034](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md).
 
 Use `/orchestrate` or plain implementation when the change is small, mechanical,
 or easily reverted. Use `/ship` when a defect that reaches `master` is costly:
@@ -33,7 +38,7 @@ surface.
 | Orchestrator | main loop | **Never delegated.** It holds the convergence judgement |
 | Designer / planner | main loop, plan mode | One role, not two, unless the task is architectural |
 | Author, fixer | domain-expert subagents | May decline an instruction **with evidence** |
-| Reviewer | fresh subagent per round | **Never resumed.** A resumed reviewer inherits its own prior conclusions |
+| Reviewer | fresh subagents — one per panel member | **Never resumed.** A resumed reviewer inherits its own prior conclusions |
 
 ## Step 1: Frame
 
@@ -81,44 +86,65 @@ push → reply and resolve.
 | Closing | Must review the last fix pass **and** satisfy the unprimed exit gate (see Stop rule) | — |
 
 **Panels run in parallel against the same pushed state.** Each member is
-fresh, read-only, and blind to the others: scoped members get briefs per the
-requirements below; the unprimed member gets the PR number and nothing else.
-The orchestrator merges the members' findings, dedups (two members reporting
-one defect is one finding), and runs a single triage and fix pass for the
-round. Width is a judgement, not a formula: a quiet previous round keeps the
-next narrow — a panel of one scoped reviewer is still a round — and a broad
-diff or a loud round widens the next.
+fresh and blind to the others: scoped members get briefs per the requirements
+below; the unprimed member gets the PR number and nothing else. Two
+constraints keep that parallelism sound:
+
+- **Members are analysts, not posters.** Every subagent shares the owner
+  token, and GitHub allows one pending review per user per PR — concurrent
+  members running `rvw-pr`'s posting step would cross-contaminate a single
+  pending review and drop findings while that skill's `totalCount`
+  verification still reads success. Panel members execute `rvw-pr` Steps 0–3
+  only and **return their findings instead of posting**; the orchestrator
+  merges, dedups (two members reporting one defect is one finding), posts the
+  round's findings as one review, and runs a single triage and fix pass. A
+  solo round — rounds 1 and 2, or a panel of one — keeps `rvw-pr`'s full
+  posting flow: one reviewer, no contention.
+- **Members are read-only by tooling, not only by instruction.** Concurrent
+  write-capable agents share one working tree, so a single member that
+  ignores the instruction can mutate the state mid-round underneath the
+  others. Spawn panel members with a `subagent_type` that has no write tools
+  — they need no posting path — and keep the instruction-only fallback below
+  for solo spawns where model diversity forces a general agent.
+
+Width is a judgement, not a formula: a quiet previous round keeps the next
+narrow — a panel of one scoped reviewer is still a round — and a broad diff
+or a loud round widens the next.
 
 **Unprimed reviewers — round 1, and one member of every odd panel — are
 unprimed on purpose.** They receive the diff, the goal, and repo conventions,
 never your areas of concern, prior findings, or round history: a reviewer
-handed conclusions confirms them, and PR #949's five scoped rounds each
-confirmed what they were pointed at while a stale docstring sat three lines
-from an edited comment until an unprimed pass read the function cold
-([ADR-0034](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md)).
+handed conclusions confirms them, and the second delivery's evidence for what
+that costs is in
+[ADR-0034](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md).
 Use a different model so its blind spots differ from the author's.
 
 Spawn an `Agent` with `model:` set and a prompt instructing it to read and
-execute `.claude/skills/rvw-pr/SKILL.md`. Two things the prompt must carry,
+execute `.claude/skills/rvw-pr/SKILL.md`. Things the prompt must carry,
 because the spawn path does not supply them:
 
 - **The PR number.** `rvw-pr/SKILL.md` read as a file still contains a literal
   `$ARGUMENTS`; only slash invocation substitutes it. Without the number the
   agent falls through to that skill's ask-the-user branch, which a subagent
-  cannot answer. Pass the number and nothing else, per the unprimed rule.
+  cannot answer. For an unprimed reviewer, pass the number and nothing else,
+  per the unprimed rule; a scoped member's prompt adds its brief.
+- **For panel members: analyze only.** `rvw-pr` Steps 0–3, findings returned
+  as the final message, no posting — per the panel constraints above.
 - **The read-only constraint, restated.** `rvw-pr`'s `allowed-tools` frontmatter
   grants no `Edit` or `Write`, and that guarantee is *lost* when a general agent
-  merely reads the file: it keeps its own full tool set. Restate the constraint
-  in the prompt, and prefer a `subagent_type` without write tools where one
-  fits. Until then "reviewers are read-only" is enforced by instruction rather
-  than by tooling, which is weaker than the frontmatter it stands in for.
+  merely reads the file: it keeps its own full tool set. Panel members get the
+  guarantee from tooling (a write-free `subagent_type`, above); for a solo
+  spawn where model diversity forces a general agent, restate the constraint
+  in the prompt — enforcement by instruction, which is weaker than the
+  frontmatter it stands in for.
 
 Invoking `/rvw-pr` directly keeps both guarantees and is the right choice
 whenever model diversity does not matter; it cannot take a model override.
 
 ### Lens menu
 
-Pick per round, by what the work is and what previous rounds missed:
+Pick one per scoped reviewer, by what the work is and what previous rounds
+missed:
 
 - **Neglected surface.** What have prior rounds *not* looked at? Historically the
   highest-yield lens; behavioural bugs hide where review attention has not gone.
@@ -135,7 +161,7 @@ Pick per round, by what the work is and what previous rounds missed:
 2. **What the previous fix pass changed**, so it gets reviewed.
 3. **What previous rounds have not examined.**
 4. **Explicit permission to find nothing**, or round N manufactures a finding.
-   On the final round, add: weight toward what would be *wrong once merged*,
+   On the closing round, add: weight toward what would be *wrong once merged*,
    away from stylistic refinement.
 
 An unprimed member's brief carries none of this — the PR number only, per the
