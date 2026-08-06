@@ -30,7 +30,7 @@ surprising_ripples:
   - scripts/drift_smoke_map.py
   - scripts/check_spec_marks.py
   - sdd/specs/003-backend-adapter-contract.md
-review_rounds: 5
+review_rounds: 6
 phases:
   - id: orient
     name: Orient
@@ -279,4 +279,31 @@ phases:
           the contract assertion, with the backend-specific justification inline.
           Generalisable: a correction justified cross-backend was applied to a
           per-backend cell without re-deriving whether its justification held there.
+        outcome: ok
+      - file: tests/backends/fixtures/test_registry.py
+        section: "test_bk289_concurrency_posture_is_declared_and_split docstring"
+        read_type: verify
+        extract: >-
+          Round 6 was run deliberately UNPRIMED — no areas, no prior findings, no
+          mention that five rounds preceded it — and it earned its place: it found a
+          docstring three lines above an inline comment I had updated in the same
+          edit, describing the same set. Rounds 2-5 were all scoped passes aimed at
+          the previous fix; each found something, but a primed reviewer confirms
+          what it is pointed at, and none was pointed here. The measurable lesson
+          for the /ship loop: a sequence of scoped rounds can converge a diff while
+          leaving adjacent surfaces unexamined, so an unprimed round is not
+          interchangeable with another targeted one.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-336"
+        read_type: verify
+        extract: >-
+          Five instances in this PR of one shape — changed a thing, updated one
+          description of it, left a sibling description stale (rounds 1, 3, 4, 5, 6).
+          None was a code defect and all five were caught, so the rate is the signal
+          rather than the severity. Every one arose from a fix I generated, and
+          BK-336's sweep rule attaches to review findings; nothing points a sweep at
+          my own corrections. Recorded here rather than acted on: inventing a
+          process rule from inside the PR that motivated it is how a rule acquires
+          an untested shape. This is BK-336's first post-ship usage data.
         outcome: ok
