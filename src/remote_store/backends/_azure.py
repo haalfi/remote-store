@@ -979,8 +979,13 @@ class AzureBackend(Backend):
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         """Delete the blob at *path*.
 
+        On a flat account a container that does not exist counts as a missing
+        blob, on the same terms as ``delete_folder``: ``missing_ok=True`` returns
+        silently and ``missing_ok=False`` raises ``NotFound``.
+
         Raises:
-            NotFound: If the blob does not exist (or, on HNS, a path component is
+            NotFound: If the blob does not exist (including when the container
+                itself is absent, or, on HNS, when a path component is
                 itself a file) and ``missing_ok`` is ``False``.
             InvalidPath: If *path* names a directory (HNS; use ``delete_folder``).
             PermissionDenied: If credentials are rejected or lack access (401/403).

@@ -833,10 +833,13 @@ class AsyncAzureBackend(AsyncBackend):
 
         Args:
             path: Backend-relative key.
-            missing_ok: If ``True``, do not raise when the file is absent.
+            missing_ok: If ``True``, do not raise when the file is absent. On a
+                flat account this covers an absent *container* too, on the same
+                terms as ``delete_folder``.
 
         Raises:
-            NotFound: If the file is missing and ``missing_ok`` is ``False``.
+            NotFound: If the file is missing (including when the container itself
+                is absent) and ``missing_ok`` is ``False``.
             InvalidPath: If ``path`` names a directory (HNS accounts only).
         """
         self._reject_root_as_file(path)

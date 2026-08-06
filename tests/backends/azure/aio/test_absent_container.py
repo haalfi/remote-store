@@ -92,7 +92,7 @@ class TestDeniedListingIsNotAnAbsentContainer:
     executes it — without this test that branch is unreached code.
     """
 
-    @pytest.mark.spec("BE-013", "BE-021", "ASYNC-013", "AZ-026")
+    @pytest.mark.spec("BE-013", "BE-021", "ASYNC-013", "AZ-025", "AZ-026")
     async def test_denied_listing_raises_permission_denied(self, denied_backend: Any) -> None:
         with pytest.raises(PermissionDenied) as exc_info:
             await denied_backend.delete_folder(FOLDER, recursive=True, missing_ok=True)

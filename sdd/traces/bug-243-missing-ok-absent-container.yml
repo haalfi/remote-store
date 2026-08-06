@@ -22,6 +22,8 @@ expected_ripples:
   - docs-src/guides/custom-backend-guide.md
 surprising_ripples:
   - tests/backends/s3/test_denied_probe.py
+  - tests/backends/azure/_helpers.py
+  - tests/backends/azure/aio/test_absent_container.py
 phases:
   - id: orient
     name: Orient
@@ -180,10 +182,13 @@ phases:
           instance is ever bound to an absent container" — which this work's own
           dropped-table test refutes, and the offered criterion (torn down
           mid-flight vs never there) is one no flat-NS backend can draw, since a
-          bucket deleted mid-flight is tolerated. Rewritten as an exemption whose
-          ground is what the response carries for free. The false claim had been
-          copied into three more homes by then: BACKLOG-DONE, the SQL test
-          docstring, and the BUG-245 item.
+          bucket deleted mid-flight is tolerated. The claim had reached five more
+          homes by then; the round-2 sweep corrected three (BACKLOG-DONE, the SQL
+          test docstring, the BUG-245 item) and missed two — CHANGELOG.md and the
+          custom-backend guide — which round 3 found. Both were named in this
+          trace's own expected_ripples, so the sweep had a list and did not use
+          it: it searched for the wording it had just written rather than for
+          every home the claim could have.
         outcome: ok
       - file: src/remote_store/backends/_s3_boto3.py
         section: "exists, is_folder (vs BE-004 / BE-005)"
@@ -197,6 +202,35 @@ phases:
           same container 404 escaping a probe that should absorb it — and
           reachable at Stage 1 only because the Azure stub now exists.
         outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 (Scope paragraph, second rewrite)"
+        read_type: verify
+        extract: >-
+          Round 3, a three-member panel, and the finding that matters most: the
+          round-2 replacement criterion was *also* wrong. It said the clause
+          binds backends whose response already carries "the container is gone" —
+          falsified by the clause's own rationale twelve lines above, since S3's
+          delete tolerates an absent bucket precisely because a bodyless
+          HeadObject 404 carries nothing. Applied as a test it would have
+          exempted the protocol shape the rule was written for. Two corrections
+          to one sentence, both from the same habit of reasoning from an observed
+          wire property. The third rests on the mechanism instead — an absent
+          container is tolerated where the error already lands in the NotFound
+          family that missing_ok swallows — which covers both halves on every
+          backend and makes the dialect question moot.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / New test file"
+        read_type: verify
+        extract: >-
+          Why the TEST-003 placement miss was structural rather than careless:
+          the row asks whether a new test file needs an os_sensitive mark and
+          says nothing about placement, and check_test_placement.py enforces
+          three other rules. Nothing in the pre-work path routes an author to
+          TEST-003 when adding a test file, so the two files this work created
+          are logged as surprising ripples — the register that makes a missing
+          row visible to the aggregator.
+        outcome: misleading
   - id: verify
     name: Verify
     steps:

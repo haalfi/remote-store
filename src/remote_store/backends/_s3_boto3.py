@@ -541,8 +541,13 @@ class S3Boto3Backend(Backend):
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         """Delete the object at *path*.
 
+        A bucket that does not exist counts as a missing object, on the same
+        terms as ``delete_folder``: ``missing_ok=True`` returns silently and
+        ``missing_ok=False`` raises ``NotFound``.
+
         Raises:
-            NotFound: If the object does not exist and ``missing_ok`` is ``False``.
+            NotFound: If the object does not exist (including when the bucket
+                itself is absent) and ``missing_ok`` is ``False``.
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """

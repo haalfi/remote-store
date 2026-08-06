@@ -582,12 +582,20 @@ discrimination has no buyer.
 what `missing_ok` tolerates; it does not silently re-decide operations that have
 no `missing_ok`. `get_folder_info`, `read`, `get_file_info` and the `move`/`copy`
 source keep answering `NotFound` against an absent container, which is what an
-absent path already owed them. `exists()`, `is_file()` and `is_folder()` are
-governed by BE-004 / BE-005 and by this section's own rule that the three never
-raise: an absent container is one more inaccessible path, so they answer
-`False`. That is a pre-existing obligation this clause neither creates nor
-relaxes — read it as the reason the three are absent from the roster above, not
-as an exemption for them.
+absent path already owed them. `exists()`, `is_file()` and `is_folder()` MUST
+answer `False`: BE-004 / BE-005 and this section's own rule already forbid the
+three from raising, and an absent container is one more inaccessible path. That
+obligation is pre-existing — this clause neither creates nor relaxes it, and it
+is the reason the three are absent from the roster above rather than an
+exemption for them.
+
+**Known divergence, stated rather than implied:** `exists()` and `is_folder()`
+currently *raise* `NotFound` against an absent container on `S3Boto3Backend`,
+`AzureBackend` and `AsyncAzureBackend`, where their strict prefix probe is
+reached after the tolerant HEAD comes back empty. `S3Backend` and
+`S3PyArrowBackend` answer `False`. The clause above is the obligation; those
+three are in breach of it and tracked in the backlog. Recorded here so a reader
+does not take the MUST as a description of what ships today.
 
 The rule exists because leaving it unstated let each backend answer from
 whatever its wire protocol happened to reveal. `HeadObject` answers a bodyless
@@ -608,27 +616,38 @@ The catch MUST stay narrow to the one shape that means "the container is not
 there" — a denial stays `PermissionDenied` and a 503 stays
 `BackendUnavailable`, per the determinant rule above.
 
-**Scope: backends whose container absence is free to observe.** The clause binds
-a backend whose response *already carries* the fact that the container is gone —
-S3's `NoSuchBucket`, Azure's `ContainerNotFound`. That is what makes tolerating
-cost nothing, and the no-extra-round-trip rule above is the same coin: a backend
-may not go looking for the distinction, so it can only honour the rule when the
-distinction arrives unasked.
+**Scope: backends where an absent container already lands in `NotFound`.** The
+clause binds a backend whose error mapping *already* turns an absent container
+into the `NotFound` family — the family `missing_ok` exists to swallow. Where it
+does, tolerating costs nothing: the tolerance the caller asked for is the
+tolerance already in the code path, and the only work is making sure the error
+reaches it. Where an absent container maps somewhere else, tolerance would have
+to be manufactured, and manufacturing it needs the discriminating probe this
+clause forbids.
 
-`SQLBlobBackend` is exempt on exactly that ground. A dropped table surfaces as a
-dialect-specific `OperationalError` / `ProgrammingError` with no portable code to
-key on, so identifying it means an extra `has_table` inspection — the round trip
-this clause forbids. It stays `BackendUnavailable` under the transport row, and
-`missing_ok` does not convert it into a silent success.
+Note what the test is *not*. It does not ask whether the backend can tell an
+absent container from an absent path — on the `delete` side of S3 it demonstrably
+cannot, since `HeadObject` answers a bodyless 404 that names nothing, and that
+call tolerates the absent bucket precisely *because* the two are
+indistinguishable. Nor does it ask how the container came to be absent: an S3
+bucket deleted under a running backend is torn down mid-flight, and this clause
+tolerates it. What the response *reveals* governs nothing here; where the error
+*lands* governs everything.
 
-This is an **exemption with a reason, not a vacuity**, and the distinction
-matters because the tempting justification is wrong. It is true that
-`SQLBlobBackend` settles its table at construction — creating it, or reflecting
-it and refusing to construct — so an absent table is always a store torn down
-mid-flight rather than one that was never there. But that line does not
-discriminate: an S3 bucket deleted under a running backend is torn down
-mid-flight too, and this clause tolerates it. "How the store came to be absent"
-governs nothing here; "what the response tells you for free" governs everything.
+`SQLBlobBackend` is exempt on that test. A dropped table lands outside the
+`NotFound` family: `OperationalError` maps to `BackendUnavailable`, and on the
+dialects that raise `ProgrammingError` instead it maps to the base error, per
+SQL-BLOB-050 in [040-sql-blob-backend.md](040-sql-blob-backend.md). Neither is a
+`NotFound`, so `missing_ok` never sees it, and routing it there would mean
+inventing a verdict the mapping does not produce — an extra `has_table`
+inspection to decide a missing table is a missing path rather than a failed
+statement. The exemption is therefore about the mapping, and it holds whichever
+of the two errors a given dialect raises.
+
+This is an **exemption with a reason, not a vacuity**. `SQLBlobBackend` does
+settle its table at construction, creating it or reflecting it and refusing to
+construct — but that fact licenses nothing here, and a live instance *can* be
+bound to an absent container by dropping the table under it.
 
 **The store root is decided before the probe, not by it.** A probe answer about
 the root is meaningless — it is a folder whether or not it has children — so

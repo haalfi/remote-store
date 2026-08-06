@@ -1,18 +1,25 @@
 """Why BE-012/BE-013's absent-container clause exempts ``SQLBlobBackend``.
 
 The clause says a tolerant delete treats an absent *container* as an absent
-path, and it binds backends whose response already carries the fact that the
-container is gone — S3's ``NoSuchBucket``, Azure's ``ContainerNotFound``. That
-is what makes tolerating free, and the clause forbids paying a round trip to
-learn it.
+path, and it binds a backend whose error mapping already turns an absent
+container into the ``NotFound`` family — the family ``missing_ok`` exists to
+swallow. Tolerating is then free, and the clause forbids paying a probe to buy
+it any other way.
 
-A dropped table gives ``SQLBlobBackend`` no such signal: it arrives as a
-dialect-specific ``OperationalError`` / ``ProgrammingError`` with no portable
-code, so telling it from any other database failure needs an extra ``has_table``
-inspection — the round trip the clause forbids. Hence the exemption, and
-``TestDroppedTableIsNotAMissingPath`` pins what it means: ``BackendUnavailable``
-stands, and ``missing_ok`` does **not** convert it into a silent success. A
-later change that widens the tolerance to swallow a dropped table fails there.
+A dropped table lands outside that family. Per SQL-BLOB-050 an
+``OperationalError`` maps to ``BackendUnavailable`` and every other
+``SQLAlchemyError`` to the base error, and which of the two a dropped table
+raises is dialect-specific — SQLite says ``OperationalError`` ("no such table"),
+PostgreSQL and MySQL say ``ProgrammingError``. Hence the exemption, and it does
+not depend on which one you get: ``missing_ok`` never sees either.
+
+``TestDroppedTableIsNotAMissingPath`` therefore asserts the dialect-independent
+property the spec actually claims — the call raises, and what it raises is not a
+``NotFound`` that ``missing_ok`` would have swallowed — rather than pinning
+SQLite's concrete ``BackendUnavailable``, which would have looked like a
+cross-dialect guarantee while testing one dialect. **Coverage bound:** only
+SQLite runs here; the ``ProgrammingError`` path on PostgreSQL and MySQL is
+argued from SQL-BLOB-050's table, not executed.
 
 ``TestContainerExistsByConstruction`` records the *other* fact about this
 backend — that the constructor settles the table's existence, creating it
@@ -32,7 +39,7 @@ from typing import TYPE_CHECKING
 import pytest
 import sqlalchemy as sa
 
-from remote_store._errors import BackendUnavailable
+from remote_store._errors import BackendUnavailable, NotFound, RemoteStoreError
 from remote_store.backends._sqlalchemy import SQLBlobBackend
 
 if TYPE_CHECKING:
@@ -73,7 +80,7 @@ class TestContainerExistsByConstruction:
 
 @pytest.mark.spec("BE-012", "BE-013", "BE-021", "SQL-BLOB-050")
 class TestDroppedTableIsNotAMissingPath:
-    """A table dropped mid-life is a torn-down store, and ``missing_ok`` does not cover it."""
+    """An absent table lands outside `NotFound`, so ``missing_ok`` cannot swallow it."""
 
     @pytest.mark.parametrize(
         ("op_name", "call"),
@@ -89,8 +96,22 @@ class TestDroppedTableIsNotAMissingPath:
         op_name: str,
         call,  # noqa: ANN001 -- parametrized callable
     ) -> None:
+        """Raises, and not with the one error class ``missing_ok`` would have absorbed.
+
+        Asserting ``not NotFound`` rather than the concrete ``BackendUnavailable``
+        is deliberate: that is the property the exemption rests on, and it is the
+        one that survives the dialect split (see the module docstring). Pinning
+        SQLite's concrete class here would read as a cross-dialect guarantee this
+        suite does not test.
+        """
         with backend._engine.begin() as conn:
             conn.execute(sa.text(f"DROP TABLE {_TABLE}"))
-        with pytest.raises(BackendUnavailable) as exc_info:
+        with pytest.raises(RemoteStoreError) as exc_info:
             call(backend)
+        assert not isinstance(exc_info.value, NotFound), (
+            f"{op_name}: an absent table must not reach missing_ok's NotFound branch"
+        )
+        # SQLite raises OperationalError, so this instance lands on
+        # BackendUnavailable; other dialects may land on the base error.
+        assert isinstance(exc_info.value, BackendUnavailable)
         assert exc_info.value.backend == "sql-blob"
