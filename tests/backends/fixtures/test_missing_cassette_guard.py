@@ -246,6 +246,15 @@ class TestMissingCassetteGuard:
         never on a registry-side widening, which is the direction that matters.
         The cassettes root is derived from this file's location, so nothing here
         comes from the code under test.
+
+        It asserts the directory's *place*, not its existence. A replay fixture
+        registered before its cassettes are recorded is a state the machinery
+        supports on purpose — the whole point of the skip is that such a backend
+        "leaves a visible gap rather than a red suite", and
+        ``mutate_scopes._cassettes_recorded`` answers ``False`` for exactly that
+        window. Git cannot store an empty directory, so requiring one to exist
+        would make the registering PR co-ship a placeholder cassette to keep
+        this cell green.
         """
         cassettes_root = (Path(__file__).resolve().parent.parent / "cassettes").resolve()
         guarded = _guarded_cassette_dirs()
@@ -255,7 +264,6 @@ class TestMissingCassetteGuard:
                 f"{directory} is not a direct child of {cassettes_root}; a guarded directory "
                 "that broad makes every cassette under it skippable"
             )
-            assert directory.is_dir(), f"{directory} is guarded but does not exist"
 
 
 @pytest.mark.spec("TEST-007")

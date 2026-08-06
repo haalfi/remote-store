@@ -324,7 +324,17 @@ where that holds of it. That is a per-(cell, backend) property, not a
 per-cell one: one backend may answer from the key alone where another
 resolves it over the wire first, so the trigger has to be the request.
 A cassette that *is* present and cannot serve the request is a stale
-recording — a failure, not a skip.
+recording, and surfaces as an error rather than a skip.
+
+**With one caveat on that error, stated because the skip's own design
+turns on it.** The stale-cassette path raises vcrpy's ordinary
+`Exception`, which a backend's error mapping converts into a library
+error like any other transport failure — so a cell asserting *some*
+error can pass on a stale recording instead of failing. The skip path
+avoids this by raising a `BaseException`, which no `except Exception`
+can intercept; the stale path has no such protection and never did.
+A cell that must distinguish the two asserts the specific error it
+expects, not a base class.
 
 **It is bounded to the registered cassette directories.** The skip means
 "a recording is owed"; that is only true of cassettes belonging to a
