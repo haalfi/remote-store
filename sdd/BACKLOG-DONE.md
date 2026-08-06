@@ -30,9 +30,11 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   skipped): the ten SIO-009 cells are green across `local`, `sftp_inproc`,
   `s3_moto`, `s3_boto3_moto` and `azure_replay`. That is **four of the five
   wrapping backends**. `s3_pyarrow` is the fifth and it did **not** run —
-  `s3_pyarrow_moto` skips unconditionally at pyarrow ≥ 24 (which CI pins), so
-  `_PyArrowBinaryIO` is reachable only at `--stage=2` against MinIO. Its wrap
-  site was checked by reading, not by execution.
+  `s3_pyarrow_moto` skips unconditionally when the resolved pyarrow is ≥ 24,
+  which every current CI resolution satisfies. `_PyArrowBinaryIO` is therefore
+  reached only by `s3_pyarrow_minio` (Stage 2) or `s3_pyarrow_live` (Stage 3,
+  real AWS, `RS_TEST_LIVE_S3`), neither of which runs in `hatch run all`. Its
+  wrap site was checked by reading, not by execution.
   **The filing decision was reversed on measurement, and the reason is the
   lesson.** This was first filed rather than fixed, on the stated grounds that
   s3 / sftp / azure were not installable here. That was **wrong**: the probe behind
@@ -82,7 +84,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   cell's `.raw`-only peel terminates on `_ErrorMappingStream`, making its BytesIO
   assertion vacuous for five of the six backends that run it — fixed here as
   BUG-244, above. The http half is pinned by `test_read_is_lazy_not_bytesio` across
-  all three transports, with the same descended-guard the shared cell now carries.
+  all three transports; both cells now call the single `tests._helpers.peel_to_body`
+  rather than each keeping a copy of the walk, which is what let one copy stay
+  broken while the other was fixed.
   **Discovery:** the item's own successor. BK-340 closed the "family with no fixture"
   gate and measured a second gate underneath it — the suite's seeding discipline —
   which is why the fixture reaches 77 cells and not the whole surface (ID-244).

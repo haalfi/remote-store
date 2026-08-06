@@ -11,6 +11,7 @@ pytest.importorskip("pytest_httpserver", reason="pytest-httpserver not installed
 from remote_store._errors import BackendUnavailable, CapabilityNotSupported, NotFound, PermissionDenied  # noqa: E402
 from remote_store._models import FileInfo  # noqa: E402
 from remote_store.backends._http import ReadOnlyHttpBackend, UrllibTransport  # noqa: E402
+from tests._helpers import KNOWN_STREAM_WRAPPERS, PEEL_STOPPED_ON_WRAPPER, peel_to_body  # noqa: E402
 
 
 def _httpx_installed() -> bool:
@@ -157,19 +158,21 @@ class TestHttpRead:
         and exposes no ``.raw``. A ``.raw``-only walk therefore terminates *on
         the wrapper*, and ``isinstance(wrapper, io.BytesIO)`` is false whatever
         the wrapper contains — the assertion passes without ever inspecting the
-        body. Measured chains with the ``_inner`` step in place: urllib →
+        body. Measured chains through ``peel_to_body``: urllib →
         ``HTTPResponse``, requests → ``_Urllib3StreamAdapter``, httpx →
-        ``_HttpxStreamAdapter``. The ``descended`` guard below fails the test if
-        a future refactor reintroduces that blindness rather than letting it
-        pass silently.
+        ``_HttpxStreamAdapter``.
+
+        The walk itself is ``tests._helpers.peel_to_body``, shared with the
+        cross-backend cell rather than copied here. The copy is what caused the
+        defect: this cell and ``conformance/test_streaming.py`` each had their
+        own walk, BUG-244 was fixed in one, and the other kept the broken form
+        through a further review round before anyone noticed.
 
         Found by BK-340's "check ``ReadOnlyHttpBackend`` at the same time"
-        obligation. The same blindness in the shared conformance cell was
-        BUG-244, fixed in the same PR — ``conformance/test_streaming.py`` now
-        peels through both accessors via ``_peel_to_body`` and carries the same
-        guard. This test remains the HTTP-specific home because the shared cell
-        is WRITE-gated and cannot reach this backend at all; that structural gap
-        is **ID-244**, still open.
+        obligation; the shared cell's copy of the blindness was BUG-244, fixed
+        in the same PR. This test remains the HTTP-specific home because that
+        cell is WRITE-gated and cannot reach this backend at all — the
+        structural gap is **ID-244**, still open.
         """
         import io
 
@@ -182,27 +185,15 @@ class TestHttpRead:
         try:
             stream = b.read("large.bin")
             try:
-                # Peel every wrapping layer — buffering (``.raw``) and error
-                # mapping (``_inner``) alike — so neither a
-                # BufferedReader(BytesIO) nor an _ErrorMappingStream(BytesIO)
-                # can hide a materialised body.
-                inner: object = stream
-                while True:
-                    if hasattr(inner, "raw"):
-                        inner = inner.raw
-                    elif hasattr(inner, "_inner"):
-                        inner = inner._inner
-                    else:
-                        break
-
-                assert inner is not stream, (
-                    "peel never descended past the returned stream — the walk no longer "
-                    "reaches the body, so the BytesIO check below would pass vacuously"
-                )
+                inner = peel_to_body(stream)
+                # Contract first: a bare BytesIO peels to itself, so this is the
+                # assertion that must name the backend for it. The wrapper guard
+                # is about the *test* losing its way and must not pre-empt it.
                 assert not isinstance(inner, io.BytesIO), (
                     f"ReadOnlyHttpBackend({client!r}) declares LAZY_READ but read() "
                     f"returned a BytesIO-backed stream (peeled to {type(inner).__name__})"
                 )
+                assert not isinstance(inner, KNOWN_STREAM_WRAPPERS), PEEL_STOPPED_ON_WRAPPER
                 # SIO-009's second half: the body layer honours the RawIOBase
                 # protocol, which is what makes the stream consumable without a
                 # full materialisation.

@@ -30,7 +30,7 @@ surprising_ripples:
   - scripts/drift_smoke_map.py
   - scripts/check_spec_marks.py
   - sdd/specs/003-backend-adapter-contract.md
-review_rounds: 3
+review_rounds: 4
 phases:
   - id: orient
     name: Orient
@@ -247,4 +247,20 @@ phases:
           contract asserts first, and re-framed the guard as "did not terminate on a
           known wrapper". A guard added to stop a check being vacuous made the check
           wrong for the one input it most needed to handle.
+        outcome: ok
+      - file: tests/backends/http/test_config.py
+        section: "test_read_is_lazy_not_bytesio"
+        read_type: verify
+        extract: >-
+          Round 4 found I had fixed the shared cell in round 3 and left the identical
+          broken guard in the HTTP sibling — a cell I wrote myself, two files away,
+          with the same defect I had just diagnosed. Third class-miss of this PR
+          (after the sweep pattern that matched wording rather than claim, and the
+          stale reference left by moving an item between backlog files). The root
+          cause was duplication: the two cells each owned a copy of the peel walk, so
+          fixing one could not fix the other. Resolved by hoisting the walk to
+          tests/_helpers.py with both cells importing it, which removes the class
+          rather than its latest instance. BK-336's sweep rule fires on a finding;
+          nothing fires on a fix I generate myself, and that is where these three
+          landed.
         outcome: ok
