@@ -204,8 +204,13 @@ rather than assumed:
 
 | Backend | Reached by the conformance cells | Pinned only in its per-backend home | Pinned nowhere |
 |---------|----------------------------------|--------------------------------------|----------------|
-| `SQLQueryBackend` — fixture `sqlquery` | the query rows on the empty store (`exists` / `is_folder` / `is_file`, both spellings) and the **whole file-shaped-operation row** (`read`, `read_bytes`, `read_seekable`, `get_file_info`, both spellings) | the populated-store rows (`get_folder_info` aggregating a non-empty store), because the conformance fixture registers an empty query mapping and the suite seeds through `write` (ID-244) | — the rows it does not reach are `delete` / `move` / `copy`, which it declares no capability for |
+| `SQLQueryBackend` — fixture `sqlquery` | the query rows on the empty store (`exists` / `is_folder` / `is_file`, both spellings); addressing (`native_path` / `resolve` agreeing on both spellings, `to_key` returning the canonical root key); and the **read half** of the file-shaped-operation row — `read`, `read_bytes`, `read_seekable`, `get_file_info`, both spellings | the populated-store rows (`get_folder_info` aggregating a non-empty store), because the conformance fixture registers an empty query mapping and the suite seeds through `write` (ID-244) | — |
 | Graph — `tests/backends/graph/aio/test_backend.py` | — | addressing only: `native_path` agreeing on both spellings (also under `base_path`), `to_key` returning the canonical root key, and every root spelling refused by `_require_writable_key` | the query rows and the file-shaped-operation row |
+
+The file-shaped-operation row is seven operations (`_ROOT_FILE_OPS`): the four
+reads above plus `delete`, `move` and `copy`. `SQLQueryBackend` declares no
+capability for those three, so they are gated out rather than missed — nothing
+to pin, which is why its "pinned nowhere" cell is empty rather than listing them.
 
 A clause that binds every LIST-capable backend needs its coverage checked per
 backend, not per source site — both defects this clause was written from

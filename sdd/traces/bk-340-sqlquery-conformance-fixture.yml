@@ -14,12 +14,22 @@ audience:
 discovery_followups:
   - BUG-244
   - ID-244
+co_shipped_items:
+  - BUG-244
 expected_ripples:
   - tests/backends/conformance/test_identity.py
   - tests/backends/fixtures/test_registry.py
 surprising_ripples:
+  # The ripple-check table has no "fixture registration" trigger, so nothing
+  # anticipated that registering a backend falsifies every artifact asserting
+  # its absence. All five were found by sweeping the claim; the first three
+  # only after a PR review named two of them.
   - tests/backends/http/test_config.py
   - tests/backends/sqlquery/test_config.py
+  - scripts/drift_smoke_map.py
+  - scripts/check_spec_marks.py
+  - sdd/specs/003-backend-adapter-contract.md
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -152,8 +162,9 @@ phases:
           as _inner and exposes no .raw), so the isinstance check never saw a body and
           my assertion was vacuous. Adding the _inner step reaches HTTPResponse /
           _Urllib3StreamAdapter / _HttpxStreamAdapter. The same blindness affects five
-          of the six backends running the shared cell — filed as BUG-244, not fixed
-          here because none of s3/sftp/azure is installable in this environment.
+          of the six backends running the shared cell (BUG-244). I first filed this
+          rather than fixing it, on a false premise corrected in review — see the
+          review phase below.
         outcome: ok
 
   - id: ripple
@@ -179,4 +190,46 @@ phases:
         extract: >-
           Derived rule: CHANGELOG required iff an audience entry starts with user.
           This is infra.test only, so no CHANGELOG entry.
+        outcome: ok
+
+  - id: review
+    name: Review rounds
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-336"
+        read_type: gate
+        extract: >-
+          Round 1 named two stale-absence comments in scripts/. BK-336's rule is to
+          sweep the finding's class, not the lines named, and doing so found three
+          more — including spec 003. The lesson is in how the sweep nearly failed: my
+          first pattern was the wording "no conformance fixture", and the spec says
+          "no fixture-registry entry". Same claim, different words; only a grep for
+          the bare item ID caught it. A sibling sweep is a coverage question, not a
+          grep — which is precisely what BK-336 already says.
+        outcome: ok
+      - file: tests/backends/conformance/test_streaming.py
+        section: "TestStreamingConformance, SIO-009"
+        read_type: verify
+        extract: >-
+          Round 2 refuted the reason I had filed BUG-244 under. I claimed s3/sftp/azure
+          were not installable here; the reviewer said the cells run and pass. Measuring
+          settled it in the reviewer's favour: my evidence was a probe that called the
+          fixture factories from a bare python process, where INFRA is unpopulated, and
+          their pytest.skip("moto/s3fs not installed") messages are about the missing
+          session fixture, not a missing dependency. Under pytest all five run. With the
+          stated reason gone there was no reason to defer, so BUG-244 was fixed in the
+          same PR (_peel_to_body + the vacuity guard; 97 passed, 20 skipped).
+          Generalisable: running a fixture factory outside a pytest session tells you
+          nothing about what the suite can exercise.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029 Coverage note"
+        read_type: verify
+        extract: >-
+          Round 2 also caught two defects in my own round-1 fix: I wrote "the whole
+          file-shaped-operation row" when the row is seven ops and conformance reaches
+          four, and the rewrite silently dropped the addressing coverage the previous
+          version credited. Rewriting a spec table from a fresh measurement is how a
+          correction introduces its own errors — the fix pass needed the review as much
+          as the original did.
         outcome: ok

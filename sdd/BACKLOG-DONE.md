@@ -8,6 +8,37 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-244 — `test_read_is_lazy`'s BytesIO assertion was vacuous for every backend that wraps its stream**
+  spec: SIO-009 · effort: S · audience: infra.test
+  `conformance/test_streaming.py::test_read_is_lazy` peeled buffering layers with
+  `while hasattr(inner, "raw")`, then asserted `not isinstance(inner, io.BytesIO)`.
+  But `_ErrorMappingStream` (`src/remote_store/_stream.py`) holds the wrapped body
+  as **`_inner`** and exposes no `.raw`, so the walk **terminated on the wrapper**
+  and the isinstance check inspected the wrapper rather than the body — false for
+  the wrapper whatever it contains.
+  **Reach:** every LAZY_READ declarer that runs the cell wraps in
+  `_ErrorMappingStream` — s3, s3_pyarrow, s3_boto3, azure, sftp — i.e. five of the
+  six. Only `local` (BufferedReader → FileIO) terminated on a real body, and that
+  was luck, not design. The defect shape that survived: a backend that materialises
+  the body and then wraps it for error mapping declares LAZY_READ and passes green.
+  **Fixed** by `_peel_to_body`, a module-level helper following both accessors,
+  shared by `test_read_is_lazy` and `test_read_is_lazy_readinto`, plus a
+  `_PEEL_VACUOUS` guard asserting the peel actually descended — so a future
+  wrapping layer whose accessor is not handled fails the test instead of silently
+  restoring the blindness. Verified: `tests/backends/conformance/test_streaming.py`
+  97 passed, 20 skipped, with the ten SIO-009 cells green across `local`,
+  `sftp_inproc`, `s3_moto`, `s3_boto3_moto` and `azure_replay`.
+  **The filing decision was reversed on measurement, and the reason is the
+  lesson.** This was first filed rather than fixed, on the stated grounds that
+  s3 / sftp / azure were not installable here. That was **wrong**: the probe behind
+  it ran the fixture factories in a bare `python` process, where `INFRA` is
+  unpopulated, and their `pytest.skip("moto/s3fs not installed")` messages were
+  read as missing dependencies rather than a missing session fixture. Under pytest
+  all five run. A PR review challenged the claim, re-measuring settled it, and the
+  item was fixed in the same PR instead. Running a fixture factory outside a pytest
+  session does not tell you what the suite can exercise.
+  Surfaced by BK-340's `ReadOnlyHttpBackend` gate audit; shipped with it.
+
 - [x] **BK-340 — `SQLQueryBackend` has no conformance fixture, so no cross-backend rule reaches it**
   spec: — · effort: M · audience: infra.test
   `tests/backends/fixtures/registry.py` had no entry for `SQLQueryBackend`, so
@@ -33,14 +64,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   (`test_get_folder_info_on_empty_root_does_not_raise` asserts `file_count == 0`), so
   a pre-seeded mapping fails them. Nothing is lost: content-bearing cells seed via
   `backend.write` and are WRITE-gated regardless.
-  **The `ReadOnlyHttpBackend` audit the item also asked for found two things**, both
-  filed rather than fixed beyond the one-backend patch: SIO-009's laziness contract
-  lives in a WRITE-gated class, so the registry's only read-only LAZY_READ declarer
-  never ran it (ID-244), and that cell's `.raw`-only peel terminates on
-  `_ErrorMappingStream`, making its BytesIO assertion vacuous for five of the six
-  backends that run it (BUG-244). The http half is pinned here by
-  `test_read_is_lazy_not_bytesio`, across all three transports, with a guard that
-  fails if the peel stops descending.
+  **The `ReadOnlyHttpBackend` audit the item also asked for found two things.**
+  SIO-009's laziness contract lives in a WRITE-gated class, so the registry's only
+  read-only LAZY_READ declarer never ran it — structural, filed as ID-244. And that
+  cell's `.raw`-only peel terminates on `_ErrorMappingStream`, making its BytesIO
+  assertion vacuous for five of the six backends that run it — fixed here as
+  BUG-244, above. The http half is pinned by `test_read_is_lazy_not_bytesio` across
+  all three transports, with the same descended-guard the shared cell now carries.
   **Discovery:** the item's own successor. BK-340 closed the "family with no fixture"
   gate and measured a second gate underneath it — the suite's seeding discipline —
   which is why the fixture reaches 77 cells and not the whole surface (ID-244).
@@ -64,7 +94,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   mode, not a wording, so for a rule spanning backends what matters is which
   backends the tests execute against, not which source lines match a grep. That
   is why BK-324's class survived in `SQLQueryBackend`, which no conformance
-  fixture reached at the time ([BK-340](#), since shipped).
+  fixture reached at the time (**BK-340**, since shipped — above).
   **The first attempt, reverted in PR #945 as over-specified, is why the entry is
   longer than the change.** It added ~34 lines to `/fix-pr`, including a
   three-row table pairing classes of finding with sweep techniques — pseudo-detail

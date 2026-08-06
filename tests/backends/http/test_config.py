@@ -164,11 +164,12 @@ class TestHttpRead:
         pass silently.
 
         Found by BK-340's "check ``ReadOnlyHttpBackend`` at the same time"
-        obligation. Two follow-ups are filed rather than fixed here: **BUG-244**
-        (the same ``.raw``-only blindness in the shared conformance cell, which
-        changes verdicts for six backends and cannot be verified without the
-        optional extras) and **ID-244** (the structural gap — a read-only backend
-        cannot reach any WRITE-gated contract cell).
+        obligation. The same blindness in the shared conformance cell was
+        BUG-244, fixed in the same PR — ``conformance/test_streaming.py`` now
+        peels through both accessors via ``_peel_to_body`` and carries the same
+        guard. This test remains the HTTP-specific home because the shared cell
+        is WRITE-gated and cannot reach this backend at all; that structural gap
+        is **ID-244**, still open.
         """
         import io
 

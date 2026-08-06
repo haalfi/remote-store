@@ -21,6 +21,45 @@ if TYPE_CHECKING:
     from remote_store._backend import Backend
 
 
+_PEEL_VACUOUS = (
+    "peel never descended past the returned stream, so the assertion below "
+    "would inspect the wrapper instead of the body and pass for any content. "
+    "A new wrapping layer needs its accessor added to _peel_to_body (BUG-244)."
+)
+
+
+def _peel_to_body(stream: object) -> object:
+    """Unwrap *stream* down to the object actually producing bytes.
+
+    Two wrapping layers exist and they expose the wrapped object under
+    **different names**, which is the whole reason this helper exists:
+
+    * buffering (``io.BufferedReader``) exposes ``.raw``;
+    * error mapping (``remote_store._stream._ErrorMappingStream``) exposes
+      ``._inner`` and has **no** ``.raw``.
+
+    A ``.raw``-only walk therefore terminates *on* an ``_ErrorMappingStream``,
+    and ``isinstance(wrapper, io.BytesIO)`` is false whatever the wrapper
+    contains — so the SIO-009 laziness assertion passed without ever inspecting
+    a body. Every LAZY_READ declarer that reaches the cell wraps in
+    ``_ErrorMappingStream`` except ``local``, so the check was vacuous for five
+    of the six (BUG-244, found while auditing the read-only HTTP fixture's
+    capability gates under BK-340).
+
+    Callers pair this with the ``_PEEL_VACUOUS`` guard: if the returned object
+    *is* the stream passed in, no descent happened and the caller's assertion
+    proves nothing. That turns a future re-introduction of the blindness into a
+    failure rather than a silent pass.
+    """
+    while True:
+        if hasattr(stream, "raw"):
+            stream = stream.raw
+        elif hasattr(stream, "_inner"):
+            stream = stream._inner
+        else:
+            return stream
+
+
 @pytest.mark.parametrize("backend", fixture_params(Capability.WRITE), indirect=True)
 class TestStreamingConformance:
     """SIO-001, SIO-003, SIO-009: streaming semantics."""
@@ -40,14 +79,10 @@ class TestStreamingConformance:
         _require(backend, Capability.LAZY_READ)
         backend.write("lazy_test.bin", b"lazy read test")
         stream = backend.read("lazy_test.bin")
-        # Peel every layer of buffering until we reach a stream with no further
-        # `.raw` attribute. This guards against multi-level wrappers such as
-        # BufferedReader(CustomWrapper(BytesIO(...))).
-        inner = stream
-        while hasattr(inner, "raw"):
-            inner = inner.raw  # type: ignore[union-attr]
+        inner = _peel_to_body(stream)
+        assert inner is not stream, _PEEL_VACUOUS
         assert not isinstance(inner, io.BytesIO), (
-            "Backend declares LAZY_READ but read() returned a BytesIO-backed stream"
+            f"Backend declares LAZY_READ but read() returned a BytesIO-backed stream (peeled to {type(inner).__name__})"
         )
         assert stream.read() == b"lazy read test"
         stream.close()
@@ -88,13 +123,12 @@ class TestStreamingConformance:
         content = b"readinto test data"
         backend.write("readinto_test.bin", content)
         stream = backend.read("readinto_test.bin")
-        # Reach the raw layer for readinto(); BufferedReader handles readinto
-        # at the buffered level, but we want to exercise the raw stream.
-        raw = stream
-        while hasattr(raw, "raw"):
-            raw = raw.raw  # type: ignore[union-attr]
+        # Reach the body for readinto(); BufferedReader handles readinto at the
+        # buffered level, but we want to exercise the stream underneath it.
+        raw = _peel_to_body(stream)
+        assert raw is not stream, _PEEL_VACUOUS
         buf = bytearray(len(content))
-        n = raw.readinto(buf)
+        n = raw.readinto(buf)  # type: ignore[attr-defined]
         assert isinstance(n, int), f"readinto() must return int, got {type(n).__name__}"
         assert n > 0, "readinto() must return > 0 bytes on a non-empty stream"
         stream.close()

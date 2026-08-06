@@ -104,34 +104,6 @@ and the highest ID already in this file, then take the next integer. Run
   as well as the kinder one.
   Surfaced while fixing BUG-242 (PR #945 round 6).
 
-- [ ] **BUG-244 — `test_read_is_lazy`'s BytesIO assertion is vacuous for every backend that wraps its stream**
-  spec: SIO-009 · effort: S · audience: infra.test
-  `conformance/test_streaming.py::test_read_is_lazy` peels buffering layers with
-  `while hasattr(inner, "raw")`, then asserts `not isinstance(inner, io.BytesIO)`.
-  But `_ErrorMappingStream` (`src/remote_store/_stream.py`) holds the wrapped body
-  as **`_inner`** and exposes no `.raw`, so the walk **terminates on the wrapper**
-  and the isinstance check inspects the wrapper rather than the body. It is false
-  for the wrapper whatever the wrapper contains.
-  **Measured, not suspected.** With the `.raw`-only walk, HTTP's chain is exactly
-  `_ErrorMappingStream` — one element, the returned object itself. With an
-  `_inner` step added it reaches `HTTPResponse` (urllib),
-  `_Urllib3StreamAdapter` (requests), `_HttpxStreamAdapter` (httpx).
-  **Reach:** every LAZY_READ declarer that runs the cell wraps in
-  `_ErrorMappingStream` — s3, s3_pyarrow, s3_boto3, azure, sftp — i.e. five of the
-  six. Only `local` (BufferedReader → FileIO) terminates on a real body today, and
-  that is luck, not design.
-  The defect shape that survives: a backend that materialises the body and then
-  wraps it for error mapping declares LAZY_READ and passes green.
-  **Fix shape:** extend the peel to follow `_inner` as well as `.raw`, and add the
-  "peel actually descended" guard so the blindness cannot return silently. Both are
-  already written in `tests/backends/http/test_config.py::test_read_is_lazy_not_bytesio`;
-  this item lifts them into the shared cell.
-  **Why not fixed with BK-340:** the change flips what five backends actually
-  assert, and none of s3 / sftp / azure is installable in the environment that
-  found it (no moto, s3fs, boto3, paramiko), so it cannot be verified where it was
-  written. Verify under CI-with-all-extras.
-  Surfaced by BK-340's `ReadOnlyHttpBackend` gate audit.
-
 - [ ] **ID-242 — Four `moto doesn't raise PermissionError` pragmas are coverage holes, not exemptions**
   spec: — · effort: S · audience: contributor
   `_s3_base.py` 510/540/573 and `_s3_pyarrow.py:626` each carry
