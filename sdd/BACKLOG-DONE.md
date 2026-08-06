@@ -143,10 +143,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   budgeting one probe per miss. It also makes flat-namespace agree with the
   hierarchical backends, where an absent store root has always been just an
   absent path.
-  **`SQLBlobBackend` is vacuous, and that is asserted rather than assumed:** it
-  creates its table or reflects it and refuses to construct, so no live instance
-  is bound to an absent container. A table dropped mid-flight stays
-  `BackendUnavailable`. Measuring that carve-out surfaced BUG-245.
+  **`SQLBlobBackend` is exempt, on a stated ground rather than a vacuity:** the
+  clause binds backends whose response already carries "the container is gone"
+  (`NoSuchBucket`, `ContainerNotFound`), which is what makes tolerating free. A
+  dropped table arrives as a dialect-specific error with no portable code, so
+  identifying it would cost the extra round trip the same clause forbids; it
+  stays `BackendUnavailable`, asserted rather than assumed. The tempting
+  justification — that SQLBlob settles its table at construction, so an absent
+  table is always a store torn down mid-flight — does not discriminate: an S3
+  bucket deleted under a running backend is torn down mid-flight too, and is
+  tolerated. Measuring the exemption surfaced BUG-245.
   **Coverage:** the Azure half runs at Stage 1 on a `pytest-httpserver` Blob
   stub rather than behind the Docker-gated `azurite` fixture — BK-324 shipped
   two real Azure defects behind that gate. Reverses the unreleased second half

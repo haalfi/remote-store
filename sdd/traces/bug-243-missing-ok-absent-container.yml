@@ -15,6 +15,7 @@ audience:
   - library.maintainer
 discovery_followups:
   - BUG-245
+  - BUG-246
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
@@ -63,10 +64,13 @@ phases:
           Measured rather than assumed, and it inverted the item's table. SQL
           "raises" is BackendUnavailable, not NotFound, and it is only reachable
           by dropping the table under a live backend: create_table=True creates
-          it, create_table=False reflects it and refuses to construct. So SQL
-          was never a third answer to the same question — it has no
-          absent-container state to answer for. The carve-out is stated in the
-          spec and asserted in tests rather than left to be rediscovered.
+          it, create_table=False reflects it and refuses to construct. Concluded
+          from that pair that the clause was *vacuous* for SQLBlob — which round
+          2 refuted using this work's own dropped-table test, and rightly: a
+          live instance bound to an absent container is exactly what that test
+          constructs. The construction facts are real, the inference from them
+          was not. The exemption stands on a different ground (see the review
+          phase).
         outcome: ok
       - file: src/remote_store/backends/_s3_base.py
         section: "wrong-type reclassification region comment"
@@ -162,6 +166,36 @@ phases:
           the NotFound mapping (S3-015). Two more in the SQL file: a class-level
           SQL-BLOB-012 (Existing Table) stamped on a create_table=True cell.
           Reviewer named one instance; the class had four.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 (the new absent-container clause)"
+        read_type: verify
+        extract: >-
+          Round-2 findings, both against this work's own spec prose, and both
+          the very defect class the item exists to remove — a claim written into
+          several homes, disagreeing with itself. (1) The clause stated no reach,
+          so a reader could not tell whether "an absent container reads as an
+          absent path" governed exists()/is_folder() too; reach is now stated.
+          (2) The SQLBlob carve-out was justified as a *vacuity* — "no live
+          instance is ever bound to an absent container" — which this work's own
+          dropped-table test refutes, and the offered criterion (torn down
+          mid-flight vs never there) is one no flat-NS backend can draw, since a
+          bucket deleted mid-flight is tolerated. Rewritten as an exemption whose
+          ground is what the response carries for free. The false claim had been
+          copied into three more homes by then: BACKLOG-DONE, the SQL test
+          docstring, and the BUG-245 item.
+        outcome: ok
+      - file: src/remote_store/backends/_s3_boto3.py
+        section: "exists, is_folder (vs BE-004 / BE-005)"
+        read_type: verify
+        extract: >-
+          Round-2 finding, filed rather than fixed as BUG-246. Measured on the
+          stub harness this work added: exists() and is_folder() raise NotFound
+          against an absent container on S3-Boto3 and both Azure lanes, where
+          BE-004/BE-005 say they never raise and the two s3fs backends return
+          False. Pre-existing and outside this item's two operations, but the
+          same container 404 escaping a probe that should absorb it — and
+          reachable at Stage 1 only because the Azure stub now exists.
         outcome: ok
   - id: verify
     name: Verify

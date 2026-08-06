@@ -1,23 +1,28 @@
-"""Why BE-012/BE-013's absent-container clause is vacuous for ``SQLBlobBackend``.
+"""Why BE-012/BE-013's absent-container clause exempts ``SQLBlobBackend``.
 
-BUG-243 decided that a tolerant delete treats an absent *container* as an absent
-path. On S3 and Azure that rule has teeth, because those backends bind their
-container lazily: a typo'd bucket name produces a perfectly constructible
-backend whose every call meets a 404.
+The clause says a tolerant delete treats an absent *container* as an absent
+path, and it binds backends whose response already carries the fact that the
+container is gone — S3's ``NoSuchBucket``, Azure's ``ContainerNotFound``. That
+is what makes tolerating free, and the clause forbids paying a round trip to
+learn it.
 
-``SQLBlobBackend`` cannot reach that state. Its container is a table, and the
-constructor settles the table's existence before returning — it creates it
-(``create_table=True``, the default) or reflects it and refuses to construct
-(``create_table=False``). There is no "constructed but bound to nothing", so the
-clause has no case to govern here.
+A dropped table gives ``SQLBlobBackend`` no such signal: it arrives as a
+dialect-specific ``OperationalError`` / ``ProgrammingError`` with no portable
+code, so telling it from any other database failure needs an extra ``has_table``
+inspection — the round trip the clause forbids. Hence the exemption, and
+``TestDroppedTableIsNotAMissingPath`` pins what it means: ``BackendUnavailable``
+stands, and ``missing_ok`` does **not** convert it into a silent success. A
+later change that widens the tolerance to swallow a dropped table fails there.
 
-The one way to produce a table-less live backend is to drop the table out from
-under it, which is a store torn down mid-flight rather than a path that was
-never there. BE-021's transport row governs that, and the third test pins it: it
-stays ``BackendUnavailable``, and ``missing_ok`` does **not** convert it into a
-silent success. That is the substantive half of the decision — the exemption is
-asserted, not merely asserted-about-in-prose, so a later change that widens the
-tolerance to swallow a dropped table fails here.
+``TestContainerExistsByConstruction`` records the *other* fact about this
+backend — that the constructor settles the table's existence, creating it
+(``create_table=True``) or reflecting it and refusing to construct
+(``create_table=False``). Worth pinning because it shapes what a caller can
+encounter, but note what it does **not** establish: it does not make the clause
+vacuous here. A live instance can be bound to an absent container, which is
+precisely what the second class constructs. Nor does "torn down mid-flight
+rather than never there" justify the exemption — an S3 bucket deleted under a
+running backend is torn down mid-flight too, and the clause tolerates it.
 """
 
 from __future__ import annotations

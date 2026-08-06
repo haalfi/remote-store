@@ -94,6 +94,30 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Lint / CI Completeness
 
+- [ ] **BUG-246 — `exists()` / `is_folder()` raise `NotFound` against an absent container on three backends**
+  spec: BE-004, BE-005, BE-021 · effort: S · audience: user.api
+  BE-004 and BE-005 say these never raise, and BE-021 repeats it: `exists()`,
+  `is_file()` and `is_folder()` return `False` on any traversal error rather than
+  raising. Against a bucket or container that does not exist, three backends
+  raise instead. Measured on a `pytest-httpserver` stub serving real
+  `NoSuchBucket` / `ContainerNotFound` 404s (the harness BUG-243 added, so this
+  reproduces at Stage 1 with no Docker):
+  | Backend | `exists(file)` | `is_file(file)` | `is_folder(folder)` |
+  | --- | --- | --- | --- |
+  | S3, S3-PyArrow | `False` | `False` | `False` |
+  | S3-Boto3 | raises `NotFound` | `False` | raises `NotFound` |
+  | Azure non-HNS | raises `NotFound` | `False` | raises `NotFound` |
+  So it is a live cross-backend divergence as well as a contract violation, and
+  the `is_file` column shows the fix is local: the HEAD-backed probe already
+  absorbs the 404, only the prefix-listing-backed ones do not.
+  `AzureBackend.exists`'s own docstring already says it never raises, so the code
+  contradicts its documentation. The async twin needs the same fix.
+  Pre-existing — BUG-243 neither introduced nor touched it, having decided only
+  what `missing_ok` owes on the two deletes — but the root cause is the same
+  container 404 escaping a probe that should absorb it, so the fix shape is the
+  one BUG-243 used for `delete_folder`.
+  Surfaced by the PR #952 round-2 review.
+
 - [ ] **BUG-245 — `SQLBlobBackend(create_table=False)` leaks `NoSuchTableError` from its constructor**
   spec: BE-021, SQL-BLOB-012 · effort: S · audience: user.api
   Reflection is unguarded: `sa.Table(name, meta, autoload_with=engine)` against an
@@ -108,10 +132,11 @@ and the highest ID already in this file, then take the next integer. Run
   BE-021's "backend-native exceptions never leak" is scoped to operations, so
   this is a gap in the contract as much as in the code: decide whether
   construction is in scope for the mapping rule, then map it. Note the behaviour
-  itself is right — refusing to bind to an absent table is what makes BE-012's
-  absent-container clause vacuous for this backend (pinned by
-  `tests/backends/sqlblob/test_absent_table.py`); only the error type is wrong.
-  Surfaced by BUG-243, which measured the constructor to establish that carve-out.
+  itself is right — refusing to bind to an absent table is a sound thing to do,
+  and is pinned by `tests/backends/sqlblob/test_absent_table.py`; only the error
+  type is wrong.
+  Surfaced by BUG-243, which measured the constructor while scoping BE-012's
+  absent-container clause.
 
 - [ ] **ID-242 — Four `moto doesn't raise PermissionError` pragmas are coverage holes, not exemptions**
   spec: — · effort: S · audience: contributor
