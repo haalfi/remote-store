@@ -246,7 +246,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   model (a reviewer handed conclusions confirms them), then one scoped lens per
   round aimed at what earlier rounds did not examine. That is what surfaced
   PR #945's only behavioural regression, at round 5, in code four rounds had
-  walked past.
+  walked past. (*Round composition since amended by
+  [ADR-0034](adrs/0034-ship-panel-rounds-and-unprimed-exit.md): panels with one
+  lens per member from round 3, unprimed coverage on every odd round plus a
+  terminal exit gate — see the BK-342 entry above.*)
   Rationale, the measured cost, and the reversal conditions:
   [ADR-0033](adrs/0033-ship-convergence-driven-review.md).
 

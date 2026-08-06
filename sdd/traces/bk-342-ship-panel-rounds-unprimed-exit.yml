@@ -22,7 +22,7 @@ surprising_ripples:
   # round 2 forced the analyze-only mode to be defined where the posting
   # rules it excepts are stated.
   - .claude/skills/rvw-pr/SKILL.md
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -213,3 +213,40 @@ phases:
           Decision sections (short-lived coordinates in long-lived content);
           both classes swept across the file.
         outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-243"
+        read_type: verify
+        extract: >-
+          Round 3 caught a false clean from round 1's own sweep: the reply had
+          reported BACKLOG-DONE checked with none describing per-round
+          reviewer cardinality, but only BK-342's new entry was read — ID-243's
+          entry, which does describe the pre-panel composition, was the
+          sibling the sweep was aimed at and missed. Annotated in place per
+          the file's since-shipped convention. A sweep that reports a file
+          clean after reading one entry in it is the file-level-match-list
+          failure BK-336 already recorded once.
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "CHECKPOINT; Step 5 template"
+        read_type: verify
+        extract: >-
+          Round 3 found round 2's four-site enumeration had a fifth site: the
+          Step 2 CHECKPOINT self-affirmation, an imperative ritual directing
+          members to Step 4 and affirming the exact behaviour analyze-only
+          forbids, sitting between the mode definition and the decision
+          point. Also the Step 5 header reads "X comments posted", false for
+          members that post nothing. Made the checkpoint mode-aware and gave
+          the mode its own header variant.
+      - file: .claude/skills/ship/SKILL.md
+        section: "Round composition, Closing row"
+        read_type: verify
+        extract: >-
+          Round 3's sharpest catch: the exit gate's appended pass was the one
+          reviewer with no stated model requirement — the Closing row's em
+          dash declared Model not-applicable, the unprimed paragraph's
+          enumeration did not reach the appended pass, and ADR-0034's
+          exit-gate bullet inherited model terms from the cadence bullet only
+          by proximity, so the load-bearing gate could quietly run on the
+          author's own model and certify with the author's blind spots.
+          Enumeration widened, row renamed Closing gate (not a round in the
+          sequence) with explicit model terms, ADR bullet states same
+          briefing and model terms.

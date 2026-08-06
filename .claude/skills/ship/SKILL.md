@@ -83,7 +83,7 @@ push → reply and resolve.
 | 1 | One reviewer: **broad, unprimed** | A different model than the author's. Fable preferred; Opus when the author was Fable |
 | 2 | One reviewer, one scoped lens | Repo domain experts, or general-purpose |
 | 3..N | Panel sized by the diff's breadth and the prior round's yield, one scoped lens per member. **Odd rounds add one unprimed member** | Scoped members: domain experts or general-purpose. Unprimed member: a different model than the author's, same tier or higher |
-| Closing | Must review the last fix pass **and** satisfy the unprimed exit gate (see Stop rule) | — |
+| Closing gate | Not a round in the sequence: whichever round ends the loop must review the last fix pass **and** satisfy the unprimed exit gate; a missing unprimed member is supplied by one appended pass (see Stop rule) | Appended pass: a different model than the author's, same tier or higher — the unprimed rule, unchanged |
 
 **Panels run in parallel against the same pushed state.** Each member is
 fresh and blind to the others: scoped members get briefs per the requirements
@@ -117,8 +117,8 @@ Width is a judgement, not a formula: a quiet previous round keeps the next
 narrow — a panel of one scoped reviewer is still a round — and a broad diff
 or a loud round widens the next.
 
-**Unprimed reviewers — round 1, and one member of every odd panel — are
-unprimed on purpose.** They receive the diff, the goal, and repo conventions,
+**Unprimed reviewers — round 1, one member of every odd panel, and the exit
+gate's appended pass — are unprimed on purpose.** They receive the diff, the goal, and repo conventions,
 never your areas of concern, prior findings, or round history: a reviewer
 handed conclusions confirms them, and the second delivery's evidence for what
 that costs is in

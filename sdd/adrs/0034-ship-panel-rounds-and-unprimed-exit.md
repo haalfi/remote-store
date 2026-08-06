@@ -64,7 +64,8 @@ passes, which is how the decisions below are split.
   and found nothing must-fix.** The load-bearing half: the second delivery's
   defects were created mid-loop by fixes, so an earlier unprimed pass proves
   nothing about what ships. A closing round with no unprimed member gets one
-  appended; like [ADR-0033](0033-ship-convergence-driven-review.md)'s
+  appended, under the same briefing and model terms as any unprimed reviewer;
+  like [ADR-0033](0033-ship-convergence-driven-review.md)'s
   verification round it counts toward the ceiling
   only if it finds something. *Reverse if* terminal unprimed passes stop
   finding anything across a meaningful sample of deliveries.

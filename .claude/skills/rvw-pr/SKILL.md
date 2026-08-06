@@ -15,7 +15,7 @@ Your only valuable output is review insights. The only artifact you create is co
 
 PR number and optional reviewer context are in `$ARGUMENTS`. Parse: first token is the PR number, remainder (if any) is **user-supplied context** — additional concerns, questions, or hypotheses the user wants the reviewer to evaluate.
 
-**Analyze-only mode.** If the invoking prompt says **analyze-only**, you are one member of a parallel review panel and the caller owns all posting: execute Steps 0–3, **skip Step 4 entirely** — concurrent members share one owner token, and GitHub allows one pending review per user per PR, so a second poster cross-contaminates the first's pending review — and return Step 5's report **plus your consolidated findings** (per finding: file, line, category, body) as your final message. Every other rule — read-only, no fixing, no follow-ups — applies unchanged.
+**Analyze-only mode.** If the invoking prompt says **analyze-only**, you are one member of a parallel review panel and the caller owns all posting: execute Steps 0–3, **skip Step 4 entirely** — concurrent members share one owner token, and GitHub allows one pending review per user per PR, so a second poster cross-contaminates the first's pending review — and return Step 5's report **plus your consolidated findings** (per finding: file, line, category, body) as your final message. Your Step 5 header reads `## PR #N Review — X findings returned (analyze-only)`, since nothing was posted and the posted-count header would be false. Every other rule — read-only, no fixing, no follow-ups — applies unchanged.
 
 **No PR number provided?** Call `list_pull_requests` (`owner: "haalfi"`, `repo: "remote-store"`, `state: "OPEN"`) and ask the user which PR to review. Do not auto-pick.
 
@@ -53,7 +53,7 @@ Priority order: (1) Correctness, (2) Spec compliance, (3) Test coverage, (4) Con
 
 **User-supplied context (if provided):** Evaluate each claim against the code. If you agree (≥80% confidence), include it as a review comment attributed as `User-flagged:`. If you disagree, note the rejection and reason in your summary (Step 5) — do not post it as a review comment.
 
-**CHECKPOINT — before proceeding to Step 4, confirm to yourself: "I am a reviewer. I will only post comments. Nothing else."**
+**CHECKPOINT — before proceeding, confirm to yourself: "I am a reviewer. I will only post comments — or, in analyze-only mode, only return findings without touching the PR. Nothing else."** Then proceed to Step 4, or in analyze-only mode directly to Step 5.
 
 ## Step 3: Consolidate findings
 
