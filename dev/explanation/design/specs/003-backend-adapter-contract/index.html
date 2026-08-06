@@ -11481,37 +11481,46 @@ and its async sibling in <code>test_async_extended.py</code>, both gated on
 <code>Capability.LIST</code> and parametrised over both spellings; addressing is covered by
 <code>test_identity.py::TestBackendNativePath</code> (sync) and
 <code>test_async_extended.py::TestAsyncBackendNativePath</code> (async).</p>
-<p><strong>Coverage note.</strong> Two LIST-capable backends are not reachable from those
-cells: <code>SQLQueryBackend</code> has no fixture-registry entry (BK-340), and the Graph
-backend's conformance cells are skipped for want of a recorded cassette
-(ID-241). Their per-backend homes pin <strong>part</strong> of this clause, not all of it:</p>
+<p><strong>Coverage note.</strong> One LIST-capable backend is still unreachable from those
+cells: the Graph backend's conformance cells are skipped for want of a recorded
+cassette (ID-241). <code>SQLQueryBackend</code> was the other until BK-340 registered its
+fixture; the cells now execute against it, and what they cover is measured
+rather than assumed:</p>
 <table>
 <thead>
 <tr>
 <th>Backend</th>
-<th>Pinned in its per-backend home</th>
+<th>Reached by the conformance cells</th>
+<th>Pinned only in its per-backend home</th>
 <th>Pinned nowhere</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>SQLQueryBackend</code> — <code>tests/backends/sqlquery/test_config.py::TestRootPath</code></td>
-<td>the query rows (<code>exists</code> / <code>is_folder</code> / <code>is_file</code>, empty store included), <code>get_folder_info</code> on the root, and <code>native_path</code> agreeing on both spellings</td>
-<td>the file-shaped-operation row: <code>read</code>, <code>read_bytes</code>, <code>read_seekable</code>, <code>get_file_info</code> on the root</td>
+<td><code>SQLQueryBackend</code> — fixture <code>sqlquery</code></td>
+<td>the query rows on the empty store (<code>exists</code> / <code>is_folder</code> / <code>is_file</code>, both spellings); addressing (<code>native_path</code> / <code>resolve</code> agreeing on both spellings, <code>to_key</code> returning the canonical root key); and the <strong>read half</strong> of the file-shaped-operation row — <code>read</code>, <code>read_bytes</code>, <code>read_seekable</code>, <code>get_file_info</code>, both spellings</td>
+<td>the populated-store rows (<code>get_folder_info</code> aggregating a non-empty store), because the conformance fixture registers an empty query mapping and the suite seeds through <code>write</code> (ID-244)</td>
+<td>—</td>
 </tr>
 <tr>
 <td>Graph — <code>tests/backends/graph/aio/test_backend.py</code></td>
+<td>—</td>
 <td>addressing only: <code>native_path</code> agreeing on both spellings (also under <code>base_path</code>), <code>to_key</code> returning the canonical root key, and every root spelling refused by <code>_require_writable_key</code></td>
 <td>the query rows and the file-shaped-operation row</td>
 </tr>
 </tbody>
 </table>
+<p>The file-shaped-operation row is seven operations (<code>_ROOT_FILE_OPS</code>): the four
+reads above plus <code>delete</code>, <code>move</code> and <code>copy</code>. <code>SQLQueryBackend</code> declares no
+capability for those three, so they are gated out rather than missed — nothing
+to pin, which is why its "pinned nowhere" cell is empty rather than listing them.</p>
 <p>A clause that binds every LIST-capable backend needs its coverage checked per
 backend, not per source site — both defects this clause was written from
-survived a source-wide sweep because no cell executed against them. The
-per-backend cells pin the sites that sweep found; the right-hand column is what
-is still asserted by nobody, and closing it structurally is what BK-340 and
-ID-241 are for.</p>
+survived a source-wide sweep because no cell executed against them. BK-340
+closed the <code>SQLQueryBackend</code> half structurally; ID-241 is what closes Graph's.
+Note what registration did <strong>not</strong> buy: a read-only backend still cannot reach
+any cell that seeds through <code>write</code>, so the middle column is a second gate
+underneath capability filtering rather than a residue of the first (ID-244).</p>
 <h3 id="be-006-read">BE-006: read()<a class="headerlink" href="#be-006-read" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>read(path)</code> returns a <code>BinaryIO</code> stream for the file content.
 <strong>Raises:</strong> <code>NotFound</code> if the path does not exist. <code>InvalidPath</code> if the path names a directory (type mismatch, not a missing file). See BE-021.

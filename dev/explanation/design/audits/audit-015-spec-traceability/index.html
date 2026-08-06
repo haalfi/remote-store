@@ -11534,15 +11534,24 @@ for one clause:</p>
 <li><strong>SQL-QUERY-061 / SQL-QUERY-063</strong> ride entirely on shared-base coverage via
   <code>SqlBlobBackend</code> tests; there is no <code>sqlquery</code> conformance fixture and no
   <code>SqlQueryBackend</code>-specific close / PRAGMA assertion. The weakest type-(b) rows.</li>
-<li><strong>GLOB-019</strong> is type (b) only when <code>s3_pyarrow_moto</code> is live in the conformance run;
+</ul>
+<blockquote>
+<p><strong>Half of this caveat has since closed.</strong> BK-340 registered the <code>sqlquery</code>
+conformance fixture, so the "no conformance fixture" clause no longer holds —
+77 cells now execute against it, including <code>check_health</code> and the close-posture
+lane. The second clause stands: there is still no <code>SQLQueryBackend</code>-specific
+close / PRAGMA assertion, and the conformance cells that do run reach it
+through the shared base rather than asserting either clause directly. The
+diagnosis above is left as written; this note records what changed under it.
+- <strong>GLOB-019</strong> is type (b) only when <code>s3_pyarrow_moto</code> is live in the conformance run;
   under <code>pyarrow&gt;=24</code> / moto-unavailable skips, the native S3-PyArrow glob path is not
-  exercised.</li>
-<li><strong>SAW-009 / SAW-011</strong> are exercised both by the <code>fixture_params(Capability.ATOMIC_WRITE)</code>-parametrized
+  exercised.
+- <strong>SAW-009 / SAW-011</strong> are exercised both by the <code>fixture_params(Capability.ATOMIC_WRITE)</code>-parametrized
   conformance success path <em>and</em> backend-specific assertions (SFTP <code>.~tmp</code> cleanup,
   Azure <code>rename_file.assert_called_once</code>); <strong>SAW-010</strong>'s S3 buffer mechanism is
   exercised but not mechanism-asserted (closest is the test that a stream failure
-  mid-write leaves no truncated object).</li>
-</ul>
+  mid-write leaves no truncated object).</p>
+</blockquote>
 <h3 id="discovery-follow-up">Discovery follow-up<a class="headerlink" href="#discovery-follow-up" title="Permanent link">&para;</a></h3>
 <p><code>HTTP-CON-004</code> surfaced a <strong>three-way capability divergence</strong> not visible to the first
 pass: the runtime constant <code>_CAPABILITIES</code> (<code>_http.py:41</code>) declares
