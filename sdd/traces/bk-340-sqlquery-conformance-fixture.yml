@@ -1,0 +1,182 @@
+id: BK-340
+title: "SQLQueryBackend conformance fixture — register it, and establish the skip set deliberately"
+trigger: >-
+  tests/backends/fixtures/registry.py had no entry for SQLQueryBackend, so nothing
+  under tests/backends/conformance/ executed against it — capability-gated or not.
+  Every cross-backend invariant was asserted for it by nobody, which is how BK-324's
+  round-2 root-spelling miss survived a source-wide sweep: the sweep found the sites
+  and no test ran them.
+source_items:
+  - BK-340
+  - BK-324
+audience:
+  - infra.test
+discovery_followups:
+  - BUG-244
+  - ID-244
+expected_ripples:
+  - tests/backends/conformance/test_identity.py
+  - tests/backends/fixtures/test_registry.py
+surprising_ripples:
+  - tests/backends/http/test_config.py
+  - tests/backends/sqlquery/test_config.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Cross-Artifact Consistency / BK-340"
+        read_type: gate
+        extract: "Register a fixture; the expected skip set is the item, not the registration; also audit ReadOnlyHttpBackend's gates"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Pre-work index"
+        read_type: gate
+        extract: "Anticipate the backend/capability/test-registry rows before touching the registry"
+        outcome: ok
+      - file: tests/backends/fixtures/registry.py
+        section: "BackendFixture, fixtures, fixture_params"
+        read_type: reference
+        extract: "Capability filtering is what decides a fixture's conformance reach; strict_only / conformance_excluded are the two exclusion levers"
+        outcome: ok
+
+  - id: design
+    name: Design
+    steps:
+      - file: tests/backends/fixtures/http.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Precedent for a read-only fixture: it clears handlers and serves 404, i.e.
+          starts from an empty store like every other fixture
+        outcome: ok
+      - file: tests/backends/conformance/test_io.py
+        section: "TestBackendRootPath"
+        read_type: gate
+        extract: >-
+          test_get_folder_info_on_empty_root_does_not_raise asserts file_count == 0,
+          which decided the fixture's query mapping must be empty — a pre-seeded
+          mapping would fail it. The content-bearing cells are WRITE-gated anyway.
+        outcome: ok
+      - file: docs-src/guides/custom-backend-guide.md
+        section: "Registering in the conformance fixture (contributing backends), step 4"
+        read_type: gate
+        extract: >-
+          Predicts exactly which lanes fail for an unclassified family — the two
+          test_identity.py declaration sets. It was right, and only those two failed.
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Guides / Examples (bad -> good), Rule 3"
+        read_type: gate
+        extract: >-
+          Derive the enumeration rather than maintaining a parallel list — decided the
+          skip-set assertion differences against Capability instead of listing node ids
+        outcome: ok
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/fixtures/backends.toml
+        section: "[backend.sqlquery]"
+        read_type: reference
+        extract: >-
+          sqlblob's comment states the rule that settled the posture question: declare
+          what the tested config exercises. Same sqlite:///:memory: substrate, so
+          single_connection.
+        outcome: ok
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "[fixture.sqlquery]"
+        read_type: reference
+        extract: "Stage 1, real-local, sync; module name must equal the fixture key or _load_all cannot import it"
+        outcome: ok
+      - file: tests/backends/fixtures/test_registry.py
+        section: "test_bk289_concurrency_posture_is_declared_and_split"
+        read_type: verify
+        extract: "Pins the single_connection set by value; adding a sql family required updating it"
+        outcome: ok
+
+  - id: verify
+    name: Measure the skip set
+    steps:
+      - file: tests/backends/conformance/
+        section: "(full, -k sqlquery)"
+        read_type: verify
+        extract: >-
+          Measured rather than predicted: 77 cells collected, 58 pass, 19 runtime-skip
+          (WRITE 11, DELETE 4, MOVE 2, COPY 2). ATOMIC_* never appears as a runtime skip
+          because those lanes are class-filtered, so the fixture is never parametrised
+          onto them — the item's predicted skip set was right in substance and wrong in
+          mechanism for one entry.
+        outcome: ok
+      - file: tests/backends/conformance/test_io.py
+        section: "TestBackendRootPath"
+        read_type: verify
+        extract: "24 of the 77 cells are the BE-029 root lane — the defect class that motivated the item"
+        outcome: ok
+
+  - id: audit
+    name: ReadOnlyHttpBackend gate audit
+    steps:
+      - file: src/remote_store/backends/_http.py
+        section: "_CAPABILITIES, list_files, is_folder"
+        read_type: verify
+        extract: >-
+          The LIST absence is a true declaration (the listing methods raise), so the
+          BE-029 lane's LIST gate excludes http correctly and by design
+        outcome: ok
+      - file: tests/backends/conformance/test_streaming.py
+        section: "TestStreamingConformance, SIO-009"
+        read_type: verify
+        extract: >-
+          The finding: both LAZY_READ cells sit in a fixture_params(Capability.WRITE)
+          class and seed via backend.write, so the registry's only read-only LAZY_READ
+          declarer is structurally excluded from the only cells asserting the contract
+          it declares. Filed as ID-244.
+        outcome: ok
+      - file: tests/backends/http/test_config.py
+        section: "test_capabilities_are_read_metadata_lazy"
+        read_type: verify
+        extract: >-
+          Its docstring asserts the behaviour in prose ("a live streamed response body,
+          not a pre-loaded BytesIO, on every transport") while the file's read tests
+          assert only content and chunking — both of which a BytesIO satisfies. The
+          claim was cited everywhere and executed nowhere.
+        outcome: ok
+      - file: src/remote_store/_stream.py
+        section: "_ErrorMappingStream"
+        read_type: verify
+        extract: >-
+          Second finding, and my own miss first: I wrote the new http test with the
+          conformance cell's .raw-only peel and it passed. Probing the actual chain
+          showed the walk terminates ON the wrapper (_ErrorMappingStream holds the body
+          as _inner and exposes no .raw), so the isinstance check never saw a body and
+          my assertion was vacuous. Adding the _inner step reaches HTTPResponse /
+          _Urllib3StreamAdapter / _HttpxStreamAdapter. The same blindness affects five
+          of the six backends running the shared cell — filed as BUG-244, not fixed
+          here because none of s3/sftp/azure is installable in this environment.
+        outcome: ok
+
+  - id: ripple
+    name: Ripple-check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Detailed checklist"
+        read_type: verify
+        extract: "Walk the backend / capability / test-registry rows against the finished diff"
+        outcome: ok
+      - file: tests/backends/sqlquery/test_config.py
+        section: "TestRootPath"
+        read_type: verify
+        extract: >-
+          Not anticipated by the ripple table: its docstring asserted "SQLQueryBackend
+          has no entry in the fixture registry", which this PR made false. Rewritten to
+          state what the per-backend cells still add — the populated store, which the
+          conformance lane cannot reach.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience"
+        read_type: verify
+        extract: >-
+          Derived rule: CHANGELOG required iff an audience entry starts with user.
+          This is infra.test only, so no CHANGELOG entry.
+        outcome: ok

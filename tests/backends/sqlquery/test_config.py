@@ -615,12 +615,21 @@ class TestSQLQueryResolve:
 class TestRootPath:
     """BE-029 on a LIST-capable, WRITE-less backend.
 
-    These cells live here rather than in the conformance suite because
-    ``SQLQueryBackend`` has no entry in the fixture registry, so no
-    conformance cell executes against it at all. That is the gap that let a
-    root-spelling defect survive a source-wide sweep: the sweep found the
-    sites, nothing ran them. Registering a fixture is the durable fix and is
-    tracked separately; this pins the behaviour meanwhile.
+    These cells predate the fixture registration. BK-340 registered
+    ``sqlquery``, so ``conformance/test_io.py::TestBackendRootPath`` now runs
+    the BE-029 lane against this backend directly (24 cells) — the durable fix
+    for the gap that let a root-spelling defect survive a source-wide sweep,
+    where the sweep found the sites and nothing ran them.
+
+    They are kept rather than deleted because they assert something the
+    conformance lane structurally cannot: the **populated** store. The
+    conformance fixture registers an empty query mapping, since every
+    conformance fixture starts from an empty store and
+    ``test_get_folder_info_on_empty_root_does_not_raise`` asserts exactly that;
+    seeding it is impossible because the suite seeds through ``backend.write``
+    and this backend is read-only (ID-244). So the ``file_count == 5``
+    assertions below have no cross-backend equivalent, and the empty-store
+    cells here are the deliberate overlap that keeps the pair comparable.
     """
 
     @pytest.mark.spec("BE-029")

@@ -89,6 +89,26 @@ concurrency       = "single_connection"
 flat_namespace    = true
 self_op_supported = true
 
+# BK-340: read-only SQL query materializer. Shares ``_sqlalchemy.py`` with the
+# sqlblob family — the file hosts both classes, so both families declare it.
+[backend.sqlquery]
+sources   = ["src/remote_store/backends/_sqlalchemy.py"]
+transport = "sql"
+# single_connection for the TESTED config, on the same measured grounds as
+# sqlblob above: the fixture uses ``sqlite:///:memory:``, which SQLAlchemy backs
+# with a SingletonThreadPool, so a shared instance hands each thread its own
+# isolated (and empty) database. Only ``read()`` touches the connection at all —
+# the key set is an in-process dict — but the posture must describe the
+# substrate that is exercised, not the subset of methods that reach it.
+concurrency       = "single_connection"
+# Folders are inferred from ``/`` in the registered query keys; no directory
+# object exists, exactly as for S3/Azure-flat and HTTP.
+flat_namespace    = true
+# Inert rather than meaningful: the backend declares neither MOVE nor COPY, so
+# no self-op gate is ever parametrised onto it. ``false`` is the honest value
+# for a backend that cannot perform the operation at all (matches http).
+self_op_supported = false
+
 [backend.http]
 sources   = [
     "src/remote_store/backends/_http.py",

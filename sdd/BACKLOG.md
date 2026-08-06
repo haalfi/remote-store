@@ -104,6 +104,34 @@ and the highest ID already in this file, then take the next integer. Run
   as well as the kinder one.
   Surfaced while fixing BUG-242 (PR #945 round 6).
 
+- [ ] **BUG-244 — `test_read_is_lazy`'s BytesIO assertion is vacuous for every backend that wraps its stream**
+  spec: SIO-009 · effort: S · audience: infra.test
+  `conformance/test_streaming.py::test_read_is_lazy` peels buffering layers with
+  `while hasattr(inner, "raw")`, then asserts `not isinstance(inner, io.BytesIO)`.
+  But `_ErrorMappingStream` (`src/remote_store/_stream.py`) holds the wrapped body
+  as **`_inner`** and exposes no `.raw`, so the walk **terminates on the wrapper**
+  and the isinstance check inspects the wrapper rather than the body. It is false
+  for the wrapper whatever the wrapper contains.
+  **Measured, not suspected.** With the `.raw`-only walk, HTTP's chain is exactly
+  `_ErrorMappingStream` — one element, the returned object itself. With an
+  `_inner` step added it reaches `HTTPResponse` (urllib),
+  `_Urllib3StreamAdapter` (requests), `_HttpxStreamAdapter` (httpx).
+  **Reach:** every LAZY_READ declarer that runs the cell wraps in
+  `_ErrorMappingStream` — s3, s3_pyarrow, s3_boto3, azure, sftp — i.e. five of the
+  six. Only `local` (BufferedReader → FileIO) terminates on a real body today, and
+  that is luck, not design.
+  The defect shape that survives: a backend that materialises the body and then
+  wraps it for error mapping declares LAZY_READ and passes green.
+  **Fix shape:** extend the peel to follow `_inner` as well as `.raw`, and add the
+  "peel actually descended" guard so the blindness cannot return silently. Both are
+  already written in `tests/backends/http/test_config.py::test_read_is_lazy_not_bytesio`;
+  this item lifts them into the shared cell.
+  **Why not fixed with BK-340:** the change flips what five backends actually
+  assert, and none of s3 / sftp / azure is installable in the environment that
+  found it (no moto, s3fs, boto3, paramiko), so it cannot be verified where it was
+  written. Verify under CI-with-all-extras.
+  Surfaced by BK-340's `ReadOnlyHttpBackend` gate audit.
+
 - [ ] **ID-242 — Four `moto doesn't raise PermissionError` pragmas are coverage holes, not exemptions**
   spec: — · effort: S · audience: contributor
   `_s3_base.py` 510/540/573 and `_s3_pyarrow.py:626` each carry
@@ -366,16 +394,28 @@ this section carries the work.
 [the file's default](#how-this-file-works), because its items form a dependency
 chain. Position therefore says nothing about importance, and dependencies are
 stated by ID inside each item so re-sequencing cannot silently invalidate them.
-**BK-340 and ID-241 come first**, then ID-207's steps 3 and 4. This is a
+**ID-241 and ID-244 come first**, then ID-207's steps 3 and 4. This is a
 re-sequencing on measured evidence, not the original plan: BK-324 was expected to
 clear the way for ID-207 step 2, and instead supplied four instances of the drift
 this programme exists to detect — none of which step 2 would have caught. BK-340
-and ID-241 are what those four actually exhibited (a rule gated so no fixture ever
-runs it), and ID-207 step 3 is the other half (a citation is not an assertion).
+(shipped), ID-241 and ID-244 are what those four actually exhibited (a rule gated
+so no fixture ever runs it), and ID-207 step 3 is the other half (a citation is
+not an assertion).
 Step 2 keeps its L cost and its ~2.5% reach; it follows rather than leads, and
 ID-207 states the evidence. BK-332, ID-236 and ID-237 are follow-ons that get
 cheaper once the earlier work lands. BK-327 and ID-238 are independent of the
 chain and can be taken at any point; both sit at the section's tail.
+
+**BK-340 shipped and produced ID-244, its own successor in this ordering.**
+Registering the `sqlquery` fixture closed the reachability hole for the *gate*
+mechanism it named (a family with no fixture) and, in doing so, measured a second
+gate underneath it: the conformance suite seeds through `backend.write`, so every
+content-bearing contract sits behind `Capability.WRITE` and no read-only backend
+can reach any of it. That is ID-244, and it is why `sqlquery` reaches 77 cells
+rather than the whole surface. The `ReadOnlyHttpBackend` audit BK-340 also asked
+for found the same gate excluding the registry's only read-only LAZY_READ
+declarer from SIO-009, plus a vacuous assertion in that cell (BUG-244, filed
+under Lint / CI Completeness).
 
 On importance, the research doc's designation, which this section adopts rather
 than restates: the two items that build what is actually missing are the authority
@@ -410,26 +450,6 @@ before believing it, because the case that does *not* resolve is the informative
 one — and a hand-counted figure about a growing corpus is stale before the commit
 that writes it lands, so cite the generator instead.
 
-- [ ] **BK-340 — `SQLQueryBackend` has no conformance fixture, so no cross-backend rule reaches it**
-  spec: — · effort: M · audience: infra.test
-  `tests/backends/fixtures/registry.py` has no entry for `SQLQueryBackend`, so
-  **nothing in `tests/backends/conformance/` executes against it** — not the
-  capability-gated cells, not the ungated ones. Every cross-backend invariant is
-  asserted for it by nobody.
-  **This is not hypothetical: it is how BK-324's round-2 miss survived.** The
-  root-spelling class was fixed across eleven sites and declared closed; review
-  round 3 found it still live in `SQLQueryBackend`, three lines from a line that
-  same fix had edited. A source sweep found the other backends because they are
-  reachable; this one was invisible to the tests and therefore to the sweep.
-  Root behaviour is now pinned in `tests/backends/sqlquery/test_config.py`, which
-  is a per-backend patch over a structural hole, not a fix for it.
-  **Why M, not S:** registering a fixture runs the *entire* conformance surface
-  against a read-only query-mapping backend, and the expected skip set — WRITE,
-  DELETE, MOVE, COPY, ATOMIC_* — has to be established deliberately rather than
-  discovered by failure. That sizing is the whole item.
-  **Check `ReadOnlyHttpBackend` at the same time**: it *is* registered, so the
-  question there is whether its gates are right, not whether it is reachable.
-
 - [ ] **ID-241 — Conformance cells that make no HTTP call still skip on a missing cassette**
   spec: — · effort: S · audience: infra.test
   The missing-cassette hook fires **per test name**, regardless of whether the
@@ -449,6 +469,39 @@ that writes it lands, so cite the generator instead.
   hand-maintained-parallel-artifact problem.
   **Why ID:** whether the marker belongs on the test, the fixture, or the hook is
   unmade, and the answer decides how much of the replay lane changes.
+
+- [ ] **ID-244 — A read-only backend cannot reach any WRITE-gated contract cell**
+  spec: — · effort: M · audience: infra.test
+  Sibling of ID-241 above, and the same class: a rule gated so no fixture ever
+  runs it. Here the gate is not a cassette but the **seeding discipline** —
+  conformance cells that need data call `backend.write`, so they sit behind
+  `fixture_params(Capability.WRITE)`. Any contract that happens to live in such a
+  class is therefore unreachable for a read-only backend, *including contracts
+  that have nothing to do with writing*.
+  **Measured instance.** SIO-009 (laziness: a LAZY_READ backend must not return a
+  BytesIO-backed stream) lives in `TestStreamingConformance`, a WRITE-gated class.
+  `ReadOnlyHttpBackend` is the registry's **only read-only LAZY_READ declarer** —
+  streaming is the whole justification for its capability set, per
+  `tests/backends/http/test_config.py::test_capabilities_are_read_metadata_lazy` —
+  and it was structurally excluded from the only cells asserting that contract.
+  The two per-backend read tests did not compensate: both assert content and
+  chunking, which a pre-loaded `BytesIO` satisfies identically.
+  Pinned per-backend by BK-340 in `test_read_is_lazy_not_bytesio`; that is a patch
+  over a structural hole, exactly as `tests/backends/sqlquery/test_config.py`'s
+  root cells were before BK-340 registered a fixture.
+  **The same hole is why BK-340's own `sqlquery` fixture reaches only 77 cells.**
+  Its content-bearing surface — read, glob, listing with keys present — is
+  WRITE-gated end to end, so registering the fixture bought the
+  capability-independent contract and nothing else. That was the right scope for
+  BK-340; it is this item's subject.
+  **Why ID:** the fix is a seeding indirection (a per-fixture `seed` hook the
+  cells call instead of `backend.write`), and *where it binds* is unmade — on the
+  fixture, on the helper, or as a capability-neutral rewrite of the affected
+  classes. The answer decides how much of the conformance suite changes, and a
+  hook whose seeded content cannot round-trip (SQLQueryBackend materialises result
+  sets, so `read(k)` never returns the bytes a seeder "wrote") constrains it
+  further: the hook must express *presence*, not content, or the cells that use it
+  must not assert content.
 
 - [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**
   spec: — · effort: L · audience: contributor.tooling

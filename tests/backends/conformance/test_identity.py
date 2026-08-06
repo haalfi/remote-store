@@ -224,11 +224,13 @@ class TestAtomicMoveCapability:
     Classification is by ``BackendFixture.backend`` (registry family
     name), not by the live ``backend.name`` property; the registry's
     family field is what's stable across same-backend fixture pairs.
-    sql-query is not parametrised here; it has its own test module.
     """
 
     _DECLARES = {"local", "memory", "dafny", "sqlblob"}
-    _DOES_NOT_DECLARE = {"s3", "s3_pyarrow", "s3_boto3", "azure", "sftp", "http"}
+    # ``sqlquery`` is read-only: it declares neither MOVE nor ATOMIC_MOVE
+    # (BK-340 registered its fixture; the family was previously unreachable
+    # from here because it had no registry entry at all).
+    _DOES_NOT_DECLARE = {"s3", "s3_pyarrow", "s3_boto3", "azure", "sftp", "http", "sqlquery"}
 
     @pytest.mark.spec("CAP-001")
     @pytest.mark.parametrize("fixture", _atomic_move_canonical_fixtures())
@@ -265,7 +267,9 @@ def _seekable_canonical_fixtures() -> list[Any]:
 class TestSeekableCapability:
     """SEEK-001: backends that always return seekable streams declare SEEKABLE_READ."""
 
-    _DECLARES = {"local", "memory", "s3", "s3_pyarrow", "s3_boto3", "sftp", "sqlblob", "dafny"}
+    # ``sqlquery`` materializes each result set into a ``BytesIO`` before
+    # returning it, so every stream it hands back is seekable (BK-340).
+    _DECLARES = {"local", "memory", "s3", "s3_pyarrow", "s3_boto3", "sftp", "sqlblob", "sqlquery", "dafny"}
     _DOES_NOT_DECLARE = {"azure", "http"}
 
     @pytest.mark.spec("SEEK-001")

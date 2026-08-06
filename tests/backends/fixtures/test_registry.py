@@ -270,10 +270,11 @@ class TestRegistryShape:
         for f in all_fixtures():
             assert f.concurrency in VALID_CONCURRENCY, f"{f.name!r} has invalid posture {f.concurrency!r}"
         # The single_connection set: SFTP (shared socket), HTTP (shared opener),
-        # and sqlblob (the tested ``sqlite:///:memory:`` SingletonThreadPool
-        # config — one isolated in-memory DB per thread; BK-289 discovery).
+        # and the two SQLAlchemy families (the tested ``sqlite:///:memory:``
+        # SingletonThreadPool config — one isolated in-memory DB per thread;
+        # BK-289 discovery, extended to sqlquery by BK-340's registration).
         single_conn_backends = {f.backend for f in all_fixtures() if f.concurrency == "single_connection"}
-        assert single_conn_backends == {"sftp", "http", "sqlblob"}, (
+        assert single_conn_backends == {"sftp", "http", "sqlblob", "sqlquery"}, (
             f"unexpected single_connection set: {sorted(single_conn_backends)}"
         )
         # Spot-check the in-process thread_safe anchors used by the Tier-1 lane.
@@ -303,6 +304,71 @@ class TestRegistryShape:
             f.name for is_async in (False, True) for f in fixtures(is_async=is_async, include_strict_only=True)
         }
         assert enumerated.isdisjoint(hns), f"HNS fixtures leaked into the conformance walk: {enumerated & set(hns)}"
+
+    def test_bk340_sqlquery_is_reachable_and_its_skip_set_is_declared(self) -> None:
+        """BK-340: ``sqlquery`` is enumerated, and the lanes it skips are a decision.
+
+        Before BK-340 the family had no registry entry, so **nothing** in
+        ``tests/backends/conformance/`` executed against it and every
+        cross-backend invariant was asserted for it by nobody. That is how
+        BK-324's root-spelling miss survived a source-wide sweep: the sweep found
+        the sites, and no test ran them.
+
+        Two halves, and the second is the one BK-340 sized as the whole item:
+
+        1. **Reachable.** The fixture appears in the plain ``fixtures()``
+           enumeration — the selector the conformance ``pytest_generate_tests``
+           hook walks. A future ``strict_only`` / ``conformance_excluded`` slip
+           would silently restore the hole, and the suite would stay green.
+        2. **The skip set is declared, not discovered.** The reach of a fixture
+           is decided entirely by its capability set, so pinning the *declared*
+           capabilities pins the skip set with it. The complement is **derived**
+           from ``Capability`` here rather than listed beside it (DRIFT-RULES
+           Rule 3): a capability added to the enum lands in the skip assertion
+           automatically instead of quietly widening what "read-only" covers.
+
+        A backend that later grows WRITE (materialized views, say) trips this
+        test rather than silently pulling the entire write/atomic/move/copy
+        surface into a lane nobody re-examined.
+
+        **Bound** (DRIFT-RULES Rule 7): this verifies the fixture is *enumerated*
+        and that its capability declaration still matches the one the skip set was
+        established against. It does **not** verify that any conformance cell
+        actually asserts anything useful about this backend, nor that the cells it
+        enters pass — the suite itself is the only witness for both. Nor does it
+        see the second gate underneath capability filtering: content-bearing cells
+        seed through ``backend.write``, so a read-only backend is excluded from
+        them by the seeding discipline rather than by its capability set, and no
+        assertion here distinguishes that from a lane it legitimately skips
+        (ID-244).
+        """
+        pytest.importorskip("sqlalchemy", reason="sql extra not installed")
+        pytest.importorskip("pyarrow", reason="sql-query extra not installed")
+
+        enumerated = {f.name for f in fixtures(is_async=False)}
+        assert "sqlquery" in enumerated, "sqlquery dropped out of the conformance enumeration — the BK-340 hole is back"
+
+        record = next(f for f in all_fixtures() if f.name == "sqlquery")
+        declared = set(record.capabilities)
+        expected = {
+            Capability.READ,
+            Capability.LIST,
+            Capability.METADATA,
+            Capability.GLOB,
+            Capability.SEEKABLE_READ,
+        }
+        assert declared == expected, (
+            f"sqlquery capability declaration changed: {sorted(c.name for c in declared ^ expected)}. "
+            "Its conformance reach follows the capability set, so re-establish the skip set deliberately "
+            "(BK-340) before updating this assertion."
+        )
+
+        # Derived, not parallel: everything the enum offers minus what is
+        # declared is exactly what the suite must never parametrise onto it.
+        for cap in set(Capability) - expected:
+            assert record not in fixtures(cap, is_async=False), (
+                f"sqlquery entered the {cap.name} lane without declaring the capability"
+            )
 
 
 def _valid_backend_raw() -> dict[str, object]:

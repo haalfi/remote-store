@@ -118,6 +118,24 @@ is_async  = false
 rejects_write_under_file_ancestor = true
 strict_only = true
 
+# BK-340: SQLQueryBackend had no registry entry, so no conformance cell ran
+# against it — which is how BK-324's root-spelling miss survived a source sweep.
+# The query mapping is deliberately EMPTY: every conformance fixture starts from
+# an empty store, and cells such as
+# ``TestBackendRootPath::test_get_folder_info_on_empty_root_does_not_raise``
+# assert that directly. A pre-seeded mapping would fail them. Content-bearing
+# cells are all WRITE-gated (they seed through ``backend.write``), so a read-only
+# backend cannot reach them either way; the reachable surface is the
+# capability-independent contract — identity, root spelling, native_path/to_key,
+# resolve, empty-listing, close posture — which is precisely the class the
+# per-backend suite could not assert cross-backend.
+[fixture.sqlquery]
+backend   = "sqlquery"
+stage     = 1
+kind      = "real-local"
+container = "none"
+is_async  = false
+
 [fixture.s3_moto]
 backend   = "s3"
 stage     = 1

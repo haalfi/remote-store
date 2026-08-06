@@ -8,6 +8,43 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-340 — `SQLQueryBackend` has no conformance fixture, so no cross-backend rule reaches it**
+  spec: — · effort: M · audience: infra.test
+  `tests/backends/fixtures/registry.py` had no entry for `SQLQueryBackend`, so
+  **nothing in `tests/backends/conformance/` executed against it** — not the
+  capability-gated cells, not the ungated ones. Every cross-backend invariant was
+  asserted for it by nobody, which is how BK-324's round-2 miss survived: a source
+  sweep found the reachable backends, and this one was invisible to the tests and
+  therefore to the sweep.
+  **Shipped:** a `[backend.sqlquery]` family and `[fixture.sqlquery]` entry in the
+  two registry TOMLs, `tests/backends/fixtures/sqlquery.py`, and the two
+  `test_identity.py` by-name classification lanes the custom-backend guide's step 4
+  predicts would fail (they did, and only they did).
+  **The skip set, established rather than discovered.** Measured: 77 cells collected,
+  58 pass, 19 runtime-skip — WRITE 11, DELETE 4, MOVE 2, COPY 2. `ATOMIC_*` never
+  appears as a runtime skip because those lanes are class-filtered, so the fixture
+  is never parametrised onto them at all. `TestBackendRootPath` alone contributes 24
+  of the 77: the BE-029 lane whose defect motivated the item.
+  `test_bk340_sqlquery_is_reachable_and_its_skip_set_is_declared` pins both halves,
+  deriving the skip set from `Capability` rather than listing it beside
+  (DRIFT-RULES Rule 3).
+  **The query mapping is deliberately empty.** Every conformance fixture starts from
+  an empty store and several cells assert the empty-store answer directly
+  (`test_get_folder_info_on_empty_root_does_not_raise` asserts `file_count == 0`), so
+  a pre-seeded mapping fails them. Nothing is lost: content-bearing cells seed via
+  `backend.write` and are WRITE-gated regardless.
+  **The `ReadOnlyHttpBackend` audit the item also asked for found two things**, both
+  filed rather than fixed beyond the one-backend patch: SIO-009's laziness contract
+  lives in a WRITE-gated class, so the registry's only read-only LAZY_READ declarer
+  never ran it (ID-244), and that cell's `.raw`-only peel terminates on
+  `_ErrorMappingStream`, making its BytesIO assertion vacuous for five of the six
+  backends that run it (BUG-244). The http half is pinned here by
+  `test_read_is_lazy_not_bytesio`, across all three transports, with a guard that
+  fails if the peel stops descending.
+  **Discovery:** the item's own successor. BK-340 closed the "family with no fixture"
+  gate and measured a second gate underneath it — the suite's seeding discipline —
+  which is why the fixture reaches 77 cells and not the whole surface (ID-244).
+
 - [x] **BK-336 — `/fix-pr` should find a finding's siblings, not just the lines it names**
   spec: — · effort: S · audience: contributor.process
   Two statements in `/fix-pr`: one Rules bullet stating the principle, and a
