@@ -16,7 +16,7 @@
         <link rel="prev" href="../0032-tiered-ci-gate-with-full-matrix-backstop/">
       
       
-        <link rel="next" href="../../audits/">
+        <link rel="next" href="../0034-ship-panel-rounds-and-unprimed-exit/">
       
       
         
@@ -6381,6 +6381,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0034-ship-panel-rounds-and-unprimed-exit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0034: Panel Rounds and an Unprimed Exit Gate for /ship Review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -10589,7 +10617,10 @@ it, since the figure is one delivery's history and not a forward estimate.</p>
   incorrect behaviour, a false statement in a durable artifact, or a shipping
   gap. A soft ceiling of five finding-rounds triggers escalation to the user
   rather than silent termination. <em>Reverse if</em> loops routinely run long without
-  the extra rounds changing what ships, so a fixed cap costs less than it saves.</p>
+  the extra rounds changing what ships, so a fixed cap costs less than it saves.
+  <em>Amended by <a href="../0034-ship-panel-rounds-and-unprimed-exit/">ADR-0034</a>:</em> a
+  third stop clause — no ending until an unprimed reviewer has seen the final
+  state clean.</p>
 </li>
 <li>
 <p><strong>The loop may not end on an unreviewed fix pass.</strong> Whatever the last round
@@ -10604,7 +10635,9 @@ it, since the figure is one delivery's history and not a forward estimate.</p>
   author's areas of concern, and runs on a different model from the author's so
   its blind spots differ. Later rounds each take one scoped lens, chosen by what
   earlier rounds did not examine. <em>Reverse if</em> unprimed rounds reliably
-  duplicate what lens rounds find, making the diversity redundant.</p>
+  duplicate what lens rounds find, making the diversity redundant.
+  <em>Amended by <a href="../0034-ship-panel-rounds-and-unprimed-exit/">ADR-0034</a>:</em> rounds
+  may widen to panels from round 3, with an unprimed member every odd round.</p>
 </li>
 <li>
 <p><strong>Reviewers are read-only and never resumed; fixers may decline with
@@ -10695,13 +10728,13 @@ operational contract and lives in <code>.claude/skills/ship/SKILL.md</code>.</p>
         
         
           
-          <a href="../../audits/" class="md-footer__link md-footer__link--next" aria-label="Next: Audits">
+          <a href="../0034-ship-panel-rounds-and-unprimed-exit/" class="md-footer__link md-footer__link--next" aria-label="Next: 0034: Panel Rounds and an Unprimed Exit Gate for /ship Review">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Audits
+                0034: Panel Rounds and an Unprimed Exit Gate for /ship Review
               </div>
             </div>
             <div class="md-footer__button md-icon">
