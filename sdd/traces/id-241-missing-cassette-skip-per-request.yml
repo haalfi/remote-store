@@ -198,6 +198,34 @@ phases:
           premise, twice, and a round-2 reviewer caught it. The sweep rule I was
           applying — grep the claim you are changing — does not reach a false
           statement you are merely standing next to.
+      - file: tests/backends/fixtures/azure_replay_async.py
+        section: "Transport shim"
+        read_type: verify
+        extract: >-
+          The most severe finding of the review, and it was mine to make in
+          phase one: I built three transport cells for "urllib3 (sync Azure),
+          aiohttp (async Azure), httpx (Graph)" from the shape of the fixture
+          list, and never opened this file. It says the async Azure fixtures
+          inject AsyncioRequestsTransport — requests/urllib3 in a thread pool —
+          precisely because vcrpy's aiohttp stub deadlocks on a streamed body.
+          So no fixture in this repo replays on aiohttp: the cell watched a stub
+          nothing uses, the pyproject pin comment told future maintainers that
+          stub bound us, and the async Azure tier's actual load-bearing fact —
+          Skipped surviving the worker-thread → future handoff — was unasserted.
+          Replaced with an executor-boundary cell, measured first with a
+          standalone probe.
+      - file: scripts/mutate_scopes.py
+        section: "_cassettes_recorded; _async_extended_scopes graph comment"
+        read_type: verify
+        extract: >-
+          Fourth instance of the same shape, found after the trace already
+          confessed the first two: the file still asserted graph's cassettes
+          were "not yet recorded (BK-260)" in a comment I had edited around.
+          The rule that keeps failing is "grep the claim you are changing";
+          what would have caught all four is reading the paragraph the edit
+          lands in. Recorded here rather than generalised into a process
+          change, because n=4 in one PR is one author's habit, not evidence
+          about the sweep rule's design.
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check / Detailed checklist"
         read_type: verify

@@ -79,7 +79,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Missing-cassette skip hook (TEST-007) + HNS known-failures xfail
+# Real-Azure xfail roster + BK-305 large-payload exclusion
 # ---------------------------------------------------------------------------
 
 # Test function names that expose a real-ADLS-Gen2 conformance gap not yet

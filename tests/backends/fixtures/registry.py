@@ -117,9 +117,10 @@ class BackendFixture:
     by the file-ancestor tests' explicit ``fixture_params(..., include_strict_only=True)``,
     whereas a ``conformance_excluded`` fixture is dropped by ``fixtures()`` in
     **every** mode. It stays visible to ``all_fixtures()``, so it still opts
-    into cassette-directory routing, name aliasing, the missing-cassette skip,
-    the scrub config, and the leak audit via its ``cassette_profile`` (REC-007),
-    and the recorder's ``-k`` filter still selects it.
+    into cassette-directory routing, name aliasing, the missing-cassette skip
+    (bounded by the profile's ``cassette_dir``), the scrub config, and the leak
+    audit via its ``cassette_profile`` (REC-007), and the recorder's ``-k``
+    filter still selects it.
 
     Set on the BK-303 ``azure_live_hns`` / ``azure_replay_hns`` deviation
     fixtures: they belong to the per-backend HNS suite under

@@ -172,8 +172,12 @@ dev = [
   # of release that can break us. The guard is the one whose failure would be
   # quiet — a stub that stopped consulting `can_play_response_for` would turn
   # skips into errors for one backend only, which is why
-  # `test_missing_cassette_guard.py` drives all three transports rather than the
-  # wrapper alone. Floor-only would leave the failure this pin
+  # `test_missing_cassette_guard.py` drives the stubs end to end rather than the
+  # wrapper alone. Note *which* stubs those are, when judging an aiohttp-only
+  # release: no fixture here replays on aiohttp. Every Azure replay fixture
+  # injects `AsyncioRequestsTransport` (requests/urllib3 in a thread pool)
+  # precisely because that stub deadlocks on a streamed body, so the stubs that
+  # bind us are urllib3 and httpx. Floor-only would leave the failure this pin
   # exists to prevent (a fragile release landing silently on whichever PR
   # resolves next) wide open on the library that actually caused it.
   # All test-only; the published package constrains neither.

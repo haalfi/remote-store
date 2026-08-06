@@ -19,9 +19,10 @@ share a single file.
 
 Missing cassettes
 -----------------
-If the cassette for a given test is absent, the conformance conftest's
-``pytest_collection_modifyitems`` hook marks that parametrize id as skip
-rather than letting vcrpy raise — per TEST-007.
+If a test issues a request it cannot play and the cassette file is absent, the
+runtime guard armed in ``pytest_configure`` skips rather than letting vcrpy
+raise — per TEST-007. A cell that issues no request needs no cassette and runs
+regardless (ID-241).
 """
 
 from __future__ import annotations

@@ -216,16 +216,25 @@ are absent from the test session and emit no `SKIPPED` line. Both
 applied once at collection time.
 
 **Runtime gating (skipif / fixture skip):** Conditions
-that depend on per-run state (env vars set, Docker daemon reachable,
-cassette file present) gate via `pytest.mark.skipif` on the test or
+that depend on per-run state (env vars set, Docker daemon reachable)
+gate via `pytest.mark.skipif` on the test or
 `pytest.skip(...)` inside the fixture's `factory()`. These do emit
 visible `SKIPPED [reason]` entries because the test was registered
 in the parametrize before the skip resolved.
 
+Cassette availability is **not** in this list. It is not a per-run
+condition a fixture can answer at setup: whether a cell needs a
+cassette depends on whether it issues a request, which only running it
+reveals. [TEST-007](#test-007-http-cassette-and-replay-layer) owns that
+gate and resolves it mid-test.
+
 **Postcondition:** No special pytest plugin is required to read the
 gating logic. A reader can trace either gate (id-filter or skipif)
 from the parametrize source or the fixture body to the registry
-without indirection.
+without indirection. The TEST-007 cassette gate is the one exception,
+and it is stated as such rather than folded in: it is readable from
+neither, because the condition it tests is a request that has already
+been issued.
 
 **Rationale:** [ADR-0028](../adrs/0028-testing-architecture-kind-stage-replay.md)
 § Capability gating uses native pytest mechanisms.

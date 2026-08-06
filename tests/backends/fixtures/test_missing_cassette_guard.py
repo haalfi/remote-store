@@ -5,16 +5,25 @@ keyed on what actually happened: a request vcrpy cannot play against a cassette
 file that does not exist. A cell that issues no request therefore runs, on every
 replay fixture where that is true of it.
 
-Two things these tests are here to pin, because both are assumptions the design
-rests on and neither is visible in the guard's own source:
+Three things these tests are here to pin, because each is an assumption the
+design rests on and none is visible in the guard's own source:
 
 * **Every transport we replay on routes through the method the guard wraps.**
-  The three transport cells below drive real vcrpy stubs — urllib3 (sync Azure),
-  aiohttp (async Azure), httpx (Graph) — rather than asserting the wrapper in
-  isolation. If a vcrpy release stops consulting ``can_play_response_for`` on any
-  of them, the guard would silently stop firing for that backend; these fail
-  instead. They are the third private-vcrpy dependency the ``vcrpy>=8.2,<8.4``
-  pin in ``pyproject.toml`` exists for.
+  The transport cells below drive the real vcrpy stubs this repo replays
+  through, rather than asserting the wrapper in isolation. If a vcrpy release
+  stops consulting ``can_play_response_for`` on one of them, the guard would
+  silently stop firing for that backend; these fail instead. They are among the
+  private-vcrpy dependencies the ``vcrpy>=8.2,<8.4`` pin in ``pyproject.toml``
+  exists for.
+
+  Which stubs those are is not obvious and is easy to get wrong: **no fixture
+  here replays on aiohttp.** All four Azure replay fixtures inject
+  ``AsyncioRequestsTransport``, which runs ``requests``/urllib3 in a thread
+  pool, because vcrpy's aiohttp stub deadlocks on a streamed body (see
+  ``azure_replay_async.py``). So the stubs that matter are urllib3 (all Azure,
+  sync and async) and httpx (Graph) — and for async Azure the extra hop is a
+  *thread*, not a different stub, which is why the third cell drives the skip
+  across an executor boundary instead.
 * **The skip cannot be swallowed.** Backends map ``except Exception`` into
   library errors — ``AsyncAzureBackend`` was measured turning vcrpy's
   ``CannotOverwriteExistingCassetteException`` into ``RemoteStoreError`` — so a
@@ -22,15 +31,25 @@ rests on and neither is visible in the guard's own source:
   assertion by any cell expecting an error. ``Skipped`` derives from
   ``BaseException``, which is what makes the guard safe rather than merely
   convenient.
+* **The bound is the registered cassette directories**, and it can only fail
+  silently in one direction: a bound that narrows turns skips into loud vcrpy
+  errors, while a bound that widens turns real replay failures into green
+  skips. Both directions are asserted.
 
 Real ``vcr.cassette.Cassette`` objects throughout (TESTING.md Rule 6): the
 subject is our interaction with vcrpy, and a stub of it would assert only that
 we agree with ourselves.
+
+``os_sensitive`` because the guard compares ``path.parent.resolve()`` against
+resolved directories and renders its message with ``os.path.relpath`` — both
+separator- and casing-sensitive, and both armed in every Windows developer's
+replay run, so the Windows CI leg should execute them.
 """
 
 from __future__ import annotations
 
 import asyncio
+import concurrent.futures
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -40,13 +59,17 @@ import vcr
 from vcr.cassette import Cassette
 from vcr.request import Request as VcrRequest
 
+from tests.backends.fixtures import _cassette_pytest as guard_module
 from tests.backends.fixtures._cassette_pytest import (
+    _guarded_cassette_dirs,
     _make_missing_cassette_guard,
     install_missing_cassette_guard,
 )
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+pytestmark = pytest.mark.os_sensitive
 
 _UNREACHABLE = "https://id-241.invalid/probe"
 
@@ -172,28 +195,73 @@ class TestMissingCassetteGuard:
         cassette = _cassette(path)
         assert cassette.can_play_response_for(_request()) is False
 
-    def test_skip_is_a_base_exception(self) -> None:
-        """``except Exception`` must not be able to swallow the skip.
+    def test_skip_escapes_an_except_exception_mapping_layer(self, guarded: Path) -> None:
+        """``except Exception`` must not be able to swallow the guard's skip.
 
-        The guard raises through backend code that maps arbitrary exceptions
-        into ``RemoteStoreError``; a cell asserting an error would then *pass*
-        on a skip, which is the vacuous-green failure mode this design exists to
-        avoid. Pinned as its own cell so a refactor to a plain exception fails
-        here rather than silently in the conformance suite.
+        Every backend wraps its transport in a mapping layer that turns
+        arbitrary exceptions into library errors — ``AsyncAzureBackend`` was
+        measured turning vcrpy's own exception into ``RemoteStoreError``. A cell
+        asserting *some* error would then pass on what is really a skip, which
+        is the vacuous-green failure this design exists to avoid.
+
+        This drives the guard through a stand-in for that layer rather than
+        asserting ``Skipped``'s ancestry: `issubclass(pytest.skip.Exception,
+        BaseException)` is a fact about pytest and stays true however this
+        module is rewritten, so it could not fail if the guard were changed to
+        raise a plain exception. This can.
         """
-        assert issubclass(pytest.skip.Exception, BaseException)
-        assert not issubclass(pytest.skip.Exception, Exception)
+        cassette = _cassette(guarded / "cassettes" / "azure" / "swallow.yaml")
+        mapped: Exception | None = None
+        try:
+            cassette.can_play_response_for(_request())
+        except pytest.skip.Exception:
+            pass  # escaped the mapping layer, which is the whole point
+        except Exception as exc:  # noqa: BLE001 -- stands in for a backend's error mapping
+            mapped = exc
+        assert mapped is None, f"the guard's skip was swallowed as {type(mapped).__name__}"
+
+    def test_guarded_dirs_are_the_registered_cassette_dirs(self) -> None:
+        """The shipped bound, not the one the other cells inject.
+
+        Every other cell passes ``guarded_dirs`` explicitly, so
+        ``_guarded_cassette_dirs`` — the default the guard actually runs with —
+        is otherwise reached but never asserted. The asymmetry is what makes
+        that worth a cell: a bound that *narrows* fails loudly, because vcrpy
+        raises where a skip was expected, but a bound that *widens* is silent.
+        Point a profile's ``cassette_dir`` at ``tests/backends/cassettes``
+        instead of a per-backend subdirectory and every sibling of a registered
+        cassette becomes skippable, converting real replay failures into green
+        skips.
+        """
+        expected = {profile.cassette_dir.resolve() for profile in guard_module._cassette_routing().values()}
+        assert _guarded_cassette_dirs() == expected
+        assert expected, "no cassette profiles registered"
+        # The parent must not be guarded: that is the widening this cannot see otherwise.
+        for parent in {d.parent for d in expected}:
+            assert parent not in _guarded_cassette_dirs()
 
 
 @pytest.mark.spec("TEST-007")
 class TestGuardCoversEveryReplayTransport:
-    """Each stub we replay through must consult the wrapped method.
+    """Each path a registered replay fixture actually takes must reach the guard.
 
-    One cell per transport that a registered replay fixture actually uses:
-    urllib3 (``azure_replay``), aiohttp (``azure_replay_async``) and httpx
-    (``graph_replay``). Each issues a real request under a cassette that does
-    not exist and asserts the guard converted it into a skip — end to end,
-    through vcrpy's own patching, not through our wrapper alone.
+    Two stubs and one boundary, which is not the same list as "the transports
+    vcrpy supports":
+
+    * **urllib3** — every Azure replay fixture, sync *and* async. The async
+      pair inject ``AsyncioRequestsTransport`` (``requests``/urllib3 in a
+      thread pool) because vcrpy's aiohttp stub deadlocks on a streamed body;
+      ``azure_replay_async.py`` records the measurement and says to re-check
+      before removing the shim.
+    * **httpx** — ``graph_replay``.
+    * **an executor boundary** — the extra hop async Azure takes. The stub is
+      still urllib3; what is load-bearing is that ``Skipped`` survives the
+      worker-thread → future handoff, which nothing else here would catch.
+
+    **No cell drives aiohttp, deliberately.** Nothing in this repo replays
+    through it, so a cell there would be a standing false alarm on the one stub
+    vcrpy has broken twice (8.1.1, 8.2.0) while telling a maintainer reading
+    the pin comment that the stub is load-bearing for us.
     """
 
     def test_urllib3_transport_skips(self, guarded: Path) -> None:
@@ -214,18 +282,30 @@ class TestGuardCoversEveryReplayTransport:
         ):
             httpx.get(_UNREACHABLE)
 
-    def test_aiohttp_transport_skips(self, guarded: Path) -> None:
-        aiohttp = pytest.importorskip("aiohttp", reason="aiohttp not installed")
+    def test_skip_crosses_the_executor_boundary(self, guarded: Path) -> None:
+        """The async Azure path: raised in a worker thread, awaited on the loop.
 
-        async def _get() -> None:
-            async with aiohttp.ClientSession() as session, session.get(_UNREACHABLE):
-                pass
+        ``AsyncioRequestsTransport`` runs the blocking request in a thread pool
+        and awaits the future. ``Skipped`` is a ``BaseException``, and a future
+        is free to treat those differently from ordinary exceptions, so the
+        handoff is worth asserting rather than assuming — it is the whole async
+        Azure replay tier.
+        """
+        import urllib3
+
+        def _blocking_get() -> None:
+            urllib3.PoolManager().request("GET", _UNREACHABLE)
+
+        async def _drive() -> None:
+            loop = asyncio.get_running_loop()
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                await loop.run_in_executor(pool, _blocking_get)
 
         with (
             pytest.raises(pytest.skip.Exception, match="replay cassette missing"),
-            vcr.use_cassette(str(guarded / "aiohttp.yaml"), record_mode="none"),
+            vcr.use_cassette(str(guarded / "threaded.yaml"), record_mode="none"),
         ):
-            asyncio.run(_get())
+            asyncio.run(_drive())
 
 
 class _FakeConfig:

@@ -40,7 +40,11 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `except Exception` into library errors — `AsyncAzureBackend` was measured
   turning vcrpy's own exception into `RemoteStoreError` — so an ordinary
   exception would be swallowed and a cell asserting an error would pass
-  vacuously. That is the whole safety argument, and it is pinned as its own test.
+  vacuously. That is the whole safety argument, and it is pinned by a cell that
+  drives the guard through a stand-in mapping layer. The obvious cell —
+  asserting `Skipped` subclasses `BaseException` — was written first and thrown
+  away in review: it states a fact about pytest, so it stays green however this
+  module is rewritten.
   **Result:** 105 missing-cassette skips → 47; 52 cells now execute; zero
   failures and zero previously-passing cells changed, verified cell-by-cell
   against a pre-change JUnit baseline rather than by totals. Graph's addressing
@@ -50,9 +54,16 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   fixtures.
   **Cost recorded honestly:** two private vcrpy surfaces are now load-bearing
   (`can_play_response_for` and `Cassette._path`), covered by the existing
-  `vcrpy>=8.2,<8.4` minor tripwire and by three transport cells that drive
-  urllib3, aiohttp and httpx end to end so a release that stops routing through
-  the wrapped method fails loudly. The recorder is untouched: the guard installs
+  `vcrpy>=8.2,<8.4` minor tripwire and by cells that drive the real stubs end to
+  end so a release that stops routing through the wrapped method fails loudly.
+  **Which stubs those are took a review round to get right:** no fixture here
+  replays on aiohttp — every Azure replay fixture injects
+  `AsyncioRequestsTransport` (requests/urllib3 in a thread pool) because vcrpy's
+  aiohttp stub deadlocks on a streamed body. The first cut pinned aiohttp and
+  left the async Azure tier's real load-bearing fact — that `Skipped` survives
+  the worker-thread → future handoff — unasserted, while telling a maintainer
+  reading the pin comment that a stub this repo routed around since 8.1.1 was
+  load-bearing. Now: urllib3, httpx, and the executor boundary. The recorder is untouched: the guard installs
   only when neither `--record` nor `--record-mode` is set — **both**, because
   moving from collection time to `pytest_configure` introduced a hook-ordering
   dependency the old hook never had (the root conftest maps `--record` onto

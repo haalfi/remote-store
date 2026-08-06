@@ -393,8 +393,10 @@ it as [BUG-244](BACKLOG-DONE.md).
 **ID-241 shipped and produced ID-245, the same way.** Making the missing-cassette
 skip fire per unplayable request rather than per test name moved 52 conformance
 cells from skipped to executing — and the act of measuring that moved spec 003's
-hand-counted coverage table for the second time, which is ID-245 at the head of
-this section. The pattern is now three for three: closing a reachability gate
+hand-counted coverage table for the second time, which is ID-245. It sits after
+ID-244 rather than at the head: ID-244 changes which cells a read-only backend
+can reach, so a generator built first would measure a surface about to move. The
+pattern is now three for three: closing a reachability gate
 measures the next thing underneath it. Read the measured numbers in
 [BACKLOG-DONE.md](BACKLOG-DONE.md) before sizing further work here, because
 "skipped" and "unreachable" turned out not to be the same set.
@@ -432,30 +434,6 @@ before believing it, because the case that does *not* resolve is the informative
 one — and a hand-counted figure about a growing corpus is stale before the commit
 that writes it lands, so cite the generator instead.
 
-- [ ] **ID-245 — Spec 003's per-backend cassette-reachability table is hand-counted**
-  spec: — · effort: M · audience: infra.test
-  [`003-backend-adapter-contract.md`](specs/003-backend-adapter-contract.md)
-  BE-029's coverage note tabulates, per backend, which root-path conformance
-  cells execute and which are pinned only in a per-backend home. Every figure in
-  it was counted by hand, against a corpus that grows — the exact shape BK-330
-  warned about and this section's preamble quotes: *"a hand-counted figure about
-  a growing corpus is stale before the commit that writes it lands, so cite the
-  generator instead."* ID-241 has already rewritten the table once for the same
-  reason, which is the second data point.
-  **Fix shape:** a script that runs the conformance suite (or its collection plus
-  the replay guard's verdict) and emits, per replay fixture, which cells execute
-  and which skip for want of a cassette; spec 003 then cites the generator rather
-  than a count. The reachability figure is not derivable from collection alone —
-  whether a cell needs a cassette depends on whether the backend issues a request,
-  which only running it answers (ID-241).
-  **Design obligations:** [`DRIFT-RULES.md`](DRIFT-RULES.md#rules) applies in
-  full — Rule 3 (the claim space must be *derived*, and its granularity stated),
-  Rule 4 (which of spec and generator governs), Rule 5 (gating or advisory, and
-  why).
-  Filed by ID-241 rather than built: that item's own diff was the mechanism, and
-  a report over a surface it was in the middle of changing would have measured a
-  moving target.
-
 - [ ] **ID-244 — A read-only backend cannot reach any WRITE-gated contract cell**
   spec: — · effort: M · audience: infra.test
   Sibling of ID-241 above, and the same class: a rule gated so no fixture ever
@@ -488,6 +466,31 @@ that writes it lands, so cite the generator instead.
   sets, so `read(k)` never returns the bytes a seeder "wrote") constrains it
   further: the hook must express *presence*, not content, or the cells that use it
   must not assert content.
+
+- [ ] **ID-245 — Spec 003's per-backend cassette-reachability table is hand-counted**
+  spec: — · effort: M · audience: infra.test
+  [`003-backend-adapter-contract.md`](specs/003-backend-adapter-contract.md)
+  BE-029's coverage note tabulates, per backend, which root-path conformance
+  cells execute and which are pinned only in a per-backend home. Every figure in
+  it was counted by hand, against a corpus that grows — the exact shape BK-330
+  warned about and this section's preamble quotes: *"a hand-counted figure about
+  a growing corpus is stale before the commit that writes it lands, so cite the
+  generator instead."* ID-241 has already rewritten the table once for the same
+  reason, which is the second data point.
+  **Fix shape:** a script that runs the conformance suite (or its collection plus
+  the replay guard's verdict) and emits, per replay fixture, which cells execute
+  and which skip for want of a cassette; spec 003 then cites the generator rather
+  than a count. The reachability figure is not derivable from collection alone —
+  whether a cell needs a cassette depends on whether the backend issues a request,
+  which only running it answers (ID-241).
+  **Design obligations:** [`DRIFT-RULES.md`](DRIFT-RULES.md#rules) applies in
+  full — Rule 3 (the claim space must be *derived*, and its granularity stated),
+  Rule 4 (which of spec and generator governs), Rule 5 (gating or advisory, and
+  why).
+  **Position:** after ID-244, not before it. ID-244 changes which cells a
+  read-only backend can reach, so building the generator first would measure a
+  surface about to move — the same reason ID-241 filed this rather than building
+  it inside its own diff.
 
 - [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**
   spec: — · effort: L · audience: contributor.tooling

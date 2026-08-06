@@ -298,9 +298,12 @@ def vcr_config(request: pytest.FixtureRequest, record_mode: str) -> dict[str, An
 # ``vcrpy`` minor-version tripwire in ``pyproject.toml``:
 #
 # * ``Cassette.can_play_response_for`` — the single gate every transport stub
-#   consults before playing, and the only point common to urllib3 (sync Azure),
-#   aiohttp (async Azure) and httpx (Graph).
-#   ``test_missing_cassette_guard.py`` drives all three end to end.
+#   consults before playing, and the only point common to the stubs we replay
+#   through: urllib3 (every Azure fixture, sync and async — the async pair run
+#   ``requests`` in a thread pool via ``AsyncioRequestsTransport``, because
+#   vcrpy's aiohttp stub deadlocks on a streamed body) and httpx (Graph).
+#   ``test_missing_cassette_guard.py`` drives both, plus the executor boundary
+#   the async Azure hop adds.
 # * ``Cassette._path`` — the cassette file vcrpy resolved. Reading it here is
 #   what lets the guard drop the old node-id → path *reconstruction*; the guard
 #   asks the cassette where it lives rather than recomputing what
