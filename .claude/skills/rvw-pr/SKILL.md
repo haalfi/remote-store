@@ -35,6 +35,8 @@ Read PR **content** via `gh` CLI when available; fall back to MCP when `gh` is a
 
 Read the diff via `gh pr diff $ARGUMENTS --repo haalfi/remote-store` (fall back to `pull_request_read` when `gh` is unavailable). Read every changed file **in full** for surrounding context — from the local checkout via `Read`, or `gh pr view $ARGUMENTS --json files` / `get_file_contents` for the PR-head version.
 
+**Never fetch PR comments, reviews, or review threads.** This step reads diff and files only, and that restraint is load-bearing, not incidental: `/ship`'s unprimed reviewers — including the exit gate that certifies its final state — stay unprimed precisely because this skill never reads the conversation. Widening Step 1 to the comment sources `/fix-pr` uses would silently turn every unprimed pass into a primed one while all other artifacts still claim otherwise.
+
 ## Step 2: Analyze
 
 Priority order: (1) Correctness, (2) Spec compliance, (3) Test coverage, (4) Consistency, (5) Ripple gaps, (6) Performance, (7) Security.

@@ -1063,29 +1063,28 @@ operational contract and lives in `.claude/skills/ship/SKILL.md`.
 
 - **Every odd round carries one unprimed reviewer.** Round 1's sole reviewer
   is that member, as [ADR-0033](0033-ship-convergence-driven-review.md)
-  already required; from round 3 the odd-round
-  panel includes one, briefed with the PR alone, on a different model from the
-  author's, same tier or higher. The cadence half: unprimed eyes on mid-loop
-  state, not only the endpoints. *Reverse if* interleaved unprimed members
-  reliably find nothing the exit gate's terminal pass would not.
+  already required; from round 3 the odd-round panel includes one, briefed
+  with the PR alone, on a different model from the author's, same tier or
+  higher. The cadence half: unprimed eyes on mid-loop state, not only the
+  endpoints. *Reverse if* interleaved unprimed members reliably find nothing
+  the exit gate's terminal pass would not.
 
 - **The loop cannot end until an unprimed reviewer has seen the final state
   and found nothing must-fix.** The load-bearing half: the second delivery's
   defects were created mid-loop by fixes, so an earlier unprimed pass proves
   nothing about what ships. A closing round with no unprimed member gets one
   appended, under the same briefing and model terms as any unprimed reviewer;
-  like [ADR-0033](0033-ship-convergence-driven-review.md)'s
-  verification round it counts toward the ceiling
-  only if it finds something. *Reverse if* terminal unprimed passes stop
-  finding anything across a meaningful sample of deliveries.
+  like [ADR-0033](0033-ship-convergence-driven-review.md)'s verification
+  round it counts toward the ceiling only if it finds something. *Reverse if*
+  terminal unprimed passes stop finding anything across a meaningful sample
+  of deliveries.
 
 - **Every fix sweeps the sibling descriptions of what it changed.** The
   sibling-sweep obligation that already attaches to review findings extends
   to the fixer's own corrections, fix by fix — a coverage question, not a
-  grep. The
-  obligation and its report clause live in `/fix-pr`; `/ship` inherits them
-  by citation. *Reverse if* these sweeps stop catching anything the review
-  rounds do not.
+  grep. The obligation and its report clause live in `/fix-pr`; `/ship`
+  inherits them by citation. *Reverse if* these sweeps stop catching
+  anything the review rounds do not.
 
 The step sequence, panel mechanics, brief requirements and the amended stop
 rule are operational contract and live in `.claude/skills/ship/SKILL.md` and

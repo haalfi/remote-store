@@ -93,7 +93,9 @@ push → reply and resolve.
 
 **Panels run in parallel against the same pushed state.** Each member is
 fresh and blind to the others: scoped members get briefs per the requirements
-below; the unprimed member gets the PR number and nothing else. Two
+below; the unprimed member's prompt carries no content beyond the PR number
+and the constraint boilerplate every spawn requires (below) — being unprimed
+excludes areas, findings and history, not mode and tool constraints. Two
 constraints keep that parallelism sound:
 
 - **Members are analysts, not posters.** Every subagent shares the owner
@@ -112,8 +114,9 @@ constraints keep that parallelism sound:
   have caught it no longer post — and runs a single triage and fix pass. A
   round with exactly one reviewer — rounds 1 and 2, an **even** round
   narrowed to a single scoped member, or the closing gate's appended pass —
-  keeps `rvw-pr`'s full posting flow: one reviewer, no contention. An odd
-  round is never solo; it always carries its unprimed member.
+  keeps `rvw-pr`'s full posting flow: one reviewer, no contention. From
+  round 3 on, an odd round is never solo; it always carries its unprimed
+  member.
 - **Member enforcement is by instruction, and honestly so.** No tool
   restriction that leaves a reviewer functional removes the hazards: reading
   PR content needs `gh`/MCP, so the posting path cannot be tool-stripped, and
@@ -121,23 +124,25 @@ constraints keep that parallelism sound:
   tool restriction and the built-in read-only types keep `Bash`, which can
   mutate the shared working tree. So the read-only and analyze-only
   constraints are restated in **every** member's prompt, panel and solo
-  alike, and the round carries a cheap check: capture `git rev-parse HEAD`
-  when the panel spawns (the just-pushed, gate-green state — the premise that
+  alike, and **every reviewer pass — panel, solo, and the closing gate's
+  appended pass** — carries a cheap check: capture `git rev-parse HEAD` when
+  the reviewers spawn (the just-pushed, gate-green state — the premise that
   makes the check meaningful), then require an unchanged HEAD **and** a clean
   `git status --porcelain` before triage. Dirtiness or a moved HEAD means the
-  members did not all see the same state, and the round is re-run, not
-  trusted.
+  reviewers did not see the state being certified, and the pass is re-run,
+  not trusted. The appended pass is the reviewer whose silence ends the loop;
+  it is the last place to skip the check, not the first.
 
 Width is a judgement, not a formula: a quiet previous round keeps the next
-narrow — a panel of one scoped member is still a round, though on an odd
-round its unprimed sibling always rides along — and a broad diff or a loud
-round widens the next.
+narrow — a panel of one scoped member is still a round, though from round 3
+on an odd round's unprimed sibling always rides along — and a broad diff or
+a loud round widens the next.
 
 **Unprimed reviewers — round 1, one member of every odd panel, and the exit
-gate's appended pass — are unprimed on purpose.** They receive the diff, the goal, and repo conventions,
-never your areas of concern, prior findings, or round history: a reviewer
-handed conclusions confirms them, and the second delivery's evidence for what
-that costs is in
+gate's appended pass — are unprimed on purpose.** They receive the diff, the
+goal, and repo conventions, never your areas of concern, prior findings, or
+round history: a reviewer handed conclusions confirms them, and the second
+delivery's evidence for what that costs is in
 [ADR-0034](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md).
 Use a different model so its blind spots differ from the author's.
 
@@ -148,8 +153,9 @@ because the spawn path does not supply them:
 - **The PR number.** `rvw-pr/SKILL.md` read as a file still contains a literal
   `$ARGUMENTS`; only slash invocation substitutes it. Without the number the
   agent falls through to that skill's ask-the-user branch, which a subagent
-  cannot answer. For an unprimed reviewer, pass the number and nothing else,
-  per the unprimed rule; a scoped member's prompt adds its brief.
+  cannot answer. An unprimed reviewer's prompt carries the number plus the
+  two constraint bullets below and no other content — the unprimed rule
+  excludes priming, not constraints; a scoped member's prompt adds its brief.
 - **For panel members: the word `analyze-only`.** `rvw-pr` defines the mode:
   Steps 0–3, Step 4 skipped, Step 5's report plus findings returned as the
   final message.
@@ -162,7 +168,9 @@ because the spawn path does not supply them:
   solo alike.
 
 Invoking `/rvw-pr` directly keeps both guarantees and is the right choice
-whenever model diversity does not matter; it cannot take a model override.
+for a **solo** pass when model diversity does not matter; it cannot take a
+model override, and it cannot form a panel — a round that owes an unprimed
+member (any odd round from 3 on) still spawns via `Agent`.
 
 ### Lens menu
 

@@ -22,7 +22,7 @@ surprising_ripples:
   # round 2 forced the analyze-only mode to be defined where the posting
   # rules it excepts are stated.
   - .claude/skills/rvw-pr/SKILL.md
-review_rounds: 4
+review_rounds: 5
 phases:
   - id: orient
     name: Orient
@@ -273,3 +273,32 @@ phases:
           defects landing where no sweep pointed, and a scoped-round sequence
           converging while unnamed surface stayed unexamined until an
           unprimed pass read it cold.
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Step 1"
+        read_type: verify
+        extract: >-
+          Round 5 (second unprimed pass, verifying round 4's fixes; the soft
+          ceiling was reached and the user chose fix-plus-final-gate) found
+          the exit gate's isolation resting on an unstated property: rvw-pr
+          happened to fetch diff and files only, with no rule saying so, one
+          directory from /fix-pr's four-comment-source machinery. Step 1 now
+          states the prohibition and why it is load-bearing. Round 5 also
+          widened the HEAD/porcelain check from panel spawns to every
+          reviewer pass — the appended solo pass whose silence ends the loop
+          had instruction-only enforcement with no detection.
+      - file: .claude/skills/ship/SKILL.md
+        section: "Round composition; spawn checklist"
+        read_type: verify
+        extract: >-
+          Round 5's consistency findings were all round-4-fix siblings: "an
+          odd round is never solo" contradicted round 1 being odd and solo
+          (scoped to round 3 on — and sweeping that fix caught the width
+          paragraph carrying the same ambiguity); "pass the number and
+          nothing else" collided with the mandatory analyze-only and
+          read-only boilerplate (resolved: unprimed excludes priming, not
+          constraints); the direct-/rvw-pr shortcut could not form a panel
+          yet claimed generality (scoped to solo passes); and round 3's edit
+          had recreated the overlong-line class round 2 swept, plus four
+          ragged wraps in ADR-0034 that the digest copies verbatim. Fifth
+          consecutive round in which a fix pass seeded the next round's
+          findings.
