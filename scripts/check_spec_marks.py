@@ -266,7 +266,14 @@ _ALLOWLIST_DESIGN: frozenset[str] = frozenset(
         "S3PA-028",  # 011 — S3PyArrowBackend thread_safe (Tier-3 live probe only)
         "HTTP-CONC-001",  # 032 — ReadOnlyHttpBackend single_connection on urllib (no WRITE -> not in carve-out)
         "SQL-BLOB-072",  # 040 — SQLBlobBackend thread_safe (per-op pool); :memory: test fixture is single_connection
-        "SQL-QUERY-092",  # 041 — SQLQueryBackend thread_safe (per-op pool connect); no conformance fixture
+        # BK-340 registered the sqlquery conformance fixture, so "no conformance
+        # fixture" is no longer why this one is excused. The exemption still
+        # holds, for HTTP-CONC-001's reason instead: the posture-gated lane is
+        # WRITE-gated (fixture_params_concurrent(Capability.WRITE, ...)), and
+        # SQLQueryBackend is read-only, so no carve-out cell reaches it. The
+        # spec/fixture posture split is the same one SQL-BLOB-072 carries above.
+        # (:memory: fixture is single_connection, as for SQL-BLOB-072.)
+        "SQL-QUERY-092",  # 041 — SQLQueryBackend thread_safe; no WRITE -> not in carve-out
     }
 )
 

@@ -8,6 +8,92 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BUG-244 — `test_read_is_lazy`'s BytesIO assertion was vacuous for every backend that wraps its stream**
+  spec: SIO-009 · effort: S · audience: infra.test
+  `conformance/test_streaming.py::test_read_is_lazy` peeled buffering layers with
+  `while hasattr(inner, "raw")`, then asserted `not isinstance(inner, io.BytesIO)`.
+  But `_ErrorMappingStream` (`src/remote_store/_stream.py`) holds the wrapped body
+  as **`_inner`** and exposes no `.raw`, so the walk **terminated on the wrapper**
+  and the isinstance check inspected the wrapper rather than the body — false for
+  the wrapper whatever it contains.
+  **Reach:** every LAZY_READ declarer that runs the cell wraps in
+  `_ErrorMappingStream` — s3, s3_pyarrow, s3_boto3, azure, sftp — i.e. five of the
+  six. Only `local` (BufferedReader → FileIO) terminated on a real body, and that
+  was luck, not design. The defect shape that survived: a backend that materialises
+  the body and then wraps it for error mapping declares LAZY_READ and passes green.
+  **Fixed** by `tests/_helpers.py::peel_to_body`, which follows both accessors,
+  plus a `KNOWN_STREAM_WRAPPERS` guard asserting the walk did not terminate *on* a
+  wrapping layer — so an accessor that stops being reachable fails the test instead
+  of silently restoring the blindness. Three callers: `test_read_is_lazy`,
+  `test_read_is_lazy_readinto`, and the HTTP-specific
+  `test_read_is_lazy_not_bytesio`. One shared home rather than a copy per cell,
+  because the copy is what let the HTTP cell keep the broken form through a
+  review round after the shared cell was fixed.
+  **Verified, with the bound stated** (`test_streaming.py`: 97 passed, 20
+  skipped): the ten SIO-009 cells are green across `local`, `sftp_inproc`,
+  `s3_moto`, `s3_boto3_moto` and `azure_replay`. That is **four of the five
+  wrapping backends**. `s3_pyarrow` is the fifth and it did **not** run —
+  `s3_pyarrow_moto` skips unconditionally when the resolved pyarrow is ≥ 24,
+  which every current CI resolution satisfies. `_PyArrowBinaryIO` is therefore
+  reached only by `s3_pyarrow_minio` (Stage 2) or `s3_pyarrow_live` (Stage 3,
+  real AWS, `RS_TEST_LIVE_S3`), neither of which runs in `hatch run all`. Its
+  wrap site was checked by reading, not by execution.
+  **The filing decision was reversed on measurement, and the reason is the
+  lesson.** This was first filed rather than fixed, on the stated grounds that
+  s3 / sftp / azure were not installable here. That was **wrong**: the probe behind
+  it ran the fixture factories in a bare `python` process, where `INFRA` is
+  unpopulated, and their `pytest.skip("moto/s3fs not installed")` messages were
+  read as missing dependencies rather than a missing session fixture. A PR review
+  challenged the claim, re-measuring settled it, and the item was fixed in the same
+  PR instead. Running a fixture factory outside a pytest session does not tell you
+  what the suite can exercise.
+  **A later round then caught the fix's own defect**, which is why the guard is
+  shaped as it is. The first version asserted the peel had *descended* (`inner is
+  not stream`) and ran that check **before** the BytesIO assertion — so a bare
+  `io.BytesIO`, the canonical SIO-009 violation, peels to itself and would have
+  failed with a message blaming the test helper rather than the backend. It also
+  made "`read()` returns a wrapped stream" an obligation SIO-009 never states.
+  Reordered (contract first) and re-framed as "did not stop on a known wrapper".
+  Surfaced by BK-340's `ReadOnlyHttpBackend` gate audit; shipped with it.
+
+- [x] **BK-340 — `SQLQueryBackend` has no conformance fixture, so no cross-backend rule reaches it**
+  spec: — · effort: M · audience: infra.test
+  `tests/backends/fixtures/registry.py` had no entry for `SQLQueryBackend`, so
+  **nothing in `tests/backends/conformance/` executed against it** — not the
+  capability-gated cells, not the ungated ones. Every cross-backend invariant was
+  asserted for it by nobody, which is how BK-324's round-2 miss survived: a source
+  sweep found the reachable backends, and this one was invisible to the tests and
+  therefore to the sweep.
+  **Shipped:** a `[backend.sqlquery]` family and `[fixture.sqlquery]` entry in the
+  two registry TOMLs, `tests/backends/fixtures/sqlquery.py`, and the two
+  `test_identity.py` by-name classification lanes the custom-backend guide's step 4
+  predicts would fail (they did, and only they did).
+  **The skip set, established rather than discovered.** Measured: 77 cells collected,
+  58 pass, 19 runtime-skip — WRITE 11, DELETE 4, MOVE 2, COPY 2. `ATOMIC_*` never
+  appears as a runtime skip because those lanes are class-filtered, so the fixture
+  is never parametrised onto them at all. `TestBackendRootPath` alone contributes 24
+  of the 77: the BE-029 lane whose defect motivated the item.
+  `test_bk340_sqlquery_is_reachable_and_its_skip_set_is_declared` pins both halves,
+  deriving the skip set from `Capability` rather than listing it beside
+  (DRIFT-RULES Rule 3).
+  **The query mapping is deliberately empty.** Every conformance fixture starts from
+  an empty store and several cells assert the empty-store answer directly
+  (`test_get_folder_info_on_empty_root_does_not_raise` asserts `file_count == 0`), so
+  a pre-seeded mapping fails them. Nothing is lost: content-bearing cells seed via
+  `backend.write` and are WRITE-gated regardless.
+  **The `ReadOnlyHttpBackend` audit the item also asked for found two things.**
+  SIO-009's laziness contract lives in a WRITE-gated class, so the registry's only
+  read-only LAZY_READ declarer never ran it — structural, filed as ID-244. And that
+  cell's `.raw`-only peel terminates on `_ErrorMappingStream`, making its BytesIO
+  assertion vacuous for five of the six backends that run it — fixed here as
+  BUG-244, above. The http half is pinned by `test_read_is_lazy_not_bytesio` across
+  all three transports; both cells now call the single `tests._helpers.peel_to_body`
+  rather than each keeping a copy of the walk, which is what let one copy stay
+  broken while the other was fixed.
+  **Discovery:** the item's own successor. BK-340 closed the "family with no fixture"
+  gate and measured a second gate underneath it — the suite's seeding discipline —
+  which is why the fixture reaches 77 cells and not the whole surface (ID-244).
+
 - [x] **BK-336 — `/fix-pr` should find a finding's siblings, not just the lines it names**
   spec: — · effort: S · audience: contributor.process
   Two statements in `/fix-pr`: one Rules bullet stating the principle, and a
@@ -27,7 +113,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   mode, not a wording, so for a rule spanning backends what matters is which
   backends the tests execute against, not which source lines match a grep. That
   is why BK-324's class survived in `SQLQueryBackend`, which no conformance
-  fixture reaches ([BK-340](BACKLOG.md)).
+  fixture reached at the time (**BK-340**, since shipped — above).
   **The first attempt, reverted in PR #945 as over-specified, is why the entry is
   longer than the change.** It added ~34 lines to `/fix-pr`, including a
   three-row table pairing classes of finding with sweep techniques — pseudo-detail
@@ -200,10 +286,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   store.
   **For a cross-backend rule, a sibling sweep is a coverage question, not a
   grep.** That is the lesson this item earns; it is written down as
-  **BK-336** above, and the two structural holes it exposed are filed as
-  **[BK-340](BACKLOG.md)** (`SQLQueryBackend` has no conformance fixture at all)
-  and **[ID-241](BACKLOG.md)** (the replay hook skips cells by test name even
-  when the cell makes no HTTP call).
+  **BK-336** above, and the two structural holes it exposed were filed as
+  **BK-340** (`SQLQueryBackend` had no conformance fixture at all — since
+  shipped, above) and **[ID-241](BACKLOG.md)** (the replay hook skips cells by
+  test name even when the cell makes no HTTP call).
   **BE-029's boundary is derived, not named.** It binds backends declaring
   `Capability.LIST`; `ReadOnlyHttpBackend` declares none and is correctly outside
   it. Writing "except ReadOnlyHttpBackend" would have reintroduced precisely the

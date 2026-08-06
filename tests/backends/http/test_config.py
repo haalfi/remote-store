@@ -11,6 +11,7 @@ pytest.importorskip("pytest_httpserver", reason="pytest-httpserver not installed
 from remote_store._errors import BackendUnavailable, CapabilityNotSupported, NotFound, PermissionDenied  # noqa: E402
 from remote_store._models import FileInfo  # noqa: E402
 from remote_store.backends._http import ReadOnlyHttpBackend, UrllibTransport  # noqa: E402
+from tests._helpers import KNOWN_STREAM_WRAPPERS, PEEL_STOPPED_ON_WRAPPER, peel_to_body  # noqa: E402
 
 
 def _httpx_installed() -> bool:
@@ -125,6 +126,100 @@ class TestHttpRead:
     def test_read_bytes(self, backend: ReadOnlyHttpBackend) -> None:
         """HTTP-002: read_bytes() returns full content."""
         assert backend.read_bytes("hello.txt") == b"hello world"
+
+    @pytest.mark.spec("SIO-009")
+    @pytest.mark.spec("HTTP-CON-004")
+    @pytest.mark.parametrize("client", ["urllib", "requests", "httpx"])
+    def test_read_is_lazy_not_bytesio(self, httpserver_with_files: HTTPServer, client: str) -> None:
+        """SIO-009 for the one read-only ``LAZY_READ`` backend in the registry.
+
+        The cross-backend SIO-009 cells
+        (``conformance/test_streaming.py::test_read_is_lazy`` and its
+        ``readinto`` sibling) seed with ``backend.write`` and therefore sit in a
+        ``fixture_params(Capability.WRITE)`` class. ``ReadOnlyHttpBackend``
+        declares ``LAZY_READ`` but not ``WRITE``, so it is **structurally
+        excluded** from the only conformance cells that assert the laziness
+        contract — the capability is declared, its contract cited, and nothing
+        executes it for the backend that declares it.
+
+        Neither sibling above catches this: ``test_read_returns_streaming_binary``
+        and ``test_read_supports_chunked_reads`` assert content and chunking,
+        both of which a pre-loaded ``BytesIO`` satisfies identically. Only the
+        ``not isinstance(inner, io.BytesIO)`` shape assertion distinguishes a
+        streamed body from a buffered one.
+
+        Parametrised across all three transports because that is the scope of
+        the claim it backs: ``test_capabilities_are_read_metadata_lazy`` states
+        the flag is truthful "on every transport -- urllib, requests
+        (``stream=True``), and httpx (``iter_bytes``)".
+
+        **The peel must follow ``_inner``, not only ``.raw``.** ``read()``
+        returns an ``_ErrorMappingStream``, which holds the body as ``_inner``
+        and exposes no ``.raw``. A ``.raw``-only walk therefore terminates *on
+        the wrapper*, and ``isinstance(wrapper, io.BytesIO)`` is false whatever
+        the wrapper contains — the assertion passes without ever inspecting the
+        body. Measured chains through ``peel_to_body``: urllib →
+        ``HTTPResponse``, requests → ``_Urllib3StreamAdapter``, httpx →
+        ``_HttpxStreamAdapter``.
+
+        The walk itself is ``tests._helpers.peel_to_body``, shared with the
+        cross-backend cell rather than copied here. The copy is what caused the
+        defect: this cell and ``conformance/test_streaming.py`` each had their
+        own walk, BUG-244 was fixed in one, and the other kept the broken form
+        through a further review round before anyone noticed.
+
+        Found by BK-340's "check ``ReadOnlyHttpBackend`` at the same time"
+        obligation; the shared cell's copy of the blindness was BUG-244, fixed
+        in the same PR. This test remains the HTTP-specific home because that
+        cell is WRITE-gated and cannot reach this backend at all — the
+        structural gap is **ID-244**, still open.
+        """
+        import io
+
+        if client == "requests":
+            pytest.importorskip("requests", reason="requests not installed")
+        if client == "httpx":
+            pytest.importorskip("httpx", reason="httpx not installed")
+
+        b = ReadOnlyHttpBackend(base_url=httpserver_with_files.url_for("/files/"), http_client=client)
+        try:
+            stream = b.read("large.bin")
+            try:
+                inner = peel_to_body(stream)
+                # Contract first: a bare BytesIO peels to itself, so this is the
+                # assertion that must name the backend for it. The guards below
+                # are about the *test* losing its way and must not pre-empt it.
+                assert not isinstance(inner, io.BytesIO), (
+                    f"ReadOnlyHttpBackend({client!r}) declares LAZY_READ but read() "
+                    f"returned a BytesIO-backed stream (peeled to {type(inner).__name__})"
+                )
+                assert not isinstance(inner, KNOWN_STREAM_WRAPPERS), PEEL_STOPPED_ON_WRAPPER
+                # Descent is required *here* though not cross-backend: ``read()``
+                # wraps in ``_ErrorMappingStream`` unconditionally (``_http.py``),
+                # so a peel that moved zero steps means the walk no longer follows
+                # this backend's wrapper — a *new* wrapper type, which
+                # KNOWN_STREAM_WRAPPERS cannot recognise and the BytesIO check
+                # cannot see through. That is BUG-244's shape returning green.
+                # The shared conformance cell rightly omits this: SIO-009 obliges
+                # laziness, not wrapping, and a backend may legitimately hand back
+                # an unwrapped body. This one may not.
+                assert inner is not stream, (
+                    f"peel did not descend for ReadOnlyHttpBackend({client!r}), which always wraps: "
+                    f"read() returned {type(stream).__name__} and the walk stopped on it, so the "
+                    f"BytesIO check above inspected the wrapper. Add the new layer's accessor to "
+                    f"tests._helpers.peel_to_body (BUG-244)."
+                )
+                # SIO-009's second half: the body layer honours the RawIOBase
+                # protocol, which is what makes the stream consumable without a
+                # full materialisation.
+                buf = bytearray(100)
+                n = inner.readinto(buf)  # type: ignore[attr-defined]
+                assert isinstance(n, int), f"readinto() must return int, got {type(n).__name__}"
+                assert n > 0, "readinto() must return > 0 bytes on a non-empty stream"
+            finally:
+                stream.close()
+        finally:
+            b.close()
 
     @pytest.mark.spec("BE-006")
     def test_read_not_found(self, backend: ReadOnlyHttpBackend) -> None:

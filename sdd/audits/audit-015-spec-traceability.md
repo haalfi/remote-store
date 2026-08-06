@@ -229,6 +229,14 @@ for one clause:
 - **SQL-QUERY-061 / SQL-QUERY-063** ride entirely on shared-base coverage via
   `SqlBlobBackend` tests; there is no `sqlquery` conformance fixture and no
   `SqlQueryBackend`-specific close / PRAGMA assertion. The weakest type-(b) rows.
+
+  > **Half of this caveat has since closed.** BK-340 registered the `sqlquery`
+  > conformance fixture, so the "no conformance fixture" clause no longer holds —
+  > 77 cells now execute against it, including `check_health` and the close-posture
+  > lane. The second clause stands: there is still no `SQLQueryBackend`-specific
+  > close / PRAGMA assertion, and the conformance cells that do run reach it
+  > through the shared base rather than asserting either clause directly. The
+  > diagnosis above is left as written; this note records what changed under it.
 - **GLOB-019** is type (b) only when `s3_pyarrow_moto` is live in the conformance run;
   under `pyarrow>=24` / moto-unavailable skips, the native S3-PyArrow glob path is not
   exercised.

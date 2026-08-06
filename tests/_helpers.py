@@ -13,16 +13,20 @@ from typing import TYPE_CHECKING
 # one place (infra/.env). Names kept stable for existing callers.
 from infra._settings import MINIO_ACCESS_KEY as MINIO_KEY
 from infra._settings import MINIO_SECRET_KEY as MINIO_SECRET
+from remote_store._stream import _ErrorMappingStream
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
 __all__ = [
+    "KNOWN_STREAM_WRAPPERS",
     "MINIO_KEY",
     "MINIO_SECRET",
+    "PEEL_STOPPED_ON_WRAPPER",
     "FailingContentReader",
     "close_all_abandoned_event_loops",
     "install_event_loop_tracker",
+    "peel_to_body",
     "pyarrow_ge_24",
     "sweep_tracked_event_loops",
     "uninstall_event_loop_tracker",
@@ -189,3 +193,63 @@ def pyarrow_ge_24() -> bool:
         return int(version("pyarrow").split(".")[0]) >= 24
     except PackageNotFoundError:
         return False
+
+
+# ---------------------------------------------------------------------------
+# SIO-009 stream peeling (BUG-244)
+# ---------------------------------------------------------------------------
+#
+# Lives here, not beside either caller, because the duplication is what caused
+# the defect. The cross-backend cell and the HTTP-specific cell each had their
+# own copy of this walk; BUG-244 was fixed in one and the other kept the broken
+# form through a further review round. One implementation, two importers.
+
+KNOWN_STREAM_WRAPPERS: tuple[type, ...] = (io.BufferedReader, _ErrorMappingStream)
+"""Wrapping layers ``peel_to_body`` knows how to see through.
+
+Terminating on one of these means the walk lost an accessor it is supposed to
+follow, which is the BUG-244 failure mode.
+"""
+
+PEEL_STOPPED_ON_WRAPPER = (
+    "peel terminated on a known wrapping layer instead of the body, so this "
+    "cell inspected the wrapper and would pass for any content underneath it. "
+    "The layer's accessor is no longer reachable from peel_to_body (BUG-244)."
+)
+
+
+def peel_to_body(stream: object) -> object:
+    """Unwrap *stream* down to the object actually producing bytes.
+
+    Two wrapping layers exist and they expose the wrapped object under
+    **different names**, which is the whole reason this helper exists:
+
+    * buffering (``io.BufferedReader``) exposes ``.raw``;
+    * error mapping (``remote_store._stream._ErrorMappingStream``) exposes
+      ``._inner`` and has **no** ``.raw``.
+
+    A ``.raw``-only walk therefore terminates *on* an ``_ErrorMappingStream``,
+    and ``isinstance(wrapper, io.BytesIO)`` is false whatever the wrapper
+    contains — so the SIO-009 laziness assertion passed without ever inspecting
+    a body (BUG-244).
+
+    An **unwrapped** stream is returned unchanged, and that is deliberate: a
+    backend handing back a bare body has nothing to peel, and a bare
+    ``io.BytesIO`` — the exact SIO-009 violation callers look for — must reach
+    the caller's own assertion rather than being intercepted here. Callers
+    therefore assert the BytesIO contract *first* and
+    ``KNOWN_STREAM_WRAPPERS`` second.
+
+    **Bound** (DRIFT-RULES Rule 7): the wrapper guard catches the walk losing an
+    accessor it already knows about. It does **not** detect a *new* wrapper type
+    introduced later — that object is indistinguishable from a body here, and no
+    general test separates the two. Adding a wrapping layer means adding it to
+    ``KNOWN_STREAM_WRAPPERS`` and to the walk below.
+    """
+    while True:
+        if hasattr(stream, "raw"):
+            stream = stream.raw
+        elif hasattr(stream, "_inner"):
+            stream = stream._inner
+        else:
+            return stream

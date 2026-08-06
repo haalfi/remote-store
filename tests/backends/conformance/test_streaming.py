@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from remote_store._capabilities import Capability
+from tests._helpers import KNOWN_STREAM_WRAPPERS, PEEL_STOPPED_ON_WRAPPER, peel_to_body
 from tests.backends.conformance._helpers import _require
 from tests.backends.fixtures import fixture_params
 
@@ -40,15 +41,14 @@ class TestStreamingConformance:
         _require(backend, Capability.LAZY_READ)
         backend.write("lazy_test.bin", b"lazy read test")
         stream = backend.read("lazy_test.bin")
-        # Peel every layer of buffering until we reach a stream with no further
-        # `.raw` attribute. This guards against multi-level wrappers such as
-        # BufferedReader(CustomWrapper(BytesIO(...))).
-        inner = stream
-        while hasattr(inner, "raw"):
-            inner = inner.raw  # type: ignore[union-attr]
+        inner = peel_to_body(stream)
+        # The contract first: a bare BytesIO peels to itself, and this is the
+        # assertion that must name the backend for it. The wrapper guard below
+        # is about the *test* losing its way, so it must not pre-empt this one.
         assert not isinstance(inner, io.BytesIO), (
-            "Backend declares LAZY_READ but read() returned a BytesIO-backed stream"
+            f"Backend declares LAZY_READ but read() returned a BytesIO-backed stream (peeled to {type(inner).__name__})"
         )
+        assert not isinstance(inner, KNOWN_STREAM_WRAPPERS), PEEL_STOPPED_ON_WRAPPER
         assert stream.read() == b"lazy read test"
         stream.close()
 
@@ -88,13 +88,12 @@ class TestStreamingConformance:
         content = b"readinto test data"
         backend.write("readinto_test.bin", content)
         stream = backend.read("readinto_test.bin")
-        # Reach the raw layer for readinto(); BufferedReader handles readinto
-        # at the buffered level, but we want to exercise the raw stream.
-        raw = stream
-        while hasattr(raw, "raw"):
-            raw = raw.raw  # type: ignore[union-attr]
+        # Reach the body for readinto(); BufferedReader handles readinto at the
+        # buffered level, but we want to exercise the stream underneath it.
+        raw = peel_to_body(stream)
+        assert not isinstance(raw, KNOWN_STREAM_WRAPPERS), PEEL_STOPPED_ON_WRAPPER
         buf = bytearray(len(content))
-        n = raw.readinto(buf)
+        n = raw.readinto(buf)  # type: ignore[attr-defined]
         assert isinstance(n, int), f"readinto() must return int, got {type(n).__name__}"
         assert n > 0, "readinto() must return > 0 bytes on a non-empty stream"
         stream.close()

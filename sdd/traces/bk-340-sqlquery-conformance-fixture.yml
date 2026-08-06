@@ -1,0 +1,310 @@
+id: BK-340
+title: "SQLQueryBackend conformance fixture — register it, and establish the skip set deliberately"
+trigger: >-
+  tests/backends/fixtures/registry.py had no entry for SQLQueryBackend, so nothing
+  under tests/backends/conformance/ executed against it — capability-gated or not.
+  Every cross-backend invariant was asserted for it by nobody, which is how BK-324's
+  round-2 root-spelling miss survived a source-wide sweep: the sweep found the sites
+  and no test ran them.
+source_items:
+  - BK-340
+  - BK-324
+audience:
+  - infra.test
+discovery_followups:
+  - BUG-244
+  - ID-244
+  - BK-342
+co_shipped_items:
+  - BUG-244
+expected_ripples:
+  - tests/backends/conformance/test_identity.py
+  - tests/backends/fixtures/test_registry.py
+surprising_ripples:
+  # The ripple-check table has no "fixture registration" trigger, so nothing
+  # anticipated that registering a backend falsifies every artifact asserting
+  # its absence. The first two were found by the original ripple walk; the
+  # last three only after a PR review named two of them and the class was
+  # then swept.
+  - tests/backends/http/test_config.py
+  - tests/backends/sqlquery/test_config.py
+  - scripts/drift_smoke_map.py
+  - scripts/check_spec_marks.py
+  - sdd/specs/003-backend-adapter-contract.md
+review_rounds: 6
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Cross-Artifact Consistency / BK-340"
+        read_type: gate
+        extract: "Register a fixture; the expected skip set is the item, not the registration; also audit ReadOnlyHttpBackend's gates"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Pre-work index"
+        read_type: gate
+        extract: "Anticipate the backend/capability/test-registry rows before touching the registry"
+        outcome: ok
+      - file: tests/backends/fixtures/registry.py
+        section: "BackendFixture, fixtures, fixture_params"
+        read_type: reference
+        extract: "Capability filtering is what decides a fixture's conformance reach; strict_only / conformance_excluded are the two exclusion levers"
+        outcome: ok
+
+  - id: design
+    name: Design
+    steps:
+      - file: tests/backends/fixtures/http.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Precedent for a read-only fixture: it clears handlers and serves 404, i.e.
+          starts from an empty store like every other fixture
+        outcome: ok
+      - file: tests/backends/conformance/test_io.py
+        section: "TestBackendRootPath"
+        read_type: gate
+        extract: >-
+          test_get_folder_info_on_empty_root_does_not_raise asserts file_count == 0,
+          which decided the fixture's query mapping must be empty — a pre-seeded
+          mapping would fail it. The content-bearing cells are WRITE-gated anyway.
+        outcome: ok
+      - file: docs-src/guides/custom-backend-guide.md
+        section: "Registering in the conformance fixture (contributing backends), step 4"
+        read_type: gate
+        extract: >-
+          Predicts exactly which lanes fail for an unclassified family — the two
+          test_identity.py declaration sets. It was right, and only those two failed.
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Guides / Examples (bad -> good), Rule 3"
+        read_type: gate
+        extract: >-
+          Derive the enumeration rather than maintaining a parallel list — decided the
+          skip-set assertion differences against Capability instead of listing node ids
+        outcome: ok
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/fixtures/backends.toml
+        section: "[backend.sqlquery]"
+        read_type: reference
+        extract: >-
+          sqlblob's comment states the rule that settled the posture question: declare
+          what the tested config exercises. Same sqlite:///:memory: substrate, so
+          single_connection.
+        outcome: ok
+      - file: tests/backends/fixtures/fixtures.toml
+        section: "[fixture.sqlquery]"
+        read_type: reference
+        extract: "Stage 1, real-local, sync; module name must equal the fixture key or _load_all cannot import it"
+        outcome: ok
+      - file: tests/backends/fixtures/test_registry.py
+        section: "test_bk289_concurrency_posture_is_declared_and_split"
+        read_type: verify
+        extract: "Pins the single_connection set by value; adding a sql family required updating it"
+        outcome: ok
+
+  - id: verify
+    name: Measure the skip set
+    steps:
+      - file: tests/backends/conformance/
+        section: "(full, -k sqlquery)"
+        read_type: verify
+        extract: >-
+          Measured rather than predicted: 77 cells collected, 58 pass, 19 runtime-skip
+          (WRITE 11, DELETE 4, MOVE 2, COPY 2). ATOMIC_* never appears as a runtime skip
+          because those lanes are class-filtered, so the fixture is never parametrised
+          onto them — the item's predicted skip set was right in substance and wrong in
+          mechanism for one entry.
+        outcome: ok
+      - file: tests/backends/conformance/test_io.py
+        section: "TestBackendRootPath"
+        read_type: verify
+        extract: "24 of the 77 cells are the BE-029 root lane — the defect class that motivated the item"
+        outcome: ok
+
+  - id: audit
+    name: ReadOnlyHttpBackend gate audit
+    steps:
+      - file: src/remote_store/backends/_http.py
+        section: "_CAPABILITIES, list_files, is_folder"
+        read_type: verify
+        extract: >-
+          The LIST absence is a true declaration (the listing methods raise), so the
+          BE-029 lane's LIST gate excludes http correctly and by design
+        outcome: ok
+      - file: tests/backends/conformance/test_streaming.py
+        section: "TestStreamingConformance, SIO-009"
+        read_type: verify
+        extract: >-
+          The finding: both LAZY_READ cells sit in a fixture_params(Capability.WRITE)
+          class and seed via backend.write, so the registry's only read-only LAZY_READ
+          declarer is structurally excluded from the only cells asserting the contract
+          it declares. Filed as ID-244.
+        outcome: ok
+      - file: tests/backends/http/test_config.py
+        section: "test_capabilities_are_read_metadata_lazy"
+        read_type: verify
+        extract: >-
+          Its docstring asserts the behaviour in prose ("a live streamed response body,
+          not a pre-loaded BytesIO, on every transport") while the file's read tests
+          assert only content and chunking — both of which a BytesIO satisfies. The
+          claim was cited everywhere and executed nowhere.
+        outcome: ok
+      - file: src/remote_store/_stream.py
+        section: "_ErrorMappingStream"
+        read_type: verify
+        extract: >-
+          Second finding, and my own miss first: I wrote the new http test with the
+          conformance cell's .raw-only peel and it passed. Probing the actual chain
+          showed the walk terminates ON the wrapper (_ErrorMappingStream holds the body
+          as _inner and exposes no .raw), so the isinstance check never saw a body and
+          my assertion was vacuous. Adding the _inner step reaches HTTPResponse /
+          _Urllib3StreamAdapter / _HttpxStreamAdapter. The same blindness affects five
+          of the six backends running the shared cell (BUG-244). I first filed this
+          rather than fixing it, on a false premise corrected in review — see the
+          review phase below.
+        outcome: ok
+
+  - id: ripple
+    name: Ripple-check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Detailed checklist"
+        read_type: verify
+        extract: "Walk the backend / capability / test-registry rows against the finished diff"
+        outcome: ok
+      - file: tests/backends/sqlquery/test_config.py
+        section: "TestRootPath"
+        read_type: verify
+        extract: >-
+          Not anticipated by the ripple table: its docstring asserted "SQLQueryBackend
+          has no entry in the fixture registry", which this PR made false. Rewritten to
+          state what the per-backend cells still add — the populated store, which the
+          conformance lane cannot reach.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience"
+        read_type: verify
+        extract: >-
+          Derived rule: CHANGELOG required iff an audience entry starts with user.
+          This is infra.test only, so no CHANGELOG entry.
+        outcome: ok
+
+  - id: review
+    name: Review rounds
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-336"
+        read_type: gate
+        extract: >-
+          Round 1 named two stale-absence comments in scripts/. BK-336's rule is to
+          sweep the finding's class, not the lines named, and doing so found three
+          more — including spec 003. The lesson is in how the sweep nearly failed: my
+          first pattern was the wording "no conformance fixture", and the spec says
+          "no fixture-registry entry". Same claim, different words; only a grep for
+          the bare item ID caught it. A sibling sweep is a coverage question, not a
+          grep — which is precisely what BK-336 already says.
+        outcome: ok
+      - file: tests/backends/conformance/test_streaming.py
+        section: "TestStreamingConformance, SIO-009"
+        read_type: verify
+        extract: >-
+          Round 2 refuted the reason I had filed BUG-244 under. I claimed s3/sftp/azure
+          were not installable here; the reviewer said the cells run and pass. Measuring
+          settled it in the reviewer's favour: my evidence was a probe that called the
+          fixture factories from a bare python process, where INFRA is unpopulated, and
+          their pytest.skip("moto/s3fs not installed") messages are about the missing
+          session fixture, not a missing dependency. Under pytest all five run. With the
+          stated reason gone there was no reason to defer, so BUG-244 was fixed in the
+          same PR (peel_to_body + the wrapper guard; 97 passed, 20 skipped).
+          Generalisable: running a fixture factory outside a pytest session tells you
+          nothing about what the suite can exercise.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029 Coverage note"
+        read_type: verify
+        extract: >-
+          Round 2 also caught two defects in my own round-1 fix: I wrote "the whole
+          file-shaped-operation row" when the row is seven ops and conformance reaches
+          four, and the rewrite silently dropped the addressing coverage the previous
+          version credited. Rewriting a spec table from a fresh measurement is how a
+          correction introduces its own errors — the fix pass needed the review as much
+          as the original did.
+        outcome: ok
+      - file: tests/backends/conformance/test_streaming.py
+        section: "peel_to_body, SIO-009 guard"
+        read_type: verify
+        extract: >-
+          Round 3 found the round-2 fix had inverted its own diagnostic. My guard
+          asserted the peel had descended (inner is not stream) and ran BEFORE the
+          BytesIO assertion — but a bare io.BytesIO, the exact violation SIO-009
+          exists to catch, peels to itself, so the canonical failure would have
+          blamed the test helper instead of the backend. It also made "read() returns
+          a wrapped stream" an obligation SIO-009 never states. Reordered so the
+          contract asserts first, and re-framed the guard as "did not terminate on a
+          known wrapper". A guard added to stop a check being vacuous made the check
+          wrong for the one input it most needed to handle.
+        outcome: ok
+      - file: tests/backends/http/test_config.py
+        section: "test_read_is_lazy_not_bytesio"
+        read_type: verify
+        extract: >-
+          Round 4 found I had fixed the shared cell in round 3 and left the identical
+          broken guard in the HTTP sibling — a cell I wrote myself, two files away,
+          with the same defect I had just diagnosed. Third class-miss of this PR
+          (after the sweep pattern that matched wording rather than claim, and the
+          stale reference left by moving an item between backlog files). The root
+          cause was duplication: the two cells each owned a copy of the peel walk, so
+          fixing one could not fix the other. Resolved by hoisting the walk to
+          tests/_helpers.py with both cells importing it, which removes the class
+          rather than its latest instance. BK-336's sweep rule fires on a finding;
+          nothing fires on a fix I generate myself, and that is where these three
+          landed.
+        outcome: ok
+      - file: tests/backends/http/test_config.py
+        section: "test_read_is_lazy_not_bytesio, descent assertion"
+        read_type: verify
+        extract: >-
+          Round 5 found the hoist had *dropped* an assertion rather than replacing
+          it. I removed the descent check from the HTTP cell because round 3 showed
+          it was wrong in the cross-backend cell — but the reason it was wrong there
+          (SIO-009 obliges laziness, not wrapping, so a backend may legitimately
+          return an unwrapped body) does not transfer to a single-backend cell whose
+          read() wraps unconditionally. There, a peel that moves zero steps means a
+          new wrapper type the walk does not follow, which neither the BytesIO check
+          nor KNOWN_STREAM_WRAPPERS can see — BUG-244's shape, green. Restored after
+          the contract assertion, with the backend-specific justification inline.
+          Generalisable: a correction justified cross-backend was applied to a
+          per-backend cell without re-deriving whether its justification held there.
+        outcome: ok
+      - file: tests/backends/fixtures/test_registry.py
+        section: "test_bk289_concurrency_posture_is_declared_and_split docstring"
+        read_type: verify
+        extract: >-
+          Round 6 was run deliberately UNPRIMED — no areas, no prior findings, no
+          mention that five rounds preceded it — and it earned its place: it found a
+          docstring three lines above an inline comment I had updated in the same
+          edit, describing the same set. Rounds 2-5 were all scoped passes aimed at
+          the previous fix; each found something, but a primed reviewer confirms
+          what it is pointed at, and none was pointed here. The measurable lesson
+          for the /ship loop: a sequence of scoped rounds can converge a diff while
+          leaving adjacent surfaces unexamined, so an unprimed round is not
+          interchangeable with another targeted one.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-336"
+        read_type: verify
+        extract: >-
+          Five instances in this PR of one shape — changed a thing, updated one
+          description of it, left a sibling description stale (rounds 1, 3, 4, 5, 6).
+          None was a code defect and all five were caught, so the rate is the signal
+          rather than the severity. Every one arose from a fix I generated, and
+          BK-336's sweep rule attaches to review findings; nothing points a sweep at
+          my own corrections. Recorded here rather than acted on: inventing a
+          process rule from inside the PR that motivated it is how a rule acquires
+          an untested shape. This is BK-336's first post-ship usage data.
+        outcome: ok

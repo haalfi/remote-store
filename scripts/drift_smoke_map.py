@@ -51,10 +51,18 @@ SMOKE_TARGETS: dict[str, list[str]] = {
         "-k",
         "sqlblob",
     ],
-    # sql-query: no conformance fixture exists (SQLQueryBackend is
-    # read-only and not in the conformance carve-out). The per-backend
-    # config test is the smoke surface.
-    "sql-query": ["tests/backends/sqlquery/"],
+    # sql-query: the conformance fixture is registered as ``sqlquery`` (one
+    # word, no underscore — see tests/backends/fixtures/sqlquery.py, BK-340).
+    # Same shape as ``sql`` above. The backend is read-only, so the reached
+    # surface is the capability-independent contract (identity, BE-029 root
+    # spelling, native_path/to_key, resolve, empty listing, close posture);
+    # the WRITE/DELETE/MOVE/COPY lanes are gated out by its capability set.
+    "sql-query": [
+        "tests/backends/sqlquery/",
+        "tests/backends/conformance/",
+        "-k",
+        "sqlquery",
+    ],
     # HTTP adapters: backend tests live at tests/backends/http/ (not
     # tests/ext/). Same target for both `requests` and `httpx` since the
     # backend chooses its transport at construction time.

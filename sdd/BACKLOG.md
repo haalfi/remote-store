@@ -366,16 +366,28 @@ this section carries the work.
 [the file's default](#how-this-file-works), because its items form a dependency
 chain. Position therefore says nothing about importance, and dependencies are
 stated by ID inside each item so re-sequencing cannot silently invalidate them.
-**BK-340 and ID-241 come first**, then ID-207's steps 3 and 4. This is a
+**ID-241 and ID-244 come first**, then ID-207's steps 3 and 4. This is a
 re-sequencing on measured evidence, not the original plan: BK-324 was expected to
 clear the way for ID-207 step 2, and instead supplied four instances of the drift
 this programme exists to detect — none of which step 2 would have caught. BK-340
-and ID-241 are what those four actually exhibited (a rule gated so no fixture ever
-runs it), and ID-207 step 3 is the other half (a citation is not an assertion).
+(shipped), ID-241 and ID-244 are what those four actually exhibited (a rule gated
+so no fixture ever runs it), and ID-207 step 3 is the other half (a citation is
+not an assertion).
 Step 2 keeps its L cost and its ~2.5% reach; it follows rather than leads, and
 ID-207 states the evidence. BK-332, ID-236 and ID-237 are follow-ons that get
 cheaper once the earlier work lands. BK-327 and ID-238 are independent of the
 chain and can be taken at any point; both sit at the section's tail.
+
+**BK-340 shipped and produced ID-244, its own successor in this ordering.**
+Registering the `sqlquery` fixture closed the reachability hole for the *gate*
+mechanism it named (a family with no fixture) and, in doing so, measured a second
+gate underneath it: the conformance suite seeds through `backend.write`, so every
+content-bearing contract sits behind `Capability.WRITE` and no read-only backend
+can reach any of it. That is ID-244, and it is why `sqlquery` reaches 77 cells
+rather than the whole surface. The `ReadOnlyHttpBackend` audit BK-340 also asked
+for found the same gate excluding the registry's only read-only LAZY_READ
+declarer from SIO-009, plus a vacuous assertion in that cell — shipped alongside
+it as [BUG-244](BACKLOG-DONE.md).
 
 On importance, the research doc's designation, which this section adopts rather
 than restates: the two items that build what is actually missing are the authority
@@ -410,26 +422,6 @@ before believing it, because the case that does *not* resolve is the informative
 one — and a hand-counted figure about a growing corpus is stale before the commit
 that writes it lands, so cite the generator instead.
 
-- [ ] **BK-340 — `SQLQueryBackend` has no conformance fixture, so no cross-backend rule reaches it**
-  spec: — · effort: M · audience: infra.test
-  `tests/backends/fixtures/registry.py` has no entry for `SQLQueryBackend`, so
-  **nothing in `tests/backends/conformance/` executes against it** — not the
-  capability-gated cells, not the ungated ones. Every cross-backend invariant is
-  asserted for it by nobody.
-  **This is not hypothetical: it is how BK-324's round-2 miss survived.** The
-  root-spelling class was fixed across eleven sites and declared closed; review
-  round 3 found it still live in `SQLQueryBackend`, three lines from a line that
-  same fix had edited. A source sweep found the other backends because they are
-  reachable; this one was invisible to the tests and therefore to the sweep.
-  Root behaviour is now pinned in `tests/backends/sqlquery/test_config.py`, which
-  is a per-backend patch over a structural hole, not a fix for it.
-  **Why M, not S:** registering a fixture runs the *entire* conformance surface
-  against a read-only query-mapping backend, and the expected skip set — WRITE,
-  DELETE, MOVE, COPY, ATOMIC_* — has to be established deliberately rather than
-  discovered by failure. That sizing is the whole item.
-  **Check `ReadOnlyHttpBackend` at the same time**: it *is* registered, so the
-  question there is whether its gates are right, not whether it is reachable.
-
 - [ ] **ID-241 — Conformance cells that make no HTTP call still skip on a missing cassette**
   spec: — · effort: S · audience: infra.test
   The missing-cassette hook fires **per test name**, regardless of whether the
@@ -450,6 +442,39 @@ that writes it lands, so cite the generator instead.
   **Why ID:** whether the marker belongs on the test, the fixture, or the hook is
   unmade, and the answer decides how much of the replay lane changes.
 
+- [ ] **ID-244 — A read-only backend cannot reach any WRITE-gated contract cell**
+  spec: — · effort: M · audience: infra.test
+  Sibling of ID-241 above, and the same class: a rule gated so no fixture ever
+  runs it. Here the gate is not a cassette but the **seeding discipline** —
+  conformance cells that need data call `backend.write`, so they sit behind
+  `fixture_params(Capability.WRITE)`. Any contract that happens to live in such a
+  class is therefore unreachable for a read-only backend, *including contracts
+  that have nothing to do with writing*.
+  **Measured instance.** SIO-009 (laziness: a LAZY_READ backend must not return a
+  BytesIO-backed stream) lives in `TestStreamingConformance`, a WRITE-gated class.
+  `ReadOnlyHttpBackend` is the registry's **only read-only LAZY_READ declarer** —
+  streaming is the whole justification for its capability set, per
+  `tests/backends/http/test_config.py::test_capabilities_are_read_metadata_lazy` —
+  and it was structurally excluded from the only cells asserting that contract.
+  The two per-backend read tests did not compensate: both assert content and
+  chunking, which a pre-loaded `BytesIO` satisfies identically.
+  Pinned per-backend by BK-340 in `test_read_is_lazy_not_bytesio`; that is a patch
+  over a structural hole, exactly as `tests/backends/sqlquery/test_config.py`'s
+  root cells were before BK-340 registered a fixture.
+  **The same hole is why BK-340's own `sqlquery` fixture reaches only 77 cells.**
+  Its content-bearing surface — read, glob, listing with keys present — is
+  WRITE-gated end to end, so registering the fixture bought the
+  capability-independent contract and nothing else. That was the right scope for
+  BK-340; it is this item's subject.
+  **Why ID:** the fix is a seeding indirection (a per-fixture `seed` hook the
+  cells call instead of `backend.write`), and *where it binds* is unmade — on the
+  fixture, on the helper, or as a capability-neutral rewrite of the affected
+  classes. The answer decides how much of the conformance suite changes, and a
+  hook whose seeded content cannot round-trip (SQLQueryBackend materialises result
+  sets, so `read(k)` never returns the bytes a seeder "wrote") constrains it
+  further: the hook must express *presence*, not content, or the cells that use it
+  must not assert content.
+
 - [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**
   spec: — · effort: L · audience: contributor.tooling
   Research § 9 step 2, the programme's strategic half: a canonical claim space,
@@ -459,7 +484,8 @@ that writes it lands, so cite the generator instead.
   four instances of the drift this programme targets, and a design investigation
   found step 2 would have caught none of them (see the step 2 bullet). What the
   four exhibited was **coverage reachability** — a rule can be gated so no
-  fixture ever runs it, which is BK-340 and ID-241 in this file — and
+  fixture ever runs it, which is ID-241 and ID-244 in this file (and BK-340,
+  shipped) — and
   **citation ≠ assertion**, which is this item's own **step 3**. Both are cheaper than L and
   both have measured instances behind them; step 2 has an L cost, a ~2.5% reach,
   and no instance. Step 2 is not abandoned: after 3 and 4 land, its unresolved
@@ -957,6 +983,36 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
 ---
 
 ## Maintenance / Long-horizon
+
+- [ ] **BK-342 — Adapt `/ship` from PR #949's review evidence**
+  spec: — · effort: M · audience: contributor.process
+  ADR-0033 derived the convergence loop from one delivery. PR #949 is the second,
+  and it disagrees with the first in ways the skill does not currently account for.
+  **This item deliberately records the evidence and withholds a prescription.** The
+  measured lesson of the run is that direction narrows attention, so an item that
+  named the fix would prime whoever picks it up — the same failure, one layer up.
+  Read the trace (`sdd/traces/bk-340-sqlquery-conformance-fixture.yml`) and the PR
+  threads before deciding anything.
+  **What the run produced**, findings per round: 2, 6, 4, 4, 2, 3. Severity fell to
+  zero bugs across the last two rounds while counts held. Rounds 2–5 were scoped
+  passes, each aimed at the previous fix pass; each found something.
+  **Two signals that neither ADR-0033 nor the skill anticipates:**
+  1. Five findings shared one shape — a thing changed, one description of it
+     updated, a sibling description left stale. Every one arose from a *fix the
+     author generated*, not from the original work. BK-336's sweep rule attaches to
+     review findings, so nothing pointed a sweep at any of them.
+  2. Round 6 was run **unprimed** (no areas, no prior findings, no round history) at
+     the user's instruction, after the loop had already passed its soft ceiling. It
+     found a stale docstring three lines above an inline comment the author had
+     edited in the same commit — inside a function four scoped rounds had read. A
+     primed reviewer confirms what it is pointed at; the surface nobody named stayed
+     unexamined through five rounds.
+  **The open question** is what, if anything, `/ship` should change: where the sweep
+  obligation attaches, whether the round sequence should interleave unprimed passes
+  rather than ending on one, whether the ceiling is measuring the right thing, or
+  none of these. n = 2 deliveries. Weigh whether the evidence supports a change at
+  all before designing one, and update ADR-0033 (or supersede it) with whatever the
+  second data point actually licenses.
 
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
   spec: GR-033 · effort: M · audience: user.api
