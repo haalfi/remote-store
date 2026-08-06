@@ -56,10 +56,11 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   (`can_play_response_for` and `Cassette._path`), covered by the existing
   `vcrpy>=8.2,<8.4` minor tripwire and by cells that drive the real stubs end to
   end so a release that stops routing through the wrapped method fails loudly.
-  **Which stubs those are took a review round to get right:** no fixture here
-  replays on aiohttp — every Azure replay fixture injects
-  `AsyncioRequestsTransport` (requests/urllib3 in a thread pool) because vcrpy's
-  aiohttp stub deadlocks on a streamed body. The first cut pinned aiohttp and
+  **Which stubs those are took two review rounds to get right:** no fixture here
+  replays on aiohttp. The sync Azure fixtures ride azure-core's default
+  `RequestsTransport`; the async pair inject `AsyncioRequestsTransport`
+  (requests/urllib3 in a thread pool) because vcrpy's aiohttp stub deadlocks on
+  a streamed body. Either route lands on urllib3. The first cut pinned aiohttp and
   left the async Azure tier's real load-bearing fact — that `Skipped` survives
   the worker-thread → future handoff — unasserted, while telling a maintainer
   reading the pin comment that a stub this repo routed around since 8.1.1 was

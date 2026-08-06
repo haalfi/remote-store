@@ -372,9 +372,10 @@ def _build() -> dict[str, Scope]:
     # for now. Its cassettes *have* been recorded since the GR-READ/WRITE/MUTATE
     # chain, so ``_async_extended_runnable`` no longer excludes it; the guard
     # below is now dormant for graph and stands for the next replay backend
-    # registered before its cassettes exist. That case is the one it was written
-    # for: every selected test would skip, so the scope collects no coverage and
-    # aborts the gremlins baseline (exit 3). Keep the companion exemption in
+    # registered before its cassettes exist. For the reason that case is still
+    # worth excluding — a near-empty baseline rather than the empty one that
+    # produced the original exit 3 — see ``_cassettes_recorded`` above; do not
+    # restate it here. Keep the companion exemption in
     # ``tests/scripts/test_mutate_scopes.py`` in lockstep.
     for backend_name in ("azure", "dafny", "graph", "local", "memory"):
         f = _filter_term(backend_name)

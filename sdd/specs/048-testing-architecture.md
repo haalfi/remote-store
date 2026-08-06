@@ -249,9 +249,13 @@ is reachable, Stage 1 otherwise. Each stage includes all lower stages.
 
 | Stage flag | Fixtures included | Required environment |
 |---|---|---|
-| `--stage=1` | pure, mocked, plus replay (when cassettes present) | none |
+| `--stage=1` | pure, mocked, plus replay | none |
 | `--stage=2` | Stage 1 plus Docker fixtures | Docker daemon reachable |
 | `--stage=3` | Stage 2 plus live fixtures | per-backend live env vars (e.g. `RS_TEST_LIVE_HNS=1`) |
+
+A replay fixture is included at Stage 1 unconditionally — cassette
+availability is not a stage condition. Whether any given *cell* on it
+runs is settled later and per cell, by [TEST-007](#test-007-http-cassette-and-replay-layer).
 
 **Postcondition:** `pytest` with no flags runs Stage 2 when Docker is
 reachable and Stage 1 otherwise; the auto-detection is the same on

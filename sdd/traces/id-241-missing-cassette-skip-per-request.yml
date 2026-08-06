@@ -97,9 +97,13 @@ phases:
         read_type: verify
         extract: >-
           Written and run before the guard existed (collection ImportError, seen
-          to fail). Three cells drive urllib3, aiohttp and httpx end to end so a
-          vcrpy release that stops routing through can_play_response_for fails
-          here rather than silently disarming the guard for one backend.
+          to fail). Transport cells drive the stubs end to end so a vcrpy release
+          that stops routing through can_play_response_for fails here rather than
+          silently disarming the guard for one backend. Retrospectively: the
+          three I wrote were urllib3, aiohttp and httpx, chosen from the fixture
+          names. Round 3 showed aiohttp is the one stub nothing here replays
+          through, and the shipped cells are urllib3, httpx and an executor
+          boundary.
 
   - id: implement
     name: Implement
@@ -240,6 +244,7 @@ expected_ripples:
   - sdd/specs/049-live-recording-architecture.md
 
 surprising_ripples:
+  - pyproject.toml
   - scripts/mutate_scopes.py
   - tests/backends/fixtures/registry.py
   - tests/backends/fixtures/_cassettes.py

@@ -436,8 +436,8 @@ that writes it lands, so cite the generator instead.
 
 - [ ] **ID-244 — A read-only backend cannot reach any WRITE-gated contract cell**
   spec: — · effort: M · audience: infra.test
-  Sibling of ID-241 above, and the same class: a rule gated so no fixture ever
-  runs it. Here the gate is not a cassette but the **seeding discipline** —
+  Sibling of [ID-241](BACKLOG-DONE.md) (shipped), and the same class: a rule
+  gated so no fixture ever runs it. Here the gate is not a cassette but the **seeding discipline** —
   conformance cells that need data call `backend.write`, so they sit behind
   `fixture_params(Capability.WRITE)`. Any contract that happens to live in such a
   class is therefore unreachable for a read-only backend, *including contracts
@@ -501,8 +501,8 @@ that writes it lands, so cite the generator instead.
   four instances of the drift this programme targets, and a design investigation
   found step 2 would have caught none of them (see the step 2 bullet). What the
   four exhibited was **coverage reachability** — a rule can be gated so no
-  fixture ever runs it, which is ID-241 and ID-244 in this file (and BK-340,
-  shipped) — and
+  fixture ever runs it, which is ID-244 in this file (and BK-340 and ID-241,
+  both shipped) — and
   **citation ≠ assertion**, which is this item's own **step 3**. Both are cheaper than L and
   both have measured instances behind them; step 2 has an L cost, a ~2.5% reach,
   and no instance. Step 2 is not abandoned: after 3 and 4 land, its unresolved

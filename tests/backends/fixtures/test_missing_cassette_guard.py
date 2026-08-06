@@ -17,13 +17,14 @@ design rests on and none is visible in the guard's own source:
   exists for.
 
   Which stubs those are is not obvious and is easy to get wrong: **no fixture
-  here replays on aiohttp.** All four Azure replay fixtures inject
-  ``AsyncioRequestsTransport``, which runs ``requests``/urllib3 in a thread
-  pool, because vcrpy's aiohttp stub deadlocks on a streamed body (see
-  ``azure_replay_async.py``). So the stubs that matter are urllib3 (all Azure,
-  sync and async) and httpx (Graph) — and for async Azure the extra hop is a
-  *thread*, not a different stub, which is why the third cell drives the skip
-  across an executor boundary instead.
+  here replays on aiohttp.** The sync Azure fixtures ride azure-core's default
+  ``RequestsTransport``; the async pair inject ``AsyncioRequestsTransport``,
+  which runs ``requests``/urllib3 in a thread pool, because vcrpy's aiohttp
+  stub deadlocks on a streamed body (see ``azure_replay_async.py``). Either
+  route lands on urllib3, so the stubs that matter are urllib3 (all Azure) and
+  httpx (Graph) — and for async Azure the extra hop is a *thread*, not a
+  different stub, which is why the third cell drives the skip across an
+  executor boundary instead.
 * **The skip cannot be swallowed.** Backends map ``except Exception`` into
   library errors — ``AsyncAzureBackend`` was measured turning vcrpy's
   ``CannotOverwriteExistingCassetteException`` into ``RemoteStoreError`` — so a
@@ -59,7 +60,6 @@ import vcr
 from vcr.cassette import Cassette
 from vcr.request import Request as VcrRequest
 
-from tests.backends.fixtures import _cassette_pytest as guard_module
 from tests.backends.fixtures._cassette_pytest import (
     _guarded_cassette_dirs,
     _make_missing_cassette_guard,
@@ -212,13 +212,20 @@ class TestMissingCassetteGuard:
         """
         cassette = _cassette(guarded / "cassettes" / "azure" / "swallow.yaml")
         mapped: Exception | None = None
+        escaped = False
         try:
             cassette.can_play_response_for(_request())
-        except pytest.skip.Exception:
-            pass  # escaped the mapping layer, which is the whole point
+        # `except Exception` comes *first*, matching a real mapping layer, which
+        # has no skip-specific clause. Ordered the other way this cell could
+        # never fail on the pytest-side half: if `Skipped` stopped being
+        # BaseException-only, a leading `except pytest.skip.Exception` would
+        # still intercept it while every backend began swallowing skips.
         except Exception as exc:  # noqa: BLE001 -- stands in for a backend's error mapping
             mapped = exc
+        except pytest.skip.Exception:
+            escaped = True
         assert mapped is None, f"the guard's skip was swallowed as {type(mapped).__name__}"
+        assert escaped, "the guard did not raise at all"
 
     def test_guarded_dirs_are_the_registered_cassette_dirs(self) -> None:
         """The shipped bound, not the one the other cells inject.
@@ -228,17 +235,27 @@ class TestMissingCassetteGuard:
         is otherwise reached but never asserted. The asymmetry is what makes
         that worth a cell: a bound that *narrows* fails loudly, because vcrpy
         raises where a skip was expected, but a bound that *widens* is silent.
-        Point a profile's ``cassette_dir`` at ``tests/backends/cassettes``
-        instead of a per-backend subdirectory and every sibling of a registered
-        cassette becomes skippable, converting real replay failures into green
-        skips.
+        Point a profile's ``cassette_dir`` somewhere broader and every sibling
+        of a registered cassette becomes skippable, converting real replay
+        failures into green skips.
+
+        The assertion is **structural**, against the on-disk layout TEST-007
+        mandates, rather than a set equality against the registry. Recomputing
+        the implementation's own expression and comparing would be tautological:
+        it could only fail if the helper were rewritten to disagree with itself,
+        never on a registry-side widening, which is the direction that matters.
+        The cassettes root is derived from this file's location, so nothing here
+        comes from the code under test.
         """
-        expected = {profile.cassette_dir.resolve() for profile in guard_module._cassette_routing().values()}
-        assert _guarded_cassette_dirs() == expected
-        assert expected, "no cassette profiles registered"
-        # The parent must not be guarded: that is the widening this cannot see otherwise.
-        for parent in {d.parent for d in expected}:
-            assert parent not in _guarded_cassette_dirs()
+        cassettes_root = (Path(__file__).resolve().parent.parent / "cassettes").resolve()
+        guarded = _guarded_cassette_dirs()
+        assert guarded, "no cassette profiles registered"
+        for directory in guarded:
+            assert directory.parent == cassettes_root, (
+                f"{directory} is not a direct child of {cassettes_root}; a guarded directory "
+                "that broad makes every cassette under it skippable"
+            )
+            assert directory.is_dir(), f"{directory} is guarded but does not exist"
 
 
 @pytest.mark.spec("TEST-007")
@@ -248,9 +265,11 @@ class TestGuardCoversEveryReplayTransport:
     Two stubs and one boundary, which is not the same list as "the transports
     vcrpy supports":
 
-    * **urllib3** — every Azure replay fixture, sync *and* async. The async
-      pair inject ``AsyncioRequestsTransport`` (``requests``/urllib3 in a
-      thread pool) because vcrpy's aiohttp stub deadlocks on a streamed body;
+    * **urllib3** — every Azure replay fixture, sync *and* async, by two
+      different routes: the sync pair ride azure-core's default
+      ``RequestsTransport``, while the async pair inject
+      ``AsyncioRequestsTransport`` (``requests``/urllib3 in a thread pool)
+      because vcrpy's aiohttp stub deadlocks on a streamed body;
       ``azure_replay_async.py`` records the measurement and says to re-check
       before removing the shim.
     * **httpx** — ``graph_replay``.
