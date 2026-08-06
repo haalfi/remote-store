@@ -78,9 +78,11 @@ _CASSETTES_ROOT: Path = Path(__file__).resolve().parent.parent / "cassettes"
 
 # All cassette routing derives from the fixture registry: a fixture
 # registered with ``cassette_profile=<PROFILE>`` opts into directory routing,
-# name aliasing, and the scrub config in that one act. A node id carrying no
-# profile-bearing fixture has no cassette. The missing-cassette guard needs no
-# registry lookup at all — it reads the path off the live cassette.
+# name aliasing, the missing-cassette skip, and the scrub config in that one
+# act. A node id carrying no profile-bearing fixture has no cassette. The skip
+# reaches it by the profile's ``cassette_dir`` rather than by its fixture id —
+# the trigger moved from the test name to the request (ID-241), the bound did
+# not move.
 
 
 @functools.cache
@@ -282,6 +284,16 @@ def vcr_config(request: pytest.FixtureRequest, record_mode: str) -> dict[str, An
 # declaration on the test, the fixture, or a roster can state that; only the
 # request can.
 #
+# **Registration still bounds the skip, and must.** The old hook reached only
+# items whose parametrize id carried a registered cassette fixture — a node with
+# no profile got ``None`` back and was left alone. A class-level patch has no
+# such bound, so the guard re-derives it from the registry: it fires only for
+# cassettes living in a registered profile's ``cassette_dir``. Without that, a
+# standalone ``vcr.use_cassette(record_mode="none")`` test anywhere in the suite
+# would silently skip on a cassette its author simply forgot to commit, which is
+# the opposite of what TEST-007 is for — nobody is waiting on a recording
+# session for that file.
+#
 # Two private vcrpy surfaces are load-bearing here, and both are covered by the
 # ``vcrpy`` minor-version tripwire in ``pyproject.toml``:
 #
@@ -290,21 +302,41 @@ def vcr_config(request: pytest.FixtureRequest, record_mode: str) -> dict[str, An
 #   aiohttp (async Azure) and httpx (Graph).
 #   ``test_missing_cassette_guard.py`` drives all three end to end.
 # * ``Cassette._path`` — the cassette file vcrpy resolved. Reading it here is
-#   what lets the guard drop the old node-id → path reconstruction; the guard
-#   asks the cassette rather than recomputing what pytest-recording already
-#   decided.
+#   what lets the guard drop the old node-id → path *reconstruction*; the guard
+#   asks the cassette where it lives rather than recomputing what
+#   pytest-recording already decided, and then checks that answer against the
+#   registered directories.
 
 _GUARD_INSTALLED = "_rs_missing_cassette_guard"
 
 
+def _guarded_cassette_dirs() -> frozenset[Path]:
+    """Resolved ``cassette_dir`` of every registered profile.
+
+    Not computed at install time: ``_cassette_routing`` is populated when the
+    ``tests.backends`` conftest imports the per-fixture modules, which happens
+    after ``pytest_configure``. Called per unplayable request instead — off the
+    hot path, since a playable request returns before reaching it, and
+    ``_cassette_routing`` is itself cached.
+    """
+    return frozenset(profile.cassette_dir.resolve() for profile in _cassette_routing().values())
+
+
 def _make_missing_cassette_guard(
-    original: Callable[[Cassette, Any], bool], rootpath: Path
+    original: Callable[[Cassette, Any], bool],
+    rootpath: Path,
+    guarded_dirs: Callable[[], frozenset[Path]] = _guarded_cassette_dirs,
 ) -> Callable[[Cassette, Any], bool]:
     """Wrap ``Cassette.can_play_response_for`` so an absent cassette skips.
 
-    Skips **only** when the cassette file does not exist. A cassette that is
-    present but cannot serve the request is a stale recording — a real failure,
-    and the guard leaves it alone.
+    Three conditions, all required. The cassette must be **write-protected**
+    (it is being replayed, not recorded); it must live in one of
+    *guarded_dirs*, the registered per-backend cassette directories (a cassette
+    outside them belongs to a test that manages its own recording, and a
+    missing one there is that test's bug, not a gap awaiting a recording
+    session); and the file must be **absent**. A cassette that is present but
+    cannot serve the request is a stale recording — a real failure, and the
+    guard leaves it alone.
 
     The skip is raised, not returned, and ``pytest.skip`` raises ``Skipped``,
     which derives from ``BaseException``. That is deliberate: the guard fires
@@ -319,7 +351,7 @@ def _make_missing_cassette_guard(
         if original(cassette, request):
             return True
         path = Path(cassette._path)
-        if cassette.write_protected and not path.exists():
+        if cassette.write_protected and path.parent.resolve() in guarded_dirs() and not path.exists():
             rel = os.path.relpath(path, rootpath)
             pytest.skip(f"replay cassette missing ({rel}); record with pytest --stage=3 --record")
         return False
@@ -347,6 +379,16 @@ def install_missing_cassette_guard(config: pytest.Config) -> None:
     Idempotent — both the conformance conftest and the sibling
     ``tests/backends/azure/`` deviation conftest call it in their own
     ``pytest_configure``, and only the first wraps.
+
+    **Installing is session-wide; what it guards is not.** The wrap lands on
+    the ``Cassette`` class, so once either conftest loads, it is live for the
+    whole run — but it only ever skips cassettes in a registered profile's
+    ``cassette_dir`` (see ``_make_missing_cassette_guard``), which is the reach
+    the collection hook had. A session that collects neither subtree installs
+    nothing, so a registered cassette replayed in such a session raises vcrpy's
+    exception instead of skipping; that was true of the collection hook too. A
+    replay fixture added outside these two subtrees should call this from its
+    own ``pytest_configure`` rather than rely on a sibling's.
     """
     if config.getoption("--record", default=False):
         return

@@ -192,9 +192,15 @@ class TestAddressing:
 
         Splitting on ``/`` and keeping every truthy segment kept ``"."``,
         producing an address for an item literally named ``.`` under the drive
-        root. These cells live here, not in the conformance suite: the async
-        addressing cells there are skipped on this backend for want of a
-        cassette, so nothing in that suite executes against it.
+        root. This cell was written because nothing in the conformance suite
+        executed against this backend — the async addressing cells there were
+        skipped for want of a cassette they never needed, which ID-241 fixed.
+        They now run on ``graph_replay``, so this is no longer the only cover;
+        it is kept because the conformance fixture is rooted under a
+        ``base_path`` and this one is not, and the bare-root arm is where the
+        defect was. The root-*refusal* cells below are still conformance-
+        unreachable: rejecting a root write costs Graph an HTTP round trip
+        first, so those cells do need a cassette.
         """
         backend = _make()
         assert backend.native_path(".") == backend.native_path("")

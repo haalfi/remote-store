@@ -31,6 +31,7 @@ we agree with ourselves.
 from __future__ import annotations
 
 import asyncio
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -83,8 +84,15 @@ def guarded(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     called from ``pytest_configure``), so these tests apply the same wrapper
     through ``monkeypatch`` instead of installing it globally — the guard under
     test is the identical object either way.
+
+    The guarded directories stand in for the registered profiles' cassette
+    dirs. ``tmp_path / "cassettes" / "azure"`` mirrors the real layout closely
+    enough for the rendered skip message to read like a real one; ``tmp_path``
+    itself is guarded so the transport cells can drop a cassette at the root.
+    ``tmp_path / "unregistered"`` is deliberately *not* guarded.
     """
-    guard = _make_missing_cassette_guard(_pristine(), tmp_path)
+    dirs = frozenset({tmp_path.resolve(), (tmp_path / "cassettes" / "azure").resolve()})
+    guard = _make_missing_cassette_guard(_pristine(), tmp_path, lambda: dirs)
     monkeypatch.setattr(Cassette, "can_play_response_for", guard)
     return tmp_path
 
@@ -100,7 +108,9 @@ class TestMissingCassetteGuard:
             cassette.can_play_response_for(_request())
         message = str(exc_info.value)
         assert "replay cassette missing" in message
-        assert "cassettes/azure/TestFoo.test_bar[azure].yaml" in message
+        # ``os.path.relpath`` renders the native separator, so the expected
+        # string is built the same way rather than spelled with "/".
+        assert os.path.join("cassettes", "azure", "TestFoo.test_bar[azure].yaml") in message
         assert "--stage=3 --record" in message
 
     def test_present_cassette_with_no_match_does_not_skip(self, guarded: Path) -> None:
@@ -142,6 +152,25 @@ class TestMissingCassetteGuard:
         cassette = _cassette(path)
         assert cassette.can_play_response_for(_request()) is True
         assert cassette.play_response(_request())["status"]["code"] == 200
+
+    def test_cassette_outside_the_registered_dirs_is_not_skipped(self, guarded: Path) -> None:
+        """The skip means "a recording is owed", which is only true of registered cassettes.
+
+        A test that manages its own cassette — ``vcr.use_cassette`` with a path
+        of its own choosing, as ``test_httpx_streaming_replay.py`` does — keeps
+        vcrpy's native failure when that file is missing, because no recording
+        session will ever supply it and swallowing it would hide the author's
+        own omission.
+
+        This bound is the one thing the class-level patch does not get for
+        free. The hook it replaced reached a test only through its parametrize
+        id, so an unregistered cassette was never a candidate; the guard has to
+        re-derive that from the profiles' ``cassette_dir`` set.
+        """
+        path = guarded / "unregistered" / "own.yaml"
+        path.parent.mkdir(parents=True)
+        cassette = _cassette(path)
+        assert cassette.can_play_response_for(_request()) is False
 
     def test_skip_is_a_base_exception(self) -> None:
         """``except Exception`` must not be able to swallow the skip.

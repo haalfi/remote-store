@@ -187,7 +187,6 @@ discovery_followups:
   - ID-245
 
 expected_ripples:
-  - sdd/backlogid.json
   - sdd/specs/003-backend-adapter-contract.md
   - sdd/specs/048-testing-architecture.md
   - sdd/specs/049-live-recording-architecture.md

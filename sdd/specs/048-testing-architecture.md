@@ -313,6 +313,12 @@ resolves it over the wire first, so the trigger has to be the request.
 A cassette that *is* present and cannot serve the request is a stale
 recording — a failure, not a skip.
 
+**It is bounded to the registered cassette directories.** The skip means
+"a recording is owed"; that is only true of cassettes belonging to a
+registered replay fixture. A test managing its own cassette outside those
+directories keeps vcrpy's native failure, because a file missing there is
+that test's own bug and no recording session will supply it.
+
 **Implementation choice** (cassette tech, scrubbing rules, async
 pipeline coverage) is specified separately: this spec fixes the
 contract, not the mechanism. See
