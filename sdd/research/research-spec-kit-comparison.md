@@ -124,33 +124,46 @@ designed. The trace corpus records what each piece of work actually read.
 
 ### 3.1 The filter
 
-`hatch run report-trace-outcomes` over the corpus at this branch head:
+`hatch run report-trace-outcomes`, measured at **`4076ed7`**:
 
 | Measure | Value |
 |---|---|
 | Traces | 270 |
-| Steps | 3,834 |
-| Steps carrying an explicit `outcome` | 1,654 (43.1%) |
-| Negative tags | 206 (`misleading` 179, `unclear` 27) |
-| Traces and references carrying them | 110 traces, 109 references |
+| Steps | 3,838 |
+| Steps carrying an explicit `outcome` | 1,655 (43.1%) |
+| Negative tags | 207 (`misleading` 180, `unclear` 27) |
+| Traces and references carrying them | 110 traces, 110 references |
 
 Top-ranked references:
 
 | Total | `misleading` | `unclear` | Reads | `rate` | Reference |
 |---:|---:|---:|---:|---:|---|
-| 22 | 18 | 4 | 235 | 9.4% | `sdd/BACKLOG.md` |
+| 22 | 18 | 4 | 236 | 9.3% | `sdd/BACKLOG.md` ¹ |
 | 10 | 3 | 7 | 287 | 3.5% | `sdd/CLAUDE-REFERENCE.md` |
 | 8 | 7 | 1 | 55 | 14.5% | `src/remote_store/backends/_sftp.py` |
 | 7 | 6 | 1 | 15 | 46.7% | `src/remote_store/backends/_local.py` |
-| 6 | 6 | 0 | 77 | 7.8% | `sdd/BACKLOG-DONE.md` |
+| 6 | 6 | 0 | 78 | 7.7% | `sdd/BACKLOG-DONE.md` ¹ |
 
-**These counts are exact and already perishable.** They follow the precedent set
+¹ Two halves of one artifact — `BACKLOG.md` drains into `BACKLOG-DONE.md`, so
+the combined signal is **28**. See bound 1 below.
+
+**These counts are exact and already perishable, and the commit is stamped above
+because this document has now gone stale twice on itself** — once when the branch
+rebased, once when a review-fix commit added tags to the very trace being counted.
+Both were caught by a reader, not by the table. They follow the precedent set
 by [research § 5 finding
 7](research-inconsistency-detection-multi-artifact.md): a dated measurement,
-with the generated report named as the successor SSoT. Re-run the report rather
-than trusting the table. This document has already proved the point on itself:
-the first draft's figures were measured one commit earlier and were stale by the
-time the branch rebased.
+with the generated report named as the successor SSoT. **Re-run the report and
+compare against the stamped commit rather than trusting these figures** — that
+comparison is the only thing that makes the staleness visible, which is the same
+argument § 4.1 makes for recording corpus totals at each release.
+
+**The stamp is what stops the regress.** This document's own trace is in the
+corpus it measures, so every commit that edits the trace changes the figures —
+including the commit that corrects them. An unstamped table is therefore false on
+arrival and there is no commit at which it is not; a stamped one is a fact about
+a named ref, which stays true and merely gets older. Read the figures as
+"the corpus at `4076ed7`", never as "the corpus now".
 
 **Three bounds the report documents, which this table must be read under**
 ([Rule 7](../DRIFT-RULES.md#miss-rate) — the tool states them, so citing the
@@ -257,25 +270,49 @@ rate, not the calendar, so the TLA+ six-month analogy ID-238 cites is rejected a
 the mechanism even though it supplies the pattern.
 
 What invalidates the report is merged traces. The repo's only recurring, ticketed
-checkpoint downstream of merged traces is a release, which the CHANGELOG dates
-show running at roughly two-week intervals.
+checkpoint downstream of merged traces is a release.
 
 **The growth rate is re-derived here, not carried forward.** ID-238's body quoted
 BK-330's "roughly +3 negative tags per merged PR" and explicitly said to
 re-measure rather than trust it. Measuring the corpus at the refs themselves:
 `83e22a3` (BK-330's last in-review point) carries 193 negative tags over 260
 traces, and `73d4079` carries 205 over 269, across the eight pull requests
-#944–#951. That is about **+1.5 negative tags and +1.1 traces per merged PR** —
-the trace rate holds, and the tag rate is roughly *half* what BK-330 measured.
-The decision survives the correction: eight PRs per release interval still moves
-the corpus by ~12 tags against a base of 206, which is enough for the ranking to
-shift.
+#944–#951.
+
+| Metric | BK-330's figure | Re-derived |
+|---|---:|---:|
+| Negative tags per merged PR | ~3 | **~1.5** |
+| Traces per merged PR | ~1 | **~1.1** |
+
+The trace rate holds; the tag rate is roughly *half* what BK-330 measured.
+
+**The per-release figure is a separate measurement, and the obvious shortcut is
+wrong.** Those eight PRs span three days (#944 merged 2026-08-04, #951 on
+2026-08-07), so that window is the *measurement* window, not a release interval.
+Measured separately: CHANGELOG release dates give intervals of 4 to 18 days,
+median ~10, and merged commits per interval over the last three are **0**
+(0.29.0 → 0.29.1, a genuinely quiet 17 days), **24** (0.29.1 → 0.30.0, 10 days),
+and **27** (0.30.0 → today, 19 days and still open).
+
+So a release fires on anywhere from 0 to ~27 PRs, or roughly 0 to 40 negative
+tags at the re-derived rate. The decision survives, and the range is a better
+argument for it than the point estimate was: a busy interval moves the ranking
+comfortably, and a quiet one moves it not at all — which is exactly what bound 1
+below is for, and why the totals have to be recorded rather than eyeballed.
 
 So: **`CONTRIBUTING.md` § Release Phase 0 gains one step** — run the report,
 record the corpus totals, and record a decision (act / defer / accept) as a
 backlog entry. The ticket half is what the ID-150 pattern exists to enforce:
 `sdd/formal/README.md` notes that "a calendar without a ticket is the same as no
 calendar."
+
+**The ticket is pinned, not merely required.** ID-150 works because
+`formal/README.md` names the ID, so the next reader can find the previous
+decision instead of grepping for a phrase; a step that says only "record a
+backlog entry" keeps the ticket and drops the pin. So the first revisit is
+tracked as **ID-249**, it lives in `BACKLOG.md` as `[ ]` (a scheduled decision is
+pending work, not completed work), and each revisit names its successor's ID on
+close — the same self-renewing chain ID-150 runs.
 
 **Bound 1 — the cadence proxy, and its mitigation.** A release is a *proxy* for
 corpus growth, not the growth itself, so a lengthening cadence degrades the
@@ -290,9 +327,23 @@ never a gate.
 absolute count, which § 3.1's bound 2 says measures exposure. At 22 against 10
 for the runner-up, that phrase resolves to `sdd/BACKLOG.md` for many releases
 running, while a high-`rate`, low-`reads` document never reaches the checklist.
-So the step selects the top-ranked row **plus any row whose `rate` is an outlier
-against its `reads`**, which is what the report's own "read them together"
-instruction asks of a reader.
+
+So the step selects the top-ranked row **plus any row with `rate` at least twice
+the top row's `rate` and `reads` ≥ 20**. That threshold is stated numerically on
+purpose: the report computes no dispersion, no baseline and no outlier flag, so
+"is an outlier" would have left the second selector undefined, and an undefined
+second selector collapses to the defined first one — reinstating the very
+under-selection this bound exists to prevent. Against § 3.1's table it selects
+`_sftp.py` (14.5% over 55 reads) and excludes `_local.py` (46.7% but only 15
+reads, where one tag swings the figure by seven points).
+
+**The threshold is a judgement pinned here, not a derived quantity**, and it is
+in mild tension with the instrument: the module docstring says `rate` "ranks
+poorly across rows", so comparing rows on it is exactly what the tool cautions
+about. The defence is that the comparison is used to *widen* a selection rather
+than to order one, and that the `reads` floor removes the small-denominator rows
+the caution is really about. A reader who finds the threshold selecting noise
+should change it and say so, rather than treat it as measured.
 
 This settles BK-330's [Rule 6](../DRIFT-RULES.md#tolerated) register entry: the
 report is tolerated because it now has a named consumer. The register's **owner
@@ -315,11 +366,13 @@ restated elsewhere — so `BACKLOG.md` cites `CLAUDE.md` § Audits as the siblin
 precedent rather than reproducing its wording.
 
 **Measurable prediction.** Re-run the report after roughly 20 merged PRs.
-`BACKLOG.md`'s negative tags per 100 reads should fall from 9.4, and the residue
+`BACKLOG.md`'s negative tags per 100 reads should fall from 9.3, and the residue
 should shift from wrong prescriptions toward wrong diagnoses, which is a rarer
 and more expensive failure. If neither moves, the rule did not change behaviour
 and should be reconsidered rather than defended — § 4.1's trigger is what causes
-that re-measurement to actually happen.
+that re-measurement to actually happen. At the velocity measured in § 4.1,
+20 merged PRs is about a week, so the check will usually fall inside a single
+release interval rather than spanning several.
 
 **Check this confound before believing either result.** The predicted figure is
 `rate`, whose denominator is coverage-dependent: `reads` counts every citing
@@ -339,3 +392,13 @@ mechanisms behave in practice are inferences from their prompts. That is
 sufficient for the adopt/reject decisions in § 3.3, which turn on our evidence
 rather than on theirs, and insufficient for any claim about how well spec-kit
 works for its own users.
+
+**"Presumed stale" is a default chosen from the failures, not from a base rate.**
+§ 3.2 measures the prescriptions that *did* go wrong; it does not measure how
+many prescriptions were still correct at implementation time, nor the interval
+over which staleness sets in. So the evidence establishes that the failure is
+common enough to be the top-ranked reference's dominant shape, and does not
+establish that most prescriptions rot. A reader who thinks the default costs more
+attention than it saves is disagreeing with an unmeasured quantity, not with the
+data — and § 4.2's re-measurement is the cheaper test, since a rule that changes
+nothing shows up there first.

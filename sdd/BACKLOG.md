@@ -261,6 +261,31 @@ and the highest ID already in this file, then take the next integer. Run
   filters. Surfaced by the PR #944 review, which noted the diagnosis had been
   recorded in that PR's trace and filed nowhere.
 
+- [ ] **ID-249 — Trace-outcome report revisit at the next release**
+  spec: — · effort: S · audience: contributor.process
+  First revisit ticket for the release-anchored trigger ID-238 shipped. Per
+  [`CONTRIBUTING.md` § Release](../CONTRIBUTING.md#release) Phase 0, each release
+  reads `hatch run report-trace-outcomes` and closes the open revisit ticket.
+  This item is the pin that makes the ticket findable — the half of the ID-150
+  pattern that "record a backlog entry" alone drops.
+  **The pin lives here, not in the checklist.** `CONTRIBUTING.md` is a published
+  surface, so [CONTENT-RULES Rules 1 and 5](CONTENT-RULES.md#rules) bar a tracker
+  ID from it (`check_no_tracker_refs` enforces this, and caught the first attempt).
+  The checklist therefore describes the behaviour and points here; this file is
+  the single place that says *which* ticket is open — the same split
+  `sdd/formal/README.md` uses to pin ID-150.
+  **Record at the revisit:** the corpus totals (the baseline the following
+  release differences against — the report keeps no history); the references
+  selected (top-ranked row, plus any row with `rate` ≥ 2× the top row's at
+  `reads` ≥ 20); and per selected reference one of **act** (file work against
+  it), **defer** (leave it, say why), or **accept** (the tags are exposure, not a
+  defect).
+  **Baseline to difference against**, measured at `4076ed7`: 270 traces, 207
+  negative tags, `sdd/BACKLOG.md` top-ranked at 22 over 236 reads (9.3%).
+  **Exit criteria:** decision logged here, then the successor ticket opened and
+  its ID named in this item's close note. A calendar without a ticket is the same
+  as no calendar; a ticket without a successor is a calendar that runs once.
+
 - [ ] **ID-248 — Closing a backlog item reaches no row that finds the items citing it**
   spec: — · effort: S · audience: contributor.process
   The [Pre-work index](CLAUDE-REFERENCE.md#pre-work-index)'s **Backlog item
@@ -294,9 +319,14 @@ and the highest ID already in this file, then take the next integer. Run
   **Distinct from ID-246**, which is the nearest neighbour and the one most likely
   to be mistaken for this. ID-246 catches a tracker ID that **resolves nowhere**;
   this catches one that resolves perfectly well while the sentence around it
-  asserts something the close falsified. ID-246's proposed inverted pass would
-  pass cleanly on both instances measured here, because both IDs resolve — so
-  neither item subsumes the other, and the fix shapes do not share a mechanism.
+  asserts something the close falsified. ID-246's proposed inverted pass would run
+  clean on **instances 1 to 3**, because the ID resolves in every one — so neither
+  item subsumes the other, and the fix shapes do not share a mechanism.
+  **Instance 4 is the contested member**, and it is contested in ID-246's
+  direction rather than this one: the *referent* was destroyed, which is closer to
+  a dangling reference. It still is not ID-246's case, because the ID itself keeps
+  resolving and ID-246's pass keys on the ID. Which item should own that shape is
+  the one genuine overlap to settle when either is picked up.
   Also distinct from **BK-337**, scoped to authority docs' restating copies in
   `.claude/**`, and from **BK-334**'s `hatch` aliases — different trigger,
   different target set. This one is `sdd/BACKLOG*.md` internal.

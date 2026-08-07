@@ -20,14 +20,21 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   kept — each revisit tracked as a backlog entry, because "a calendar without a
   ticket is the same as no calendar". What invalidates the report is merged
   traces; a release is the repo's only recurring ticketed checkpoint downstream of
-  those, running at roughly two-week intervals per the CHANGELOG dates.
+  those.
   **The growth rate was re-derived, not inherited.** This item's own body quoted
   BK-330's "~+3 negative tags per merged PR" and said to re-measure rather than
   trust it, so: `83e22a3` carries 193 negative tags over 260 traces, `73d4079`
   carries 205 over 269, across eight merged PRs (#944–#951). That is **~+1.5 tags
   and ~+1.1 traces per merged PR** — the trace rate holds, the tag rate is about
-  half BK-330's. The decision survives: eight PRs per release interval still moves
-  the corpus ~12 tags against a base of 206.
+  half BK-330's.
+  **The per-release figure is a second measurement, and the shortcut was wrong.**
+  Those eight PRs span three days, so that window is the *measurement* window, not
+  a release interval. Measured separately: CHANGELOG intervals run 4–18 days
+  (median ~10), and merged commits per interval over the last three are **0**, **24**
+  and **27** (the last still open). So a release fires on 0 to ~27 PRs, or 0 to ~40
+  tags. The decision survives, and the range argues for it better than a point
+  estimate did — a quiet interval moves the ranking not at all, which is what
+  bound 1 exists for.
   **Bound 1 — cadence proxy** ([Rule 7](DRIFT-RULES.md#miss-rate)): a release is a
   *proxy* for corpus growth, not the growth itself, so a lengthening cadence
   degrades the trigger silently. **The mitigation is built, not asserted** — the
@@ -38,7 +45,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   report documents as measuring exposure rather than failure rate. "Top-ranked"
   alone resolves to `sdd/BACKLOG.md` for many releases running (22 against 10 for
   the runner-up) while a high-`rate`, low-`reads` document never surfaces, so the
-  step selects the top row **plus any `rate` outlier**.
+  step selects the top row **plus any row with `rate` ≥ 2× the top row's at
+  `reads` ≥ 20**. The threshold is numeric because the report computes no
+  dispersion or outlier flag, and an undefined second selector collapses to the
+  defined first one; it is a pinned judgement, not a derived quantity.
+  **The ticket is pinned too.** ID-150 works because `formal/README.md` names the
+  ID; "record a backlog entry" keeps the ticket and drops the pin. First revisit
+  is **ID-249**, `[ ]` in `BACKLOG.md`, each revisit naming its successor on close.
   **This settles BK-330's [Rule 6](DRIFT-RULES.md#tolerated) register entry**,
   which named this item as its owner. The standing owner is now the **Phase 0
   checklist step**, not this closed item: an owner must be answerable the next
@@ -56,9 +69,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   spec: — · effort: S · audience: contributor.process
   Diagnosed by the first reading of BK-330's report
   ([research § 3.2](research/research-spec-kit-comparison.md)). `sdd/BACKLOG.md`
-  ranks first in the corpus for negative outcome tags (22 across 20 items, 235
-  reads; 28 counting the `BACKLOG-DONE.md` half the report's drain-file bound
-  says belongs with it). Reading the extracts rather than the count: ~11 are a genuine defect in
+  ranks first in the corpus for negative outcome tags (22 across 20 items, 236
+  reads at `4076ed7`; 28 counting the `BACKLOG-DONE.md` half the report's
+  drain-file bound says belongs with it). Reading the extracts rather than the count: ~11 are a genuine defect in
   the item, all one shape — the item's **prescription or premise** was wrong by
   the time someone implemented it. BK-331 ("trusting the item body over the
   cross-reference would have produced a wrong fix"), BK-291 (prescribed fix half
@@ -81,7 +94,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   7](DRIFT-RULES.md#mandatory-path). Recorded rather than assumed, per Rule 5.
   **Measurable prediction, and the trigger that will test it:** re-run the report
   after ~20 merged PRs. `BACKLOG.md`'s negative tags per 100 reads should fall
-  from 9.4, with the residue shifting from wrong prescriptions toward wrong
+  from 9.3, with the residue shifting from wrong prescriptions toward wrong
   diagnoses. **Co-report tag coverage when checking it** — that figure is `rate`,
   whose denominator counts every citing step while only 43.1% carry an `outcome`,
   so a shift in tagging discipline (which shipping a rule about backlog items may

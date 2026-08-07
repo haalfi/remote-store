@@ -15,9 +15,10 @@ co_shipped_items:
   - BK-343
 discovery_followups:
   - ID-248
+  - ID-249
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient on the external comparison
@@ -212,3 +213,46 @@ phases:
           distinct from the cited reads in `phases`, so listing them there repeats
           the error one field over. The genuinely unanticipated thing is already
           recorded as the `unclear` on the Pre-work index step plus ID-248
+  - id: review_2
+    name: PR review round 2
+    steps:
+      - file: sdd/research/research-spec-kit-comparison.md
+        section: "3.1 The filter"
+        read_type: verify
+        extract: >-
+          The measurement table went stale a *second* time, and by my own hand:
+          round 1's fix commit added a `misleading` tag to this very trace, so the
+          head total was 207 not 206, reads 236 not 235, rate 9.3% not 9.4% — and
+          9.4 was the published baseline for BK-343's prediction. Both stalings
+          were caught by a reader, never by the artifact. Fixed the class rather
+          than the row: the table now stamps the commit it was measured at, so the
+          next drift is detectable by comparison instead of by suspicion
+      - file: CHANGELOG.md
+        section: "(release headings)"
+        read_type: verify
+        extract: >-
+          "Eight PRs per release interval" reused the measurement window as if it
+          were a release interval; #944 to #951 spans three days. Re-measured:
+          release intervals run 4-18 days (median ~10) and carry 0, 24 and 27
+          merged commits over the last three. The conclusion strengthened and the
+          derivation was wrong, which is the same reuse-without-re-derivation
+          BK-343 exists to stop, committed by the PR shipping it
+        outcome: misleading
+      - file: sdd/formal/README.md
+        section: "3 (CI informational / revisit cadence), ID-150"
+        read_type: gate
+        extract: >-
+          Re-read for the half round 1 missed. ID-150 works because the naming doc
+          pins the *ID*, not merely because a ticket exists; "record a backlog
+          entry" kept the ticket and dropped the pin, leaving the next release no
+          way to find the previous decision. Filed ID-249 as the first revisit
+          ticket, `[ ]` in BACKLOG.md, each revisit naming its successor on close
+      - file: CONTRIBUTING.md
+        section: "Authoritative Document Format / Scope"
+        read_type: gate
+        extract: >-
+          Checked the review question about `BACKLOG.md` § How this file works not
+          matching the authoritative-document format. The Scope line names
+          `BACKLOG.md` in its explicit exclusion list, so the format does not
+          govern it and adding a Rules section would conform it to a format that
+          excludes it. Declined with that evidence rather than applied
