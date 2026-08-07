@@ -94,7 +94,7 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Lint / CI Completeness
 
-- [ ] **BK-343 — BE-021's absent-container rule has no registry-driven gate, so a new backend is silently exempt**
+- [ ] **BK-345 — BE-021's absent-container rule has no registry-driven gate, so a new backend is silently exempt**
   spec: BE-021 · effort: M · audience: infra.test
   The rule binds every backend that can delete and whose container can be
   absent, and it is verified by six hand-written per-backend suites
@@ -366,7 +366,10 @@ and the highest ID already in this file, then take the next integer. Run
   Third delivery under ADR-0033, and the first to run the ADR-0034 machinery.
   **This item records the evidence and withholds a prescription**, for the reason
   BK-342 gave and proved: direction narrows attention, so the design is chosen
-  against the evidence, with the user, before anything is written. BK-342 also
+  against the evidence, with the user, before anything is written. The
+  [Item authority](#how-this-file-works) rule makes every prescription advisory;
+  this item carries none to be stale, which is the stronger form of the same
+  posture and the right one when the design question is still open. BK-342 also
   anticipated this item by name — it split what n = 2 licensed from what it
   guessed, and said the third delivery should prune what does not pay. Some of
   what follows is that pruning data.
