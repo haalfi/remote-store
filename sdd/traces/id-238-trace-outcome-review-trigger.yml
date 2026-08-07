@@ -18,7 +18,7 @@ discovery_followups:
   - ID-249
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 3
+review_rounds: 4
 phases:
   - id: orient
     name: Orient on the external comparison
@@ -288,8 +288,10 @@ phases:
           clearing the reads floor, so the second selector selected nothing and
           reinstated the under-selection it was written to prevent — and the worked
           example claimed it selected `_sftp.py`, which the arithmetic contradicts.
-          Refitted to 1.5x (bar 14.0%, selects `_sftp.py` at 14.5%) and labelled as
-          fitted to one table rather than derived
+          Refitted to 1.5x (bar 14.0%) and labelled as fitted to one table. Round 4
+          then caught that the refit named only `_sftp.py` because it was judged
+          against the doc's five-row excerpt: the full report at `4076ed7` selects
+          three rows, and the two omitted ones outrank the named one
         outcome: misleading
       - file: sdd/BACKLOG-DONE.md
         section: "(item) BK-250, (item) BK-343"
@@ -300,3 +302,37 @@ phases:
           at BK-250 by item ID. This is BK-343's own defect class committed by
           BK-343's entry, and the second line-reference instance in this PR
         outcome: misleading
+  - id: review_4
+    name: PR review round 4 (terminal unprimed)
+    steps:
+      - file: scripts/report_trace_outcomes.py
+        section: "(generated report, full ranking at 4076ed7)"
+        read_type: verify
+        extract: >-
+          Round 3's refitted 1.5x threshold was validated against the research
+          doc's five-row excerpt instead of the report it summarises. The full
+          ranking has three rows clearing `reads` >= 20 at `rate` >= 13.95% —
+          `CONTRIBUTING.md` (15.6%/32) and spec 029 (15.4%/26) alongside
+          `_sftp.py` (14.5%/55) — and the two omitted ones rank higher than the
+          named one. Third instance in this PR of concluding from a truncated view
+          of an instrument, after the report's unread bounds and the shallow clone;
+          recorded in the doc as the one recurring defect worth generalising from
+        outcome: misleading
+      - file: sdd/research/research-spec-kit-comparison.md
+        section: "3.2 (exemplar list)"
+        read_type: verify
+        extract: >-
+          BUG-220's quoted extract is filed against `_local.py`, not `BACKLOG.md` —
+          the same wrong-row error round 3 fixed for BUG-221 and left in its
+          sibling. Fixing the named instance rather than the class is what the
+          fix-pr sweep rule exists to prevent, and it failed here. Every remaining
+          exemplar was then checked individually against its filing row
+        outcome: misleading
+      - file: CHANGELOG.md
+        section: "(release headings, full history)"
+        read_type: verify
+        extract: >-
+          The 4-18 day interval range holds only over v0.23.0 onward; earlier
+          history carries same-day and one-day releases. Window now stated in both
+          the research doc and the DONE entry — an unstated measurement window is
+          the same class as the shallow clone one round earlier

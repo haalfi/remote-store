@@ -34,7 +34,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   starts 2026-07-13), so a pre-graft interval returns zero because the history is
   absent, not because it was quiet; an earlier draft read one such zero as "a
   genuinely quiet 17 days". What this clone supports: CHANGELOG intervals of 4–18
-  days (median ~10, in-file so unaffected), and **21** merged commits for
+  days (median ~10) **over v0.23.0 → v0.30.0** — the window is stated because
+  earlier history released far faster, with same-day intervals — and **21** merged commits for
   v0.30.0 → HEAD (`git rev-list --count --first-parent 7931c7d..origin/master`,
   19 days and open). Earlier intervals are not derivable here. One interval at 21
   PRs is ~30 tags against a base of 207 — enough for the ranking to move, which is
@@ -56,9 +57,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   dispersion or outlier flag, and an undefined second selector collapses to the
   defined first one. **Fitted, and flagged as such**: a first draft used 2×, which
   at 9.3% sets the bar at 18.6% — above every row clearing the `reads` floor, so
-  the selector would have shipped inert. At 1.5× the bar is 14.0% and it selects
-  `_sftp.py` (14.5% over 55 reads). Re-check it when the ranking shifts rather
-  than inheriting it.
+  the selector would have shipped inert. At 1.5× the bar is 14.0% and, against the
+  **full** report at `4076ed7`, it selects three rows: `CONTRIBUTING.md`
+  (15.6%/32), spec 029 (15.4%/26) and `_sftp.py` (14.5%/55). Two lie outside the
+  research doc's top-five excerpt, which is the selector earning its place — and a
+  draft that named only `_sftp.py` had been fitted against that excerpt rather
+  than the whole report. Re-check when the ranking shifts rather than inheriting.
   **The ticket is pinned too.** ID-150 works because `formal/README.md` names the
   ID; "record a backlog entry" keeps the ticket and drops the pin. First revisit
   is **ID-249**, `[ ]` in `BACKLOG.md`, each revisit naming its successor on close.
@@ -87,8 +91,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   cross-reference would have produced a wrong fix"), BK-291 (prescribed fix half
   wrong on Windows), BK-269 (asserted a CI practice that did not exist), BK-272
   (cited a `pyproject.toml` line that had moved). Every exemplar is a tag filed
-  against `BACKLOG.md` itself; an earlier draft listed BUG-221, whose tag is filed
-  against `_local.py` — a true observation about an item, counted in the wrong row.
+  against `BACKLOG.md` itself, checked one by one; two earlier drafts listed
+  BUG-221 and BUG-220, both filed against `_local.py` — true observations about an
+  item, recorded in the row of the file the reader was in, which is the
+  attribution difficulty the report's own drain-file bound describes.
   Shipped as an **Item authority** rule in
   [§ How this file works](BACKLOG.md#how-this-file-works): diagnosis is durable,
   prescription is advisory and presumed stale, re-derive before acting and correct

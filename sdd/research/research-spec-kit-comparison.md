@@ -206,21 +206,22 @@ implemented**:
 - BK-269: the item said "install hatch in the job, as the publish/drift jobs
   already do". No CI job used hatch.
 - BK-324 facet 3: "neither half of it survived checking."
-- BUG-220: "The BACKLOG recipe under-specified: it reproduces 0/20 with SHORT
-  path components."
 - BK-272: the item cited `pyproject.toml:256` for a target that had moved to
   `:288` — a stale line reference, the same class as the one this document
   committed against `BACKLOG-DONE.md` and had corrected in review.
 - BK-271: the item's framing and line references described work that had already
   happened.
 
-Every exemplar above is a tag filed **against `sdd/BACKLOG.md`**, which is what
-the "~11 of 22" claim requires. An earlier draft listed BUG-221 ("as written is
-NOT reproducible") here, and that tag is filed against
-`src/remote_store/backends/_local.py` — a true observation about a backlog item,
-counted in the wrong row. It is dropped rather than reassigned; the count is
-unaffected, since re-reading the 22 against the criterion yields 11 to 14
-depending on how strictly "prescription" is drawn.
+**Every exemplar above is a tag filed against `sdd/BACKLOG.md`, and each was
+checked individually rather than by recognising the item name.** Two earlier
+drafts failed that check in the same way: BUG-221 ("as written is NOT
+reproducible") and BUG-220 ("the BACKLOG recipe under-specified") are both filed
+against `src/remote_store/backends/_local.py`. Both are true observations *about*
+a backlog item, recorded in the row of the file the reader was in at the time —
+which is exactly the attribution the report's drain-file bound warns is hard to
+read. They are dropped rather than reassigned. The count is unaffected:
+re-reading the 22 against the criterion yields 11 to 14 depending on how strictly
+"prescription" is drawn.
 
 The other high-ranked rows are not process wounds. `CLAUDE-REFERENCE.md` is
 mostly `unclear` tags recording ripple rows that did not anticipate a case, and
@@ -315,9 +316,13 @@ What this clone can actually support:
 
 | Quantity | Value | Source |
 |---|---|---|
-| Release intervals | 4–18 days, median ~10 | `CHANGELOG.md` dates, which are in-file and unaffected |
+| Release intervals, v0.23.0 → v0.30.0 | 4–18 days, median ~10 | `CHANGELOG.md` dates, which are in-file and unaffected |
 | Merged commits, v0.30.0 → HEAD | **21** over 19 days, interval still open | `git rev-list --count --first-parent 7931c7d..origin/master` |
 | Earlier intervals | not derivable | before the graft point |
+
+The interval window is stated because it matters: before v0.23.0 the project
+released far faster, with several same-day and one-day intervals, so the median
+over all history is not the median of the current regime.
 
 So the one fully measurable interval carries 21 merged commits, or roughly 30
 negative tags at the re-derived rate, against a base of 207. That is comfortably
@@ -361,15 +366,31 @@ outlier" would have left the second selector undefined, and an undefined second
 selector collapses to the defined first one — reinstating the very
 under-selection this bound exists to prevent.
 
-**The multiplier was fitted against the table, and saying so is the point.** A
-first draft used 2×, which at the top row's 9.3% sets the bar at 18.6% — above
-every row that clears the `reads` floor, so the second selector would have
-selected *nothing* and been inert on arrival. At 1.5× the bar is 14.0% and the
-selector picks `_sftp.py` (14.5% over 55 reads); `_local.py` is excluded by the
-floor (46.7% over 15 reads, where one tag swings the figure seven points). So
-this is a judgement fitted to one table, not a derived quantity, and it should be
-re-checked whenever the ranking shifts rather than inherited — precisely the
-posture BK-343 asks for.
+**The multiplier was fitted against the full ranking, and both the fit and how it
+was got wrong are worth recording.** A first draft used 2×, which at the top
+row's 9.3% sets the bar at 18.6% — above every row clearing the `reads` floor, so
+the selector would have been inert on arrival. At 1.5× the bar is 14.0%, and
+against the whole report at `4076ed7` it selects **three** rows:
+
+| `rate` | `reads` | Reference |
+|---:|---:|---|
+| 15.6% | 32 | `CONTRIBUTING.md` |
+| 15.4% | 26 | `sdd/specs/029-async-store-backend-api.md` |
+| 14.5% | 55 | `src/remote_store/backends/_sftp.py` |
+
+`_local.py` is excluded by the floor (46.7% over 15 reads, where one tag swings
+the figure seven points). Two of the three sit outside § 3.1's top-five excerpt
+entirely, which is the point of the second selector: the count-sort buries them,
+and the highest-rate qualifying row is a file the ranking puts nowhere near the
+top.
+
+**An earlier draft named only `_sftp.py`, because the fit was judged against
+§ 3.1's five-row excerpt rather than the full report.** That is the third time in
+this document's history that a conclusion was drawn from a truncated view of an
+instrument — after the report's unread bounds and the shallow clone — and it is
+the one recurring defect here worth generalising from. The threshold remains a
+judgement fitted to one table, to be re-checked when the ranking shifts rather
+than inherited, which is the posture BK-343 asks for.
 
 It is also in mild tension with the instrument: the module docstring says `rate`
 "ranks poorly across rows", so comparing rows on it is what the tool cautions
