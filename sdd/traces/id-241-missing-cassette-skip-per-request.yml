@@ -254,6 +254,7 @@ review_rounds: 6
 discovery_followups:
   - ID-245
   - ID-246
+  - ID-247
 
 expected_ripples:
   - sdd/specs/003-backend-adapter-contract.md

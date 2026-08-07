@@ -388,6 +388,22 @@ and the highest ID already in this file, then take the next integer. Run
   this file's own § Completing work — but the question exposed that nothing
   enforces the migration's promise.
 
+- [ ] **ID-247 — Record the Graph root-path cassettes**
+  spec: BE-029 · effort: S · audience: infra.test
+  22 `TestBackendRootPath` cells still skip on `graph_replay` for want of a
+  recording — the "pinned nowhere" column of spec 003's BE-029 table. Graph is
+  the only HTTP family with **no emulator tier** (`graph_live` Stage 3 and
+  `graph_replay` Stage 1, nothing between), so those contracts are unexercised
+  against `GraphBackend` at every stage below a live account; Azure's equivalent
+  skips are covered by `azurite` at Stage 2. 14 of the 22 are Graph-only —
+  Azure passes them with no cassette at all (ID-241).
+  `python scripts/record_cassettes.py --backend graph` needs `RS_TEST_LIVE_GRAPH=1`
+  plus `GRAPH_CLIENT_ID` / `GRAPH_TENANT_ID` / `GRAPH_DRIVE_ID` (device-code, so
+  interactive). Prefer `--node` per cell: a full run re-records all 119 existing
+  graph cassettes, churning their volatile headers into an unreviewable diff
+  against TEST-009. Any op that raises before issuing a request records nothing
+  and keeps skipping — correct since ID-241, and visible in the Step-5 replay.
+
 ---
 
 ## Cross-Artifact Consistency
