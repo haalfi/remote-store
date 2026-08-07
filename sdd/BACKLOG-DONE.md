@@ -27,14 +27,20 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   carries 205 over 269, across eight merged PRs (#944–#951). That is **~+1.5 tags
   and ~+1.1 traces per merged PR** — the trace rate holds, the tag rate is about
   half BK-330's.
-  **The per-release figure is a second measurement, and the shortcut was wrong.**
+  **The per-release figure is a second measurement, and two shortcuts were wrong.**
   Those eight PRs span three days, so that window is the *measurement* window, not
-  a release interval. Measured separately: CHANGELOG intervals run 4–18 days
-  (median ~10), and merged commits per interval over the last three are **0**, **24**
-  and **27** (the last still open). So a release fires on 0 to ~27 PRs, or 0 to ~40
-  tags. The decision survives, and the range argues for it better than a point
-  estimate did — a quiet interval moves the ranking not at all, which is what
-  bound 1 exists for.
+  a release interval. The obvious correction — counting commits per interval with
+  `git log --since/--until` — **was run against a shallow clone** (grafted history
+  starts 2026-07-13), so a pre-graft interval returns zero because the history is
+  absent, not because it was quiet; an earlier draft read one such zero as "a
+  genuinely quiet 17 days". What this clone supports: CHANGELOG intervals of 4–18
+  days (median ~10, in-file so unaffected), and **21** merged commits for
+  v0.30.0 → HEAD (`git rev-list --count --first-parent 7931c7d..origin/master`,
+  19 days and open). Earlier intervals are not derivable here. One interval at 21
+  PRs is ~30 tags against a base of 207 — enough for the ranking to move, which is
+  the whole claim needed. Whether intervals vary enough to make some firings
+  uninformative is unanswered, and that is itself an argument for bound 1's
+  recorded totals: differencing two recorded numbers needs no git history.
   **Bound 1 — cadence proxy** ([Rule 7](DRIFT-RULES.md#miss-rate)): a release is a
   *proxy* for corpus growth, not the growth itself, so a lengthening cadence
   degrades the trigger silently. **The mitigation is built, not asserted** — the
@@ -45,10 +51,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   report documents as measuring exposure rather than failure rate. "Top-ranked"
   alone resolves to `sdd/BACKLOG.md` for many releases running (22 against 10 for
   the runner-up) while a high-`rate`, low-`reads` document never surfaces, so the
-  step selects the top row **plus any row with `rate` ≥ 2× the top row's at
+  step selects the top row **plus any row with `rate` ≥ 1.5× the top row's at
   `reads` ≥ 20**. The threshold is numeric because the report computes no
   dispersion or outlier flag, and an undefined second selector collapses to the
-  defined first one; it is a pinned judgement, not a derived quantity.
+  defined first one. **Fitted, and flagged as such**: a first draft used 2×, which
+  at 9.3% sets the bar at 18.6% — above every row clearing the `reads` floor, so
+  the selector would have shipped inert. At 1.5× the bar is 14.0% and it selects
+  `_sftp.py` (14.5% over 55 reads). Re-check it when the ranking shifts rather
+  than inheriting it.
   **The ticket is pinned too.** ID-150 works because `formal/README.md` names the
   ID; "record a backlog entry" keeps the ticket and drops the pin. First revisit
   is **ID-249**, `[ ]` in `BACKLOG.md`, each revisit naming its successor on close.
@@ -75,8 +85,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   the item, all one shape — the item's **prescription or premise** was wrong by
   the time someone implemented it. BK-331 ("trusting the item body over the
   cross-reference would have produced a wrong fix"), BK-291 (prescribed fix half
-  wrong on Windows), BK-269 (asserted a CI practice that did not exist), BUG-221
-  (not reproducible as written).
+  wrong on Windows), BK-269 (asserted a CI practice that did not exist), BK-272
+  (cited a `pyproject.toml` line that had moved). Every exemplar is a tag filed
+  against `BACKLOG.md` itself; an earlier draft listed BUG-221, whose tag is filed
+  against `_local.py` — a true observation about an item, counted in the wrong row.
   Shipped as an **Item authority** rule in
   [§ How this file works](BACKLOG.md#how-this-file-works): diagnosis is durable,
   prescription is advisory and presumed stale, re-derive before acting and correct
@@ -86,8 +98,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   owning the pair and not restated elsewhere. `CLAUDE.md` § Audits rule 3 governs
   audit finding ↔ implementation; this governs item body ↔ implementation. The
   backlog cites it as sibling precedent rather than reproducing its wording. That
-  the norm already existed informally is itself evidence: `BACKLOG-DONE.md:3848`
-  records a contributor applying the audit rule to a backlog item by analogy.
+  the norm already existed informally is itself evidence: **BK-250's entry** in
+  this file records a contributor applying the audit rule to a backlog item by
+  analogy ("Audit prescription is advisory; diverged per the
+  re-verify-against-code convention"). Cited by item ID, not line number — the
+  line number originally used here had drifted by the time review reached it,
+  which is this item's own defect class landing on this item.
   **Deliberately no gate.** The measured defect is stale *premises*, which no
   check can evaluate; the mechanically checkable part (`path:line` references) is
   6 instances file-wide, which does not clear [Rules 5 and

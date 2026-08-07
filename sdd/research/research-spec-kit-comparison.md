@@ -208,21 +208,35 @@ implemented**:
 - BK-324 facet 3: "neither half of it survived checking."
 - BUG-220: "The BACKLOG recipe under-specified: it reproduces 0/20 with SHORT
   path components."
-- BUG-221: "as written is NOT reproducible."
+- BK-272: the item cited `pyproject.toml:256` for a target that had moved to
+  `:288` — a stale line reference, the same class as the one this document
+  committed against `BACKLOG-DONE.md` and had corrected in review.
 - BK-271: the item's framing and line references described work that had already
   happened.
+
+Every exemplar above is a tag filed **against `sdd/BACKLOG.md`**, which is what
+the "~11 of 22" claim requires. An earlier draft listed BUG-221 ("as written is
+NOT reproducible") here, and that tag is filed against
+`src/remote_store/backends/_local.py` — a true observation about a backlog item,
+counted in the wrong row. It is dropped rather than reassigned; the count is
+unaffected, since re-reading the 22 against the criterion yields 11 to 14
+depending on how strictly "prescription" is drawn.
 
 The other high-ranked rows are not process wounds. `CLAUDE-REFERENCE.md` is
 mostly `unclear` tags recording ripple rows that did not anticipate a case, and
 those already became BK-333 and BK-334 — a feedback loop that is working. The
 backend files are review rounds catching real defects, which is review working.
 
-`sdd/audits/` shows the same prescription-decay shape as the backlog (4 tags,
-all "audit proposes X; prescription reframed"), and that is precisely the failure
+`sdd/audits/` shows the same prescription-decay shape as the backlog — 6 tags
+across two audits (audit-014 carries 4, audit-017 carries 2), all "audit proposes
+X; prescription reframed" — and that is precisely the failure
 [`CLAUDE.md` § Audits](../../CLAUDE.md#audits) rule 3 already exists to absorb.
-**`BACKLOG.md` has no equivalent rule.** `BACKLOG-DONE.md:3848` shows a
-contributor applying the audit rule to a backlog item by analogy, which is the
-norm existing informally without a home.
+**`BACKLOG.md` has no equivalent rule.** BK-250's `BACKLOG-DONE.md` entry shows a
+contributor applying the audit rule to a backlog item by analogy ("Audit
+prescription is advisory; diverged per the re-verify-against-code convention"),
+which is the norm existing informally without a home. Cited by item ID rather
+than line number, because the line number this document originally used had
+already drifted by the time review reached it.
 
 ### 3.3 Candidates against the evidence
 
@@ -286,19 +300,31 @@ traces, and `73d4079` carries 205 over 269, across the eight pull requests
 
 The trace rate holds; the tag rate is roughly *half* what BK-330 measured.
 
-**The per-release figure is a separate measurement, and the obvious shortcut is
-wrong.** Those eight PRs span three days (#944 merged 2026-08-04, #951 on
-2026-08-07), so that window is the *measurement* window, not a release interval.
-Measured separately: CHANGELOG release dates give intervals of 4 to 18 days,
-median ~10, and merged commits per interval over the last three are **0**
-(0.29.0 → 0.29.1, a genuinely quiet 17 days), **24** (0.29.1 → 0.30.0, 10 days),
-and **27** (0.30.0 → today, 19 days and still open).
+**The per-release figure is a separate measurement, and two successive shortcuts
+were wrong.** First, those eight PRs span three days (#944 merged 2026-08-04,
+#951 on 2026-08-07), so that window is the *measurement* window, not a release
+interval. Second — and this is the instructive one — the obvious correction,
+counting commits per release interval with `git log --since/--until`, **was run
+against a shallow clone**. `git rev-parse --is-shallow-repository` returns true
+here and the grafted history begins 2026-07-13, so an interval before that date
+returns zero commits because the history is absent, not because the interval was
+quiet. An earlier draft of this section read one such zero as "a genuinely quiet
+17 days" and built an argument on it.
 
-So a release fires on anywhere from 0 to ~27 PRs, or roughly 0 to 40 negative
-tags at the re-derived rate. The decision survives, and the range is a better
-argument for it than the point estimate was: a busy interval moves the ranking
-comfortably, and a quiet one moves it not at all — which is exactly what bound 1
-below is for, and why the totals have to be recorded rather than eyeballed.
+What this clone can actually support:
+
+| Quantity | Value | Source |
+|---|---|---|
+| Release intervals | 4–18 days, median ~10 | `CHANGELOG.md` dates, which are in-file and unaffected |
+| Merged commits, v0.30.0 → HEAD | **21** over 19 days, interval still open | `git rev-list --count --first-parent 7931c7d..origin/master` |
+| Earlier intervals | not derivable | before the graft point |
+
+So the one fully measurable interval carries 21 merged commits, or roughly 30
+negative tags at the re-derived rate, against a base of 207. That is comfortably
+enough for the ranking to move, and it is the whole claim this decision needs.
+Whether intervals vary enough to make some firings uninformative is **not
+answered here** — which is itself an argument for bound 1's recorded totals, since
+a reader differencing two recorded numbers needs no history at all.
 
 So: **`CONTRIBUTING.md` § Release Phase 0 gains one step** — run the report,
 record the corpus totals, and record a decision (act / defer / accept) as a
@@ -328,22 +354,28 @@ absolute count, which § 3.1's bound 2 says measures exposure. At 22 against 10
 for the runner-up, that phrase resolves to `sdd/BACKLOG.md` for many releases
 running, while a high-`rate`, low-`reads` document never reaches the checklist.
 
-So the step selects the top-ranked row **plus any row with `rate` at least twice
-the top row's `rate` and `reads` ≥ 20**. That threshold is stated numerically on
-purpose: the report computes no dispersion, no baseline and no outlier flag, so
-"is an outlier" would have left the second selector undefined, and an undefined
-second selector collapses to the defined first one — reinstating the very
-under-selection this bound exists to prevent. Against § 3.1's table it selects
-`_sftp.py` (14.5% over 55 reads) and excludes `_local.py` (46.7% but only 15
-reads, where one tag swings the figure by seven points).
+So the step selects the top-ranked row **plus any row with `rate` at least 1.5×
+the top row's `rate` and `reads` ≥ 20**. The threshold is numeric on purpose: the
+report computes no dispersion, no baseline and no outlier flag, so "is an
+outlier" would have left the second selector undefined, and an undefined second
+selector collapses to the defined first one — reinstating the very
+under-selection this bound exists to prevent.
 
-**The threshold is a judgement pinned here, not a derived quantity**, and it is
-in mild tension with the instrument: the module docstring says `rate` "ranks
-poorly across rows", so comparing rows on it is exactly what the tool cautions
-about. The defence is that the comparison is used to *widen* a selection rather
-than to order one, and that the `reads` floor removes the small-denominator rows
-the caution is really about. A reader who finds the threshold selecting noise
-should change it and say so, rather than treat it as measured.
+**The multiplier was fitted against the table, and saying so is the point.** A
+first draft used 2×, which at the top row's 9.3% sets the bar at 18.6% — above
+every row that clears the `reads` floor, so the second selector would have
+selected *nothing* and been inert on arrival. At 1.5× the bar is 14.0% and the
+selector picks `_sftp.py` (14.5% over 55 reads); `_local.py` is excluded by the
+floor (46.7% over 15 reads, where one tag swings the figure seven points). So
+this is a judgement fitted to one table, not a derived quantity, and it should be
+re-checked whenever the ranking shifts rather than inherited — precisely the
+posture BK-343 asks for.
+
+It is also in mild tension with the instrument: the module docstring says `rate`
+"ranks poorly across rows", so comparing rows on it is what the tool cautions
+about. The defence is that the comparison *widens* a selection rather than
+ordering one, and the `reads` floor removes the small-denominator rows the
+caution is really about.
 
 This settles BK-330's [Rule 6](../DRIFT-RULES.md#tolerated) register entry: the
 report is tolerated because it now has a named consumer. The register's **owner

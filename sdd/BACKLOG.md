@@ -276,8 +276,9 @@ and the highest ID already in this file, then take the next integer. Run
   `sdd/formal/README.md` uses to pin ID-150.
   **Record at the revisit:** the corpus totals (the baseline the following
   release differences against — the report keeps no history); the references
-  selected (top-ranked row, plus any row with `rate` ≥ 2× the top row's at
-  `reads` ≥ 20); and per selected reference one of **act** (file work against
+  selected (top-ranked row, plus any row with `rate` ≥ 1.5× the top row's at
+  `reads` ≥ 20 — a fitted threshold, re-check it rather than inherit it); and per
+  selected reference one of **act** (file work against
   it), **defer** (leave it, say why), or **accept** (the tags are exposure, not a
   defect).
   **Baseline to difference against**, measured at `4076ed7`: 270 traces, 207

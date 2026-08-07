@@ -18,7 +18,7 @@ discovery_followups:
   - ID-249
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient on the external comparison
@@ -232,11 +232,11 @@ phases:
         read_type: verify
         extract: >-
           "Eight PRs per release interval" reused the measurement window as if it
-          were a release interval; #944 to #951 spans three days. Re-measured:
-          release intervals run 4-18 days (median ~10) and carry 0, 24 and 27
-          merged commits over the last three. The conclusion strengthened and the
-          derivation was wrong, which is the same reuse-without-re-derivation
-          BK-343 exists to stop, committed by the PR shipping it
+          were a release interval; #944 to #951 spans three days. Re-measured the
+          intervals from the CHANGELOG dates (4-18 days, median ~10). The
+          per-interval *commit counts* taken here were themselves wrong and round 3
+          caught them — see the `git rev-parse` step in review_3; this step's
+          correction fixed the framing and introduced a second bad number
         outcome: misleading
       - file: sdd/formal/README.md
         section: "3 (CI informational / revisit cadence), ID-150"
@@ -256,3 +256,47 @@ phases:
           `BACKLOG.md` in its explicit exclusion list, so the format does not
           govern it and adding a Rules section would conform it to a format that
           excludes it. Declined with that evidence rather than applied
+  - id: review_3
+    name: PR review round 3 (terminal unprimed)
+    steps:
+      - file: sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md
+        section: "Decision (stop rule)"
+        read_type: gate
+        extract: >-
+          The loop cannot end until an unprimed reviewer has seen the final state.
+          Both prior rounds reviewed states that no longer existed, and round 2 had
+          found a defect round 1's fix created, so the ADR's premise was already
+          confirmed twice on this PR. Ran a terminal unprimed review of `bb5188b`
+      - file: sdd/research/research-spec-kit-comparison.md
+        section: "4.1 (per-release measurement)"
+        read_type: verify
+        extract: >-
+          `git rev-parse --is-shallow-repository` returns true and grafted history
+          starts 2026-07-13, so round 2's per-interval commit counts were measured
+          against truncated history: the "0 commits, a genuinely quiet 17 days" was
+          the graft boundary, not a quiet period, and I had explicitly re-checked
+          and confirmed that zero. The instrument's bound went unchecked — the same
+          failure as round 1's selective reading of the report's own bounds, one
+          layer down. Now states only what this clone supports (21 merged commits
+          for v0.30.0 to HEAD) and names the shallow-clone limit
+        outcome: misleading
+      - file: sdd/research/research-spec-kit-comparison.md
+        section: "4.1 (Bound 2)"
+        read_type: verify
+        extract: >-
+          The 2x rate threshold shipped inert: 2 x 9.3% = 18.6%, above every row
+          clearing the reads floor, so the second selector selected nothing and
+          reinstated the under-selection it was written to prevent — and the worked
+          example claimed it selected `_sftp.py`, which the arithmetic contradicts.
+          Refitted to 1.5x (bar 14.0%, selects `_sftp.py` at 14.5%) and labelled as
+          fitted to one table rather than derived
+        outcome: misleading
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) BK-250, (item) BK-343"
+        read_type: verify
+        extract: >-
+          The `BACKLOG-DONE.md:3848` citation had drifted — correct when written,
+          stale after the rebase and this PR's own edits grew the file. Re-pointed
+          at BK-250 by item ID. This is BK-343's own defect class committed by
+          BK-343's entry, and the second line-reference instance in this PR
+        outcome: misleading
