@@ -16,10 +16,12 @@ audience:
 discovery_followups:
   - BUG-245
   - BUG-246
+  - BUG-247
 expected_ripples:
-  - sdd/backlogid.json
   - CHANGELOG.md
   - docs-src/guides/custom-backend-guide.md
+  - scripts/check_docstring_parity.py
+  - docs-src/_data/graph/graph.json
 surprising_ripples:
   - tests/backends/s3/test_denied_probe.py
   - tests/backends/azure/_helpers.py
@@ -50,11 +52,19 @@ phases:
         section: "delete, delete_folder"
         read_type: reference
         extract: >-
-          The read that settled the decision, and it was not in the item's
-          frame. Local resolves the path and tests exists(), so an absent store
-          root is already just an absent path and missing_ok returns silently.
-          The hierarchical backends had answered this years ago; "tolerate" was
-          not a new rule but the flat-NS half catching up.
+          Read as the decisive argument — Local resolves the path and tests
+          exists(), so an absent store root looked like just an absent path that
+          missing_ok returns silently, making "tolerate" the flat-NS half
+          catching up to the hierarchical backends. **The conclusion was wrong**,
+          and round 4 caught it only because a reviewer asked for the claim to be
+          pinned by a test. Running it: an absent root raises InvalidPath("Path
+          escapes root directory") from _resolve, two lines before either
+          missing_ok branch, because _within_root's ancestor walk climbs above a
+          root that no longer exists. Both deletes read correctly in isolation,
+          which is why two independent code readings agreed and the first
+          execution disagreed. Filed as BUG-247; the decision survived on its
+          cost argument alone, and the spec now records the premise as refuted
+          rather than dropping it.
         outcome: ok
   - id: reproduce
     name: Measure the three answers
@@ -218,6 +228,23 @@ phases:
           container is tolerated where the error already lands in the NotFound
           family that missing_ok swallows — which covers both halves on every
           backend and makes the dialect question moot.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 (the exemption, abandoned)"
+        read_type: verify
+        extract: >-
+          Round 4 refuted the third scope criterion too: "binds backends whose
+          mapping already lands in NotFound" is circular, since BE-021's own
+          canonical table requires exactly that of every backend, so a backend
+          violating the table becomes exempt and one obeying it becomes bound.
+          Three criteria, three refutations, each attempting to derive a general
+          rule for who the clause binds. The loop's divergence check fired and
+          the work stopped for a user decision rather than attempting a fourth.
+          Outcome: drop the exemption and make SQLBlobBackend comply — one
+          inspector call on the already-failed statement. The lesson is about
+          shape rather than wording: a carve-out needed a criterion, every
+          criterion was circular or false, and compliance was cheaper than the
+          third attempt at justifying its absence.
         outcome: ok
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Pre-work index / New test file"

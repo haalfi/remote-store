@@ -62,21 +62,21 @@ async def denied_backend(httpserver: HTTPServer) -> Any:
 class TestAbsentContainerReadsAsAbsentPath:
     """An absent container is an absent path, for both deletes."""
 
-    @pytest.mark.spec("BE-012", "BE-021", "ASYNC-012")
+    @pytest.mark.spec("BE-012", "BE-021", "ASYNC-012", "AZ-025")
     async def test_delete_tolerates_absent_container(self, backend: Any) -> None:
         assert await backend.delete(KEY, missing_ok=True) is None
 
-    @pytest.mark.spec("BE-013", "BE-021", "ASYNC-013")
+    @pytest.mark.spec("BE-013", "BE-021", "ASYNC-013", "AZ-015")
     async def test_delete_folder_tolerates_absent_container(self, backend: Any) -> None:
         assert await backend.delete_folder(FOLDER, recursive=True, missing_ok=True) is None
 
-    @pytest.mark.spec("BE-012", "BE-021", "ASYNC-012", "AZ-026")
+    @pytest.mark.spec("BE-012", "BE-021", "ASYNC-012", "AZ-025", "AZ-026")
     async def test_delete_raises_not_found_when_strict(self, backend: Any) -> None:
         with pytest.raises(NotFound) as exc_info:
             await backend.delete(KEY)
         assert exc_info.value.backend == "async-azure"
 
-    @pytest.mark.spec("BE-013", "BE-021", "ASYNC-013", "AZ-026")
+    @pytest.mark.spec("BE-013", "BE-021", "ASYNC-013", "AZ-015", "AZ-026")
     async def test_delete_folder_raises_not_found_when_strict(self, backend: Any) -> None:
         """The tolerance belongs to ``missing_ok``, not to the container 404."""
         with pytest.raises(NotFound) as exc_info:

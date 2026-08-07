@@ -254,11 +254,9 @@ def _children_or_absent_container(
 
     This helper is the folder-shaped half catching up, and it costs nothing: the
     404 is already in hand. Making the *pair* strict instead would have cost
-    ``delete`` a second ``HeadBucket`` on every miss, against a spec that
-    budgets one probe per miss — and it would have split flat-namespace
-    backends from the hierarchical ones, where an absent store root is already
-    just an absent path (``LocalBackend.delete_folder`` returns silently under
-    ``missing_ok``).
+    ``delete`` a second ``HeadBucket`` on every miss, against a spec that budgets
+    one probe per miss — and it would have changed the behaviour that was already
+    there rather than the one that disagreed with it.
 
     Returning ``False`` is not the same as tolerating the call: the caller still
     runs its wrong-type probe and still raises ``NotFound`` when ``missing_ok``

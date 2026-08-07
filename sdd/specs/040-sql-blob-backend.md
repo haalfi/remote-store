@@ -282,11 +282,23 @@ gets them.
 | SQLAlchemy exception | remote-store error |
 |---------------------|-------------------|
 | `IntegrityError` (on INSERT) | `AlreadyExists` |
-| `OperationalError` (connection) | `BackendUnavailable` |
+| `OperationalError` (connection failures, and any other operational fault the driver reports this way) | `BackendUnavailable` |
 | No row returned for read/info | `NotFound` |
 | Other `SQLAlchemyError` | `RemoteStoreError` |
 
 Backend-native exceptions must never leak.
+
+**The `OperationalError` row is not limited to connection faults**, and the
+parenthetical above says so because a narrower reading made a downstream clause
+cite this row for something it did not cover. `_map_errors` catches
+`sa.exc.OperationalError` unconditionally and always has; SQLite reports a
+missing table that way, for instance.
+
+**Absent table:** `delete` and `delete_folder` do **not** reach this table for a
+dropped table — BE-021's absent-container rule reclassifies it as a missing path
+first, so `missing_ok=True` returns cleanly and `missing_ok=False` raises
+`NotFound`. Every other operation still maps through the rows above, which is a
+known divergence from the canonical `NotFound` row and is recorded in BE-021.
 
 ---
 

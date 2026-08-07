@@ -94,6 +94,33 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Lint / CI Completeness
 
+- [ ] **BUG-247 — `LocalBackend` reports a deleted root as "Path escapes root directory"**
+  spec: BE-004, BE-012, BE-013, BE-021 · effort: S · audience: user.api
+  Delete a `LocalBackend`'s root directory out from under it and **every** operation
+  raises `InvalidPath("Path escapes root directory")` — including
+  `delete(missing_ok=True)` and `delete_folder(missing_ok=True)`, which BE-021's
+  absent-container rule requires to return cleanly, and `exists()`, which BE-004
+  forbids from raising at all.
+  Nothing is escaping. `_within_root` walks up from the target to the deepest
+  *lexically existing* ancestor for its symlink-escape check; once the root is
+  gone that walk climbs past the root, so
+  `anchor.resolve().relative_to(self._root)` raises `ValueError` and containment
+  is reported as an escape. `InvalidPath` is the worst of the plausible answers:
+  it tells the caller their path is malformed when the path is fine and the store
+  is simply absent.
+  Reproduction and the current behaviour are pinned in
+  `tests/backends/local/test_absent_root.py` — the contract cells are
+  `xfail(strict=True)`, so fixing this flips them to XPASS and fails the suite
+  until the markers come off.
+  **Care required:** `_within_root` is the symlink-escape guard, so a fix must
+  distinguish "anchor escaped because the root is gone" from "anchor escaped
+  because the path really does point outside" without weakening the second. A
+  root-existence check before the walk is the obvious shape, at the cost of a
+  `stat` per call — measure before adopting it.
+  Surfaced by BUG-243, whose spec rationale asserted the opposite (that Local
+  already treated an absent root as an absent path) on the strength of two
+  code readings; the first test that ran it disproved it.
+
 - [ ] **BUG-246 — `exists()` / `is_folder()` raise `NotFound` against an absent container on three backends**
   spec: BE-004, BE-005, BE-021 · effort: S · audience: user.api
   BE-004 and BE-005 say these never raise, and BE-021 repeats it: `exists()`,

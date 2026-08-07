@@ -140,24 +140,30 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   **Why this way round.** It costs nothing — `delete_folder` reads the
   container 404 its listing already raises as "no children" — whereas strictness
   would have cost `delete` a second `HeadBucket` on every miss, against a spec
-  budgeting one probe per miss. It also makes flat-namespace agree with the
-  hierarchical backends, where an absent store root has always been just an
-  absent path.
-  **`SQLBlobBackend` is exempt, on a stated ground rather than a vacuity:** the
-  clause binds backends whose response already carries "the container is gone"
-  (`NoSuchBucket`, `ContainerNotFound`), which is what makes tolerating free. A
-  dropped table arrives as a dialect-specific error with no portable code, so
-  identifying it would cost the extra round trip the same clause forbids; it
-  stays `BackendUnavailable`, asserted rather than assumed. The tempting
-  justification — that SQLBlob settles its table at construction, so an absent
-  table is always a store torn down mid-flight — does not discriminate: an S3
-  bucket deleted under a running backend is torn down mid-flight too, and is
-  tolerated. Measuring the exemption surfaced BUG-245.
+  budgeting one probe per miss. It also ratifies the answer `delete` already
+  gave on every flat-namespace backend, correcting the sibling that disagreed
+  rather than both.
+  **No carve-outs, after three attempts at one.** `SQLBlobBackend` was
+  initially exempted, and the exemption went through three scope criteria in
+  successive review rounds — vacuity (refuted by this item's own dropped-table
+  test), "the response already carries the fact" (refuted by the clause's own
+  rationale, since S3's `delete` tolerates a bodyless 404 that carries nothing),
+  and "the mapping already lands in `NotFound`" (circular against BE-021's
+  canonical table, which requires that of every backend). Complying costs one
+  inspector call hung off `SQLAlchemyError`, so it is charged to a statement
+  that already failed and never to a miss. The exemption cost more to justify
+  than compliance cost to implement; the clause now binds everything.
   **Coverage:** the Azure half runs at Stage 1 on a `pytest-httpserver` Blob
   stub rather than behind the Docker-gated `azurite` fixture — BK-324 shipped
   two real Azure defects behind that gate. Reverses the unreleased second half
   of BUG-242, whose CHANGELOG bullet was amended rather than left contradicting
   this one in the same section.
+  **Three divergences found and filed, not fixed:** BUG-245 (`create_table=False`
+  leaks `NoSuchTableError`), BUG-246 (`exists()` / `is_folder()` raise against an
+  absent container on three backends), BUG-247 (`LocalBackend` reports a deleted
+  root as a path escape). The last refuted a premise this item's own spec
+  rationale had asserted, and only a test caught it — two code readings had
+  agreed it was true.
 
 - [x] **ID-241 — Conformance cells that make no HTTP call still skip on a missing cassette**
   spec: TEST-007 · effort: S · audience: infra.test

@@ -190,17 +190,17 @@ returns the stream as-is.
 
 - `delete()` targets files. `delete_folder()` targets folders.
 - `missing_ok=True` suppresses `NotFound`.
-- `missing_ok=True` also covers an absent *container* — the bucket or container
-  holding the path — **if** your backend already maps an absent container into
-  `NotFound`. Where it does, a container that is not there holds no path either,
-  so both deletes must return cleanly and both must raise `NotFound` without
-  `missing_ok`. Do not spend a round trip distinguishing an absent container
-  from an absent path, and keep the tolerance narrow to that one case: a denial
-  is still `PermissionDenied`. If an absent container maps somewhere else on
-  your backend — a transport or generic failure rather than `NotFound` — you are
-  outside this rule and should leave it there; honouring it would take the probe
-  the previous sentence forbids. See
-  the error-mapping section of the
+- `missing_ok=True` also covers an absent *container* — the bucket, container or
+  table holding the path. A container that is not there holds no path either, so
+  both deletes return cleanly, and both raise `NotFound` without `missing_ok`.
+  This has no exemptions: if your backend's native error for an absent container
+  is not already a not-found, reclassify it. Two constraints on how. Keep the
+  tolerance narrow to that one case — a denial is still `PermissionDenied`, a
+  timeout still `BackendUnavailable`. And do not make an ordinary miss pay for
+  it: never spend an extra round trip distinguishing an absent container from an
+  absent path, so if you need a probe to recognise the container, put it on the
+  failure path where the operation has already errored. See the error-mapping
+  section of the
   [Backend Adapter Contract](../../sdd/specs/003-backend-adapter-contract.md).
 - `delete_folder(recursive=False)` raises `DirectoryNotEmpty` if the folder has contents.
 - You cannot delete root (`""` or `"."`) — `Store` rejects it before your

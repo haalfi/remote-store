@@ -979,9 +979,10 @@ class AzureBackend(Backend):
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         """Delete the blob at *path*.
 
-        On a flat account a container that does not exist counts as a missing
-        blob, on the same terms as ``delete_folder``: ``missing_ok=True`` returns
-        silently and ``missing_ok=False`` raises ``NotFound``.
+        A container that does not exist counts as a missing blob, on the same
+        terms as ``delete_folder``: ``missing_ok=True`` returns silently and
+        ``missing_ok=False`` raises ``NotFound``. Both namespace kinds answer
+        this way; only the flat path needed changing to do so.
 
         Raises:
             NotFound: If the blob does not exist (including when the container
@@ -1040,15 +1041,17 @@ class AzureBackend(Backend):
         Args:
             path: Backend-relative key.
             recursive: If ``True``, delete all contents first.
-            missing_ok: If ``True``, do not raise when absent. On a flat account
-                this covers an absent *container* too: it holds no folder
-                either, so it reads as a missing path rather than a failure.
+            missing_ok: If ``True``, do not raise when absent. This covers an
+                absent *container* too: it holds no folder either, so it reads
+                as a missing path rather than a failure.
 
         Raises:
             NotFound: If the folder is missing (including when the container
                 itself is absent) and ``missing_ok`` is ``False``.
             InvalidPath: If ``path`` names a file (use ``delete`` instead).
             DirectoryNotEmpty: If non-empty and ``recursive`` is ``False``.
+            PermissionDenied: If credentials are rejected or lack access (401/403).
+            BackendUnavailable: On throttling (429), 5xx, or transport failure.
         """
         with self._errors(path):
             azure_path = self._azure_path(path)
