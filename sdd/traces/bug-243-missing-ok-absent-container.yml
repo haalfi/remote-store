@@ -22,7 +22,7 @@ expected_ripples:
   - docs-src/guides/custom-backend-guide.md
   - scripts/check_docstring_parity.py
   - docs-src/_data/graph/graph.json
-review_rounds: 5
+review_rounds: 6
 surprising_ripples:
   - tests/backends/s3/test_denied_probe.py
   - tests/backends/azure/_helpers.py
@@ -298,6 +298,23 @@ phases:
           call site, invisible to check_spec_marks.py, and survived two later
           rounds that were specifically hunting mis-traced marks. A correction
           verified only where it was applied is not verified.
+        outcome: ok
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "close, _table_is_absent (the gate, narrowed)"
+        read_type: verify
+        extract: >-
+          Round 6, a verification round the user authorised past the ceiling,
+          and both members independently found the round-5 fix too broad. The
+          gate keyed on "was close() called" when the hazard is "did closing
+          discard the store" — and those separate in two directions, both
+          measured: a *borrowed* engine is never disposed, and an owned *file*
+          engine reopens with its contents, so both stayed live while silently
+          losing the reclassification for the rest of the instance's life. My
+          docstring's "a file-backed engine is unaffected either way" was true
+          only for the instant after close(), which is the assumption the clause
+          exists in order not to make. Narrowed to owned + in-memory, with a
+          test per separating case. Sixth round, sixth fix pass, and the fifth
+          time a round found a defect in the previous round's fix.
         outcome: ok
   - id: verify
     name: Verify

@@ -159,8 +159,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   of BUG-242, whose CHANGELOG bullet was amended rather than left contradicting
   this one in the same section.
   **Three divergences found and filed, not fixed:** BUG-245 (`create_table=False`
-  leaks `NoSuchTableError`), BUG-246 (`exists()` / `is_folder()` raise against an
-  absent container on three backends), BUG-247 (`LocalBackend` reports a deleted
+  leaks `NoSuchTableError`), BUG-246 (`exists()` / `is_file()` / `is_folder()`
+  raise against an absent container on four backends), BUG-247 (`LocalBackend` reports a deleted
   root as a path escape). The last refuted a premise this item's own spec
   rationale had asserted, and only a test caught it — two code readings had
   agreed it was true.

@@ -268,6 +268,41 @@ class TestAClosedBackendIsNotAnEmptyStore:
         with pytest.raises(BackendUnavailable):
             instance.delete("folder/object.txt", missing_ok=True)
 
+    def test_a_borrowed_engine_keeps_the_tolerance_after_close(self, tmp_path: Path) -> None:
+        """``close()`` disposes nothing here, so the store is untouched and the rule holds.
+
+        The gate's condition is "did closing discard the store", not "was
+        ``close()`` called", and this is one of the two cases that separates
+        them. SQL-BLOB-041 makes ``close()`` a no-op for a borrowed engine, so
+        an instance closed and reused is working against the same live database
+        — and a table dropped afterwards is exactly what the clause governs.
+        """
+        engine = sa.create_engine(f"sqlite:///{tmp_path / 'borrowed.db'}")
+        try:
+            instance = SQLBlobBackend(engine=engine)
+            instance.write("folder/object.txt", b"payload")
+            instance.close()
+            _drop_table(instance)
+            assert instance.delete("folder/object.txt", missing_ok=True) is None
+        finally:
+            engine.dispose()
+
+    def test_an_owned_file_engine_keeps_the_tolerance_after_close(self, tmp_path: Path) -> None:
+        """Disposing a file engine loses nothing: it reopens with its contents.
+
+        The second separating case. ``close_is_terminal=False`` permits closing
+        and resuming, and the resumed instance is on the same database, so it
+        must still reclassify a table dropped later. Gating on ``close()``
+        alone silently disabled the rule for the rest of the instance's life.
+        """
+        instance = SQLBlobBackend(f"sqlite:///{tmp_path / 'owned.db'}")
+        instance.write("folder/object.txt", b"payload")
+        instance.close()
+        instance.write("folder/other.txt", b"payload")  # resume: reopens the same file
+        _drop_table(instance)
+        assert instance.delete("folder/object.txt", missing_ok=True) is None
+        instance.close()
+
 
 class TestContainerExistsByConstruction:
     """The two constructor paths, recorded for what a caller can encounter."""

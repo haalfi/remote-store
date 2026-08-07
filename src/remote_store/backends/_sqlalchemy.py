@@ -86,7 +86,16 @@ class _SQLAlchemyBaseBackend(Backend, abc.ABC):
             self._owns_engine = False
 
         self._is_sqlite = self._engine.dialect.name == "sqlite"
-        self._closed = False
+        self._store_discarded = False
+        # Does closing this backend *destroy the store*? Only when we own an
+        # engine whose database lives in the connection itself: disposing an
+        # in-memory SQLite engine throws the data away, and re-initialising
+        # opens a different, empty database. Every other combination survives
+        # ``close()`` — a borrowed engine is not even disposed, and a file
+        # reopens with its contents. ``_table_is_absent`` is the only consumer.
+        self._close_discards_store = (
+            self._owns_engine and self._is_sqlite and self._engine.url.database in (None, "", ":memory:")
+        )
 
         if self._is_sqlite:
             self._configure_sqlite()
@@ -109,11 +118,15 @@ class _SQLAlchemyBaseBackend(Backend, abc.ABC):
         if self._owns_engine:
             self._engine.dispose()
         # Not a use-after-close guard: this backend is close_is_terminal=False
-        # and stays usable, re-initialising lazily. The flag exists only so the
-        # absent-table reclassification can tell "a table was dropped under a
-        # live backend" from "the caller shut this backend down" — see
-        # ``SQLBlobBackend._table_is_absent``.
-        self._closed = True
+        # and stays usable, re-initialising lazily. The flag records the one
+        # thing ``close()`` can do that re-initialising cannot undo — discard
+        # the store — so the absent-table reclassification can tell that apart
+        # from a table dropped under a live backend. Gated on
+        # ``_close_discards_store`` rather than set unconditionally: a borrowed
+        # or file-backed engine is still the same store afterwards, and must
+        # keep the reclassification. See ``SQLBlobBackend._table_is_absent``.
+        if self._close_discards_store:
+            self._store_discarded = True
 
     def unwrap(self, type_hint: type[T]) -> T:
         """Return the SQLAlchemy ``Engine`` if requested."""
@@ -687,19 +700,25 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         an error it already holds, so a failed inspection leaves that original
         error standing rather than replacing it with a guess.
 
-        **A closed backend never reclassifies**, for the same reason. This
-        backend is ``close_is_terminal=False``, so it re-initialises lazily and
-        stays usable — but on an in-memory SQLite engine, re-initialising opens a
-        *different, empty* database, and the inspector then truthfully reports no
-        table. Reclassifying there would answer "no such path" for a store the
-        caller destroyed, and it would answer it only for the two deletes while
-        ``read`` and the rest still said ``BackendUnavailable`` — the same
-        operation-disagrees-with-its-sibling defect this reclassification exists
-        to remove. A file-backed engine is unaffected either way: it reopens with
-        its table intact, so the inspection would have returned ``False``
-        regardless.
+        **A discarded store never reclassifies**, for the same reason. On an
+        owned in-memory SQLite engine, ``close()`` throws the data away and
+        re-initialising opens a *different, empty* database, so the inspector
+        truthfully reports no table. Reclassifying there would answer "no such
+        path" for a store the caller destroyed — and only for the two deletes,
+        while ``read`` and the rest still said ``BackendUnavailable``, which is
+        the operation-disagrees-with-its-sibling defect this reclassification
+        exists to remove.
+
+        The condition is "did closing discard the store", **not** "was
+        ``close()`` called". Those come apart in both directions, and gating on
+        the latter re-broke the rule for two live stores: a *borrowed* engine is
+        never disposed, so the store is untouched; and an owned *file* engine
+        reopens with its contents, so a caller who closes and resumes — which
+        ``close_is_terminal=False`` permits — is working against the same
+        database as before. In both, a table dropped afterwards is exactly the
+        case this clause governs, and both must keep reclassifying.
         """
-        if self._closed:
+        if self._store_discarded:
             return False
         try:
             return not sa.inspect(self._engine).has_table(self._table.name, schema=self._table.schema)
