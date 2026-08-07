@@ -22,6 +22,7 @@ expected_ripples:
   - docs-src/guides/custom-backend-guide.md
   - scripts/check_docstring_parity.py
   - docs-src/_data/graph/graph.json
+review_rounds: 5
 surprising_ripples:
   - tests/backends/s3/test_denied_probe.py
   - tests/backends/azure/_helpers.py
@@ -258,6 +259,46 @@ phases:
           are logged as surprising ripples — the register that makes a missing
           row visible to the aggregator.
         outcome: misleading
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_table_is_absent, close"
+        read_type: verify
+        extract: >-
+          Round 5, and the fix pass that removed the exemption had itself
+          introduced a regression of the class this item exists to remove. On an
+          in-memory engine, close() disposes and the next call opens a
+          *different, empty* database, so the inspector truthfully found no
+          table and the deletes answered "absent path" for a store the caller
+          had destroyed — while read() on the same instance still said
+          BackendUnavailable. Two verdicts, one dead store, on the configuration
+          the sqlblob conformance fixture uses. A closed backend no longer
+          reclassifies. Five rounds, five fix passes, and every round found
+          something in the previous one.
+        outcome: ok
+      - file: tests/backends/sftp/test_absent_base_path.py
+        section: "(new file)"
+        read_type: verify
+        extract: >-
+          Round 5 asked for the "binds every backend" claim to be measured
+          rather than read on the two backends where it had only been read,
+          arguing from this work's own BUG-247. Measured: SFTP complies, on the
+          in-process paramiko server with no Docker, and the absent container
+          needs no teardown to arrange — a base_path never created is the case.
+          Azure HNS cannot be reached here and carries a stated bound instead.
+          The clause is now executed on S3 (three lanes), Azure flat (both
+          lanes), SQLBlob and SFTP.
+        outcome: ok
+      - file: tests/backends/s3/test_denied_probe.py
+        section: "_BACKEND_PARAMS"
+        read_type: verify
+        extract: >-
+          Round 5 found the round-1 spec-mark correction void at runtime, and it
+          had been for four rounds: param-level marks ride onto every test
+          consuming the list, so S3-016 stayed attached to cells whose
+          function-level mark had been corrected to S3-015. Invisible at the
+          call site, invisible to check_spec_marks.py, and survived two later
+          rounds that were specifically hunting mis-traced marks. A correction
+          verified only where it was applied is not verified.
+        outcome: ok
   - id: verify
     name: Verify
     steps:
