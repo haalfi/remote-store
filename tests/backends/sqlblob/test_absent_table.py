@@ -274,10 +274,16 @@ class TestADiscardedInMemoryStoreReadsAsEmpty:
         the URI way got different delete semantics from one who did not.
         """
         instance = SQLBlobBackend(url)
-        instance.write("folder/object.txt", b"payload")
-        instance.close()
-        assert instance.delete("folder/object.txt", missing_ok=True) is None
-        assert instance.delete_folder("folder", recursive=True, missing_ok=True) is None
+        try:
+            instance.write("folder/object.txt", b"payload")
+            instance.close()
+            assert instance.delete("folder/object.txt", missing_ok=True) is None
+            assert instance.delete_folder("folder", recursive=True, missing_ok=True) is None
+        finally:
+            # The deletes above reopen a connection on the disposed engine. Close
+            # again so the pool releases it here rather than at a GC point, which
+            # on 3.13+ surfaces as an unraisable attributed to an unrelated test.
+            instance.close()
 
     def test_a_borrowed_engine_disposed_by_its_owner_answers_the_same(self) -> None:
         """No call reaches this object, so no guard here could ever have seen it.
@@ -287,19 +293,25 @@ class TestADiscardedInMemoryStoreReadsAsEmpty:
         learns of it only by failing.
         """
         engine = sa.create_engine("sqlite:///:memory:")
-        instance = SQLBlobBackend(engine=engine)
-        instance.write("folder/object.txt", b"payload")
-        engine.dispose()
-        assert instance.delete("folder/object.txt", missing_ok=True) is None
+        try:
+            instance = SQLBlobBackend(engine=engine)
+            instance.write("folder/object.txt", b"payload")
+            engine.dispose()
+            assert instance.delete("folder/object.txt", missing_ok=True) is None
+        finally:
+            engine.dispose()
 
     def test_the_read_asymmetry_is_bug_246_not_this_clause(self) -> None:
         """Pins the residue, so closing BUG-246 is visible here rather than silent."""
         instance = SQLBlobBackend("sqlite:///:memory:")
-        instance.write("folder/object.txt", b"payload")
-        instance.close()
-        assert instance.delete("folder/object.txt", missing_ok=True) is None
-        with pytest.raises(BackendUnavailable):
-            instance.read_bytes("folder/object.txt")
+        try:
+            instance.write("folder/object.txt", b"payload")
+            instance.close()
+            assert instance.delete("folder/object.txt", missing_ok=True) is None
+            with pytest.raises(BackendUnavailable):
+                instance.read_bytes("folder/object.txt")
+        finally:
+            instance.close()
 
 
 class TestTheReclassificationOverItsWholeConditionSpace:
