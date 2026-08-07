@@ -361,6 +361,87 @@ and the highest ID already in this file, then take the next integer. Run
   without it the next divergence is equally invisible. Expect it to turn a
   backend red on arrival; that is the item working, not a regression.
 
+- [ ] **BK-344 — Adapt `/ship` from PR #952's review evidence**
+  spec: — · effort: M · audience: contributor.process
+  Third delivery under ADR-0033, and the first to run the ADR-0034 machinery.
+  **This item records the evidence and withholds a prescription**, for the reason
+  BK-342 gave and proved: direction narrows attention, so the design is chosen
+  against the evidence, with the user, before anything is written. BK-342 also
+  anticipated this item by name — it split what n = 2 licensed from what it
+  guessed, and said the third delivery should prune what does not pay. Some of
+  what follows is that pruning data.
+  **Shape of the run:** eight review rounds, ten commits, four backlog items and
+  one spec-vs-spec conflict discovered. Two rounds ran past the soft ceiling on
+  user escalation. The final round found twelve findings, including one that
+  invalidated the clause's central argument. The loop did not converge; it
+  stopped because the work had to ship.
+  **Signal 1 — five consecutive rounds found a defect in the previous round's
+  fix, all on one decision.** A gate was keyed on `close()` (round 5), narrowed to
+  owned + `:memory:` (round 6), and withdrawn (round 7) once a reviewer measured
+  the URI-form in-memory spellings and an owner-disposed borrowed engine. Each
+  narrowing was argued from a reading of what the hazard *is*; each was refuted by
+  a state the argument had not considered. The condition space was four boolean
+  axes — enumerable in one test the whole time. Nothing in the loop escalates from
+  "argue the condition again" to "enumerate the space", and the rounds themselves
+  could not: each was correct about the defect in front of it.
+  **Signal 2 — method separated the productive rounds, and `/ship` varies
+  everything except method.** Three premises in this work were asserted and
+  disproved, every one of them by *running* something: that Local treats an absent
+  root as an absent path (round 4), that the round-6 gate covered the in-memory
+  cases (round 7), and that the rule merely ratified `delete`'s existing behaviour
+  on every flat-namespace backend (round 8, measured on `origin/master`). Rounds
+  that read the diff for internal consistency found real things — stale summaries,
+  mis-scoped spec marks — but never a false premise. ADR-0034 varies *who*
+  reviews: unprimed, panel, single-lens. Nothing varies *how*, and the two
+  reviewers in the last round differed most in exactly that: one read the artifact
+  set, one measured master and enumerated all thirteen backends against
+  `Capability.DELETE`. The second found the false premise and a fifth defect
+  (BUG-249) the first did not.
+  **Signal 3 — the framing fixed the reachable defect set for six rounds.** The
+  work was scoped by where the symptom was reported — flat-namespace backends —
+  and `GraphBackend`, a DELETE-capable backend whose drive is a container, went
+  unnamed until round 7. It then turned out to contradict the new clause by
+  *specification* (GR-031), the only spec-vs-spec conflict in the item. ADR-0034
+  sizes a panel by "the diff's breadth"; the diff never touched Graph. No round
+  asked which subjects the clause's own words pick out, as distinct from which
+  files the change edits.
+  **Signal 4 — a finding was closed to exactly its own wording and the same gap
+  resurfaced three rounds later.** Round 5 caught BE-021's divergence list
+  claiming backlog coverage that BUG-246 did not provide; the fix added the three
+  probe rows the finding named. Round 8 caught the identical gap — the same
+  divergence bullet says "every operation except the two deletes", and the item
+  still tracked three of eleven. BK-336's sweep obligation extends a finding to
+  its siblings and (post-BK-342) to the fixer's own changes; neither extends a
+  *fix* to the full class its own finding names.
+  **Signal 5 — a fix introduced a smaller, more misleading defect.** Round 7
+  closed an omission by adding the clause to the four docstrings that define
+  `missing_ok` for every caller, and stated the obligation as a flat guarantee on
+  the backend-agnostic `Store` facade — while the same PR's divergence list named
+  two backends that raise instead. Round 8 caught it. The sweep found the missing
+  copies; nothing checked whether the copies were true.
+  **Signal 6 — `/ship`'s own verification step failed silently at a threshold.**
+  The posted-count delta check ran `gh api .../comments --jq 'length'` without
+  `--paginate`, which saturates at 30. It read as "the comments did not post", so
+  a review was re-posted twice: fifteen comments where five were intended, and a
+  public claim that posting had failed when it had not. A verification step with a
+  silent ceiling is worse than none, because it is trusted. The instrument, not
+  the reviewer, produced that one.
+  **Signal 7 — nothing in the loop looked at CI.** CI went red on the rebase and
+  stayed red across four commits and four review rounds. Every round's gate was
+  the local `hatch run all`, which is a no-Docker Stage-1 variant on a different
+  interpreter than the failing matrix entries; the failure was 3.13/3.14-only and
+  could not appear locally. The user noticed, not the loop.
+  **Also evidence, on the other side.** Both ceiling escalations found more than
+  the round before them, and the last round found the most severe finding of the
+  eight — which is data about the soft ceiling BK-342 deliberately left alone, and
+  about whether "rounds elapsed" is a stop signal at all. ADR-0034's unprimed exit
+  gate worked as designed: it is what surfaced signals 1 through 5, and it is the
+  reason the loop was still open at round 8 rather than closed at round 6.
+  **Read the trace before designing anything:**
+  [`sdd/traces/bug-243-missing-ok-absent-container.yml`](traces/bug-243-missing-ok-absent-container.yml)
+  carries the per-round detail, the `outcome` tags, and the two ripple-check gaps
+  the work hit. PR #952 carries the eight posted rounds.
+
 - [ ] **BK-338 — Decide what a PR review roster should be**
   spec: — · effort: S · audience: contributor.process
   Open question, not a committed design. Evidence from PR #944: the only
