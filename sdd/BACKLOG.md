@@ -22,6 +22,21 @@ they land, not only here.
 Do not repeat process steps (those live in `sdd/000-process.md` and the ripple-check table).
 Existing items may be more verbose — trim on next touch.
 
+**Item authority:** an item's **diagnosis** — the observed problem and the
+evidence for it — is durable, and is what the item is for. Any **prescription**
+it carries — a fix shape, a disposition, a line reference, a scope claim, a
+reproduction recipe — is advisory, and is presumed stale by the time it is
+implemented. Re-derive it against the code before acting, and correct the item
+body in the same commit ([principle 3](../CLAUDE.md#principles)). An item whose
+prescription survived unchecked is not evidence the prescription was right.
+
+This is the same shape as [`CLAUDE.md` § Audits](../CLAUDE.md#audits) rule 3, for
+a different artifact pair — item body against implementation, rather than audit
+finding against implementation. That rule is not restated here and does not
+govern this pair; see it for the audit side.
+Measured failure modes behind this rule:
+[research § 3.2](research/research-spec-kit-comparison.md).
+
 **Item attributes:** each item carries a compact `spec: · effort: · audience:` line for quick scanning.
 Effort: S = <1 day · M = 1–3 days · L = >3 days. `—` = not applicable.
 
@@ -246,6 +261,88 @@ and the highest ID already in this file, then take the next integer. Run
   filters. Surfaced by the PR #944 review, which noted the diagnosis had been
   recorded in that PR's trace and filed nowhere.
 
+- [ ] **ID-249 — Trace-outcome report revisit at the next release**
+  spec: — · effort: S · audience: contributor.process
+  First revisit ticket for the release-anchored trigger ID-238 shipped. Per
+  [`CONTRIBUTING.md` § Release](../CONTRIBUTING.md#release) Phase 0, each release
+  reads `hatch run report-trace-outcomes` and closes the open revisit ticket.
+  This item is the pin that makes the ticket findable — the half of the ID-150
+  pattern that "record a backlog entry" alone drops.
+  **The pin lives here, not in the checklist.** `CONTRIBUTING.md` is a published
+  surface, so [CONTENT-RULES Rules 1 and 5](CONTENT-RULES.md#rules) bar a tracker
+  ID from it (`check_no_tracker_refs` enforces this, and caught the first attempt).
+  The checklist therefore describes the behaviour and points here; this file is
+  the single place that says *which* ticket is open — the same split
+  `sdd/formal/README.md` uses to pin ID-150.
+  **Record at the revisit:** the corpus totals (the baseline the following
+  release differences against — the report keeps no history); the references
+  selected (top-ranked row, plus any row with `rate` ≥ 1.5× the top row's at
+  `reads` ≥ 20 — a fitted threshold, re-check it rather than inherit it); and per
+  selected reference one of **act** (file work against
+  it), **defer** (leave it, say why), or **accept** (the tags are exposure, not a
+  defect).
+  **Baseline to difference against**, measured at `4076ed7`: 270 traces, 207
+  negative tags, `sdd/BACKLOG.md` top-ranked at 22 over 236 reads (9.3%).
+  **Exit criteria:** decision logged here, then the successor ticket opened and
+  its ID named in this item's close note. A calendar without a ticket is the same
+  as no calendar; a ticket without a successor is a calendar that runs once.
+
+- [ ] **ID-248 — Closing a backlog item reaches no row that finds the items citing it**
+  spec: — · effort: S · audience: contributor.process
+  The [Pre-work index](CLAUDE-REFERENCE.md#pre-work-index)'s **Backlog item
+  touched** row names the trace, the schema and the CHANGELOG-audience rule. It
+  does not name the **inbound** references: other items, section preambles, and
+  `BACKLOG-DONE.md` entries that cite the closing item by ID and assert something
+  about its state.
+  **Measured instances, from closing ID-238 in one PR** — four, each carrying a
+  claim the close falsified rather than a bare cross-reference. Two were caught by
+  the author's grep; **two more only by review**, which is itself the measurement:
+  1. The Cross-Artifact Consistency section preamble ("BK-327 and ID-238 are
+     independent of the chain … both sit at the section's tail").
+  2. BK-330's DONE entry, in two places ("nothing yet causes anyone to read it";
+     a Rule 6 register entry naming ID-238 as the owner that "will settle" its
+     fate).
+  3. The same section's "Shipped so far" paragraph ("the cadence is open as
+     ID-238 … so step 3 is not closed") — which the *same commit* contradicted in
+     `BACKLOG-DONE.md` with "Step 3 is whole". Two files, one commit, opposite
+     states of the same fact.
+  4. ID-239's `Why ID, not BK`, citing reasoning ID-238 stated. **The close
+     deleted the referent rather than moving it**: the rewrite into
+     `BACKLOG-DONE.md` dropped that paragraph, so the ID resolved and the sentence
+     around it pointed at nothing.
+  **Instance 4 is a distinct sub-shape** worth naming separately: not a stale
+  assertion *about* the closed item, but a live citation *of* it whose target the
+  close destroyed. A close migrates an item; anything the item was the sole home
+  of has to migrate too, or move to the citing site.
+  The asserting kind is what makes this more than a link-rot problem:
+  [principle 3](../CLAUDE.md#principles) is violated the moment the item closes,
+  and the stale sentence reads as current.
+  **Distinct from ID-246**, which is the nearest neighbour and the one most likely
+  to be mistaken for this. ID-246 catches a tracker ID that **resolves nowhere**;
+  this catches one that resolves perfectly well while the sentence around it
+  asserts something the close falsified. ID-246's proposed inverted pass would run
+  clean on **instances 1 to 3**, because the ID resolves in every one — so neither
+  item subsumes the other, and the fix shapes do not share a mechanism.
+  **Instance 4 is the contested member**, and it is contested in ID-246's
+  direction rather than this one: the *referent* was destroyed, which is closer to
+  a dangling reference. It still is not ID-246's case, because the ID itself keeps
+  resolving and ID-246's pass keys on the ID. Which item should own that shape is
+  the one genuine overlap to settle when either is picked up.
+  Also distinct from **BK-337**, scoped to authority docs' restating copies in
+  `.claude/**`, and from **BK-334**'s `hatch` aliases — different trigger,
+  different target set. This one is `sdd/BACKLOG*.md` internal.
+  **Prescription advisory** per [§ How this file works](#how-this-file-works),
+  and the disposition was re-derived once the count moved. An earlier draft said
+  n=2 was "thin evidence for a ripple row". At **n=4 from a single close, half of
+  them missed by an author who was grepping the ID deliberately**, thin is the
+  wrong reading: the base rate is high enough that a ripple row is the likely
+  answer, and the open question is narrower — whether the row can say anything
+  more useful than "grep the ID and read every hit". Note a gate is harder than it
+  looks: the defect is an assertion going stale, not a reference dangling, which
+  is precisely why ID-246's mechanism does not reach it. Instance 4 may be the
+  exception — a citation whose target the close deleted is closer to ID-246's
+  shape, though still not identical, since the *ID* keeps resolving.
+
 - [ ] **BK-335 — `check_links.py` cannot see Markdown links inside Python docstrings**
   spec: — · effort: S/M · audience: contributor.tooling
   [`scripts/docs/check_links.py`](../scripts/docs/check_links.py) walks git-tracked
@@ -304,8 +401,8 @@ and the highest ID already in this file, then take the next integer. Run
   `sdd/**` **are** published prose, and "Out of scope: `sdd/**`" already
   contradicts the dual-dest mechanism today. Settle that first; it bounds
   everything else.
-  **Why ID, not BK:** the same reasoning ID-238 states under Cross-Artifact
-  Consistency. The
+  **Why ID, not BK:** the question is filed, not a commitment — whether the
+  mechanism is the right one at all is unevaluated, so no outcome is promised. The
   scope question above is unevaluated and the item's own body says deciding it
   "bounds everything else", so the size of the committed half is unknown — which
   is also why `effort:` is `—` rather than a guess. Contrast BK-334 above, which
@@ -429,8 +526,10 @@ gated so no fixture ever runs it), and ID-207 step 3 is the other half (a
 citation is not an assertion).
 Step 2 keeps its L cost and its ~2.5% reach; it follows rather than leads, and
 ID-207 states the evidence. BK-332, ID-236 and ID-237 are follow-ons that get
-cheaper once the earlier work lands. BK-327 and ID-238 are independent of the
-chain and can be taken at any point; both sit at the section's tail.
+cheaper once the earlier work lands. BK-327 is independent of the chain and can
+be taken at any point; it sits at the section's tail. ID-238 was the other such
+item and [shipped](BACKLOG-DONE.md), settling BK-330's
+[Rule 6](DRIFT-RULES.md#tolerated) register entry.
 
 **BK-340 shipped and produced ID-244, its own successor in this ordering.**
 Registering the `sqlquery` fixture closed the reachability hole for the *gate*
@@ -478,8 +577,8 @@ Shipped so far: step 1 (Dafny twin parity) as BK-328, step 5.1 (the attribution
 rule) as BK-329, step 4 (037's per-backend table) as BK-331, and **step 3's
 report half** as BK-330; see
 [BACKLOG-DONE.md](BACKLOG-DONE.md). Step 3 asked for a report *and* a review
-cadence — the cadence is open as ID-238 at the tail of this section, so step 3
-is not closed. Four findings from them
+cadence; BK-330 shipped the report and ID-238 the cadence, so **step 3 is
+closed**. Four findings from them
 apply to what follows: a documented gap statement is not a measured one, pinning
 what an exemption covers beats exempting the whole item, an authority rule is
 worth exactly the live disagreements it decides — run a proposed one against them
@@ -736,40 +835,6 @@ that writes it lands, so cite the generator instead.
   raising `nav.omitted_files` to WARNING covers the nav half only.
   Surfaced by the PR #938 review; an unstated bound on `docs-gate` being trusted
   past its range ([`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)).
-
-- [ ] **ID-238 — Decide whether the trace-outcome report gets a review trigger, and what fires it**
-  spec: — · effort: S · audience: contributor.process
-  Independent of the chain, like BK-327 above — take it whenever, though it is
-  only actionable now that BK-330's report exists.
-  Research § 9 step 3 asked for two things: the report, and "review the top of the
-  list at the same cadence as the TLA+ status revisit". BK-330 shipped the report;
-  its item body dropped the cadence sentence, so the report exists and nothing
-  causes anyone to read it. **That gap between what the research asked for and
-  what the item scoped is this item's whole justification** — recorded here rather
-  than folded into BK-330, which deliberately shipped a tool and left the practice
-  question open.
-  This item is also the **named owner of BK-330's
-  [Rule 6](DRIFT-RULES.md#tolerated) register entry**: the decision it takes is
-  what settles whether that advisory check stays tolerated or gets switched off.
-  The analogy the research offered is `sdd/formal/README.md`'s TLA+ status revisit
-  (every 6 months or every 10 spec amendments, whichever first, each revisit
-  tracked as a backlog entry — the ID-150 pattern).
-  **The analogy is not the decision.** [`DRIFT-RULES.md` Rule 9](DRIFT-RULES.md#period)
-  says set the period from the drift rate and anchor a recurring check to the
-  events that can invalidate the artifact, not to a date — so an event trigger
-  ("a reference crosses N tags", "at each release", "when a ranked file is next
-  edited") is as admissible as a calendar one, and choosing between those shapes
-  is most of the work.
-  Input to that argument, not the answer: BK-330's
-  [BACKLOG-DONE entry](BACKLOG-DONE.md) measured the corpus growing by roughly
-  +3 negative tags and +1 tagged trace per merged PR across `79d0382` →
-  `d9a2d3d` → `83e22a3`. Re-measure with `hatch run report-trace-outcomes`
-  rather than trusting that figure — its going stale is the finding BK-330
-  shipped.
-  **Why ID, not BK:** the question was filed, not a period committed to. Whether
-  a scheduled review is the right mechanism at all is unevaluated, and Rule 9
-  makes "no recurring trigger, act on the report when a ranked file is next
-  touched" a legitimate outcome.
 
 ---
 

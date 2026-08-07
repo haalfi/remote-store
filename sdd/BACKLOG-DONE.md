@@ -8,6 +8,123 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-238 — Decide whether the trace-outcome report gets a review trigger, and what fires it**
+  spec: — · effort: S · audience: contributor.process
+  Closed as **yes, release-anchored**. `CONTRIBUTING.md` § Release Phase 0 gains
+  one step: run `hatch run report-trace-outcomes`, then record the corpus totals
+  and a decision (act / defer / accept) as a backlog entry.
+  **The trigger shape is the decision, and the analogy was rejected.** The item
+  offered `sdd/formal/README.md`'s TLA+ revisit (every 6 months or 10 spec
+  amendments) as the pattern. [Rule 9](DRIFT-RULES.md#period) wants the period set
+  from the drift rate, so the calendar half is dropped and only the ID-150 half is
+  kept — each revisit tracked as a backlog entry, because "a calendar without a
+  ticket is the same as no calendar". What invalidates the report is merged
+  traces; a release is the repo's only recurring ticketed checkpoint downstream of
+  those.
+  **The growth rate was re-derived, not inherited.** This item's own body quoted
+  BK-330's "~+3 negative tags per merged PR" and said to re-measure rather than
+  trust it, so: `83e22a3` carries 193 negative tags over 260 traces, `73d4079`
+  carries 205 over 269, across eight merged PRs (#944–#951). That is **~+1.5 tags
+  and ~+1.1 traces per merged PR** — the trace rate holds, the tag rate is about
+  half BK-330's.
+  **The per-release figure is a second measurement, and two shortcuts were wrong.**
+  Those eight PRs span three days, so that window is the *measurement* window, not
+  a release interval. The obvious correction — counting commits per interval with
+  `git log --since/--until` — **was run against a shallow clone** (grafted history
+  starts 2026-07-13), so a pre-graft interval returns zero because the history is
+  absent, not because it was quiet; an earlier draft read one such zero as "a
+  genuinely quiet 17 days". What this clone supports: CHANGELOG intervals of 4–18
+  days (median ~10) **over v0.23.0 → v0.30.0** — the window is stated because
+  earlier history released far faster, with same-day intervals — and **21** merged commits for
+  v0.30.0 → HEAD (`git rev-list --count --first-parent 7931c7d..origin/master`,
+  19 days and open). Earlier intervals are not derivable here. One interval at 21
+  PRs is ~30 tags against a base of 207 — enough for the ranking to move, which is
+  the whole claim needed. Whether intervals vary enough to make some firings
+  uninformative is unanswered, and that is itself an argument for bound 1's
+  recorded totals: differencing two recorded numbers needs no git history.
+  **Bound 1 — cadence proxy** ([Rule 7](DRIFT-RULES.md#miss-rate)): a release is a
+  *proxy* for corpus growth, not the growth itself, so a lengthening cadence
+  degrades the trigger silently. **The mitigation is built, not asserted** — the
+  report prints only current totals and stores no history, so the Phase 0 entry
+  records the totals it was decided against and that line is the next release's
+  baseline. The failure mode is a stale ranking, never a missed gate.
+  **Bound 2 — selection rule**: the sort key is the absolute count, which the
+  report documents as measuring exposure rather than failure rate. "Top-ranked"
+  alone resolves to `sdd/BACKLOG.md` for many releases running (22 against 10 for
+  the runner-up) while a high-`rate`, low-`reads` document never surfaces, so the
+  step selects the top row **plus any row with `rate` ≥ 1.5× the top row's at
+  `reads` ≥ 20**. The threshold is numeric because the report computes no
+  dispersion or outlier flag, and an undefined second selector collapses to the
+  defined first one. **Fitted, and flagged as such**: a first draft used 2×, which
+  at 9.3% sets the bar at 18.6% — above every row clearing the `reads` floor, so
+  the selector would have shipped inert. At 1.5× the bar is 14.0% and, against the
+  **full** report at `4076ed7`, it selects three rows: `CONTRIBUTING.md`
+  (15.6%/32), spec 029 (15.4%/26) and `_sftp.py` (14.5%/55). Two lie outside the
+  research doc's top-five excerpt, which is the selector earning its place — and a
+  draft that named only `_sftp.py` had been fitted against that excerpt rather
+  than the whole report. Re-check when the ranking shifts rather than inheriting.
+  **The ticket is pinned too.** ID-150 works because `formal/README.md` names the
+  ID; "record a backlog entry" keeps the ticket and drops the pin. First revisit
+  is **ID-249**, `[ ]` in `BACKLOG.md`, each revisit naming its successor on close.
+  **This settles BK-330's [Rule 6](DRIFT-RULES.md#tolerated) register entry**,
+  which named this item as its owner. The standing owner is now the **Phase 0
+  checklist step**, not this closed item: an owner must be answerable the next
+  time the question is asked, and a closed item records only that it was answered
+  once — the same standard BK-329's round-5 review applied when it disqualified
+  "whoever picks up a ranked reference".
+  **The decision was taken against a measurement, not from the item body.** The
+  first reading of the report is [research
+  § 3](research/research-spec-kit-comparison.md), which also measured the interval's
+  cost: the top-ranked reference was hand-counted at 16 in the earlier research
+  doc and is 22 now, having grown throughout the period in which nothing read it.
+  Co-shipped with **BK-343**, which that same first reading produced.
+
+- [x] **BK-343 — `BACKLOG.md` has no authority rule, so stale item prescriptions read as current**
+  spec: — · effort: S · audience: contributor.process
+  Diagnosed by the first reading of BK-330's report
+  ([research § 3.2](research/research-spec-kit-comparison.md)). `sdd/BACKLOG.md`
+  ranks first in the corpus for negative outcome tags (22 across 20 items, 236
+  reads at `4076ed7`; 28 counting the `BACKLOG-DONE.md` half the report's
+  drain-file bound says belongs with it). Reading the extracts rather than the count: ~11 are a genuine defect in
+  the item, all one shape — the item's **prescription or premise** was wrong by
+  the time someone implemented it. BK-331 ("trusting the item body over the
+  cross-reference would have produced a wrong fix"), BK-291 (prescribed fix half
+  wrong on Windows), BK-269 (asserted a CI practice that did not exist), BK-272
+  (cited a `pyproject.toml` line that had moved). Every exemplar is a tag filed
+  against `BACKLOG.md` itself, checked one by one; two earlier drafts listed
+  BUG-221 and BUG-220, both filed against `_local.py` — true observations about an
+  item, recorded in the row of the file the reader was in, which is the
+  attribution difficulty the report's own drain-file bound describes.
+  Shipped as an **Item authority** rule in
+  [§ How this file works](BACKLOG.md#how-this-file-works): diagnosis is durable,
+  prescription is advisory and presumed stale, re-derive before acting and correct
+  the body in the same commit.
+  **A new direction for a new artifact pair, not a copy.**
+  [Rule 4](DRIFT-RULES.md#authority) wants the direction declared in the document
+  owning the pair and not restated elsewhere. `CLAUDE.md` § Audits rule 3 governs
+  audit finding ↔ implementation; this governs item body ↔ implementation. The
+  backlog cites it as sibling precedent rather than reproducing its wording. That
+  the norm already existed informally is itself evidence: **BK-250's entry** in
+  this file records a contributor applying the audit rule to a backlog item by
+  analogy ("Audit prescription is advisory; diverged per the
+  re-verify-against-code convention"). Cited by item ID, not line number — the
+  line number originally used here had drifted by the time review reached it,
+  which is this item's own defect class landing on this item.
+  **Deliberately no gate.** The measured defect is stale *premises*, which no
+  check can evaluate; the mechanically checkable part (`path:line` references) is
+  6 instances file-wide, which does not clear [Rules 5 and
+  7](DRIFT-RULES.md#mandatory-path). Recorded rather than assumed, per Rule 5.
+  **Measurable prediction, and the trigger that will test it:** re-run the report
+  after ~20 merged PRs. `BACKLOG.md`'s negative tags per 100 reads should fall
+  from 9.3, with the residue shifting from wrong prescriptions toward wrong
+  diagnoses. **Co-report tag coverage when checking it** — that figure is `rate`,
+  whose denominator counts every citing step while only 43.1% carry an `outcome`,
+  so a shift in tagging discipline (which shipping a rule about backlog items may
+  itself cause) moves the ratio with no change in the underlying failure rate.
+  If neither moves, the rule did not change behaviour and should be
+  reconsidered rather than defended. ID-238's release-anchored trigger, co-shipped
+  here, is what causes that re-measurement to happen.
+
 - [x] **ID-241 — Conformance cells that make no HTTP call still skip on a missing cassette**
   spec: TEST-007 · effort: S · audience: infra.test
   The missing-cassette skip fired **per test name**, at collection time: any
@@ -491,8 +608,11 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   each with the traces that cited it and the sections they cited, plus corpus
   totals and tag-coverage.
   **Partially closes step 3, which asked for a report *and* a review cadence.**
-  The report is here; nothing yet causes anyone to read it. The residue is
-  **[ID-238](BACKLOG.md)**, and the section preamble is qualified to match.
+  The report shipped here; the cadence was the residue, filed as **ID-238** and
+  since closed with a release-anchored trigger. Step 3 is whole. (Deliberately a
+  bare ID rather than an `(#unreleased)` anchor: Release Phase 2 renames that
+  heading to `## vX.Y.Z`, so the link would keep resolving while pointing at the
+  fresh empty section — the defect class ID-238 exists to instrument.)
   **A report, not a gate**, per [`DRIFT-RULES.md` Rule 5](DRIFT-RULES.md#mandatory-path)'s
   requirement to record why. The two reasons live in the script's module
   docstring — this entry points at them rather than restating them, so there is
@@ -500,12 +620,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   when a trace cannot be read or parsed; there is deliberately no code that
   signals findings, and `test_findings_never_change_the_exit_code` asserts the
   return value, so a promotion to a gate fails it by construction.
-  **Rule 6 register entry — owner: [ID-238](BACKLOG.md).** That item decides what
-  triggers reading the report, so it is the item that will settle whether this
-  advisory check stays tolerated or gets switched off, which is what Rule 6 asks
-  an owner to be answerable for. (Naming no owner is what BK-329's round-5 review
-  disqualified a candidate register for; "whoever picks up a ranked reference"
-  was a description of the unowned state, not an owner.)
+  **Rule 6 register entry — owner: the `CONTRIBUTING.md` § Release Phase 0
+  checklist step.** ID-238 decided what triggers reading the report and kept it
+  rather than switching it off, but a *closed item* cannot be the standing owner:
+  Rule 6 wants someone answerable the next time the question is asked, and a
+  closed item records only that it was answered once. The checklist step is
+  self-renewing — it fires every release and produces a backlog entry carrying the
+  corpus totals and a decision, so the register has a live owner and a dated
+  record. (Naming no owner is what BK-329's round-5 review disqualified a
+  candidate register for; "whoever picks up a ranked reference" was a description
+  of the unowned state, not an owner. A closed item is a description of a past
+  decision, which fails the same test.)
   Deliberately absent from `lint`, `preflight`, `docs-gate` and `all`. What keeps
   it executable rather than rotting is its own test suite, including a
   live-corpus run — **locally**. In CI the qualifier matters: `CODE_PAT` does not
