@@ -311,8 +311,8 @@ async def _awrong_type_if_file(path: str, *, is_object: Callable[[str], Awaitabl
 
 
 __all__ = [
-    "_achildren_or_absent_container",
     "_acheck_no_file_ancestor",
+    "_achildren_or_absent_container",
     "_awrong_type_if_file",
     "_awrong_type_if_folder",
     "_check_no_file_ancestor",

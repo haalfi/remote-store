@@ -94,6 +94,63 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Lint / CI Completeness
 
+- [ ] **BK-343 — BE-021's absent-container rule has no registry-driven gate, so a new backend is silently exempt**
+  spec: BE-021 · effort: M · audience: infra.test
+  The rule binds every backend that can delete and whose container can be
+  absent, and it is verified by six hand-written per-backend suites
+  (`tests/backends/{s3,azure,azure/aio,sqlblob,sftp,local,graph/aio}/`).
+  `tests/backends/conformance/` gained nothing, so a seventh such backend
+  inherits no cell and passes CI without ever meeting the clause.
+  This is not hypothetical. `GraphBackend` went unexamined through six review
+  rounds of the change that wrote the rule (BUG-243) and turned out to
+  contradict it, which is BUG-248. A registry-driven cell would have failed on
+  the first run.
+  The repo already has the shape for this: [`sdd/TESTING.md`](TESTING.md)
+  Rule 13 § "Declaring an exemption" — a self-pruning exemption list where
+  silence is not consent. The work is a conformance cell parametrised over the
+  backend registry, plus an explicit exemption entry for the four backends BE-021
+  names as out of scope (`MemoryBackend` and `AsyncMemoryBackend`, whose
+  container is an in-process dict; `SQLQueryBackend` and `ReadOnlyHttpBackend`,
+  which do not declare `DELETE`).
+  **Note the fixture problem before scoping this.** An absent container is not
+  a state most conformance fixtures can reach: the S3 and Azure lanes need a
+  stub that 404s at container level (BUG-243 built those), SQLBlob needs a
+  dropped table, Local needs its root deleted, and Graph needs a respx route.
+  The per-backend suites exist partly because arranging the state is
+  per-backend. A registry cell may need a fixture-declared "make the container
+  absent" hook rather than a single shared arrangement.
+  Surfaced by the PR #952 round-8 review, which noted the PR records the lesson
+  in prose (BACKLOG-DONE: "scope a contract change by which backends have the
+  thing the clause names") without building the mechanism that would enforce it.
+
+- [ ] **BUG-249 — Three `S3Boto3Backend` listings leak a raw `botocore.ClientError`**
+  spec: BE-021 · effort: S · audience: user.api
+  BE-021's first invariant: "Backend-native exceptions never leak. All
+  exceptions are mapped to `remote_store` error types." `list_files`,
+  `list_folders` and `iter_children` are the only methods on the class that call
+  the wire without `_boto_errors` around it — every other method wraps, at
+  fourteen sites. So the paginator's exception reaches the caller untouched.
+  Measured against the missing-bucket stub, and against a 403 stub to show the
+  cause is local rather than contractual:
+  | Backend | `list_files` on an absent bucket | on a denied bucket |
+  | --- | --- | --- |
+  | S3, S3-PyArrow | empty listing | `PermissionDenied` |
+  | S3-Boto3 | raises `botocore.exceptions.ClientError` | raises `botocore` `AccessDenied` |
+  Two backends answer correctly against the identical wire response, so this is
+  an omission in one adapter, not an unstated contract question. The escaping
+  type is the worst part: a caller caching `except RemoteStoreError` catches
+  every backend but this one, and `ClientError` comes from a library they may
+  never have imported.
+  Pinned by `tests/backends/s3/test_denied_probe.py::TestS3Boto3ListingsLeakTheirNativeError`,
+  which asserts both that the error *is* a `ClientError` and that it is *not* a
+  `RemoteStoreError` — so the fix breaks the cell rather than making it vacuous.
+  The fix is one `with self._boto_errors(path):` per method, but note all three
+  are generators: the wrapper must be inside the generator body, not around the
+  call that returns it, or it will not be entered until the first `next()`.
+  Pre-existing. Surfaced by the PR #952 round-8 review, which enumerated every
+  operation on every backend against an absent container rather than only the
+  ones the clause governs.
+
 - [ ] **BUG-248 — BE-021's absent-container rule and GR-031's drive-identity escalation contradict each other**
   spec: BE-021, GR-031 · effort: M · audience: user.api
   Two clauses, both deliberate, giving opposite answers for the same call. BE-021

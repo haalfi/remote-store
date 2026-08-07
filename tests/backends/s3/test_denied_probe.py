@@ -91,7 +91,7 @@ pytest.importorskip("boto3", reason="boto3 not installed")
 pytest.importorskip("pytest_httpserver", reason="pytest-httpserver not installed")
 pytest.importorskip("werkzeug", reason="werkzeug not installed")
 
-from remote_store._errors import NotFound, PermissionDenied  # noqa: E402
+from remote_store._errors import NotFound, PermissionDenied, RemoteStoreError  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -389,3 +389,60 @@ class TestAbsentBucketReadsAsAbsentPath:
             with pytest.raises(NotFound) as exc_info:
                 _STRICT_DELETES[op_name](backend)
             assert exc_info.value.backend == _BACKEND_NAMES[dotted]
+
+
+# The three listings on S3Boto3Backend, which do not wrap `_paginate` in
+# `_boto_errors` the way every other method on the class wraps its call.
+_BOTO3_LISTINGS: dict[str, Callable[[Backend], Any]] = {
+    "list_files": lambda b: list(b.list_files("")),
+    "list_files-recursive": lambda b: list(b.list_files("folder", recursive=True)),
+    "list_folders": lambda b: list(b.list_folders("")),
+    "iter_children": lambda b: list(b.iter_children("")),
+}
+
+
+class TestS3Boto3ListingsLeakTheirNativeError:
+    """A raw ``botocore`` exception escapes three listings — pinned, not fixed.
+
+    BE-021's first invariant is that backend-native exceptions never leak: every
+    failure arrives as a ``RemoteStoreError`` subclass. These three are the only
+    methods on ``S3Boto3Backend`` that call the wire without
+    ``_boto_errors`` around it, so against an absent bucket the caller gets
+    ``botocore.exceptions.ClientError`` — a type from a library they may not
+    have imported and cannot catch through ``remote_store``'s hierarchy.
+
+    Pre-existing, and outside the reach of the absent-container clause, which
+    decides only what the two deletes tolerate. It is pinned here rather than
+    fixed because the fix belongs with the other listing-mapping work in
+    BUG-249, and because an unpinned divergence is how the same measurement
+    gets redone. The assertion is deliberately two-sided: it records that the
+    escaping error *is* a ``ClientError`` and that it is *not* a
+    ``RemoteStoreError``, so closing BUG-249 breaks this cell rather than
+    silently making it vacuous.
+    """
+
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.parametrize("op_name", sorted(_BOTO3_LISTINGS))
+    def test_listing_raises_the_raw_botocore_error(self, httpserver: HTTPServer, op_name: str) -> None:
+        from botocore.exceptions import ClientError
+
+        endpoint = _serve_missing_bucket_stub(httpserver)
+        with _backend_at(_S3B3, endpoint) as backend, pytest.raises(ClientError) as exc_info:
+            _BOTO3_LISTINGS[op_name](backend)
+        assert not isinstance(exc_info.value, RemoteStoreError), (
+            f"{op_name} now maps its error — BUG-249 is fixed, so delete this class"
+        )
+
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.parametrize("dotted", [_S3, _S3PA], ids=["s3", "s3-pyarrow"])
+    def test_the_other_two_lanes_map_it(self, httpserver: HTTPServer, dotted: str) -> None:
+        """The s3fs-backed lanes map the same 404, which is what makes this a gap.
+
+        Without this cell the divergence reads as "S3 listings do not map an
+        absent bucket", which would be a contract question. It is a
+        backend-local omission: the same wire response, the same operation, two
+        backends that answer correctly and one that does not.
+        """
+        endpoint = _serve_missing_bucket_stub(httpserver)
+        with _backend_at(dotted, endpoint) as backend:
+            assert list(backend.list_files("")) == []

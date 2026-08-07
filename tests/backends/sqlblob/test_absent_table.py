@@ -46,6 +46,17 @@ pinning because it shapes what a caller can encounter, but note what it does
 can be bound to an absent container by dropping the table under it — which is
 exactly what the first class does.
 
+**How spec marks are scoped in this module**, since ``check_spec_marks.py``
+verifies only that a cited ID *exists* and two rounds found marks that fit
+nothing. A mark must be exercised by *some* cell in the scope it is attached to:
+a class-level mark by at least one of the class's tests, a method-level mark by
+at least one of the method's parametrisations. A mark no cell under it exercises
+is removed rather than tolerated — which is why the matrix cell dropped
+``BE-013`` (it calls only ``delete``) and why ``TestContainerExistsByConstruction``
+carries no ``BE-01x`` at all. ``BE-020`` stays on the matrix cell because half
+its parametrisations call ``close()``, and on the class below because two of its
+three tests do.
+
 **Coverage bound:** only SQLite runs here. A dropped table raises
 ``OperationalError`` on SQLite and ``ProgrammingError`` on PostgreSQL and MySQL;
 both are ``SQLAlchemyError`` subclasses, so the branch below covers both by

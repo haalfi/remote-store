@@ -1104,6 +1104,21 @@ and by the resource scope of the failing URL:
   unreachable) to confirm the drive is reachable, then treat
   `NotFound` as authoritative for the item.
 
+**Conflict with BE-021, unresolved.** The third bullet's escalation
+contradicts
+[BE-021](003-backend-adapter-contract.md#be-021-error-mapping)
+§ "An absent container reads as an absent path", which requires
+`delete(missing_ok=True)` and `delete_folder(missing_ok=True)` to return
+cleanly when the container is absent and binds every backend with no
+carve-out. A drive is a container, so against a drive-identity
+`resourceNotFound` this clause raises `BackendUnavailable` where that one
+requires a clean return. Both were written deliberately and neither
+implementation is wrong under its own; the disagreement is recorded in
+BE-021's divergence list and adjudicated as a whole rather than by
+assuming either clause wins. Whichever loses gets an amended
+cross-reference here as well as there — a resolution recorded on one side
+only is how the conflict went six review rounds without being noticed.
+
 **Verification note (live, consumer OneDrive, 2026-06):** a
 nonexistent drive id returned `404 itemNotFound` on **both** URL
 forms — the item-by-path address and the bare `/drives/{drive_id}`

@@ -18,6 +18,8 @@ discovery_followups:
   - BUG-246
   - BUG-247
   - BUG-248
+  - BUG-249
+  - BK-343
 expected_ripples:
   - CHANGELOG.md
   - docs-src/guides/custom-backend-guide.md
@@ -470,4 +472,46 @@ phases:
           it added exactly the rows that round's finding named. A divergence
           claiming "every operation except X" needs an item scoped to every
           operation except X, not to whatever subset a reviewer measured.
+        outcome: ok
+      - file: src/remote_store/backends/_s3_boto3.py
+        section: "list_files, list_folders, iter_children"
+        read_type: verify
+        extract: >-
+          Round 8's second reviewer enumerated every operation on every backend
+          against an absent container rather than only the ones the clause
+          governs, and found the three listings calling the wire without
+          _boto_errors — the only unwrapped call sites on a class that wraps at
+          fourteen others. A raw botocore ClientError reaches the caller,
+          breaching BE-021's never-leak invariant. Pre-existing and outside this
+          clause's reach, so filed as BUG-249 and pinned rather than fixed. The
+          reason it was found now and not in seven earlier rounds is the
+          enumeration: every previous round measured the operations the clause
+          names.
+        outcome: ok
+      - file: tests/backends/conformance/
+        section: "(absent-container coverage — absent)"
+        read_type: verify
+        extract: >-
+          Six per-backend suites verify a rule that binds every backend, and the
+          conformance tree gained nothing, so a seventh backend inherits no cell.
+          That is exactly how GraphBackend survived six rounds. The PR records
+          the lesson in prose and does not build the mechanism; filed as BK-343
+          with the fixture problem noted, since arranging an absent container is
+          per-backend and a registry cell likely needs a fixture-declared hook.
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.pytest.ini_options] filterwarnings"
+        read_type: verify
+        extract: >-
+          CI went red on 3.13 and 3.14 with PytestUnraisableExceptionWarning for
+          a GC-finalized sqlite3.Connection, attributed to an unrelated test and
+          landing on a different one per job. The cause was already documented
+          two lines above the failure — "SQLAlchemy's connection pool on SQLite
+          may leave DBAPI connections for GC to finalize" — with ignores that
+          are module-scoped to sqlalchemy and weakref and so cannot match the
+          unraisable form, which is raised from _pytest.unraisableexception.
+          Three cells in this PR reopened a connection after close() and left it
+          for GC; disposing in a finally turned CI green without widening any
+          ignore. Not reproducible on the local 3.11 interpreter, so CI was the
+          only available measurement.
         outcome: ok

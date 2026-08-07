@@ -609,6 +609,12 @@ here is what makes the container case answerable from one place.
   `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend`, where the strict
   prefix probe is reached after the tolerant HEAD comes back empty.
   `S3Backend` and `S3PyArrowBackend` answer `False`.
+- `S3Boto3Backend`'s `list_files`, `list_folders` and `iter_children` raise a
+  raw `botocore.exceptions.ClientError` against an absent container, breaching
+  the never-leak invariant at the top of this section rather than the mapping
+  row. They are the only methods on that class whose wire call is not wrapped in
+  its error mapper; the two s3fs-backed lanes answer the identical response with
+  an empty listing.
 - On `SQLBlobBackend`, **every operation except the two deletes** answers an
   absent table with `BackendUnavailable` (or the base error, by dialect) rather
   than `NotFound`, because they map the driver's complaint without asking
@@ -692,6 +698,18 @@ than a missing row (`OperationalError` on SQLite, `ProgrammingError` on
 PostgreSQL and MySQL), so it reclassifies: one inspector call, hung off
 `SQLAlchemyError` so it is charged to a statement that already failed and never
 to a miss.
+
+**What "every backend" leaves out, named rather than left to be re-derived.**
+The clause reaches every backend that can delete and whose container can be
+absent. That is `S3Backend`, `S3PyArrowBackend`, `S3Boto3Backend`,
+`AzureBackend`, `AsyncAzureBackend`, `SQLBlobBackend`, `LocalBackend`,
+`SFTPBackend`, `GraphBackend` and its sync adapter. Four are out of scope, for
+two different reasons: `MemoryBackend` and `AsyncMemoryBackend` delete, but
+their container is an in-process dict that cannot be absent while the backend
+exists; `SQLQueryBackend` and `ReadOnlyHttpBackend` do not declare `DELETE`, so
+there is no tolerant delete to bind. Writing the roster out is cheap insurance
+— `GraphBackend` sat unexamined through six review rounds of this clause
+because nobody had enumerated which backends the words picked out.
 
 **Why "every backend" and not a scoped subset.** Three criteria for narrowing
 the clause's reach were tried and every one was either circular or false — the
