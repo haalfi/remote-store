@@ -234,6 +234,22 @@ phases:
         section: "Ripple-check / Detailed checklist"
         read_type: verify
         extract: "Full ripple audit at verify-end."
+      - file: tests/backends/fixtures/test_missing_cassette_guard.py
+        section: "os_sensitive enrolment, verified on the Windows CI leg"
+        read_type: verify
+        extract: >-
+          The marker was declined in round 1 and added in round 3, because the
+          code changed underneath the decision: round 2 introduced the
+          path.parent.resolve() containment check, which is Windows-sensitive in
+          a way the round-1 reasoning (a separator in one assertion) did not
+          cover. Both reviewers who examined it could only reason about Windows,
+          not run it, and nor could I. Now measured: the windows-latest leg
+          collected and passed all 14 cells on platform win32 under
+          `pytest -m os_sensitive`, so the resolve() comparison and the
+          os.path.relpath message are exercised on a native-backslash
+          filesystem rather than argued about.
+
+review_rounds: 6
 
 discovery_followups:
   - ID-245
