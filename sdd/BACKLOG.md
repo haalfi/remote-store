@@ -94,6 +94,42 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Lint / CI Completeness
 
+- [ ] **BUG-248 — BE-021's absent-container rule and GR-031's drive-identity escalation contradict each other**
+  spec: BE-021, GR-031 · effort: M · audience: user.api
+  Two clauses, both deliberate, giving opposite answers for the same call. BE-021
+  says `delete(missing_ok=True)` and `delete_folder(missing_ok=True)` MUST return
+  cleanly when the container is absent, binding **every** backend with no
+  carve-out. GR-031 says a `404 resourceNotFound` — Graph's drive-identity code,
+  honoured at any URL scope — maps to `BackendUnavailable` for every
+  error-raising operation, because a deleted drive is a backend identity failure
+  rather than a per-item condition. `GraphBackend`'s drive is a container, so the
+  two clauses meet, and GR-031 wins today:
+  | Graph `error.code` | `delete(missing_ok=True)` | `delete_folder(missing_ok=True)` | `exists` / `is_file` / `is_folder` |
+  | --- | --- | --- | --- |
+  | `itemNotFound` | tolerated | tolerated | `False` |
+  | `resourceNotFound` | raises `BackendUnavailable` | raises `BackendUnavailable` | `False` |
+  Measured on respx stubs and pinned in
+  `tests/backends/graph/aio/test_absent_drive.py`. The probe row is not a
+  divergence: GR-031's probe scope flattens every `404`, so BE-004/BE-005 hold.
+  Only the two tolerant deletes disagree.
+  This is not a bug in either implementation — each matches its own spec — so it
+  needs adjudicating before anything is coded. The case for GR-031: a drive that
+  has been deleted or misconfigured is not the same event as an empty bucket, and
+  silently returning from a delete against a store the caller cannot reach hides a
+  configuration error behind a success. The case for BE-021: it binds every
+  backend precisely because the earlier per-backend answers disagreed, and a
+  container is a container.
+  Note the escalation is defensive rather than observed: GR-031's own verification
+  note records that live consumer OneDrive returned `404 itemNotFound` for a
+  nonexistent drive on both URL forms, so the divergent row may be unreachable on
+  that tier and reachable only on SharePoint-backed drives, which the live tier
+  does not cover. Weigh how much a rule is worth when nobody has seen it fire.
+  Whichever clause loses must say so explicitly — an amended cross-reference in
+  both specs, not silence in one.
+  Surfaced by the PR #952 round-7 review: `GraphBackend` went unexamined for six
+  rounds because the work was framed around flat-namespace backends, and Graph is
+  hierarchical.
+
 - [ ] **BUG-247 — `LocalBackend` reports a deleted root as "Path escapes root directory"**
   spec: BE-004, BE-012, BE-013, BE-021 · effort: S · audience: user.api
   Delete a `LocalBackend`'s root directory out from under it and **every** operation
@@ -121,7 +157,7 @@ and the highest ID already in this file, then take the next integer. Run
   already treated an absent root as an absent path) on the strength of two
   code readings; the first test that ran it disproved it.
 
-- [ ] **BUG-246 — An absent container makes `exists()` / `is_file()` / `is_folder()` raise on four backends**
+- [ ] **BUG-246 — An absent container makes the never-raise probes raise on four backends**
   spec: BE-004, BE-005, BE-021 · effort: M · audience: user.api
   BE-004 and BE-005 say these never raise, and BE-021 repeats it: the three
   return `False` on any traversal error rather than raising. Against a container

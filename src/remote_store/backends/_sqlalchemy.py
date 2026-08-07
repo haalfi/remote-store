@@ -86,16 +86,6 @@ class _SQLAlchemyBaseBackend(Backend, abc.ABC):
             self._owns_engine = False
 
         self._is_sqlite = self._engine.dialect.name == "sqlite"
-        self._store_discarded = False
-        # Does closing this backend *destroy the store*? Only when we own an
-        # engine whose database lives in the connection itself: disposing an
-        # in-memory SQLite engine throws the data away, and re-initialising
-        # opens a different, empty database. Every other combination survives
-        # ``close()`` — a borrowed engine is not even disposed, and a file
-        # reopens with its contents. ``_table_is_absent`` is the only consumer.
-        self._close_discards_store = (
-            self._owns_engine and self._is_sqlite and self._engine.url.database in (None, "", ":memory:")
-        )
 
         if self._is_sqlite:
             self._configure_sqlite()
@@ -117,16 +107,6 @@ class _SQLAlchemyBaseBackend(Backend, abc.ABC):
         """Dispose the engine if owned. No-op for borrowed engines."""
         if self._owns_engine:
             self._engine.dispose()
-        # Not a use-after-close guard: this backend is close_is_terminal=False
-        # and stays usable, re-initialising lazily. The flag records the one
-        # thing ``close()`` can do that re-initialising cannot undo — discard
-        # the store — so the absent-table reclassification can tell that apart
-        # from a table dropped under a live backend. Gated on
-        # ``_close_discards_store`` rather than set unconditionally: a borrowed
-        # or file-backed engine is still the same store afterwards, and must
-        # keep the reclassification. See ``SQLBlobBackend._table_is_absent``.
-        if self._close_discards_store:
-            self._store_discarded = True
 
     def unwrap(self, type_hint: type[T]) -> T:
         """Return the SQLAlchemy ``Engine`` if requested."""
@@ -700,26 +680,29 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         an error it already holds, so a failed inspection leaves that original
         error standing rather than replacing it with a guess.
 
-        **A discarded store never reclassifies**, for the same reason. On an
-        owned in-memory SQLite engine, ``close()`` throws the data away and
-        re-initialising opens a *different, empty* database, so the inspector
-        truthfully reports no table. Reclassifying there would answer "no such
-        path" for a store the caller destroyed — and only for the two deletes,
-        while ``read`` and the rest still said ``BackendUnavailable``, which is
-        the operation-disagrees-with-its-sibling defect this reclassification
-        exists to remove.
+        **A discarded in-memory store is not special-cased**, and that is a
+        decision rather than an oversight. Disposing an in-memory SQLite engine
+        throws the data away, so the next statement opens a *different, empty*
+        database and the inspector truthfully reports no table — whereupon the
+        deletes tolerate while ``read`` raises ``BackendUnavailable``, because
+        only the deletes carry this reclassification.
 
-        The condition is "did closing discard the store", **not** "was
-        ``close()`` called". Those come apart in both directions, and gating on
-        the latter re-broke the rule for two live stores: a *borrowed* engine is
-        never disposed, so the store is untouched; and an owned *file* engine
-        reopens with its contents, so a caller who closes and resumes — which
-        ``close_is_terminal=False`` permits — is working against the same
-        database as before. In both, a table dropped afterwards is exactly the
-        case this clause governs, and both must keep reclassifying.
+        A guard against that shipped briefly and was withdrawn. It could not be
+        made to work: the condition is "was the store discarded", and that is
+        not decidable from configuration. Keying it on ``close()`` broke two
+        live stores (a borrowed engine is never disposed; a file engine reopens
+        with its contents); keying it additionally on an in-memory URL still
+        missed the URI-form spellings (``file::memory:``, ``mode=memory``) and
+        could never see an owner disposing a *borrowed* engine, which needs no
+        call on this object at all. Each attempt made the behaviour depend on
+        URL spelling rather than on the store.
+
+        The asymmetry it was papering over is a defect in its own right, already
+        filed: ``read`` and ``exists`` answer ``BackendUnavailable`` for an
+        absent table where the contract says ``NotFound`` and ``False``. Fix
+        that and a discarded store reads as an empty store from every
+        operation, consistently, with no special case here to get wrong.
         """
-        if self._store_discarded:
-            return False
         try:
             return not sa.inspect(self._engine).has_table(self._table.name, schema=self._table.schema)
         except sa.exc.SQLAlchemyError:

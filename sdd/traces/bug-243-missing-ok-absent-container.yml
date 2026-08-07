@@ -17,16 +17,19 @@ discovery_followups:
   - BUG-245
   - BUG-246
   - BUG-247
+  - BUG-248
 expected_ripples:
   - CHANGELOG.md
   - docs-src/guides/custom-backend-guide.md
   - scripts/check_docstring_parity.py
   - docs-src/_data/graph/graph.json
-review_rounds: 6
+review_rounds: 7
 surprising_ripples:
   - tests/backends/s3/test_denied_probe.py
   - tests/backends/azure/_helpers.py
   - tests/backends/azure/aio/test_absent_container.py
+  - src/remote_store/aio/backends/_graph/backend.py
+  - sdd/specs/044-graph-backend.md
 phases:
   - id: orient
     name: Orient
@@ -317,6 +320,76 @@ phases:
           test per separating case. Sixth round, sixth fix pass, and the fifth
           time a round found a defect in the previous round's fix.
         outcome: ok
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_table_is_absent (the gate, withdrawn)"
+        read_type: verify
+        extract: >-
+          Round 7 measured the round-6 gate and it failed again, in two
+          directions: the URI-form in-memory spellings
+          (sqlite:///file::memory:?uri=true and the named-shared form) are not
+          matched by the owned + ":memory:" test, and a borrowed engine the
+          owner disposes is never gated at all. Three rounds, three conditions,
+          each argued rather than enumerated and each refuted by a state the
+          argument had not considered. Withdrawn instead of narrowed a fourth
+          time: it papered over an asymmetry already filed as BUG-246, and only
+          for some spellings of the same URL, so it made behaviour depend on how
+          the store was addressed. The condition space is small and finite, so
+          the replacement test parametrises the axes and generates the product
+          rather than hand-listing coordinates — which is also how the round-6
+          version came to guard a row that was not there.
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "delete, delete_folder, classify_graph_error"
+        read_type: verify
+        extract: >-
+          Round 7's completeness critic asked which DELETE-capable backends had
+          never been named, and GraphBackend had not been, in six rounds. Its
+          drive is a container and it is not flat-namespace, which is exactly
+          why the framing missed it — the work was scoped by where the symptom
+          was reported rather than by which backends have the thing the clause
+          names. Measured: an absent drive reported as 404 itemNotFound is
+          tolerated by both deletes, and one reported as 404 resourceNotFound
+          raises BackendUnavailable. The second is not a bug; GR-031 specifies
+          it deliberately. Two of this repo's own clauses give opposite answers
+          for one call, so BUG-248 adjudicates rather than this PR deciding by
+          assuming the newer clause wins.
+        outcome: ok
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-031"
+        read_type: reference
+        extract: >-
+          Read to find out whether the Graph divergence was an oversight or a
+          decision. It is a decision, with a rationale and a live verification
+          note — and the note weakens it: consumer OneDrive returned
+          itemNotFound for a nonexistent drive on both URL forms, so the
+          escalation may be unreachable on that tier. A spec conflict where one
+          side has never been observed to fire is a different adjudication from
+          one where both are live, and only reading the whole clause showed
+          that.
+        outcome: ok
+      - file: tests/backends/sqlblob/test_absent_table.py
+        section: "class-level spec marks"
+        read_type: verify
+        extract: >-
+          Round 7 found the matrix cell carrying BE-013 while calling only
+          delete, and the constructor class carrying BE-012/BE-013 while
+          calling neither. check_spec_marks.py verifies a cited ID exists, never
+          that it fits, so false traceability is invisible to the gate and reads
+          as coverage to anyone trusting the marks. This is the second
+          spec-mark defect in this PR after the round-5 param-level leak, from
+          the same cause: a mark applied at a scope wider than the assertion.
+        outcome: ok
+      - file: src/remote_store/_backend.py
+        section: "Backend.delete, Backend.delete_folder"
+        read_type: verify
+        extract: >-
+          The clause changed what missing_ok tolerates, and the ABC and Store
+          docstrings that define missing_ok for every caller said nothing about
+          it for seven rounds. Nothing in the ripple-check points from "a spec
+          clause about an operation" to "the ABC docstring for that operation" —
+          the public-API rows key on signature changes, and this was a semantic
+          change behind an unchanged signature.
+        outcome: unclear
   - id: verify
     name: Verify
     steps:

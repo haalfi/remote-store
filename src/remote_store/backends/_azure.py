@@ -982,7 +982,7 @@ class AzureBackend(Backend):
         A container that does not exist counts as a missing blob, on the same
         terms as ``delete_folder``: ``missing_ok=True`` returns silently and
         ``missing_ok=False`` raises ``NotFound``. Both namespace kinds answer
-        this way; only the flat path needed changing to do so.
+        this way.
 
         Raises:
             NotFound: If the blob does not exist (including when the container

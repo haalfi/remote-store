@@ -608,8 +608,14 @@ the MUST for a description, and tracked in the backlog:
   than `NotFound`, because they map the driver's complaint without asking
   whether the table is still there. That includes `exists()`, `is_file()` and
   `is_folder()`, so this backend breaches the never-raise rule above as well as
-  the mapping row — the widest of the three divergences by operation count,
-  measured rather than inferred.
+  the mapping row — the widest divergence in this list by operation count,
+  measured rather than inferred. The same split shows on a disposed in-memory
+  engine, where disposal destroys the database rather than releasing a
+  connection to it: the deletes return and everything else raises, so a caller
+  watching one call sees a store that is gone and a caller watching the next
+  sees a backend that is broken. That is one divergence with two ways in, not
+  two, and the reclassification deliberately does not try to tell them apart —
+  see [SQL-BLOB-050](040-sql-blob-backend.md#sql-blob-050-exception-translation).
 - `LocalBackend` answers **every** operation with
   `InvalidPath("Path escapes root directory")` once its root directory is
   deleted, including both tolerant deletes. The containment check walks up to
@@ -617,6 +623,16 @@ the MUST for a description, and tracked in the backlog:
   so absence is misreported as an escape. This is the furthest from the clause
   any backend currently sits, and the only one where the error type actively
   misleads.
+- On `GraphBackend` and its sync adapter, an absent drive raises
+  `BackendUnavailable` from both tolerant deletes when Graph answers
+  `404 resourceNotFound`, and is tolerated when it answers `404 itemNotFound`.
+  Unlike the three above this is not an oversight: it is what
+  [GR-031](044-graph-backend.md#gr-031-404-discrimination-item-vs-drive)
+  deliberately specifies, on the grounds that a deleted drive is a backend
+  identity failure rather than a per-item condition. Two clauses of this
+  repository's own specs therefore give opposite answers for the same call, and
+  the conflict is adjudicated as a whole rather than resolved by assuming this
+  clause wins — the divergence stands until it is.
 
 The rule exists because leaving it unstated let each backend answer from
 whatever its wire protocol happened to reveal. `HeadObject` answers a bodyless

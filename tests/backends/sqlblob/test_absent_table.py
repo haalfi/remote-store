@@ -12,7 +12,7 @@ BE-021's own canonical table requires of every backend anyway. Complying costs
 one inspector call on an already-failed statement, so there was nothing left for
 a criterion to buy.
 
-Five properties matter and each is pinned here, because the four beyond
+Four properties matter and each is pinned here, because the three beyond
 tolerance all fail *silently* — a regression in any of them leaves the tolerance
 cells green:
 
@@ -26,21 +26,19 @@ cells green:
   (``TestTheCatchStaysNarrow``). This is the branch whose failure mode is the
   dangerous one: reporting ``NotFound`` for a database that is broken rather
   than empty. Widening the catch would look exactly like success.
-* **A discarded store does not reclassify** (``TestAClosedBackendIsNotAnEmptyStore``).
-  On an owned in-memory engine, re-initialising after ``close()`` opens a
-  *different, empty* database, so the inspector truthfully finds no table — and
-  answering "no such path" there would describe a store the caller destroyed, in
-  contradiction with every operation that lacks the wrapper. The same class
-  pins the two cases that separate *discarded* from merely *closed*, since
-  gating on ``close()`` alone silently disabled the rule for both.
-* **The gate is right across its whole condition space**
-  (``TestTheGateOverItsWholeConditionSpace``). The four properties above are
-  each one state; this is all of them — ownership x locality x lifecycle x
-  table, with the single unreachable combination named as unreachable. Two
-  review rounds each found the gate keyed on the wrong condition because the
-  reasoning behind it was argued rather than enumerated, so this closes the
-  question by exhaustion: the rule is *tolerate unless closing discarded the
-  store*, and there is no sixteenth case in which to get it wrong.
+* **The rule holds across its whole condition space**
+  (``TestTheReclassificationOverItsWholeConditionSpace``). Ownership x locality
+  x lifecycle x table, generated as a product rather than hand-listed. Three
+  review rounds each found the reclassification keyed on the wrong condition
+  because the reasoning was argued rather than enumerated; the table answers
+  the question by exhaustion, and every reachable cell answers the same way.
+
+``TestADiscardedInMemoryStoreReadsAsEmpty`` documents the one residue: dispose an
+in-memory engine and the deletes tolerate while ``read`` raises, because only the
+deletes carry the reclassification. That asymmetry is BUG-246. A guard against it
+shipped briefly and was withdrawn — "was the store discarded" is not decidable
+from configuration, and every version of the check made behaviour depend on how
+the caller spelled the URL.
 
 ``TestContainerExistsByConstruction`` records the constructor's two paths. Worth
 pinning because it shapes what a caller can encounter, but note what it does
@@ -235,132 +233,108 @@ class TestTheCatchStaysNarrow:
             backend.delete("folder/object.txt", missing_ok=True)
 
 
-@pytest.mark.spec("BE-020", "BE-021", "SQL-BLOB-041")
-class TestAClosedBackendIsNotAnEmptyStore:
-    """Re-initialising an in-memory engine is not the same as finding no path."""
+@pytest.mark.spec("BE-012", "BE-013", "BE-020", "BE-021")
+class TestADiscardedInMemoryStoreReadsAsEmpty:
+    """Disposing an in-memory engine leaves an empty store, and the deletes say so.
+
+    Recorded because it is the one place the rule produces an answer that reads
+    oddly, and because a guard against it shipped briefly and was withdrawn.
+
+    Disposing an in-memory SQLite engine destroys the data, so the next
+    statement opens a *different, empty* database. The deletes then tolerate —
+    correctly, by the rule — while ``read`` raises ``BackendUnavailable``,
+    because only the deletes carry the reclassification. That asymmetry is
+    BUG-246, not a defect in this clause: once ``read`` and ``exists`` answer
+    for an absent table the way the contract requires, every operation agrees
+    that a discarded store is an empty one.
+
+    The withdrawn guard is worth a sentence, since three review rounds went into
+    it. "Was the store discarded" is not decidable from configuration: keyed on
+    ``close()`` it broke two live stores, keyed additionally on an in-memory URL
+    it still missed the URI-form spellings, and it could never see an owner
+    disposing a *borrowed* engine, which touches this object not at all. Each
+    version made behaviour depend on URL spelling rather than on the store.
+    """
 
     @pytest.mark.parametrize(
-        ("op_name", "call"),
+        "url",
         [
-            ("delete", lambda b: b.delete("folder/object.txt", missing_ok=True)),
-            ("delete_folder", lambda b: b.delete_folder("folder", recursive=True, missing_ok=True)),
+            "sqlite:///:memory:",
+            "sqlite://",
+            "sqlite:///file::memory:?uri=true",
+            "sqlite:///file:memdb1?mode=memory&cache=shared&uri=true",
         ],
-        ids=["delete", "delete_folder"],
+        ids=["memory", "bare", "uri-anonymous", "uri-named-shared"],
     )
-    def test_use_after_close_on_memory_still_reports_unavailable(
-        self,
-        op_name: str,
-        call,  # noqa: ANN001 -- parametrized callable
-    ) -> None:
-        """``close()`` on ``:memory:`` destroys the store; the deletes must say so.
+    def test_every_in_memory_spelling_answers_the_same(self, url: str) -> None:
+        """All four in-memory spellings, so the answer cannot depend on the URL.
 
-        ``close_is_terminal`` is ``False`` here, so the backend re-initialises
-        lazily — but for an in-memory engine that opens a *different* database
-        with no table, and the inspector cannot tell that from a dropped one.
-        Without the closed-backend gate these two calls answered "nothing to
-        delete" while ``read`` on the same instance still raised
-        ``BackendUnavailable``: two verdicts for one dead store, which is the
-        defect class the absent-container rule exists to remove.
+        The withdrawn guard covered the first two and not the last two, which is
+        precisely the failure mode: a caller who spells an in-memory database
+        the URI way got different delete semantics from one who did not.
         """
-        instance = SQLBlobBackend("sqlite:///:memory:")
+        instance = SQLBlobBackend(url)
         instance.write("folder/object.txt", b"payload")
         instance.close()
-        with pytest.raises(BackendUnavailable):
-            call(instance)
+        assert instance.delete("folder/object.txt", missing_ok=True) is None
+        assert instance.delete_folder("folder", recursive=True, missing_ok=True) is None
 
-    def test_read_and_delete_agree_after_close(self) -> None:
-        """The property the gate exists for, asserted as the agreement it is."""
+    def test_a_borrowed_engine_disposed_by_its_owner_answers_the_same(self) -> None:
+        """No call reaches this object, so no guard here could ever have seen it.
+
+        The case that showed the detection was not merely incomplete but
+        unavailable: the owner disposes the engine directly, and the backend
+        learns of it only by failing.
+        """
+        engine = sa.create_engine("sqlite:///:memory:")
+        instance = SQLBlobBackend(engine=engine)
+        instance.write("folder/object.txt", b"payload")
+        engine.dispose()
+        assert instance.delete("folder/object.txt", missing_ok=True) is None
+
+    def test_the_read_asymmetry_is_bug_246_not_this_clause(self) -> None:
+        """Pins the residue, so closing BUG-246 is visible here rather than silent."""
         instance = SQLBlobBackend("sqlite:///:memory:")
         instance.write("folder/object.txt", b"payload")
         instance.close()
+        assert instance.delete("folder/object.txt", missing_ok=True) is None
         with pytest.raises(BackendUnavailable):
             instance.read_bytes("folder/object.txt")
-        with pytest.raises(BackendUnavailable):
-            instance.delete("folder/object.txt", missing_ok=True)
-
-    def test_a_borrowed_engine_keeps_the_tolerance_after_close(self, tmp_path: Path) -> None:
-        """``close()`` disposes nothing here, so the store is untouched and the rule holds.
-
-        The gate's condition is "did closing discard the store", not "was
-        ``close()`` called", and this is one of the two cases that separates
-        them. SQL-BLOB-041 makes ``close()`` a no-op for a borrowed engine, so
-        an instance closed and reused is working against the same live database
-        — and a table dropped afterwards is exactly what the clause governs.
-        """
-        engine = sa.create_engine(f"sqlite:///{tmp_path / 'borrowed.db'}")
-        try:
-            instance = SQLBlobBackend(engine=engine)
-            instance.write("folder/object.txt", b"payload")
-            instance.close()
-            _drop_table(instance)
-            assert instance.delete("folder/object.txt", missing_ok=True) is None
-        finally:
-            engine.dispose()
-
-    def test_an_owned_file_engine_keeps_the_tolerance_after_close(self, tmp_path: Path) -> None:
-        """Disposing a file engine loses nothing: it reopens with its contents.
-
-        The second separating case. ``close_is_terminal=False`` permits closing
-        and resuming, and the resumed instance is on the same database, so it
-        must still reclassify a table dropped later. Gating on ``close()``
-        alone silently disabled the rule for the rest of the instance's life.
-        """
-        instance = SQLBlobBackend(f"sqlite:///{tmp_path / 'owned.db'}")
-        instance.write("folder/object.txt", b"payload")
-        instance.close()
-        instance.write("folder/other.txt", b"payload")  # resume: reopens the same file
-        _drop_table(instance)
-        assert instance.delete("folder/object.txt", missing_ok=True) is None
-        instance.close()
 
 
-@pytest.mark.spec("BE-012", "BE-013", "BE-020", "BE-021")
-class TestTheGateOverItsWholeConditionSpace:
-    """Every reachable state of the reclassification gate, as a truth table.
+class TestTheReclassificationOverItsWholeConditionSpace:
+    """Every reachable state of the reclassification, as a truth table.
 
-    Two review rounds each found the gate keyed on the wrong condition, and each
+    Three review rounds each found this keyed on the wrong condition, and each
     time the fix was argued rather than enumerated — so each time a reviewer
     found a state the argument had not considered. The condition space is small
     and finite, so this closes it by exhaustion instead: ownership (owned /
     borrowed) x locality (in-memory / file) x lifecycle (open / closed) x table
     (present / dropped).
 
-    Enumerating it makes the rule vivid. **The gate must fire in exactly one
-    reachable state** — an owned in-memory engine after ``close()``, the only
-    combination where closing destroys the store rather than merely releasing a
-    handle. Everywhere else the store survives, so a dropped table is the case
-    BE-021 governs and the tolerance must hold. Round 5 missed the state where
-    it must fire; round 6 missed two where it must not.
+    **Every reachable state answers the same way**, and that uniformity is the
+    result rather than a coincidence. Earlier versions carved out a state — the
+    discarded in-memory store — and each carve-out was either wrong or
+    undetectable; withdrawing it left a rule with no exceptions, which is the
+    only shape this table can state exhaustively. A dropped table is tolerated
+    under ``missing_ok`` wherever the statement can reach a database at all.
 
-    One cell is unreachable rather than untested, and saying which matters:
+    Two cells are unreachable rather than untested, and saying which matters:
     disposing an owned in-memory engine *is* what discards the table, so
-    "closed, owned, in-memory, table still present" cannot be constructed. It is
-    marked, not skipped silently.
+    "closed, owned, in-memory" cannot be paired with either table state
+    meaningfully — the store is new and empty whichever was requested. Both are
+    covered by ``TestADiscardedInMemoryStoreReadsAsEmpty`` instead, which is
+    where the residue and its BUG-246 link are documented.
     """
 
-    @pytest.mark.parametrize(
-        ("owned", "in_memory", "close_first", "drop_table", "expects_unavailable"),
-        [
-            # Owned + in-memory: close() discards the store. The one firing cell.
-            pytest.param(True, True, False, False, False, id="owned-memory-open-present"),
-            pytest.param(True, True, False, True, False, id="owned-memory-open-dropped"),
-            pytest.param(True, True, True, False, True, id="owned-memory-closed[store-discarded]"),
-            # Owned + file: dispose releases the handle; the file survives.
-            pytest.param(True, False, False, False, False, id="owned-file-open-present"),
-            pytest.param(True, False, False, True, False, id="owned-file-open-dropped"),
-            pytest.param(True, False, True, False, False, id="owned-file-closed-present"),
-            pytest.param(True, False, True, True, False, id="owned-file-closed-dropped"),
-            # Borrowed: close() is a no-op (SQL-BLOB-041), so nothing is ever discarded.
-            pytest.param(False, True, False, False, False, id="borrowed-memory-open-present"),
-            pytest.param(False, True, False, True, False, id="borrowed-memory-open-dropped"),
-            pytest.param(False, True, True, False, False, id="borrowed-memory-closed-present"),
-            pytest.param(False, True, True, True, False, id="borrowed-memory-closed-dropped"),
-            pytest.param(False, False, False, False, False, id="borrowed-file-open-present"),
-            pytest.param(False, False, False, True, False, id="borrowed-file-open-dropped"),
-            pytest.param(False, False, True, False, False, id="borrowed-file-closed-present"),
-            pytest.param(False, False, True, True, False, id="borrowed-file-closed-dropped"),
-        ],
-    )
+    @pytest.mark.parametrize("owned", [True, False], ids=["owned", "borrowed"])
+    @pytest.mark.parametrize("in_memory", [True, False], ids=["memory", "file"])
+    @pytest.mark.parametrize("close_first", [True, False], ids=["closed", "open"])
+    @pytest.mark.parametrize("drop_table", [True, False], ids=["dropped", "present"])
+    # BE-012 only: this cell exercises ``delete``. ``delete_folder`` (BE-013) is
+    # covered over the same axes by the classes above; running the whole product
+    # twice would double the cell count to re-assert one shared code path.
+    @pytest.mark.spec("BE-012", "BE-020", "BE-021")
     def test_tolerant_delete_over_the_matrix(
         self,
         tmp_path: Path,
@@ -368,13 +342,14 @@ class TestTheGateOverItsWholeConditionSpace:
         in_memory: bool,
         close_first: bool,
         drop_table: bool,
-        expects_unavailable: bool,
     ) -> None:
-        """One operation, every state: `delete(missing_ok=True)` on an absent key.
+        """One operation, every state: ``delete(missing_ok=True)`` on an absent key.
 
-        The expectation follows from a single rule rather than from fifteen
-        judgements — *tolerate unless closing discarded the store* — which is
-        the property the gate is supposed to encode.
+        Parametrised on the axes themselves rather than on a hand-written list
+        of tuples, so the product is generated and no coordinate can be omitted
+        or mislabelled by hand — an earlier hand-listed version had a row whose
+        id disagreed with its coordinates and a guard for a row that was not
+        there.
         """
         url = "sqlite:///:memory:" if in_memory else f"sqlite:///{tmp_path / 'matrix.db'}"
         engine = None if owned else sa.create_engine(url)
@@ -383,45 +358,31 @@ class TestTheGateOverItsWholeConditionSpace:
             backend.write("folder/object.txt", b"payload")
             if close_first:
                 backend.close()
-            if drop_table and not (close_first and owned and in_memory):
+            if drop_table and not (in_memory and close_first):
+                # An in-memory store that has been closed is already empty; there
+                # is nothing left to drop, and the DROP would fail on a fresh db.
                 _drop_table(backend)
-
-            if expects_unavailable:
-                with pytest.raises(BackendUnavailable):
-                    backend.delete("folder/absent.txt", missing_ok=True)
-            else:
-                assert backend.delete("folder/absent.txt", missing_ok=True) is None
+            assert backend.delete("folder/absent.txt", missing_ok=True) is None
         finally:
             backend.close()
             if engine is not None:
                 engine.dispose()
 
-    def test_the_unreachable_cell_is_unreachable(self) -> None:
-        """ "Owned, in-memory, closed, table still present" cannot be constructed.
-
-        Recorded as a property rather than left as a gap in the matrix above:
-        disposing an owned in-memory engine is *what* discards the table, so the
-        two halves of that cell are contradictory. If SQLAlchemy ever made an
-        in-memory engine survive disposal, this fails and the matrix gains a row.
-        """
-        backend = SQLBlobBackend("sqlite:///:memory:")
-        backend.write("folder/object.txt", b"payload")
-        assert sa.inspect(backend._engine).has_table(_TABLE)
-        backend.close()
-        assert not sa.inspect(backend._engine).has_table(_TABLE), (
-            "an owned in-memory engine kept its table across close(); the gate's matrix needs a new row"
-        )
-
 
 class TestContainerExistsByConstruction:
-    """The two constructor paths, recorded for what a caller can encounter."""
+    """The two constructor paths, recorded for what a caller can encounter.
 
-    @pytest.mark.spec("BE-012", "BE-013", "SQL-BLOB-010")
+    No BE-012 / BE-013 mark here: neither cell calls a delete. They record how a
+    caller reaches the absent-container state at all, which is context for the
+    rule rather than a test of it.
+    """
+
+    @pytest.mark.spec("SQL-BLOB-010")
     def test_default_creates_the_table(self, backend: SQLBlobBackend) -> None:
         """``create_table=True`` means the container exists the moment the backend does."""
         assert sa.inspect(backend._engine).has_table(_TABLE)
 
-    @pytest.mark.spec("BE-012", "BE-013", "SQL-BLOB-012")
+    @pytest.mark.spec("SQL-BLOB-012")
     def test_reflection_refuses_an_absent_table(self, tmp_path: Path) -> None:
         """``create_table=False`` cannot bind to a table that is not there."""
         engine = sa.create_engine(f"sqlite:///{tmp_path / 'empty.db'}")

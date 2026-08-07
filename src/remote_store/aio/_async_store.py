@@ -304,6 +304,9 @@ class AsyncStore:
     async def delete(self, path: str, *, missing_ok: bool = False) -> None:
         """Delete a single file.
 
+        A store whose backing container is gone — a deleted bucket, container or
+        table — holds no file either, so *missing_ok* tolerates that too.
+
         Args:
             path: Store-relative file path.
             missing_ok: If ``True``, silently succeeds when *path*
@@ -325,6 +328,9 @@ class AsyncStore:
 
     async def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
         """Delete a folder.
+
+        A store whose backing container is gone — a deleted bucket, container or
+        table — holds no folder either, so *missing_ok* tolerates that too.
 
         Args:
             path: Store-relative folder path.  Must not be ``""``

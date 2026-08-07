@@ -158,12 +158,22 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   two real Azure defects behind that gate. Reverses the unreleased second half
   of BUG-242, whose CHANGELOG bullet was amended rather than left contradicting
   this one in the same section.
-  **Three divergences found and filed, not fixed:** BUG-245 (`create_table=False`
-  leaks `NoSuchTableError`), BUG-246 (`exists()` / `is_file()` / `is_folder()`
-  raise against an absent container on four backends), BUG-247 (`LocalBackend` reports a deleted
-  root as a path escape). The last refuted a premise this item's own spec
-  rationale had asserted, and only a test caught it — two code readings had
-  agreed it was true.
+  **Four divergences found and filed, not fixed:** BUG-245 (`create_table=False`
+  leaks `NoSuchTableError`), BUG-246 (the never-raise probes raise against an
+  absent container on four backends), BUG-247 (`LocalBackend` reports a deleted
+  root as a path escape), BUG-248 (the new clause and GR-031 give opposite
+  answers for an absent Graph drive). BUG-247 refuted a premise this item's own
+  spec rationale had asserted, and only a test caught it — two code readings had
+  agreed it was true. BUG-248 is the only one where nothing is broken: two
+  deliberate clauses simply disagree, and neither implementation is wrong under
+  its own. All four are listed in BE-021's divergence list, so the clause reads
+  as an obligation with named exceptions rather than as a description.
+  **Graph came last and should have come first.** The work was framed around
+  flat-namespace backends because that is where the reported symptom lived, and
+  `GraphBackend` — hierarchical, but with a drive that is every bit a container —
+  went unexamined for six review rounds. The clause it collides with was already
+  written down. Scope a contract change by "which backends have the thing the
+  clause names", not by where the bug report came from.
 
 - [x] **ID-241 — Conformance cells that make no HTTP call still skip on a missing cassette**
   spec: TEST-007 · effort: S · audience: infra.test
@@ -230,7 +240,6 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   rather than a live recording run, which needs credentials this PR did not have.
   Produced **ID-245** (generate spec 003's reachability table rather than count
   it) and left ID-244 as the next item in the section's chain.
-
 
 - [x] **BK-342 — Adapt `/ship` from PR #949's review evidence**
   spec: — · effort: M · audience: contributor.process

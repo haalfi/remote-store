@@ -294,19 +294,22 @@ cite this row for something it did not cover. `_map_errors` catches
 `sa.exc.OperationalError` unconditionally and always has; SQLite reports a
 missing table that way, for instance.
 
-**Absent table:** `delete` and `delete_folder` do **not** reach this table for a
-table dropped under a live backend — BE-021's absent-container rule reclassifies
-it as a missing path first, so `missing_ok=True` returns cleanly and
-`missing_ok=False` raises `NotFound`. Every other operation still maps through
-the rows above, which is a known divergence from the canonical `NotFound` row
-and is recorded in BE-021.
+**Absent table:** `delete` and `delete_folder` do **not** reach this table when
+the table is not there — BE-021's absent-container rule reclassifies the
+driver's complaint as a missing path first, so `missing_ok=True` returns cleanly
+and `missing_ok=False` raises `NotFound`. Every other operation still maps
+through the rows above, which is a known divergence from the canonical
+`NotFound` row and is recorded in BE-021.
 
-The qualifier is load-bearing. Where `close()` *discarded* the store — an owned
-in-memory engine, the one case disposal destroys rather than releases — there is
-no table to have been dropped, the reclassification is deliberately skipped, and
-the deletes map through this table like everything else. That keeps them
-answering what `read` and `exists` answer for the same dead store, which is the
-whole point of the rule they would otherwise be applying.
+The reclassification asks only whether the table is reachable, and does not ask
+*why* it is not. A dropped table and a disposed in-memory engine — the one case
+where disposal destroys the database rather than releasing a connection to it —
+both answer "absent", and both deletes therefore return. An earlier draft tried
+to exclude the second case so the deletes would answer what `read` and `exists`
+answer for the same dead store; that gate could not be written without making
+behaviour depend on how the in-memory URL was spelled, and the asymmetry it was
+papering over is a divergence tracked in BE-021 rather than one this table
+should hide.
 
 ---
 
