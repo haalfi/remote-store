@@ -45,6 +45,11 @@ from remote_store.backends._local import LocalBackend
 if TYPE_CHECKING:
     from pathlib import Path
 
+# The behaviour pinned here comes from ``Path.resolve()`` / ``relative_to()``
+# semantics in ``_within_root``, which differ most on macOS and Windows — the
+# platforms this mark is what runs the file on.
+pytestmark = pytest.mark.os_sensitive
+
 _DIVERGENCE = "absent root raises InvalidPath instead of the contract's NotFound / missing_ok tolerance"
 
 

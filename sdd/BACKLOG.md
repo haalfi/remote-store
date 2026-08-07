@@ -121,29 +121,33 @@ and the highest ID already in this file, then take the next integer. Run
   already treated an absent root as an absent path) on the strength of two
   code readings; the first test that ran it disproved it.
 
-- [ ] **BUG-246 — `exists()` / `is_folder()` raise `NotFound` against an absent container on three backends**
-  spec: BE-004, BE-005, BE-021 · effort: S · audience: user.api
-  BE-004 and BE-005 say these never raise, and BE-021 repeats it: `exists()`,
-  `is_file()` and `is_folder()` return `False` on any traversal error rather than
-  raising. Against a bucket or container that does not exist, three backends
-  raise instead. Measured on a `pytest-httpserver` stub serving real
-  `NoSuchBucket` / `ContainerNotFound` 404s (the harness BUG-243 added, so this
-  reproduces at Stage 1 with no Docker):
+- [ ] **BUG-246 — An absent container makes `exists()` / `is_file()` / `is_folder()` raise on four backends**
+  spec: BE-004, BE-005, BE-021 · effort: M · audience: user.api
+  BE-004 and BE-005 say these never raise, and BE-021 repeats it: the three
+  return `False` on any traversal error rather than raising. Against a container
+  that does not exist, four backends raise instead. Measured on the
+  `pytest-httpserver` stubs BUG-243 added (real `NoSuchBucket` /
+  `ContainerNotFound` 404s, Stage 1, no Docker) and on a dropped SQLite table:
   | Backend | `exists(file)` | `is_file(file)` | `is_folder(folder)` |
   | --- | --- | --- | --- |
   | S3, S3-PyArrow | `False` | `False` | `False` |
   | S3-Boto3 | raises `NotFound` | `False` | raises `NotFound` |
   | Azure non-HNS | raises `NotFound` | `False` | raises `NotFound` |
-  So it is a live cross-backend divergence as well as a contract violation, and
-  the `is_file` column shows the fix is local: the HEAD-backed probe already
-  absorbs the 404, only the prefix-listing-backed ones do not.
-  `AzureBackend.exists`'s own docstring already says it never raises, so the code
-  contradicts its documentation. The async twin needs the same fix.
+  | SQLBlob | raises `BackendUnavailable` | raises `BackendUnavailable` | raises `BackendUnavailable` |
+  Two different root causes, so budget for two fixes. On S3-Boto3 and Azure the
+  `is_file` column shows it is local: the HEAD-backed probe already absorbs the
+  404 and only the prefix-listing-backed ones do not. On SQLBlob all three run
+  their `SELECT` inside a bare `_map_errors`, so the driver's complaint maps
+  straight through — the same gap BUG-243 closed for the two deletes only, and
+  the fix shape is the one it used (`_absent_table_is_absent_path`, minus the
+  `missing_ok` branch, answering `False` instead).
+  `AzureBackend.exists`'s own docstring already says it never raises, so the
+  code contradicts its documentation. The async twins need the same fix.
   Pre-existing — BUG-243 neither introduced nor touched it, having decided only
-  what `missing_ok` owes on the two deletes — but the root cause is the same
-  container 404 escaping a probe that should absorb it, so the fix shape is the
-  one BUG-243 used for `delete_folder`.
-  Surfaced by the PR #952 round-2 review.
+  what `missing_ok` owes on the two deletes.
+  Surfaced by the PR #952 round-2 review; the SQLBlob row added in round 5,
+  which caught BE-021's divergence list claiming backlog coverage this item did
+  not yet provide.
 
 - [ ] **BUG-245 — `SQLBlobBackend(create_table=False)` leaks `NoSuchTableError` from its constructor**
   spec: BE-021, SQL-BLOB-012 · effort: S · audience: user.api

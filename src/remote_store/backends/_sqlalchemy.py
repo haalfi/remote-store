@@ -86,6 +86,7 @@ class _SQLAlchemyBaseBackend(Backend, abc.ABC):
             self._owns_engine = False
 
         self._is_sqlite = self._engine.dialect.name == "sqlite"
+        self._closed = False
 
         if self._is_sqlite:
             self._configure_sqlite()
@@ -107,6 +108,12 @@ class _SQLAlchemyBaseBackend(Backend, abc.ABC):
         """Dispose the engine if owned. No-op for borrowed engines."""
         if self._owns_engine:
             self._engine.dispose()
+        # Not a use-after-close guard: this backend is close_is_terminal=False
+        # and stays usable, re-initialising lazily. The flag exists only so the
+        # absent-table reclassification can tell "a table was dropped under a
+        # live backend" from "the caller shut this backend down" — see
+        # ``SQLBlobBackend._table_is_absent``.
+        self._closed = True
 
     def unwrap(self, type_hint: type[T]) -> T:
         """Return the SQLAlchemy ``Engine`` if requested."""
@@ -679,7 +686,21 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         conservative direction here: the caller only asks in order to *reclassify*
         an error it already holds, so a failed inspection leaves that original
         error standing rather than replacing it with a guess.
+
+        **A closed backend never reclassifies**, for the same reason. This
+        backend is ``close_is_terminal=False``, so it re-initialises lazily and
+        stays usable — but on an in-memory SQLite engine, re-initialising opens a
+        *different, empty* database, and the inspector then truthfully reports no
+        table. Reclassifying there would answer "no such path" for a store the
+        caller destroyed, and it would answer it only for the two deletes while
+        ``read`` and the rest still said ``BackendUnavailable`` — the same
+        operation-disagrees-with-its-sibling defect this reclassification exists
+        to remove. A file-backed engine is unaffected either way: it reopens with
+        its table intact, so the inspection would have returned ``False``
+        regardless.
         """
+        if self._closed:
+            return False
         try:
             return not sa.inspect(self._engine).has_table(self._table.name, schema=self._table.schema)
         except sa.exc.SQLAlchemyError:

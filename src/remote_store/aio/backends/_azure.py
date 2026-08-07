@@ -841,6 +841,8 @@ class AsyncAzureBackend(AsyncBackend):
             NotFound: If the file is missing (including when the container itself
                 is absent) and ``missing_ok`` is ``False``.
             InvalidPath: If ``path`` names a directory (HNS accounts only).
+            PermissionDenied: If credentials are rejected or lack access (401/403).
+            BackendUnavailable: On throttling (429), 5xx, or transport failure.
         """
         self._reject_root_as_file(path)
         async with self._errors(path):

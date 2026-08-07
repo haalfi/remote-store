@@ -135,10 +135,24 @@ _S3B3 = "remote_store.backends._s3_boto3:S3Boto3Backend"
 
 _BACKEND_NAMES = {_S3: "s3", _S3PA: "s3-pyarrow", _S3B3: "s3-boto3"}
 
+# Denial suites: the per-backend clause is the PermissionDenied mapping.
 _BACKEND_PARAMS = [
     pytest.param(_S3, id="s3", marks=pytest.mark.spec("BE-021", "S3-016")),
     pytest.param(_S3PA, id="s3-pyarrow", marks=pytest.mark.spec("BE-021", "S3PA-018", "S3PA-019")),
     pytest.param(_S3B3, id="s3-boto3", marks=pytest.mark.spec("BE-021", "S3-016")),
+]
+
+# Absent-bucket suite: a separate list, because param-level marks ride onto
+# *every* test that consumes them. Sharing the list above would re-attach
+# S3-016 (PermissionDenied Mapping) to cells whose subject is the NotFound
+# mapping — false traceability no gate can see, since `check_spec_marks.py`
+# verifies that a cited ID exists, never that it fits. The pyarrow entry keeps
+# S3PA-018, which is that backend's umbrella for S3-015/016/017 and so covers
+# this half too.
+_ABSENT_BUCKET_PARAMS = [
+    pytest.param(_S3, id="s3", marks=pytest.mark.spec("BE-021", "S3-015")),
+    pytest.param(_S3PA, id="s3-pyarrow", marks=pytest.mark.spec("BE-021", "S3PA-018")),
+    pytest.param(_S3B3, id="s3-boto3", marks=pytest.mark.spec("BE-021", "S3-015")),
 ]
 
 # Every operation BK-324 rewired onto a type probe, grouped by which request is
@@ -344,8 +358,8 @@ class TestAbsentBucketReadsAsAbsentPath:
     strict case, which is the failure mode a tolerance-only test would miss.
     """
 
-    @pytest.mark.spec("BE-012", "BE-013", "BE-021", "S3-015")
-    @pytest.mark.parametrize("dotted", _BACKEND_PARAMS)
+    @pytest.mark.spec("BE-012", "BE-013", "BE-021")
+    @pytest.mark.parametrize("dotted", _ABSENT_BUCKET_PARAMS)
     @pytest.mark.parametrize("op_name", sorted(_TOLERANT_OPS))
     def test_absent_bucket_is_tolerated(self, httpserver: HTTPServer, dotted: str, op_name: str) -> None:
         """``missing_ok=True`` returns cleanly for both deletes."""
@@ -354,8 +368,8 @@ class TestAbsentBucketReadsAsAbsentPath:
         with _backend_at(dotted, endpoint) as backend:
             assert call(backend) is None
 
-    @pytest.mark.spec("BE-012", "BE-013", "BE-021", "S3-015")
-    @pytest.mark.parametrize("dotted", _BACKEND_PARAMS)
+    @pytest.mark.spec("BE-012", "BE-013", "BE-021")
+    @pytest.mark.parametrize("dotted", _ABSENT_BUCKET_PARAMS)
     @pytest.mark.parametrize("op_name", sorted(_STRICT_DELETES))
     def test_absent_bucket_raises_not_found_when_strict(
         self,

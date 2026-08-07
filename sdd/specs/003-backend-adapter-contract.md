@@ -603,10 +603,13 @@ the MUST for a description, and tracked in the backlog:
   `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend`, where the strict
   prefix probe is reached after the tolerant HEAD comes back empty.
   `S3Backend` and `S3PyArrowBackend` answer `False`.
-- On `SQLBlobBackend` the four no-`missing_ok` operations answer an absent table
-  with `BackendUnavailable` or the base error rather than `NotFound`, because
-  they map the driver's complaint without asking whether the table is still
-  there. Only the two deletes carry the reclassification.
+- On `SQLBlobBackend`, **every operation except the two deletes** answers an
+  absent table with `BackendUnavailable` (or the base error, by dialect) rather
+  than `NotFound`, because they map the driver's complaint without asking
+  whether the table is still there. That includes `exists()`, `is_file()` and
+  `is_folder()`, so this backend breaches the never-raise rule above as well as
+  the mapping row — the widest of the three divergences by operation count,
+  measured rather than inferred.
 - `LocalBackend` answers **every** operation with
   `InvalidPath("Path escapes root directory")` once its root directory is
   deleted, including both tolerant deletes. The containment check walks up to

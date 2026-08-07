@@ -12,15 +12,25 @@ BE-021's own canonical table requires of every backend anyway. Complying costs
 one inspector call on an already-failed statement, so there was nothing left for
 a criterion to buy.
 
-Two properties matter and both are pinned here:
+Four properties matter and each is pinned here, because the three beyond
+tolerance all fail *silently* — a regression in any of them leaves the tolerance
+cells green:
 
 * **The tolerance reaches the caller** (``TestAbsentTableReadsAsAbsentPath``).
 * **It costs nothing on the miss path** (``TestTheProbeStaysOffTheHotPath``). The
   inspector call hangs off ``SQLAlchemyError``, so an ordinary miss — which
   raises this module's own ``NotFound`` from a query that *succeeded* — never
   reaches it. That bound is what makes the rule's no-extra-round-trip budget
-  survive, and asserting the tolerance without asserting the cost would let a
-  future simplification move the probe onto every miss and stay green.
+  survive.
+* **A real fault is not mistaken for a missing table**
+  (``TestTheCatchStaysNarrow``). This is the branch whose failure mode is the
+  dangerous one: reporting ``NotFound`` for a database that is broken rather
+  than empty. Widening the catch would look exactly like success.
+* **A closed backend does not reclassify** (``TestAClosedBackendIsNotAnEmptyStore``).
+  On an in-memory engine, re-initialising after ``close()`` opens a *different,
+  empty* database, so the inspector truthfully finds no table — and answering
+  "no such path" there would describe a store the caller destroyed, in
+  contradiction with every operation that lacks the wrapper.
 
 ``TestContainerExistsByConstruction`` records the constructor's two paths. Worth
 pinning because it shapes what a caller can encounter, but note what it does
@@ -42,13 +52,24 @@ from unittest.mock import patch
 import pytest
 import sqlalchemy as sa
 
-from remote_store._errors import NotFound
+from remote_store._errors import BackendUnavailable, NotFound
 from remote_store.backends._sqlalchemy import SQLBlobBackend
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 _TABLE = "remote_store_objects"
+
+
+def _replace_table_with_incompatible_schema(backend: SQLBlobBackend) -> None:
+    """Leave a table of that name in place, but one the delete statement cannot use.
+
+    Produces a genuine driver failure with ``has_table`` still answering yes —
+    the state the narrowness branch has to tell apart from a dropped table.
+    """
+    with backend._engine.begin() as conn:
+        conn.execute(sa.text(f"DROP TABLE {_TABLE}"))
+        conn.execute(sa.text(f"CREATE TABLE {_TABLE} (unrelated TEXT)"))
 
 
 @pytest.fixture
@@ -149,6 +170,103 @@ class TestTheProbeStaysOffTheHotPath:
         ) as probe:
             assert call(backend) is None
         assert probe.call_count == 0
+
+
+@pytest.mark.spec("BE-021", "SQL-BLOB-050")
+class TestTheCatchStaysNarrow:
+    """A driver failure on a *live* table keeps its mapping, unreclassified."""
+
+    @pytest.mark.parametrize(
+        ("op_name", "call"),
+        [
+            ("delete", lambda b: b.delete("folder/object.txt", missing_ok=True)),
+            ("delete_folder", lambda b: b.delete_folder("folder", recursive=True, missing_ok=True)),
+        ],
+        ids=["delete", "delete_folder"],
+    )
+    def test_driver_error_with_the_table_present_still_maps(
+        self,
+        backend: SQLBlobBackend,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        """The failure mode this guards is reporting ``NotFound`` for a broken database.
+
+        Everything else in this module asserts that a ``SQLAlchemyError`` becomes
+        a missing path. This asserts the converse — that it does so *only* when
+        the table is really gone — which is the half a widened catch would break
+        while leaving the tolerance cells green.
+
+        Nothing is mocked: the table is replaced with one that has no ``key``
+        column, so the real statement fails with a real ``OperationalError``
+        while ``has_table`` truthfully answers yes. That is the exact state the
+        branch discriminates on, produced rather than simulated.
+        """
+        _replace_table_with_incompatible_schema(backend)
+        with pytest.raises(BackendUnavailable) as exc_info:
+            call(backend)
+        assert exc_info.value.backend == "sql-blob", op_name
+
+    def test_a_failed_inspection_leaves_the_original_error_standing(self, backend: SQLBlobBackend) -> None:
+        """``_table_is_absent`` fails closed, so an unanswerable probe reclassifies nothing.
+
+        The table really is gone here, so the tolerance *would* fire — but the
+        inspection cannot run, and the conservative answer keeps the operation's
+        own error rather than inventing a verdict from a probe that failed.
+        """
+        _drop_table(backend)
+        with (
+            patch(
+                "sqlalchemy.inspect",
+                side_effect=sa.exc.OperationalError("inspect", {}, Exception("cannot inspect")),
+            ),
+            pytest.raises(BackendUnavailable),
+        ):
+            backend.delete("folder/object.txt", missing_ok=True)
+
+
+@pytest.mark.spec("BE-020", "BE-021", "SQL-BLOB-041")
+class TestAClosedBackendIsNotAnEmptyStore:
+    """Re-initialising an in-memory engine is not the same as finding no path."""
+
+    @pytest.mark.parametrize(
+        ("op_name", "call"),
+        [
+            ("delete", lambda b: b.delete("folder/object.txt", missing_ok=True)),
+            ("delete_folder", lambda b: b.delete_folder("folder", recursive=True, missing_ok=True)),
+        ],
+        ids=["delete", "delete_folder"],
+    )
+    def test_use_after_close_on_memory_still_reports_unavailable(
+        self,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        """``close()`` on ``:memory:`` destroys the store; the deletes must say so.
+
+        ``close_is_terminal`` is ``False`` here, so the backend re-initialises
+        lazily — but for an in-memory engine that opens a *different* database
+        with no table, and the inspector cannot tell that from a dropped one.
+        Without the closed-backend gate these two calls answered "nothing to
+        delete" while ``read`` on the same instance still raised
+        ``BackendUnavailable``: two verdicts for one dead store, which is the
+        defect class the absent-container rule exists to remove.
+        """
+        instance = SQLBlobBackend("sqlite:///:memory:")
+        instance.write("folder/object.txt", b"payload")
+        instance.close()
+        with pytest.raises(BackendUnavailable):
+            call(instance)
+
+    def test_read_and_delete_agree_after_close(self) -> None:
+        """The property the gate exists for, asserted as the agreement it is."""
+        instance = SQLBlobBackend("sqlite:///:memory:")
+        instance.write("folder/object.txt", b"payload")
+        instance.close()
+        with pytest.raises(BackendUnavailable):
+            instance.read_bytes("folder/object.txt")
+        with pytest.raises(BackendUnavailable):
+            instance.delete("folder/object.txt", missing_ok=True)
 
 
 class TestContainerExistsByConstruction:

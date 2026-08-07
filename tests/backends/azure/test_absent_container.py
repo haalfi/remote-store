@@ -19,6 +19,16 @@ raising on the listing's 404 would pass the tolerant cells and silently turn a
 strict ``delete_folder`` into a no-op. The ``missing_ok=False`` cells forbid
 that, and ``TestDeniedListingIsNotAnAbsentContainer`` forbids the other
 overshoot — widening the catch past the container's own 404.
+
+**Coverage bound: the flat lane only.** The docstrings on both deletes say the
+rule holds on HNS accounts too, and that is argued rather than executed — the
+HNS branches are ``# pragma: no cover -- HNS only`` and reachable only through
+the Docker-gated or live fixtures. The argument is that on HNS an absent
+container surfaces from ``delete_blob`` / ``get_directory_properties`` as
+``ResourceNotFoundError`` → ``NotFound`` → the pre-existing ``missing_ok``
+branch, with none of this work's changes involved. Sound, and still a reading:
+the one time a reading of a delete body was checked against a run during this
+change, it was wrong.
 """
 
 from __future__ import annotations
