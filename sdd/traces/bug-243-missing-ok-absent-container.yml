@@ -270,9 +270,10 @@ phases:
           table and the deletes answered "absent path" for a store the caller
           had destroyed — while read() on the same instance still said
           BackendUnavailable. Two verdicts, one dead store, on the configuration
-          the sqlblob conformance fixture uses. A closed backend no longer
-          reclassifies. Five rounds, five fix passes, and every round found
-          something in the previous one.
+          the sqlblob conformance fixture uses. Fixed by gating the
+          reclassification on close() — which round 6 then found too broad, so
+          read the next-but-one step for what actually ships. Five rounds, five
+          fix passes, and every round found something in the previous one.
         outcome: ok
       - file: tests/backends/sftp/test_absent_base_path.py
         section: "(new file)"

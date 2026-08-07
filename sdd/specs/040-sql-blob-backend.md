@@ -295,10 +295,18 @@ cite this row for something it did not cover. `_map_errors` catches
 missing table that way, for instance.
 
 **Absent table:** `delete` and `delete_folder` do **not** reach this table for a
-dropped table — BE-021's absent-container rule reclassifies it as a missing path
-first, so `missing_ok=True` returns cleanly and `missing_ok=False` raises
-`NotFound`. Every other operation still maps through the rows above, which is a
-known divergence from the canonical `NotFound` row and is recorded in BE-021.
+table dropped under a live backend — BE-021's absent-container rule reclassifies
+it as a missing path first, so `missing_ok=True` returns cleanly and
+`missing_ok=False` raises `NotFound`. Every other operation still maps through
+the rows above, which is a known divergence from the canonical `NotFound` row
+and is recorded in BE-021.
+
+The qualifier is load-bearing. Where `close()` *discarded* the store — an owned
+in-memory engine, the one case disposal destroys rather than releases — there is
+no table to have been dropped, the reclassification is deliberately skipped, and
+the deletes map through this table like everything else. That keeps them
+answering what `read` and `exists` answer for the same dead store, which is the
+whole point of the rule they would otherwise be applying.
 
 ---
 
