@@ -9173,6 +9173,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../design/research/research-spec-kit-comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    GitHub spec-kit compared against our SDD process (ID-238, BK-343)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../design/research/research-sqlalchemy-backend/" class="md-nav__link">
         
   
@@ -11726,6 +11754,7 @@ workflow's runner) so the lock is comparable.</p>
 <li>[ ] CI is green on master: <code>ci.yml</code> (lint, typecheck, the tiered test jobs, examples, docs, package) <strong>and</strong> the <code>ci-full.yml</code> full live-backend matrix on every supported interpreter — the full live-backend guarantee runs in <code>ci-full.yml</code>, not <code>ci.yml</code></li>
 <li>[ ] <code>hatch run all</code> passes <strong>locally</strong> (constituent scripts in <code>pyproject.toml</code>; the pre-commit gate variant deliberately does not enforce the 95% floor — CI does)</li>
 <li>[ ] No open <code>[~]</code> items shipping in this release in <code>sdd/BACKLOG.md</code> — complete and move to <code>BACKLOG-DONE.md</code>, or defer (<code>[ ]</code>)</li>
+<li>[ ] <code>hatch run report-trace-outcomes</code> read, and the open trace-outcome revisit item in <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md"><code>sdd/BACKLOG.md</code></a> closed against it — that item names the successor which becomes the next release's ticket, and states what to record: the corpus totals (the report keeps no history, so that line is the baseline the following release differences against), the references selected, and a decision of act, defer, or accept for each. A report, never a gate: nothing here blocks the release, but the decision is written down rather than remembered</li>
 <li>[ ] <code>[Unreleased]</code> section in CHANGELOG.md is non-empty</li>
 <li>[ ] Decide bump level (patch / minor / major) per the table above</li>
 </ul>
