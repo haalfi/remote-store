@@ -11509,11 +11509,8 @@ and its async sibling in <code>test_async_extended.py</code>, both gated on
 <code>Capability.LIST</code> and parametrised over both spellings; addressing is covered by
 <code>test_identity.py::TestBackendNativePath</code> (sync) and
 <code>test_async_extended.py::TestAsyncBackendNativePath</code> (async).</p>
-<p><strong>Coverage note.</strong> One LIST-capable backend is still unreachable from those
-cells: the Graph backend's conformance cells are skipped for want of a recorded
-cassette (ID-241). <code>SQLQueryBackend</code> was the other until BK-340 registered its
-fixture; the cells now execute against it, and what they cover is measured
-rather than assumed:</p>
+<p><strong>Coverage note.</strong> Two LIST-capable backends reach these cells only in part, and
+what they do reach is measured rather than assumed:</p>
 <table>
 <thead>
 <tr>
@@ -11531,9 +11528,9 @@ rather than assumed:</p>
 <td>—</td>
 </tr>
 <tr>
-<td>Graph — <code>tests/backends/graph/aio/test_backend.py</code></td>
-<td>—</td>
-<td>addressing only: <code>native_path</code> agreeing on both spellings (also under <code>base_path</code>), <code>to_key</code> returning the canonical root key, and every root spelling refused by <code>_require_writable_key</code></td>
+<td>Graph — fixture <code>graph_replay</code></td>
+<td>addressing, under the fixture's <code>base_path</code>: <code>native_path</code> / <code>resolve</code> agreeing on both spellings, <code>to_key</code> returning the canonical root key</td>
+<td>in <code>tests/backends/graph/aio/test_backend.py</code>: every root spelling refused by <code>_require_writable_key</code>, and the same addressing agreement with <strong>no</strong> <code>base_path</code> — the conformance fixture is always rooted under one, and the bare-root arm is where both defects this clause was written from lived</td>
 <td>the query rows and the file-shaped-operation row</td>
 </tr>
 </tbody>
@@ -11544,11 +11541,16 @@ capability for those three, so they are gated out rather than missed — nothing
 to pin, which is why its "pinned nowhere" cell is empty rather than listing them.</p>
 <p>A clause that binds every LIST-capable backend needs its coverage checked per
 backend, not per source site — both defects this clause was written from
-survived a source-wide sweep because no cell executed against them. BK-340
-closed the <code>SQLQueryBackend</code> half structurally; ID-241 is what closes Graph's.
-Note what registration did <strong>not</strong> buy: a read-only backend still cannot reach
-any cell that seeds through <code>write</code>, so the middle column is a second gate
-underneath capability filtering rather than a residue of the first (ID-244).</p>
+survived a source-wide sweep because no cell executed against them. Each column
+here is a distinct gate, and the two that were structural have been closed
+structurally: BK-340 registered the missing <code>sqlquery</code> fixture, and ID-241 made
+the missing-cassette skip fire per unplayable request rather than per test name,
+which is what let Graph's addressing cells — pure string work, no HTTP — move
+into the first column. What remains in Graph's last column is not a gate but an
+absence: the Graph data-plane cassettes those rows need have not been recorded.
+The middle column is the gate still open, and it is a second one underneath
+capability filtering rather than a residue of the first: a read-only backend
+cannot reach any cell that seeds through <code>write</code> (ID-244).</p>
 <h3 id="be-006-read">BE-006: read()<a class="headerlink" href="#be-006-read" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>read(path)</code> returns a <code>BinaryIO</code> stream for the file content.
 <strong>Raises:</strong> <code>NotFound</code> if the path does not exist. <code>InvalidPath</code> if the path names a directory (type mismatch, not a missing file). See BE-021.
