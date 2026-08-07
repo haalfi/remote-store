@@ -128,37 +128,60 @@ designed. The trace corpus records what each piece of work actually read.
 
 | Measure | Value |
 |---|---|
-| Traces | 268 |
-| Steps | 3,794 |
-| Steps carrying an explicit `outcome` | 1,652 (43.5%) |
-| Negative tags | 204 (`misleading` 178, `unclear` 26) |
-| Traces and references carrying them | 108 traces, 109 references |
+| Traces | 270 |
+| Steps | 3,834 |
+| Steps carrying an explicit `outcome` | 1,654 (43.1%) |
+| Negative tags | 206 (`misleading` 179, `unclear` 27) |
+| Traces and references carrying them | 110 traces, 109 references |
 
 Top-ranked references:
 
-| Total | `misleading` | `unclear` | Reads | Reference |
-|---:|---:|---:|---:|---|
-| 21 | 17 | 4 | 230 | `sdd/BACKLOG.md` |
-| 9 | 3 | 6 | 284 | `sdd/CLAUDE-REFERENCE.md` |
-| 8 | 7 | 1 | 55 | `src/remote_store/backends/_sftp.py` |
-| 7 | 6 | 1 | 15 | `src/remote_store/backends/_local.py` |
-| 6 | 6 | 0 | 76 | `sdd/BACKLOG-DONE.md` |
+| Total | `misleading` | `unclear` | Reads | `rate` | Reference |
+|---:|---:|---:|---:|---:|---|
+| 22 | 18 | 4 | 235 | 9.4% | `sdd/BACKLOG.md` |
+| 10 | 3 | 7 | 287 | 3.5% | `sdd/CLAUDE-REFERENCE.md` |
+| 8 | 7 | 1 | 55 | 14.5% | `src/remote_store/backends/_sftp.py` |
+| 7 | 6 | 1 | 15 | 46.7% | `src/remote_store/backends/_local.py` |
+| 6 | 6 | 0 | 77 | 7.8% | `sdd/BACKLOG-DONE.md` |
 
 **These counts are exact and already perishable.** They follow the precedent set
 by [research § 5 finding
 7](research-inconsistency-detection-multi-artifact.md): a dated measurement,
 with the generated report named as the successor SSoT. Re-run the report rather
-than trusting the table.
+than trusting the table. This document has already proved the point on itself:
+the first draft's figures were measured one commit earlier and were stale by the
+time the branch rebased.
+
+**Three bounds the report documents, which this table must be read under**
+([Rule 7](../DRIFT-RULES.md#miss-rate) — the tool states them, so citing the
+ranking without them is a partial reading):
+
+1. **Rows 1 and 5 are two halves of one artifact.** The report's "Drain files"
+   bound: `sdd/BACKLOG.md` drains into `sdd/BACKLOG-DONE.md` as items complete,
+   and a tag written against a live item stays pinned to `BACKLOG.md` after the
+   cited section moved out. Combined signal is **28**, not 22, and localization is
+   broken for the drained part. This is not hypothetical here: every exemplar in
+   § 3.2 is a completed item now living in `BACKLOG-DONE.md`. It does not
+   overturn § 3.3's adopt decision, because the rule belongs where items are
+   *authored*, which is `BACKLOG.md`.
+2. **The sort key is exposure at least as much as failure rate.** `CLAUDE.md`
+   makes "open the backlog item" the first step of nearly every trace, so
+   `sdd/BACKLOG.md` gets a chance to earn a tag in almost all of them. A file
+   that misled every reader it ever had can sort below one that misled a small
+   fraction of many.
+3. **`rate`'s denominator mixes assessed and never-assessed reads.** Coverage is
+   43.1% overall and varies per reference, so `rate` is "negative tags per
+   citation" and interrogates a row rather than ordering rows.
 
 That precedent also supplies a second measurement for free. The same
 reference ranked first there, at **16**, hand-counted at that branch head. It is
-**21** now. The signal has been visible, attributed, and growing, across the
+**22** now. The signal has been visible, attributed, and growing, across the
 entire interval in which nothing consumed it.
 
 ### 3.2 What the top row actually is
 
 The tag is noisy: a `misleading` tag can mean the reader was misled, or merely
-that they recorded checking and diverging. So the 21 extracts were read rather
+that they recorded checking and diverging. So the 22 extracts were read rather
 than counted. Roughly 11 are a genuine defect in the item, and they share one
 shape — **the item's prescription or premise was wrong by the time it was
 implemented**:
@@ -192,7 +215,7 @@ norm existing informally without a home.
 
 | Candidate from § 2.1 | Evidence in the corpus | Verdict |
 |---|---|---|
-| Mark prescriptions as advisory / `[NEEDS CLARIFICATION]` | ~11 of 21 tags on the top-ranked reference | **Adopt**, reshaped as an authority rule (BK-343) |
+| Mark prescriptions as advisory / `[NEEDS CLARIFICATION]` | ~11 of 22 tags on the top-ranked reference | **Adopt**, reshaped as an authority rule (BK-343) |
 | `/clarify` nine-category taxonomy | Spec-side tags are staleness after behaviour changed, not authoring ambiguity | Reject: solves a problem we do not have |
 | `/analyze` requirement-to-task coverage | `check_spec_marks.py` already does this direction, deterministically and with five failure modes | Reject: we are ahead |
 | Gate for "code without a spec" ([Rule 1](../000-process.md#rules)) | Zero tags | Reject: theoretical symmetry, not a measured cost |
@@ -212,7 +235,7 @@ That is not a new discovery — **ID-238 already states it**, and states why: BK
 shipped [research § 9](research-inconsistency-detection-multi-artifact.md) step
 3's report and dropped step 3's cadence sentence. What is new is that the item
 now has the measurement it was waiting on, and that the interval it describes has
-a measured cost (§ 3.1: 16 → 21 on one reference).
+a measured cost (§ 3.1: 16 → 22 on one reference).
 
 It also has a deadline the repo set for itself.
 [`DRIFT-RULES.md` Rule 6](../DRIFT-RULES.md#tolerated) says a check with no
@@ -235,24 +258,47 @@ the mechanism even though it supplies the pattern.
 
 What invalidates the report is merged traces. The repo's only recurring, ticketed
 checkpoint downstream of merged traces is a release, which the CHANGELOG dates
-show running at roughly two-week intervals. At BK-330's measured growth of about
-three negative tags per merged PR, a release bundles enough corpus delta for the
-ranking to move.
+show running at roughly two-week intervals.
 
-So: **`CONTRIBUTING.md` § Release Phase 0 gains one step** — run the report, and
-record the decision (act / defer / accept) for the top-ranked reference as a
-backlog entry. The second half is what the ID-150 pattern exists to enforce:
+**The growth rate is re-derived here, not carried forward.** ID-238's body quoted
+BK-330's "roughly +3 negative tags per merged PR" and explicitly said to
+re-measure rather than trust it. Measuring the corpus at the refs themselves:
+`83e22a3` (BK-330's last in-review point) carries 193 negative tags over 260
+traces, and `73d4079` carries 205 over 269, across the eight pull requests
+#944–#951. That is about **+1.5 negative tags and +1.1 traces per merged PR** —
+the trace rate holds, and the tag rate is roughly *half* what BK-330 measured.
+The decision survives the correction: eight PRs per release interval still moves
+the corpus by ~12 tags against a base of 206, which is enough for the ranking to
+shift.
+
+So: **`CONTRIBUTING.md` § Release Phase 0 gains one step** — run the report,
+record the corpus totals, and record a decision (act / defer / accept) as a
+backlog entry. The ticket half is what the ID-150 pattern exists to enforce:
 `sdd/formal/README.md` notes that "a calendar without a ticket is the same as no
 calendar."
 
-**Stated bound.** A release is a *proxy* for corpus growth, not the growth
-itself. If release cadence lengthens, the trigger degrades silently. The
-mitigation is that the report prints corpus totals, so a reader can see how much
-accumulated since the last reading; the failure mode is a stale ranking, not a
-missed gate, because the report was never a gate.
+**Bound 1 — the cadence proxy, and its mitigation.** A release is a *proxy* for
+corpus growth, not the growth itself, so a lengthening cadence degrades the
+trigger silently. The mitigation has to be built rather than asserted: the report
+prints only *current* totals and stores no prior reading, so recording the totals
+in the Phase 0 backlog entry is what gives the next reading a baseline to
+difference against. Without that the bound would be stated and left unmitigated.
+The failure mode is a stale ranking, not a missed gate, because the report was
+never a gate.
+
+**Bound 2 — the selection rule.** "The top-ranked reference" selects on the
+absolute count, which § 3.1's bound 2 says measures exposure. At 22 against 10
+for the runner-up, that phrase resolves to `sdd/BACKLOG.md` for many releases
+running, while a high-`rate`, low-`reads` document never reaches the checklist.
+So the step selects the top-ranked row **plus any row whose `rate` is an outlier
+against its `reads`**, which is what the report's own "read them together"
+instruction asks of a reader.
 
 This settles BK-330's [Rule 6](../DRIFT-RULES.md#tolerated) register entry: the
-report is tolerated because it now has a named consumer.
+report is tolerated because it now has a named consumer. The register's **owner
+is the Phase 0 checklist step**, not this closed item — an owner has to be
+answerable the next time the question is asked, and a closed item records only
+that it was answered once.
 
 ### 4.2 Give `BACKLOG.md` the authority rule audits already have (BK-343)
 
@@ -269,11 +315,21 @@ restated elsewhere — so `BACKLOG.md` cites `CLAUDE.md` § Audits as the siblin
 precedent rather than reproducing its wording.
 
 **Measurable prediction.** Re-run the report after roughly 20 merged PRs.
-`BACKLOG.md`'s negative tags per 100 reads should fall from 9.1, and the residue
+`BACKLOG.md`'s negative tags per 100 reads should fall from 9.4, and the residue
 should shift from wrong prescriptions toward wrong diagnoses, which is a rarer
 and more expensive failure. If neither moves, the rule did not change behaviour
 and should be reconsidered rather than defended — § 4.1's trigger is what causes
 that re-measurement to actually happen.
+
+**Check this confound before believing either result.** The predicted figure is
+`rate`, whose denominator is coverage-dependent: `reads` counts every citing
+step, but only 43.1% of steps carry an explicit `outcome`, and that fraction
+varies per reference. If tagging discipline on `BACKLOG.md` shifts over those 20
+PRs — and shipping an authority rule *about backlog items* is exactly the kind of
+change that shifts it — the ratio moves without the underlying failure rate
+moving at all. So the re-measurement co-reports tag coverage, both globally and
+for this reference, and a change in `rate` unaccompanied by stable coverage
+falsifies nothing in either direction.
 
 ### 4.3 What this document does not claim
 

@@ -17,10 +17,7 @@ discovery_followups:
   - ID-248
 expected_ripples:
   - sdd/backlogid.json
-surprising_ripples:
-  - sdd/BACKLOG.md
-  - sdd/BACKLOG-DONE.md
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient on the external comparison
@@ -164,3 +161,54 @@ phases:
           not see master's allocations, so the green check was not evidence of no
           collision. Master's new ID-246 (dangling tracker IDs under `sdd/`) is the
           nearest neighbour to ID-248 and needed an explicit distinction added
+  - id: review
+    name: PR review round 1
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Cross-Artifact Consistency (Shipped so far), ID-239 (Why ID, not BK)"
+        read_type: verify
+        extract: >-
+          Review found the inbound sweep was half-done. My own miss, twice: the
+          grep that found instances 1 and 2 was run against the section I was
+          editing rather than the tree, so "Shipped so far" (asserting step 3 open,
+          contradicted by this same commit) and ID-239's citation both survived.
+          ID-239 is a distinct sub-shape — the close *deleted* the referent instead
+          of moving it, so the ID resolved and the sentence pointed at nothing.
+          n=2 became n=4 and ID-248's "thin evidence" disposition was re-derived
+      - file: scripts/report_trace_outcomes.py
+        section: "What this report does NOT catch, Reading the ranking"
+        read_type: gate
+        extract: >-
+          The bounds the tool documents about itself, none of which the first draft
+          cited: the BACKLOG.md-to-BACKLOG-DONE.md drain (so rows 1 and 5 are two
+          halves of one artifact, combined 28), the sort key measuring exposure
+          rather than failure rate (so "top-ranked" pre-selects BACKLOG.md for many
+          releases), and `rate`'s coverage-dependent denominator (which can move
+          BK-343's prediction with no behaviour change). Read at review time, not
+          at design time — the decision was anchored to an instrument whose own
+          docstring had not been read end-to-end
+        outcome: misleading
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) BK-330, (item) ID-238"
+        read_type: verify
+        extract: >-
+          Two corrections the review forced. The Rule 6 register named a closed item
+          as owner, which is the unowned state BK-329's round 5 disqualified;
+          re-pointed at the Phase 0 checklist step, which is self-renewing. And the
+          "+3 negative tags per merged PR" figure was carried forward against the
+          closing item's explicit re-measure instruction — and against BK-343,
+          shipped in this same PR. Re-derived at the refs: 193 over 260 traces at
+          `83e22a3`, 205 over 269 at `73d4079`, eight merged PRs, so ~+1.5 tags per
+          PR, about half the inherited figure
+      - file: sdd/traces/_schema.yml
+        section: "surprising_ripples, expected_ripples"
+        read_type: gate
+        extract: >-
+          Review caught `sdd/BACKLOG.md` and `sdd/BACKLOG-DONE.md` filed as
+          surprising ripples when both are cited reads in this trace and are the
+          definition of closing an item — seeding the two files every close touches
+          would flatten the aggregate the field exists to produce. Removed rather
+          than moved to `expected_ripples`: the schema frames that field as
+          distinct from the cited reads in `phases`, so listing them there repeats
+          the error one field over. The genuinely unanticipated thing is already
+          recorded as the `unclear` on the Pre-work index step plus ID-248

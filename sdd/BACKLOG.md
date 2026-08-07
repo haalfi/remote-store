@@ -268,13 +268,26 @@ and the highest ID already in this file, then take the next integer. Run
   does not name the **inbound** references: other items, section preambles, and
   `BACKLOG-DONE.md` entries that cite the closing item by ID and assert something
   about its state.
-  **Measured instances, from closing ID-238 in this PR** — two, both carrying a
-  claim that the close falsified rather than a bare cross-reference: the
-  Cross-Artifact Consistency section preamble ("BK-327 and ID-238 are independent
-  of the chain … both sit at the section's tail"), and BK-330's DONE entry in two
-  places ("nothing yet causes anyone to read it"; a Rule 6 register entry naming
-  ID-238 as the owner that "will settle" its fate). Both were found by grepping
-  the ID, not by a checklist row.
+  **Measured instances, from closing ID-238 in one PR** — four, each carrying a
+  claim the close falsified rather than a bare cross-reference. Two were caught by
+  the author's grep; **two more only by review**, which is itself the measurement:
+  1. The Cross-Artifact Consistency section preamble ("BK-327 and ID-238 are
+     independent of the chain … both sit at the section's tail").
+  2. BK-330's DONE entry, in two places ("nothing yet causes anyone to read it";
+     a Rule 6 register entry naming ID-238 as the owner that "will settle" its
+     fate).
+  3. The same section's "Shipped so far" paragraph ("the cadence is open as
+     ID-238 … so step 3 is not closed") — which the *same commit* contradicted in
+     `BACKLOG-DONE.md` with "Step 3 is whole". Two files, one commit, opposite
+     states of the same fact.
+  4. ID-239's `Why ID, not BK`, citing reasoning ID-238 stated. **The close
+     deleted the referent rather than moving it**: the rewrite into
+     `BACKLOG-DONE.md` dropped that paragraph, so the ID resolved and the sentence
+     around it pointed at nothing.
+  **Instance 4 is a distinct sub-shape** worth naming separately: not a stale
+  assertion *about* the closed item, but a live citation *of* it whose target the
+  close destroyed. A close migrates an item; anything the item was the sole home
+  of has to migrate too, or move to the citing site.
   The asserting kind is what makes this more than a link-rot problem:
   [principle 3](../CLAUDE.md#principles) is violated the moment the item closes,
   and the stale sentence reads as current.
@@ -287,11 +300,17 @@ and the highest ID already in this file, then take the next integer. Run
   Also distinct from **BK-337**, scoped to authority docs' restating copies in
   `.claude/**`, and from **BK-334**'s `hatch` aliases — different trigger,
   different target set. This one is `sdd/BACKLOG*.md` internal.
-  **Prescription advisory** per [§ How this file works](#how-this-file-works): a grep for
-  the ID is the obvious shape and n=2 is thin evidence for a ripple row, so
-  whether this needs a row, a gate, or nothing is the open question. Note that a
-  gate is harder than it looks — the defect is an assertion going stale, not a
-  reference dangling, which is precisely why ID-246's mechanism does not reach it.
+  **Prescription advisory** per [§ How this file works](#how-this-file-works),
+  and the disposition was re-derived once the count moved. An earlier draft said
+  n=2 was "thin evidence for a ripple row". At **n=4 from a single close, half of
+  them missed by an author who was grepping the ID deliberately**, thin is the
+  wrong reading: the base rate is high enough that a ripple row is the likely
+  answer, and the open question is narrower — whether the row can say anything
+  more useful than "grep the ID and read every hit". Note a gate is harder than it
+  looks: the defect is an assertion going stale, not a reference dangling, which
+  is precisely why ID-246's mechanism does not reach it. Instance 4 may be the
+  exception — a citation whose target the close deleted is closer to ID-246's
+  shape, though still not identical, since the *ID* keeps resolving.
 
 - [ ] **BK-335 — `check_links.py` cannot see Markdown links inside Python docstrings**
   spec: — · effort: S/M · audience: contributor.tooling
@@ -351,8 +370,8 @@ and the highest ID already in this file, then take the next integer. Run
   `sdd/**` **are** published prose, and "Out of scope: `sdd/**`" already
   contradicts the dual-dest mechanism today. Settle that first; it bounds
   everything else.
-  **Why ID, not BK:** the same reasoning ID-238 states under Cross-Artifact
-  Consistency. The
+  **Why ID, not BK:** the question is filed, not a commitment — whether the
+  mechanism is the right one at all is unevaluated, so no outcome is promised. The
   scope question above is unevaluated and the item's own body says deciding it
   "bounds everything else", so the size of the committed half is unknown — which
   is also why `effort:` is `—` rather than a guess. Contrast BK-334 above, which
@@ -527,8 +546,8 @@ Shipped so far: step 1 (Dafny twin parity) as BK-328, step 5.1 (the attribution
 rule) as BK-329, step 4 (037's per-backend table) as BK-331, and **step 3's
 report half** as BK-330; see
 [BACKLOG-DONE.md](BACKLOG-DONE.md). Step 3 asked for a report *and* a review
-cadence — the cadence is open as ID-238 at the tail of this section, so step 3
-is not closed. Four findings from them
+cadence; BK-330 shipped the report and ID-238 the cadence, so **step 3 is
+closed**. Four findings from them
 apply to what follows: a documented gap statement is not a measured one, pinning
 what an exemption covers beats exempting the whole item, an authority rule is
 worth exactly the live disagreements it decides — run a proposed one against them

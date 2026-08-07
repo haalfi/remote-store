@@ -11,8 +11,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 - [x] **ID-238 — Decide whether the trace-outcome report gets a review trigger, and what fires it**
   spec: — · effort: S · audience: contributor.process
   Closed as **yes, release-anchored**. `CONTRIBUTING.md` § Release Phase 0 gains
-  one step: run `hatch run report-trace-outcomes`, and record the decision
-  (act / defer / accept) for the top-ranked reference as a backlog entry.
+  one step: run `hatch run report-trace-outcomes`, then record the corpus totals
+  and a decision (act / defer / accept) as a backlog entry.
   **The trigger shape is the decision, and the analogy was rejected.** The item
   offered `sdd/formal/README.md`'s TLA+ revisit (every 6 months or 10 spec
   amendments) as the pattern. [Rule 9](DRIFT-RULES.md#period) wants the period set
@@ -20,30 +20,45 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   kept — each revisit tracked as a backlog entry, because "a calendar without a
   ticket is the same as no calendar". What invalidates the report is merged
   traces; a release is the repo's only recurring ticketed checkpoint downstream of
-  those, running at roughly two-week intervals per the CHANGELOG dates, which at
-  BK-330's measured ~+3 negative tags per merged PR is enough delta to move the
-  ranking.
-  **Stated bound** ([Rule 7](DRIFT-RULES.md#miss-rate)): a release is a *proxy*
-  for corpus growth, not the growth itself, so a lengthening release cadence
-  degrades the trigger silently. Mitigated by the report printing corpus totals,
-  so a reader sees what accumulated since the last reading. The failure mode is a
-  stale ranking, never a missed gate — the report is not a gate.
+  those, running at roughly two-week intervals per the CHANGELOG dates.
+  **The growth rate was re-derived, not inherited.** This item's own body quoted
+  BK-330's "~+3 negative tags per merged PR" and said to re-measure rather than
+  trust it, so: `83e22a3` carries 193 negative tags over 260 traces, `73d4079`
+  carries 205 over 269, across eight merged PRs (#944–#951). That is **~+1.5 tags
+  and ~+1.1 traces per merged PR** — the trace rate holds, the tag rate is about
+  half BK-330's. The decision survives: eight PRs per release interval still moves
+  the corpus ~12 tags against a base of 206.
+  **Bound 1 — cadence proxy** ([Rule 7](DRIFT-RULES.md#miss-rate)): a release is a
+  *proxy* for corpus growth, not the growth itself, so a lengthening cadence
+  degrades the trigger silently. **The mitigation is built, not asserted** — the
+  report prints only current totals and stores no history, so the Phase 0 entry
+  records the totals it was decided against and that line is the next release's
+  baseline. The failure mode is a stale ranking, never a missed gate.
+  **Bound 2 — selection rule**: the sort key is the absolute count, which the
+  report documents as measuring exposure rather than failure rate. "Top-ranked"
+  alone resolves to `sdd/BACKLOG.md` for many releases running (22 against 10 for
+  the runner-up) while a high-`rate`, low-`reads` document never surfaces, so the
+  step selects the top row **plus any `rate` outlier**.
   **This settles BK-330's [Rule 6](DRIFT-RULES.md#tolerated) register entry**,
-  which named this item as its owner: the report is tolerated because it now has a
-  named consumer, rather than switched off.
+  which named this item as its owner. The standing owner is now the **Phase 0
+  checklist step**, not this closed item: an owner must be answerable the next
+  time the question is asked, and a closed item records only that it was answered
+  once — the same standard BK-329's round-5 review applied when it disqualified
+  "whoever picks up a ranked reference".
   **The decision was taken against a measurement, not from the item body.** The
   first reading of the report is [research
   § 3](research/research-spec-kit-comparison.md), which also measured the interval's
   cost: the top-ranked reference was hand-counted at 16 in the earlier research
-  doc and is 21 now, having grown throughout the period in which nothing read it.
+  doc and is 22 now, having grown throughout the period in which nothing read it.
   Co-shipped with **BK-343**, which that same first reading produced.
 
 - [x] **BK-343 — `BACKLOG.md` has no authority rule, so stale item prescriptions read as current**
   spec: — · effort: S · audience: contributor.process
   Diagnosed by the first reading of BK-330's report
   ([research § 3.2](research/research-spec-kit-comparison.md)). `sdd/BACKLOG.md`
-  ranks first in the corpus for negative outcome tags (21 across 19 items, 230
-  reads). Reading the extracts rather than the count: ~11 are a genuine defect in
+  ranks first in the corpus for negative outcome tags (22 across 20 items, 235
+  reads; 28 counting the `BACKLOG-DONE.md` half the report's drain-file bound
+  says belongs with it). Reading the extracts rather than the count: ~11 are a genuine defect in
   the item, all one shape — the item's **prescription or premise** was wrong by
   the time someone implemented it. BK-331 ("trusting the item body over the
   cross-reference would have produced a wrong fix"), BK-291 (prescribed fix half
@@ -66,8 +81,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   7](DRIFT-RULES.md#mandatory-path). Recorded rather than assumed, per Rule 5.
   **Measurable prediction, and the trigger that will test it:** re-run the report
   after ~20 merged PRs. `BACKLOG.md`'s negative tags per 100 reads should fall
-  from 9.1, with the residue shifting from wrong prescriptions toward wrong
-  diagnoses. If neither moves, the rule did not change behaviour and should be
+  from 9.4, with the residue shifting from wrong prescriptions toward wrong
+  diagnoses. **Co-report tag coverage when checking it** — that figure is `rate`,
+  whose denominator counts every citing step while only 43.1% carry an `outcome`,
+  so a shift in tagging discipline (which shipping a rule about backlog items may
+  itself cause) moves the ratio with no change in the underlying failure rate.
+  If neither moves, the rule did not change behaviour and should be
   reconsidered rather than defended. ID-238's release-anchored trigger, co-shipped
   here, is what causes that re-measurement to happen.
 
@@ -555,7 +574,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   totals and tag-coverage.
   **Partially closes step 3, which asked for a report *and* a review cadence.**
   The report shipped here; the cadence was the residue, filed as **ID-238** and
-  since [closed](#unreleased) with a release-anchored trigger. Step 3 is whole.
+  since closed with a release-anchored trigger. Step 3 is whole. (Deliberately a
+  bare ID rather than an `(#unreleased)` anchor: Release Phase 2 renames that
+  heading to `## vX.Y.Z`, so the link would keep resolving while pointing at the
+  fresh empty section — the defect class ID-238 exists to instrument.)
   **A report, not a gate**, per [`DRIFT-RULES.md` Rule 5](DRIFT-RULES.md#mandatory-path)'s
   requirement to record why. The two reasons live in the script's module
   docstring — this entry points at them rather than restating them, so there is
@@ -563,12 +585,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   when a trace cannot be read or parsed; there is deliberately no code that
   signals findings, and `test_findings_never_change_the_exit_code` asserts the
   return value, so a promotion to a gate fails it by construction.
-  **Rule 6 register entry — owner: ID-238, and now settled by it.** That item
-  decided what triggers reading the report, which is what Rule 6 asks an owner to
-  be answerable for; it kept the report rather than switching it off, and named
-  `CONTRIBUTING.md` § Release Phase 0 as the consumer. (Naming no owner is what
-  BK-329's round-5 review disqualified a candidate register for; "whoever picks up
-  a ranked reference" was a description of the unowned state, not an owner.)
+  **Rule 6 register entry — owner: the `CONTRIBUTING.md` § Release Phase 0
+  checklist step.** ID-238 decided what triggers reading the report and kept it
+  rather than switching it off, but a *closed item* cannot be the standing owner:
+  Rule 6 wants someone answerable the next time the question is asked, and a
+  closed item records only that it was answered once. The checklist step is
+  self-renewing — it fires every release and produces a backlog entry carrying the
+  corpus totals and a decision, so the register has a live owner and a dated
+  record. (Naming no owner is what BK-329's round-5 review disqualified a
+  candidate register for; "whoever picks up a ranked reference" was a description
+  of the unowned state, not an owner. A closed item is a description of a past
+  decision, which fails the same test.)
   Deliberately absent from `lint`, `preflight`, `docs-gate` and `all`. What keeps
   it executable rather than rotting is its own test suite, including a
   live-corpus run — **locally**. In CI the qualifier matters: `CODE_PAT` does not
