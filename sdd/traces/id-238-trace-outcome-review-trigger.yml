@@ -18,7 +18,7 @@ discovery_followups:
   - ID-249
 expected_ripples:
   - sdd/backlogid.json
-review_rounds: 4
+review_rounds: 5
 phases:
   - id: orient
     name: Orient on the external comparison
@@ -336,3 +336,19 @@ phases:
           history carries same-day and one-day releases. Window now stated in both
           the research doc and the DONE entry — an unstated measurement window is
           the same class as the shallow clone one round earlier
+  - id: review_5
+    name: PR review round 5 (terminal unprimed)
+    steps:
+      - file: sdd/research/research-spec-kit-comparison.md
+        section: "4.2 (measurable prediction)"
+        read_type: verify
+        extract: >-
+          Round 5 returned one minor finding and an explicit no-blocker verdict,
+          having reproduced every stamped figure in worktrees at three refs. The
+          finding: "20 merged PRs is about a week" used the 8-in-3-days burst rate
+          that section 4.1 quarantines; at the sustained rate (21 commits / 19
+          days) it is ~18 days, about two median intervals, so both halves of the
+          sentence flip. Fixed by deleting the calendar conversion rather than
+          restating it — every prior fix in this PR seeded a defect, and a removal
+          cannot introduce a new wrong number
+        outcome: misleading

@@ -423,9 +423,10 @@ precedent rather than reproducing its wording.
 should shift from wrong prescriptions toward wrong diagnoses, which is a rarer
 and more expensive failure. If neither moves, the rule did not change behaviour
 and should be reconsidered rather than defended — § 4.1's trigger is what causes
-that re-measurement to actually happen. At the velocity measured in § 4.1,
-20 merged PRs is about a week, so the check will usually fall inside a single
-release interval rather than spanning several.
+that re-measurement to actually happen. The horizon is stated in merged PRs and
+deliberately not converted to a calendar figure: the two velocities § 4.1
+measures differ by more than a factor of two, so any such conversion would carry
+an unstated choice between them.
 
 **Check this confound before believing either result.** The predicted figure is
 `rate`, whose denominator is coverage-dependent: `reads` counts every citing
