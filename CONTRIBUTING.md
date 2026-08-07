@@ -460,6 +460,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] CI is green on master: `ci.yml` (lint, typecheck, the tiered test jobs, examples, docs, package) **and** the `ci-full.yml` full live-backend matrix on every supported interpreter — the full live-backend guarantee runs in `ci-full.yml`, not `ci.yml`
 - [ ] `hatch run all` passes **locally** (constituent scripts in `pyproject.toml`; the pre-commit gate variant deliberately does not enforce the 95% floor — CI does)
 - [ ] No open `[~]` items shipping in this release in `sdd/BACKLOG.md` — complete and move to `BACKLOG-DONE.md`, or defer (`[ ]`)
+- [ ] `hatch run report-trace-outcomes` read, and the top-ranked reference given a recorded decision — act, defer, or accept — as a backlog entry. A report, never a gate: nothing here blocks the release, but the decision is written down rather than remembered
 - [ ] `[Unreleased]` section in CHANGELOG.md is non-empty
 - [ ] Decide bump level (patch / minor / major) per the table above
 

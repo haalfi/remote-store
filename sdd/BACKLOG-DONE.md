@@ -8,6 +8,69 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-238 — Decide whether the trace-outcome report gets a review trigger, and what fires it**
+  spec: — · effort: S · audience: contributor.process
+  Closed as **yes, release-anchored**. `CONTRIBUTING.md` § Release Phase 0 gains
+  one step: run `hatch run report-trace-outcomes`, and record the decision
+  (act / defer / accept) for the top-ranked reference as a backlog entry.
+  **The trigger shape is the decision, and the analogy was rejected.** The item
+  offered `sdd/formal/README.md`'s TLA+ revisit (every 6 months or 10 spec
+  amendments) as the pattern. [Rule 9](DRIFT-RULES.md#period) wants the period set
+  from the drift rate, so the calendar half is dropped and only the ID-150 half is
+  kept — each revisit tracked as a backlog entry, because "a calendar without a
+  ticket is the same as no calendar". What invalidates the report is merged
+  traces; a release is the repo's only recurring ticketed checkpoint downstream of
+  those, running at roughly two-week intervals per the CHANGELOG dates, which at
+  BK-330's measured ~+3 negative tags per merged PR is enough delta to move the
+  ranking.
+  **Stated bound** ([Rule 7](DRIFT-RULES.md#miss-rate)): a release is a *proxy*
+  for corpus growth, not the growth itself, so a lengthening release cadence
+  degrades the trigger silently. Mitigated by the report printing corpus totals,
+  so a reader sees what accumulated since the last reading. The failure mode is a
+  stale ranking, never a missed gate — the report is not a gate.
+  **This settles BK-330's [Rule 6](DRIFT-RULES.md#tolerated) register entry**,
+  which named this item as its owner: the report is tolerated because it now has a
+  named consumer, rather than switched off.
+  **The decision was taken against a measurement, not from the item body.** The
+  first reading of the report is [research
+  § 3](research/research-spec-kit-comparison.md), which also measured the interval's
+  cost: the top-ranked reference was hand-counted at 16 in the earlier research
+  doc and is 21 now, having grown throughout the period in which nothing read it.
+  Co-shipped with **BK-343**, which that same first reading produced.
+
+- [x] **BK-343 — `BACKLOG.md` has no authority rule, so stale item prescriptions read as current**
+  spec: — · effort: S · audience: contributor.process
+  Diagnosed by the first reading of BK-330's report
+  ([research § 3.2](research/research-spec-kit-comparison.md)). `sdd/BACKLOG.md`
+  ranks first in the corpus for negative outcome tags (21 across 19 items, 230
+  reads). Reading the extracts rather than the count: ~11 are a genuine defect in
+  the item, all one shape — the item's **prescription or premise** was wrong by
+  the time someone implemented it. BK-331 ("trusting the item body over the
+  cross-reference would have produced a wrong fix"), BK-291 (prescribed fix half
+  wrong on Windows), BK-269 (asserted a CI practice that did not exist), BUG-221
+  (not reproducible as written).
+  Shipped as an **Item authority** rule in
+  [§ How this file works](BACKLOG.md#how-this-file-works): diagnosis is durable,
+  prescription is advisory and presumed stale, re-derive before acting and correct
+  the body in the same commit.
+  **A new direction for a new artifact pair, not a copy.**
+  [Rule 4](DRIFT-RULES.md#authority) wants the direction declared in the document
+  owning the pair and not restated elsewhere. `CLAUDE.md` § Audits rule 3 governs
+  audit finding ↔ implementation; this governs item body ↔ implementation. The
+  backlog cites it as sibling precedent rather than reproducing its wording. That
+  the norm already existed informally is itself evidence: `BACKLOG-DONE.md:3848`
+  records a contributor applying the audit rule to a backlog item by analogy.
+  **Deliberately no gate.** The measured defect is stale *premises*, which no
+  check can evaluate; the mechanically checkable part (`path:line` references) is
+  6 instances file-wide, which does not clear [Rules 5 and
+  7](DRIFT-RULES.md#mandatory-path). Recorded rather than assumed, per Rule 5.
+  **Measurable prediction, and the trigger that will test it:** re-run the report
+  after ~20 merged PRs. `BACKLOG.md`'s negative tags per 100 reads should fall
+  from 9.1, with the residue shifting from wrong prescriptions toward wrong
+  diagnoses. If neither moves, the rule did not change behaviour and should be
+  reconsidered rather than defended. ID-238's release-anchored trigger, co-shipped
+  here, is what causes that re-measurement to happen.
+
 - [x] **ID-241 — Conformance cells that make no HTTP call still skip on a missing cassette**
   spec: TEST-007 · effort: S · audience: infra.test
   The missing-cassette skip fired **per test name**, at collection time: any
@@ -491,8 +554,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   each with the traces that cited it and the sections they cited, plus corpus
   totals and tag-coverage.
   **Partially closes step 3, which asked for a report *and* a review cadence.**
-  The report is here; nothing yet causes anyone to read it. The residue is
-  **[ID-238](BACKLOG.md)**, and the section preamble is qualified to match.
+  The report shipped here; the cadence was the residue, filed as **ID-238** and
+  since [closed](#unreleased) with a release-anchored trigger. Step 3 is whole.
   **A report, not a gate**, per [`DRIFT-RULES.md` Rule 5](DRIFT-RULES.md#mandatory-path)'s
   requirement to record why. The two reasons live in the script's module
   docstring — this entry points at them rather than restating them, so there is
@@ -500,12 +563,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   when a trace cannot be read or parsed; there is deliberately no code that
   signals findings, and `test_findings_never_change_the_exit_code` asserts the
   return value, so a promotion to a gate fails it by construction.
-  **Rule 6 register entry — owner: [ID-238](BACKLOG.md).** That item decides what
-  triggers reading the report, so it is the item that will settle whether this
-  advisory check stays tolerated or gets switched off, which is what Rule 6 asks
-  an owner to be answerable for. (Naming no owner is what BK-329's round-5 review
-  disqualified a candidate register for; "whoever picks up a ranked reference"
-  was a description of the unowned state, not an owner.)
+  **Rule 6 register entry — owner: ID-238, and now settled by it.** That item
+  decided what triggers reading the report, which is what Rule 6 asks an owner to
+  be answerable for; it kept the report rather than switching it off, and named
+  `CONTRIBUTING.md` § Release Phase 0 as the consumer. (Naming no owner is what
+  BK-329's round-5 review disqualified a candidate register for; "whoever picks up
+  a ranked reference" was a description of the unowned state, not an owner.)
   Deliberately absent from `lint`, `preflight`, `docs-gate` and `all`. What keeps
   it executable rather than rotting is its own test suite, including a
   live-corpus run — **locally**. In CI the qualifier matters: `CODE_PAT` does not

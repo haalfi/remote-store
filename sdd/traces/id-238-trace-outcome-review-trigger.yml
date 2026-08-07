@@ -1,0 +1,166 @@
+id: ID-238
+title: "Decide whether the trace-outcome report gets a review trigger, and what fires it"
+trigger: >-
+  A comparison of our SDD process against GitHub spec-kit was requested, then
+  narrowed to "no nice-to-haves, real provable & measurable value". Answering the
+  narrowed question required a measurement rather than a feature survey, and the
+  only instrument for it was BK-330's report — which nothing in the repo caused
+  anyone to run, the exact gap ID-238 was filed to close.
+source_items:
+  - ID-238
+  - BK-330
+audience:
+  - contributor.process
+co_shipped_items:
+  - BK-343
+discovery_followups:
+  - ID-248
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient on the external comparison
+    steps:
+      - file: sdd/000-process.md
+        section: "Rules, Attribution inside the intent domain"
+        read_type: reference
+        extract: >-
+          Our authority model, to compare against spec-kit's constitution. Rule 7's
+          four defeaters are what spec-kit has no counterpart for
+      - file: sdd/DRIFT-RULES.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Rules 1 and 8 are what spec-kit's pairwise spec/plan/tasks/code comparison
+          violates; used for the "where we are better" half
+      - file: sdd/templates/spec-template.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Compare against spec-kit's spec-template — ours is invariant-shaped, theirs
+          is user-story-shaped with [NEEDS CLARIFICATION] markers
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Pre-work index"
+        read_type: gate
+        extract: >-
+          Pre-work scan before touching backlog items, an authority direction, and a
+          new sdd/ document. Retrospectively: the Backlog-item-touched row does not
+          ask about inbound references to the item being closed, which is the gap
+          this PR hit twice and filed as ID-248
+        outcome: unclear
+  - id: measure
+    name: Measure instead of surveying
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Finding the documents that are failing readers"
+        read_type: reference
+        extract: >-
+          Names `hatch run report-trace-outcomes` as the way to ask which documents
+          fail readers — the instrument that turns the narrowed question into a
+          measurable one
+      - file: scripts/report_trace_outcomes.py
+        section: "(full)"
+        read_type: reference
+        extract: "Run it; 268 traces, 204 negative tags, sdd/BACKLOG.md ranked first"
+      - file: sdd/BACKLOG.md
+        section: "(item) ID-238"
+        read_type: gate
+        extract: >-
+          Found the decision already scoped, with its own justification and its Rule 6
+          ownership stated. The answer to "what should we do" was an open item, not a
+          spec-kit import. My own miss: the first answer to the user was assembled
+          from spec-kit's feature list before this was read, and three of its five
+          recommendations did not survive the measurement
+      - file: sdd/research/research-inconsistency-detection-multi-artifact.md
+        section: "5 (finding 7), 9 (step 3)"
+        read_type: reference
+        extract: >-
+          Step 3 asked for report plus cadence; the hand-counted table gives the
+          earlier value for the top-ranked reference (16, now 21), which measures the
+          cost of the interval in which nothing consumed the report
+  - id: design
+    name: Choose the trigger shape
+    steps:
+      - file: sdd/DRIFT-RULES.md
+        section: "Rule 9 (period), Rule 6 (tolerated), Rule 7 (miss-rate)"
+        read_type: gate
+        extract: >-
+          Rule 9 rejects the calendar half of the TLA+ analogy; Rule 6 makes leaving
+          ID-238 open an argument for deleting the report; Rule 7 requires the stated
+          bound that a release is a proxy for corpus growth
+      - file: sdd/formal/README.md
+        section: "3 (CI informational / revisit cadence)"
+        read_type: reference
+        extract: >-
+          The ID-150 pattern — each revisit tracked as a backlog entry, because "a
+          calendar without a ticket is the same as no calendar". Kept; the six-month
+          period is dropped
+      - file: CHANGELOG.md
+        section: "(release headings)"
+        read_type: verify
+        extract: >-
+          Release cadence is roughly two weeks, which is what makes a release a
+          usable anchor at BK-330's measured ~+3 negative tags per merged PR
+      - file: CONTRIBUTING.md
+        section: "Release / Phase 0: Pre-flight"
+        read_type: reference
+        extract: >-
+          Phase 0 already gates on backlog hygiene, so the report step belongs beside
+          it rather than in the content freeze
+  - id: implement
+    name: Ship both items
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Item authority"
+        read_type: reference
+        extract: "BK-343's rule — diagnosis durable, prescription advisory"
+      - file: CLAUDE.md
+        section: "Audits"
+        read_type: reference
+        extract: >-
+          Rule 3 is the sibling precedent BK-343 cites. Confirmed it governs a
+          different artifact pair, so the backlog rule is a new direction rather than
+          a second copy of a direction (DRIFT-RULES Rule 4)
+      - file: sdd/traces/_schema.yml
+        section: "co_shipped_items, audience"
+        read_type: gate
+        extract: >-
+          One owning trace with co_shipped_items rather than two traces; audience
+          contributor.process with no new user-facing framework, so no CHANGELOG
+  - id: verify
+    name: Ripple-check
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "Cross-Artifact Consistency (preamble)"
+        read_type: verify
+        extract: >-
+          The preamble asserted ID-238 "sits at the section's tail" — falsified by
+          closing it. Found by grepping the ID, not by a ripple row
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) BK-330"
+        read_type: verify
+        extract: >-
+          Two stale claims: "nothing yet causes anyone to read it", and a Rule 6
+          register entry saying ID-238 "will settle" the report's fate. Both rewritten
+          to the settled state per principle 3
+      - file: sdd/AUTHORING.md
+        section: "Directory defaults"
+        read_type: verify
+        extract: >-
+          sdd/research/research-*.md defaults to dual with no marker needed, so the
+          new research doc carries none
+      - file: sdd/BACKLOG.md
+        section: "(item) ID-246, ID-245"
+        read_type: verify
+        extract: >-
+          Rebase race, the same shape ID-209's trace recorded. PR #951 (ID-241)
+          landed on master while this branch was open and allocated ID-245, 246 and
+          247; this PR's follow-up was renumbered ID-245 to ID-248 on rebase.
+          `gen_backlogid --check` had passed pre-rebase against a branch that could
+          not see master's allocations, so the green check was not evidence of no
+          collision. Master's new ID-246 (dangling tracker IDs under `sdd/`) is the
+          nearest neighbour to ID-248 and needed an explicit distinction added
