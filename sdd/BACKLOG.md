@@ -157,7 +157,7 @@ and the highest ID already in this file, then take the next integer. Run
   already treated an absent root as an absent path) on the strength of two
   code readings; the first test that ran it disproved it.
 
-- [ ] **BUG-246 — An absent container makes the never-raise probes raise on four backends**
+- [ ] **BUG-246 — An absent container raises where the contract says `False`, `NotFound`, or an empty listing**
   spec: BE-004, BE-005, BE-021 · effort: M · audience: user.api
   BE-004 and BE-005 say these never raise, and BE-021 repeats it: the three
   return `False` on any traversal error rather than raising. Against a container
@@ -168,8 +168,10 @@ and the highest ID already in this file, then take the next integer. Run
   | --- | --- | --- | --- |
   | S3, S3-PyArrow | `False` | `False` | `False` |
   | S3-Boto3 | raises `NotFound` | `False` | raises `NotFound` |
-  | Azure non-HNS | raises `NotFound` | `False` | raises `NotFound` |
+  | Azure non-HNS (sync and async) | raises `NotFound` | `False` | raises `NotFound` |
   | SQLBlob | raises `BackendUnavailable` | raises `BackendUnavailable` | raises `BackendUnavailable` |
+  Four backends, three rows: `AzureBackend` and `AsyncAzureBackend` share one
+  because they answer identically and need the same fix.
   Two different root causes, so budget for two fixes. On S3-Boto3 and Azure the
   `is_file` column shows it is local: the HEAD-backed probe already absorbs the
   404 and only the prefix-listing-backed ones do not. On SQLBlob all three run
@@ -178,12 +180,37 @@ and the highest ID already in this file, then take the next integer. Run
   the fix shape is the one it used (`_absent_table_is_absent_path`, minus the
   `missing_ok` branch, answering `False` instead).
   `AzureBackend.exists`'s own docstring already says it never raises, so the
-  code contradicts its documentation. The async twins need the same fix.
+  code contradicts its documentation.
+  **On SQLBlob the three probes are a third of it.** BE-021's divergence list
+  says "every operation except the two deletes", and that is measured, not
+  inferred — against a dropped SQLite table every one of these raises
+  `BackendUnavailable`:
+  | Operation | Canonical row (BE-021) | Measured |
+  | --- | --- | --- |
+  | `read`, `read_bytes`, `get_file_info`, `get_folder_info` | `NotFound` | `BackendUnavailable` |
+  | `move` / `copy` source | `NotFound` | `BackendUnavailable` |
+  | `list_files`, `list_folders` | empty listing | `BackendUnavailable` |
+  | `exists`, `is_file`, `is_folder` | `False` | `BackendUnavailable` |
+  | `write` | — | `BackendUnavailable` |
+  Only `write` is arguably right: no clause says what a write owes against an
+  absent container, so leaving it as a backend-identity failure is defensible
+  and this item does not propose changing it. The other eleven owe a different
+  answer, and the fix is one shape applied at three call sites, not eleven —
+  they all run their statement inside a bare `_map_errors`.
+  **The same split reaches a disposed in-memory engine.** Disposing one destroys
+  the database rather than releasing a connection, so the table is genuinely
+  absent and the two deletes return while everything else raises. Fixing the
+  rows above fixes this with them; there is nothing separate to decide.
   Pre-existing — BUG-243 neither introduced nor touched it, having decided only
   what `missing_ok` owes on the two deletes.
-  Surfaced by the PR #952 round-2 review; the SQLBlob row added in round 5,
-  which caught BE-021's divergence list claiming backlog coverage this item did
-  not yet provide.
+  Surfaced by the PR #952 round-2 review; the SQLBlob probe row added in round
+  5, which caught BE-021's divergence list claiming backlog coverage this item
+  did not yet provide. Widened to the full operation set in round 8, which
+  caught the *same* gap a second time: the round-5 fix added the three probes
+  the finding named and left the eight other operations BE-021's own bullet
+  claimed were tracked. A divergence list that says "every operation except X"
+  needs an item scoped to every operation except X, not to the subset a reviewer
+  happened to measure.
 
 - [ ] **BUG-245 — `SQLBlobBackend(create_table=False)` leaks `NoSuchTableError` from its constructor**
   spec: BE-021, SQL-BLOB-012 · effort: S · audience: user.api

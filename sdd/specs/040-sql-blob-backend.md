@@ -288,11 +288,10 @@ gets them.
 
 Backend-native exceptions must never leak.
 
-**The `OperationalError` row is not limited to connection faults**, and the
-parenthetical above says so because a narrower reading made a downstream clause
-cite this row for something it did not cover. `_map_errors` catches
-`sa.exc.OperationalError` unconditionally and always has; SQLite reports a
-missing table that way, for instance.
+**The `OperationalError` row is not limited to connection faults.**
+`_map_errors` catches `sa.exc.OperationalError` unconditionally; SQLite reports
+a missing table that way, for instance. The parenthetical in the row says so
+explicitly because the narrower reading is the natural one and it is wrong.
 
 **Absent table:** `delete` and `delete_folder` do **not** reach this table when
 the table is not there — BE-021's absent-container rule reclassifies the
@@ -304,12 +303,11 @@ through the rows above, which is a known divergence from the canonical
 The reclassification asks only whether the table is reachable, and does not ask
 *why* it is not. A dropped table and a disposed in-memory engine — the one case
 where disposal destroys the database rather than releasing a connection to it —
-both answer "absent", and both deletes therefore return. An earlier draft tried
-to exclude the second case so the deletes would answer what `read` and `exists`
-answer for the same dead store; that gate could not be written without making
-behaviour depend on how the in-memory URL was spelled, and the asymmetry it was
-papering over is a divergence tracked in BE-021 rather than one this table
-should hide.
+both answer "absent", and both deletes therefore return. Excluding the second
+case would make the deletes answer what `read` and `exists` answer for the same
+dead store, but no test for it can be written that does not depend on how the
+in-memory URL was spelled, and the asymmetry it would hide is a divergence
+tracked in BE-021 rather than one this table should paper over.
 
 ---
 

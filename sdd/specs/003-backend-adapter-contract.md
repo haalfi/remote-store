@@ -586,18 +586,24 @@ error-path-only rule above. An ordinary miss must not pay for it.
 
 **Reach: these two calls, and no others by implication.** The clause decides
 what `missing_ok` tolerates; it does not silently re-decide operations that have
-no `missing_ok`. For those — `get_folder_info`, `read`, `get_file_info` and the
-`move`/`copy` source — an absent container is a non-existent path and the
-canonical table's `NotFound` row governs, exactly as it did before this clause.
-`exists()`, `is_file()` and `is_folder()` MUST answer `False`: BE-004 / BE-005
-and this section's own rule already forbid the three from raising. Both
-obligations are pre-existing — this clause neither creates nor relaxes them, and
-they are why those operations are absent from the roster above rather than
-exempt from it.
+no `missing_ok`. Every other operation already had an answer for an absent
+container before this clause, and keeps it: `get_folder_info`, `read`,
+`get_file_info` and the `move`/`copy` source take the canonical table's
+`NotFound` row; `list_files` and `list_folders` return an empty listing, since an
+absent container holds nothing; `exists()`, `is_file()` and `is_folder()` MUST
+answer `False`, which BE-004 / BE-005 and this section's own rule already forbid
+them from breaching. `write` is the one operation no clause decides, and this one
+does not decide it either. All of these obligations are pre-existing — this
+clause neither creates nor relaxes them, and that is why those operations are
+absent from the roster above rather than exempt from it.
 
-**Known divergences, stated rather than implied.** The clause above is the
-obligation; these are what ships today, recorded so a reader does not mistake
-the MUST for a description, and tracked in the backlog:
+**Known divergences, stated rather than implied.** These are what ships today,
+recorded so a reader does not mistake an obligation for a description, and
+tracked in the backlog. They are scoped to the whole absent-container question
+rather than to the two deletes alone: the Reach paragraph rules that the other
+operations keep obligations this clause did not write, and a divergence from one
+of *those* is no less real for having been written down elsewhere. Listing them
+here is what makes the container case answerable from one place.
 
 - `exists()` and `is_folder()` *raise* `NotFound` against an absent container on
   `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend`, where the strict
@@ -641,20 +647,35 @@ tolerated it without being asked to; `ListObjectsV2` answers an absent prefix
 with `200 KeyCount=0`, so the only 404 it can raise is the container's, and
 `delete_folder` raised where its sibling returned — against the same absent
 bucket, in the same store. Tolerating is the cheaper way to end that
-disagreement: `delete` already answered this way on every flat-namespace
-backend, so the rule ratifies the behaviour that was there and fixes the
-sibling, where making the pair strict instead would have cost `delete` a second
-`HeadBucket` on every miss, against the one-probe-per-miss budget above.
+disagreement on the backends whose wire shape produced it: making the pair
+strict would have cost `delete` a second `HeadBucket` on every miss, against the
+one-probe-per-miss budget above, to buy an answer no caller asked to
+distinguish.
 
-An earlier draft argued the rule from a second premise — that the hierarchical
-backends had already settled it, because on Local an absent store root is just
-an absent path. **That premise is false**, and worth recording as such rather
-than quietly dropping: with its root deleted, `LocalBackend` raises
-`InvalidPath("Path escapes root directory")` from the containment check, before
-either delete's `missing_ok` branch is reached. It is a divergence from this
-clause, not evidence for it (see the divergence list above), and it went
-unnoticed because both deletes look correct in isolation — the guard that fires
-is two lines upstream in `_resolve`.
+**Two earlier premises for the rule were false, and both are recorded rather
+than quietly dropped** — each was asserted from a reading and disproved by a
+run, which is the argument for the rule being stated as an obligation rather
+than inferred from what backends happened to do.
+
+The first was that the hierarchical backends had already settled it, because on
+Local an absent store root is just an absent path. With its root deleted,
+`LocalBackend` raises `InvalidPath("Path escapes root directory")` from the
+containment check, before either delete's `missing_ok` branch is reached. It is
+a divergence from this clause, not evidence for it, and it went unnoticed
+because both deletes look correct in isolation — the guard that fires is two
+lines upstream in `_resolve`.
+
+The second was that the rule merely ratified what `delete` already did on every
+flat-namespace backend, correcting only its sibling. That holds for the S3 and
+Azure family, whose bodyless `HeadObject` 404 cannot name the bucket, and it is
+where the reported symptom came from. It does not hold for `SQLBlobBackend`,
+which is flat-namespace by this spec's own classification and whose `delete` was
+measured raising `BackendUnavailable` against a dropped table before this
+change, exactly as its sibling did. The rule therefore changes `delete` on one
+backend rather than ratifying it everywhere. Both divergences are listed above;
+the premise survived six review rounds because "the S3 family" and "the
+flat-namespace backends" were used interchangeably by a clause whose whole
+purpose is to bind the second set.
 
 Reading the container's 404 as "no children" does not shortcut the rest of the
 operation: the wrong-type probe still runs and `missing_ok=False` still raises.
@@ -672,13 +693,12 @@ PostgreSQL and MySQL), so it reclassifies: one inspector call, hung off
 `SQLAlchemyError` so it is charged to a statement that already failed and never
 to a miss.
 
-An earlier draft of this clause tried to *exempt* `SQLBlobBackend` and went
-through three scope criteria, each refuted — the last keyed on whether a
-backend's mapping already produces `NotFound`, which the canonical table above
-requires of every backend anyway, making the test circular. That is the argument
-against carve-outs here rather than for them: the exemption cost more to justify
-than compliance cost to implement, and every criterion for "which backends does
-this bind" turned out to be either circular or false. It binds all of them.
+**Why "every backend" and not a scoped subset.** Three criteria for narrowing
+the clause's reach were tried and every one was either circular or false — the
+last keyed on whether a backend's mapping already produces `NotFound`, which the
+canonical table above requires of every backend anyway. Compliance turned out to
+cost less than any of the justifications for exemption, which is the argument
+against a carve-out here rather than for one. It binds all of them.
 
 **The store root is decided before the probe, not by it.** A probe answer about
 the root is meaningless — it is a folder whether or not it has children — so

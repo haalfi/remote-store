@@ -835,7 +835,9 @@ class AsyncAzureBackend(AsyncBackend):
             path: Backend-relative key.
             missing_ok: If ``True``, do not raise when the file is absent. This
                 covers an absent *container* too, on the same terms as
-                ``delete_folder``; both namespace kinds answer that way.
+                ``delete_folder``. Verified on flat (non-HNS) accounts; the HNS
+                branch is not exercised against an absent container, so the same
+                answer there is expected rather than measured.
 
         Raises:
             NotFound: If the file is missing (including when the container itself

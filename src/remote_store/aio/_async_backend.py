@@ -194,7 +194,10 @@ class AsyncBackend(abc.ABC):
         """Delete a file.
 
         An absent container — a missing bucket, container or table — counts as
-        an absent file, so *missing_ok* tolerates it on the same terms.
+        an absent file, so *missing_ok* tolerates it on the same terms. This is
+        required of implementations rather than guaranteed by them: the local
+        backend raises ``InvalidPath`` when its root directory is gone, and the
+        Graph backend may raise ``BackendUnavailable`` when its drive is.
 
         Args:
             path: Backend-relative key.
@@ -211,7 +214,10 @@ class AsyncBackend(abc.ABC):
         """Delete a folder.
 
         An absent container — a missing bucket, container or table — counts as
-        an absent folder, so *missing_ok* tolerates it on the same terms.
+        an absent folder, so *missing_ok* tolerates it on the same terms. This is
+        required of implementations rather than guaranteed by them: the local
+        backend raises ``InvalidPath`` when its root directory is gone, and the
+        Graph backend may raise ``BackendUnavailable`` when its drive is.
 
         Args:
             path: Backend-relative key.

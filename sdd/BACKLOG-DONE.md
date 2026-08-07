@@ -126,7 +126,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   here, is what causes that re-measurement to happen.
 
 - [x] **BUG-243 — `missing_ok` had no stated obligation when the *container* was absent**
-  spec: BE-012, BE-013, BE-021 · effort: M · audience: user.api
+  spec: BE-012, BE-013, BE-021 · effort: M · audience: user.api, library.maintainer
   Every clause spoke of "the path" and none of the bucket, container or table
   holding it, so each backend answered from whatever its wire protocol happened
   to reveal: `delete(missing_ok=True)` returned silently against a missing
@@ -140,9 +140,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   **Why this way round.** It costs nothing — `delete_folder` reads the
   container 404 its listing already raises as "no children" — whereas strictness
   would have cost `delete` a second `HeadBucket` on every miss, against a spec
-  budgeting one probe per miss. It also ratifies the answer `delete` already
-  gave on every flat-namespace backend, correcting the sibling that disagreed
-  rather than both.
+  budgeting one probe per miss. On the S3 and Azure family it ratifies the
+  answer `delete` already gave and corrects only its sibling; on `SQLBlobBackend`
+  both deletes raised, so the rule changes that backend's `delete` too. An
+  earlier formulation claimed the ratification held on *every* flat-namespace
+  backend and survived six rounds — "the S3 family" and "the flat-namespace
+  backends" were used interchangeably by a clause whose point is to bind the
+  second set. Measured, not read.
   **No carve-outs, after three attempts at one.** `SQLBlobBackend` was
   initially exempted, and the exemption went through three scope criteria in
   successive review rounds — vacuity (refuted by this item's own dropped-table
@@ -166,8 +170,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   spec rationale had asserted, and only a test caught it — two code readings had
   agreed it was true. BUG-248 is the only one where nothing is broken: two
   deliberate clauses simply disagree, and neither implementation is wrong under
-  its own. All four are listed in BE-021's divergence list, so the clause reads
-  as an obligation with named exceptions rather than as a description.
+  its own. The three that are divergences *from this clause* — BUG-246, BUG-247,
+  BUG-248 — are in BE-021's divergence list, so the clause reads as an obligation
+  with named exceptions rather than as a description. BUG-245 is not: an
+  unmapped constructor exception is a gap in BE-021's "backend-native exceptions
+  never leak" rule, which is scoped to operations, and belongs to that rule
+  rather than to this clause.
   **Graph came last and should have come first.** The work was framed around
   flat-namespace backends because that is where the reported symptom lived, and
   `GraphBackend` — hierarchical, but with a drive that is every bit a container —

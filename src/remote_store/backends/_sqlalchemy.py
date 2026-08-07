@@ -687,17 +687,16 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         deletes tolerate while ``read`` raises ``BackendUnavailable``, because
         only the deletes carry this reclassification.
 
-        A guard against that shipped briefly and was withdrawn. It could not be
-        made to work: the condition is "was the store discarded", and that is
-        not decidable from configuration. Keying it on ``close()`` broke two
-        live stores (a borrowed engine is never disposed; a file engine reopens
-        with its contents); keying it additionally on an in-memory URL still
-        missed the URI-form spellings (``file::memory:``, ``mode=memory``) and
-        could never see an owner disposing a *borrowed* engine, which needs no
-        call on this object at all. Each attempt made the behaviour depend on
-        URL spelling rather than on the store.
+        Guarding against it is not possible from here, and the reason is worth
+        keeping so nobody re-derives the attempt. The condition is "was the store
+        discarded", which is not decidable from this object's state: a *borrowed*
+        engine can be disposed by its owner without any call on this backend, and
+        a ``close()``-based test therefore cannot see it, while an in-memory URL
+        test cannot see the URI-form spellings (``file::memory:``,
+        ``mode=memory``) and so makes behaviour depend on how the store was
+        addressed rather than on the store.
 
-        The asymmetry it was papering over is a defect in its own right, already
+        The asymmetry a guard would hide is a defect in its own right, already
         filed: ``read`` and ``exists`` answer ``BackendUnavailable`` for an
         absent table where the contract says ``NotFound`` and ``False``. Fix
         that and a discarded store reads as an empty store from every
@@ -717,9 +716,10 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         ``missing_ok=False`` raises ``NotFound``. Without this, a dropped table
         surfaced as whatever ``_map_errors`` made of the driver's complaint
         (``BackendUnavailable`` from ``OperationalError`` on SQLite, the base
-        error from ``ProgrammingError`` on PostgreSQL and MySQL), and a tolerant
-        cleanup loop got an exception where every other flat-namespace backend
-        returned.
+        error from ``ProgrammingError`` on PostgreSQL and MySQL), so a tolerant
+        cleanup loop got an exception from *both* deletes where the S3 and Azure
+        family returned from one and raised from the other. This backend needed
+        the fix on both, not just on the sibling.
 
         **Placement is the whole cost story.** This catches
         ``SQLAlchemyError`` — a *driver* failure — and nothing else, so the

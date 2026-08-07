@@ -23,13 +23,19 @@ expected_ripples:
   - docs-src/guides/custom-backend-guide.md
   - scripts/check_docstring_parity.py
   - docs-src/_data/graph/graph.json
-review_rounds: 7
+  - docs-src/explanation/graph_viz.html
+# Commits, per the schema's definition — not review rounds, which were 8. The
+# first commit is the implementation; every commit after it exists because a
+# review round found something.
+review_rounds: 10
 surprising_ripples:
-  - tests/backends/s3/test_denied_probe.py
   - tests/backends/azure/_helpers.py
+  - tests/backends/azure/test_absent_container.py
   - tests/backends/azure/aio/test_absent_container.py
-  - src/remote_store/aio/backends/_graph/backend.py
-  - sdd/specs/044-graph-backend.md
+  - src/remote_store/_backend.py
+  - src/remote_store/_store.py
+  - src/remote_store/aio/_async_backend.py
+  - src/remote_store/aio/_async_store.py
 phases:
   - id: orient
     name: Orient
@@ -261,7 +267,7 @@ phases:
           TEST-003 when adding a test file, so the two files this work created
           are logged as surprising ripples — the register that makes a missing
           row visible to the aggregator.
-        outcome: misleading
+        outcome: unclear
       - file: src/remote_store/backends/_sqlalchemy.py
         section: "_table_is_absent, close"
         read_type: verify
@@ -379,16 +385,18 @@ phases:
           spec-mark defect in this PR after the round-5 param-level leak, from
           the same cause: a mark applied at a scope wider than the assertion.
         outcome: ok
-      - file: src/remote_store/_backend.py
-        section: "Backend.delete, Backend.delete_folder"
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / A public method signature"
         read_type: verify
         extract: >-
-          The clause changed what missing_ok tolerates, and the ABC and Store
-          docstrings that define missing_ok for every caller said nothing about
-          it for seven rounds. Nothing in the ripple-check points from "a spec
-          clause about an operation" to "the ABC docstring for that operation" —
-          the public-API rows key on signature changes, and this was a semantic
-          change behind an unchanged signature.
+          Consulted to find what a contract change owes the public API surface,
+          and it answered for signatures only. The clause changed what
+          missing_ok tolerates without changing a signature, so nothing routed
+          from "a spec clause about an operation" to "the ABC docstring for that
+          operation" — and the four docstrings that define missing_ok for every
+          caller (Backend, AsyncBackend, Store, AsyncStore) said nothing about
+          it for seven rounds. A semantic change behind an unchanged signature
+          has no row.
         outcome: unclear
   - id: verify
     name: Verify
@@ -399,9 +407,17 @@ phases:
         extract: >-
           BUG-242's second bullet asserted the behaviour this item reverses, and
           both are unreleased — so leaving it would have shipped a section
-          contradicting itself. Amended rather than appended to. The
-          ripple-check's CHANGELOG row says where a new entry goes, not that an
-          unreleased sibling entry may have been invalidated by it.
+          contradicting itself. Amended rather than appended to.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / CHANGELOG"
+        read_type: verify
+        extract: >-
+          Read to find what a behaviour change owes the CHANGELOG. The row says
+          where a new entry goes and stops there; it does not ask whether an
+          *unreleased sibling* entry has been invalidated by the new one. Here
+          one had been, by this same item, in the same section — and catching it
+          took reading the section rather than following the row.
         outcome: unclear
       - file: sdd/formal/BackendContract.dfy
         section: "fs map, Delete / DeleteFolder postconditions"
@@ -411,4 +427,47 @@ phases:
           map that always exists, so an absent container has no representation
           to verify against. Stated as an out-of-frame note on BE-012 rather
           than left as a silent gap in formal coverage.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021, the clause's rationale paragraph"
+        read_type: verify
+        extract: >-
+          Round 8 measured the rationale's central claim on origin/master and it
+          is false. "delete already answered this way on every flat-namespace
+          backend, so the rule ratifies the behaviour that was there and fixes
+          the sibling" — SQLBlobBackend is flat-namespace by this spec's own
+          classification, and on master *both* its deletes raised
+          BackendUnavailable against a dropped table. The rule changes delete on
+          that backend rather than ratifying it. The premise survived six rounds
+          plus a seventh that was specifically hunting stale claims, because "the
+          S3 family" and "the flat-namespace backends" were used interchangeably
+          throughout by a clause whose entire purpose is to bind the second set.
+          Third false premise in this item, and the third caught by running
+          something rather than reading it. The claim had propagated to
+          BACKLOG-DONE and to a helper docstring, both corrected with it.
+        outcome: ok
+      - file: src/remote_store/_store.py
+        section: "Store.delete, Store.delete_folder"
+        read_type: verify
+        extract: >-
+          Round 7 added the clause to the ABC and Store docstrings and stated it
+          as flat description — "so missing_ok tolerates that too" — on the
+          backend-agnostic facade, while this PR's own divergence list names two
+          backends that raise instead. Fixing an omission by writing the
+          obligation as though it were a guarantee is a smaller error than the
+          omission and a more misleading one: help(Store.delete) promised every
+          backend. Now names the compliant families and the two exceptions.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BUG-246"
+        read_type: verify
+        extract: >-
+          BE-021's bullet says SQLBlob answers "every operation except the two
+          deletes" with BackendUnavailable, and the list header says the
+          divergences are tracked in the backlog. BUG-246 tracked three probes.
+          Measured the full set: eleven operations owe a different answer, not
+          three. This is the *same* gap round 5 caught and closed too narrowly —
+          it added exactly the rows that round's finding named. A divergence
+          claiming "every operation except X" needs an item scoped to every
+          operation except X, not to whatever subset a reviewer measured.
         outcome: ok
