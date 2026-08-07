@@ -9,9 +9,13 @@ vcrpy records and replays ``httpx.AsyncClient.stream()`` with no transport
 shim (proven by ``test_httpx_streaming_replay.py``), so — unlike the Azure async
 replay fixture — no ``AsyncioRequestsTransport`` is injected.
 
-Until GR-READ / GR-WRITE / GR-MUTATE record cassettes (and implement the
-data-plane ops), the conformance suite's missing-cassette skip keeps every
-graph_replay slice inert.
+The data-plane ops and their cassettes landed with GR-READ / GR-WRITE /
+GR-MUTATE, so most of this fixture's conformance surface executes. What is
+still inert is the root-path lane: no cassette has been recorded under those
+test names, and Graph resolves the root over HTTP before ruling on it, so the
+missing-cassette skip catches them. Its addressing and close-posture siblings
+answer from the key alone and need no cassette, which is why they run and the
+root-path cells do not (ID-241).
 """
 
 from __future__ import annotations

@@ -134,11 +134,13 @@ def test_every_async_fixture_matches_an_async_extended_scope() -> None:
         if f.stage >= 3:
             continue
         # Replay fixtures whose cassettes have not been recorded yet skip
-        # every test, so they are intentionally excluded from the
-        # async-extended scopes (a scope built around them aborts the gremlins
-        # baseline with 'No data was collected', exit 3). Exempt them here in
-        # lockstep with ``mutate_scopes._async_extended_runnable``; the
-        # exemption self-lifts once cassettes land (graph: BK-260).
+        # every test that issues a request, leaving too little to mutate for a
+        # scope to be worth generating (the original failure was 'No data was
+        # collected', exit 3; since ID-241 a few request-free cells run, so the
+        # baseline would now be near-empty rather than empty — see
+        # ``mutate_scopes._cassettes_recorded``). Exempt them here in lockstep
+        # with ``mutate_scopes._async_extended_runnable``; the exemption
+        # self-lifts once cassettes land, as it has for graph.
         if f.kind == "replay" and not manifest._cassettes_recorded(f.backend):
             continue
         # The companion test above asserts every async-extended scope has a

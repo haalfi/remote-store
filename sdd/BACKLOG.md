@@ -351,6 +351,59 @@ and the highest ID already in this file, then take the next integer. Run
   instance; enumerating `lint` and `preflight` against the path filters found two
   more, so the item is scoped to all three rather than to the one reported.
 
+- [ ] **ID-246 — No gate verifies that a tracker ID cited under `sdd/` resolves**
+  spec: — · effort: S · audience: contributor.tooling
+  Specs cite backlog coordinates as provenance — the clause says what it binds,
+  the ID says which work produced it. `check_no_tracker_refs.py` is built to
+  *push* IDs here: it fails a docstring or `docs-src/` page and tells the author
+  to "move the coordinate into the corresponding `sdd/specs/` or
+  `sdd/BACKLOG-DONE.md` entry", and lists `sdd/**` as out of scope because "the
+  trackers are how those documents are addressed". So the citations are correct
+  by design. **Nothing checks that they resolve.**
+  **Measured** (all 50 specs): 166 citations, 80 distinct IDs, 28 files, **zero
+  dangling** — 69 resolve into `BACKLOG-DONE.md`, the rest into `BACKLOG.md`.
+  The invariant holds today by discipline, not by construction: no script
+  validates sdd-internal tracker citations (`check_no_tracker_refs` looks away
+  by design, `check_formal_trace` covers spec IDs not backlog IDs), and
+  [`DRIFT-RULES.md`](DRIFT-RULES.md) does not mention the backlog at all.
+  **Failure mode:** `BACKLOG-DONE.md` is ~8,000 lines and append-only *by
+  convention*. A prune, a bad merge, or a renumber silently rots every spec
+  clause pointing into it, and the rot is invisible — a reader meets an ID that
+  resolves nowhere and cannot tell whether the evidence was deleted or never
+  existed.
+  **Fix shape:** extend `check_no_tracker_refs.py` — it already parses the ID
+  pattern and already knows both backlog files — with a second, inverted pass:
+  every `PREFIX-NNN` under `sdd/` must appear as an item in `BACKLOG.md` or
+  `BACKLOG-DONE.md`, failing with the citing file and line
+  ([DRIFT-RULES Rule 2](DRIFT-RULES.md#rules): localize, don't merely fail).
+  Rule 3 is what makes this cheap and worth doing: the claim space is *derived*
+  from the citing documents rather than maintained beside them, and the
+  identifiers are already stable. Rule 4 needs a decision the item does not
+  presuppose — when a spec cites an ID no backlog file carries, which side is
+  wrong. Note the wiring trap BK-333 above documents: a check reading `sdd/`
+  must reach a gate an `sdd/`-only change actually runs.
+  Surfaced during the ID-241 review by the question "why do specs carry backlog
+  IDs at all, aren't they temporary?" The premise turned out to be wrong —
+  completed items migrate to `BACKLOG-DONE.md` rather than being deleted, per
+  this file's own § Completing work — but the question exposed that nothing
+  enforces the migration's promise.
+
+- [ ] **ID-247 — Record the Graph root-path cassettes**
+  spec: BE-029 · effort: S · audience: infra.test
+  22 `TestBackendRootPath` cells still skip on `graph_replay` for want of a
+  recording — the "pinned nowhere" column of spec 003's BE-029 table. Graph is
+  the only HTTP family with **no emulator tier** (`graph_live` Stage 3 and
+  `graph_replay` Stage 1, nothing between), so those contracts are unexercised
+  against `GraphBackend` at every stage below a live account; Azure's equivalent
+  skips are covered by `azurite` at Stage 2. 14 of the 22 are Graph-only —
+  Azure passes them with no cassette at all (ID-241).
+  `python scripts/record_cassettes.py --backend graph` needs `RS_TEST_LIVE_GRAPH=1`
+  plus `GRAPH_CLIENT_ID` / `GRAPH_TENANT_ID` / `GRAPH_DRIVE_ID` (device-code, so
+  interactive). Prefer `--node` per cell: a full run re-records all 119 existing
+  graph cassettes, churning their volatile headers into an unreviewable diff
+  against TEST-009. Any op that raises before issuing a request records nothing
+  and keeps skipping — correct since ID-241, and visible in the Step-5 replay.
+
 ---
 
 ## Cross-Artifact Consistency
@@ -366,13 +419,14 @@ this section carries the work.
 [the file's default](#how-this-file-works), because its items form a dependency
 chain. Position therefore says nothing about importance, and dependencies are
 stated by ID inside each item so re-sequencing cannot silently invalidate them.
-**ID-241 and ID-244 come first**, then ID-207's steps 3 and 4. This is a
+**ID-244 comes first** (ID-241, its sibling, has shipped), then ID-207's steps 3
+and 4. This is a
 re-sequencing on measured evidence, not the original plan: BK-324 was expected to
 clear the way for ID-207 step 2, and instead supplied four instances of the drift
-this programme exists to detect — none of which step 2 would have caught. BK-340
-(shipped), ID-241 and ID-244 are what those four actually exhibited (a rule gated
-so no fixture ever runs it), and ID-207 step 3 is the other half (a citation is
-not an assertion).
+this programme exists to detect — none of which step 2 would have caught. BK-340,
+ID-241 (both shipped) and ID-244 are what those four actually exhibited (a rule
+gated so no fixture ever runs it), and ID-207 step 3 is the other half (a
+citation is not an assertion).
 Step 2 keeps its L cost and its ~2.5% reach; it follows rather than leads, and
 ID-207 states the evidence. BK-332, ID-236 and ID-237 are follow-ons that get
 cheaper once the earlier work lands. BK-327 and ID-238 are independent of the
@@ -388,6 +442,17 @@ rather than the whole surface. The `ReadOnlyHttpBackend` audit BK-340 also asked
 for found the same gate excluding the registry's only read-only LAZY_READ
 declarer from SIO-009, plus a vacuous assertion in that cell — shipped alongside
 it as [BUG-244](BACKLOG-DONE.md).
+
+**ID-241 shipped and produced ID-245, the same way.** Making the missing-cassette
+skip fire per unplayable request rather than per test name moved 52 conformance
+cells from skipped to executing — and the act of measuring that moved spec 003's
+hand-counted coverage table for the second time, which is ID-245. It sits after
+ID-244 rather than at the head: ID-244 changes which cells a read-only backend
+can reach, so a generator built first would measure a surface about to move. The
+pattern is now three for three: closing a reachability gate
+measures the next thing underneath it. Read the measured numbers in
+[BACKLOG-DONE.md](BACKLOG-DONE.md) before sizing further work here, because
+"skipped" and "unreachable" turned out not to be the same set.
 
 On importance, the research doc's designation, which this section adopts rather
 than restates: the two items that build what is actually missing are the authority
@@ -422,30 +487,10 @@ before believing it, because the case that does *not* resolve is the informative
 one — and a hand-counted figure about a growing corpus is stale before the commit
 that writes it lands, so cite the generator instead.
 
-- [ ] **ID-241 — Conformance cells that make no HTTP call still skip on a missing cassette**
-  spec: — · effort: S · audience: infra.test
-  The missing-cassette hook fires **per test name**, regardless of whether the
-  test issues a request. So `graph_replay` and `azure_replay_async` skip
-  pure-addressing cells — `native_path` / `to_key` / `resolve`, which are string
-  manipulation with no I/O — purely because no cassette was recorded for that
-  test name.
-  **Cost, measured:** BK-324 added `TestAsyncBackendNativePath` to conformance,
-  and it immediately caught a truthiness defect in the `AsyncBackend.native_path`
-  default that a source sweep had missed (the async ABC sits outside
-  `src/remote_store/backends/`, where the sweep looked). That cell earned its
-  place and is nonetheless skipped on both replay fixtures; Graph's root
-  addressing is pinned in `tests/backends/graph/aio/test_backend.py` instead.
-  **Fix shape:** let a cell declare it makes no HTTP call, and have the hook
-  honour that instead of skipping by name. The alternative — recording empty
-  cassettes per test name — scales with the test count and reintroduces the
-  hand-maintained-parallel-artifact problem.
-  **Why ID:** whether the marker belongs on the test, the fixture, or the hook is
-  unmade, and the answer decides how much of the replay lane changes.
-
 - [ ] **ID-244 — A read-only backend cannot reach any WRITE-gated contract cell**
   spec: — · effort: M · audience: infra.test
-  Sibling of ID-241 above, and the same class: a rule gated so no fixture ever
-  runs it. Here the gate is not a cassette but the **seeding discipline** —
+  Sibling of [ID-241](BACKLOG-DONE.md) (shipped), and the same class: a rule
+  gated so no fixture ever runs it. Here the gate is not a cassette but the **seeding discipline** —
   conformance cells that need data call `backend.write`, so they sit behind
   `fixture_params(Capability.WRITE)`. Any contract that happens to live in such a
   class is therefore unreachable for a read-only backend, *including contracts
@@ -475,6 +520,31 @@ that writes it lands, so cite the generator instead.
   further: the hook must express *presence*, not content, or the cells that use it
   must not assert content.
 
+- [ ] **ID-245 — Spec 003's per-backend cassette-reachability table is hand-counted**
+  spec: — · effort: M · audience: infra.test
+  [`003-backend-adapter-contract.md`](specs/003-backend-adapter-contract.md)
+  BE-029's coverage note tabulates, per backend, which root-path conformance
+  cells execute and which are pinned only in a per-backend home. Every figure in
+  it was counted by hand, against a corpus that grows — the exact shape BK-330
+  warned about and this section's preamble quotes: *"a hand-counted figure about
+  a growing corpus is stale before the commit that writes it lands, so cite the
+  generator instead."* ID-241 has already rewritten the table once for the same
+  reason, which is the second data point.
+  **Fix shape:** a script that runs the conformance suite (or its collection plus
+  the replay guard's verdict) and emits, per replay fixture, which cells execute
+  and which skip for want of a cassette; spec 003 then cites the generator rather
+  than a count. The reachability figure is not derivable from collection alone —
+  whether a cell needs a cassette depends on whether the backend issues a request,
+  which only running it answers (ID-241).
+  **Design obligations:** [`DRIFT-RULES.md`](DRIFT-RULES.md#rules) applies in
+  full — Rule 3 (the claim space must be *derived*, and its granularity stated),
+  Rule 4 (which of spec and generator governs), Rule 5 (gating or advisory, and
+  why).
+  **Position:** after ID-244, not before it. ID-244 changes which cells a
+  read-only backend can reach, so building the generator first would measure a
+  surface about to move — the same reason ID-241 filed this rather than building
+  it inside its own diff.
+
 - [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**
   spec: — · effort: L · audience: contributor.tooling
   Research § 9 step 2, the programme's strategic half: a canonical claim space,
@@ -484,8 +554,8 @@ that writes it lands, so cite the generator instead.
   four instances of the drift this programme targets, and a design investigation
   found step 2 would have caught none of them (see the step 2 bullet). What the
   four exhibited was **coverage reachability** — a rule can be gated so no
-  fixture ever runs it, which is ID-241 and ID-244 in this file (and BK-340,
-  shipped) — and
+  fixture ever runs it, which is ID-244 in this file (and BK-340 and ID-241,
+  both shipped) — and
   **citation ≠ assertion**, which is this item's own **step 3**. Both are cheaper than L and
   both have measured instances behind them; step 2 has an L cost, a ~2.5% reach,
   and no instance. Step 2 is not abandoned: after 3 and 4 land, its unresolved

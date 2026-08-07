@@ -1,0 +1,271 @@
+id: ID-241
+title: "Missing-cassette skip fires per unplayable request, not per test name"
+trigger: >-
+  The TEST-007 missing-cassette skip ran at collection time and keyed on the
+  test name: any vcr-marked item whose cassette file was absent was skipped,
+  whether or not it ever issued a request. Conformance cells that are pure
+  string manipulation — native_path / to_key / resolve — were therefore inert on
+  every replay fixture, waiting on a recording they would never read.
+source_items:
+  - ID-241
+  - BK-324
+  - BK-340
+audience:
+  - infra.test
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-241 (item), Cross-Artifact Consistency preamble"
+        read_type: gate
+        extract: >-
+          The item's own fix shape ("let a cell declare it makes no HTTP call")
+          and its stated open question (marker on the test, the fixture, or the
+          hook). Retrospectively the fix shape was the misleading part, and the
+          item could not have known: measurement showed the declaration it
+          proposes is not expressible, because whether a cell calls out is a
+          per-(cell, backend) fact. The open question named three homes for a
+          marker and none for "no marker at all", which is where the work landed.
+        outcome: misleading
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029 Coverage note"
+        read_type: gate
+        extract: >-
+          The per-backend table naming Graph as the LIST-capable backend still
+          unreachable from the root-path cells, and citing ID-241 as what closes
+          it — the artifact this work had to make true.
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Pre-work index"
+        read_type: gate
+        extract: >-
+          Triggered rows: Spec section, Test whose subject is outside src/,
+          Backlog item touched, CHANGELOG entry.
+      - file: tests/backends/fixtures/_cassette_pytest.py
+        section: "apply_missing_cassette_skips, _cassette_path_for_item"
+        read_type: reference
+        extract: >-
+          The collection-time hook and its node-id → cassette-path
+          reconstruction — a second derivation of a path pytest-recording
+          already computes, which the runtime guard let us delete.
+
+  - id: measure
+    name: Measure before designing
+    steps:
+      - file: tests/backends/conformance/
+        section: "(full suite, name-skip disabled behind a temporary env flag)"
+        read_type: verify
+        extract: >-
+          Ran the suite with the skip disabled and diffed JUnit against a
+          baseline. 105 cells skipped for a missing cassette; 52 pass with no
+          cassette, 47 fail, 6 skip for other reasons. Only 22 of the 52 pass on
+          every replay fixture — test_file_operation_on_root_raises_invalid_path
+          and test_root_is_a_folder pass on Azure and fail on Graph. That split
+          is what killed the item's proposed marker and chose the runtime guard;
+          without running it, a per-test marker would have looked correct and
+          would have turned 30 Azure-only cells into Graph failures.
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "error mapping (~1514)"
+        read_type: verify
+        extract: >-
+          In the same run, AsyncAzureBackend translated vcrpy's
+          CannotOverwriteExistingCassetteException into RemoteStoreError. That
+          is the evidence for raising the skip as a BaseException: an ordinary
+          exception would be swallowed and a cell asserting an error would pass
+          vacuously.
+      - file: src/remote_store/backends/_azure.py
+        section: "except BaseException (606); aio/backends/_graph/transfer.py (376)"
+        read_type: verify
+        extract: >-
+          Both BaseException handlers on the replay paths re-raise after
+          cleanup, so a Skipped propagates intact. Checked before relying on it,
+          not after.
+
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: sdd/TESTING.md
+        section: "Rules 5 and 6 (mock discipline, prefer real dependencies)"
+        read_type: gate
+        extract: >-
+          The subject is our interaction with vcrpy, so the tests drive real
+          Cassette objects and real transport stubs rather than stubbing the
+          library we are wrapping.
+      - file: tests/backends/fixtures/test_missing_cassette_guard.py
+        section: "(new file)"
+        read_type: verify
+        extract: >-
+          Written and run before the guard existed (collection ImportError, seen
+          to fail). Transport cells drive the stubs end to end so a vcrpy release
+          that stops routing through can_play_response_for fails here rather than
+          silently disarming the guard for one backend. Retrospectively: the
+          three I wrote were urllib3, aiohttp and httpx, chosen from the fixture
+          names. Round 3 showed aiohttp is the one stub nothing here replays
+          through, and the shipped cells are urllib3, httpx and an executor
+          boundary.
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/fixtures/_cassette_pytest.py
+        section: "install_missing_cassette_guard, _make_missing_cassette_guard"
+        read_type: reference
+        extract: >-
+          Wrap Cassette.can_play_response_for; skip only when the request is
+          unplayable, the cassette is write-protected, and the file is absent.
+          Installed from pytest_configure in both conftests, idempotently, and
+          only when the session record mode is none so the recorder is untouched.
+      - file: tests/backends/conformance/conftest.py
+        section: "pytest_configure, pytest_collection_modifyitems"
+        read_type: reference
+        extract: >-
+          Arm the guard; drop the collection hook. The hook's `config` parameter
+          became unused, so the signature narrowed to `items` — pytest resolves
+          hook arguments by name, so dropping one is safe.
+      - file: tests/conftest.py
+        section: "pytest_configure (--record → record_mode=rewrite)"
+        read_type: verify
+        extract: >-
+          Found while self-reviewing the diff, not while writing it, and it is
+          the one real defect this work introduced: moving the record-mode check
+          from collection time to `pytest_configure` made it depend on hook
+          order, because the root conftest maps `--record` onto
+          `record_mode="rewrite"` in *its* `pytest_configure` and pluggy calls
+          historic-hook impls in reverse registration order. The guard would have
+          armed inside a recording session — and `scripts/record_cassettes.py`
+          passes exactly `--record`, never `--record-mode`, so it is the real
+          consumer of the case that would have broken. Fixed by reading
+          `--record` directly as well; three parametrized cells pin all flag
+          combinations. The lesson is the general one: a check that moves
+          earlier in the lifecycle inherits every ordering question the later
+          phase had already settled.
+
+  - id: docs
+    name: Ripple the claims
+    steps:
+      - file: sdd/specs/048-testing-architecture.md
+        section: "TEST-007 Postcondition"
+        read_type: reference
+        extract: >-
+          The postcondition said a missing cassette skips "that parametrize id";
+          it now states the trigger (an unplayable request) and the granularity
+          (per cell *and* backend), plus that a present-but-stale cassette fails.
+      - file: sdd/specs/049-live-recording-architecture.md
+        section: "REC-007"
+        read_type: reference
+        extract: >-
+          The missing-cassette skip is listed among what a cassette_profile
+          registration buys, and is restated in five other homes (registry.py
+          twice, _cassettes.py, test_cassette_routing.py, test_examples.py) —
+          one claim, six homes, exactly the class this section's programme
+          exists to catch, and found by grepping the claim rather than the file.
+          I first rewrote all six to say the skip no longer derives from
+          registration, which was wrong: a round-1 reviewer showed the deleted
+          hook had bounded itself by the registry, so commit 2 restored the six
+          with the mechanism corrected — the profile's ``cassette_dir`` is what
+          bounds the skip, while the request is what fires it. Grepping the
+          claim found every home both times; what it could not tell me was
+          whether the claim I was replacing them with was true.
+      - file: tests/backends/conformance/aio/test_close_posture.py
+        section: "test_close_posture_outranks_root_rejection docstring"
+        read_type: reference
+        extract: >-
+          Its docstring stated that no Stage-1 async fixture executes the
+          terminal branch, and named the name-keyed skip as why. Both replay
+          fixtures now execute it; the docstring records that as history.
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/backends/conformance/
+        section: "(full suite, guard installed)"
+        read_type: verify
+        extract: >-
+          105 missing-cassette skips → 47; 52 cells newly executing and passing;
+          zero failures and zero previously-passing cells changed. Compared
+          cell-by-cell against the pre-change JUnit baseline rather than by
+          totals, because equal totals can hide an offsetting pair. The
+          remaining 6 of the 105 land on the ``large_write_distinct`` opt-in
+          gate (``conformance/_helpers.py``), not on BK-305's large-payload
+          carve-out — I attributed them to BK-305 from the test names alone and
+          a round-2 reviewer read the actual skip reason, which is the same
+          "ran it, did not read it" mistake in miniature.
+      - file: tests/backends/fixtures/graph_replay.py
+        section: "module docstring; fixtures.toml Graph block"
+        read_type: verify
+        extract: >-
+          Both said the Graph data-plane ops were stubbed and their cassettes
+          unrecorded "until GR-READ/WRITE/MUTATE". Those shipped; 119 cassettes
+          are committed and 118 graph_replay conformance cells execute. I edited
+          the sentence *around* that premise in both files without checking the
+          premise, twice, and a round-2 reviewer caught it. The sweep rule I was
+          applying — grep the claim you are changing — does not reach a false
+          statement you are merely standing next to.
+      - file: tests/backends/fixtures/azure_replay_async.py
+        section: "Transport shim"
+        read_type: verify
+        extract: >-
+          The most severe finding of the review, and it was mine to make in
+          phase one: I built three transport cells for "urllib3 (sync Azure),
+          aiohttp (async Azure), httpx (Graph)" from the shape of the fixture
+          list, and never opened this file. It says the async Azure fixtures
+          inject AsyncioRequestsTransport — requests/urllib3 in a thread pool —
+          precisely because vcrpy's aiohttp stub deadlocks on a streamed body.
+          So no fixture in this repo replays on aiohttp: the cell watched a stub
+          nothing uses, the pyproject pin comment told future maintainers that
+          stub bound us, and the async Azure tier's actual load-bearing fact —
+          Skipped surviving the worker-thread → future handoff — was unasserted.
+          Replaced with an executor-boundary cell, measured first with a
+          standalone probe.
+      - file: scripts/mutate_scopes.py
+        section: "_cassettes_recorded; _async_extended_scopes graph comment"
+        read_type: verify
+        extract: >-
+          Fourth instance of the same shape, found after the trace already
+          confessed the first two: the file still asserted graph's cassettes
+          were "not yet recorded (BK-260)" in a comment I had edited around.
+          The rule that keeps failing is "grep the claim you are changing";
+          what would have caught all four is reading the paragraph the edit
+          lands in. Recorded here rather than generalised into a process
+          change, because n=4 in one PR is one author's habit, not evidence
+          about the sweep rule's design.
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Detailed checklist"
+        read_type: verify
+        extract: "Full ripple audit at verify-end."
+      - file: tests/backends/fixtures/test_missing_cassette_guard.py
+        section: "os_sensitive enrolment, verified on the Windows CI leg"
+        read_type: verify
+        extract: >-
+          The marker was declined in round 1 and added in round 3, because the
+          code changed underneath the decision: round 2 introduced the
+          path.parent.resolve() containment check, which is Windows-sensitive in
+          a way the round-1 reasoning (a separator in one assertion) did not
+          cover. Both reviewers who examined it could only reason about Windows,
+          not run it, and nor could I. Now measured: the windows-latest leg
+          collected and passed all 14 cells on platform win32 under
+          `pytest -m os_sensitive`, so the resolve() comparison and the
+          os.path.relpath message are exercised on a native-backslash
+          filesystem rather than argued about.
+
+review_rounds: 6
+
+discovery_followups:
+  - ID-245
+  - ID-246
+  - ID-247
+
+expected_ripples:
+  - sdd/specs/003-backend-adapter-contract.md
+  - sdd/specs/048-testing-architecture.md
+  - sdd/specs/049-live-recording-architecture.md
+
+surprising_ripples:
+  - pyproject.toml
+  - scripts/mutate_scopes.py
+  - tests/backends/fixtures/registry.py
+  - tests/backends/fixtures/_cassettes.py
+  - tests/backends/fixtures/fixtures.toml
+  - tests/backends/conformance/test_close_posture.py
+  - tests/backends/conformance/aio/test_close_posture.py

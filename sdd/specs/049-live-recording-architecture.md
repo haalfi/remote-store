@@ -177,7 +177,10 @@ additions, and the optional vcrpy matcher override.
 
 In return the core provides: cassette-directory routing, cassette-name
 normalisation, the missing-cassette skip (TEST-007), the scrub config,
-and inclusion in both audit gates (REC-006). There is no second
+and inclusion in both audit gates (REC-006). The skip reaches a fixture by
+its profile's cassette *directory* rather than by its fixture id: what
+triggers it is an unplayable request against an absent file, and the
+directory is what bounds it to registered fixtures. There is no second
 registration point; the one cross-check — a profile-bearing fixture must
 appear in its profile's aliases — fails loud at routing-map build, and a
 vcr-marked test whose fixture carries no profile fails loud rather than

@@ -423,8 +423,10 @@ self_op_supported = true
 # Graph fixtures (ID-127). Async-native only. The live tier is device-code /
 # consumer (no client secret): RS_TEST_LIVE_GRAPH=1 plus GRAPH_CLIENT_ID /
 # GRAPH_TENANT_ID / GRAPH_DRIVE_ID. graph_replay plays back committed cassettes
-# recorded from the live tier; until those exist the missing-cassette skip keeps
-# the slices inert (and the data-plane ops are stubbed until GR-READ/WRITE/MUTATE).
+# recorded from the live tier by GR-READ/WRITE/MUTATE, which also landed the
+# data-plane ops. The root-path lane has no recording under its test names, so
+# the missing-cassette skip still holds it inert; its addressing and
+# close-posture siblings need no cassette and run (ID-241).
 # ---------------------------------------------------------------------------
 
 [fixture.graph_live]

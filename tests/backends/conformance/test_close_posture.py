@@ -6,7 +6,9 @@ their posture and the lane tests each against *its own* declaration.
 
 * **Terminal** (``close_is_terminal=True``: Azure, S3, Graph) — a use-after-close
   raises ``BackendUnavailable``. The guard short-circuits before any network or
-  cassette access, so this assertion is tier-safe (no recorded cassette needed).
+  cassette access, so this assertion is tier-safe: the replay fixtures execute it
+  with no cassette recorded under its name (ID-241 made the missing-cassette skip
+  fire on the unplayable request rather than the test name).
 * **Reusable** (the default: Local, Memory, SFTP, HTTP, SQL) — an operation after
   ``close()`` re-initialises the client and must **not** raise the terminal
   ``BackendUnavailable("closed")``.

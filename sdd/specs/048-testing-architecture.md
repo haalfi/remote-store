@@ -216,16 +216,25 @@ are absent from the test session and emit no `SKIPPED` line. Both
 applied once at collection time.
 
 **Runtime gating (skipif / fixture skip):** Conditions
-that depend on per-run state (env vars set, Docker daemon reachable,
-cassette file present) gate via `pytest.mark.skipif` on the test or
+that depend on per-run state (env vars set, Docker daemon reachable)
+gate via `pytest.mark.skipif` on the test or
 `pytest.skip(...)` inside the fixture's `factory()`. These do emit
 visible `SKIPPED [reason]` entries because the test was registered
 in the parametrize before the skip resolved.
 
+Cassette availability is **not** in this list. It is not a per-run
+condition a fixture can answer at setup: whether a cell needs a
+cassette depends on whether it issues a request, which only running it
+reveals. [TEST-007](#test-007-http-cassette-and-replay-layer) owns that
+gate and resolves it mid-test.
+
 **Postcondition:** No special pytest plugin is required to read the
 gating logic. A reader can trace either gate (id-filter or skipif)
 from the parametrize source or the fixture body to the registry
-without indirection.
+without indirection. The TEST-007 cassette gate is the one exception,
+and it is stated as such rather than folded in: it is readable from
+neither, because the condition it tests is a request that has already
+been issued.
 
 **Rationale:** [ADR-0028](../adrs/0028-testing-architecture-kind-stage-replay.md)
 § Capability gating uses native pytest mechanisms.
@@ -240,9 +249,13 @@ is reachable, Stage 1 otherwise. Each stage includes all lower stages.
 
 | Stage flag | Fixtures included | Required environment |
 |---|---|---|
-| `--stage=1` | pure, mocked, plus replay (when cassettes present) | none |
+| `--stage=1` | pure, mocked, plus replay | none |
 | `--stage=2` | Stage 1 plus Docker fixtures | Docker daemon reachable |
 | `--stage=3` | Stage 2 plus live fixtures | per-backend live env vars (e.g. `RS_TEST_LIVE_HNS=1`) |
+
+A replay fixture is included at Stage 1 unconditionally — cassette
+availability is not a stage condition. Whether any given *cell* on it
+runs is settled later and per cell, by [TEST-007](#test-007-http-cassette-and-replay-layer).
 
 **Postcondition:** `pytest` with no flags runs Stage 2 when Docker is
 reachable and Stage 1 otherwise; the auto-detection is the same on
@@ -301,9 +314,33 @@ HTTP transport stubbed by recorded cassette files in
 
 **Postcondition:** A test that originally required a live cloud
 account to validate runs at zero cost in every default CI run, while
-the live fixture remains the source of truth. If a cassette is
-missing for a test, the replay fixture skips that parametrize id
-rather than failing.
+the live fixture remains the source of truth. A parametrize id whose
+cassette is missing skips at the point it needs one — when the replay
+transport is asked for a request it cannot play — rather than failing.
+
+**The skip is per request, not per test name.** A cell that issues no
+request needs no cassette and therefore runs, on every replay fixture
+where that holds of it. That is a per-(cell, backend) property, not a
+per-cell one: one backend may answer from the key alone where another
+resolves it over the wire first, so the trigger has to be the request.
+A cassette that *is* present and cannot serve the request is a stale
+recording, and surfaces as an error rather than a skip.
+
+**With one caveat on that error, stated because the skip's own design
+turns on it.** The stale-cassette path raises vcrpy's ordinary
+`Exception`, which a backend's error mapping converts into a library
+error like any other transport failure — so a cell asserting *some*
+error can pass on a stale recording instead of failing. The skip path
+avoids this by raising a `BaseException`, which no `except Exception`
+can intercept; the stale path has no such protection and never did.
+A cell that must distinguish the two asserts the specific error it
+expects, not a base class.
+
+**It is bounded to the registered cassette directories.** The skip means
+"a recording is owed"; that is only true of cassettes belonging to a
+registered replay fixture. A test managing its own cassette outside those
+directories keeps vcrpy's native failure, because a file missing there is
+that test's own bug and no recording session will supply it.
 
 **Implementation choice** (cassette tech, scrubbing rules, async
 pipeline coverage) is specified separately: this spec fixes the

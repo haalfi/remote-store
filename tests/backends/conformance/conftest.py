@@ -26,7 +26,7 @@ HTTP cassette / replay (TEST-007 / spec 049)
 --------------------------------------------
 The generic, registry-driven cassette wiring — directory routing, live/replay
 name aliasing, the scrub-config fixture, the plugin guard, the missing-cassette
-skip, and the scrub-fire manifest dump — lives in
+guard, and the scrub-fire manifest dump — lives in
 ``tests/backends/fixtures/_cassette_pytest.py`` so the sibling
 ``tests/backends/azure/`` deviation subtree can reuse it (BK-303). This conftest
 imports the three fixtures and three hook helpers and adds only what is
@@ -42,10 +42,10 @@ import pytest
 
 from tests.backends.fixtures import BackendFixture, fixture_params
 from tests.backends.fixtures._cassette_pytest import (
-    apply_missing_cassette_skips,
     cassette_plugin_guard,
     default_cassette_name,  # noqa: F401 — imported so pytest resolves it as a fixture
     dump_scrub_manifest,
+    install_missing_cassette_guard,
     vcr_cassette_dir,  # noqa: F401 — imported so pytest resolves it as a fixture
     vcr_config,  # noqa: F401 — imported so pytest resolves it as a fixture
 )
@@ -65,8 +65,9 @@ _LOG = logging.getLogger(__name__)
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """Fail fast if pytest-recording is not installed (TEST-007)."""
+    """Fail fast if pytest-recording is missing; arm the missing-cassette guard (TEST-007)."""
     cassette_plugin_guard(config)
+    install_missing_cassette_guard(config)
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
@@ -78,7 +79,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
 
 
 # ---------------------------------------------------------------------------
-# Missing-cassette skip hook (TEST-007) + HNS known-failures xfail
+# Real-Azure xfail roster + BK-305 large-payload exclusion
 # ---------------------------------------------------------------------------
 
 # Test function names that expose a real-ADLS-Gen2 conformance gap not yet
@@ -110,15 +111,18 @@ def _has_real_azure_fixture(node_id: str) -> bool:
     return False
 
 
-def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
-    """Apply the real-Azure xfail roster, then the missing-cassette skip (TEST-007).
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    """Apply the real-Azure xfail roster and the BK-305 large-payload exclusion.
 
     The xfail marks are applied in **all** modes, including ``--record``.
     During recording, xfail still lets the HTTP call complete (so the cassette
     is written) and then gracefully handles the subsequent assertion failure
     — without this, ``record_cassettes.py`` aborts at step 2 when the known-
-    failing tests return non-zero. The missing-cassette skip (delegated to the
-    shared helper) is gated on replay mode internally.
+    failing tests return non-zero.
+
+    The missing-cassette skip is **not** here: it fires per unplayable request
+    at run time (``install_missing_cassette_guard``), not per test name at
+    collection time (ID-241).
     """
     for item in items:
         fn_name = getattr(item, "originalname", item.name.split("[")[0])
@@ -139,8 +143,6 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
             item.add_marker(
                 pytest.mark.skip(reason="large_payload excluded from live cloud (BK-305); runs at Stage 2 (Azurite)")
             )
-
-    apply_missing_cassette_skips(config, items)
 
 
 # ---------------------------------------------------------------------------

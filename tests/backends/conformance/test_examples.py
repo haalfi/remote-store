@@ -14,7 +14,8 @@ conftest routes the entire cassette stack by the fixture-alias tokens in a
 node's parametrize id. The param ids ``graph_live`` / ``graph_replay`` buy
 cassette-dir routing, the shared cassette name
 (``test_graph_backend_example[graph].yaml``), the ``GRAPH_PROFILE``
-record/replay scrub configs, the missing-cassette skip, and the root
+record/replay scrub configs, the missing-cassette skip (via the profile's
+``cassette_dir``, which is what bounds it), and the root
 conftest's ``--record``-mode vcr marking — with zero conftest or
 ``record_cassettes.py`` changes. The recorder's ``-k graph_live`` sweep
 records (and a full ``record-graph`` regenerates) the cassette alongside the

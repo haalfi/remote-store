@@ -6,6 +6,10 @@ missing-cassette skip, and the scrub config. These tests pin that contract
 from both sides: the registry invariants every profile-bearing fixture must
 satisfy, and the shared cassette-routing core's fail-loud guards
 (``tests/backends/fixtures/_cassette_pytest.py``) for fixtures that break it.
+
+The skip's own behaviour lives in ``test_missing_cassette_guard.py``: what
+fires it is a request, not a fixture id, so only its *bound* — the profile's
+``cassette_dir`` — belongs to this contract.
 """
 
 from __future__ import annotations
@@ -45,7 +49,9 @@ class TestCassetteRouting:
 
     def test_replay_fixtures_carry_a_profile(self) -> None:
         """A replay fixture without a profile would silently lose routing,
-        scrubbing, and the missing-cassette skip."""
+        scrubbing, and the missing-cassette skip — it would read and write a
+        cassette in the wrong place, unscrubbed, and outside the directories
+        the skip is bounded to."""
         for fixture in all_fixtures():
             if fixture.kind == "replay":
                 assert fixture.cassette_profile is not None, fixture.name

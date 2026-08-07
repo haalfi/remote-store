@@ -8,6 +8,72 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **ID-241 — Conformance cells that make no HTTP call still skip on a missing cassette**
+  spec: TEST-007 · effort: S · audience: infra.test
+  The missing-cassette skip fired **per test name**, at collection time: any
+  vcr-marked item whose cassette file was absent was skipped, whether or not it
+  ever issued a request. Pure-addressing cells — `native_path` / `to_key` /
+  `resolve`, string manipulation with no I/O — were therefore inert on
+  `graph_replay` and `azure_replay*` for want of a recording they would never
+  read.
+  **Measured, and the measurement redirected the fix.** Disabling the name-keyed
+  skip over the whole conformance suite: of 105 cells skipped for a missing
+  cassette, **52 pass with no cassette at all**, 47 genuinely need one, and 6
+  fall through to an unrelated skip. But only 22 of the 52 pass on *every* replay
+  fixture: `test_file_operation_on_root_raises_invalid_path` (26) and
+  `test_root_is_a_folder` (4) pass on Azure and fail on Graph, because Graph
+  resolves the root over HTTP before rejecting it while Azure rejects locally.
+  **"Makes no HTTP call" is a per-(cell, backend) fact**, so the item's own
+  proposed fix shape — a marker on the test declaring it — could not have
+  expressed it, and a roster keyed by (cell, fixture) would have been the
+  hand-maintained parallel artifact the item was filed to avoid.
+  **Shipped instead:** the skip now fires on the thing it is actually about. A
+  guard wraps vcrpy's `Cassette.can_play_response_for` — the one gate every
+  transport stub consults — and skips when the request cannot be played *and* the
+  cassette file does not exist. A present-but-stale cassette still fails, which
+  the old hook could not distinguish at all. No declaration, no roster, and the
+  node-id → cassette-path reconstruction the old hook needed is deleted with it:
+  the guard asks the cassette for its path instead of recomputing what
+  pytest-recording already decided.
+  **Why the skip is raised, not returned.** `pytest.skip` raises `Skipped`, a
+  `BaseException`. The guard fires inside backend code that maps
+  `except Exception` into library errors — `AsyncAzureBackend` was measured
+  turning vcrpy's own exception into `RemoteStoreError` — so an ordinary
+  exception would be swallowed and a cell asserting an error would pass
+  vacuously. That is the whole safety argument, and it is pinned by a cell that
+  drives the guard through a stand-in mapping layer. The obvious cell —
+  asserting `Skipped` subclasses `BaseException` — was written first and thrown
+  away in review: it states a fact about pytest, so it stays green however this
+  module is rewritten.
+  **Result:** 105 missing-cassette skips → 47; 52 cells now execute; zero
+  failures and zero previously-passing cells changed, verified cell-by-cell
+  against a pre-change JUnit baseline rather than by totals. Graph's addressing
+  cells reach the conformance suite for the first time (spec 003's BE-029
+  coverage table updated accordingly), and the close-posture lane's terminal
+  branch — which no Stage-1 async fixture executed — now runs on both replay
+  fixtures.
+  **Cost recorded honestly:** two private vcrpy surfaces are now load-bearing
+  (`can_play_response_for` and `Cassette._path`), covered by the existing
+  `vcrpy>=8.2,<8.4` minor tripwire and by cells that drive the real stubs end to
+  end so a release that stops routing through the wrapped method fails loudly.
+  **Which stubs those are took two review rounds to get right:** no fixture here
+  replays on aiohttp. The sync Azure fixtures ride azure-core's default
+  `RequestsTransport`; the async pair inject `AsyncioRequestsTransport`
+  (requests/urllib3 in a thread pool) because vcrpy's aiohttp stub deadlocks on
+  a streamed body. Either route lands on urllib3. The first cut pinned aiohttp and
+  left the async Azure tier's real load-bearing fact — that `Skipped` survives
+  the worker-thread → future handoff — unasserted, while telling a maintainer
+  reading the pin comment that a stub this repo routed around since 8.1.1 was
+  load-bearing. Now: urllib3, httpx, and the executor boundary. The recorder is untouched: the guard installs
+  only when neither `--record` nor `--record-mode` is set — **both**, because
+  moving from collection time to `pytest_configure` introduced a hook-ordering
+  dependency the old hook never had (the root conftest maps `--record` onto
+  `record_mode="rewrite"` in its own `pytest_configure`, and pluggy may call this
+  one first). Unit-tested with a fake config over all three flag combinations
+  rather than a live recording run, which needs credentials this PR did not have.
+  Produced **ID-245** (generate spec 003's reachability table rather than count
+  it) and left ID-244 as the next item in the section's chain.
+
 - [x] **BK-342 — Adapt `/ship` from PR #949's review evidence**
   spec: — · effort: M · audience: contributor.process
   The item recorded PR #949's evidence and deliberately withheld a prescription —

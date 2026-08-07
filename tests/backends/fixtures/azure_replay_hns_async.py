@@ -8,8 +8,8 @@ vcrpy 8.3.0 under BK-326; see ``azure_replay_async``); every
 runs, only the bottom transport leaf differs (``azure_live_hns_async`` with the
 real ``AioHttpTransport`` remains the source of truth for transport-leaf defects).
 
-Builds against ``FAKE_FILESYSTEM`` / ``FAKE_CONN_STR``; cassette naming and the
-missing-cassette skip are identical to ``azure_replay_hns``.
+Builds against ``FAKE_FILESYSTEM`` / ``FAKE_CONN_STR``; cassette naming is
+identical to ``azure_replay_hns``.
 """
 
 from __future__ import annotations
