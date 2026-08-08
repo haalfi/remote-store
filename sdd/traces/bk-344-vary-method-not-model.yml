@@ -18,8 +18,10 @@ discovery_followups:
 expected_ripples:
   - sdd/adrs/DIGEST.md
   - sdd/backlogid.json
-surprising_ripples: []
-review_rounds: 1
+surprising_ripples:
+  - sdd/CLAUDE-REFERENCE.md
+  - CLAUDE.md
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -193,8 +195,13 @@ phases:
           exists to remove — a claim consistent with its own diff and false
           against the system. Fixed by bounding rather than removing the
           constraint, and /ship now ships the permission (`measuring`) with the
-          obligation.
-        outcome: misleading
+          obligation. Tagged `ok` deliberately: the schema reserves `outcome`
+          for documents that failed a reader, and rvw-pr/SKILL.md did not — it
+          stated the restriction accurately in three places and was simply
+          never consulted before the obligation was written. The miss is mine
+          and belongs in this extract, not in the tag that
+          `report-trace-outcomes` ranks documents by.
+        outcome: ok
       - file: pyproject.toml
         section: "[tool.hatch.envs.default.scripts] — all, format-check, gen-*"
         read_type: verify
@@ -225,6 +232,49 @@ phases:
           say four. The residual — a fixed roster versus selecting the experts a
           change requires — is BK-338's open question, so "fixing" it would
           decide that item rather than de-drift this one.
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] — drift-check, format"
+        read_type: verify
+        extract: >-
+          PR #954 round 1 refuted the `-check` suffix rule I had just written as
+          "the rule that catches every case": `drift-check` carries the suffix,
+          takes free-form args, and reaches `refresh-baseline` (overwrites a
+          committed lock file) and `render-docs` without `--check` (overwrites a
+          tracked docs page). The reviewer's proposed replacement — "takes no
+          {args}, or args pinned to --check" — was **also** refuted by running it
+          against the alias table: `format` takes no args and rewrites source.
+          Two lexical rules, two counterexamples, so the third attempt is not a
+          third rule: the safe set is now an allowlist by name, with both
+          counterexamples recorded as why no pattern works. Same shape as the
+          BE-021 carve-out in the item's own evidence, where three criteria were
+          each circular or false and compliance was cheaper than a fourth.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "GitHub PR I/O split"
+        read_type: verify
+        extract: >-
+          Round-1 ripple finding, and a sweep that stopped at the file boundary.
+          The PR body and this trace both enumerated "three separate clauses"
+          confining Bash — complete for rvw-pr/SKILL.md, and wrong for the repo:
+          the split section is the named single source for that rule and carries
+          a fourth copy ("never Bash, never Python") plus a claim that /rvw-pr
+          never touches the feedback row, which the new count read falsifies.
+          The item's own quantifier rule names this failure and I committed it
+          in the same PR that adds the rule.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Stop rule"
+        read_type: verify
+        extract: >-
+          Round-1 finding: ADR-0035 stated the premise obligation absolutely
+          while the only mechanism was panel-scoped, and panels start at round 3
+          — so a one- or two-round delivery ships with zero execution-based
+          review, and the stop rule expressly permits ending on a clean round 1.
+          Fixed with a fourth stop clause on ADR-0034's precedent, which is the
+          same argument the exit gate rests on: an obligation that only fires
+          mid-loop proves nothing about what ships. This makes ADR-0035's third
+          decision true as written rather than aspirational.
         outcome: ok
       - file: .claude/skills/ship/SKILL.md
         section: "(full)"

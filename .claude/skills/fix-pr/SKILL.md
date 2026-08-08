@@ -39,10 +39,21 @@ Fetch **all four** comment sources (`owner: "haalfi"`, `repo: "remote-store"`):
 
 | #   | Tool                 | Method               | What it returns                          |
 | --- | -------------------- | -------------------- | ---------------------------------------- |
-| 1   | `pull_request_read`  | `get_review_comments`| Inline thread comments on specific lines |
+| 1   | `pull_request_read`  | `get_review_comments`| Inline review **threads** (not comments) on specific lines — pass `perPage: 100` |
 | 2   | `pull_request_read`  | `get_comments`       | Review-level comments (pulls API)        |
 | 3   | `pull_request_read`  | `get_reviews`        | Review body/summary text                 |
 | 4   | `issue_read`         | `get_comments`       | Top-level conversation comments (issues API — GitHub stores these separately) |
+
+**Every one of these paginates, and a truncated work list is indistinguishable
+from a short one.** Pass `perPage: 100`; if a source returns exactly 100, or
+source 1 reports `hasNextPage`, fetch the next page (`after` the returned
+`endCursor` for source 1, `page` for the rest) until it does not. A comment you
+never fetched looks exactly like a comment that does not exist, and this list is
+the input to every fix below — the same silent-ceiling shape `/rvw-pr` Step 4
+pins its own instrument against.
+
+Source 1 returns **threads**, each carrying its own comments; do not treat its
+`totalCount` as a comment count.
 
 If `gh` CLI is authenticated, also fetch thread IDs for resolution in Step 4:
 
@@ -51,7 +62,7 @@ gh api graphql -f query='
   query($owner:String!, $repo:String!, $number:Int!) {
     repository(owner:$owner, name:$repo) {
       pullRequest(number:$number) {
-        reviewThreads(last: 100) {
+        reviewThreads(last: 100) {   # saturating: if this returns 100, page it
           nodes {
             id isResolved isOutdated path line
             comments(first: 10) {
@@ -64,6 +75,11 @@ gh api graphql -f query='
   }
 ' -f owner='haalfi' -f repo='remote-store' -F number=$ARGUMENTS
 ```
+
+`reviewThreads(last: 100)` is a ceiling, not a total: if it returns exactly 100,
+page it with `before`/`after` rather than assuming that is all of them. MCP
+`resolve_review_thread` covers the same gap where `gh api graphql` is
+unavailable.
 
 No gh? Skip thread IDs — tell user thread resolution will be manual.
 

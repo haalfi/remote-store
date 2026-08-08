@@ -1111,24 +1111,23 @@ rule are operational contract and live in `.claude/skills/ship/SKILL.md` and
   measured comparison attributes findings to model difference at a rate that
   justifies the per-round cost.
 
-- **Every panel carries one measuring member**, whose brief is to reach a
-  verdict by execution rather than by reading: run the code, measure on the base
-  branch, exercise each subject. This is the axis the model requirement vacates,
-  and the trade is deliberate — one member per panel, spent on method instead of
+- **Every panel carries one measuring member**, reaching its verdict by
+  execution rather than reading. This is the axis the model requirement vacates,
+  and the trade is deliberate: one member per panel, spent on method instead of
   identity. *Reverse if* measuring members stop finding what reading members
   miss across a meaningful sample of deliveries.
 
-- **A premise about existing behaviour is executed, not read, before it ships.**
-  Any claim the PR makes about how the system already behaves is run on the
-  revision it claims about. A false premise is consistent with the diff, so no
-  amount of reading reaches it. *Reverse if* premise checks reliably confirm
-  what a reading round already established.
+- **A premise about existing behaviour is executed, not read, before it ships**,
+  enforced by a stop-rule clause and not by the panel obligation alone. A PR
+  asserting no such claim satisfies it vacuously. A false premise is consistent
+  with the diff, so no amount of reading reaches it. *Reverse if* premise checks
+  reliably confirm what a reading round already established.
 
-- **Panel width follows the subject set, not the diff.** Sizing is by the reach
-  of what the change's own words pick out, alongside the diff's breadth and the
-  prior round's yield. Breadth alone cannot see a subject the change binds and
-  the diff never touches. *Reverse if* subject enumeration reliably reproduces
-  the file list.
+- **Panel width follows the subject set, not the diff** — the reach of what the
+  change's own words pick out, alongside the diff's breadth and the prior
+  round's yield. Breadth alone cannot see a subject the change binds and the
+  diff never touches. *Reverse if* subject enumeration reliably reproduces the
+  file list.
 
 - **The soft ceiling stays at five finding-rounds and stays soft, but the
   escalation carries evidence** — severity trend, per-round yield, unreached

@@ -186,10 +186,18 @@ was *not* told, and that is independent of who or what reviews.
 **Solo passes invoke [`/rvw-pr`](../rvw-pr/SKILL.md) directly.** That is rounds
 1 and 2, an even round narrowed to a single scoped member, and the closing
 gate's appended pass. Direct invocation keeps the skill's `allowed-tools`
-frontmatter — a real read-only guarantee rather than the restated instruction
-below, which is weaker than the frontmatter it stands in for. Pass the PR
-number, and the brief as trailing context for a scoped pass; an unprimed pass
-gets the number alone.
+frontmatter, which withholds `Edit` and `Write` — the guarantee the spawn path
+loses and has to restate as an instruction. It is not a read-only guarantee:
+that frontmatter grants `Bash`, and this file's own panel-constraints bullet
+says why that is not write-free. What covers the `Bash` residue is the
+`git rev-parse HEAD` plus `git status --porcelain` check, which is why that
+check binds solo passes too.
+
+**Argument order is `<PR number> [mode flags] [brief]`** — `/rvw-pr 954
+measuring <brief>`. That skill consumes leading `analyze-only` / `measuring`
+tokens as flags and treats only the remainder as reviewer context; without that
+parse the mode word would be read as a claim to verify. An unprimed pass gets
+the number alone.
 
 **Panels spawn `Agent`s**, because `/rvw-pr` cannot form one. Each member gets a
 prompt instructing it to read and execute `.claude/skills/rvw-pr/SKILL.md`.
@@ -323,19 +331,33 @@ what was refuted and why. The PR record is where that survives.
 ### Stop rule
 
 > **Stop when the most recent round yields zero must-fix findings, that round
-> reviewed the most recent fix pass, *and* an unprimed reviewer has seen the
-> final state and found nothing must-fix.**
+> reviewed the most recent fix pass, an unprimed reviewer has seen the
+> final state and found nothing must-fix, *and* every behavioural claim the PR
+> makes has been executed by a measuring pass.**
 
-The second and third clauses close the loop's two measured blind spots. **The
-loop cannot end on an unreviewed fix pass**: a fix pass is not trusted work —
-it is new code written under time pressure by someone who has already been
-wrong once in this file. And **it cannot end on a state no unprimed reviewer
+The second, third and fourth clauses close the loop's measured blind spots.
+**The loop cannot end on an unreviewed fix pass**: a fix pass is not trusted
+work — it is new code written under time pressure by someone who has already
+been wrong once in this file. **It cannot end on a state no unprimed reviewer
 has seen**: scoped rounds confirm what they are pointed at, and the defects a
 loop creates are created by its fixes, after round 1's unprimed pass has come
 and gone. If the would-be closing round had no unprimed member, append one
 unprimed pass; like a verification round, it counts toward the ceiling only if
-it finds something. A clean unprimed round 1 on a diff warranting no other
-lens satisfies all three clauses at once — stopping there is still correct.
+it finds something.
+
+**And it cannot end on a behavioural claim nobody ran.** The measuring member
+is a panel obligation, and panels start at round 3 — so without this clause a
+one- or two-round delivery ships with zero execution-based review while the
+Rules below assert a premise was executed. Same structure as the unprimed
+gate, for the same reason: an obligation that only fires mid-loop proves
+nothing about what ships. If the closing round had no measuring pass and the
+PR asserts anything about existing behaviour, append one, on the same terms as
+the unprimed pass. A PR that makes no such claim satisfies the clause
+vacuously, exactly as a round that fixed nothing satisfies the fix-pass clause.
+
+A clean unprimed round 1 on a diff warranting no other lens still satisfies all
+four — stopping there is still correct, provided the diff asserts nothing about
+existing behaviour or that round was itself the measuring pass.
 
 - **Floor: lens coverage, not a round count.** Every lens the diff *warrants*
   must have been applied. A one-surface change may warrant only the broad round,
@@ -432,6 +454,7 @@ Then stop. **`/ship` never merges.** It hands over a PR that is ready to be.
 - Never push to master.
 - Never end the loop on an unreviewed fix pass.
 - Never end the loop on a state no unprimed reviewer has seen.
+- Never end the loop on a behavioural claim no measuring pass has executed.
 - Never end the loop on a red or unread CI.
 - Reviewers are read-only and fresh each round; fixers may decline with evidence.
 - Reviewers are picked by lens and method. **Never pin or prefer a model.**

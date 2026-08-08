@@ -13,9 +13,16 @@ allowed-tools: Read, Grep, Glob, Bash, mcp__MCP_DOCKER__pull_request_read, mcp__
 
 **Measuring pass.** If the invoking prompt says **measuring**, you reach your verdict by *executing*, not by reading, and Bash is opened to exactly this set:
 
-- **Allowed:** the repo's check-only gates (`hatch run all` / `lint` / `preflight` / `typecheck` / `test*` / any `*-check` script), read-only `git` (`log`, `show`, `diff`, `status`, `rev-parse`, `blame`), and `python` invoked to exercise the library.
-- **Forbidden:** anything that writes a tracked file. Regenerating a baseline is the one way a reviewer can dirty the tree, and the rule that catches every case is the **`-check` suffix**: `hatch run format` mutates and `format-check` does not, and each `gen-*` alias pairs with a `gen-*-check` twin — run the twin, never the bare alias. `scripts/record_cassettes.py` is the same hazard without a twin. The alias list is `pyproject.toml`'s `[tool.hatch.envs.default.scripts]`; read the suffix there rather than trusting a copy here, since a new script adds a new pair.
-- **Never change the checked-out revision.** No `checkout`, `switch`, `stash`, `reset`, or `rebase`: `/ship` verifies an unchanged `HEAD` and a clean `git status --porcelain` before it trusts your pass, and moving either invalidates the whole round. To measure the **base** branch, add a worktree under the gitignored `tmp/` (`git worktree add tmp/base <base-ref>`) and run there — the working tree and `HEAD` stay put.
+- **Allowed, by name — this is an allowlist, not a pattern.** The composite gates `hatch run all` / `lint` / `preflight` / `docs-gate` / `typecheck` / `test*`; read-only `git` (`log`, `show`, `diff`, `status`, `rev-parse`, `blame`, and `worktree add`/`remove`/`prune` under `tmp/`); and `python` exercising the library. Anything not on this list, do not run — "it looked read-only" is not a reason.
+- **The alias name does not tell you whether it writes**, which is why the list above is enumerated rather than derived. Two counterexamples, both live in `pyproject.toml`: `drift-check` carries the `-check` suffix but takes free-form args and reaches `refresh-baseline` (overwrites the committed `infra/drift-locks/<extra>.txt`) and `render-docs` without `--check` (overwrites a tracked docs page); `format` takes no args at all and rewrites source. A suffix rule and an args-shape rule are each false against one of these.
+- **Write only under `tmp/`.** Not "only tracked files" — `/ship` requires a clean `git status --porcelain`, which reports an untracked file as `??` just as loudly. Exercising a *storage* library means writing files, so point every root, temp dir and worktree at the gitignored `tmp/` and the stated bound matches the enforced check.
+- **Never change the checked-out revision.** No `checkout`, `switch`, `stash`, `reset`, or `rebase`: `/ship` verifies an unchanged `HEAD` and a clean `git status --porcelain` before it trusts your pass, and moving either invalidates the whole round. To measure the **base** branch, use a worktree — and tear it down, because `worktree add` is not idempotent and the next round's measuring member runs the same command:
+
+```bash
+git worktree add tmp/base-$$ <base-ref>   # unique path; tmp/ is gitignored
+# ... measure in tmp/base-$$ ...
+git worktree remove tmp/base-$$ || git worktree prune
+```
 
 **Running the gate is safe for `/ship`'s clean-tree check, and that was measured rather than assumed.** `hatch run all` composes only check-only targets, and its outputs — coverage data, caches, the built site, `tmp/` — are gitignored, so a full run leaves `git status --porcelain` empty. This paragraph is the single home for that claim; `/ship` and ADR-0035 cite it rather than restating it.
 
@@ -23,7 +30,13 @@ Report what you **ran** and what came back, not what you concluded from reading.
 
 Your only valuable output is review insights. The only artifact you create is comments on the PR. Findings go in a comment — bugs, gaps, deferrals, follow-ups. Anything else is out of scope for a reviewer.
 
-PR number and optional reviewer context are in `$ARGUMENTS`. Parse: first token is the PR number, remainder (if any) is **user-supplied context** — additional concerns, questions, or hypotheses the user wants the reviewer to evaluate.
+PR number, mode flags, and optional reviewer context are in `$ARGUMENTS`. Parse in this order:
+
+1. **First token: the PR number.**
+2. **Then any leading mode flags**, consumed as flags and never as content: `analyze-only`, `measuring`. Keep consuming while the next token is one of those words; both may appear, in either order.
+3. **The remainder (if any) is user-supplied context** — additional concerns, questions, or hypotheses the user wants the reviewer to evaluate.
+
+**Step 2 must not treat a consumed mode flag as a user claim.** Getting this wrong is silent and expensive in both directions: a `measuring` flag mis-parsed as context produces a pass that reads instead of running — the inert obligation `/ship` depends on this skill to prevent — and it surfaces as a stray `User-flagged:` comment or a `Rejected user input: "measuring"` line rather than as an error. The mode gates below say "if the invoking prompt says X", which is satisfied by an `Agent` prompt *or* by a flag parsed here; slash invocation is the path `/ship` prefers for solo passes, so this is the common case, not the exotic one.
 
 **Analyze-only mode.** If the invoking prompt says **analyze-only**, you are one member of a parallel review panel and the caller owns all posting: execute Steps 0–3, **skip Step 4 entirely** — concurrent members share one owner token, and GitHub allows one pending review per user per PR, so a second poster cross-contaminates the first's pending review — and return Step 5's report **plus your consolidated findings** as your final message — per finding, everything Step 4 would need to post it: path, `subjectType` (`LINE` or `FILE`), line and side when `LINE` (`side: "LEFT"` with the base-branch line for deleted lines), category, body. Your Step 5 header reads `## PR #N Review — X findings returned (analyze-only)`, since nothing was posted and the posted-count header would be false. Every other rule — read-only, no fixing, no follow-ups — applies unchanged.
 
@@ -93,18 +106,26 @@ Apply confidence filter: only post findings you are ≥80% confident about. Skip
 
 **Verify (only when you posted inline findings).** The check is a **delta**, not an absolute: capture the review-comment count **before** creating the pending review, and again after `submit_pending`. The count must rise by the number of comments you attached (at minimum, it must rise) — an absolute non-zero count proves nothing on a PR that already carries review comments from earlier rounds. If you had no inline findings to post (step 2 had nothing to attach), skip verification — an unchanged count is the correct outcome. If the count did not rise, the submit dropped your comments. Retry **once**: restart from step 1 (new `create` pending review, re-attach every comment, re-`submit_pending`) — after `submit_pending` there is no pending review to attach to, so calling `add_comment_to_pending_review` without a fresh `create` will fail. If the retry also fails the delta, stop and report the failure in the Step 5 summary (do not loop further).
 
-**Take the count from exactly one instrument, and check it for saturation:**
+**Take the count from exactly one instrument, and walk its pages explicitly:**
 
 ```bash
-gh api "repos/haalfi/remote-store/pulls/<N>/comments?per_page=100" --jq 'length'
+# Sum pages until one comes back short. per_page is the page size, not a ceiling.
+gh api "repos/haalfi/remote-store/pulls/<N>/comments?per_page=100&page=1" --jq 'length'
+gh api "repos/haalfi/remote-store/pulls/<N>/comments?per_page=100&page=2" --jq 'length'   # only if page 1 returned exactly 100
 ```
 
-**`per_page=100` is not decoration and neither is the saturation check.** If that
-call returns exactly `100`, the number is a ceiling rather than a count: say so
-and stop, do not compute a delta from it. This is the one count that does **not**
-follow Step 1's `gh`-content-first split as a matter of convenience — the split
-is why a saturating spelling was reachable at all, so the instrument is pinned
-here instead of chosen at the call site.
+**A page that returns exactly `per_page` means there is more, not that you are
+done** — advance `page` until a short page (or `0`) comes back, and sum. That
+loop is what makes this a count rather than a ceiling: `/ship` runs to eight
+rounds and the closing gate is where a dropped finding costs most, so a
+verification that switches itself off above 100 comments switches off exactly
+when it is needed. Verified by walking one PR at `per_page=40`: `40 + 6 + 0`,
+matching its true total.
+
+This is the one count that does **not** follow Step 1's `gh`-content-first split
+as a matter of convenience — the split is why a saturating spelling was
+reachable at all, so the instrument is pinned here instead of chosen at the call
+site.
 
 Two spellings are **forbidden**, each for a structural reason rather than a
 tuning one:
@@ -119,11 +140,14 @@ answers — the capped count, the true count, and the thread count. The figures
 are recorded with the item that found them; what belongs here is that neither
 instrument is a comment count.
 
-`--paginate` is not a fix. It streams partial results to stdout *and* exits
-non-zero when it cannot follow a page, so a caller reading only stdout gets a
-truncated count from a call that failed — the original failure mode at a
-different threshold. If you use it anyway, check its exit status before believing
-its output.
+**Prefer the explicit `page=` walk above to `--paginate`**, which is why it is
+written that way. Behind an agent proxy that refuses `gh`'s page-follow URLs —
+measured here, and not a property of `--paginate` everywhere — it streams
+partial results to stdout *and* exits non-zero, so a caller reading only stdout
+gets a truncated count from a call that failed: the original failure mode at a
+different threshold. Where it does work it is fine; the explicit walk is
+portable across both, which is the reason to pin it. If you use `--paginate`
+anyway, check its exit status before believing its output.
 
 **The rule this encodes:** a verification step that can fail silently is worse
 than no verification, because it is trusted. This one once read as a failed post

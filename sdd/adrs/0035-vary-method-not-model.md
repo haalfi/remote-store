@@ -62,24 +62,23 @@ pin predated it and survived.
   measured comparison attributes findings to model difference at a rate that
   justifies the per-round cost.
 
-- **Every panel carries one measuring member**, whose brief is to reach a
-  verdict by execution rather than by reading: run the code, measure on the base
-  branch, exercise each subject. This is the axis the model requirement vacates,
-  and the trade is deliberate — one member per panel, spent on method instead of
+- **Every panel carries one measuring member**, reaching its verdict by
+  execution rather than reading. This is the axis the model requirement vacates,
+  and the trade is deliberate: one member per panel, spent on method instead of
   identity. *Reverse if* measuring members stop finding what reading members
   miss across a meaningful sample of deliveries.
 
-- **A premise about existing behaviour is executed, not read, before it ships.**
-  Any claim the PR makes about how the system already behaves is run on the
-  revision it claims about. A false premise is consistent with the diff, so no
-  amount of reading reaches it. *Reverse if* premise checks reliably confirm
-  what a reading round already established.
+- **A premise about existing behaviour is executed, not read, before it ships**,
+  enforced by a stop-rule clause and not by the panel obligation alone. A PR
+  asserting no such claim satisfies it vacuously. A false premise is consistent
+  with the diff, so no amount of reading reaches it. *Reverse if* premise checks
+  reliably confirm what a reading round already established.
 
-- **Panel width follows the subject set, not the diff.** Sizing is by the reach
-  of what the change's own words pick out, alongside the diff's breadth and the
-  prior round's yield. Breadth alone cannot see a subject the change binds and
-  the diff never touches. *Reverse if* subject enumeration reliably reproduces
-  the file list.
+- **Panel width follows the subject set, not the diff** — the reach of what the
+  change's own words pick out, alongside the diff's breadth and the prior
+  round's yield. Breadth alone cannot see a subject the change binds and the
+  diff never touches. *Reverse if* subject enumeration reliably reproduces the
+  file list.
 
 - **The soft ceiling stays at five finding-rounds and stays soft, but the
   escalation carries evidence** — severity trend, per-round yield, unreached
@@ -109,10 +108,11 @@ repeat-site check and the CI check are operational contract and live in
   question is untouched and still open.
 - **Positive:** solo reviewer passes now invoke `/rvw-pr` directly instead of
   spawning an `Agent`, since the model override was the only reason to spawn.
-  That restores the skill's `allowed-tools` read-only frontmatter for every solo
-  pass, replacing an instruction the skill itself describes as weaker than the
-  frontmatter it stands in for. `Agent` spawning remains for panels, which
-  `/rvw-pr` cannot form.
+  That restores the skill's `allowed-tools` withholding of `Edit` and `Write`,
+  which the spawn path loses and must restate as an instruction. It is not a
+  read-only guarantee — that frontmatter grants `Bash` — and what covers the
+  `Bash` residue is the unchanged-`HEAD` and clean-tree check every pass
+  carries. `Agent` spawning remains for panels, which `/rvw-pr` cannot form.
 - **Negative:** a measuring member costs more than a reading one. It runs code,
   which means environment setup, gate time, and a longer round.
 - **Negative:** it also widens a reviewer's tool surface. `/rvw-pr` confined
@@ -124,7 +124,13 @@ repeat-site check and the CI check are operational contract and live in
   rather than being stopped.
 - **Negative:** the premise obligation has no mechanical trigger. Nothing detects
   that a sentence is a claim about existing behaviour, so it rests on the
-  brief and on review, like the sibling-sweep obligation it sits beside.
+  brief and on review, like the sibling-sweep obligation it sits beside. It
+  needed the stop-rule clause because the panel obligation alone starts at
+  round 3: a one- or two-round delivery is solo throughout, and the stop rule
+  expressly permits ending on a clean round 1, so the absolute wording would
+  have been aspirational on exactly the short deliveries where nobody is
+  watching. Same structure, and the same reason, as ADR-0034's unprimed exit
+  gate.
 - **Negative:** subject enumeration is a new judgement at Step 1, made before
   the work exists to be judged, and an under-enumerated list understates panel
   width for the whole run.
