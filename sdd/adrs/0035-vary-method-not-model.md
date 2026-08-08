@@ -117,13 +117,11 @@ repeat-site check and the CI check are operational contract and live in
   which means environment setup, gate time, and a longer round.
 - **Negative:** it also widens a reviewer's tool surface. `/rvw-pr` confined
   `Bash` to `gh` PR-content reads, which would have made this decision inert —
-  the obligation to measure with no permission to run. The constraint is
-  bounded rather than removed: check-only gates, read-only `git`, `python`
-  against the library; no writes to tracked files, no regenerating variants, no
-  changing the checked-out revision. That the bound holds is measured, not
-  assumed — `hatch run all` leaves `git status --porcelain` empty — but it is
-  enforced by instruction, so a reviewer that ignores it invalidates the round's
-  clean-tree check rather than being stopped.
+  the obligation to measure with no permission to run. That constraint is now
+  bounded rather than removed, and the bound and the measurement showing it
+  keeps the review round's clean-tree guarantee live in that skill. It is
+  enforced by instruction, so a reviewer that ignores it invalidates the round
+  rather than being stopped.
 - **Negative:** the premise obligation has no mechanical trigger. Nothing detects
   that a sentence is a claim about existing behaviour, so it rests on the
   brief and on review, like the sibling-sweep obligation it sits beside.

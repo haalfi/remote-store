@@ -14,10 +14,10 @@ allowed-tools: Read, Grep, Glob, Bash, mcp__MCP_DOCKER__pull_request_read, mcp__
 **Measuring pass.** If the invoking prompt says **measuring**, you reach your verdict by *executing*, not by reading, and Bash is opened to exactly this set:
 
 - **Allowed:** the repo's check-only gates (`hatch run all` / `lint` / `preflight` / `typecheck` / `test*` / any `*-check` script), read-only `git` (`log`, `show`, `diff`, `status`, `rev-parse`, `blame`), and `python` invoked to exercise the library.
-- **Forbidden:** anything that writes a tracked file. Named, because these are the traps: `hatch run format` (use `format-check`), and every `gen-*` alias without a `-check` suffix — `gen-graph`, `gen-features`, `gen-graph-viz`, `gen-adr-digest`, `gen-backlogid` — plus `scripts/record_cassettes.py`. Regenerating a baseline is the one way a reviewer can dirty the tree.
+- **Forbidden:** anything that writes a tracked file. Regenerating a baseline is the one way a reviewer can dirty the tree, and the rule that catches every case is the **`-check` suffix**: `hatch run format` mutates and `format-check` does not, and each `gen-*` alias pairs with a `gen-*-check` twin — run the twin, never the bare alias. `scripts/record_cassettes.py` is the same hazard without a twin. The alias list is `pyproject.toml`'s `[tool.hatch.envs.default.scripts]`; read the suffix there rather than trusting a copy here, since a new script adds a new pair.
 - **Never change the checked-out revision.** No `checkout`, `switch`, `stash`, `reset`, or `rebase`: `/ship` verifies an unchanged `HEAD` and a clean `git status --porcelain` before it trusts your pass, and moving either invalidates the whole round. To measure the **base** branch, add a worktree under the gitignored `tmp/` (`git worktree add tmp/base <base-ref>`) and run there — the working tree and `HEAD` stay put.
 
-**This is safe, and it was measured rather than assumed:** `hatch run all` uses `format-check` (never `format`) and runs every `gen_*` with `--check`, and everything it writes — `.coverage`, `coverage.xml`, `.pytest_cache/`, `__pycache__/`, `site/`, `tmp/` — is gitignored. Two consecutive full runs left `git status --porcelain` empty.
+**Running the gate is safe for `/ship`'s clean-tree check, and that was measured rather than assumed.** `hatch run all` composes only check-only targets, and its outputs — coverage data, caches, the built site, `tmp/` — are gitignored, so a full run leaves `git status --porcelain` empty. This paragraph is the single home for that claim; `/ship` and ADR-0035 cite it rather than restating it.
 
 Report what you **ran** and what came back, not what you concluded from reading. A finding you could not reproduce is reported as unreproduced.
 
@@ -106,13 +106,18 @@ follow Step 1's `gh`-content-first split as a matter of convenience — the spli
 is why a saturating spelling was reachable at all, so the instrument is pinned
 here instead of chosen at the call site.
 
-Two spellings are **forbidden**, both measured on PR #952, which carries 46
-review comments across 39 threads:
+Two spellings are **forbidden**, each for a structural reason rather than a
+tuning one:
 
-| Forbidden | Returns | Why |
-|---|---|---|
-| `gh api ".../comments" --jq 'length'` | 30 | No `per_page`, so it caps at the default page size and reads as "the comments did not post" |
-| `pull_request_read` → `get_review_comments` → `totalCount` | 39 | Counts **threads**, not comments. A comment delta compared against it compares two different quantities |
+| Forbidden | Why |
+|---|---|
+| `gh api ".../comments" --jq 'length'` | No `per_page`, so it silently caps at the default page size and reads as "the comments did not post" |
+| `pull_request_read` → `get_review_comments` → `totalCount` | Counts **threads**, not comments, so a comment delta compared against it compares two different quantities |
+
+Both were caught by measuring one PR three ways and getting three different
+answers — the capped count, the true count, and the thread count. The figures
+are recorded with the item that found them; what belongs here is that neither
+instrument is a comment count.
 
 `--paginate` is not a fix. It streams partial results to stdout *and* exits
 non-zero when it cannot follow a page, so a caller reading only stdout gets a

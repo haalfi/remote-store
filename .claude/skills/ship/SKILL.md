@@ -249,14 +249,12 @@ against the library — which is otherwise closed: that skill confines `Bash` to
 the diff and nothing else. The obligation and the permission ship together or
 the obligation is inert.
 
-**Measuring does not endanger the clean-tree check above, and that was
-measured.** `hatch run all` uses `format-check` and runs every `gen_*` with
-`--check`; everything it writes is gitignored, and two consecutive full runs
-left `git status --porcelain` empty. What *would* break the check is
-regenerating a baseline (`hatch run format`, any `gen-*` without `-check`) or
-moving the checked-out revision — both forbidden to reviewers, and `rvw-pr`
-names them. To measure the base branch, a reviewer adds a worktree under the
-gitignored `tmp/` rather than checking anything out.
+**Measuring does not endanger the clean-tree check above.** Running the gate is
+safe; what would break the check is regenerating a baseline or moving the
+checked-out revision, and `rvw-pr`'s measuring-pass block forbids both, states
+the bound, and carries the measurement behind it. Read it there rather than
+here — a second copy of that reasoning is the failure the sibling-sweep rule
+exists to catch.
 
 This is the axis that separated the productive rounds in the third delivery.
 Three premises there were asserted and disproved, every one by running
