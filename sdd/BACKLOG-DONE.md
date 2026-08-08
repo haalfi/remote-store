@@ -265,6 +265,19 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   **measuring member** takes its place: one per panel, verdict by execution.
   Shipped as [ADR-0035](adrs/0035-vary-method-not-model.md), amending ADR-0033
   and ADR-0034.
+  **The measuring member needed a permission, not just an obligation.**
+  `/rvw-pr` confined `Bash` to `gh` PR-content reads in three separate clauses,
+  so the first cut of this work shipped a member instructed to run things and
+  structurally unable to run any — the item's own defect class, a claim
+  consistent with its diff and false against the system, caught by a parallel
+  BK-338 session. The constraint is now **bounded rather than removed**:
+  check-only gates, read-only `git`, `python` against the library; no writes to
+  tracked files, no `gen-*` without `-check`, no moving the checked-out
+  revision, and a gitignored-worktree recipe for reaching the base branch. That
+  this leaves `/ship`'s clean-tree gate intact is measured — `all` composes
+  `format-check`, every `gen_*` runs `--check`, and two consecutive full runs
+  left `git status --porcelain` empty. `/ship` now emits the enabling word
+  (`measuring`) alongside the brief.
   **Where the other six signals landed.** Signal 1 (five rounds narrowing one
   gate whose condition space was four booleans) → a **repeat-site check** beside
   the divergence check: two consecutive refutations of the same condition stop

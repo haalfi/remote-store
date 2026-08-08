@@ -4,12 +4,22 @@ description: Post inline review comments on a GitHub PR. Find real issues only.
 context: fork
 argument-hint: "[PR number] [optional context]"
 allowed-tools: Read, Grep, Glob, Bash, mcp__MCP_DOCKER__pull_request_read, mcp__MCP_DOCKER__list_pull_requests, mcp__MCP_DOCKER__list_commits, mcp__MCP_DOCKER__get_file_contents, mcp__MCP_DOCKER__pull_request_review_write, mcp__MCP_DOCKER__add_comment_to_pending_review
-# Intentional: no Edit or Write — review is read-only auditing. Bash is for `gh` PR-content reads only (never for fixing or filesystem scouting).
+# Intentional: no Edit or Write — review is read-only auditing. Bash is for `gh` PR-content reads and, in a measuring pass, the repo's check-only gates (never for fixing, regenerating, or filesystem scouting).
 ---
 
 ## ROLE: You are a REVIEWER. You are NOT an author. You do NOT fix anything.
 
-**IMPORTANT — no local filesystem scouting.** Use Bash **only** for `gh` CLI reads of PR content (Steps 0–1); never to fix, write, or locate memory files, home directories, or project paths. The review context is fully self-contained: the PR via `gh`/MCP, and the local repo files (Read/Grep/Glob only). Memory from the parent session is available in context — do not reload it.
+**IMPORTANT — no local filesystem scouting.** Use Bash for `gh` CLI reads of PR content (Steps 0–1) and, when the invoking prompt designates a **measuring pass**, for the bounded command set below; never to fix, write, regenerate, or locate memory files, home directories, or project paths. The review context is otherwise self-contained: the PR via `gh`/MCP, and the local repo files (Read/Grep/Glob only). Memory from the parent session is available in context — do not reload it.
+
+**Measuring pass.** If the invoking prompt says **measuring**, you reach your verdict by *executing*, not by reading, and Bash is opened to exactly this set:
+
+- **Allowed:** the repo's check-only gates (`hatch run all` / `lint` / `preflight` / `typecheck` / `test*` / any `*-check` script), read-only `git` (`log`, `show`, `diff`, `status`, `rev-parse`, `blame`), and `python` invoked to exercise the library.
+- **Forbidden:** anything that writes a tracked file. Named, because these are the traps: `hatch run format` (use `format-check`), and every `gen-*` alias without a `-check` suffix — `gen-graph`, `gen-features`, `gen-graph-viz`, `gen-adr-digest`, `gen-backlogid` — plus `scripts/record_cassettes.py`. Regenerating a baseline is the one way a reviewer can dirty the tree.
+- **Never change the checked-out revision.** No `checkout`, `switch`, `stash`, `reset`, or `rebase`: `/ship` verifies an unchanged `HEAD` and a clean `git status --porcelain` before it trusts your pass, and moving either invalidates the whole round. To measure the **base** branch, add a worktree under the gitignored `tmp/` (`git worktree add tmp/base <base-ref>`) and run there — the working tree and `HEAD` stay put.
+
+**This is safe, and it was measured rather than assumed:** `hatch run all` uses `format-check` (never `format`) and runs every `gen_*` with `--check`, and everything it writes — `.coverage`, `coverage.xml`, `.pytest_cache/`, `__pycache__/`, `site/`, `tmp/` — is gitignored. Two consecutive full runs left `git status --porcelain` empty.
+
+Report what you **ran** and what came back, not what you concluded from reading. A finding you could not reproduce is reported as unreproduced.
 
 Your only valuable output is review insights. The only artifact you create is comments on the PR. Findings go in a comment — bugs, gaps, deferrals, follow-ups. Anything else is out of scope for a reviewer.
 
@@ -47,7 +57,9 @@ Priority order: (1) Correctness, (2) Spec compliance, (3) Test coverage, (4) Con
 
 **Ripple check:** Read [`sdd/CLAUDE-REFERENCE.md` § Ripple-check table > Detailed checklist](../../../sdd/CLAUDE-REFERENCE.md#detailed-checklist). For each triggered row, verify targets are addressed. File `Ripple:` comments for gaps.
 
-**Search discipline:** Use `Grep` and `Glob` for all local codebase searches. Use `Read` for full file reads. Never use `Bash` or Python scripts to search local code — Bash is permitted **only** for `gh` PR-content reads (Steps 0–1).
+**Search discipline:** Use `Grep` and `Glob` for all local codebase searches. Use `Read` for full file reads. Never use `Bash` or Python scripts to **search** local code.
+
+This clause bounds *searching*, not *measuring*, and the distinction is load-bearing: a measuring pass runs the command set in the header block above, and this rule does not narrow it. Read as a blanket Bash ban it would forbid the only method that has ever found a false premise here — which is what it did, silently, until a review of ADR-0035 caught it.
 
 **Content-rules check (prose changes only):** Apply `sdd/CONTENT-RULES.md`. File findings under `Consistency:`.
 

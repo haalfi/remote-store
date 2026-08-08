@@ -19,7 +19,7 @@ expected_ripples:
   - sdd/adrs/DIGEST.md
   - sdd/backlogid.json
 surprising_ripples: []
-review_rounds: 0
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -177,6 +177,54 @@ phases:
           user-facing framework. This is contributor.process with no user-facing
           surface, so no entry — matching ID-243 and BK-342, neither of which
           has one.
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "frontmatter comment, IMPORTANT block, Step 2 Search discipline"
+        read_type: verify
+        extract: >-
+          **The measuring decision shipped inert and a parallel BK-338 session
+          caught it.** Three clauses — the frontmatter comment, the "no local
+          filesystem scouting" block, and Step 2's search discipline — confine
+          Bash to gh PR-content reads in Steps 0-1, so a measuring member
+          executing this skill can run nothing: not the gate, not the library,
+          not git. Verified in force at 044a161 as well as at HEAD. I wrote the
+          obligation into /ship and ADR-0035 and never checked whether the skill
+          that executes it permits the method; the same defect class the item
+          exists to remove — a claim consistent with its own diff and false
+          against the system. Fixed by bounding rather than removing the
+          constraint, and /ship now ships the permission (`measuring`) with the
+          obligation.
+        outcome: misleading
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] — all, format-check, gen-*"
+        read_type: verify
+        extract: >-
+          Measured the safety of the constraint lift instead of asserting it,
+          which is the discipline this PR adds. `all` composes format-check and
+          never format; every gen_* in preflight and docs-gate carries --check;
+          .coverage, coverage.xml, .pytest_cache/, __pycache__/, site/ and tmp/
+          are gitignored. Two consecutive full `hatch run all` runs left
+          `git status --porcelain` empty, so a measuring reviewer does not
+          endanger /ship's clean-tree gate. The hazard is the mutating twins
+          (format, gen-* without -check, record_cassettes.py) and moving the
+          checked-out revision — both now named as forbidden, with a
+          gitignored-worktree recipe for reaching the base branch.
+        outcome: ok
+      - file: sdd/rfcs/rfc-0009-multi-agent-orchestration.md
+        section: "Status; Four Subject Matter Experts (line 39)"
+        read_type: verify
+        extract: >-
+          A third finding from the same parallel session was **refuted**: that
+          /orchestrate's "All 5 experts activate" contradicts this RFC's "the
+          orchestrator decides which experts to spawn", and is drift fixable
+          without new evidence. It is not. This RFC is `Superseded by ADR-0020
+          (via ADR-0019)`, and the ripple-check lists rfcs/ as records rather
+          than instructions, so a live skill differing from it is supersession
+          working. The 5-vs-4 gap is the sdd-expert, added by BK-315 (#911)
+          long after the RFC, whose heading, table and line 39 all consistently
+          say four. The residual — a fixed roster versus selecting the experts a
+          change requires — is BK-338's open question, so "fixing" it would
+          decide that item rather than de-drift this one.
         outcome: ok
       - file: .claude/skills/ship/SKILL.md
         section: "(full)"

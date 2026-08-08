@@ -203,6 +203,10 @@ Things the prompt must carry, because the spawn path does not supply them:
   excludes priming, not constraints; a scoped member's prompt adds its brief.
 - **The word `analyze-only`.** `rvw-pr` defines the mode: Steps 0–3, Step 4
   skipped, Step 5's report plus findings returned as the final message.
+- **For the measuring member: the word `measuring`.** It opens `rvw-pr`'s
+  bounded execution set. Without it that skill permits `Bash` only for `gh`
+  PR-content reads, and the member cannot run the thing it exists to run. A
+  solo measuring pass carries the word too.
 - **The read-only constraint, restated — in every panel member's prompt.**
   `rvw-pr`'s `allowed-tools` frontmatter grants no `Edit` or `Write`, and that
   guarantee is *lost* when a general agent merely reads the file: it keeps its
@@ -237,6 +241,22 @@ something.** Its lens may be any of the above, but its instruction is to reach
 its verdict by execution: run the code, measure on the base branch, enumerate
 the subject set and exercise each entry. It reports what it *ran* and what came
 back, and a finding it cannot reproduce is reported as unreproduced.
+
+**Its prompt must carry the word `measuring`.** That word is what opens
+`rvw-pr`'s bounded command set — check-only gates, read-only `git`, `python`
+against the library — which is otherwise closed: that skill confines `Bash` to
+`gh` PR-content reads, and a measuring member spawned without the word can read
+the diff and nothing else. The obligation and the permission ship together or
+the obligation is inert.
+
+**Measuring does not endanger the clean-tree check above, and that was
+measured.** `hatch run all` uses `format-check` and runs every `gen_*` with
+`--check`; everything it writes is gitignored, and two consecutive full runs
+left `git status --porcelain` empty. What *would* break the check is
+regenerating a baseline (`hatch run format`, any `gen-*` without `-check`) or
+moving the checked-out revision — both forbidden to reviewers, and `rvw-pr`
+names them. To measure the base branch, a reviewer adds a worktree under the
+gitignored `tmp/` rather than checking anything out.
 
 This is the axis that separated the productive rounds in the third delivery.
 Three premises there were asserted and disproved, every one by running
