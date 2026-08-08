@@ -586,9 +586,11 @@ delete(path: str, *, missing_ok: bool = False) -> None
 
 Delete the object at *path*.
 
+A bucket that does not exist counts as a missing object, on the same terms as `delete_folder`: `missing_ok=True` returns silently and `missing_ok=False` raises `NotFound`.
+
 Raises:
 
-- `NotFound` – If the object does not exist and missing_ok is False.
+- `NotFound` – If the object does not exist (including when the bucket itself is absent) and missing_ok is False.
 - `PermissionDenied` – If the credentials lack access.
 - `BackendUnavailable` – On a transport or service failure, or after close().
 
@@ -607,9 +609,11 @@ Delete the virtual folder at *path*.
 
 `recursive=True` removes every object under the prefix; this is a best-effort multi-object delete, not atomic, so an interruption can leave the prefix partially deleted. `recursive=False` removes the prefix only when it has no contents.
 
+A bucket that does not exist counts as a missing folder, not as a transport failure: `missing_ok=True` returns silently and `missing_ok=False` raises `NotFound`, matching `delete`.
+
 Raises:
 
-- `NotFound` – If no object exists under path and missing_ok is False.
+- `NotFound` – If no object exists under path (including when the bucket itself is absent) and missing_ok is False.
 - `DirectoryNotEmpty` – If the prefix is non-empty and recursive is False.
 - `PermissionDenied` – If the credentials lack access.
 - `BackendUnavailable` – On a transport or service failure, or after close().

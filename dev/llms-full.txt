@@ -1310,6 +1310,7 @@ def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool 
 
 - `delete()` targets files. `delete_folder()` targets folders.
 - `missing_ok=True` suppresses `NotFound`.
+- `missing_ok=True` also covers an absent *container* — the bucket, container or table holding the path. Both deletes return cleanly against one, and both raise `NotFound` without `missing_ok`. No exemptions: if your backend's native error for an absent container is not already a not-found, reclassify it, subject to two constraints. Keep the reclassification narrow to that one case: a denial stays `PermissionDenied`, a timeout stays `BackendUnavailable`. And put any probe you need on the failure path, never on the miss path — an ordinary miss must not spend a round trip distinguishing an absent container from an absent path. The reasoning behind both is in the error-mapping section of the [Backend Adapter Contract](https://docs.remotestore.dev/stable/explanation/design/specs/003-backend-adapter-contract/index.md).
 - `delete_folder(recursive=False)` raises `DirectoryNotEmpty` if the folder has contents.
 - You cannot delete root (`""` or `"."`) — `Store` rejects it before your backend runs, so users never reach you with a root delete; the tutorial backend also guards it locally, which is the safer shape.
 
@@ -4891,9 +4892,11 @@ delete(path: str, *, missing_ok: bool = False) -> None
 
 Delete the blob at *path*.
 
+A container that does not exist counts as a missing blob, on the same terms as `delete_folder`: `missing_ok=True` returns silently and `missing_ok=False` raises `NotFound`. Verified on flat (non-HNS) accounts; HNS takes a separate branch that the suite does not exercise against an absent container, so the same answer there is expected rather than measured.
+
 Raises:
 
-- `NotFound` – If the blob does not exist (or, on HNS, a path component is itself a file) and missing_ok is False.
+- `NotFound` – If the blob does not exist (including when the container itself is absent, or, on HNS, when a path component is itself a file) and missing_ok is False.
 - `InvalidPath` – If path names a directory (HNS; use delete_folder).
 - `PermissionDenied` – If credentials are rejected or lack access (401/403).
 - `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
@@ -4915,13 +4918,15 @@ Parameters:
 
 - **`path`** (`str`) – Backend-relative key.
 - **`recursive`** (`bool`, default: `False` ) – If True, delete all contents first.
-- **`missing_ok`** (`bool`, default: `False` ) – If True, do not raise when absent.
+- **`missing_ok`** (`bool`, default: `False` ) – If True, do not raise when absent. This covers an absent container too: it holds no folder either, so it reads as a missing path rather than a failure.
 
 Raises:
 
-- `NotFound` – If the folder is missing and missing_ok is False.
+- `NotFound` – If the folder is missing (including when the container itself is absent) and missing_ok is False.
 - `InvalidPath` – If path names a file (use delete instead).
 - `DirectoryNotEmpty` – If non-empty and recursive is False.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
 
 ### list_files
 
@@ -7805,9 +7810,11 @@ delete(path: str, *, missing_ok: bool = False) -> None
 
 Delete the object at *path*.
 
+A bucket that does not exist counts as a missing object, on the same terms as `delete_folder`: `missing_ok=True` returns silently and `missing_ok=False` raises `NotFound`.
+
 Raises:
 
-- `NotFound` – If the object does not exist and missing_ok is False.
+- `NotFound` – If the object does not exist (including when the bucket itself is absent) and missing_ok is False.
 - `PermissionDenied` – If the credentials lack access.
 - `BackendUnavailable` – On a transport or service failure, or after close().
 
@@ -7826,9 +7833,11 @@ Delete the virtual folder at *path*.
 
 `recursive=True` removes every object under the prefix; this is a best-effort multi-object delete, not atomic, so an interruption can leave the prefix partially deleted. `recursive=False` removes the prefix only when it has no contents.
 
+A bucket that does not exist counts as a missing folder, not as a transport failure: `missing_ok=True` returns silently and `missing_ok=False` raises `NotFound`, matching `delete`.
+
 Raises:
 
-- `NotFound` – If no object exists under path and missing_ok is False.
+- `NotFound` – If no object exists under path (including when the bucket itself is absent) and missing_ok is False.
 - `DirectoryNotEmpty` – If the prefix is non-empty and recursive is False.
 - `PermissionDenied` – If the credentials lack access.
 - `BackendUnavailable` – On a transport or service failure, or after close().
@@ -8832,9 +8841,11 @@ delete(path: str, *, missing_ok: bool = False) -> None
 
 Delete the row at *path* in one transaction.
 
+A missing backing table counts as a missing file, on the same terms as `delete_folder`: `missing_ok=True` returns silently and `missing_ok=False` raises `NotFound`.
+
 Raises:
 
-- `NotFound` – If no key exists at path and missing_ok is False.
+- `NotFound` – If no key exists at path (including when the backing table is absent) and missing_ok is False.
 - `InvalidPath` – If path is empty, absolute, or malformed.
 - `BackendUnavailable` – If the database operation fails.
 
@@ -8853,9 +8864,11 @@ Delete every key under the virtual folder *path*.
 
 Folders are key prefixes, not stored rows, so a folder "exists" only when it has children: a non-recursive call on an existing folder therefore always raises `DirectoryNotEmpty`. `recursive=True` deletes all keys under `path + "/"` in one atomic transaction.
 
+A missing backing table counts as a missing folder: `missing_ok=True` returns silently and `missing_ok=False` raises `NotFound`.
+
 Raises:
 
-- `NotFound` – If no key exists under path and missing_ok is False.
+- `NotFound` – If no key exists under path (including when the backing table is absent) and missing_ok is False.
 - `DirectoryNotEmpty` – If recursive is False (an existing virtual folder is never empty).
 - `InvalidPath` – If path is empty, absolute, or malformed.
 - `BackendUnavailable` – If the database operation fails.
@@ -9652,6 +9665,8 @@ delete(path: str, *, missing_ok: bool = False) -> None
 
 Delete a file.
 
+An absent container — a missing bucket, container or table — counts as an absent file, so *missing_ok* tolerates it on the same terms. This is required of implementations rather than guaranteed by them: the local backend raises `InvalidPath` when its root directory is gone, and the Graph backend may raise `BackendUnavailable` when its drive is.
+
 Parameters:
 
 - **`path`** (`str`) – Backend-relative key.
@@ -9674,6 +9689,8 @@ delete_folder(
 ```
 
 Delete a folder.
+
+An absent container — a missing bucket, container or table — counts as an absent folder, so *missing_ok* tolerates it on the same terms. This is required of implementations rather than guaranteed by them: the local backend raises `InvalidPath` when its root directory is gone, and the Graph backend may raise `BackendUnavailable` when its drive is.
 
 Parameters:
 
@@ -11498,6 +11515,8 @@ delete(path: str, *, missing_ok: bool = False) -> None
 
 Delete a single file.
 
+A store whose backing container is gone — a deleted bucket, container or table — holds no file either, so *missing_ok* tolerates that too on the S3, Azure and SQL backends. Two do not yet: a local store whose root directory was deleted raises `InvalidPath`, and a Graph store whose drive is gone may raise `BackendUnavailable`.
+
 Parameters:
 
 - **`path`** (`str`) – Store-relative file path.
@@ -11520,6 +11539,8 @@ delete_folder(
 ```
 
 Delete a folder.
+
+A store whose backing container is gone — a deleted bucket, container or table — holds no folder either, so *missing_ok* tolerates that too on the S3, Azure and SQL backends. Two do not yet: a local store whose root directory was deleted raises `InvalidPath`, and a Graph store whose drive is gone may raise `BackendUnavailable`.
 
 Parameters:
 
@@ -12832,6 +12853,8 @@ delete(path: str, *, missing_ok: bool = False) -> None
 
 Delete a file.
 
+An absent container — a missing bucket, container or table — counts as an absent file, so *missing_ok* tolerates it on the same terms. This is required of implementations rather than guaranteed by them: the local backend raises `InvalidPath` when its root directory is gone, and the Graph backend may raise `BackendUnavailable` when its drive is.
+
 Parameters:
 
 - **`path`** (`str`) – Backend-relative key.
@@ -12854,6 +12877,8 @@ delete_folder(
 ```
 
 Delete a folder.
+
+An absent container — a missing bucket, container or table — counts as an absent folder, so *missing_ok* tolerates it on the same terms. This is required of implementations rather than guaranteed by them: the local backend raises `InvalidPath` when its root directory is gone, and the Graph backend may raise `BackendUnavailable` when its drive is.
 
 Parameters:
 
@@ -13452,6 +13477,8 @@ delete(path: str, *, missing_ok: bool = False) -> None
 
 Delete a single file.
 
+A store whose backing container is gone — a deleted bucket, container or table — holds no file either, so *missing_ok* tolerates that too on the S3, Azure and SQL backends. Two do not yet: a local store whose root directory was deleted raises `InvalidPath`, and a Graph store whose drive is gone may raise `BackendUnavailable`.
+
 Parameters:
 
 - **`path`** (`str`) – Store-relative file path.
@@ -13474,6 +13501,8 @@ delete_folder(
 ```
 
 Delete a folder.
+
+A store whose backing container is gone — a deleted bucket, container or table — holds no folder either, so *missing_ok* tolerates that too on the S3, Azure and SQL backends. Two do not yet: a local store whose root directory was deleted raises `InvalidPath`, and a Graph store whose drive is gone may raise `BackendUnavailable`.
 
 Parameters:
 
@@ -14303,12 +14332,14 @@ Delete a file.
 Parameters:
 
 - **`path`** (`str`) – Backend-relative key.
-- **`missing_ok`** (`bool`, default: `False` ) – If True, do not raise when the file is absent.
+- **`missing_ok`** (`bool`, default: `False` ) – If True, do not raise when the file is absent. This covers an absent container too, on the same terms as delete_folder. Verified on flat (non-HNS) accounts; the HNS branch is not exercised against an absent container, so the same answer there is expected rather than measured.
 
 Raises:
 
-- `NotFound` – If the file is missing and missing_ok is False.
+- `NotFound` – If the file is missing (including when the container itself is absent) and missing_ok is False.
 - `InvalidPath` – If path names a directory (HNS accounts only).
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
 
 ### delete_folder
 
@@ -14327,13 +14358,15 @@ Parameters:
 
 - **`path`** (`str`) – Backend-relative key.
 - **`recursive`** (`bool`, default: `False` ) – If True, delete all contents first.
-- **`missing_ok`** (`bool`, default: `False` ) – If True, do not raise when absent.
+- **`missing_ok`** (`bool`, default: `False` ) – If True, do not raise when absent. This covers an absent container too: it holds no folder either, so it reads as a missing path rather than a failure.
 
 Raises:
 
-- `NotFound` – If the folder is missing and missing_ok is False.
+- `NotFound` – If the folder is missing (including when the container itself is absent) and missing_ok is False.
 - `InvalidPath` – If path names a file (use delete instead).
 - `DirectoryNotEmpty` – If non-empty and recursive is False.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
 
 ### list_files
 
@@ -15431,9 +15464,11 @@ delete(path: str, *, missing_ok: bool = False) -> None
 
 Delete the blob at *path*.
 
+A container that does not exist counts as a missing blob, on the same terms as `delete_folder`: `missing_ok=True` returns silently and `missing_ok=False` raises `NotFound`. Verified on flat (non-HNS) accounts; HNS takes a separate branch that the suite does not exercise against an absent container, so the same answer there is expected rather than measured.
+
 Raises:
 
-- `NotFound` – If the blob does not exist (or, on HNS, a path component is itself a file) and missing_ok is False.
+- `NotFound` – If the blob does not exist (including when the container itself is absent, or, on HNS, when a path component is itself a file) and missing_ok is False.
 - `InvalidPath` – If path names a directory (HNS; use delete_folder).
 - `PermissionDenied` – If credentials are rejected or lack access (401/403).
 - `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
@@ -15455,13 +15490,15 @@ Parameters:
 
 - **`path`** (`str`) – Backend-relative key.
 - **`recursive`** (`bool`, default: `False` ) – If True, delete all contents first.
-- **`missing_ok`** (`bool`, default: `False` ) – If True, do not raise when absent.
+- **`missing_ok`** (`bool`, default: `False` ) – If True, do not raise when absent. This covers an absent container too: it holds no folder either, so it reads as a missing path rather than a failure.
 
 Raises:
 
-- `NotFound` – If the folder is missing and missing_ok is False.
+- `NotFound` – If the folder is missing (including when the container itself is absent) and missing_ok is False.
 - `InvalidPath` – If path names a file (use delete instead).
 - `DirectoryNotEmpty` – If non-empty and recursive is False.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
 
 ### list_files
 
@@ -16769,9 +16806,11 @@ delete(path: str, *, missing_ok: bool = False) -> None
 
 Delete the object at *path*.
 
+A bucket that does not exist counts as a missing object, on the same terms as `delete_folder`: `missing_ok=True` returns silently and `missing_ok=False` raises `NotFound`.
+
 Raises:
 
-- `NotFound` – If the object does not exist and missing_ok is False.
+- `NotFound` – If the object does not exist (including when the bucket itself is absent) and missing_ok is False.
 - `PermissionDenied` – If the credentials lack access.
 - `BackendUnavailable` – On a transport or service failure, or after close().
 
@@ -16790,9 +16829,11 @@ Delete the virtual folder at *path*.
 
 `recursive=True` removes every object under the prefix; this is a best-effort multi-object delete, not atomic, so an interruption can leave the prefix partially deleted. `recursive=False` removes the prefix only when it has no contents.
 
+A bucket that does not exist counts as a missing folder, not as a transport failure: `missing_ok=True` returns silently and `missing_ok=False` raises `NotFound`, matching `delete`.
+
 Raises:
 
-- `NotFound` – If no object exists under path and missing_ok is False.
+- `NotFound` – If no object exists under path (including when the bucket itself is absent) and missing_ok is False.
 - `DirectoryNotEmpty` – If the prefix is non-empty and recursive is False.
 - `PermissionDenied` – If the credentials lack access.
 - `BackendUnavailable` – On a transport or service failure, or after close().
@@ -17433,9 +17474,11 @@ delete(path: str, *, missing_ok: bool = False) -> None
 
 Delete the row at *path* in one transaction.
 
+A missing backing table counts as a missing file, on the same terms as `delete_folder`: `missing_ok=True` returns silently and `missing_ok=False` raises `NotFound`.
+
 Raises:
 
-- `NotFound` – If no key exists at path and missing_ok is False.
+- `NotFound` – If no key exists at path (including when the backing table is absent) and missing_ok is False.
 - `InvalidPath` – If path is empty, absolute, or malformed.
 - `BackendUnavailable` – If the database operation fails.
 
@@ -17454,9 +17497,11 @@ Delete every key under the virtual folder *path*.
 
 Folders are key prefixes, not stored rows, so a folder "exists" only when it has children: a non-recursive call on an existing folder therefore always raises `DirectoryNotEmpty`. `recursive=True` deletes all keys under `path + "/"` in one atomic transaction.
 
+A missing backing table counts as a missing folder: `missing_ok=True` returns silently and `missing_ok=False` raises `NotFound`.
+
 Raises:
 
-- `NotFound` – If no key exists under path and missing_ok is False.
+- `NotFound` – If no key exists under path (including when the backing table is absent) and missing_ok is False.
 - `DirectoryNotEmpty` – If recursive is False (an existing virtual folder is never empty).
 - `InvalidPath` – If path is empty, absolute, or malformed.
 - `BackendUnavailable` – If the database operation fails.

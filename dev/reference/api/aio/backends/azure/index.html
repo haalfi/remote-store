@@ -12130,7 +12130,11 @@ For HNS accounts, write to temp file via DFS then atomic rename.</p>
 )
           –
           <div class="doc-md-description">
-            <p>If <code>True</code>, do not raise when the file is absent.</p>
+            <p>If <code>True</code>, do not raise when the file is absent. This
+covers an absent <em>container</em> too, on the same terms as
+<code>delete_folder</code>. Verified on flat (non-HNS) accounts; the HNS
+branch is not exercised against an absent container, so the same
+answer there is expected rather than measured.</p>
           </div>
         </li>
     </ul>
@@ -12142,7 +12146,8 @@ For HNS accounts, write to temp file via DFS then atomic rename.</p>
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
-            <p>If the file is missing and <code>missing_ok</code> is <code>False</code>.</p>
+            <p>If the file is missing (including when the container itself
+is absent) and <code>missing_ok</code> is <code>False</code>.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12150,6 +12155,20 @@ For HNS accounts, write to temp file via DFS then atomic rename.</p>
             –
           <div class="doc-md-description">
             <p>If <code>path</code> names a directory (HNS accounts only).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If credentials are rejected or lack access (401/403).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../../errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
+            –
+          <div class="doc-md-description">
+            <p>On throttling (429), 5xx, or transport failure.</p>
           </div>
         </li>
     </ul>
@@ -12211,7 +12230,9 @@ For HNS accounts, write to temp file via DFS then atomic rename.</p>
 )
           –
           <div class="doc-md-description">
-            <p>If <code>True</code>, do not raise when absent.</p>
+            <p>If <code>True</code>, do not raise when absent. This covers an
+absent <em>container</em> too: it holds no folder either, so it reads
+as a missing path rather than a failure.</p>
           </div>
         </li>
     </ul>
@@ -12223,7 +12244,8 @@ For HNS accounts, write to temp file via DFS then atomic rename.</p>
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
-            <p>If the folder is missing and <code>missing_ok</code> is <code>False</code>.</p>
+            <p>If the folder is missing (including when the container
+itself is absent) and <code>missing_ok</code> is <code>False</code>.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12238,6 +12260,20 @@ For HNS accounts, write to temp file via DFS then atomic rename.</p>
             –
           <div class="doc-md-description">
             <p>If non-empty and <code>recursive</code> is <code>False</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If credentials are rejected or lack access (401/403).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../../errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
+            –
+          <div class="doc-md-description">
+            <p>On throttling (429), 5xx, or transport failure.</p>
           </div>
         </li>
     </ul>

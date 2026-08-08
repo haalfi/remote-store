@@ -11485,6 +11485,9 @@ exists as a file.</p>
     <div class="doc doc-contents ">
 
         <p>Delete the row at <em>path</em> in one transaction.</p>
+<p>A missing backing table counts as a missing file, on the same terms as
+<code>delete_folder</code>: <code>missing_ok=True</code> returns silently and
+<code>missing_ok=False</code> raises <code>NotFound</code>.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11493,7 +11496,8 @@ exists as a file.</p>
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
-            <p>If no key exists at <em>path</em> and <code>missing_ok</code> is <code>False</code>.</p>
+            <p>If no key exists at <em>path</em> (including when the backing
+table is absent) and <code>missing_ok</code> is <code>False</code>.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -11540,6 +11544,8 @@ exists as a file.</p>
 it has children: a non-recursive call on an existing folder therefore
 always raises <code>DirectoryNotEmpty</code>. <code>recursive=True</code> deletes all keys
 under <code>path + "/"</code> in one atomic transaction.</p>
+<p>A missing backing table counts as a missing folder: <code>missing_ok=True</code>
+returns silently and <code>missing_ok=False</code> raises <code>NotFound</code>.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11548,7 +11554,8 @@ under <code>path + "/"</code> in one atomic transaction.</p>
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
-            <p>If no key exists under <em>path</em> and <code>missing_ok</code> is <code>False</code>.</p>
+            <p>If no key exists under <em>path</em> (including when the backing
+table is absent) and <code>missing_ok</code> is <code>False</code>.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">

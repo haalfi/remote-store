@@ -12429,6 +12429,11 @@ declare this capability.</p>
     <div class="doc doc-contents first">
 
         <p>Delete a single file.</p>
+<p>A store whose backing container is gone — a deleted bucket, container or
+table — holds no file either, so <em>missing_ok</em> tolerates that too on the
+S3, Azure and SQL backends. Two do not yet: a local store whose root
+directory was deleted raises <code>InvalidPath</code>, and a Graph store whose
+drive is gone may raise <code>BackendUnavailable</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -12499,6 +12504,11 @@ does not exist.</p>
     <div class="doc doc-contents first">
 
         <p>Delete a folder.</p>
+<p>A store whose backing container is gone — a deleted bucket, container or
+table — holds no folder either, so <em>missing_ok</em> tolerates that too on the
+S3, Azure and SQL backends. Two do not yet: a local store whose root
+directory was deleted raises <code>InvalidPath</code>, and a Graph store whose
+drive is gone may raise <code>BackendUnavailable</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

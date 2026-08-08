@@ -13209,6 +13209,20 @@ and by the resource scope of the failing URL:
   drive root always exists, so <code>False</code> means the drive itself is
   unreachable) to confirm the drive is reachable, then treat
   <code>NotFound</code> as authoritative for the item.</p>
+<p><strong>Conflict with BE-021, unresolved.</strong> The third bullet's escalation
+contradicts
+<a href="../003-backend-adapter-contract/#be-021-error-mapping">BE-021</a>
+§ "An absent container reads as an absent path", which requires
+<code>delete(missing_ok=True)</code> and <code>delete_folder(missing_ok=True)</code> to return
+cleanly when the container is absent and binds every backend with no
+carve-out. A drive is a container, so against a drive-identity
+<code>resourceNotFound</code> this clause raises <code>BackendUnavailable</code> where that one
+requires a clean return. Both were written deliberately and neither
+implementation is wrong under its own; the disagreement is recorded in
+BE-021's divergence list and adjudicated as a whole rather than by
+assuming either clause wins. Whichever loses gets an amended
+cross-reference here as well as there — a resolution recorded on one side
+only is how the conflict went six review rounds without being noticed.</p>
 <p><strong>Verification note (live, consumer OneDrive, 2026-06):</strong> a
 nonexistent drive id returned <code>404 itemNotFound</code> on <strong>both</strong> URL
 forms — the item-by-path address and the bare <code>/drives/{drive_id}</code>

@@ -11624,7 +11624,7 @@ gets them.</p>
 <td><code>AlreadyExists</code></td>
 </tr>
 <tr>
-<td><code>OperationalError</code> (connection)</td>
+<td><code>OperationalError</code> (connection failures, and any other operational fault the driver reports this way)</td>
 <td><code>BackendUnavailable</code></td>
 </tr>
 <tr>
@@ -11638,6 +11638,24 @@ gets them.</p>
 </tbody>
 </table>
 <p>Backend-native exceptions must never leak.</p>
+<p><strong>The <code>OperationalError</code> row is not limited to connection faults.</strong>
+<code>_map_errors</code> catches <code>sa.exc.OperationalError</code> unconditionally; SQLite reports
+a missing table that way, for instance. The parenthetical in the row says so
+explicitly because the narrower reading is the natural one and it is wrong.</p>
+<p><strong>Absent table:</strong> <code>delete</code> and <code>delete_folder</code> do <strong>not</strong> reach this table when
+the table is not there — BE-021's absent-container rule reclassifies the
+driver's complaint as a missing path first, so <code>missing_ok=True</code> returns cleanly
+and <code>missing_ok=False</code> raises <code>NotFound</code>. Every other operation still maps
+through the rows above, which is a known divergence from the canonical
+<code>NotFound</code> row and is recorded in BE-021.</p>
+<p>The reclassification asks only whether the table is reachable, and does not ask
+<em>why</em> it is not. A dropped table and a disposed in-memory engine — the one case
+where disposal destroys the database rather than releasing a connection to it —
+both answer "absent", and both deletes therefore return. Excluding the second
+case would make the deletes answer what <code>read</code> and <code>exists</code> answer for the same
+dead store, but no test for it can be written that does not depend on how the
+in-memory URL was spelled, and the asymmetry it would hide is a divergence
+tracked in BE-021 rather than one this table should paper over.</p>
 <hr />
 <h2 id="path-handling">Path Handling<a class="headerlink" href="#path-handling" title="Permanent link">&para;</a></h2>
 <h3 id="sql-blob-060-path-validation">SQL-BLOB-060: Path Validation<a class="headerlink" href="#sql-blob-060-path-validation" title="Permanent link">&para;</a></h3>

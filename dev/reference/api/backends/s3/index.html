@@ -11430,6 +11430,9 @@ before exit leaves <em>path</em> untouched.</p>
     <div class="doc doc-contents ">
 
         <p>Delete the object at <em>path</em>.</p>
+<p>A bucket that does not exist counts as a missing object, on the same
+terms as <code>delete_folder</code>: <code>missing_ok=True</code> returns silently and
+<code>missing_ok=False</code> raises <code>NotFound</code>.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11438,7 +11441,8 @@ before exit leaves <em>path</em> untouched.</p>
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
-            <p>If the object does not exist and <code>missing_ok</code> is <code>False</code>.</p>
+            <p>If the object does not exist (including when the bucket
+itself is absent) and <code>missing_ok</code> is <code>False</code>.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -11485,6 +11489,9 @@ before exit leaves <em>path</em> untouched.</p>
 best-effort multi-object delete, not atomic, so an interruption can leave
 the prefix partially deleted. <code>recursive=False</code> removes the prefix only
 when it has no contents.</p>
+<p>A bucket that does not exist counts as a missing folder, not as a
+transport failure: <code>missing_ok=True</code> returns silently and
+<code>missing_ok=False</code> raises <code>NotFound</code>, matching <code>delete</code>.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11493,7 +11500,8 @@ when it has no contents.</p>
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
-            <p>If no object exists under <em>path</em> and <code>missing_ok</code> is <code>False</code>.</p>
+            <p>If no object exists under <em>path</em> (including when the bucket
+itself is absent) and <code>missing_ok</code> is <code>False</code>.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">

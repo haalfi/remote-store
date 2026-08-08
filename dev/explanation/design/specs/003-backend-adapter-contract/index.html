@@ -11684,10 +11684,12 @@ postcondition-chain coverage as <code>write</code>. See ID-151.</p>
 <h3 id="be-012-delete">BE-012: delete()<a class="headerlink" href="#be-012-delete" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>delete(path, missing_ok=False)</code> removes a file.
 <strong>Raises:</strong> <code>NotFound</code> if the file is missing and <code>missing_ok=False</code>. <code>InvalidPath</code> if <code>path</code> names a directory, regardless of <code>missing_ok</code> — type errors are not silenced by missing-path tolerance (Dafny: <code>Delete: IsDir → InvalidPath</code> unconditionally). See BE-021.
-<strong>Postconditions:</strong> If <code>missing_ok=True</code>, no error for missing files.</p>
+<strong>Postconditions:</strong> If <code>missing_ok=True</code>, no error for missing files.
+<strong>Absent container:</strong> A missing bucket, container or table counts as a missing file, so <code>missing_ok=True</code> returns cleanly and <code>missing_ok=False</code> raises <code>NotFound</code> — see <a href="#be-021-error-mapping">BE-021</a> § "An absent container reads as an absent path" for the rule, its stated reach, and its cost model. It binds every backend in scope, with no carve-out. Outside the Dafny model's frame: <code>BackendContract.dfy</code> models the store as a map that always exists, so the absent-container case has no representation to verify against and is pinned in Python only (BUG-243).</p>
 <h3 id="be-013-delete_folder">BE-013: delete_folder()<a class="headerlink" href="#be-013-delete_folder" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>delete_folder(path, recursive=False, missing_ok=False)</code> removes a folder.
-<strong>Raises:</strong> <code>NotFound</code> if the path does not exist and <code>missing_ok=False</code>. <code>InvalidPath</code> if <code>path</code> names a file (use <code>delete</code> instead). <code>DirectoryNotEmpty</code> if the folder is non-empty and <code>recursive=False</code>. See BE-021.</p>
+<strong>Raises:</strong> <code>NotFound</code> if the path does not exist and <code>missing_ok=False</code>. <code>InvalidPath</code> if <code>path</code> names a file (use <code>delete</code> instead). <code>DirectoryNotEmpty</code> if the folder is non-empty and <code>recursive=False</code>. See BE-021.
+<strong>Absent container:</strong> A missing bucket, container or table counts as a missing folder, on the same terms as BE-012 — see <a href="#be-021-error-mapping">BE-021</a> § "An absent container reads as an absent path". This is the half the wire shape got wrong: an absent prefix is an empty listing, so the container's 404 is the only one a prefix listing can raise, and a backend MUST read it as "no children" rather than letting it escape past the <code>missing_ok</code> check.</p>
 <h3 id="be-014-list_files">BE-014: list_files()<a class="headerlink" href="#be-014-list_files" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>list_files(path, recursive=False)</code> returns <code>Iterator[FileInfo]</code>.
 <strong>Postconditions:</strong> Returns only files, not folders. If <code>recursive=True</code>, includes files in all subdirectories.
@@ -11921,6 +11923,144 @@ divergence this clause exists to remove.</p>
 <code>delete_folder(file, missing_ok=True)</code> raise <code>InvalidPath</code>, because the
 tolerance is for a <em>missing</em> path, not a wrong-typed one. This is the same rule
 BE-012 already states for hierarchical backends, now uniform.</p>
+<p><strong>An absent container reads as an absent path.</strong> The bucket, container or table
+holding a path is part of the path's existence: a container that is not there
+holds no path either. <code>delete(path, missing_ok=True)</code> and <code>delete_folder(path,
+missing_ok=True)</code> MUST return cleanly against an absent container; with
+<code>missing_ok=False</code> both MUST raise <code>NotFound</code>. This binds <strong>every</strong> backend in
+scope — there is no carve-out, and a backend whose native error for an absent
+container is not already a <code>NotFound</code> owes the reclassification like any other.</p>
+<p><strong>The rule is free on the miss path, and MUST stay so.</strong> Backends MUST NOT spend
+an extra round trip to tell an absent container from an absent path: the two
+answers are the same, so the discrimination has no buyer. Where a backend needs
+a probe to recognise the absent container at all, that probe belongs on the
+<em>error</em> path — charged only to an operation that has already failed — under the
+error-path-only rule above. An ordinary miss must not pay for it.</p>
+<p><strong>Reach: these two calls, and no others by implication.</strong> The clause decides
+what <code>missing_ok</code> tolerates; it does not silently re-decide operations that have
+no <code>missing_ok</code>. Every other operation already had an answer for an absent
+container before this clause, and keeps it: <code>get_folder_info</code>, <code>read</code>,
+<code>get_file_info</code> and the <code>move</code>/<code>copy</code> source take the canonical table's
+<code>NotFound</code> row; <code>list_files</code> and <code>list_folders</code> return an empty listing, since an
+absent container holds nothing; <code>exists()</code>, <code>is_file()</code> and <code>is_folder()</code> MUST
+answer <code>False</code>, which BE-004 / BE-005 and this section's own rule already forbid
+them from breaching. <code>write</code> is the one operation no clause decides, and this one
+does not decide it either. All of these obligations are pre-existing — this
+clause neither creates nor relaxes them, and that is why those operations are
+absent from the roster above rather than exempt from it.</p>
+<p><strong>Known divergences, stated rather than implied.</strong> These are what ships today,
+recorded so a reader does not mistake an obligation for a description, and
+tracked in the backlog. They are scoped to the whole absent-container question
+rather than to the two deletes alone: the Reach paragraph rules that the other
+operations keep obligations this clause did not write, and a divergence from one
+of <em>those</em> is no less real for having been written down elsewhere. Listing them
+here is what makes the container case answerable from one place.</p>
+<ul>
+<li><code>exists()</code> and <code>is_folder()</code> <em>raise</em> <code>NotFound</code> against an absent container on
+  <code>S3Boto3Backend</code>, <code>AzureBackend</code> and <code>AsyncAzureBackend</code>, where the strict
+  prefix probe is reached after the tolerant HEAD comes back empty.
+  <code>S3Backend</code> and <code>S3PyArrowBackend</code> answer <code>False</code>.</li>
+<li><code>S3Boto3Backend</code>'s <code>list_files</code>, <code>list_folders</code> and <code>iter_children</code> raise a
+  raw <code>botocore.exceptions.ClientError</code> against an absent container, breaching
+  the never-leak invariant at the top of this section rather than the mapping
+  row. They are the only methods on that class whose wire call is not wrapped in
+  its error mapper; the two s3fs-backed lanes answer the identical response with
+  an empty listing.</li>
+<li>On <code>SQLBlobBackend</code>, <strong>every operation except the two deletes</strong> answers an
+  absent table with <code>BackendUnavailable</code> (or the base error, by dialect) rather
+  than <code>NotFound</code>, because they map the driver's complaint without asking
+  whether the table is still there. That includes <code>exists()</code>, <code>is_file()</code> and
+  <code>is_folder()</code>, so this backend breaches the never-raise rule above as well as
+  the mapping row — the widest divergence in this list by operation count,
+  measured rather than inferred. The same split shows on a disposed in-memory
+  engine, where disposal destroys the database rather than releasing a
+  connection to it: the deletes return and everything else raises, so a caller
+  watching one call sees a store that is gone and a caller watching the next
+  sees a backend that is broken. That is one divergence with two ways in, not
+  two, and the reclassification deliberately does not try to tell them apart —
+  see <a href="../040-sql-blob-backend/#sql-blob-050-exception-translation">SQL-BLOB-050</a>.</li>
+<li><code>LocalBackend</code> answers <strong>every</strong> operation with
+  <code>InvalidPath("Path escapes root directory")</code> once its root directory is
+  deleted, including both tolerant deletes. The containment check walks up to
+  the deepest existing ancestor, which is above the root once the root is gone,
+  so absence is misreported as an escape. This is the furthest from the clause
+  any backend currently sits, and the only one where the error type actively
+  misleads.</li>
+<li>On <code>GraphBackend</code> and its sync adapter, an absent drive raises
+  <code>BackendUnavailable</code> from both tolerant deletes when Graph answers
+  <code>404 resourceNotFound</code>, and is tolerated when it answers <code>404 itemNotFound</code>.
+  Unlike the three above this is not an oversight: it is what
+  <a href="../044-graph-backend/#gr-031-404-discrimination-item-vs-drive">GR-031</a>
+  deliberately specifies, on the grounds that a deleted drive is a backend
+  identity failure rather than a per-item condition. Two clauses of this
+  repository's own specs therefore give opposite answers for the same call, and
+  the conflict is adjudicated as a whole rather than resolved by assuming this
+  clause wins — the divergence stands until it is.</li>
+</ul>
+<p>The rule exists because leaving it unstated let each backend answer from
+whatever its wire protocol happened to reveal. <code>HeadObject</code> answers a bodyless
+404, so a missing bucket is indistinguishable from a missing key and <code>delete</code>
+tolerated it without being asked to; <code>ListObjectsV2</code> answers an absent prefix
+with <code>200 KeyCount=0</code>, so the only 404 it can raise is the container's, and
+<code>delete_folder</code> raised where its sibling returned — against the same absent
+bucket, in the same store. Tolerating is the cheaper way to end that
+disagreement on the backends whose wire shape produced it: making the pair
+strict would have cost <code>delete</code> a second <code>HeadBucket</code> on every miss, against the
+one-probe-per-miss budget above, to buy an answer no caller asked to
+distinguish.</p>
+<p><strong>Two earlier premises for the rule were false, and both are recorded rather
+than quietly dropped</strong> — each was asserted from a reading and disproved by a
+run, which is the argument for the rule being stated as an obligation rather
+than inferred from what backends happened to do.</p>
+<p>The first was that the hierarchical backends had already settled it, because on
+Local an absent store root is just an absent path. With its root deleted,
+<code>LocalBackend</code> raises <code>InvalidPath("Path escapes root directory")</code> from the
+containment check, before either delete's <code>missing_ok</code> branch is reached. It is
+a divergence from this clause, not evidence for it, and it went unnoticed
+because both deletes look correct in isolation — the guard that fires is two
+lines upstream in <code>_resolve</code>.</p>
+<p>The second was that the rule merely ratified what <code>delete</code> already did on every
+flat-namespace backend, correcting only its sibling. That holds for the S3 and
+Azure family, whose bodyless <code>HeadObject</code> 404 cannot name the bucket, and it is
+where the reported symptom came from. It does not hold for <code>SQLBlobBackend</code>,
+which is flat-namespace by this spec's own classification and whose <code>delete</code> was
+measured raising <code>BackendUnavailable</code> against a dropped table before this
+change, exactly as its sibling did. The rule therefore changes <code>delete</code> on one
+backend rather than ratifying it everywhere. Both divergences are listed above;
+the premise survived six review rounds because "the S3 family" and "the
+flat-namespace backends" were used interchangeably by a clause whose whole
+purpose is to bind the second set.</p>
+<p>Reading the container's 404 as "no children" does not shortcut the rest of the
+operation: the wrong-type probe still runs and <code>missing_ok=False</code> still raises.
+The catch MUST stay narrow to the one shape that means "the container is not
+there" — a denial stays <code>PermissionDenied</code> and a 503 stays
+<code>BackendUnavailable</code>, per the determinant rule above.</p>
+<p><strong>What each backend's absent container looks like</strong>, since the shape differs and
+the answer must not. S3 and Azure already map it into <code>NotFound</code> — the family
+<code>missing_ok</code> swallows — so the work is only to stop the error escaping past the
+tolerance check out of a <code>delete_folder</code> determinant. <code>SQLBlobBackend</code>'s
+container is its table, and a dropped one arrives as a driver failure rather
+than a missing row (<code>OperationalError</code> on SQLite, <code>ProgrammingError</code> on
+PostgreSQL and MySQL), so it reclassifies: one inspector call, hung off
+<code>SQLAlchemyError</code> so it is charged to a statement that already failed and never
+to a miss.</p>
+<p><strong>What "every backend" leaves out, named rather than left to be re-derived.</strong>
+The clause reaches every backend that can delete and whose container can be
+absent. That is <code>S3Backend</code>, <code>S3PyArrowBackend</code>, <code>S3Boto3Backend</code>,
+<code>AzureBackend</code>, <code>AsyncAzureBackend</code>, <code>SQLBlobBackend</code>, <code>LocalBackend</code>,
+<code>SFTPBackend</code>, <code>GraphBackend</code> and its sync adapter. Four are out of scope, for
+two different reasons: <code>MemoryBackend</code> and <code>AsyncMemoryBackend</code> delete, but
+their container is an in-process dict that cannot be absent while the backend
+exists; <code>SQLQueryBackend</code> and <code>ReadOnlyHttpBackend</code> do not declare <code>DELETE</code>, so
+there is no tolerant delete to bind. Writing the roster out is cheap insurance
+— <code>GraphBackend</code> sat unexamined through six review rounds of this clause
+because nobody had enumerated which backends the words picked out.</p>
+<p><strong>Why "every backend" and not a scoped subset.</strong> Three criteria for narrowing
+the clause's reach were tried and every one was either circular or false — the
+last keyed on whether a backend's mapping already produces <code>NotFound</code>, which the
+canonical table above requires of every backend anyway. Compliance turned out to
+cost less than any of the justifications for exemption, which is the argument
+against a carve-out here rather than for one. It binds all of them.</p>
 <p><strong>The store root is decided before the probe, not by it.</strong> A probe answer about
 the root is meaningless — it is a folder whether or not it has children — so
 every file-shaped operation rejects it up front (BE-029) and the probes below

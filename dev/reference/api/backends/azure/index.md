@@ -245,9 +245,11 @@ delete(path: str, *, missing_ok: bool = False) -> None
 
 Delete the blob at *path*.
 
+A container that does not exist counts as a missing blob, on the same terms as `delete_folder`: `missing_ok=True` returns silently and `missing_ok=False` raises `NotFound`. Verified on flat (non-HNS) accounts; HNS takes a separate branch that the suite does not exercise against an absent container, so the same answer there is expected rather than measured.
+
 Raises:
 
-- `NotFound` – If the blob does not exist (or, on HNS, a path component is itself a file) and missing_ok is False.
+- `NotFound` – If the blob does not exist (including when the container itself is absent, or, on HNS, when a path component is itself a file) and missing_ok is False.
 - `InvalidPath` – If path names a directory (HNS; use delete_folder).
 - `PermissionDenied` – If credentials are rejected or lack access (401/403).
 - `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
@@ -269,13 +271,15 @@ Parameters:
 
 - **`path`** (`str`) – Backend-relative key.
 - **`recursive`** (`bool`, default: `False` ) – If True, delete all contents first.
-- **`missing_ok`** (`bool`, default: `False` ) – If True, do not raise when absent.
+- **`missing_ok`** (`bool`, default: `False` ) – If True, do not raise when absent. This covers an absent container too: it holds no folder either, so it reads as a missing path rather than a failure.
 
 Raises:
 
-- `NotFound` – If the folder is missing and missing_ok is False.
+- `NotFound` – If the folder is missing (including when the container itself is absent) and missing_ok is False.
 - `InvalidPath` – If path names a file (use delete instead).
 - `DirectoryNotEmpty` – If non-empty and recursive is False.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
 
 ### list_files
 

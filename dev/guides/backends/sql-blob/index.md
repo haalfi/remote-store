@@ -350,9 +350,11 @@ delete(path: str, *, missing_ok: bool = False) -> None
 
 Delete the row at *path* in one transaction.
 
+A missing backing table counts as a missing file, on the same terms as `delete_folder`: `missing_ok=True` returns silently and `missing_ok=False` raises `NotFound`.
+
 Raises:
 
-- `NotFound` – If no key exists at path and missing_ok is False.
+- `NotFound` – If no key exists at path (including when the backing table is absent) and missing_ok is False.
 - `InvalidPath` – If path is empty, absolute, or malformed.
 - `BackendUnavailable` – If the database operation fails.
 
@@ -371,9 +373,11 @@ Delete every key under the virtual folder *path*.
 
 Folders are key prefixes, not stored rows, so a folder "exists" only when it has children: a non-recursive call on an existing folder therefore always raises `DirectoryNotEmpty`. `recursive=True` deletes all keys under `path + "/"` in one atomic transaction.
 
+A missing backing table counts as a missing folder: `missing_ok=True` returns silently and `missing_ok=False` raises `NotFound`.
+
 Raises:
 
-- `NotFound` – If no key exists under path and missing_ok is False.
+- `NotFound` – If no key exists under path (including when the backing table is absent) and missing_ok is False.
 - `DirectoryNotEmpty` – If recursive is False (an existing virtual folder is never empty).
 - `InvalidPath` – If path is empty, absolute, or malformed.
 - `BackendUnavailable` – If the database operation fails.

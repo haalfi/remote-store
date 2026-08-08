@@ -12743,10 +12743,12 @@ Amended with research round 2 §2.4 items and Phase 2 spec.</p>
 <h3 id="async-012-delete">ASYNC-012: delete()<a class="headerlink" href="#async-012-delete" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>async def delete(path, *, missing_ok=False)</code> removes a file.
 <strong>Raises:</strong> <code>NotFound</code> if the file is missing and <code>missing_ok=False</code>. <code>InvalidPath</code> if <code>path</code> names a directory, regardless of <code>missing_ok</code> — see <a href="../003-backend-adapter-contract/">BE-012</a>.
+<strong>Absent container:</strong> A missing bucket, container or table counts as a missing file, on the same terms as BE-012 — see <a href="../003-backend-adapter-contract/#be-021-error-mapping">BE-021</a> § "An absent container reads as an absent path".
 <strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-012</a>.</p>
 <h3 id="async-013-delete_folder">ASYNC-013: delete_folder()<a class="headerlink" href="#async-013-delete_folder" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>async def delete_folder(path, *, recursive=False, missing_ok=False)</code> removes a folder.
 <strong>Raises:</strong> <code>NotFound</code> if the folder is missing and <code>missing_ok=False</code>. Fails if folder is non-empty and <code>recursive=False</code>.
+<strong>Absent container:</strong> A missing bucket, container or table counts as a missing folder, on the same terms as BE-013 — see <a href="../003-backend-adapter-contract/#be-021-error-mapping">BE-021</a> § "An absent container reads as an absent path".
 <strong>See also:</strong> <a href="../003-backend-adapter-contract/">BE-013</a>.</p>
 <h3 id="async-014-list_files">ASYNC-014: list_files()<a class="headerlink" href="#async-014-list_files" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>async def list_files(path, *, recursive=False, max_depth=None) -&gt; AsyncIterator[FileInfo]</code>.

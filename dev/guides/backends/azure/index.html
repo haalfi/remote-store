@@ -12559,6 +12559,12 @@ file.</p>
     <div class="doc doc-contents ">
 
         <p>Delete the blob at <em>path</em>.</p>
+<p>A container that does not exist counts as a missing blob, on the same
+terms as <code>delete_folder</code>: <code>missing_ok=True</code> returns silently and
+<code>missing_ok=False</code> raises <code>NotFound</code>. Verified on flat (non-HNS)
+accounts; HNS takes a separate branch that the suite does not exercise
+against an absent container, so the same answer there is expected rather
+than measured.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -12567,7 +12573,8 @@ file.</p>
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../../reference/api/errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
-            <p>If the blob does not exist (or, on HNS, a path component is
+            <p>If the blob does not exist (including when the container
+itself is absent, or, on HNS, when a path component is
 itself a file) and <code>missing_ok</code> is <code>False</code>.</p>
           </div>
         </li>
@@ -12647,7 +12654,9 @@ itself a file) and <code>missing_ok</code> is <code>False</code>.</p>
 )
           –
           <div class="doc-md-description">
-            <p>If <code>True</code>, do not raise when absent.</p>
+            <p>If <code>True</code>, do not raise when absent. This covers an
+absent <em>container</em> too: it holds no folder either, so it reads
+as a missing path rather than a failure.</p>
           </div>
         </li>
     </ul>
@@ -12659,7 +12668,8 @@ itself a file) and <code>missing_ok</code> is <code>False</code>.</p>
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../../reference/api/errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
-            <p>If the folder is missing and <code>missing_ok</code> is <code>False</code>.</p>
+            <p>If the folder is missing (including when the container
+itself is absent) and <code>missing_ok</code> is <code>False</code>.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12674,6 +12684,20 @@ itself a file) and <code>missing_ok</code> is <code>False</code>.</p>
             –
           <div class="doc-md-description">
             <p>If non-empty and <code>recursive</code> is <code>False</code>.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../reference/api/errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If credentials are rejected or lack access (401/403).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../../reference/api/errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
+            –
+          <div class="doc-md-description">
+            <p>On throttling (429), 5xx, or transport failure.</p>
           </div>
         </li>
     </ul>

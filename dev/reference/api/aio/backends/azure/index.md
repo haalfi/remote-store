@@ -286,12 +286,14 @@ Delete a file.
 Parameters:
 
 - **`path`** (`str`) – Backend-relative key.
-- **`missing_ok`** (`bool`, default: `False` ) – If True, do not raise when the file is absent.
+- **`missing_ok`** (`bool`, default: `False` ) – If True, do not raise when the file is absent. This covers an absent container too, on the same terms as delete_folder. Verified on flat (non-HNS) accounts; the HNS branch is not exercised against an absent container, so the same answer there is expected rather than measured.
 
 Raises:
 
-- `NotFound` – If the file is missing and missing_ok is False.
+- `NotFound` – If the file is missing (including when the container itself is absent) and missing_ok is False.
 - `InvalidPath` – If path names a directory (HNS accounts only).
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
 
 ### delete_folder
 
@@ -310,13 +312,15 @@ Parameters:
 
 - **`path`** (`str`) – Backend-relative key.
 - **`recursive`** (`bool`, default: `False` ) – If True, delete all contents first.
-- **`missing_ok`** (`bool`, default: `False` ) – If True, do not raise when absent.
+- **`missing_ok`** (`bool`, default: `False` ) – If True, do not raise when absent. This covers an absent container too: it holds no folder either, so it reads as a missing path rather than a failure.
 
 Raises:
 
-- `NotFound` – If the folder is missing and missing_ok is False.
+- `NotFound` – If the folder is missing (including when the container itself is absent) and missing_ok is False.
 - `InvalidPath` – If path names a file (use delete instead).
 - `DirectoryNotEmpty` – If non-empty and recursive is False.
+- `PermissionDenied` – If credentials are rejected or lack access (401/403).
+- `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
 
 ### list_files
 

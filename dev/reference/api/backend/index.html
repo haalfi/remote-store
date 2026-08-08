@@ -12389,6 +12389,11 @@ declare this capability.</p>
     <div class="doc doc-contents first">
 
         <p>Delete a file.</p>
+<p>An absent container — a missing bucket, container or table — counts as
+an absent file, so <em>missing_ok</em> tolerates it on the same terms. This is
+required of implementations rather than guaranteed by them: the local
+backend raises <code>InvalidPath</code> when its root directory is gone, and the
+Graph backend may raise <code>BackendUnavailable</code> when its drive is.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -12461,6 +12466,11 @@ not silenced by <em>missing_ok</em>).</p>
     <div class="doc doc-contents first">
 
         <p>Delete a folder.</p>
+<p>An absent container — a missing bucket, container or table — counts as
+an absent folder, so <em>missing_ok</em> tolerates it on the same terms. This is
+required of implementations rather than guaranteed by them: the local
+backend raises <code>InvalidPath</code> when its root directory is gone, and the
+Graph backend may raise <code>BackendUnavailable</code> when its drive is.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

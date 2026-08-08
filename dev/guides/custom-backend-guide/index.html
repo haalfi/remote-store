@@ -11783,6 +11783,16 @@ returns the stream as-is.</p>
 <ul>
 <li><code>delete()</code> targets files. <code>delete_folder()</code> targets folders.</li>
 <li><code>missing_ok=True</code> suppresses <code>NotFound</code>.</li>
+<li><code>missing_ok=True</code> also covers an absent <em>container</em> — the bucket, container or
+  table holding the path. Both deletes return cleanly against one, and both raise
+  <code>NotFound</code> without <code>missing_ok</code>. No exemptions: if your backend's native error
+  for an absent container is not already a not-found, reclassify it, subject to
+  two constraints. Keep the reclassification narrow to that one case: a denial
+  stays <code>PermissionDenied</code>, a timeout stays <code>BackendUnavailable</code>. And put any
+  probe you need on the failure path, never on the miss path — an ordinary miss
+  must not spend a round trip distinguishing an absent container from an absent
+  path. The reasoning behind both is in the error-mapping section of the
+  <a href="../../explanation/design/specs/003-backend-adapter-contract/">Backend Adapter Contract</a>.</li>
 <li><code>delete_folder(recursive=False)</code> raises <code>DirectoryNotEmpty</code> if the folder has contents.</li>
 <li>You cannot delete root (<code>""</code> or <code>"."</code>) — <code>Store</code> rejects it before your
   backend runs, so users never reach you with a root delete; the tutorial

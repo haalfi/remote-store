@@ -416,6 +416,7 @@ def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool 
 
 - `delete()` targets files. `delete_folder()` targets folders.
 - `missing_ok=True` suppresses `NotFound`.
+- `missing_ok=True` also covers an absent *container* — the bucket, container or table holding the path. Both deletes return cleanly against one, and both raise `NotFound` without `missing_ok`. No exemptions: if your backend's native error for an absent container is not already a not-found, reclassify it, subject to two constraints. Keep the reclassification narrow to that one case: a denial stays `PermissionDenied`, a timeout stays `BackendUnavailable`. And put any probe you need on the failure path, never on the miss path — an ordinary miss must not spend a round trip distinguishing an absent container from an absent path. The reasoning behind both is in the error-mapping section of the [Backend Adapter Contract](https://docs.remotestore.dev/stable/explanation/design/specs/003-backend-adapter-contract/index.md).
 - `delete_folder(recursive=False)` raises `DirectoryNotEmpty` if the folder has contents.
 - You cannot delete root (`""` or `"."`) — `Store` rejects it before your backend runs, so users never reach you with a root delete; the tutorial backend also guards it locally, which is the safer shape.
 
