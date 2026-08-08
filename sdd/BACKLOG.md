@@ -94,30 +94,200 @@ and the highest ID already in this file, then take the next integer. Run
 
 ## Lint / CI Completeness
 
-- [ ] **BUG-243 — `missing_ok` has no stated obligation when the *container* is absent**
-  spec: BE-012, BE-013, BE-021 · effort: M · audience: user.api
-  Every clause speaks of "the path" and none of the bucket, container, or table
-  holding it. So what a tolerant delete owes against a **missing store** is
-  undecided, and each backend answers from whatever its wire protocol happens to
-  reveal rather than from a rule.
-  Current state, measured (all four flat-NS implementations, so nothing is
-  inconsistent *today* — the gap is that the agreement is accidental):
-  | Operation | S3 (all three) | Azure non-HNS | SQL |
+- [ ] **BK-345 — BE-021's absent-container rule has no registry-driven gate, so a new backend is silently exempt**
+  spec: BE-021 · effort: M · audience: infra.test
+  The rule binds every backend that can delete and whose container can be
+  absent, and it is verified by six hand-written per-backend suites
+  (`tests/backends/{s3,azure,azure/aio,sqlblob,sftp,local,graph/aio}/`).
+  `tests/backends/conformance/` gained nothing, so a seventh such backend
+  inherits no cell and passes CI without ever meeting the clause.
+  This is not hypothetical. `GraphBackend` went unexamined through six review
+  rounds of the change that wrote the rule (BUG-243) and turned out to
+  contradict it, which is BUG-248. A registry-driven cell would have failed on
+  the first run.
+  The repo already has the shape for this: [`sdd/TESTING.md`](TESTING.md)
+  Rule 13 § "Declaring an exemption" — a self-pruning exemption list where
+  silence is not consent. The work is a conformance cell parametrised over the
+  backend registry, plus an explicit exemption entry for the four backends BE-021
+  names as out of scope (`MemoryBackend` and `AsyncMemoryBackend`, whose
+  container is an in-process dict; `SQLQueryBackend` and `ReadOnlyHttpBackend`,
+  which do not declare `DELETE`).
+  **Note the fixture problem before scoping this.** An absent container is not
+  a state most conformance fixtures can reach: the S3 and Azure lanes need a
+  stub that 404s at container level (BUG-243 built those), SQLBlob needs a
+  dropped table, Local needs its root deleted, and Graph needs a respx route.
+  The per-backend suites exist partly because arranging the state is
+  per-backend. A registry cell may need a fixture-declared "make the container
+  absent" hook rather than a single shared arrangement.
+  Surfaced by the PR #952 round-8 review, which noted the PR records the lesson
+  in prose (BACKLOG-DONE: "scope a contract change by which backends have the
+  thing the clause names") without building the mechanism that would enforce it.
+
+- [ ] **BUG-249 — Three `S3Boto3Backend` listings leak a raw `botocore.ClientError`**
+  spec: BE-021 · effort: S · audience: user.api
+  BE-021's first invariant: "Backend-native exceptions never leak. All
+  exceptions are mapped to `remote_store` error types." `list_files`,
+  `list_folders` and `iter_children` are the only methods on the class that call
+  the wire without `_boto_errors` around it — every other method wraps, at
+  fourteen sites. So the paginator's exception reaches the caller untouched.
+  Measured against the missing-bucket stub, and against a 403 stub to show the
+  cause is local rather than contractual:
+  | Backend | `list_files` on an absent bucket | on a denied bucket |
+  | --- | --- | --- |
+  | S3, S3-PyArrow | empty listing | `PermissionDenied` |
+  | S3-Boto3 | raises `botocore.exceptions.ClientError` | raises `botocore` `AccessDenied` |
+  Two backends answer correctly against the identical wire response, so this is
+  an omission in one adapter, not an unstated contract question. The escaping
+  type is the worst part: a caller caching `except RemoteStoreError` catches
+  every backend but this one, and `ClientError` comes from a library they may
+  never have imported.
+  Pinned by `tests/backends/s3/test_denied_probe.py::TestS3Boto3ListingsLeakTheirNativeError`,
+  which asserts both that the error *is* a `ClientError` and that it is *not* a
+  `RemoteStoreError` — so the fix breaks the cell rather than making it vacuous.
+  The fix is one `with self._boto_errors(path):` per method, but note all three
+  are generators: the wrapper must be inside the generator body, not around the
+  call that returns it, or it will not be entered until the first `next()`.
+  Pre-existing. Surfaced by the PR #952 round-8 review, which enumerated every
+  operation on every backend against an absent container rather than only the
+  ones the clause governs.
+
+- [ ] **BUG-248 — BE-021's absent-container rule and GR-031's drive-identity escalation contradict each other**
+  spec: BE-021, GR-031 · effort: M · audience: user.api
+  Two clauses, both deliberate, giving opposite answers for the same call. BE-021
+  says `delete(missing_ok=True)` and `delete_folder(missing_ok=True)` MUST return
+  cleanly when the container is absent, binding **every** backend with no
+  carve-out. GR-031 says a `404 resourceNotFound` — Graph's drive-identity code,
+  honoured at any URL scope — maps to `BackendUnavailable` for every
+  error-raising operation, because a deleted drive is a backend identity failure
+  rather than a per-item condition. `GraphBackend`'s drive is a container, so the
+  two clauses meet, and GR-031 wins today:
+  | Graph `error.code` | `delete(missing_ok=True)` | `delete_folder(missing_ok=True)` | `exists` / `is_file` / `is_folder` |
   | --- | --- | --- | --- |
-  | `delete(missing_ok=True)` | returns silently | returns silently | raises |
-  | `delete_folder(missing_ok=True)` | raises `NotFound` | raises `NotFound` | raises |
-  **The split is protocol accident, not design.** `HeadObject` answers 404 with
-  no body, so `NoSuchBucket` never reaches the client and a missing bucket is
-  indistinguishable from a missing key; `ListObjectsV2` answers `200
-  KeyCount=0`, so the only 404 it can raise is the bucket's, and that one *does*
-  carry a code. Azure lands in the same place by a different route. A caller
-  writing an idempotent cleanup loop cannot predict which they get.
-  **Decide it once, for all flat-namespace backends**, and say so in BE-012 /
-  BE-013. Whichever way it goes, note that making S3's `delete` strict costs a
-  second `HeadBucket` on every miss, against a spec that budgets exactly one
-  probe per miss — so "tolerate the missing container" may be the cheaper rule
-  as well as the kinder one.
-  Surfaced while fixing BUG-242 (PR #945 round 6).
+  | `itemNotFound` | tolerated | tolerated | `False` |
+  | `resourceNotFound` | raises `BackendUnavailable` | raises `BackendUnavailable` | `False` |
+  Measured on respx stubs and pinned in
+  `tests/backends/graph/aio/test_absent_drive.py`. The probe row is not a
+  divergence: GR-031's probe scope flattens every `404`, so BE-004/BE-005 hold.
+  Only the two tolerant deletes disagree.
+  This is not a bug in either implementation — each matches its own spec — so it
+  needs adjudicating before anything is coded. The case for GR-031: a drive that
+  has been deleted or misconfigured is not the same event as an empty bucket, and
+  silently returning from a delete against a store the caller cannot reach hides a
+  configuration error behind a success. The case for BE-021: it binds every
+  backend precisely because the earlier per-backend answers disagreed, and a
+  container is a container.
+  Note the escalation is defensive rather than observed: GR-031's own verification
+  note records that live consumer OneDrive returned `404 itemNotFound` for a
+  nonexistent drive on both URL forms, so the divergent row may be unreachable on
+  that tier and reachable only on SharePoint-backed drives, which the live tier
+  does not cover. Weigh how much a rule is worth when nobody has seen it fire.
+  Whichever clause loses must say so explicitly — an amended cross-reference in
+  both specs, not silence in one.
+  Surfaced by the PR #952 round-7 review: `GraphBackend` went unexamined for six
+  rounds because the work was framed around flat-namespace backends, and Graph is
+  hierarchical.
+
+- [ ] **BUG-247 — `LocalBackend` reports a deleted root as "Path escapes root directory"**
+  spec: BE-004, BE-012, BE-013, BE-021 · effort: S · audience: user.api
+  Delete a `LocalBackend`'s root directory out from under it and **every** operation
+  raises `InvalidPath("Path escapes root directory")` — including
+  `delete(missing_ok=True)` and `delete_folder(missing_ok=True)`, which BE-021's
+  absent-container rule requires to return cleanly, and `exists()`, which BE-004
+  forbids from raising at all.
+  Nothing is escaping. `_within_root` walks up from the target to the deepest
+  *lexically existing* ancestor for its symlink-escape check; once the root is
+  gone that walk climbs past the root, so
+  `anchor.resolve().relative_to(self._root)` raises `ValueError` and containment
+  is reported as an escape. `InvalidPath` is the worst of the plausible answers:
+  it tells the caller their path is malformed when the path is fine and the store
+  is simply absent.
+  Reproduction and the current behaviour are pinned in
+  `tests/backends/local/test_absent_root.py` — the contract cells are
+  `xfail(strict=True)`, so fixing this flips them to XPASS and fails the suite
+  until the markers come off.
+  **Care required:** `_within_root` is the symlink-escape guard, so a fix must
+  distinguish "anchor escaped because the root is gone" from "anchor escaped
+  because the path really does point outside" without weakening the second. A
+  root-existence check before the walk is the obvious shape, at the cost of a
+  `stat` per call — measure before adopting it.
+  Surfaced by BUG-243, whose spec rationale asserted the opposite (that Local
+  already treated an absent root as an absent path) on the strength of two
+  code readings; the first test that ran it disproved it.
+
+- [ ] **BUG-246 — An absent container raises where the contract says `False`, `NotFound`, or an empty listing**
+  spec: BE-004, BE-005, BE-021 · effort: M · audience: user.api
+  BE-004 and BE-005 say these never raise, and BE-021 repeats it: the three
+  return `False` on any traversal error rather than raising. Against a container
+  that does not exist, four backends raise instead. Measured on the
+  `pytest-httpserver` stubs BUG-243 added (real `NoSuchBucket` /
+  `ContainerNotFound` 404s, Stage 1, no Docker) and on a dropped SQLite table:
+  | Backend | `exists(file)` | `is_file(file)` | `is_folder(folder)` |
+  | --- | --- | --- | --- |
+  | S3, S3-PyArrow | `False` | `False` | `False` |
+  | S3-Boto3 | raises `NotFound` | `False` | raises `NotFound` |
+  | Azure non-HNS (sync and async) | raises `NotFound` | `False` | raises `NotFound` |
+  | SQLBlob | raises `BackendUnavailable` | raises `BackendUnavailable` | raises `BackendUnavailable` |
+  Four backends, three rows: `AzureBackend` and `AsyncAzureBackend` share one
+  because they answer identically and need the same fix.
+  Two different root causes, so budget for two fixes. On S3-Boto3 and Azure the
+  `is_file` column shows it is local: the HEAD-backed probe already absorbs the
+  404 and only the prefix-listing-backed ones do not. On SQLBlob all three run
+  their `SELECT` inside a bare `_map_errors`, so the driver's complaint maps
+  straight through — the same gap BUG-243 closed for the two deletes only, and
+  the fix shape is the one it used (`_absent_table_is_absent_path`, minus the
+  `missing_ok` branch, answering `False` instead).
+  `AzureBackend.exists`'s own docstring already says it never raises, so the
+  code contradicts its documentation.
+  **On SQLBlob the three probes are a third of it.** BE-021's divergence list
+  says "every operation except the two deletes", and that is measured, not
+  inferred — against a dropped SQLite table every one of these raises
+  `BackendUnavailable`:
+  | Operation | Canonical row (BE-021) | Measured |
+  | --- | --- | --- |
+  | `read`, `read_bytes`, `get_file_info`, `get_folder_info` | `NotFound` | `BackendUnavailable` |
+  | `move` / `copy` source | `NotFound` | `BackendUnavailable` |
+  | `list_files`, `list_folders` | empty listing | `BackendUnavailable` |
+  | `exists`, `is_file`, `is_folder` | `False` | `BackendUnavailable` |
+  | `write` | — | `BackendUnavailable` |
+  Only `write` is arguably right: no clause says what a write owes against an
+  absent container, so leaving it as a backend-identity failure is defensible
+  and this item does not propose changing it. The other eleven owe a different
+  answer, and the fix is one shape applied at three call sites, not eleven —
+  they all run their statement inside a bare `_map_errors`.
+  **The same split reaches a disposed in-memory engine.** Disposing one destroys
+  the database rather than releasing a connection, so the table is genuinely
+  absent and the two deletes return while everything else raises. Fixing the
+  rows above fixes this with them; there is nothing separate to decide.
+  Pre-existing — BUG-243 neither introduced nor touched it, having decided only
+  what `missing_ok` owes on the two deletes.
+  Surfaced by the PR #952 round-2 review; the SQLBlob probe row added in round
+  5, which caught BE-021's divergence list claiming backlog coverage this item
+  did not yet provide. Widened to the full operation set in round 8, which
+  caught the *same* gap a second time: the round-5 fix added the three probes
+  the finding named and left the eight other operations BE-021's own bullet
+  claimed were tracked. A divergence list that says "every operation except X"
+  needs an item scoped to every operation except X, not to the subset a reviewer
+  happened to measure.
+
+- [ ] **BUG-245 — `SQLBlobBackend(create_table=False)` leaks `NoSuchTableError` from its constructor**
+  spec: BE-021, SQL-BLOB-012 · effort: S · audience: user.api
+  Reflection is unguarded: `sa.Table(name, meta, autoload_with=engine)` against an
+  absent table raises `sqlalchemy.exc.NoSuchTableError`, which reaches the caller
+  unmapped. Every other backend's constructor rejects bad configuration with
+  `ValueError` (`validate_azure_params`, the S3 bucket check), so a caller
+  wrapping construction in `except (RemoteStoreError, ValueError)` catches
+  every backend but this one — and the escaping type is a SQLAlchemy import the
+  caller may not have.
+  Reproduction: `SQLBlobBackend(engine=sa.create_engine("sqlite:///:memory:"),
+  table_name="nope", create_table=False)`.
+  BE-021's "backend-native exceptions never leak" is scoped to operations, so
+  this is a gap in the contract as much as in the code: decide whether
+  construction is in scope for the mapping rule, then map it. Note the behaviour
+  itself is right — refusing to bind to an absent table is a sound thing to do,
+  and is pinned by `tests/backends/sqlblob/test_absent_table.py`; only the error
+  type is wrong.
+  Surfaced by BUG-243, which measured the constructor while scoping BE-012's
+  absent-container clause.
 
 - [ ] **ID-242 — Four `moto doesn't raise PermissionError` pragmas are coverage holes, not exemptions**
   spec: — · effort: S · audience: contributor
@@ -190,6 +360,90 @@ and the highest ID already in this file, then take the next integer. Run
   **Whichever way it goes, the async conformance cell is part of the fix** —
   without it the next divergence is equally invisible. Expect it to turn a
   backend red on arrival; that is the item working, not a regression.
+
+- [ ] **BK-344 — Adapt `/ship` from PR #952's review evidence**
+  spec: — · effort: M · audience: contributor.process
+  Third delivery under ADR-0033, and the first to run the ADR-0034 machinery.
+  **This item records the evidence and withholds a prescription**, for the reason
+  BK-342 gave and proved: direction narrows attention, so the design is chosen
+  against the evidence, with the user, before anything is written. The
+  [Item authority](#how-this-file-works) rule makes every prescription advisory;
+  this item carries none to be stale, which is the stronger form of the same
+  posture and the right one when the design question is still open. BK-342 also
+  anticipated this item by name — it split what n = 2 licensed from what it
+  guessed, and said the third delivery should prune what does not pay. Some of
+  what follows is that pruning data.
+  **Shape of the run:** eight review rounds, ten commits, four backlog items and
+  one spec-vs-spec conflict discovered. Two rounds ran past the soft ceiling on
+  user escalation. The final round found twelve findings, including one that
+  invalidated the clause's central argument. The loop did not converge; it
+  stopped because the work had to ship.
+  **Signal 1 — five consecutive rounds found a defect in the previous round's
+  fix, all on one decision.** A gate was keyed on `close()` (round 5), narrowed to
+  owned + `:memory:` (round 6), and withdrawn (round 7) once a reviewer measured
+  the URI-form in-memory spellings and an owner-disposed borrowed engine. Each
+  narrowing was argued from a reading of what the hazard *is*; each was refuted by
+  a state the argument had not considered. The condition space was four boolean
+  axes — enumerable in one test the whole time. Nothing in the loop escalates from
+  "argue the condition again" to "enumerate the space", and the rounds themselves
+  could not: each was correct about the defect in front of it.
+  **Signal 2 — method separated the productive rounds, and `/ship` varies
+  everything except method.** Three premises in this work were asserted and
+  disproved, every one of them by *running* something: that Local treats an absent
+  root as an absent path (round 4), that the round-6 gate covered the in-memory
+  cases (round 7), and that the rule merely ratified `delete`'s existing behaviour
+  on every flat-namespace backend (round 8, measured on `origin/master`). Rounds
+  that read the diff for internal consistency found real things — stale summaries,
+  mis-scoped spec marks — but never a false premise. ADR-0034 varies *who*
+  reviews: unprimed, panel, single-lens. Nothing varies *how*, and the two
+  reviewers in the last round differed most in exactly that: one read the artifact
+  set, one measured master and enumerated all thirteen backends against
+  `Capability.DELETE`. The second found the false premise and a fifth defect
+  (BUG-249) the first did not.
+  **Signal 3 — the framing fixed the reachable defect set for six rounds.** The
+  work was scoped by where the symptom was reported — flat-namespace backends —
+  and `GraphBackend`, a DELETE-capable backend whose drive is a container, went
+  unnamed until round 7. It then turned out to contradict the new clause by
+  *specification* (GR-031), the only spec-vs-spec conflict in the item. ADR-0034
+  sizes a panel by "the diff's breadth"; the diff never touched Graph. No round
+  asked which subjects the clause's own words pick out, as distinct from which
+  files the change edits.
+  **Signal 4 — a finding was closed to exactly its own wording and the same gap
+  resurfaced three rounds later.** Round 5 caught BE-021's divergence list
+  claiming backlog coverage that BUG-246 did not provide; the fix added the three
+  probe rows the finding named. Round 8 caught the identical gap — the same
+  divergence bullet says "every operation except the two deletes", and the item
+  still tracked three of eleven. BK-336's sweep obligation extends a finding to
+  its siblings and (post-BK-342) to the fixer's own changes; neither extends a
+  *fix* to the full class its own finding names.
+  **Signal 5 — a fix introduced a smaller, more misleading defect.** Round 7
+  closed an omission by adding the clause to the four docstrings that define
+  `missing_ok` for every caller, and stated the obligation as a flat guarantee on
+  the backend-agnostic `Store` facade — while the same PR's divergence list named
+  two backends that raise instead. Round 8 caught it. The sweep found the missing
+  copies; nothing checked whether the copies were true.
+  **Signal 6 — `/ship`'s own verification step failed silently at a threshold.**
+  The posted-count delta check ran `gh api .../comments --jq 'length'` without
+  `--paginate`, which saturates at 30. It read as "the comments did not post", so
+  a review was re-posted twice: fifteen comments where five were intended, and a
+  public claim that posting had failed when it had not. A verification step with a
+  silent ceiling is worse than none, because it is trusted. The instrument, not
+  the reviewer, produced that one.
+  **Signal 7 — nothing in the loop looked at CI.** CI went red on the rebase and
+  stayed red across four commits and four review rounds. Every round's gate was
+  the local `hatch run all`, which is a no-Docker Stage-1 variant on a different
+  interpreter than the failing matrix entries; the failure was 3.13/3.14-only and
+  could not appear locally. The user noticed, not the loop.
+  **Also evidence, on the other side.** Both ceiling escalations found more than
+  the round before them, and the last round found the most severe finding of the
+  eight — which is data about the soft ceiling BK-342 deliberately left alone, and
+  about whether "rounds elapsed" is a stop signal at all. ADR-0034's unprimed exit
+  gate worked as designed: it is what surfaced signals 1 through 5, and it is the
+  reason the loop was still open at round 8 rather than closed at round 6.
+  **Read the trace before designing anything:**
+  [`sdd/traces/bug-243-missing-ok-absent-container.yml`](traces/bug-243-missing-ok-absent-container.yml)
+  carries the per-round detail, the `outcome` tags, and the two ripple-check gaps
+  the work hit. PR #952 carries the eight posted rounds.
 
 - [ ] **BK-338 — Decide what a PR review roster should be**
   spec: — · effort: S · audience: contributor.process

@@ -1,13 +1,17 @@
 """Shared path-type helpers for flat-namespace backends.
 
-Two contracts live here, both about the same blind spot: a flat namespace
-stores keys, not nodes, so "this path is a directory" is never an answer
-the store gives back — it has to be inferred from a prefix listing.
+Three contracts live here. The first two are about the same blind spot: a
+flat namespace stores keys, not nodes, so "this path is a directory" is
+never an answer the store gives back — it has to be inferred from a prefix
+listing.
 
 * **File-ancestor pre-check** — an opt-in *pre*-check on the write path,
   documented immediately below.
 * **Wrong-type reclassification** — a mandatory *post*-check on the error
   path, documented at ``_wrong_type_if_folder``.
+* **Absent container reads as absent path** — the folder-existence probe's
+  answer when the bucket / container itself is gone, documented at
+  ``_children_or_absent_container``.
 
 Hierarchical backends (Local, SFTP, Memory) detect a file-ancestor path on
 ``write`` / ``move`` / ``copy`` for free because their native APIs cannot
@@ -227,6 +231,73 @@ def _wrong_type_if_file(path: str, *, is_object: Callable[[str], bool], backend:
         raise _file_not_folder(path, backend)
 
 
+def _children_or_absent_container(
+    path: str,
+    *,
+    has_children: Callable[[str], bool],
+    absent_container: Callable[[BaseException], bool],
+) -> bool:
+    """Run the folder-existence probe, reading an absent container as "no children".
+
+    A tolerant delete treats an absent *container* — the bucket, the Azure
+    container — exactly as it treats an absent path, because a container that
+    does not exist holds no path either. Deciding that at the contract is what
+    stops the wire shape from deciding it per backend:
+
+    * ``HeadObject`` answers a bodyless 404, so the file-shaped probe cannot
+      distinguish a missing bucket from a missing key even in principle, and
+      ``delete`` tolerates both without being asked to.
+    * ``ListObjectsV2`` answers an absent *prefix* with ``200 KeyCount=0``, so
+      the only 404 it can raise is the container's, and it arrives with a body
+      that names it. Left alone, ``delete_folder`` raised where its sibling
+      returned — against the same absent bucket.
+
+    This helper is the folder-shaped half catching up, and it costs nothing: the
+    404 is already in hand. Making the *pair* strict instead would have cost
+    ``delete`` a second ``HeadBucket`` on every miss, against a spec that budgets
+    one probe per miss — and it would have changed the behaviour that was already
+    there rather than the one that disagreed with it.
+
+    Returning ``False`` is not the same as tolerating the call: the caller still
+    runs its wrong-type probe and still raises ``NotFound`` when ``missing_ok``
+    is ``False``. The absent container is reported as a missing path, which is
+    what it is.
+
+    ``absent_container`` narrows the catch to the one wire shape that means
+    "the container is not there" — ``FileNotFoundError`` from ``s3fs``, a
+    404-coded ``ClientError`` from botocore, ``ResourceNotFoundError`` from the
+    Azure SDK. Everything else propagates, so a denial stays ``PermissionDenied``
+    and a 503 stays ``BackendUnavailable``. Widening it to swallow those would
+    reintroduce, in a new place, the defect this backend family has already
+    shipped once: a probe that invents an answer instead of reporting that it
+    could not get one.
+    """
+    # Contract: 003-backend-adapter-contract BE-012 / BE-013, and the shared
+    # rule under BE-021 ("An absent container reads as an absent path").
+    # The invented-answer regression this narrows against was BUG-242.
+    try:
+        return has_children(path)
+    except Exception as exc:  # noqa: BLE001 -- re-raised unless it is the absent container
+        if absent_container(exc):
+            return False
+        raise
+
+
+async def _achildren_or_absent_container(
+    path: str,
+    *,
+    has_children: Callable[[str], Awaitable[bool]],
+    absent_container: Callable[[BaseException], bool],
+) -> bool:
+    """Async sibling of ``_children_or_absent_container``; ``has_children`` is awaitable."""
+    try:
+        return await has_children(path)
+    except Exception as exc:  # noqa: BLE001 -- re-raised unless it is the absent container
+        if absent_container(exc):
+            return False
+        raise
+
+
 async def _awrong_type_if_folder(path: str, *, has_children: Callable[[str], Awaitable[bool]], backend: str) -> None:
     """Async sibling of ``_wrong_type_if_folder``; ``has_children`` is awaitable."""
     if not is_root(path) and await has_children(path):
@@ -241,9 +312,11 @@ async def _awrong_type_if_file(path: str, *, is_object: Callable[[str], Awaitabl
 
 __all__ = [
     "_acheck_no_file_ancestor",
+    "_achildren_or_absent_container",
     "_awrong_type_if_file",
     "_awrong_type_if_folder",
     "_check_no_file_ancestor",
+    "_children_or_absent_container",
     "_file_not_folder",
     "_folder_not_file",
     "_reject_root_as_file",

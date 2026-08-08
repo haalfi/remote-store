@@ -193,6 +193,12 @@ class AsyncBackend(abc.ABC):
     async def delete(self, path: str, *, missing_ok: bool = False) -> None:
         """Delete a file.
 
+        An absent container — a missing bucket, container or table — counts as
+        an absent file, so *missing_ok* tolerates it on the same terms. This is
+        required of implementations rather than guaranteed by them: the local
+        backend raises ``InvalidPath`` when its root directory is gone, and the
+        Graph backend may raise ``BackendUnavailable`` when its drive is.
+
         Args:
             path: Backend-relative key.
             missing_ok: If ``True``, do not raise when the file is absent.
@@ -206,6 +212,12 @@ class AsyncBackend(abc.ABC):
     @abc.abstractmethod
     async def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
         """Delete a folder.
+
+        An absent container — a missing bucket, container or table — counts as
+        an absent folder, so *missing_ok* tolerates it on the same terms. This is
+        required of implementations rather than guaranteed by them: the local
+        backend raises ``InvalidPath`` when its root directory is gone, and the
+        Graph backend may raise ``BackendUnavailable`` when its drive is.
 
         Args:
             path: Backend-relative key.

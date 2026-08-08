@@ -396,7 +396,9 @@ class S3PyArrowBackend(_S3Base):
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
         with self._s3fs_errors(path):
             s3_path = self._s3_path(path)
-            if not self._s3_has_children(path):
+            # BE-013: an absent bucket is an absent path, so it lands here rather
+            # than escaping as the listing's NoSuchBucket 404.
+            if not self._s3_children_or_absent_bucket(path):
                 # BE-013: an object at *path* is a type mismatch, not a
                 # missing folder, and outranks missing_ok.
                 self._reject_file(path)

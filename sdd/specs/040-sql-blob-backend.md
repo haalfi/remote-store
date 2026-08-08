@@ -282,11 +282,32 @@ gets them.
 | SQLAlchemy exception | remote-store error |
 |---------------------|-------------------|
 | `IntegrityError` (on INSERT) | `AlreadyExists` |
-| `OperationalError` (connection) | `BackendUnavailable` |
+| `OperationalError` (connection failures, and any other operational fault the driver reports this way) | `BackendUnavailable` |
 | No row returned for read/info | `NotFound` |
 | Other `SQLAlchemyError` | `RemoteStoreError` |
 
 Backend-native exceptions must never leak.
+
+**The `OperationalError` row is not limited to connection faults.**
+`_map_errors` catches `sa.exc.OperationalError` unconditionally; SQLite reports
+a missing table that way, for instance. The parenthetical in the row says so
+explicitly because the narrower reading is the natural one and it is wrong.
+
+**Absent table:** `delete` and `delete_folder` do **not** reach this table when
+the table is not there — BE-021's absent-container rule reclassifies the
+driver's complaint as a missing path first, so `missing_ok=True` returns cleanly
+and `missing_ok=False` raises `NotFound`. Every other operation still maps
+through the rows above, which is a known divergence from the canonical
+`NotFound` row and is recorded in BE-021.
+
+The reclassification asks only whether the table is reachable, and does not ask
+*why* it is not. A dropped table and a disposed in-memory engine — the one case
+where disposal destroys the database rather than releasing a connection to it —
+both answer "absent", and both deletes therefore return. Excluding the second
+case would make the deletes answer what `read` and `exists` answer for the same
+dead store, but no test for it can be written that does not depend on how the
+in-memory URL was spelled, and the asymmetry it would hide is a divergence
+tracked in BE-021 rather than one this table should paper over.
 
 ---
 

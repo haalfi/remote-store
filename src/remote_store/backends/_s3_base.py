@@ -198,11 +198,17 @@ class _S3Base(Backend):
     # alongside it. For ``ListObjectsV2`` the same answer arrives as
     # ``200 KeyCount=0``, never as an error, so the only ``FileNotFoundError``
     # that call can raise is a missing bucket (a 404 whose body *does* carry
-    # ``NoSuchBucket``) — a different question, correctly propagated.
-    # Consequence: against a missing bucket ``delete(key, missing_ok=True)``
-    # returns silently while ``delete_folder(path, missing_ok=True)`` raises
-    # ``NotFound``. ``S3Boto3Backend`` and Azure non-HNS land the same way;
-    # pinned for all three S3 backends by ``tests/backends/s3/test_denied_probe.py``.
+    # ``NoSuchBucket``) — a different question.
+    #
+    # What that difference is *not* allowed to do is decide the caller's answer.
+    # Left alone it gave a missing bucket a silent ``delete(missing_ok=True)``
+    # and a raising ``delete_folder(missing_ok=True)``; BE-012/BE-013 now say an
+    # absent container reads as an absent path, so ``delete_folder`` routes its
+    # determinant through ``_s3_children_or_absent_bucket`` (BUG-243). The catch
+    # stays narrow — a denial and a 503 still propagate — and the strict
+    # ``missing_ok=False`` call still raises ``NotFound``. ``S3Boto3Backend`` and
+    # Azure non-HNS land the same way; pinned for all three S3 backends by
+    # ``tests/backends/s3/test_denied_probe.py``.
 
     def _s3_is_object(self, path: str) -> bool:
         """One ``HeadObject``: ``True`` iff an object exists at exactly *path*.
@@ -243,6 +249,27 @@ class _S3Base(Backend):
             MaxKeys=1,
         )
         return bool(resp.get("KeyCount", 0)) or bool(resp.get("CommonPrefixes"))
+
+    def _s3_children_or_absent_bucket(self, path: str) -> bool:
+        """``_s3_has_children``, with a missing bucket answering "no children".
+
+        The ``delete_folder`` determinant. An absent container is an absent
+        path, so the ``NoSuchBucket`` 404 the listing raises is the same answer
+        an empty prefix gives. See ``_flat_ns._children_or_absent_container``
+        for why the pair is decided this way round rather than the strict one.
+
+        Only ``delete_folder`` routes through here. ``get_folder_info`` keeps the
+        strict probe: it has no ``missing_ok``, so an absent bucket is a plain
+        ``NotFound`` for it either way, and nothing is gained by catching the
+        404 only to re-raise it.
+        """
+        from remote_store.backends._flat_ns import _children_or_absent_container
+
+        return _children_or_absent_container(
+            path,
+            has_children=self._s3_has_children,
+            absent_container=lambda exc: isinstance(exc, FileNotFoundError),
+        )
 
     def _reject_root_as_file(self, path: str) -> None:
         """Pre-check: the store root is a folder, so a file op on it is a type error.

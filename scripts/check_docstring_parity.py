@@ -184,6 +184,7 @@ TWINS: tuple[Twin, ...] = (
             {
                 "_errors",
                 "_file_op_errors",
+                "_flat_children_or_absent_container",
                 "_flat_has_children",
                 "_flat_is_blob",
                 "_reject_file",

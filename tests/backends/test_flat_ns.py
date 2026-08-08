@@ -23,9 +23,11 @@ import pytest
 from remote_store._errors import InvalidPath
 from remote_store.backends._flat_ns import (
     _acheck_no_file_ancestor,
+    _achildren_or_absent_container,
     _awrong_type_if_file,
     _awrong_type_if_folder,
     _check_no_file_ancestor,
+    _children_or_absent_container,
     _reject_root_as_file,
     _wrong_type_if_file,
     _wrong_type_if_folder,
@@ -358,3 +360,105 @@ class TestRejectRootAsFile:
         here would reject ordinary keys before any I/O.
         """
         assert _reject_root_as_file(path, "stub") is None
+
+
+class _Sentinel(Exception):
+    """An exception no ``absent_container`` predicate should ever claim."""
+
+
+@pytest.mark.spec("BE-012", "BE-013", "BE-021")
+class TestChildrenOrAbsentContainerSync:
+    """The determinant that reads a container's 404 as "no children".
+
+    Both branches matter and they fail in opposite directions. Swallowing too
+    little leaves ``delete_folder`` raising where its sibling returns, which is
+    the divergence the helper exists to remove; swallowing too much turns a
+    denial or a 503 into "the folder is empty", which is the invented-answer
+    class this backend family has already shipped once.
+    """
+
+    def test_children_answer_passes_through(self) -> None:
+        """No exception, no interpretation: the helper is transparent on success."""
+        for answer in (True, False):
+            got = _children_or_absent_container(
+                "folder",
+                has_children=lambda _p, a=answer: a,  # type: ignore[misc]
+                absent_container=lambda _e: pytest.fail("predicate consulted without an exception"),
+            )
+            assert got is answer
+
+    def test_absent_container_reads_as_no_children(self) -> None:
+        def has_children(_path: str) -> bool:
+            raise _Sentinel
+
+        assert (
+            _children_or_absent_container(
+                "folder",
+                has_children=has_children,
+                absent_container=lambda exc: isinstance(exc, _Sentinel),
+            )
+            is False
+        )
+
+    def test_any_other_failure_re_raises_unchanged(self) -> None:
+        """The identity of the error is preserved, not just its type.
+
+        A helper that re-raised a *new* exception of the same class would pass a
+        type-only assertion while discarding the message, the ``__cause__`` and
+        any backend attribution the caller had already attached.
+        """
+        original = _Sentinel("503 from the service")
+
+        def has_children(_path: str) -> bool:
+            raise original
+
+        with pytest.raises(_Sentinel) as exc_info:
+            _children_or_absent_container(
+                "folder",
+                has_children=has_children,
+                absent_container=lambda _e: False,
+            )
+        assert exc_info.value is original
+
+
+@pytest.mark.spec("ASYNC-012", "ASYNC-013", "BE-021")
+class TestAChildrenOrAbsentContainerAsync:
+    """The async sibling. Mirrored because the two share no code."""
+
+    async def test_children_answer_passes_through(self) -> None:
+        async def has_children(_path: str) -> bool:
+            return True
+
+        got = await _achildren_or_absent_container(
+            "folder",
+            has_children=has_children,
+            absent_container=lambda _e: pytest.fail("predicate consulted without an exception"),
+        )
+        assert got is True
+
+    async def test_absent_container_reads_as_no_children(self) -> None:
+        async def has_children(_path: str) -> bool:
+            raise _Sentinel
+
+        assert (
+            await _achildren_or_absent_container(
+                "folder",
+                has_children=has_children,
+                absent_container=lambda exc: isinstance(exc, _Sentinel),
+            )
+            is False
+        )
+
+    async def test_any_other_failure_re_raises_unchanged(self) -> None:
+        original = _Sentinel("503 from the service")
+
+        async def has_children(_path: str) -> bool:
+            raise original
+
+        with pytest.raises(_Sentinel) as exc_info:
+            await _achildren_or_absent_container(
+                "folder",
+                has_children=has_children,
+                absent_container=lambda _e: False,
+            )
+        assert exc_info.value is original

@@ -669,16 +669,101 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
     # region: public methods — deletion
 
+    def _table_is_absent(self) -> bool:
+        """One inspector call: has the backing table been dropped out from under us?
+
+        Error path only — see ``_absent_table_is_absent_path`` for why that
+        placement is what keeps this off the miss path.
+
+        Answers ``False`` when the inspection itself fails. That is the
+        conservative direction here: the caller only asks in order to *reclassify*
+        an error it already holds, so a failed inspection leaves that original
+        error standing rather than replacing it with a guess.
+
+        **A discarded in-memory store is not special-cased**, and that is a
+        decision rather than an oversight. Disposing an in-memory SQLite engine
+        throws the data away, so the next statement opens a *different, empty*
+        database and the inspector truthfully reports no table — whereupon the
+        deletes tolerate while ``read`` raises ``BackendUnavailable``, because
+        only the deletes carry this reclassification.
+
+        Guarding against it is not possible from here, and the reason is worth
+        keeping so nobody re-derives the attempt. The condition is "was the store
+        discarded", which is not decidable from this object's state: a *borrowed*
+        engine can be disposed by its owner without any call on this backend, and
+        a ``close()``-based test therefore cannot see it, while an in-memory URL
+        test cannot see the URI-form spellings (``file::memory:``,
+        ``mode=memory``) and so makes behaviour depend on how the store was
+        addressed rather than on the store.
+
+        The asymmetry a guard would hide is a defect in its own right, already
+        filed: ``read`` and ``exists`` answer ``BackendUnavailable`` for an
+        absent table where the contract says ``NotFound`` and ``False``. Fix
+        that and a discarded store reads as an empty store from every
+        operation, consistently, with no special case here to get wrong.
+        """
+        try:
+            return not sa.inspect(self._engine).has_table(self._table.name, schema=self._table.schema)
+        except sa.exc.SQLAlchemyError:
+            return False
+
+    @contextlib.contextmanager
+    def _absent_table_is_absent_path(self, path: str, *, missing_ok: bool, what: str) -> Iterator[None]:
+        """A dropped table is a missing path, not a failed statement.
+
+        The table is this backend's container, so an absent one owes the same
+        answer an absent bucket owes on S3 — ``missing_ok=True`` returns cleanly,
+        ``missing_ok=False`` raises ``NotFound``. Without this, a dropped table
+        surfaced as whatever ``_map_errors`` made of the driver's complaint
+        (``BackendUnavailable`` from ``OperationalError`` on SQLite, the base
+        error from ``ProgrammingError`` on PostgreSQL and MySQL), so a tolerant
+        cleanup loop got an exception from *both* deletes where the S3 and Azure
+        family returned from one and raised from the other. This backend needed
+        the fix on both, not just on the sibling.
+
+        **Placement is the whole cost story.** This catches
+        ``SQLAlchemyError`` — a *driver* failure — and nothing else, so the
+        inspector call is charged only to a statement that already failed. An
+        ordinary miss raises this module's own ``NotFound`` from a query that
+        succeeded, which is not a ``SQLAlchemyError`` and passes straight
+        through: the common path pays nothing, and the contract's
+        "no extra round trip to tell an absent container from an absent path"
+        budget is kept. Sitting inside ``_map_errors`` rather than outside it is
+        what preserves that, since by the time ``_map_errors`` has run the
+        driver's exception type is gone.
+
+        A ``SQLAlchemyError`` raised while the table is still there re-raises
+        untouched, so a genuine connection or syntax failure keeps its mapping.
+        """
+        # Contract: 003-backend-adapter-contract BE-012 / BE-013, and the shared
+        # rule under BE-021 ("An absent container reads as an absent path").
+        try:
+            yield
+        except sa.exc.SQLAlchemyError:
+            if not self._table_is_absent():
+                raise
+            if not missing_ok:
+                raise NotFound(f"{what} not found: {path}", path=path, backend=self.name) from None
+
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         """Delete the row at *path* in one transaction.
 
+        A missing backing table counts as a missing file, on the same terms as
+        ``delete_folder``: ``missing_ok=True`` returns silently and
+        ``missing_ok=False`` raises ``NotFound``.
+
         Raises:
-            NotFound: If no key exists at *path* and ``missing_ok`` is ``False``.
+            NotFound: If no key exists at *path* (including when the backing
+                table is absent) and ``missing_ok`` is ``False``.
             InvalidPath: If *path* is empty, absolute, or malformed.
             BackendUnavailable: If the database operation fails.
         """
         self._validate_path(path)
-        with self._map_errors(path), self._engine.begin() as conn:
+        with (
+            self._map_errors(path),
+            self._absent_table_is_absent_path(path, missing_ok=missing_ok, what="File"),
+            self._engine.begin() as conn,
+        ):
             t = self._table
             result = conn.execute(t.delete().where(t.c.key == path))
             if result.rowcount == 0:
@@ -696,8 +781,12 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         always raises ``DirectoryNotEmpty``. ``recursive=True`` deletes all keys
         under ``path + "/"`` in one atomic transaction.
 
+        A missing backing table counts as a missing folder: ``missing_ok=True``
+        returns silently and ``missing_ok=False`` raises ``NotFound``.
+
         Raises:
-            NotFound: If no key exists under *path* and ``missing_ok`` is ``False``.
+            NotFound: If no key exists under *path* (including when the backing
+                table is absent) and ``missing_ok`` is ``False``.
             DirectoryNotEmpty: If ``recursive`` is ``False`` (an existing virtual
                 folder is never empty).
             InvalidPath: If *path* is empty, absolute, or malformed.
@@ -705,7 +794,11 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         """
         self._validate_path(path)
         prefix = path + "/"
-        with self._map_errors(path), self._engine.begin() as conn:
+        with (
+            self._map_errors(path),
+            self._absent_table_is_absent_path(path, missing_ok=missing_ok, what="Folder"),
+            self._engine.begin() as conn,
+        ):
             t = self._table
             # Check if any keys exist under this prefix
             has_children = conn.execute(sa.select(sa.literal(1)).where(t.c.key.like(prefix + "%")).limit(1)).first()

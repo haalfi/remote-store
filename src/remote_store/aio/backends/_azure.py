@@ -204,6 +204,39 @@ class AsyncAzureBackend(AsyncBackend):
             return False
         return False
 
+    async def _flat_children_or_absent_container(self, path: str) -> bool:
+        """Non-HNS ``delete_folder`` determinant: strict, except for an absent container.
+
+        Distinct from ``_flat_has_children`` above, and the difference is
+        load-bearing. That one is fail-open because it runs *after* an operation
+        has already failed and exists only to reclassify; this one **is** the
+        answer, so swallowing a denial would report "no such folder" for a
+        folder the caller simply cannot see.
+
+        The one error it does read as an answer is the container's own 404: an
+        absent container is an absent path, so the caller proceeds to its
+        ``missing_ok`` branch exactly as for an empty prefix. Safe to narrow
+        to ``ResourceNotFoundError`` because an absent *prefix* is never an
+        error here — it is an empty listing — so the only 404 this call can
+        raise is the container's.
+        """
+        from azure.core.exceptions import ResourceNotFoundError
+
+        from remote_store.backends._flat_ns import _achildren_or_absent_container
+
+        prefix = _azure_path_fn(path).rstrip("/") + "/"
+
+        async def _has_children(_key: str) -> bool:
+            async for _ in self._cc.list_blobs(name_starts_with=prefix, results_per_page=1):
+                return True
+            return False
+
+        return await _achildren_or_absent_container(
+            path,
+            has_children=_has_children,
+            absent_container=lambda exc: isinstance(exc, ResourceNotFoundError),
+        )
+
     async def _flat_is_blob(self, path: str) -> bool:
         """Non-HNS: one HEAD; ``True`` iff a blob exists at exactly *path*."""
         from azure.core.exceptions import AzureError
@@ -800,11 +833,18 @@ class AsyncAzureBackend(AsyncBackend):
 
         Args:
             path: Backend-relative key.
-            missing_ok: If ``True``, do not raise when the file is absent.
+            missing_ok: If ``True``, do not raise when the file is absent. This
+                covers an absent *container* too, on the same terms as
+                ``delete_folder``. Verified on flat (non-HNS) accounts; the HNS
+                branch is not exercised against an absent container, so the same
+                answer there is expected rather than measured.
 
         Raises:
-            NotFound: If the file is missing and ``missing_ok`` is ``False``.
+            NotFound: If the file is missing (including when the container itself
+                is absent) and ``missing_ok`` is ``False``.
             InvalidPath: If ``path`` names a directory (HNS accounts only).
+            PermissionDenied: If credentials are rejected or lack access (401/403).
+            BackendUnavailable: On throttling (429), 5xx, or transport failure.
         """
         self._reject_root_as_file(path)
         async with self._errors(path):
@@ -854,12 +894,17 @@ class AsyncAzureBackend(AsyncBackend):
         Args:
             path: Backend-relative key.
             recursive: If ``True``, delete all contents first.
-            missing_ok: If ``True``, do not raise when absent.
+            missing_ok: If ``True``, do not raise when absent. This covers an
+                absent *container* too: it holds no folder either, so it reads
+                as a missing path rather than a failure.
 
         Raises:
-            NotFound: If the folder is missing and ``missing_ok`` is ``False``.
+            NotFound: If the folder is missing (including when the container
+                itself is absent) and ``missing_ok`` is ``False``.
             InvalidPath: If ``path`` names a file (use ``delete`` instead).
             DirectoryNotEmpty: If non-empty and ``recursive`` is ``False``.
+            PermissionDenied: If credentials are rejected or lack access (401/403).
+            BackendUnavailable: On throttling (429), 5xx, or transport failure.
         """
         async with self._errors(path):
             ap = _azure_path_fn(path)
@@ -891,13 +936,10 @@ class AsyncAzureBackend(AsyncBackend):
                         raise DirectoryNotEmpty(f"Folder not empty: {path}", path=path, backend=self.name)
                 await dc.delete_directory()
             else:
-                # non-HNS: virtual folders via blob prefix
+                # non-HNS: virtual folders via blob prefix. BE-013: an absent
+                # container answers "no children" rather than escaping as a 404.
                 prefix = ap.rstrip("/") + "/"
-                first = []
-                async for blob in self._cc.list_blobs(name_starts_with=prefix, results_per_page=1):
-                    first.append(blob)
-                    break
-                if first:
+                if await self._flat_children_or_absent_container(path):
                     if not recursive:
                         raise DirectoryNotEmpty(f"Folder not empty: {path}", path=path, backend=self.name)
                     async for blob in self._cc.list_blobs(name_starts_with=prefix):

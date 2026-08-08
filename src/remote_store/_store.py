@@ -357,6 +357,12 @@ class Store:
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
         """Delete a single file.
 
+        A store whose backing container is gone — a deleted bucket, container or
+        table — holds no file either, so *missing_ok* tolerates that too on the
+        S3, Azure and SQL backends. Two do not yet: a local store whose root
+        directory was deleted raises ``InvalidPath``, and a Graph store whose
+        drive is gone may raise ``BackendUnavailable``.
+
         Args:
             path: Store-relative file path.
             missing_ok: If ``True``, silently succeeds when *path*
@@ -378,6 +384,12 @@ class Store:
 
     def delete_folder(self, path: str, *, recursive: bool = False, missing_ok: bool = False) -> None:
         """Delete a folder.
+
+        A store whose backing container is gone — a deleted bucket, container or
+        table — holds no folder either, so *missing_ok* tolerates that too on the
+        S3, Azure and SQL backends. Two do not yet: a local store whose root
+        directory was deleted raises ``InvalidPath``, and a Graph store whose
+        drive is gone may raise ``BackendUnavailable``.
 
         Args:
             path: Store-relative folder path.  Must not be ``""``

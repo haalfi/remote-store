@@ -125,6 +125,64 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   reconsidered rather than defended. ID-238's release-anchored trigger, co-shipped
   here, is what causes that re-measurement to happen.
 
+- [x] **BUG-243 — `missing_ok` had no stated obligation when the *container* was absent**
+  spec: BE-012, BE-013, BE-021 · effort: M · audience: user.api, library.maintainer
+  Every clause spoke of "the path" and none of the bucket, container or table
+  holding it, so each backend answered from whatever its wire protocol happened
+  to reveal: `delete(missing_ok=True)` returned silently against a missing
+  bucket while `delete_folder(missing_ok=True)` raised `NotFound` — same store,
+  same absent container, opposite answers.
+  **Decided: an absent container reads as an absent path.** Both tolerate it
+  under `missing_ok`, both raise `NotFound` without it, and no backend spends a
+  round trip telling the two apart. Stated in
+  [BE-021](specs/003-backend-adapter-contract.md#be-021-error-mapping)
+  § "An absent container reads as an absent path", cited from BE-012 and BE-013.
+  **Why this way round.** It costs nothing — `delete_folder` reads the
+  container 404 its listing already raises as "no children" — whereas strictness
+  would have cost `delete` a second `HeadBucket` on every miss, against a spec
+  budgeting one probe per miss. On the S3 and Azure family it ratifies the
+  answer `delete` already gave and corrects only its sibling; on `SQLBlobBackend`
+  both deletes raised, so the rule changes that backend's `delete` too. An
+  earlier formulation claimed the ratification held on *every* flat-namespace
+  backend and survived six rounds — "the S3 family" and "the flat-namespace
+  backends" were used interchangeably by a clause whose point is to bind the
+  second set. Measured, not read.
+  **No carve-outs, after three attempts at one.** `SQLBlobBackend` was
+  initially exempted, and the exemption went through three scope criteria in
+  successive review rounds — vacuity (refuted by this item's own dropped-table
+  test), "the response already carries the fact" (refuted by the clause's own
+  rationale, since S3's `delete` tolerates a bodyless 404 that carries nothing),
+  and "the mapping already lands in `NotFound`" (circular against BE-021's
+  canonical table, which requires that of every backend). Complying costs one
+  inspector call hung off `SQLAlchemyError`, so it is charged to a statement
+  that already failed and never to a miss. The exemption cost more to justify
+  than compliance cost to implement; the clause now binds everything.
+  **Coverage:** the Azure half runs at Stage 1 on a `pytest-httpserver` Blob
+  stub rather than behind the Docker-gated `azurite` fixture — BK-324 shipped
+  two real Azure defects behind that gate. Reverses the unreleased second half
+  of BUG-242, whose CHANGELOG bullet was amended rather than left contradicting
+  this one in the same section.
+  **Four divergences found and filed, not fixed:** BUG-245 (`create_table=False`
+  leaks `NoSuchTableError`), BUG-246 (the never-raise probes raise against an
+  absent container on four backends), BUG-247 (`LocalBackend` reports a deleted
+  root as a path escape), BUG-248 (the new clause and GR-031 give opposite
+  answers for an absent Graph drive). BUG-247 refuted a premise this item's own
+  spec rationale had asserted, and only a test caught it — two code readings had
+  agreed it was true. BUG-248 is the only one where nothing is broken: two
+  deliberate clauses simply disagree, and neither implementation is wrong under
+  its own. The three that are divergences *from this clause* — BUG-246, BUG-247,
+  BUG-248 — are in BE-021's divergence list, so the clause reads as an obligation
+  with named exceptions rather than as a description. BUG-245 is not: an
+  unmapped constructor exception is a gap in BE-021's "backend-native exceptions
+  never leak" rule, which is scoped to operations, and belongs to that rule
+  rather than to this clause.
+  **Graph came last and should have come first.** The work was framed around
+  flat-namespace backends because that is where the reported symptom lived, and
+  `GraphBackend` — hierarchical, but with a drive that is every bit a container —
+  went unexamined for six review rounds. The clause it collides with was already
+  written down. Scope a contract change by "which backends have the thing the
+  clause names", not by where the bug report came from.
+
 - [x] **ID-241 — Conformance cells that make no HTTP call still skip on a missing cassette**
   spec: TEST-007 · effort: S · audience: infra.test
   The missing-cassette skip fired **per test name**, at collection time: any

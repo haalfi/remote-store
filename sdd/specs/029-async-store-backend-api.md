@@ -78,12 +78,14 @@ Amended with research round 2 §2.4 items and Phase 2 spec.
 
 **Invariant:** `async def delete(path, *, missing_ok=False)` removes a file.
 **Raises:** `NotFound` if the file is missing and `missing_ok=False`. `InvalidPath` if `path` names a directory, regardless of `missing_ok` — see [BE-012](003-backend-adapter-contract.md).
+**Absent container:** A missing bucket, container or table counts as a missing file, on the same terms as BE-012 — see [BE-021](003-backend-adapter-contract.md#be-021-error-mapping) § "An absent container reads as an absent path".
 **See also:** [BE-012](003-backend-adapter-contract.md).
 
 ### ASYNC-013: delete_folder()
 
 **Invariant:** `async def delete_folder(path, *, recursive=False, missing_ok=False)` removes a folder.
 **Raises:** `NotFound` if the folder is missing and `missing_ok=False`. Fails if folder is non-empty and `recursive=False`.
+**Absent container:** A missing bucket, container or table counts as a missing folder, on the same terms as BE-013 — see [BE-021](003-backend-adapter-contract.md#be-021-error-mapping) § "An absent container reads as an absent path".
 **See also:** [BE-013](003-backend-adapter-contract.md).
 
 ### ASYNC-014: list_files()

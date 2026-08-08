@@ -1,0 +1,517 @@
+id: BUG-243
+title: "missing_ok has no stated obligation when the container is absent"
+trigger: >-
+  BE-012, BE-013 and BE-021 all spoke of "the path" and none of the bucket,
+  container or table holding it, so each flat-namespace backend answered a
+  tolerant delete against an absent container from whatever its wire protocol
+  happened to reveal. delete(missing_ok=True) returned silently while
+  delete_folder(missing_ok=True) raised NotFound — same store, same absent
+  bucket, opposite answers.
+source_items:
+  - BUG-243
+  - BUG-242
+audience:
+  - user.api
+  - library.maintainer
+discovery_followups:
+  - BUG-245
+  - BUG-246
+  - BUG-247
+  - BUG-248
+  - BUG-249
+  - BK-345
+expected_ripples:
+  - CHANGELOG.md
+  - docs-src/guides/custom-backend-guide.md
+  - scripts/check_docstring_parity.py
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+# Commits, per the schema's definition — not review rounds, which were 8. The
+# first commit is the implementation; every commit after it exists because a
+# review round found something.
+review_rounds: 10
+surprising_ripples:
+  - tests/backends/azure/_helpers.py
+  - tests/backends/azure/test_absent_container.py
+  - tests/backends/azure/aio/test_absent_container.py
+  - src/remote_store/_backend.py
+  - src/remote_store/_store.py
+  - src/remote_store/aio/_async_backend.py
+  - src/remote_store/aio/_async_store.py
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-243 (item)"
+        read_type: gate
+        extract: >-
+          The measured 2x3 table and the cost note. The item withheld a
+          disposition but pre-argued one: strictness costs S3 a second
+          HeadBucket per miss against a one-probe budget, so "tolerate" is
+          likely both cheaper and kinder. That framing survived scrutiny and
+          became the decision.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-012, BE-013, BE-021"
+        read_type: gate
+        extract: >-
+          Confirms the gap is real: BE-021 already decides the sibling question
+          (type mismatch outranks missing_ok) in the same prose, which is where
+          the container rule then went — one home, pointers from BE-012/BE-013.
+        outcome: ok
+      - file: src/remote_store/backends/_local.py
+        section: "delete, delete_folder"
+        read_type: reference
+        extract: >-
+          Read as the decisive argument — Local resolves the path and tests
+          exists(), so an absent store root looked like just an absent path that
+          missing_ok returns silently, making "tolerate" the flat-NS half
+          catching up to the hierarchical backends. **The conclusion was wrong**,
+          and round 4 caught it only because a reviewer asked for the claim to be
+          pinned by a test. Running it: an absent root raises InvalidPath("Path
+          escapes root directory") from _resolve, two lines before either
+          missing_ok branch, because _within_root's ancestor walk climbs above a
+          root that no longer exists. Both deletes read correctly in isolation,
+          which is why two independent code readings agreed and the first
+          execution disagreed. Filed as BUG-247; the decision survived on its
+          cost argument alone, and the spec now records the premise as refuted
+          rather than dropping it.
+        outcome: ok
+  - id: reproduce
+    name: Measure the three answers
+    steps:
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "SQLBlobBackend.__init__, delete, delete_folder"
+        read_type: verify
+        extract: >-
+          Measured rather than assumed, and it inverted the item's table. SQL
+          "raises" is BackendUnavailable, not NotFound, and it is only reachable
+          by dropping the table under a live backend: create_table=True creates
+          it, create_table=False reflects it and refuses to construct. Concluded
+          from that pair that the clause was *vacuous* for SQLBlob — which round
+          2 refuted using this work's own dropped-table test, and rightly: a
+          live instance bound to an absent container is exactly what that test
+          constructs. The construction facts are real, the inference from them
+          was not. The exemption stands on a different ground (see the review
+          phase).
+        outcome: ok
+      - file: src/remote_store/backends/_s3_base.py
+        section: "wrong-type reclassification region comment"
+        read_type: reference
+        extract: >-
+          The comment explained the split as wire shape and named the divergent
+          outcome explicitly — an accurate description of behaviour the contract
+          had not decided. Reading it as settled would have closed the item as
+          working-as-intended; it is the code's own account of the accident the
+          item exists to remove, and it had to be rewritten by the fix.
+        outcome: ok
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: tests/backends/s3/test_denied_probe.py
+        section: "TestMissingBucketVerdict (renamed by this work to TestAbsentBucketReadsAsAbsentPath)"
+        read_type: gate
+        extract: >-
+          The old behaviour was pinned, by name, with a docstring arguing it was
+          correct — so the failing-test step was flipping an existing assertion,
+          not adding one. Not anticipated by the ripple-check: "tests tagged
+          with the spec ID" finds tests that assert a clause, not tests whose
+          whole subject is the undecided question the clause now decides.
+          Added the missing_ok=False axis at the same time; tolerance-only cells
+          would have passed for a fix that swallowed the 404 outright.
+        outcome: ok
+      - file: tests/backends/fixtures/azurite.py
+        section: "requires_docker mark"
+        read_type: reference
+        extract: >-
+          Azure's only non-live fixture is Docker-gated and no daemon is
+          available here, which is exactly how BK-324 shipped two real Azure
+          defects. Built a Stage-1 pytest-httpserver Blob stub on the pattern
+          test_denied_probe.py established for S3 instead of stating a coverage
+          bound. It caught the async defect on the first run.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "module docstring, _wrong_type_if_folder"
+        read_type: reference
+        extract: >-
+          The module documents cross-backend contracts centrally and implements
+          the wire-shape-specific half per backend; the new rule follows that
+          shape as _children_or_absent_container, with the narrowing predicate
+          supplied per SDK.
+        outcome: ok
+      - file: src/remote_store/backends/_s3_base.py
+        section: "_s3_has_children, _probe_fail_open"
+        read_type: gate
+        extract: >-
+          BUG-242's split had to be preserved: the determinant stays strict and
+          only the error-path probe fails open. The new tolerance is a third
+          posture — strict except for one named shape — and it is routed only
+          through delete_folder, not through get_folder_info, which has no
+          missing_ok and would gain nothing from catching a 404 to re-raise it.
+        outcome: ok
+  - id: review
+    name: Review rounds
+    steps:
+      - file: sdd/specs/048-testing-architecture.md
+        section: "TEST-003 (Sync and async co-location)"
+        read_type: verify
+        extract: >-
+          Round-1 finding. The new Azure suite mixed sync and async test methods
+          in one file and inside the same classes, which TEST-003 forbids in as
+          many words; the async half belongs in the per-backend aio/ submodule
+          with shared logic in _helpers. Never read during authoring — the
+          ripple-check's "New test file" row asks about os_sensitive marks, not
+          placement, and check_test_placement.py enforces three other rules and
+          not this one, so nothing pointed here.
+        outcome: ok
+      - file: sdd/specs/012-azure-backend.md
+        section: "AZ-014, AZ-015, AZ-025, AZ-026"
+        read_type: verify
+        extract: >-
+          Round-1 finding, and the highest-value one: AZ-014 is Atomic Write,
+          so all six sync cells were traced to an unrelated clause. Picked from
+          memory of the number rather than read. check_spec_marks.py verifies
+          that a cited ID exists, not that it is the right one, so false
+          traceability passes every gate in the repo — the failure mode is
+          permanent and silent.
+        outcome: ok
+      - file: sdd/specs/008-s3-backend.md
+        section: "S3-011, S3-015, S3-016"
+        read_type: verify
+        extract: >-
+          The sibling sweep of the round-1 fix, and it paid: the same mistake
+          sat in the S3 file under a different number. S3-016 is PermissionDenied
+          Mapping, correct for the denial classes that already carried it and
+          wrong for the absent-bucket cells this work added, whose subject is
+          the NotFound mapping (S3-015). Two more in the SQL file: a class-level
+          SQL-BLOB-012 (Existing Table) stamped on a create_table=True cell.
+          Reviewer named one instance; the class had four.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 (the new absent-container clause)"
+        read_type: verify
+        extract: >-
+          Round-2 findings, both against this work's own spec prose, and both
+          the very defect class the item exists to remove — a claim written into
+          several homes, disagreeing with itself. (1) The clause stated no reach,
+          so a reader could not tell whether "an absent container reads as an
+          absent path" governed exists()/is_folder() too; reach is now stated.
+          (2) The SQLBlob carve-out was justified as a *vacuity* — "no live
+          instance is ever bound to an absent container" — which this work's own
+          dropped-table test refutes, and the offered criterion (torn down
+          mid-flight vs never there) is one no flat-NS backend can draw, since a
+          bucket deleted mid-flight is tolerated. The claim had reached five more
+          homes by then; the round-2 sweep corrected three (BACKLOG-DONE, the SQL
+          test docstring, the BUG-245 item) and missed two — CHANGELOG.md and the
+          custom-backend guide — which round 3 found. Both were named in this
+          trace's own expected_ripples, so the sweep had a list and did not use
+          it: it searched for the wording it had just written rather than for
+          every home the claim could have.
+        outcome: ok
+      - file: src/remote_store/backends/_s3_boto3.py
+        section: "exists, is_folder (vs BE-004 / BE-005)"
+        read_type: verify
+        extract: >-
+          Round-2 finding, filed rather than fixed as BUG-246. Measured on the
+          stub harness this work added: exists() and is_folder() raise NotFound
+          against an absent container on S3-Boto3 and both Azure lanes, where
+          BE-004/BE-005 say they never raise and the two s3fs backends return
+          False. Pre-existing and outside this item's two operations, but the
+          same container 404 escaping a probe that should absorb it — and
+          reachable at Stage 1 only because the Azure stub now exists.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 (Scope paragraph, second rewrite)"
+        read_type: verify
+        extract: >-
+          Round 3, a three-member panel, and the finding that matters most: the
+          round-2 replacement criterion was *also* wrong. It said the clause
+          binds backends whose response already carries "the container is gone" —
+          falsified by the clause's own rationale twelve lines above, since S3's
+          delete tolerates an absent bucket precisely because a bodyless
+          HeadObject 404 carries nothing. Applied as a test it would have
+          exempted the protocol shape the rule was written for. Two corrections
+          to one sentence, both from the same habit of reasoning from an observed
+          wire property. The third rests on the mechanism instead — an absent
+          container is tolerated where the error already lands in the NotFound
+          family that missing_ok swallows — which covers both halves on every
+          backend and makes the dialect question moot.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 (the exemption, abandoned)"
+        read_type: verify
+        extract: >-
+          Round 4 refuted the third scope criterion too: "binds backends whose
+          mapping already lands in NotFound" is circular, since BE-021's own
+          canonical table requires exactly that of every backend, so a backend
+          violating the table becomes exempt and one obeying it becomes bound.
+          Three criteria, three refutations, each attempting to derive a general
+          rule for who the clause binds. The loop's divergence check fired and
+          the work stopped for a user decision rather than attempting a fourth.
+          Outcome: drop the exemption and make SQLBlobBackend comply — one
+          inspector call on the already-failed statement. The lesson is about
+          shape rather than wording: a carve-out needed a criterion, every
+          criterion was circular or false, and compliance was cheaper than the
+          third attempt at justifying its absence.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / New test file"
+        read_type: verify
+        extract: >-
+          Why the TEST-003 placement miss was structural rather than careless:
+          the row asks whether a new test file needs an os_sensitive mark and
+          says nothing about placement, and check_test_placement.py enforces
+          three other rules. Nothing in the pre-work path routes an author to
+          TEST-003 when adding a test file, so the two files this work created
+          are logged as surprising ripples — the register that makes a missing
+          row visible to the aggregator.
+        outcome: unclear
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_table_is_absent, close"
+        read_type: verify
+        extract: >-
+          Round 5, and the fix pass that removed the exemption had itself
+          introduced a regression of the class this item exists to remove. On an
+          in-memory engine, close() disposes and the next call opens a
+          *different, empty* database, so the inspector truthfully found no
+          table and the deletes answered "absent path" for a store the caller
+          had destroyed — while read() on the same instance still said
+          BackendUnavailable. Two verdicts, one dead store, on the configuration
+          the sqlblob conformance fixture uses. Fixed by gating the
+          reclassification on close() — which round 6 then found too broad, so
+          read the next-but-one step for what actually ships. Five rounds, five
+          fix passes, and every round found something in the previous one.
+        outcome: ok
+      - file: tests/backends/sftp/test_absent_base_path.py
+        section: "(new file)"
+        read_type: verify
+        extract: >-
+          Round 5 asked for the "binds every backend" claim to be measured
+          rather than read on the two backends where it had only been read,
+          arguing from this work's own BUG-247. Measured: SFTP complies, on the
+          in-process paramiko server with no Docker, and the absent container
+          needs no teardown to arrange — a base_path never created is the case.
+          Azure HNS cannot be reached here and carries a stated bound instead.
+          The clause is now executed on S3 (three lanes), Azure flat (both
+          lanes), SQLBlob and SFTP.
+        outcome: ok
+      - file: tests/backends/s3/test_denied_probe.py
+        section: "_BACKEND_PARAMS"
+        read_type: verify
+        extract: >-
+          Round 5 found the round-1 spec-mark correction void at runtime, and it
+          had been for four rounds: param-level marks ride onto every test
+          consuming the list, so S3-016 stayed attached to cells whose
+          function-level mark had been corrected to S3-015. Invisible at the
+          call site, invisible to check_spec_marks.py, and survived two later
+          rounds that were specifically hunting mis-traced marks. A correction
+          verified only where it was applied is not verified.
+        outcome: ok
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "close, _table_is_absent (the gate, narrowed)"
+        read_type: verify
+        extract: >-
+          Round 6, a verification round the user authorised past the ceiling,
+          and both members independently found the round-5 fix too broad. The
+          gate keyed on "was close() called" when the hazard is "did closing
+          discard the store" — and those separate in two directions, both
+          measured: a *borrowed* engine is never disposed, and an owned *file*
+          engine reopens with its contents, so both stayed live while silently
+          losing the reclassification for the rest of the instance's life. My
+          docstring's "a file-backed engine is unaffected either way" was true
+          only for the instant after close(), which is the assumption the clause
+          exists in order not to make. Narrowed to owned + in-memory, with a
+          test per separating case. Sixth round, sixth fix pass, and the fifth
+          time a round found a defect in the previous round's fix.
+        outcome: ok
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_table_is_absent (the gate, withdrawn)"
+        read_type: verify
+        extract: >-
+          Round 7 measured the round-6 gate and it failed again, in two
+          directions: the URI-form in-memory spellings
+          (sqlite:///file::memory:?uri=true and the named-shared form) are not
+          matched by the owned + ":memory:" test, and a borrowed engine the
+          owner disposes is never gated at all. Three rounds, three conditions,
+          each argued rather than enumerated and each refuted by a state the
+          argument had not considered. Withdrawn instead of narrowed a fourth
+          time: it papered over an asymmetry already filed as BUG-246, and only
+          for some spellings of the same URL, so it made behaviour depend on how
+          the store was addressed. The condition space is small and finite, so
+          the replacement test parametrises the axes and generates the product
+          rather than hand-listing coordinates — which is also how the round-6
+          version came to guard a row that was not there.
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "delete, delete_folder, classify_graph_error"
+        read_type: verify
+        extract: >-
+          Round 7's completeness critic asked which DELETE-capable backends had
+          never been named, and GraphBackend had not been, in six rounds. Its
+          drive is a container and it is not flat-namespace, which is exactly
+          why the framing missed it — the work was scoped by where the symptom
+          was reported rather than by which backends have the thing the clause
+          names. Measured: an absent drive reported as 404 itemNotFound is
+          tolerated by both deletes, and one reported as 404 resourceNotFound
+          raises BackendUnavailable. The second is not a bug; GR-031 specifies
+          it deliberately. Two of this repo's own clauses give opposite answers
+          for one call, so BUG-248 adjudicates rather than this PR deciding by
+          assuming the newer clause wins.
+        outcome: ok
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-031"
+        read_type: reference
+        extract: >-
+          Read to find out whether the Graph divergence was an oversight or a
+          decision. It is a decision, with a rationale and a live verification
+          note — and the note weakens it: consumer OneDrive returned
+          itemNotFound for a nonexistent drive on both URL forms, so the
+          escalation may be unreachable on that tier. A spec conflict where one
+          side has never been observed to fire is a different adjudication from
+          one where both are live, and only reading the whole clause showed
+          that.
+        outcome: ok
+      - file: tests/backends/sqlblob/test_absent_table.py
+        section: "class-level spec marks"
+        read_type: verify
+        extract: >-
+          Round 7 found the matrix cell carrying BE-013 while calling only
+          delete, and the constructor class carrying BE-012/BE-013 while
+          calling neither. check_spec_marks.py verifies a cited ID exists, never
+          that it fits, so false traceability is invisible to the gate and reads
+          as coverage to anyone trusting the marks. This is the second
+          spec-mark defect in this PR after the round-5 param-level leak, from
+          the same cause: a mark applied at a scope wider than the assertion.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / A public method signature"
+        read_type: verify
+        extract: >-
+          Consulted to find what a contract change owes the public API surface,
+          and it answered for signatures only. The clause changed what
+          missing_ok tolerates without changing a signature, so nothing routed
+          from "a spec clause about an operation" to "the ABC docstring for that
+          operation" — and the four docstrings that define missing_ok for every
+          caller (Backend, AsyncBackend, Store, AsyncStore) said nothing about
+          it for seven rounds. A semantic change behind an unchanged signature
+          has no row.
+        outcome: unclear
+  - id: verify
+    name: Verify
+    steps:
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: >-
+          BUG-242's second bullet asserted the behaviour this item reverses, and
+          both are unreleased — so leaving it would have shipped a section
+          contradicting itself. Amended rather than appended to.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / CHANGELOG"
+        read_type: verify
+        extract: >-
+          Read to find what a behaviour change owes the CHANGELOG. The row says
+          where a new entry goes and stops there; it does not ask whether an
+          *unreleased sibling* entry has been invalidated by the new one. Here
+          one had been, by this same item, in the same section — and catching it
+          took reading the section rather than following the row.
+        outcome: unclear
+      - file: sdd/formal/BackendContract.dfy
+        section: "fs map, Delete / DeleteFolder postconditions"
+        read_type: verify
+        extract: >-
+          No Dafny edit possible, and the reason is structural: the model is a
+          map that always exists, so an absent container has no representation
+          to verify against. Stated as an out-of-frame note on BE-012 rather
+          than left as a silent gap in formal coverage.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021, the clause's rationale paragraph"
+        read_type: verify
+        extract: >-
+          Round 8 measured the rationale's central claim on origin/master and it
+          is false. "delete already answered this way on every flat-namespace
+          backend, so the rule ratifies the behaviour that was there and fixes
+          the sibling" — SQLBlobBackend is flat-namespace by this spec's own
+          classification, and on master *both* its deletes raised
+          BackendUnavailable against a dropped table. The rule changes delete on
+          that backend rather than ratifying it. The premise survived six rounds
+          plus a seventh that was specifically hunting stale claims, because "the
+          S3 family" and "the flat-namespace backends" were used interchangeably
+          throughout by a clause whose entire purpose is to bind the second set.
+          Third false premise in this item, and the third caught by running
+          something rather than reading it. The claim had propagated to
+          BACKLOG-DONE and to a helper docstring, both corrected with it.
+        outcome: ok
+      - file: src/remote_store/_store.py
+        section: "Store.delete, Store.delete_folder"
+        read_type: verify
+        extract: >-
+          Round 7 added the clause to the ABC and Store docstrings and stated it
+          as flat description — "so missing_ok tolerates that too" — on the
+          backend-agnostic facade, while this PR's own divergence list names two
+          backends that raise instead. Fixing an omission by writing the
+          obligation as though it were a guarantee is a smaller error than the
+          omission and a more misleading one: help(Store.delete) promised every
+          backend. Now names the compliant families and the two exceptions.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BUG-246"
+        read_type: verify
+        extract: >-
+          BE-021's bullet says SQLBlob answers "every operation except the two
+          deletes" with BackendUnavailable, and the list header says the
+          divergences are tracked in the backlog. BUG-246 tracked three probes.
+          Measured the full set: eleven operations owe a different answer, not
+          three. This is the *same* gap round 5 caught and closed too narrowly —
+          it added exactly the rows that round's finding named. A divergence
+          claiming "every operation except X" needs an item scoped to every
+          operation except X, not to whatever subset a reviewer measured.
+        outcome: ok
+      - file: src/remote_store/backends/_s3_boto3.py
+        section: "list_files, list_folders, iter_children"
+        read_type: verify
+        extract: >-
+          Round 8's second reviewer enumerated every operation on every backend
+          against an absent container rather than only the ones the clause
+          governs, and found the three listings calling the wire without
+          _boto_errors — the only unwrapped call sites on a class that wraps at
+          fourteen others. A raw botocore ClientError reaches the caller,
+          breaching BE-021's never-leak invariant. Pre-existing and outside this
+          clause's reach, so filed as BUG-249 and pinned rather than fixed. The
+          reason it was found now and not in seven earlier rounds is the
+          enumeration: every previous round measured the operations the clause
+          names.
+        outcome: ok
+      - file: tests/backends/conformance/
+        section: "(absent-container coverage — absent)"
+        read_type: verify
+        extract: >-
+          Six per-backend suites verify a rule that binds every backend, and the
+          conformance tree gained nothing, so a seventh backend inherits no cell.
+          That is exactly how GraphBackend survived six rounds. The PR records
+          the lesson in prose and does not build the mechanism; filed as BK-345
+          with the fixture problem noted, since arranging an absent container is
+          per-backend and a registry cell likely needs a fixture-declared hook.
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.pytest.ini_options] filterwarnings"
+        read_type: verify
+        extract: >-
+          CI went red on 3.13 and 3.14 with PytestUnraisableExceptionWarning for
+          a GC-finalized sqlite3.Connection, attributed to an unrelated test and
+          landing on a different one per job. The cause was already documented
+          two lines above the failure — "SQLAlchemy's connection pool on SQLite
+          may leave DBAPI connections for GC to finalize" — with ignores that
+          are module-scoped to sqlalchemy and weakref and so cannot match the
+          unraisable form, which is raised from _pytest.unraisableexception.
+          Three cells in this PR reopened a connection after close() and left it
+          for GC; disposing in a finally turned CI green without widening any
+          ignore. Not reproducible on the local 3.11 interpreter, so CI was the
+          only available measurement.
+        outcome: ok
