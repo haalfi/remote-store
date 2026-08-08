@@ -79,7 +79,39 @@ Apply confidence filter: only post findings you are ≥80% confident about. Skip
 2. **Attach each inline comment** with `add_comment_to_pending_review`, one call per finding. Required params: `path`, `body`, `subjectType: "LINE"` (or `"FILE"` for file-level). Optional: `line`, `side`, `startLine`, `startSide` for multi-line. Do not batch into a single review creation.
 3. **Submit the review.** `pull_request_review_write` with `method: "submit_pending"`, `event: "COMMENT"`, and the summary body.
 
-**Verify (only when you posted inline findings).** The check is a **delta**, not an absolute: capture `totalCount` via `pull_request_read` `method: "get_review_comments"` **before** creating the pending review, and again after `submit_pending`. The count must rise by the number of comments you attached (at minimum, it must rise) — an absolute non-zero count proves nothing on a PR that already carries review comments from earlier rounds. If you had no inline findings to post (step 2 had nothing to attach), skip verification — an unchanged count is the correct outcome. If the count did not rise, the submit dropped your comments. Retry **once**: restart from step 1 (new `create` pending review, re-attach every comment, re-`submit_pending`) — after `submit_pending` there is no pending review to attach to, so calling `add_comment_to_pending_review` without a fresh `create` will fail. If the retry also fails the delta, stop and report the failure in the Step 5 summary (do not loop further).
+**Verify (only when you posted inline findings).** The check is a **delta**, not an absolute: capture the review-comment count **before** creating the pending review, and again after `submit_pending`. The count must rise by the number of comments you attached (at minimum, it must rise) — an absolute non-zero count proves nothing on a PR that already carries review comments from earlier rounds. If you had no inline findings to post (step 2 had nothing to attach), skip verification — an unchanged count is the correct outcome. If the count did not rise, the submit dropped your comments. Retry **once**: restart from step 1 (new `create` pending review, re-attach every comment, re-`submit_pending`) — after `submit_pending` there is no pending review to attach to, so calling `add_comment_to_pending_review` without a fresh `create` will fail. If the retry also fails the delta, stop and report the failure in the Step 5 summary (do not loop further).
+
+**Take the count from exactly one instrument, and check it for saturation:**
+
+```bash
+gh api "repos/haalfi/remote-store/pulls/<N>/comments?per_page=100" --jq 'length'
+```
+
+**`per_page=100` is not decoration and neither is the saturation check.** If that
+call returns exactly `100`, the number is a ceiling rather than a count: say so
+and stop, do not compute a delta from it. This is the one count that does **not**
+follow Step 1's `gh`-content-first split as a matter of convenience — the split
+is why a saturating spelling was reachable at all, so the instrument is pinned
+here instead of chosen at the call site.
+
+Two spellings are **forbidden**, both measured on PR #952, which carries 46
+review comments across 39 threads:
+
+| Forbidden | Returns | Why |
+|---|---|---|
+| `gh api ".../comments" --jq 'length'` | 30 | No `per_page`, so it caps at the default page size and reads as "the comments did not post" |
+| `pull_request_read` → `get_review_comments` → `totalCount` | 39 | Counts **threads**, not comments. A comment delta compared against it compares two different quantities |
+
+`--paginate` is not a fix. It streams partial results to stdout *and* exits
+non-zero when it cannot follow a page, so a caller reading only stdout gets a
+truncated count from a call that failed — the original failure mode at a
+different threshold. If you use it anyway, check its exit status before believing
+its output.
+
+**The rule this encodes:** a verification step that can fail silently is worse
+than no verification, because it is trusted. This one once read as a failed post
+and caused a review to be re-posted twice — fifteen comments where five were
+intended, plus a public claim that posting had failed when it had not.
 
 **Never** use APPROVE or REQUEST_CHANGES (owner token can't APPROVE).
 

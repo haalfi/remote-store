@@ -51,6 +51,9 @@ passes, which is how the decisions below are split.
   [ADR-0020](0020-orchestrate-iterative-convergence.md) still owns. *Reverse if*
   merging and deduplication cost more than the serial rounds they replace, or
   members mostly duplicate one another.
+  *Amended by [ADR-0035](0035-vary-method-not-model.md):* width follows the
+  subject set's reach as well as the diff's breadth, and every panel carries one
+  member that reaches its verdict by execution.
 
 - **Every odd round carries one unprimed reviewer.** Round 1's sole reviewer
   is that member, as [ADR-0033](0033-ship-convergence-driven-review.md)
@@ -59,6 +62,9 @@ passes, which is how the decisions below are split.
   higher. The cadence half: unprimed eyes on mid-loop state, not only the
   endpoints. *Reverse if* interleaved unprimed members reliably find nothing
   the exit gate's terminal pass would not.
+  *Amended by [ADR-0035](0035-vary-method-not-model.md):* the model terms are
+  withdrawn here and in the exit-gate clause below, which inherits them. An
+  unprimed member is defined by what it was not told, not by what reads it.
 
 - **The loop cannot end until an unprimed reviewer has seen the final state
   and found nothing must-fix.** The load-bearing half: the second delivery's

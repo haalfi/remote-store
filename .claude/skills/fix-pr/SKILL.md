@@ -124,8 +124,9 @@ do not create a new trace here.
 Stage, commit (`fix: address PR #$ARGUMENTS review`), push. Report: comments
 fixed/resolved, skipped with reasons, per finding the class swept and per fix
 the sibling descriptions swept — each with what it caught, because a sweep
-that found nothing reads exactly like one that never ran — plus any changed
-surface the gate never executed.
+that found nothing reads exactly like one that never ran — the enumeration
+behind any fix to a quantified claim, and any changed surface the gate never
+executed.
 
 ## Rules
 
@@ -135,6 +136,16 @@ surface the gate never executed.
   instances it happened to see. Siblings share a failure mode, not a spelling,
   so for a rule spanning backends the question is which backends the tests
   execute against, not which lines match a grep.
+- **A fix to a quantified claim is scoped to the quantifier, not to the
+  finding.** When the artifact under repair says "every X", "all but Y", or
+  "each of these", the fix covers that extent and the reply states the
+  enumeration — how many there are, and that you counted rather than assumed.
+  Closing a finding to exactly its own wording leaves the rest of the class
+  open and reads, to every later reviewer, as though it were closed. A
+  divergence list claiming "every operation except the two deletes" needs an
+  item scoped to every operation except the two deletes, not to whichever
+  subset a reviewer happened to measure — that gap was caught, closed to its
+  own wording, and caught again three rounds later in the same sentence.
 - Sweep your own fixes the same way: a fix changes a thing, and every other
   description of that thing — docstring, comment, spec table, guide — is now
   suspect. The class sweep above fires on a review finding; nothing but this
@@ -143,3 +154,12 @@ surface the gate never executed.
   ([ADR-0034](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md)).
   Same discipline: coverage, not a grep — the same claim appears in different
   words.
+- **A copy is not correct because it matches the source. It is correct when it
+  is true where it sits.** The sweep above finds the copies; this rule checks
+  them. A clause true of some backends becomes false the moment it is written
+  as a flat guarantee on a backend-agnostic facade, and a qualifier that was
+  redundant in the spec is load-bearing in a docstring the whole API reads.
+  Ask of each copy what its own readers will take it to promise, not whether
+  it agrees with the original. Filling an omission with a statement that is
+  wrong at its new altitude is a smaller defect than the omission and a more
+  misleading one, because it reads as authoritative.
