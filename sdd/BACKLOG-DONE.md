@@ -249,6 +249,73 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Produced **ID-245** (generate spec 003's reachability table rather than count
   it) and left ID-244 as the next item in the section's chain.
 
+- [x] **BK-344 — Adapt `/ship` from PR #952's review evidence**
+  spec: — · effort: M · audience: contributor.process
+  Third delivery under ADR-0033, first to run the ADR-0034 machinery. The item
+  recorded seven signals and withheld a prescription — BK-342's lesson, that
+  direction narrows attention — so the design was chosen against the evidence,
+  with the user, before anything was written.
+  **The organising finding is signal 2, and it also decided the model question.**
+  Method separated the productive rounds: three premises were asserted and
+  disproved, every one by *running* something, while rounds that read the diff
+  found stale summaries and mis-scoped marks and never a false premise. `/ship`
+  varied *who* reviews along three axes — persona, model, primed-ness — and *how*
+  along none. So the model axis was dropped (it had no attributed finding across
+  three deliveries, and Fable's move to usage pricing gave it a bill) and a
+  **measuring member** takes its place: one per panel, verdict by execution.
+  Shipped as [ADR-0035](adrs/0035-vary-method-not-model.md), amending ADR-0033
+  and ADR-0034.
+  **The measuring member needed a permission, not just an obligation.**
+  `/rvw-pr` confined `Bash` to `gh` PR-content reads in three separate clauses,
+  so the first cut of this work shipped a member instructed to run things and
+  structurally unable to run any — the item's own defect class, a claim
+  consistent with its diff and false against the system, caught by a parallel
+  BK-338 session. The constraint is now **bounded rather than removed**:
+  check-only gates, read-only `git`, `python` against the library; no writes to
+  tracked files, no `gen-*` without `-check`, no moving the checked-out
+  revision, and a gitignored-worktree recipe for reaching the base branch. That
+  this leaves `/ship`'s clean-tree gate intact is measured — `all` composes
+  `format-check`, every `gen_*` runs `--check`, and two consecutive full runs
+  left `git status --porcelain` empty. `/ship` now emits the enabling word
+  (`measuring`) alongside the brief.
+  **Where the other six signals landed.** Signal 1 (five rounds narrowing one
+  gate whose condition space was four booleans) → a **repeat-site check** beside
+  the divergence check: two consecutive refutations of the same condition stop
+  the argument and enumerate the space. Signal 3 (a spec-bound backend unnamed
+  for six rounds) → Step 1 **enumerates the subjects the change's words pick
+  out**, and panel width follows that list rather than the diff's breadth.
+  Signals 4 and 5 → two `/fix-pr` rules: a fix to a quantified claim is scoped to
+  the quantifier, and a copy is correct when it is true *where it sits*, not when
+  it matches its source. Signal 7 (CI red across four rounds, unnoticed by the
+  loop) → **CI is read at every round close**, with the reason the local gate
+  cannot substitute stated: it is Stage-1, no-Docker, one interpreter.
+  **Signal 6 was measured, and it was worse than the item recorded.** Three
+  spellings of "the review-comment count" on PR #952 give three answers:
+  `gh api .../comments --jq 'length'` returns **30** (caps at the default page
+  size — the spelling that misfired), `?per_page=100` returns **46** (the truth),
+  and `pull_request_read` → `get_review_comments` → `totalCount` returns **39**
+  because it counts *threads*. So `/rvw-pr` Step 4 was checking a thread count
+  against a comment delta, wrong on its own terms before anyone reached for
+  `gh api`. Step 4 now pins one instrument, names both forbidden spellings, and
+  rejects a count equal to the page size as a ceiling rather than a count.
+  `--paginate` is not the fix and is documented as such — through this proxy it
+  streams a partial result to stdout *and* exits non-zero.
+  **The soft ceiling was deliberately left at five.** Both escalations past it
+  found more than the round before, and the run's most severe finding came after
+  it — but n = 3 is thin for replacing the loop's only bound, so the count still
+  triggers and the *escalation* now carries the severity trend, per-round yield,
+  and unreached subjects instead of the number.
+  **Consequence worth its own line:** with no model override left, the only
+  reason solo passes spawned an `Agent` was gone, so they now invoke `/rvw-pr`
+  directly and regain its `allowed-tools` read-only frontmatter — a real
+  guarantee replacing an instruction the skill itself calls weaker than the
+  frontmatter it stands in for. `Agent` spawning remains for panels.
+  **Co-shipped:** BK-338's "do not pin a model in a repo skill" is discharged
+  (its roster question stays open, annotated with signal 2's evidence).
+  **Produced BK-346** — three ripple-check rows that answered a question adjacent
+  to the one asked, recorded as `unclear` in PR #952's trace and filed rather
+  than fixed here, since this item's subject was the loop and not the table.
+
 - [x] **BK-342 — Adapt `/ship` from PR #949's review evidence**
   spec: — · effort: M · audience: contributor.process
   The item recorded PR #949's evidence and deliberately withheld a prescription —
@@ -265,7 +332,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   amending ADR-0033**: from round 3 a round may widen to a panel of parallel
   single-lens reviewers sized by the diff's breadth and the prior round's yield;
   every odd round carries one unprimed member (different model than the author's,
-  same tier or higher); and the stop rule gains a third clause — the loop cannot
+  same tier or higher — **since withdrawn by BK-344 /
+  [ADR-0035](adrs/0035-vary-method-not-model.md)**, which drops the model axis
+  and spends it on method; the unprimed requirement itself is unchanged); and the
+  stop rule gains a third clause — the loop cannot
   end until an unprimed reviewer has seen the final state clean. The exit gate is
   the load-bearing half: #949's defects were created mid-loop by fixes, so
   ADR-0033's round-1-only unprimed pass ran before any of them existed.

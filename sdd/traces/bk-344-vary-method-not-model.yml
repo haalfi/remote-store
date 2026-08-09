@@ -1,0 +1,360 @@
+id: BK-344
+title: "Adapt /ship from PR #952's review evidence"
+trigger: >-
+  The third delivery under ADR-0033 ran eight review rounds and stopped because
+  the work had to ship, not because it converged. Five consecutive rounds found
+  a defect in the previous round's fix, all on one decision; the loop varied
+  reviewer identity along three axes and reviewer method along none; and
+  /ship's own posted-count verification read as a failed post when the post had
+  succeeded. Separately, Fable moved to usage-based pricing, so the model
+  clause the skill carried was no longer close to free.
+source_items:
+  - BK-344
+  - BK-338
+audience:
+  - contributor.process
+discovery_followups:
+  - BK-346
+expected_ripples:
+  - sdd/adrs/DIGEST.md
+  - sdd/backlogid.json
+surprising_ripples:
+  - sdd/CLAUDE-REFERENCE.md
+  - CLAUDE.md
+review_rounds: 4
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-344 (item)"
+        read_type: gate
+        extract: >-
+          Seven signals and no prescription, deliberately. Signals 1-5 and 7 are
+          loop defects; signal 6 is an instrument defect. The user's framing
+          arrived separately (remove the model instructions) and turned out to
+          be signal 2's other half rather than a second task: the axis the item
+          says never varied is method, and the axis being removed is the one
+          with no attributed finding.
+        outcome: ok
+      - file: sdd/traces/bug-243-missing-ok-absent-container.yml
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          The item's own instruction, and it paid on signal 1. The per-round
+          detail shows the same gate narrowed at rounds 5, 6 and 7 and withdrawn
+          at the last, with the round-7 step naming the resolution the skill now
+          prescribes — "the condition space is small and finite, so the
+          replacement test parametrises the axes and generates the product". The
+          prescription was in the evidence; nothing in the loop escalated to it.
+        outcome: ok
+      - file: sdd/adrs/0033-ship-convergence-driven-review.md
+        section: "Decision"
+        read_type: gate
+        extract: >-
+          Locates the model clause inside a Decision bullet with its own
+          *Reverse if* about unprimed-versus-lens redundancy. Removing it
+          reverses the clause on grounds the bullet does not anticipate (cost),
+          which is what makes a new amending record the right shape rather than
+          an in-place edit.
+        outcome: ok
+      - file: sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md
+        section: "Decision"
+        read_type: gate
+        extract: >-
+          Two bullets carry the model terms and a third inherits them by
+          reference ("the same briefing and model terms as any unprimed
+          reviewer"), so the amendment note has to name the inheritance or the
+          exit gate keeps a requirement nothing else states. Also supplies the
+          panel-sizing clause signal 3 contradicts — "the diff's breadth", where
+          the diff never touched the subject that went unnamed.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Authority direction amended"
+        read_type: gate
+        extract: >-
+          Decides the scope question before any editing: rfcs/, research/ and
+          traces/ are records, not instructions, so RFC-0009's "Haiku vs Sonnet"
+          open question and ID-232's "Sonnet subagent" extracts stay. Without
+          this row the sweep would have rewritten history to satisfy a
+          present-tense instruction.
+        outcome: ok
+  - id: reproduce
+    name: Measure the instrument
+    steps:
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Step 4 (Verify)"
+        read_type: verify
+        extract: >-
+          Measured rather than assumed, and the written instruction was already
+          wrong. The skill says capture totalCount via pull_request_read
+          get_review_comments and require it to rise "by the number of comments
+          you attached" — but on PR #952 that returns 39, the *thread* count,
+          against 46 actual review comments. So the check compared two different
+          quantities before anyone reached for the gh api spelling BK-344
+          blamed. The item diagnosed the instrument the operator used; the
+          instrument the skill specifies is separately defective.
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Step 1 (Gather context)"
+        read_type: reference
+        extract: >-
+          Explains how the saturating spelling was reachable at all: Step 1
+          mandates gh-first for PR content, so substituting `gh api
+          .../comments --jq length` for the MCP call reads as following the
+          skill. Measured that call: 30, exactly the default page size, on a PR
+          carrying 46. The fix therefore pins the instrument for this one count
+          and says why it is an exception to the split, rather than only
+          correcting the arithmetic.
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Step 4 (--paginate as candidate fix)"
+        read_type: verify
+        extract: >-
+          The obvious fix, tested and rejected. `gh api --paginate` with
+          per_page=10 against PR #952 printed ten ids to stdout and exited
+          non-zero, because page-follow URLs are refused by this environment's
+          proxy — a caller reading only stdout gets a truncated count from a
+          failed call, which is the original failure mode at a new threshold.
+          Prescribed per_page=100 plus an explicit saturation check instead, and
+          documented --paginate's exit-status trap rather than leaving the next
+          reader to rediscover it.
+        outcome: ok
+  - id: design
+    name: Design against the evidence
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-338 (item)"
+        read_type: reference
+        extract: >-
+          Found the open item already holding "Do not pin a model in a repo
+          skill" — written after PR #945, while the pin it forbids arrived with
+          ID-243 and survived. Confirms the removal discharges an existing
+          directive rather than inventing one, and fixes what this PR owes
+          BK-338: annotate the discharged half, leave the roster question, and
+          hand it signal 2's evidence since a roster varies exactly the axis
+          with no measured yield.
+        outcome: ok
+      - file: sdd/templates/adr-template.md
+        section: "Status, Decision"
+        read_type: gate
+        extract: >-
+          Amends is clause-level and the amended clause must be named in prose
+          below the table; the whole Decision section is lifted verbatim into
+          DIGEST.md, so loop mechanics stay in the skills. Set the split for
+          ADR-0035: five decisions with reversal conditions, and the repeat-site
+          check, subject enumeration and CI check left in SKILL.md.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Spawn an Agent / Invoking /rvw-pr directly"
+        read_type: reference
+        extract: >-
+          The consequence the model removal forced, and it was not in the item.
+          The only stated reason a *solo* pass spawned an Agent was that
+          /rvw-pr "cannot take a model override" — so with the override gone the
+          rationale is gone, and solo passes can invoke /rvw-pr directly and
+          regain its allowed-tools frontmatter, which the same file calls
+          stronger than the instruction restating it. Removing a requirement
+          made a guarantee available; leaving the spawn path alone would have
+          kept a false "why".
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/adrs/DIGEST.md
+        section: "(generated)"
+        read_type: verify
+        extract: >-
+          Generated by gen_adr_digest.py and gated by preflight's --check, which
+          verifies digest freshness and supersession-graph consistency. Three
+          ADRs changed, so regenerate and commit rather than hand-edit; a DRIFT
+          failure would mean the Amends metadata is one-sided.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience (derived rule)"
+        read_type: verify
+        extract: >-
+          Settles the CHANGELOG question: an entry is required iff an audience
+          entry starts with `user.`, or contributor.process introduces a new
+          user-facing framework. This is contributor.process with no user-facing
+          surface, so no entry — matching ID-243 and BK-342, neither of which
+          has one.
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "frontmatter comment, IMPORTANT block, Step 2 Search discipline"
+        read_type: verify
+        extract: >-
+          **The measuring decision shipped inert and a parallel BK-338 session
+          caught it.** Three clauses — the frontmatter comment, the "no local
+          filesystem scouting" block, and Step 2's search discipline — confine
+          Bash to gh PR-content reads in Steps 0-1, so a measuring member
+          executing this skill can run nothing: not the gate, not the library,
+          not git. Verified in force at 044a161 as well as at HEAD. I wrote the
+          obligation into /ship and ADR-0035 and never checked whether the skill
+          that executes it permits the method; the same defect class the item
+          exists to remove — a claim consistent with its own diff and false
+          against the system. Fixed by bounding rather than removing the
+          constraint, and /ship now ships the permission (`measuring`) with the
+          obligation. Tagged `ok` deliberately: the schema reserves `outcome`
+          for documents that failed a reader, and rvw-pr/SKILL.md did not — it
+          stated the restriction accurately in three places and was simply
+          never consulted before the obligation was written. The miss is mine
+          and belongs in this extract, not in the tag that
+          `report-trace-outcomes` ranks documents by.
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] — all, format-check, gen-*"
+        read_type: verify
+        extract: >-
+          Measured the safety of the constraint lift instead of asserting it,
+          which is the discipline this PR adds. `all` composes format-check and
+          never format; every gen_* in preflight and docs-gate carries --check;
+          .coverage, coverage.xml, .pytest_cache/, __pycache__/, site/ and tmp/
+          are gitignored. Two consecutive full `hatch run all` runs left
+          `git status --porcelain` empty, so a measuring reviewer does not
+          endanger /ship's clean-tree gate. The hazard is the mutating twins
+          (format, gen-* without -check, record_cassettes.py) and moving the
+          checked-out revision — both now named as forbidden, with a
+          gitignored-worktree recipe for reaching the base branch.
+        outcome: ok
+      - file: sdd/rfcs/rfc-0009-multi-agent-orchestration.md
+        section: "Status; Four Subject Matter Experts (line 39)"
+        read_type: verify
+        extract: >-
+          A third finding from the same parallel session was **refuted**: that
+          /orchestrate's "All 5 experts activate" contradicts this RFC's "the
+          orchestrator decides which experts to spawn", and is drift fixable
+          without new evidence. It is not. This RFC is `Superseded by ADR-0020
+          (via ADR-0019)`, and the ripple-check lists rfcs/ as records rather
+          than instructions, so a live skill differing from it is supersession
+          working. The 5-vs-4 gap is the sdd-expert, added by BK-315 (#911)
+          long after the RFC, whose heading, table and line 39 all consistently
+          say four. The residual — a fixed roster versus selecting the experts a
+          change requires — is BK-338's open question, so "fixing" it would
+          decide that item rather than de-drift this one.
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] — drift-check, format"
+        read_type: verify
+        extract: >-
+          PR #954 round 1 refuted the `-check` suffix rule I had just written as
+          "the rule that catches every case": `drift-check` carries the suffix,
+          takes free-form args, and reaches `refresh-baseline` (overwrites a
+          committed lock file) and `render-docs` without `--check` (overwrites a
+          tracked docs page). The reviewer's proposed replacement — "takes no
+          {args}, or args pinned to --check" — was **also** refuted by running it
+          against the alias table: `format` takes no args and rewrites source.
+          Two lexical rules, two counterexamples, so the third attempt is not a
+          third rule: the safe set is now an allowlist by name, with both
+          counterexamples recorded as why no pattern works. Same shape as the
+          BE-021 carve-out in the item's own evidence, where three criteria were
+          each circular or false and compliance was cheaper than a fourth.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "GitHub PR I/O split"
+        read_type: verify
+        extract: >-
+          Round-1 ripple finding, and a sweep that stopped at the file boundary.
+          The PR body and this trace both enumerated "three separate clauses"
+          confining Bash — complete for rvw-pr/SKILL.md, and wrong for the repo:
+          the split section is the named single source for that rule and carries
+          a fourth copy ("never Bash, never Python") plus a claim that /rvw-pr
+          never touches the feedback row, which the new count read falsifies.
+          The item's own quantifier rule names this failure and I committed it
+          in the same PR that adds the rule.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Stop rule"
+        read_type: verify
+        extract: >-
+          Round-1 finding: ADR-0035 stated the premise obligation absolutely
+          while the only mechanism was panel-scoped, and panels start at round 3
+          — so a one- or two-round delivery ships with zero execution-based
+          review, and the stop rule expressly permits ending on a clean round 1.
+          Fixed with a fourth stop clause on ADR-0034's precedent, which is the
+          same argument the exit gate rests on: an obligation that only fires
+          mid-loop proves nothing about what ships. This makes ADR-0035's third
+          decision true as written rather than aspirational.
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "frontmatter comment, IMPORTANT block, Step 4 count"
+        read_type: verify
+        extract: >-
+          Round-3 finding, and the round-1 fix created it: pinning the Step 4
+          count to a `gh api` call made an *ordinary* review pass depend on Bash
+          at Step 4 to read review **feedback**, while three sites still scoped
+          Bash to PR **content** at Steps 0-1. Obligation without permission,
+          the same split fixed for `measuring` one round earlier and
+          reintroduced one step later. The reviewer named four sites; sweeping
+          the wording rather than the finding found a **fifth** —
+          `ship/SKILL.md`'s "permits Bash only for gh PR-content reads" in the
+          spawn-prompt bullet — which is the quantifier rule paying for itself
+          on the round that rule was written for.
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] — all"
+        read_type: verify
+        extract: >-
+          Round 3 refuted a claim round 2 had certified as verified-clean:
+          "`hatch run all` composes only check-only targets" is false —
+          `docs-build` writes the site, `examples` and `notebooks` execute
+          scripts, `test-cov-s1` writes coverage. The conclusion survives on the
+          measured evidence (two full runs left the tree clean), but the stated
+          *reason* was wrong, and it is the reason a later reader applies to a
+          newly added `all` member. Replaced with the invariant that actually
+          holds: every output of `all` lands on a gitignored path. A reading
+          round certified it; a round that read `pyproject.toml` refuted it.
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Dev commands (Claude-specific shell constraints)"
+        read_type: verify
+        extract: >-
+          Round 3 caught the worktree recipe using `||`, which this file
+          forbids, and `$$`, which differs per Bash call because each call is a
+          new shell — so the teardown would have removed a path that never
+          existed and left the real worktree to break the next round, the exact
+          hazard the bullet warns about. I had hit the no-`&&` rule twice while
+          committing during this same PR and still wrote a `||` into a recipe
+          for someone else. Rewritten as three separate calls with a literal
+          path, then executed verbatim: add, HEAD and tree unaffected, remove,
+          no worktree left registered.
+        outcome: ok
+      - file: sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md
+        section: "Decision — exit-gate bullet"
+        read_type: verify
+        extract: >-
+          Round-4 finding, and the one every earlier round walked past. I
+          attached per-bullet `*Amended by*` notes to two of ADR-0034's three
+          Decision bullets and covered the third by writing "and in the
+          exit-gate clause below, which inherits them" in a *sibling's* note.
+          That bullet therefore still read "the same briefing and model terms"
+          as live text, lifted verbatim into DIGEST.md, contradicting /ship's
+          new "Never pin or prefer a model" rule for anyone landing on it
+          directly. Exactly this PR's own "a copy is correct when it is true
+          where it sits" — a fix that relied on a reader having read the
+          neighbouring paragraph. The third bullet now carries its own note.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Round composition — Closing gate row; When not to use this"
+        read_type: verify
+        extract: >-
+          Round-4 finding: the 3..N row was swept for the measuring obligation
+          and the Closing gate row was not, though it already inlines the
+          analogous unprimed appended-pass mechanism rather than deferring to
+          the Stop rule. A table-skimming reader saw one appendable gap where
+          this PR creates two. Swept the class rather than the row: the "When
+          not to use this" cost paragraph made the same singular claim ("can
+          append a further reviewer pass") and was not named by the finding.
+          Both now state two gates, never the same reviewer.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Final sweep for orphaned references after the Model column was
+          dropped: the panel-constraints bullet still describes solo rounds
+          keeping rvw-pr's full posting flow (true, and now via direct
+          invocation), and the analyze-only bullet no longer says "for panel
+          members" since only panels spawn. Confirmed no remaining hit for
+          model / tier / Fable / Opus / Sonnet / Haiku anywhere under .claude/.
+        outcome: ok

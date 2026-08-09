@@ -39,10 +39,21 @@ Fetch **all four** comment sources (`owner: "haalfi"`, `repo: "remote-store"`):
 
 | #   | Tool                 | Method               | What it returns                          |
 | --- | -------------------- | -------------------- | ---------------------------------------- |
-| 1   | `pull_request_read`  | `get_review_comments`| Inline thread comments on specific lines |
+| 1   | `pull_request_read`  | `get_review_comments`| Inline review **threads** (not comments) on specific lines — pass `perPage: 100` |
 | 2   | `pull_request_read`  | `get_comments`       | Review-level comments (pulls API)        |
 | 3   | `pull_request_read`  | `get_reviews`        | Review body/summary text                 |
 | 4   | `issue_read`         | `get_comments`       | Top-level conversation comments (issues API — GitHub stores these separately) |
+
+**Every one of these paginates, and a truncated work list is indistinguishable
+from a short one.** Pass `perPage: 100`; if a source returns exactly 100, or
+source 1 reports `hasNextPage`, fetch the next page (`after` the returned
+`endCursor` for source 1, `page` for the rest) until it does not. A comment you
+never fetched looks exactly like a comment that does not exist, and this list is
+the input to every fix below — the same silent-ceiling shape `/rvw-pr` Step 4
+pins its own instrument against.
+
+Source 1 returns **threads**, each carrying its own comments; do not treat its
+`totalCount` as a comment count.
 
 If `gh` CLI is authenticated, also fetch thread IDs for resolution in Step 4:
 
@@ -51,7 +62,7 @@ gh api graphql -f query='
   query($owner:String!, $repo:String!, $number:Int!) {
     repository(owner:$owner, name:$repo) {
       pullRequest(number:$number) {
-        reviewThreads(last: 100) {
+        reviewThreads(last: 100) {   # saturating: if this returns 100, page it
           nodes {
             id isResolved isOutdated path line
             comments(first: 10) {
@@ -64,6 +75,11 @@ gh api graphql -f query='
   }
 ' -f owner='haalfi' -f repo='remote-store' -F number=$ARGUMENTS
 ```
+
+`reviewThreads(last: 100)` is a ceiling, not a total: if it returns exactly 100,
+page it with `before`/`after` rather than assuming that is all of them. MCP
+`resolve_review_thread` covers the same gap where `gh api graphql` is
+unavailable.
 
 No gh? Skip thread IDs — tell user thread resolution will be manual.
 
@@ -124,8 +140,9 @@ do not create a new trace here.
 Stage, commit (`fix: address PR #$ARGUMENTS review`), push. Report: comments
 fixed/resolved, skipped with reasons, per finding the class swept and per fix
 the sibling descriptions swept — each with what it caught, because a sweep
-that found nothing reads exactly like one that never ran — plus any changed
-surface the gate never executed.
+that found nothing reads exactly like one that never ran — the enumeration
+behind any fix to a quantified claim, and any changed surface the gate never
+executed.
 
 ## Rules
 
@@ -135,6 +152,16 @@ surface the gate never executed.
   instances it happened to see. Siblings share a failure mode, not a spelling,
   so for a rule spanning backends the question is which backends the tests
   execute against, not which lines match a grep.
+- **A fix to a quantified claim is scoped to the quantifier, not to the
+  finding.** When the artifact under repair says "every X", "all but Y", or
+  "each of these", the fix covers that extent and the reply states the
+  enumeration — how many there are, and that you counted rather than assumed.
+  Closing a finding to exactly its own wording leaves the rest of the class
+  open and reads, to every later reviewer, as though it were closed. A
+  divergence list claiming "every operation except the two deletes" needs an
+  item scoped to every operation except the two deletes, not to whichever
+  subset a reviewer happened to measure — that gap was caught, closed to its
+  own wording, and caught again three rounds later in the same sentence.
 - Sweep your own fixes the same way: a fix changes a thing, and every other
   description of that thing — docstring, comment, spec table, guide — is now
   suspect. The class sweep above fires on a review finding; nothing but this
@@ -143,3 +170,12 @@ surface the gate never executed.
   ([ADR-0034](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md)).
   Same discipline: coverage, not a grep — the same claim appears in different
   words.
+- **A copy is not correct because it matches the source. It is correct when it
+  is true where it sits.** The sweep above finds the copies; this rule checks
+  them. A clause true of some backends becomes false the moment it is written
+  as a flat guarantee on a backend-agnostic facade, and a qualifier that was
+  redundant in the spec is load-bearing in a docstring the whole API reads.
+  Ask of each copy what its own readers will take it to promise, not whether
+  it agrees with the original. Filling an omission with a statement that is
+  wrong at its new altitude is a smaller defect than the omission and a more
+  misleading one, because it reads as authoritative.

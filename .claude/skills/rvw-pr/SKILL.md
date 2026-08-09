@@ -4,16 +4,51 @@ description: Post inline review comments on a GitHub PR. Find real issues only.
 context: fork
 argument-hint: "[PR number] [optional context]"
 allowed-tools: Read, Grep, Glob, Bash, mcp__MCP_DOCKER__pull_request_read, mcp__MCP_DOCKER__list_pull_requests, mcp__MCP_DOCKER__list_commits, mcp__MCP_DOCKER__get_file_contents, mcp__MCP_DOCKER__pull_request_review_write, mcp__MCP_DOCKER__add_comment_to_pending_review
-# Intentional: no Edit or Write — review is read-only auditing. Bash is for `gh` PR-content reads only (never for fixing or filesystem scouting).
+# Intentional: no Edit or Write — review is read-only auditing. Bash is for `gh` PR-content reads, Step 4's posted-count verification, and — in a measuring pass — the allowlisted gates (never for fixing, regenerating, or filesystem scouting).
 ---
 
 ## ROLE: You are a REVIEWER. You are NOT an author. You do NOT fix anything.
 
-**IMPORTANT — no local filesystem scouting.** Use Bash **only** for `gh` CLI reads of PR content (Steps 0–1); never to fix, write, or locate memory files, home directories, or project paths. The review context is fully self-contained: the PR via `gh`/MCP, and the local repo files (Read/Grep/Glob only). Memory from the parent session is available in context — do not reload it.
+**IMPORTANT — no local filesystem scouting.** Use Bash for three things and nothing else: `gh` CLI reads of PR content (Steps 0–1); **Step 4's posted-count verification**, which is a `gh api` read of review *feedback* rather than content and is authorised here because Step 4 pins it (a count carries no content, so it primes nobody); and, when the invoking prompt designates a **measuring pass**, the allowlisted set below. Never to fix, write, regenerate, or locate memory files, home directories, or project paths. The review context is otherwise self-contained: the PR via `gh`/MCP, and the local repo files (Read/Grep/Glob only). Memory from the parent session is available in context — do not reload it.
+
+**Measuring pass.** If the invoking prompt says **measuring**, you reach your verdict by *executing*, not by reading, and Bash is opened to exactly this set:
+
+- **Allowed, by name — this is an allowlist, not a pattern.** The composite gates `hatch run all` / `lint` / `preflight` / `docs-gate` / `typecheck` / `test*`; read-only `git` (`log`, `show`, `diff`, `status`, `rev-parse`, `blame`, and `worktree add`/`remove`/`prune` under `tmp/`); and `python` exercising the library. Anything not on this list, do not run — "it looked read-only" is not a reason.
+- **The alias name does not tell you whether it writes**, which is why the list above is enumerated rather than derived. Two counterexamples, both live in `pyproject.toml`: `drift-check` carries the `-check` suffix but takes free-form args and reaches `refresh-baseline` (overwrites the committed `infra/drift-locks/<extra>.txt`) and `render-docs` without `--check` (overwrites a tracked docs page); `format` takes no args at all and rewrites source. A suffix rule and an args-shape rule are each false against one of these.
+- **Write only under `tmp/`.** Not "only tracked files" — `/ship` requires a clean `git status --porcelain`, which reports an untracked file as `??` just as loudly. Exercising a *storage* library means writing files, so point every root, temp dir and worktree at the gitignored `tmp/` and the stated bound matches the enforced check.
+- **Never change the checked-out revision.** No `checkout`, `switch`, `stash`, `reset`, or `rebase`: `/ship` verifies an unchanged `HEAD` and a clean `git status --porcelain` before it trusts your pass, and moving either invalidates the whole round. To measure the **base** branch, use a worktree — and tear it down, because `worktree add` is not idempotent and the next round's measuring member runs the same command:
+
+One Bash call per line — `&&`, `||` and `;` are forbidden by
+[`CLAUDE.md` § Dev commands](../../../CLAUDE.md#dev-commands), and `$$` would
+differ between calls because each is a new shell, so the path is a literal:
+
+```bash
+git worktree add tmp/base <base-ref>
+```
+```bash
+# ... measure in tmp/base ...
+```
+```bash
+git worktree remove tmp/base
+```
+
+If `worktree remove` fails on a stale entry, `git worktree prune` then retry.
+Tear down even when the measurement failed: one reviewer runs at a time, so a
+surviving `tmp/base` is what breaks the next round's `worktree add`.
+
+**Running the gate is safe for `/ship`'s clean-tree check, and that was measured rather than assumed.** Two consecutive full `hatch run all` runs left `git status --porcelain` empty. **The invariant is that every output of `all` lands on a gitignored path** — not that its targets are check-only, which is false: `docs-build` writes the whole site, `examples` and `notebooks` execute scripts, `test-cov-s1` writes coverage data. Apply the gitignored-output test, not a check-only test, when asking whether a newly added `all` member is still safe to run here. This paragraph is the single home for that claim; `/ship` and ADR-0035 cite it rather than restating it.
+
+Report what you **ran** and what came back, not what you concluded from reading. A finding you could not reproduce is reported as unreproduced.
 
 Your only valuable output is review insights. The only artifact you create is comments on the PR. Findings go in a comment — bugs, gaps, deferrals, follow-ups. Anything else is out of scope for a reviewer.
 
-PR number and optional reviewer context are in `$ARGUMENTS`. Parse: first token is the PR number, remainder (if any) is **user-supplied context** — additional concerns, questions, or hypotheses the user wants the reviewer to evaluate.
+PR number, mode flags, and optional reviewer context are in `$ARGUMENTS`. Parse in this order:
+
+1. **First token: the PR number.**
+2. **Then any leading mode flags**, consumed as flags and never as content: `analyze-only`, `measuring`. Keep consuming while the next token is one of those words; both may appear, in either order.
+3. **The remainder (if any) is user-supplied context** — additional concerns, questions, or hypotheses the user wants the reviewer to evaluate.
+
+**Step 2 must not treat a consumed mode flag as a user claim.** Getting this wrong is silent and expensive in both directions: a `measuring` flag mis-parsed as context produces a pass that reads instead of running — the inert obligation `/ship` depends on this skill to prevent — and it surfaces as a stray `User-flagged:` comment or a `Rejected user input: "measuring"` line rather than as an error. The mode gates below say "if the invoking prompt says X", which is satisfied by an `Agent` prompt *or* by a flag parsed here; slash invocation is the path `/ship` prefers for solo passes, so this is the common case, not the exotic one.
 
 **Analyze-only mode.** If the invoking prompt says **analyze-only**, you are one member of a parallel review panel and the caller owns all posting: execute Steps 0–3, **skip Step 4 entirely** — concurrent members share one owner token, and GitHub allows one pending review per user per PR, so a second poster cross-contaminates the first's pending review — and return Step 5's report **plus your consolidated findings** as your final message — per finding, everything Step 4 would need to post it: path, `subjectType` (`LINE` or `FILE`), line and side when `LINE` (`side: "LEFT"` with the base-branch line for deleted lines), category, body. Your Step 5 header reads `## PR #N Review — X findings returned (analyze-only)`, since nothing was posted and the posted-count header would be false. Every other rule — read-only, no fixing, no follow-ups — applies unchanged.
 
@@ -47,7 +82,9 @@ Priority order: (1) Correctness, (2) Spec compliance, (3) Test coverage, (4) Con
 
 **Ripple check:** Read [`sdd/CLAUDE-REFERENCE.md` § Ripple-check table > Detailed checklist](../../../sdd/CLAUDE-REFERENCE.md#detailed-checklist). For each triggered row, verify targets are addressed. File `Ripple:` comments for gaps.
 
-**Search discipline:** Use `Grep` and `Glob` for all local codebase searches. Use `Read` for full file reads. Never use `Bash` or Python scripts to search local code — Bash is permitted **only** for `gh` PR-content reads (Steps 0–1).
+**Search discipline:** Use `Grep` and `Glob` for all local codebase searches. Use `Read` for full file reads. Never use `Bash` or Python scripts to **search** local code.
+
+This clause bounds *searching*, not *measuring*, and the distinction is load-bearing: a measuring pass runs the command set in the header block above, and this rule does not narrow it. Read as a blanket Bash ban it would forbid the only method that has ever found a false premise here — which is what it did, silently, until a review of ADR-0035 caught it.
 
 **Content-rules check (prose changes only):** Apply `sdd/CONTENT-RULES.md`. File findings under `Consistency:`.
 
@@ -79,7 +116,55 @@ Apply confidence filter: only post findings you are ≥80% confident about. Skip
 2. **Attach each inline comment** with `add_comment_to_pending_review`, one call per finding. Required params: `path`, `body`, `subjectType: "LINE"` (or `"FILE"` for file-level). Optional: `line`, `side`, `startLine`, `startSide` for multi-line. Do not batch into a single review creation.
 3. **Submit the review.** `pull_request_review_write` with `method: "submit_pending"`, `event: "COMMENT"`, and the summary body.
 
-**Verify (only when you posted inline findings).** The check is a **delta**, not an absolute: capture `totalCount` via `pull_request_read` `method: "get_review_comments"` **before** creating the pending review, and again after `submit_pending`. The count must rise by the number of comments you attached (at minimum, it must rise) — an absolute non-zero count proves nothing on a PR that already carries review comments from earlier rounds. If you had no inline findings to post (step 2 had nothing to attach), skip verification — an unchanged count is the correct outcome. If the count did not rise, the submit dropped your comments. Retry **once**: restart from step 1 (new `create` pending review, re-attach every comment, re-`submit_pending`) — after `submit_pending` there is no pending review to attach to, so calling `add_comment_to_pending_review` without a fresh `create` will fail. If the retry also fails the delta, stop and report the failure in the Step 5 summary (do not loop further).
+**Verify (only when you posted inline findings).** The check is a **delta**, not an absolute: capture the review-comment count **before** creating the pending review, and again after `submit_pending`. The count must rise by the number of comments you attached (at minimum, it must rise) — an absolute non-zero count proves nothing on a PR that already carries review comments from earlier rounds. If you had no inline findings to post (step 2 had nothing to attach), skip verification — an unchanged count is the correct outcome. If the count did not rise, the submit dropped your comments. Retry **once**: restart from step 1 (new `create` pending review, re-attach every comment, re-`submit_pending`) — after `submit_pending` there is no pending review to attach to, so calling `add_comment_to_pending_review` without a fresh `create` will fail. If the retry also fails the delta, stop and report the failure in the Step 5 summary (do not loop further).
+
+**Take the count from exactly one instrument, and walk its pages explicitly:**
+
+```bash
+# Sum pages until one comes back short. per_page is the page size, not a ceiling.
+gh api "repos/haalfi/remote-store/pulls/<N>/comments?per_page=100&page=1" --jq 'length'
+gh api "repos/haalfi/remote-store/pulls/<N>/comments?per_page=100&page=2" --jq 'length'   # only if page 1 returned exactly 100
+```
+
+**A page that returns exactly `per_page` means there is more, not that you are
+done** — advance `page` until a short page (or `0`) comes back, and sum. That
+loop is what makes this a count rather than a ceiling: `/ship` runs to eight
+rounds and the closing gate is where a dropped finding costs most, so a
+verification that switches itself off above 100 comments switches off exactly
+when it is needed. Verified by walking one PR at `per_page=40`: `40 + 6 + 0`,
+matching its true total.
+
+This is the one count that does **not** follow Step 1's `gh`-content-first split
+as a matter of convenience — the split is why a saturating spelling was
+reachable at all, so the instrument is pinned here instead of chosen at the call
+site.
+
+Two spellings are **forbidden**, each for a structural reason rather than a
+tuning one:
+
+| Forbidden | Why |
+|---|---|
+| `gh api ".../comments" --jq 'length'` | No `per_page`, so it silently caps at the default page size and reads as "the comments did not post" |
+| `pull_request_read` → `get_review_comments` → `totalCount` | Counts **threads**, not comments, so a comment delta compared against it compares two different quantities |
+
+Both were caught by measuring one PR three ways and getting three different
+answers — the capped count, the true count, and the thread count. The figures
+are recorded with the item that found them; what belongs here is that neither
+instrument is a comment count.
+
+**Prefer the explicit `page=` walk above to `--paginate`**, which is why it is
+written that way. Behind an agent proxy that refuses `gh`'s page-follow URLs —
+measured here, and not a property of `--paginate` everywhere — it streams
+partial results to stdout *and* exits non-zero, so a caller reading only stdout
+gets a truncated count from a call that failed: the original failure mode at a
+different threshold. Where it does work it is fine; the explicit walk is
+portable across both, which is the reason to pin it. If you use `--paginate`
+anyway, check its exit status before believing its output.
+
+**The rule this encodes:** a verification step that can fail silently is worse
+than no verification, because it is trusted. This one once read as a failed post
+and caused a review to be re-posted twice — fifteen comments where five were
+intended, plus a public claim that posting had failed when it had not.
 
 **Never** use APPROVE or REQUEST_CHANGES (owner token can't APPROVE).
 

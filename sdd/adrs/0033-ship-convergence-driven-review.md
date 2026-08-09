@@ -87,6 +87,10 @@ it, since the figure is one delivery's history and not a forward estimate.
   duplicate what lens rounds find, making the diversity redundant.
   *Amended by [ADR-0034](0034-ship-panel-rounds-and-unprimed-exit.md):* rounds
   may widen to panels from round 3, with an unprimed member every odd round.
+  *Amended by [ADR-0035](0035-vary-method-not-model.md):* the model clause is
+  withdrawn — no repo skill pins or diversifies a model — and the diversity it
+  bought moves to method, one member per panel reaching its verdict by
+  execution. Unprimed-ness is unchanged.
 
 - **Reviewers are read-only and never resumed; fixers may decline with
   evidence.** A resumed reviewer inherits its own prior conclusions and stops

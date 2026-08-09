@@ -2,7 +2,7 @@
 
 <!-- doc: repo-only -->
 
-Compiled from 34 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
+Compiled from 35 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
 
 ## Accepted
 
@@ -1034,6 +1034,10 @@ directly.
   duplicate what lens rounds find, making the diversity redundant.
   *Amended by [ADR-0034](0034-ship-panel-rounds-and-unprimed-exit.md):* rounds
   may widen to panels from round 3, with an unprimed member every odd round.
+  *Amended by [ADR-0035](0035-vary-method-not-model.md):* the model clause is
+  withdrawn — no repo skill pins or diversifies a model — and the diversity it
+  bought moves to method, one member per panel reaching its verdict by
+  execution. Unprimed-ness is unchanged.
 
 - **Reviewers are read-only and never resumed; fixers may decline with
   evidence.** A resumed reviewer inherits its own prior conclusions and stops
@@ -1060,6 +1064,9 @@ operational contract and lives in `.claude/skills/ship/SKILL.md`.
   [ADR-0020](0020-orchestrate-iterative-convergence.md) still owns. *Reverse if*
   merging and deduplication cost more than the serial rounds they replace, or
   members mostly duplicate one another.
+  *Amended by [ADR-0035](0035-vary-method-not-model.md):* width follows the
+  subject set's reach as well as the diff's breadth, and every panel carries one
+  member that reaches its verdict by execution.
 
 - **Every odd round carries one unprimed reviewer.** Round 1's sole reviewer
   is that member, as [ADR-0033](0033-ship-convergence-driven-review.md)
@@ -1068,6 +1075,9 @@ operational contract and lives in `.claude/skills/ship/SKILL.md`.
   higher. The cadence half: unprimed eyes on mid-loop state, not only the
   endpoints. *Reverse if* interleaved unprimed members reliably find nothing
   the exit gate's terminal pass would not.
+  *Amended by [ADR-0035](0035-vary-method-not-model.md):* the model terms are
+  withdrawn. An unprimed member is defined by what it was not told, not by what
+  reads it.
 
 - **The loop cannot end until an unprimed reviewer has seen the final state
   and found nothing must-fix.** The load-bearing half: the second delivery's
@@ -1078,6 +1088,9 @@ operational contract and lives in `.claude/skills/ship/SKILL.md`.
   round it counts toward the ceiling only if it finds something. *Reverse if*
   terminal unprimed passes stop finding anything across a meaningful sample
   of deliveries.
+  *Amended by [ADR-0035](0035-vary-method-not-model.md):* "model terms" is
+  withdrawn — briefing terms only — and a second, parallel exit gate joins this
+  one for behavioural claims.
 
 - **Every fix sweeps the sibling descriptions of what it changed.** The
   sibling-sweep obligation that already attaches to review findings extends
@@ -1091,6 +1104,47 @@ rule are operational contract and live in `.claude/skills/ship/SKILL.md` and
 `.claude/skills/fix-pr/SKILL.md`.
 
 > amends ADR-0033 (clause).
+
+### [ADR-0035](0035-vary-method-not-model.md): Vary Method, Not Model, in `/ship` Review
+
+- **No repo skill pins, prefers, or diversifies an LLM model.** `/ship` selects
+  reviewers by lens and method only. Unprimed-ness carries reviewer diversity on
+  its own: what makes an unprimed pass independent is what it was *not* told,
+  which is a property of the brief and not of who reads it. *Reverse if* a
+  measured comparison attributes findings to model difference at a rate that
+  justifies the per-round cost.
+
+- **Every panel carries one measuring member**, reaching its verdict by
+  execution rather than reading. This is the axis the model requirement vacates,
+  and the trade is deliberate: one member per panel, spent on method instead of
+  identity. *Reverse if* measuring members stop finding what reading members
+  miss across a meaningful sample of deliveries.
+
+- **A premise about existing behaviour is executed, not read, before it ships**,
+  enforced by a stop-rule clause and not by the panel obligation alone. A PR
+  asserting no such claim satisfies it vacuously. A false premise is consistent
+  with the diff, so no amount of reading reaches it. *Reverse if* premise checks
+  reliably confirm what a reading round already established.
+
+- **Panel width follows the subject set, not the diff** — the reach of what the
+  change's own words pick out, alongside the diff's breadth and the prior
+  round's yield. Breadth alone cannot see a subject the change binds and the
+  diff never touches. *Reverse if* subject enumeration reliably reproduces the
+  file list.
+
+- **The soft ceiling stays at five finding-rounds and stays soft, but the
+  escalation carries evidence** — severity trend, per-round yield, unreached
+  subjects — rather than the count. Three deliveries is too thin to move the
+  loop's only bound, and too much to keep deciding on the one number ADR-0033
+  already identified as a poor termination signal. *Reverse if* a meaningful
+  sample shows rounds past the ceiling reliably finding nothing.
+
+The step sequence, panel mechanics, lens menu, brief requirements, the
+repeat-site check and the CI check are operational contract and live in
+`.claude/skills/ship/SKILL.md`, `.claude/skills/fix-pr/SKILL.md` and
+`.claude/skills/rvw-pr/SKILL.md`.
+
+> amends ADR-0033, ADR-0034 (clause).
 
 ## Superseded
 

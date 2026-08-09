@@ -339,9 +339,13 @@ fork-vs-main distinction does **not** change the read tool; the only axis that
 does is whether `gh` is on `PATH`. (`/pr` is out of scope here: it gathers
 context from local git, not the PR API, and its only GitHub call is the
 `create_pull_request` write — already on the MCP write path below.
-`/rvw-pr` uses the content-read and write rows only: its Step 1 forbids
-fetching review feedback — load-bearing for `/ship`'s unprimed reviewers —
-so the feedback row governs `/fix-pr` and the main session alone.)
+`/rvw-pr` uses the content-read and write rows, and the feedback row for one
+narrow purpose: its Step 4 counts review comments to verify its own post
+landed. Its Step 1 still forbids *reading* review feedback — load-bearing for
+`/ship`'s unprimed reviewers — and a count carries no content, so it primes
+nobody. That count is pinned to an explicit paginated `gh api` call in the
+skill rather than chosen per the rows below, because a saturating spelling
+reading as "the post failed" is what made pinning necessary.)
 
 | Direction | Tool |
 |-----------|------|
@@ -349,7 +353,7 @@ so the feedback row governs `/fix-pr` and the main session alone.)
 | Read review **feedback with resolution state** (`isResolved`/`isOutdated`) | MCP dual-fetch (`get_review_comments` + `get_comments`), or `gh api graphql` `reviewThreads` — but **not** plain `gh` content reads (`gh pr view`/`gh pr diff`), which omit resolution state |
 | **Write** (post review, inline comments) | MCP (`pull_request_review_write`, `add_comment_to_pending_review`) |
 | Resolve/unresolve **threads** | MCP where available; `gh api graphql` mutation for the resolve gap |
-| Search **local repo code** | `Grep` / `Glob` / `Read` — never Bash, never Python |
+| Search **local repo code** | `Grep` / `Glob` / `Read` — never Bash, never Python. This row bounds *searching*; it does not bound *measuring* — a `/rvw-pr` measuring pass runs an allowlisted set of gates, read-only `git`, and `python` against the library, defined in that skill |
 | Read **any** PR data via Python | never |
 
 **Why `gh`-preferred for content reads:** quick, skips the MCP round-trip, needs

@@ -142,7 +142,10 @@ PR workflows are codified as skills: `/pr`, `/rvw-pr`, `/fix-pr`. Use those inst
 Use `/rvw-pr` for PR reviews, not the built-in `/review` CLI command.
 
 `/ship` delivers a whole task as one merge-ready PR, planning and building before
-reviewing to convergence rather than to a round count. Rationale: [ADR-0033](sdd/adrs/0033-ship-convergence-driven-review.md).
+reviewing to convergence rather than to a round count. Rationale: [ADR-0033](sdd/adrs/0033-ship-convergence-driven-review.md),
+amended by [ADR-0034](sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md) (panel
+rounds, unprimed exit gate) and [ADR-0035](sdd/adrs/0035-vary-method-not-model.md)
+(method over model). Read all three: 0035 withdraws a clause a reader lands on in 0033.
 
 For lookup tables, detailed procedures, and repo layout see `sdd/CLAUDE-REFERENCE.md`.
 
