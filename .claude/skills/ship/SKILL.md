@@ -41,7 +41,8 @@ surface.
 |---|---|---|
 | Orchestrator | main loop | **Never delegated.** It holds the convergence judgement |
 | Designer / planner | main loop, plan mode | One role, not two, unless the task is architectural |
-| Author, fixer | domain-expert subagents | May decline an instruction **with evidence** |
+| Author | domain-expert subagents where the work is theirs | May decline an instruction **with evidence** |
+| Fixer | **main loop by default.** Delegate only for depth inside one file tree | The fixer owns the sibling sweep ([ADR-0034](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md)), and the sweeps that pay are cross-file — a domain-scoped fixer cannot perform them ([ADR-0036](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md)). A delegate still returns the sweep across what it touched |
 | Reviewer | fresh subagents — one per panel member | **Never resumed.** A resumed reviewer inherits its own prior conclusions |
 
 ## Step 1: Frame
@@ -113,15 +114,20 @@ push → reply and resolve.
 | Round | Composition |
 |---|---|
 | 1 | One reviewer: **broad, unprimed** |
-| 2 | One reviewer, one scoped lens. Repo domain experts, or general-purpose |
+| 2 | One reviewer, one scoped lens |
 | 3..N | Panel sized by the subject set's reach, the diff's breadth and the prior round's yield, one scoped lens per member. **Odd rounds add one unprimed member; every panel carries one measuring member** |
 | Closing gate | Not a round in the sequence: whichever round ends the loop must review the last fix pass **and** satisfy both exit gates — unprimed, and measuring if the PR asserts anything about existing behaviour. Each missing member is supplied by one appended pass; they may be the same round but never the same reviewer (see Stop rule) |
 
-Reviewers are chosen by **lens and method**, never by model. Nothing in this
-skill pins, prefers, or diversifies an LLM model: the axis was never measured to
-pay, and the axis that was — reading versus executing — is the measuring member
-below. See
-[ADR-0035](../../../sdd/adrs/0035-vary-method-not-model.md).
+Reviewers are chosen by **lens and method**, never by model and never by domain.
+Nothing in this skill pins, prefers, or diversifies an LLM model: the axis was
+never measured to pay, and the axis that was — reading versus executing — is the
+measuring member below
+([ADR-0035](../../../sdd/adrs/0035-vary-method-not-model.md)). A domain persona
+is one way to **staff** a lens, never the unit of selection: pick it when the
+lens sits inside one domain and its foundation docs help, `general-purpose`
+otherwise, which is the normal case for a lens spanning domains or aimed at the
+surface no persona owns
+([ADR-0036](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md)).
 
 **Panels run in parallel against the same pushed state.** Each member is
 fresh and blind to the others: scoped members get briefs per the requirements
@@ -237,6 +243,16 @@ missed:
   Docker-gated fixtures, backends with no fixture, `# pragma: no cover`. A green
   gate proves the *covered* code works; it never says what is covered.
 - **Consumer.** Docs, guides, and API read from outside.
+- **Tooling and process contract.** The repo's own machinery: gates in
+  `scripts/`, skills and personas in `.claude/`, aliases in `pyproject.toml`, CI
+  in `.github/`, `infra/`, and the root process docs. **No persona's `DOMAIN:`
+  line contains any of it**, so a roster cannot aim at it and a reviewer staffed
+  by domain will not look — 9 of PR #954's 12 findings landed here
+  ([ADR-0036](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md)). Staff
+  this lens with `general-purpose`. Ask what a *reader* of the changed
+  instruction would be permitted to do, not whether the instruction reads well:
+  the recurring defect is an obligation written without the permission that
+  makes it executable.
 - **Premise.** Every claim the PR makes about behaviour that already exists —
   in prose, a docstring, a commit message, or a rationale — is executed on the
   base branch and reported as measured or refuted. A reading lens cannot find a
@@ -462,8 +478,11 @@ Then stop. **`/ship` never merges.** It hands over a PR that is ready to be.
 - Never end the loop on a behavioural claim no measuring pass has executed.
 - Never end the loop on a red or unread CI.
 - Reviewers are read-only and fresh each round; fixers may decline with evidence.
-- Reviewers are picked by lens and method. **Never pin or prefer a model.**
+- Reviewers are picked by lens and method. **Never pin or prefer a model, and
+  never by domain** — a persona staffs a lens, it does not select one.
 - Every panel carries a member that runs something.
+- The main loop fixes and owns the sweep; delegate a fix only for depth inside
+  one file tree.
 - Findings that are real but out of scope get filed, not silently dropped.
 - If a reviewer and a fixer disagree on fact, **measure**. Neither wins by assertion.
 - A premise about existing behaviour is executed before it ships, not read.

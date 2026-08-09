@@ -5,8 +5,10 @@ disable-model-invocation: true
 argument-hint: "[BACKLOG-ID] [optional: task description]"
 ---
 
-Orchestrate a complex task by delegating to 5 domain experts.
-See ADR-0020 for architecture rationale.
+Orchestrate a complex task by delegating authoring to domain experts and
+reviewing by lens and method. See ADR-0020 for architecture rationale, and
+[ADR-0036](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md) for why
+the two halves select differently.
 
 Reviews here are capped at two rounds. When a defect reaching `master` would be
 costly enough to justify reviewing to convergence instead, [`/ship`](../ship/SKILL.md)
@@ -45,23 +47,73 @@ before each review round in Step 6, present the plan/findings to the user
 and wait for confirmation. This prevents wasted expert cycles when the
 direction is uncertain.
 
-### Expert activation rules
+### Expert activation rules (authoring only)
 
-**Code change (feature, refactor, bug fix):** All 5 experts activate.
-Each evaluates from their domain — even if their files aren't directly touched.
-For bug fixes scope is narrower, but every expert still evaluates.
+These govern **Step 4**, where work is written. Review selection is a different
+question with a different answer — see [Reviewer selection](#reviewer-selection)
+below and [ADR-0036](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md).
+
+**Code change (feature, refactor, bug fix):** activate the experts whose domain
+the change writes into. A pure backend change needs no Extension Expert; a
+docs-only change needs only the Documentation Expert.
 
 **SDD-only change (spec/RFC/ADR/process):** The SDD Expert leads
-implementation. The other 4 experts **review** (not implement) from their
-domain perspective.
+implementation.
+
+**Nobody's domain.** `scripts/`, `.claude/`, `pyproject.toml`, `CLAUDE.md`,
+`CHANGELOG.md`, `.github/` and `infra/` are in no persona's `DOMAIN:` line. The
+orchestrator authors those directly. Do not stretch a persona over them — a
+`DOMAIN:` line is what the persona reads its constraints against, and widening
+it silently is how a change gets an owner who has no foundation docs for it.
+
+<a id="reviewer-selection"></a>
+### Reviewer selection (Steps 3 and 6)
+
+**A reviewer is selected by the subject set it is aimed at and the method it
+uses, never by which directory it owns.** A persona is one way to staff a lens,
+not the unit of selection. Measured across four deliveries, a persona lens
+reaches a minority of findings, and the surface no persona owns carried most of
+the findings on process work: [ADR-0036](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md).
+
+1. **Write down the subject set** — what the change's own words claim something
+   about (a backend, a capability, an operation, a caller, a gate, a skill).
+   This is not the file list, and the gap between the two is where defects
+   survive.
+2. **Pick a lens per reviewer** from `/ship`'s
+   [lens menu](../ship/SKILL.md#lens-menu), which this skill shares rather than
+   copies. Pick by what the work is and what earlier rounds did not look at.
+3. **At least one reviewer reaches its verdict by executing**, not by reading —
+   running the gate, measuring the base branch, exercising each subject. It
+   reports what it *ran* and what came back, and a finding it cannot reproduce
+   is reported as unreproduced. Reviewers here are plain subagents against the
+   working tree, so there is no permission to open and no `measuring` keyword to
+   pass: that word belongs to [`/rvw-pr`](../rvw-pr/SKILL.md), which reviews a
+   *pushed PR* under an allowlist this skill's reviewers do not run under. What
+   this skill owes instead is the opposite caution — these reviewers **can**
+   write, so say read-only in the prompt and confirm a clean
+   `git status --porcelain` before trusting a round.
+4. **Staff each lens.** A domain persona when the lens sits inside one domain
+   and its foundation docs help; `general-purpose` otherwise — which is the
+   normal case for a lens spanning domains or aimed at the surface no persona
+   owns.
+
+Never pin or prefer a model
+([ADR-0035](../../../sdd/adrs/0035-vary-method-not-model.md)).
 
 ## Step 3: Refine (Standard and Complex only)
 
-Spawn all 5 experts in **review mode** with the plan from Step 2. Each expert
-reviews the plan from their domain perspective and returns:
+Spawn reviewers per [Reviewer selection](#reviewer-selection) with the plan from
+Step 2 — lenses aimed at the plan's subject set, not one reviewer per domain.
+Each returns:
 - Gaps, risks, or contradictions they see
-- Suggestions for their domain scope
-- "No concerns" if the plan is sound for their domain
+- Suggestions within their lens
+- "No concerns" if the plan is sound under that lens
+
+A plan has nothing built yet, so the measuring reviewer measures **what the plan
+asserts about existing behaviour**. That is the cheapest place in the whole run
+to catch a false premise, and it is where the premise obligation
+([ADR-0035](../../../sdd/adrs/0035-vary-method-not-model.md)) has the most to
+buy: a plan built on a premise nobody ran is the one that costs rounds later.
 
 **One round only.** The orchestrator integrates feedback and adjusts the plan.
 Any unresolved disagreements or open questions → escalate to user. Do not
@@ -138,17 +190,27 @@ and wait.
 
 ## Step 6: Review
 
-Spawn all 5 experts in **review mode** — each reviews *all output from all
-experts*, not just their own domain. Each returns:
+Spawn reviewers per [Reviewer selection](#reviewer-selection). Each reviews
+*all output from all experts*, within its lens, and returns:
 - Issues found (with file, line, category)
+- What it **ran** and what came back, if it is the measuring reviewer
 - "Clean — no issues" if nothing to report
 
 **Simple mode:** Single pass. If issues found, orchestrator fixes directly.
 
 **Standard/Complex mode:** If issues found:
-1. Route each issue to the responsible expert for fixing.
-2. Re-spawn affected experts with targeted fix tasks.
-3. Re-review (all 5 experts again). **Max 2 review rounds total.**
+1. **The orchestrator fixes, and owns the sweep.** A fix changes a thing, and
+   every other description of that thing is now suspect — the sweeps that pay
+   are cross-file, so a domain-scoped fixer cannot perform them. Apply
+   [`/fix-pr`](../fix-pr/SKILL.md)'s Rules: the finding's class, not only the
+   lines it names; the sibling descriptions of your own changes; a fix to a
+   quantified claim scoped to the quantifier.
+2. **Delegate a fix only when it needs depth inside one file tree** — a backend
+   invariant, a conformance fixture, an extension contract. Re-spawn that expert
+   with the targeted task. The orchestrator still owns the sweep across
+   everything the fix touched outside that tree.
+3. Re-review, re-selecting lenses by what round 1 found and did not look at.
+   **Max 2 review rounds total.**
 4. If issues remain after 2 rounds → present to user for decision.
 
 ## Step 7: Finish
@@ -165,8 +227,12 @@ experts*, not just their own domain. Each returns:
 4. **Validate**: Run `hatch run all`. Fix failures (max 2 attempts — see Rules).
 5. Stage all changes, commit with backlog ID prefix.
 6. Push feature branch (never master).
-7. Report: mode used, experts spawned (count of rounds), files changed,
-   ripple-checks completed, validation status, deferred items (if any).
+7. Report: mode used, authoring experts spawned, **the lens and method of each
+   reviewer per round** and what the measuring one ran, the subject set with
+   each entry marked executed / read only / not reached, files changed,
+   ripple-checks completed, validation status, deferred items (if any). A
+   subject left `not reached` is a stated coverage bound, not an oversight —
+   say so rather than letting silence imply coverage.
 
 ## Rules
 
@@ -175,7 +241,15 @@ experts*, not just their own domain. Each returns:
 - If `hatch run all` fails after 2 fix attempts, report the failure and stop.
 - Commit message: `<BACKLOG-ID>: <short description>`.
 - The orchestrator handles cross-domain files (CHANGELOG, BACKLOG, README tables,
-  pyproject.toml extras). Experts stay in their domain. The Documentation Expert
-  assesses README/CHANGELOG impact but does not write to them.
+  pyproject.toml extras) and everything in no persona's domain (`scripts/`,
+  `.claude/`, `CLAUDE.md`, `.github/`, `infra/`). Experts stay in their domain
+  when authoring. The Documentation Expert assesses README/CHANGELOG impact but
+  does not write to them.
+- **Reviewers are picked by lens and method, never by domain or model.** A
+  persona staffs a lens; it is not the unit of selection.
+- **Every review round carries a reviewer that runs something**, and it reports
+  what it ran.
+- **The orchestrator fixes and owns the sweep.** Delegate a fix only for depth
+  inside one file tree.
 - **User breaks ties.** The orchestrator never overrides expert disagreements
   autonomously — it presents the conflict and asks.

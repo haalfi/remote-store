@@ -1,0 +1,119 @@
+# ADR-0036: Select Reviewers by Subject and Method, Not by Domain Persona
+
+## Status
+
+| Field         | Value    |
+| ------------- | -------- |
+| Status        | Accepted |
+| Supersedes    | —        |
+| Superseded by | —        |
+| Amends        | ADR-0020, ADR-0035 |
+
+Amends the review half of
+[ADR-0020](0020-orchestrate-iterative-convergence.md)'s *Carry forward
+ADR-0019's delegation structure* clause — per-domain boundaries continue to
+govern **authoring** in `/orchestrate` and stop governing **review** there — and
+extends [ADR-0035](0035-vary-method-not-model.md)'s lens-and-method selection
+from `/ship` to `/orchestrate`, adding one lens. ADR-0033 and ADR-0034 are
+untouched.
+
+## Context
+
+BK-338 asked whether `/rvw-pr` and `/orchestrate` should select the experts a
+change requires rather than run a fixed numbered list. It was filed on one
+delivery (PR #944) and a first attempt was reverted for deciding on that
+evidence. Four deliveries now carry per-round detail in `sdd/traces/`.
+
+Two measurements decide it, both derived from those traces rather than argued.
+
+1. **Persona lenses reach a minority of findings.** Classifying every review
+   finding recorded in the two richest traces by whether a persona lens, scoped
+   as its `.claude/agents/` file scopes it, would plausibly have caught it:
+   PR #952, 19 findings — 7 reachable, 7 inside the persona's domain but
+   reachable only by execution the persona is not briefed to do, 5 reachable by
+   no single lens. PR #954, 12 findings — 3 reachable, 9 not. Across both,
+   roughly half of all verdicts were reached by executing.
+
+2. **The five domains do not cover the repository.** The `DOMAIN:` lines are
+   `src/remote_store/`, `src/remote_store/ext/`, `tests/`, `docs-src/` +
+   `examples/` + `docs/`, and `sdd/`. Nothing contains `scripts/`, `.claude/`,
+   `pyproject.toml`, `CLAUDE.md`, `CHANGELOG.md`, `.github/` or `infra/`. Over
+   the five deliveries, 20 of 135 changed files (15%) fall outside every domain;
+   for the two process deliveries it is 45% and 31%. Nine of PR #954's twelve
+   findings landed there. A process delivery is invisible to a persona roster by
+   construction.
+
+The two between-lenses cases sharpen the first measurement, because in both the
+owning persona existed. `GraphBackend` is the store-backend expert's, and went
+unnamed for six rounds because the diff never touched it. The `missing_ok`
+docstring claim sits between documentation, which owns docstrings, and
+store-backend, which owns whether the claim is true across backends; neither
+lens asks whether a docstring's claim holds elsewhere.
+
+`/ship` already selects by lens and method and says in ADR-0035's Consequences
+that BK-338's roster question is untouched. So the live instance is
+`/orchestrate` alone, whose Steps 3 and 6 spawn all five experts to review.
+
+## Decision
+
+- **A reviewer is selected by the subject set it is aimed at and the method it
+  uses, never by which directory it owns.** Domain personas remain a way to
+  *staff* a scoped lens; they stop being the unit of selection. The measured
+  reachability of a persona lens is a minority of findings, and identity is the
+  axis [ADR-0035](0035-vary-method-not-model.md) already found unpaying.
+  *Reverse if* a delivery's findings cluster by domain such that a persona
+  roster would have reached them and a subject-and-method selection did not.
+
+- **`/orchestrate`'s review steps select by lens and method; its authoring
+  fan-out stays persona-based.** Authoring genuinely is domain-partitioned — a
+  backend change is written in `src/remote_store/`, and ADR-0020's delegation
+  structure holds for that half. Review is not, which is what the measurements
+  show. This keeps one review model across both skills instead of two.
+  *Reverse if* `/orchestrate`'s reviews become materially more expensive without
+  finding more than the five-persona fan-out did.
+
+- **The repository's own tooling and process contract is a lens, not a
+  domain.** Gates in `scripts/`, skills and personas in `.claude/`, aliases in
+  `pyproject.toml`, CI in `.github/`, and the root process docs are selectable
+  like any other lens. A sixth persona was rejected: the surface needs looking
+  at, not owning, and a persona whose domain is "everything left over" grows the
+  roster on the axis with no yield. *Reverse if* the lens is reliably selected
+  for the same deliveries a domain assignment would have covered, at which point
+  the assignment is cheaper.
+
+- **The author fixes and owns the sweep; delegation to a domain expert is by
+  depth, not by default.** [ADR-0034](0034-ship-panel-rounds-and-unprimed-exit.md)
+  puts the sibling sweep on the fixer, and the sweeps that paid across both
+  traces were cross-file — a claim in five homes spanning `sdd/`, `CHANGELOG.md`
+  and a guide; a fifth restatement in a different skill. A domain-scoped fixer
+  cannot perform those. Delegate when the fix needs depth inside one file tree.
+  *Reverse if* delegated fixes stop producing the divergences that motivated the
+  sweep obligation.
+
+The step sequences, the lens menu, and the brief requirements are operational
+contract and live in `.claude/skills/orchestrate/SKILL.md` and
+`.claude/skills/ship/SKILL.md`.
+
+## Consequences
+
+- **Positive:** process and tooling deliveries stop being invisible to review
+  selection. The surface carrying 75% of PR #954's findings is now nameable in a
+  brief.
+- **Positive:** one review model across `/ship` and `/orchestrate`. Before this,
+  the same repository selected reviewers two incompatible ways depending on
+  which skill was invoked, and only one of them had a record behind it.
+- **Positive:** the fixer role stops contradicting the sweep obligation it is
+  supposed to discharge.
+- **Negative:** selection becomes a judgement where it was a list. "All 5
+  experts activate" needs no thought and cannot be under-selected; a lens choice
+  can be, and an under-selected review looks exactly like a clean one.
+- **Negative:** the persona files keep DOMAIN lines that no longer bound
+  anything at review time, only at authoring time. The asymmetry is real and is
+  stated in each skill rather than resolved.
+- **Negative:** the finding-level classification behind measurement 1 is a
+  per-finding judgement, not a mechanical count, and it was made by the same
+  agent proposing the decision. The file-level measurement is mechanical and
+  corroborates it, but it is the weaker of the two.
+- **Neutral:** `/orchestrate` moves closer to `/ship` in review shape while
+  keeping the boundary ADR-0020 owns — a capped consolidation, not an
+  open-ended convergence loop.

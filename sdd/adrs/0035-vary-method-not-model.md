@@ -61,6 +61,10 @@ pin predated it and survived.
   which is a property of the brief and not of who reads it. *Reverse if* a
   measured comparison attributes findings to model difference at a rate that
   justifies the per-round cost.
+  *Amended by [ADR-0036](0036-reviewers-by-subject-and-method.md):* lens-and-method
+  selection extends to `/orchestrate`'s review steps, domain persona is ruled out
+  as a selection unit alongside model, and the menu gains a lens for the tooling
+  and process surface no persona's `DOMAIN:` line covers.
 
 - **Every panel carries one measuring member**, reaching its verdict by
   execution rather than reading. This is the axis the model requirement vacates,
@@ -105,7 +109,9 @@ repeat-site check and the CI check are operational contract and live in
 - **Positive:** reviewer selection no longer depends on which models exist or
   what they cost, so the skill stops carrying a fact that changes underneath it.
   BK-338's "do not pin a model in a repo skill" is discharged; its roster
-  question is untouched and still open.
+  question was untouched here and has since been decided by BK-338 itself —
+  [ADR-0036](0036-reviewers-by-subject-and-method.md) rules out domain persona
+  as a selection unit alongside model.
 - **Positive:** solo reviewer passes now invoke `/rvw-pr` directly instead of
   spawning an `Agent`, since the model override was the only reason to spawn.
   That restores the skill's `allowed-tools` withholding of `Edit` and `Write`,
