@@ -21,7 +21,7 @@ expected_ripples:
 surprising_ripples:
   - sdd/CLAUDE-REFERENCE.md
   - CLAUDE.md
-review_rounds: 3
+review_rounds: 4
 phases:
   - id: orient
     name: Orient
@@ -318,6 +318,34 @@ phases:
           for someone else. Rewritten as three separate calls with a literal
           path, then executed verbatim: add, HEAD and tree unaffected, remove,
           no worktree left registered.
+        outcome: ok
+      - file: sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md
+        section: "Decision — exit-gate bullet"
+        read_type: verify
+        extract: >-
+          Round-4 finding, and the one every earlier round walked past. I
+          attached per-bullet `*Amended by*` notes to two of ADR-0034's three
+          Decision bullets and covered the third by writing "and in the
+          exit-gate clause below, which inherits them" in a *sibling's* note.
+          That bullet therefore still read "the same briefing and model terms"
+          as live text, lifted verbatim into DIGEST.md, contradicting /ship's
+          new "Never pin or prefer a model" rule for anyone landing on it
+          directly. Exactly this PR's own "a copy is correct when it is true
+          where it sits" — a fix that relied on a reader having read the
+          neighbouring paragraph. The third bullet now carries its own note.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Round composition — Closing gate row; When not to use this"
+        read_type: verify
+        extract: >-
+          Round-4 finding: the 3..N row was swept for the measuring obligation
+          and the Closing gate row was not, though it already inlines the
+          analogous unprimed appended-pass mechanism rather than deferring to
+          the Stop rule. A table-skimming reader saw one appendable gap where
+          this PR creates two. Swept the class rather than the row: the "When
+          not to use this" cost paragraph made the same singular claim ("can
+          append a further reviewer pass") and was not named by the finding.
+          Both now state two gates, never the same reviewer.
         outcome: ok
       - file: .claude/skills/ship/SKILL.md
         section: "(full)"

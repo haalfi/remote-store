@@ -1076,8 +1076,8 @@ operational contract and lives in `.claude/skills/ship/SKILL.md`.
   endpoints. *Reverse if* interleaved unprimed members reliably find nothing
   the exit gate's terminal pass would not.
   *Amended by [ADR-0035](0035-vary-method-not-model.md):* the model terms are
-  withdrawn here and in the exit-gate clause below, which inherits them. An
-  unprimed member is defined by what it was not told, not by what reads it.
+  withdrawn. An unprimed member is defined by what it was not told, not by what
+  reads it.
 
 - **The loop cannot end until an unprimed reviewer has seen the final state
   and found nothing must-fix.** The load-bearing half: the second delivery's
@@ -1088,6 +1088,9 @@ operational contract and lives in `.claude/skills/ship/SKILL.md`.
   round it counts toward the ceiling only if it finds something. *Reverse if*
   terminal unprimed passes stop finding anything across a meaningful sample
   of deliveries.
+  *Amended by [ADR-0035](0035-vary-method-not-model.md):* "model terms" is
+  withdrawn — briefing terms only — and a second, parallel exit gate joins this
+  one for behavioural claims.
 
 - **Every fix sweeps the sibling descriptions of what it changed.** The
   sibling-sweep obligation that already attaches to review findings extends

@@ -20,8 +20,9 @@ loop.
 
 The loop is the dominant cost: every round is one or more reviewer passes — a
 panel, from round 3, one of whose members runs the code rather than reading it —
-plus a fix pass and a full `hatch run all`, and the
-unprimed exit gate can append a further reviewer pass at the close. What the
+plus a fix pass and a full `hatch run all`, and the two exit gates can append
+up to two further reviewer passes at the close — one unprimed, one measuring,
+and never the same reviewer. What the
 pre-panel shape came to on a large delivery is recorded in
 [ADR-0033](../../../sdd/adrs/0033-ship-convergence-driven-review.md); the cost
 the panel and exit gate add on top is recorded in
@@ -114,7 +115,7 @@ push → reply and resolve.
 | 1 | One reviewer: **broad, unprimed** |
 | 2 | One reviewer, one scoped lens. Repo domain experts, or general-purpose |
 | 3..N | Panel sized by the subject set's reach, the diff's breadth and the prior round's yield, one scoped lens per member. **Odd rounds add one unprimed member; every panel carries one measuring member** |
-| Closing gate | Not a round in the sequence: whichever round ends the loop must review the last fix pass **and** satisfy the unprimed exit gate; a missing unprimed member is supplied by one appended pass (see Stop rule) |
+| Closing gate | Not a round in the sequence: whichever round ends the loop must review the last fix pass **and** satisfy both exit gates — unprimed, and measuring if the PR asserts anything about existing behaviour. Each missing member is supplied by one appended pass; they may be the same round but never the same reviewer (see Stop rule) |
 
 Reviewers are chosen by **lens and method**, never by model. Nothing in this
 skill pins, prefers, or diversifies an LLM model: the axis was never measured to
