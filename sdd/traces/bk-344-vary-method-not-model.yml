@@ -21,7 +21,7 @@ expected_ripples:
 surprising_ripples:
   - sdd/CLAUDE-REFERENCE.md
   - CLAUDE.md
-review_rounds: 2
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -275,6 +275,49 @@ phases:
           same argument the exit gate rests on: an obligation that only fires
           mid-loop proves nothing about what ships. This makes ADR-0035's third
           decision true as written rather than aspirational.
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "frontmatter comment, IMPORTANT block, Step 4 count"
+        read_type: verify
+        extract: >-
+          Round-3 finding, and the round-1 fix created it: pinning the Step 4
+          count to a `gh api` call made an *ordinary* review pass depend on Bash
+          at Step 4 to read review **feedback**, while three sites still scoped
+          Bash to PR **content** at Steps 0-1. Obligation without permission,
+          the same split fixed for `measuring` one round earlier and
+          reintroduced one step later. The reviewer named four sites; sweeping
+          the wording rather than the finding found a **fifth** —
+          `ship/SKILL.md`'s "permits Bash only for gh PR-content reads" in the
+          spawn-prompt bullet — which is the quantifier rule paying for itself
+          on the round that rule was written for.
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] — all"
+        read_type: verify
+        extract: >-
+          Round 3 refuted a claim round 2 had certified as verified-clean:
+          "`hatch run all` composes only check-only targets" is false —
+          `docs-build` writes the site, `examples` and `notebooks` execute
+          scripts, `test-cov-s1` writes coverage. The conclusion survives on the
+          measured evidence (two full runs left the tree clean), but the stated
+          *reason* was wrong, and it is the reason a later reader applies to a
+          newly added `all` member. Replaced with the invariant that actually
+          holds: every output of `all` lands on a gitignored path. A reading
+          round certified it; a round that read `pyproject.toml` refuted it.
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Dev commands (Claude-specific shell constraints)"
+        read_type: verify
+        extract: >-
+          Round 3 caught the worktree recipe using `||`, which this file
+          forbids, and `$$`, which differs per Bash call because each call is a
+          new shell — so the teardown would have removed a path that never
+          existed and left the real worktree to break the next round, the exact
+          hazard the bullet warns about. I had hit the no-`&&` rule twice while
+          committing during this same PR and still wrote a `||` into a recipe
+          for someone else. Rewritten as three separate calls with a literal
+          path, then executed verbatim: add, HEAD and tree unaffected, remove,
+          no worktree left registered.
         outcome: ok
       - file: .claude/skills/ship/SKILL.md
         section: "(full)"

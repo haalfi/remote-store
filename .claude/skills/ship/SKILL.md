@@ -213,8 +213,8 @@ Things the prompt must carry, because the spawn path does not supply them:
   skipped, Step 5's report plus findings returned as the final message.
 - **For the measuring member: the word `measuring`.** It opens `rvw-pr`'s
   bounded execution set. Without it that skill permits `Bash` only for `gh`
-  PR-content reads, and the member cannot run the thing it exists to run. A
-  solo measuring pass carries the word too.
+  PR-content reads and its own Step 4 count, and the member cannot run the
+  thing it exists to run. A solo measuring pass carries the word too.
 - **The read-only constraint, restated — in every panel member's prompt.**
   `rvw-pr`'s `allowed-tools` frontmatter grants no `Edit` or `Write`, and that
   guarantee is *lost* when a general agent merely reads the file: it keeps its
@@ -253,7 +253,7 @@ back, and a finding it cannot reproduce is reported as unreproduced.
 **Its prompt must carry the word `measuring`.** That word is what opens
 `rvw-pr`'s bounded command set — check-only gates, read-only `git`, `python`
 against the library — which is otherwise closed: that skill confines `Bash` to
-`gh` PR-content reads, and a measuring member spawned without the word can read
+`gh` PR-content reads and its own Step 4 count, and a member spawned without the word can read
 the diff and nothing else. The obligation and the permission ship together or
 the obligation is inert.
 
@@ -356,8 +356,12 @@ the unprimed pass. A PR that makes no such claim satisfies the clause
 vacuously, exactly as a round that fixed nothing satisfies the fix-pass clause.
 
 A clean unprimed round 1 on a diff warranting no other lens still satisfies all
-four — stopping there is still correct, provided the diff asserts nothing about
-existing behaviour or that round was itself the measuring pass.
+four **provided the diff asserts nothing about existing behaviour** — stopping
+there is still correct. It cannot satisfy the fourth clause any other way: an
+unprimed pass gets the PR number alone, so it never carries the `measuring`
+token and never reaches a measuring brief, by the two rules above. A one-round
+delivery that *does* assert something therefore closes on the appended
+measuring pass, never on round 1 itself.
 
 - **Floor: lens coverage, not a round count.** Every lens the diff *warrants*
   must have been applied. A one-surface change may warrant only the broad round,

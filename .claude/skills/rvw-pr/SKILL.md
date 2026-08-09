@@ -4,12 +4,12 @@ description: Post inline review comments on a GitHub PR. Find real issues only.
 context: fork
 argument-hint: "[PR number] [optional context]"
 allowed-tools: Read, Grep, Glob, Bash, mcp__MCP_DOCKER__pull_request_read, mcp__MCP_DOCKER__list_pull_requests, mcp__MCP_DOCKER__list_commits, mcp__MCP_DOCKER__get_file_contents, mcp__MCP_DOCKER__pull_request_review_write, mcp__MCP_DOCKER__add_comment_to_pending_review
-# Intentional: no Edit or Write — review is read-only auditing. Bash is for `gh` PR-content reads and, in a measuring pass, the repo's check-only gates (never for fixing, regenerating, or filesystem scouting).
+# Intentional: no Edit or Write — review is read-only auditing. Bash is for `gh` PR-content reads, Step 4's posted-count verification, and — in a measuring pass — the allowlisted gates (never for fixing, regenerating, or filesystem scouting).
 ---
 
 ## ROLE: You are a REVIEWER. You are NOT an author. You do NOT fix anything.
 
-**IMPORTANT — no local filesystem scouting.** Use Bash for `gh` CLI reads of PR content (Steps 0–1) and, when the invoking prompt designates a **measuring pass**, for the bounded command set below; never to fix, write, regenerate, or locate memory files, home directories, or project paths. The review context is otherwise self-contained: the PR via `gh`/MCP, and the local repo files (Read/Grep/Glob only). Memory from the parent session is available in context — do not reload it.
+**IMPORTANT — no local filesystem scouting.** Use Bash for three things and nothing else: `gh` CLI reads of PR content (Steps 0–1); **Step 4's posted-count verification**, which is a `gh api` read of review *feedback* rather than content and is authorised here because Step 4 pins it (a count carries no content, so it primes nobody); and, when the invoking prompt designates a **measuring pass**, the allowlisted set below. Never to fix, write, regenerate, or locate memory files, home directories, or project paths. The review context is otherwise self-contained: the PR via `gh`/MCP, and the local repo files (Read/Grep/Glob only). Memory from the parent session is available in context — do not reload it.
 
 **Measuring pass.** If the invoking prompt says **measuring**, you reach your verdict by *executing*, not by reading, and Bash is opened to exactly this set:
 
@@ -18,13 +18,25 @@ allowed-tools: Read, Grep, Glob, Bash, mcp__MCP_DOCKER__pull_request_read, mcp__
 - **Write only under `tmp/`.** Not "only tracked files" — `/ship` requires a clean `git status --porcelain`, which reports an untracked file as `??` just as loudly. Exercising a *storage* library means writing files, so point every root, temp dir and worktree at the gitignored `tmp/` and the stated bound matches the enforced check.
 - **Never change the checked-out revision.** No `checkout`, `switch`, `stash`, `reset`, or `rebase`: `/ship` verifies an unchanged `HEAD` and a clean `git status --porcelain` before it trusts your pass, and moving either invalidates the whole round. To measure the **base** branch, use a worktree — and tear it down, because `worktree add` is not idempotent and the next round's measuring member runs the same command:
 
+One Bash call per line — `&&`, `||` and `;` are forbidden by
+[`CLAUDE.md` § Dev commands](../../../CLAUDE.md#dev-commands), and `$$` would
+differ between calls because each is a new shell, so the path is a literal:
+
 ```bash
-git worktree add tmp/base-$$ <base-ref>   # unique path; tmp/ is gitignored
-# ... measure in tmp/base-$$ ...
-git worktree remove tmp/base-$$ || git worktree prune
+git worktree add tmp/base <base-ref>
+```
+```bash
+# ... measure in tmp/base ...
+```
+```bash
+git worktree remove tmp/base
 ```
 
-**Running the gate is safe for `/ship`'s clean-tree check, and that was measured rather than assumed.** `hatch run all` composes only check-only targets, and its outputs — coverage data, caches, the built site, `tmp/` — are gitignored, so a full run leaves `git status --porcelain` empty. This paragraph is the single home for that claim; `/ship` and ADR-0035 cite it rather than restating it.
+If `worktree remove` fails on a stale entry, `git worktree prune` then retry.
+Tear down even when the measurement failed: one reviewer runs at a time, so a
+surviving `tmp/base` is what breaks the next round's `worktree add`.
+
+**Running the gate is safe for `/ship`'s clean-tree check, and that was measured rather than assumed.** Two consecutive full `hatch run all` runs left `git status --porcelain` empty. **The invariant is that every output of `all` lands on a gitignored path** — not that its targets are check-only, which is false: `docs-build` writes the whole site, `examples` and `notebooks` execute scripts, `test-cov-s1` writes coverage data. Apply the gitignored-output test, not a check-only test, when asking whether a newly added `all` member is still safe to run here. This paragraph is the single home for that claim; `/ship` and ADR-0035 cite it rather than restating it.
 
 Report what you **ran** and what came back, not what you concluded from reading. A finding you could not reproduce is reported as unreproduced.
 
