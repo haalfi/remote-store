@@ -16,7 +16,7 @@
         <link rel="prev" href="../0033-ship-convergence-driven-review/">
       
       
-        <link rel="next" href="../../audits/">
+        <link rel="next" href="../0035-vary-method-not-model/">
       
       
         
@@ -6409,6 +6409,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0035-vary-method-not-model/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0035: Vary Method, Not Model, in /ship Review
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -10598,7 +10626,10 @@ passes, which is how the decisions below are split.</p>
   <code>/orchestrate</code>'s capped fan-out, which
   <a href="../0020-orchestrate-iterative-convergence/">ADR-0020</a> still owns. <em>Reverse if</em>
   merging and deduplication cost more than the serial rounds they replace, or
-  members mostly duplicate one another.</p>
+  members mostly duplicate one another.
+  <em>Amended by <a href="../0035-vary-method-not-model/">ADR-0035</a>:</em> width follows the
+  subject set's reach as well as the diff's breadth, and every panel carries one
+  member that reaches its verdict by execution.</p>
 </li>
 <li>
 <p><strong>Every odd round carries one unprimed reviewer.</strong> Round 1's sole reviewer
@@ -10607,7 +10638,10 @@ passes, which is how the decisions below are split.</p>
   with the PR alone, on a different model from the author's, same tier or
   higher. The cadence half: unprimed eyes on mid-loop state, not only the
   endpoints. <em>Reverse if</em> interleaved unprimed members reliably find nothing
-  the exit gate's terminal pass would not.</p>
+  the exit gate's terminal pass would not.
+  <em>Amended by <a href="../0035-vary-method-not-model/">ADR-0035</a>:</em> the model terms are
+  withdrawn. An unprimed member is defined by what it was not told, not by what
+  reads it.</p>
 </li>
 <li>
 <p><strong>The loop cannot end until an unprimed reviewer has seen the final state
@@ -10618,7 +10652,10 @@ passes, which is how the decisions below are split.</p>
   like <a href="../0033-ship-convergence-driven-review/">ADR-0033</a>'s verification
   round it counts toward the ceiling only if it finds something. <em>Reverse if</em>
   terminal unprimed passes stop finding anything across a meaningful sample
-  of deliveries.</p>
+  of deliveries.
+  <em>Amended by <a href="../0035-vary-method-not-model/">ADR-0035</a>:</em> "model terms" is
+  withdrawn — briefing terms only — and a second, parallel exit gate joins this
+  one for behavioural claims.</p>
 </li>
 <li>
 <p><strong>Every fix sweeps the sibling descriptions of what it changed.</strong> The
@@ -10716,13 +10753,13 @@ rule are operational contract and live in <code>.claude/skills/ship/SKILL.md</co
         
         
           
-          <a href="../../audits/" class="md-footer__link md-footer__link--next" aria-label="Next: Audits">
+          <a href="../0035-vary-method-not-model/" class="md-footer__link md-footer__link--next" aria-label="Next: 0035: Vary Method, Not Model, in /ship Review">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Audits
+                0035: Vary Method, Not Model, in /ship Review
               </div>
             </div>
             <div class="md-footer__button md-icon">
