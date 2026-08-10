@@ -16,19 +16,30 @@ discovery_followups:
   - BK-347
 expected_ripples:
   - sdd/adrs/DIGEST.md
-surprising_ripples: []
+# Reached by sibling sweeps and class sweeps, not by any ripple-check row. The
+# ADR row points at digest freshness and the Status table; nothing in it
+# anticipates that an amending ADR falsifies a *different, non-amended* ADR's
+# Context (0033), or that editing a list in one skill obliges editing the skill
+# it was copied from (ship), or that binding one skill to another's allowlist
+# obliges annotating that allowlist (rvw-pr). Recorded rather than left empty:
+# `[]` is a claim that the table anticipated everything, and this field is
+# aggregated across traces.
+surprising_ripples:
+  - sdd/adrs/0033-ship-convergence-driven-review.md
+  - .claude/skills/ship/SKILL.md
+  - .claude/skills/rvw-pr/SKILL.md
 # Commits that exist because feedback was incorporated, per the schema, counted
 # from `git log` rather than from memory of posted rounds — which is how the two
-# earlier values here went wrong. Five commits on the branch: 741687a is the
-# implementation; the other four are feedback-driven — 483338c (the /pr
+# earlier values here went wrong. Six commits on the branch: 741687a is the
+# implementation; the other five are feedback-driven — 483338c (the /pr
 # qualitative gate's findings against this PR's own prose, pre-PR), then dc10a23,
-# 96329f2 and this one for PR #956's three review rounds. An earlier value of 1
+# 96329f2, fce9735 and this one for PR #956's four review rounds. An earlier value of 1
 # excluded 483338c as "pre-PR", which inverts the clause it cited — the schema
 # says feedback before the PR was opened counts the same *if it produced a commit
 # on the branch*, and that one did. bk-344's trace counted the identical case the
 # same way one PR ago; two traces cannot both be right and the aggregator sees
 # only the numbers.
-review_rounds: 4
+review_rounds: 5
 phases:
   - id: orient
     name: Orient
@@ -344,6 +355,43 @@ phases:
           two disagreeing about whether the list is closed. Both now say the
           enumeration is what deliveries have hit so far and instruct the reader
           to ask what the words pick out rather than which entry they match.
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Reviewer selection (read-only scope); Step 7 item 1"
+        read_type: verify
+        extract: >-
+          PR #956 round 4, seven findings, and the sharpest was the fourth
+          instance of this PR's own defect class sitting inside the fix for the
+          third. Round 2 asked me to bound what a measuring reviewer may run; I
+          put the read-only instruction and the tamper check inside the numbered
+          item whose subject is the measuring reviewer, so an obligation that
+          belongs to every reviewer this skill spawns was written where only one
+          reader reaches it - and the reading reviewers are the likelier
+          tamperers, since the violation this skill itself calls most probable is
+          editing a file the experts already modified. Hoisted to a clause
+          covering all four steps, with a Rules bullet, which is what /ship does
+          and says why. Separately Step 7's ripple-check audit still said
+          "for domain-specific gaps, re-spawn the relevant expert" - the routing
+          Step 6 had just inverted, in the step where cross-file sweeps are most
+          likely. Swept the class: Step 5's re-spawn of a *blocked author* and
+          /ship's re-spawn of a *mis-aimed reviewer* are different questions and
+          were correctly left alone.
+        outcome: ok
+      - file: sdd/adrs/0036-reviewers-by-subject-and-method.md
+        section: "Context (provenance of the two measurements)"
+        read_type: verify
+        extract: >-
+          Round 4 caught the record misstating where its own evidence came from,
+          on the measurement it calls the mechanical one. "Four deliveries now
+          carry per-round detail" followed by "both derived from those traces"
+          is false for measurement 2: that is a git-log count over five merge
+          SHAs, two of which (#944, #945) predate this loop and carry no
+          per-round detail at all, so they cannot be among the four. It also left
+          "the five deliveries" as a definite article with no antecedent. Now
+          each measurement states its own sample and method, and measurement 2
+          points at the trace step holding the reproducible recipe. The ADR's
+          whole claim to authority is measured-rather-than-argued, so a sentence
+          that misdescribes the measurement costs more than its wording.
         outcome: ok
       - file: .claude/agents/store-backend-expert.md
         section: "CONSTRAINTS, closing /orchestrate paragraph"

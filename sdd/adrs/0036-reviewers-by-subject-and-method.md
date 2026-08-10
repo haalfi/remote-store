@@ -24,11 +24,17 @@ change requires rather than run a fixed numbered list. It was filed on one
 delivery (PR #944) and a first attempt was reverted for deciding on that
 evidence. Four deliveries now carry per-round detail in `sdd/traces/`.
 
-Two measurements decide it, both derived from those traces rather than argued.
+**Two measurements decide it, over two different samples and by two different
+methods.** Both are measured rather than argued, and neither is a reading of all
+four traces — conflating them is what a reader trying to re-derive either would
+trip on:
 
-1. **Persona lenses reach a minority of findings.** Classifying every review
-   finding recorded in the two richest traces by whether a persona lens, scoped
-   as its `.claude/agents/` file scopes it, would plausibly have caught it:
+1. **Persona lenses reach a minority of findings.** Sample: the **two richest**
+   of those four traces, PR #952 and PR #954, chosen because they record findings
+   round by round. Method: classifying every review
+   finding recorded there by whether a persona lens, scoped
+   as its `.claude/agents/` file scopes it, would plausibly have caught it —
+   a per-finding judgement, not a count.
    PR #952, 19 findings — 7 reachable, 7 inside the persona's domain but
    reachable only by execution the persona is not briefed to do, 5 reachable by
    no single lens. PR #954, 12 findings — 3 reachable, 9 not. Across both,
@@ -37,8 +43,14 @@ Two measurements decide it, both derived from those traces rather than argued.
 2. **The five domains do not cover the repository.** The `DOMAIN:` lines are
    `src/remote_store/`, `src/remote_store/ext/`, `tests/`, `docs-src/` +
    `examples/` + `docs/`, and `sdd/`; everything else is uncovered, `scripts/`,
-   `.claude/`, `pyproject.toml`, `.github/`, `infra/` and the root files among
-   it. Over the five deliveries, 20 of 135 changed files (15%) fall outside every
+   `.claude/`, `pyproject.toml`, `.github/`, `infra/`, `benchmarks/` and the root
+   files among it. Sample: **five** deliveries — PRs #944, #945, #949, #952 and
+   #954, which is not the four above, because #944 and #945 predate this loop and
+   carry no per-round detail. Method: `git show --name-only` per merge SHA,
+   bucketing each path by longest-matching `DOMAIN:` prefix — mechanical, and
+   re-derivable from the recipe in
+   [`sdd/traces/bk-338-review-roster.yml`](../traces/bk-338-review-roster.yml).
+   Result: 20 of 135 changed files (15%) fall outside every
    domain; for the two process deliveries it is 45% and 31%. Nine of PR #954's
    twelve findings landed there. A process delivery is invisible to a persona
    roster by construction.

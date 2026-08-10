@@ -69,12 +69,21 @@ implementation.
 
 The five `DOMAIN:` lines are `src/remote_store/` (excluding
 `ext/`), `src/remote_store/ext/`, `tests/`, `docs-src/` + `examples/` + `docs/` +
-docstrings, and `sdd/`. **Anything else is the orchestrator's** — derive it from
-those five lines rather than from a list, because a list read as exhaustive plus
-the instruction below is exactly how an unlisted file gets handed to a persona
-whose `DOMAIN:` excludes it. What falls out today: `scripts/`, `.claude/`,
-`pyproject.toml`, `.github/`, `infra/`, and the root files — `CLAUDE.md`,
-`CHANGELOG.md`, `README.md`, `CONTRIBUTING.md`.
+docstrings, and `sdd/`. **Anything else is the orchestrator's.** Derive it by
+checking a path against those five lines — do not look for it in a list here,
+because a list read as exhaustive plus the instruction below is exactly how an
+unlisted file gets handed to a persona whose `DOMAIN:` excludes it. No list is
+given for that reason: the residue is most of the repository root plus several
+whole trees, and any enumeration written here goes stale the next time something
+is added.
+
+Two examples, offered as traps rather than as coverage. **`benchmarks/`** is a
+source tree with its own `bench-*` aliases, so it reads as Store & Backend or
+Testing work and is neither. **`FEATURES.md`** is the authoritative feature
+reference per `CLAUDE.md`, so it reads as Documentation work and is not — the
+Documentation `DOMAIN:` is `docs-src/`, `examples/`, `docs/` and docstrings, and
+a root file matches none of them. If a path looks like a persona's work, that is
+the moment to check the `DOMAIN:` line rather than the moment to assume.
 
 Do not stretch a persona over them. A `DOMAIN:` line is what the persona reads
 its constraints against, and widening it silently is how a change gets an owner
@@ -87,9 +96,11 @@ question; the Rules entry below points here rather than restating the set.
 **A reviewer is selected by the subject set it is aimed at and the method it
 uses, never by which directory it owns.** A persona is one way to staff a lens,
 not the unit of selection. Two measurements, over different samples: across the
-**two** deliveries whose traces record findings round by round, a persona lens
-reaches a minority of them; across **five** deliveries' changed files, the
-surface no persona owns is where most of the findings on process work landed.
+**two richest of four** per-round traces, a persona lens reaches a minority of
+the findings; across **five** deliveries' changed files, the surface no persona
+owns is where most of the findings on process work landed. The first sample is
+two chosen from four, not two that were all there were — which is what its
+*Reverse if* turns on.
 Both, with their samples, are in
 [ADR-0036 § Context](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md#context);
 the bound that the first is a per-finding judgement and the second the mechanical
@@ -105,17 +116,20 @@ one is in
 2. **Pick a lens per reviewer** from `/ship`'s
    [lens menu](../ship/SKILL.md#lens-menu), which this skill shares rather than
    copies. Pick by what the work is and what earlier rounds did not look at.
-3. **At least one reviewer reaches its verdict by executing**, not by reading —
-   running the gate, measuring the base branch, exercising each subject. It
-   reports what it *ran* and what came back, and a finding it cannot reproduce
-   is reported as unreproduced. Reviewers here are plain subagents against the
-   working tree, so there is no `measuring` keyword to pass: that word belongs to
+3. **Exactly one reviewer per round reaches its verdict by executing**, not by
+   reading — running the gate, measuring the base branch, exercising each
+   subject. It reports what it *ran* and what came back, and a finding it cannot
+   reproduce is reported as unreproduced. **One, not "at least one"**: the
+   base-branch recipe below uses a fixed `tmp/base` path, and two measuring
+   reviewers in a round would collide on it — the second `worktree add` fails,
+   or one tears down a worktree the other is mid-measurement in, and both
+   failures reach the orchestrator as an unreproduced finding, which reads like
+   a clean result. This matches `/ship`'s one measuring member per panel.
+
+   Reviewers here are plain subagents against the working tree, so there is no
+   `measuring` keyword to pass: that word belongs to
    [`/rvw-pr`](../rvw-pr/SKILL.md), and it opens a permission gate this skill has
-   no equivalent of. **That is a difference in mechanism, not in hazard.** What
-   this skill owes instead is three cautions, each differing from `/ship`'s
-   version because the state under review differs — it is uncommitted work that
-   exists nowhere else, so here a bad command is unrecoverable rather than
-   re-fetchable.
+   no equivalent of. **That is a difference in mechanism, not in hazard.**
 
    **Run only the allowlisted set, and write only under `tmp/`.** No permission
    gate does not mean no bound: `/rvw-pr`'s
@@ -126,36 +140,6 @@ one is in
    here. The `tmp/` write bound matters more in this skill than in that one,
    because what a stray `format` or `drift-check refresh-baseline` would
    overwrite has never been committed.
-
-   **Tamper check: unchanged since spawn, and content-sensitive.** These
-   reviewers **can** write, so say read-only in the prompt. `/ship` requires an
-   *empty* `git status --porcelain`, which works only because its tree is pushed
-   and committed; here Step 6 runs **before** Step 7 commits, so the tree
-   necessarily carries every authoring expert's output and porcelain is
-   non-empty by construction. Requiring empty is unsatisfiable; comparing
-   porcelain strings is worse, because porcelain prints status codes and paths
-   and nothing derived from content — a reviewer editing a file the experts
-   already modified leaves ` M path` byte-identical, and that is the single most
-   likely violation. Capture three things at spawn and require all three
-   unchanged before triage:
-
-   ```bash
-   git rev-parse HEAD
-   ```
-   ```bash
-   git status --porcelain --untracked-files=all
-   ```
-   ```bash
-   git diff HEAD
-   ```
-
-   `git diff HEAD` is the content-sensitive one; porcelain adds the paths that
-   diff cannot see (new and deleted untracked files); `rev-parse` catches a moved
-   revision. **Residual, stated rather than papered over:** an edit to the
-   *contents* of an already-untracked file changes none of the three. The `tmp/`
-   bound above is what shrinks that hole, and committing before review — which
-   would restore `/ship`'s empty-porcelain model exactly — is the structural
-   closure this skill has not taken.
 
    **Reaching the base branch.** `git checkout` would destroy the very
    uncommitted work under review, so never move the checked-out revision. Use a
@@ -171,7 +155,7 @@ one is in
    ```
 
    `tmp/` is gitignored, so the worktree perturbs none of the three captures
-   above — it is absent from `git diff HEAD` and from `--untracked-files=all`
+   below — it is absent from `git diff HEAD` and from `--untracked-files=all`
    alike. If
    `worktree remove` fails on a stale entry, `git worktree prune` then retry.
    [`/rvw-pr`](../rvw-pr/SKILL.md)'s measuring block carries the same three
@@ -179,11 +163,48 @@ one is in
    pushed state `/ship` certifies, here it is uncommitted work that has never
    been saved anywhere. Deliberately a second copy rather than a link: sending a
    reader there would hand them a paragraph whose stated reason is false in this
-   skill. Edit both when the commands change.
+   skill. Edit both when the commands change; the single-measuring-reviewer rule
+   above is what keeps a fixed path safe on both sides.
 4. **Staff each lens.** A domain persona when the lens sits inside one domain
    and its foundation docs help; `general-purpose` otherwise — which is the
    normal case for a lens spanning domains or aimed at the surface no persona
    owns.
+
+**Read-only, and checked — for every reviewer, not only the measuring one.**
+This applies to all four steps above: every reviewer this skill spawns is a
+plain subagent with a full tool set, pointed at a tree that holds the **only**
+copy of the authoring experts' uncommitted output. The reading reviewers are if
+anything the likelier tamperers, since the most probable violation is a reviewer
+editing a file the experts already modified — what a reviewer with an opinion
+about the prose does, not what a reviewer running the gate does. So say
+read-only in **every** member's prompt, and check it the same way for all of
+them. `/ship` hoists its equivalent for the same reason.
+
+`/ship` requires an *empty* `git status --porcelain`, which works only because
+its tree is pushed and committed; here Step 6 runs **before** Step 7 commits, so
+porcelain is non-empty by construction. Requiring empty is unsatisfiable;
+comparing porcelain strings is worse, because porcelain prints status codes and
+paths and nothing derived from content — a reviewer editing an already-modified
+file leaves ` M path` byte-identical. Capture three things when the reviewers
+spawn and require all three unchanged before triage:
+
+```bash
+git rev-parse HEAD
+```
+```bash
+git status --porcelain --untracked-files=all
+```
+```bash
+git diff HEAD
+```
+
+`git diff HEAD` is the content-sensitive one; porcelain adds the paths diff
+cannot see (new and deleted untracked files); `rev-parse` catches a moved
+revision. **Residual, stated rather than papered over:** an edit to the
+*contents* of an already-untracked file changes none of the three. The `tmp/`
+write bound is what shrinks that hole, and committing before review — which
+would restore `/ship`'s empty-porcelain model exactly — is the structural
+closure this skill has not taken.
 
 Never pin or prefer a model
 ([ADR-0035 § Decision](../../../sdd/adrs/0035-vary-method-not-model.md#decision)).
@@ -319,9 +340,10 @@ orchestrator fixes directly.
 ## Step 7: Finish
 
 1. **Ripple-check audit**: Walk [`sdd/CLAUDE-REFERENCE.md` § Ripple-check table > Detailed checklist](../../../sdd/CLAUDE-REFERENCE.md#detailed-checklist). For each
-   triggered row, verify target files were updated. For domain-specific gaps
-   (e.g., missing test), re-spawn the relevant expert. For cross-domain gaps,
-   fix directly.
+   triggered row, verify target files were updated. **Close the gaps yourself**,
+   and delegate only where a fix needs depth inside one file tree — the same
+   routing as Step 6, for the same reason. This step is where cross-file sweeps
+   are most likely, which is exactly what a domain-scoped fixer cannot do.
 2. **CHANGELOG**: Add one stub line per completed item under `[Unreleased]` —
    see format in `sdd/CLAUDE-REFERENCE.md` ripple-check row **CHANGELOG entry**.
 3. **BACKLOG**: Delete completed items from BACKLOG.md, add as `[x]` to
@@ -349,8 +371,12 @@ orchestrator fixes directly.
   Expert assesses README/CHANGELOG impact but does not write to them.
 - **Reviewers are picked by lens and method, never by domain or model.** A
   persona staffs a lens; it is not the unit of selection.
-- **Every review round carries a reviewer that runs something**, and it reports
-  what it ran.
+- **Every review round carries exactly one reviewer that runs something**, and
+  it reports what it ran.
+- **Every reviewer is read-only, and the round proves it** — read-only in each
+  member's prompt, plus the three-capture check in
+  [Reviewer selection](#reviewer-selection). Not only the measuring one: they
+  all have a full tool set and the tree is the only copy of the work.
 - **The orchestrator fixes and owns the sweep.** Delegate a fix only for depth
   inside one file tree.
 - **User breaks ties.** The orchestrator never overrides expert disagreements
