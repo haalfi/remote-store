@@ -143,15 +143,16 @@ Use `/rvw-pr` for PR reviews, not the built-in `/review` CLI command.
 
 `/ship` delivers a whole task as one merge-ready PR, planning and building before
 reviewing to convergence rather than to a round count. Rationale:
-[ADR-0033](sdd/adrs/0033-ship-convergence-driven-review.md), then a chain of
-amendments — each amends the record before it, not all of them:
-[ADR-0034](sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md) amends 0033
-(panel rounds, unprimed exit gate);
-[ADR-0035](sdd/adrs/0035-vary-method-not-model.md) amends 0033 and 0034 (method
-over model); [ADR-0036](sdd/adrs/0036-reviewers-by-subject-and-method.md) amends
-0035 and 0020 (subject and method over domain persona; the fixer role) and
-leaves 0033 and 0034 untouched. Read all four: each later record withdraws a
-clause a reader lands on in an earlier one.
+[ADR-0033](sdd/adrs/0033-ship-convergence-driven-review.md), amended by
+[ADR-0034](sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md) (panel rounds,
+unprimed exit gate),
+[ADR-0035](sdd/adrs/0035-vary-method-not-model.md) (method over model) and
+[ADR-0036](sdd/adrs/0036-reviewers-by-subject-and-method.md) (subject and method
+over domain persona; the fixer role). **Read all four, and read each record's own
+`Amends` field rather than assuming the chain is linear** — it is not, and which
+record withdraws which clause is the thing a reader most needs and the thing
+most easily got wrong from a summary. Every one of them withdraws a clause a
+reader lands on in an earlier one.
 
 `/orchestrate` shares the review half of that model — reviewers picked by lens
 and method — while keeping its own capped rounds and persona-based **authoring**

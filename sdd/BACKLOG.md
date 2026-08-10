@@ -390,8 +390,11 @@ and the highest ID already in this file, then take the next integer. Run
 - [ ] **BK-347 — An ADR-only diff is routed away from the ADR drift gate, locally and in CI**
   spec: — · effort: S · audience: contributor.process, infra.ci
   `gen_adr_digest.py --check` gates `sdd/adrs/DIGEST.md` freshness **and**
-  supersession-graph consistency. It appears in exactly one hatch target:
-  `preflight`. Not `lint`, not `docs-gate`.
+  supersession-graph consistency. Exactly one composite gate runs it: `preflight`,
+  which inlines the command. Not `lint`, not `docs-gate`. A standalone
+  `gen-adr-digest-check` alias also exists in `pyproject.toml` and **nothing
+  composes it** — so the checker is one alias away from any gate that wants it,
+  which is what makes the fix cheap and the omission easy to miss.
   **Both paths miss it for the one diff class that always regenerates the file.**
   The [PR validation gates](CLAUDE-REFERENCE.md#pr-validation-gates) route a
   no-code diff to `lint` + `docs-gate`, so an ADR-only change never runs the

@@ -33,12 +33,17 @@ surprising_ripples:
 # earlier values here went wrong. Seven commits on the branch: 741687a is the
 # implementation; the other six are feedback-driven — 483338c (the /pr
 # qualitative gate's findings against this PR's own prose, pre-PR), then dc10a23,
-# 96329f2, fce9735, 582b7a6 and this one for PR #956's five review rounds. An earlier value of 1
+# 96329f2, fce9735, 582b7a6 and d52a3ff for PR #956's five posted rounds. An
+# earlier value of 1
 # excluded 483338c as "pre-PR", which inverts the clause it cited — the schema
 # says feedback before the PR was opened counts the same *if it produced a commit
 # on the branch*, and that one did. bk-344's trace counted the identical case the
 # same way one PR ago; two traces cannot both be right and the aggregator sees
 # only the numbers.
+# The finishing commit after d52a3ff does NOT increment this: it is an
+# author-initiated pass over the whole diff, not feedback incorporated, and the
+# schema counts the latter. Stated because the honest reading is the one that
+# does not inflate the field.
 review_rounds: 6
 phases:
   - id: orient
@@ -385,13 +390,23 @@ phases:
           on the measurement it calls the mechanical one. "Four deliveries now
           carry per-round detail" followed by "both derived from those traces"
           is false for measurement 2: that is a git-log count over five merge
-          SHAs, two of which (#944, #945) predate this loop and carry no
-          per-round detail at all, so they cannot be among the four. It also left
+          SHAs, two of which (#944, #945) predate the loop, so they cannot be
+          among the four. It also left
           "the five deliveries" as a definite article with no antecedent. Now
           each measurement states its own sample and method, and measurement 2
           points at the trace step holding the reproducible recipe. The ADR's
           whole claim to authority is measured-rather-than-argued, so a sentence
           that misdescribes the measurement costs more than its wording.
+          **The round-4 fix then carried its own false clause, found in the
+          finishing pass by measuring instead of asserting.** It said #944 and
+          #945 "carry no per-round detail", which is false — bk-330 (#944) has
+          review_rounds: 4 and a per-round review phase, and a scan of the corpus
+          finds round-by-round detail in bk-324, bk-329, bk-340, bk-342 and
+          bug-243 besides. The real referent of "four" is deliveries run *under
+          the loop* (#946, #949, #952, #954), which is what BK-344 meant and what
+          I inherited without checking. Three provenance errors in one paragraph
+          across three rounds; the third was caught by running a query rather
+          than by a reviewer.
         outcome: ok
       - file: .claude/skills/orchestrate/SKILL.md
         section: "Reviewer selection (tamper-check residual)"
@@ -452,6 +467,50 @@ phases:
           this skill's deliveries have hit so far" was falsified by this delivery,
           whose own subjects include a gate (BK-347) and three skills. Both now
           carry the same six as illustrations with no claim about history.
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "(full) — author-initiated finishing pass"
+        read_type: verify
+        extract: >-
+          Author-initiated pass over all twelve changed files after the review
+          closed, reading each whole rather than as a diff. It found nine defects
+          no round had named, and every one was a sibling of an earlier fix -
+          which is the fix-pass blind spot ADR-0034 exists for, showing up in a
+          run that had already been told about it five times. The frontmatter
+          `description` still advertised "delegates to domain experts", falsified
+          by the change it describes. "Do not stretch a persona over them" lost
+          its antecedent when the round-4 examples paragraph was inserted between.
+          The tamper block justified itself with "Step 6 runs before Step 7
+          commits", true for Step 6 and false for Step 3, which routes through the
+          same section - the round-2 fix scoped to one of its two readers, again.
+          /ship's Rules still said "fixers may decline with evidence" after the
+          Roles split moved that clause to Author. /ship's Rules said "a member
+          that runs something" while /orchestrate asserted /ship had a
+          one-measurer rule keeping a fixed path safe. rvw-pr's tmp/ bullet, which
+          /orchestrate is now told to obey, carried a /ship-only reason.
+          CLAUDE.md's round-5 fix overcorrected into "each amends the record
+          before it", false for 0036 which amends 0020. BACKLOG-DONE still said
+          "/ship needed only two edits" after six, and enumerated the uncovered
+          surface a fourth time. BK-347 claimed the checker "appears in exactly
+          one hatch target" while a standalone gen-adr-digest-check alias exists,
+          which is what its own proposed fix wants to compose.
+        outcome: ok
+      - file: sdd/adrs/0036-reviewers-by-subject-and-method.md
+        section: "Context (sample framing) — measured, not read"
+        read_type: verify
+        extract: >-
+          The finishing pass caught the third provenance error in one paragraph,
+          and this time by running a query rather than by being told. The round-4
+          fix asserted #944 and #945 "carry no per-round detail"; parsing every
+          trace's review_rounds and phase ids shows bk-330 (#944) has
+          review_rounds 4 and a per-round review phase, and that round-by-round
+          detail is common across the corpus - bk-324, bk-329, bk-340, bk-342 and
+          bug-243 all carry it. So the clause was false and the framing inherited
+          from BK-344 was miscited: the real referent of "four" is deliveries run
+          *under the /ship loop* (#946, #949, #952, #954), not traces with
+          per-round detail. Corrected in the ADR, the skill and this trace.
+          The lesson is the item's own: four reading passes over this paragraph
+          left the error, and one query removed it.
         outcome: ok
       - file: .claude/agents/store-backend-expert.md
         section: "CONSTRAINTS, closing /orchestrate paragraph"

@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: Multi-agent orchestration — delegates to domain experts for complex tasks
+description: Multi-agent orchestration — domain experts author, lens-and-method reviewers review
 disable-model-invocation: true
 argument-hint: "[BACKLOG-ID] [optional: task description]"
 ---
@@ -85,7 +85,9 @@ Documentation `DOMAIN:` is `docs-src/`, `examples/`, `docs/` and docstrings, and
 a root file matches none of them. If a path looks like a persona's work, that is
 the moment to check the `DOMAIN:` line rather than the moment to assume.
 
-Do not stretch a persona over them. A `DOMAIN:` line is what the persona reads
+Do not stretch a persona over anything the derivation puts outside its
+`DOMAIN:` — not the two examples above, and not the rest of the residue they
+stand for. A `DOMAIN:` line is what the persona reads
 its constraints against, and widening it silently is how a change gets an owner
 who has no foundation docs for it. This clause is the single home for the
 question; the Rules entry below points here rather than restating the set.
@@ -96,11 +98,11 @@ question; the Rules entry below points here rather than restating the set.
 **A reviewer is selected by the subject set it is aimed at and the method it
 uses, never by which directory it owns.** A persona is one way to staff a lens,
 not the unit of selection. Two measurements, over different samples: across the
-**two richest of four** per-round traces, a persona lens reaches a minority of
-the findings; across **five** deliveries' changed files, the surface no persona
-owns is where most of the findings on process work landed. The first sample is
-two chosen from four, not two that were all there were — which is what its
-*Reverse if* turns on.
+**two richest** traces of the four deliveries run under `/ship`, a persona lens
+reaches a minority of the findings; across **five** deliveries' changed files,
+the surface no persona owns is where most of the findings on process work
+landed. The first sample is two chosen from four, not two that were all there
+were — which is what its *Reverse if* turns on.
 Both, with their samples, are in
 [ADR-0036 § Context](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md#context);
 the bound that the first is a per-finding judgement and the second the mechanical
@@ -163,29 +165,37 @@ one is in
    pushed state `/ship` certifies, here it is uncommitted work that has never
    been saved anywhere. Deliberately a second copy rather than a link: sending a
    reader there would hand them a paragraph whose stated reason is false in this
-   skill. Edit both when the commands change; the single-measuring-reviewer rule
-   above is what keeps a fixed path safe on both sides.
+   skill. Edit both when the commands change. A fixed path is safe on each side
+   for its own reason: here, the exactly-one rule above; there, `/ship`'s one
+   measuring member per panel. Neither rule protects the other skill.
 4. **Staff each lens.** A domain persona when the lens sits inside one domain
    and its foundation docs help; `general-purpose` otherwise — which is the
    normal case for a lens spanning domains or aimed at the surface no persona
    owns.
 
 **Read-only, and checked — for every reviewer, not only the measuring one.**
-This applies to all four steps above: every reviewer this skill spawns is a
-plain subagent with a full tool set, pointed at a tree that holds the **only**
-copy of the authoring experts' uncommitted output. The reading reviewers are if
+This applies to all four numbered items above, in both steps that use them:
+every reviewer this skill spawns is a plain subagent with a full tool set,
+pointed at a working tree nothing has pushed. At Step 6 that tree holds the
+**only** copy of the authoring experts' output; at Step 3 it holds whatever
+planning the orchestrator has not committed. Either way a reviewer write is
+unrecoverable. The reading reviewers are if
 anything the likelier tamperers, since the most probable violation is a reviewer
-editing a file the experts already modified — what a reviewer with an opinion
+editing a file it was asked to review — what a reviewer with an opinion
 about the prose does, not what a reviewer running the gate does. So say
 read-only in **every** member's prompt, and check it the same way for all of
 them. `/ship` hoists its equivalent for the same reason.
 
-`/ship` requires an *empty* `git status --porcelain`, which works only because
-its tree is pushed and committed; here Step 6 runs **before** Step 7 commits, so
-porcelain is non-empty by construction. Requiring empty is unsatisfiable;
-comparing porcelain strings is worse, because porcelain prints status codes and
-paths and nothing derived from content — a reviewer editing an already-modified
-file leaves ` M path` byte-identical. Capture three things when the reviewers
+**The invariant is *unchanged since spawn*, whatever the baseline holds.** That
+phrasing is deliberate, because the two steps that route here start from
+different trees: at Step 3 nothing has been built yet, so the baseline may be
+empty; at Step 6 it never is, since Step 6 runs **before** Step 7 commits and the
+tree carries every authoring expert's output. `/ship` can require an *empty*
+`git status --porcelain` because its tree is pushed and committed; requiring that
+here is unsatisfiable for Step 6, and comparing porcelain strings is worse than
+useless, because porcelain prints status codes and paths and nothing derived from
+content — a reviewer editing an already-modified file leaves ` M path`
+byte-identical. Capture three things when the reviewers
 spawn and require all three unchanged before triage:
 
 ```bash

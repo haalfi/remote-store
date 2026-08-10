@@ -22,16 +22,17 @@ untouched.
 BK-338 asked whether `/rvw-pr` and `/orchestrate` should select the experts a
 change requires rather than run a fixed numbered list. It was filed on one
 delivery (PR #944) and a first attempt was reverted for deciding on that
-evidence. Four deliveries now carry per-round detail in `sdd/traces/`.
+evidence. Four deliveries have since run under the `/ship` convergence loop
+(PRs #946, #949, #952 and #954), each leaving a trace.
 
 **Two measurements decide it, over two different samples and by two different
-methods.** Both are measured rather than argued, and neither is a reading of all
-four traces — conflating them is what a reader trying to re-derive either would
-trip on:
+methods.** Both are measured rather than argued, and the samples are not the same
+set — conflating them is what a reader trying to re-derive either would trip on:
 
 1. **Persona lenses reach a minority of findings.** Sample: the **two richest**
-   of those four traces, PR #952 and PR #954, chosen because they record findings
-   round by round. Method: classifying every review
+   of those four traces, PR #952 and PR #954 — richest, not the only ones with
+   round-by-round detail, which many traces outside the loop also carry. Method:
+   classifying every review
    finding recorded there by whether a persona lens, scoped
    as its `.claude/agents/` file scopes it, would plausibly have caught it —
    a per-finding judgement, not a count.
@@ -45,8 +46,10 @@ trip on:
    `examples/` + `docs/`, and `sdd/`; everything else is uncovered, `scripts/`,
    `.claude/`, `pyproject.toml`, `.github/`, `infra/`, `benchmarks/` and the root
    files among it. Sample: **five** deliveries — PRs #944, #945, #949, #952 and
-   #954, which is not the four above, because #944 and #945 predate this loop and
-   carry no per-round detail. Method: `git show --name-only` per merge SHA,
+   #954. Not the four above: #944 and #945 predate the loop, and #946 is the
+   delivery that created it rather than one run under it, so file-level coverage
+   was measured over the wider set that has changed-file data. Method:
+   `git show --name-only` per merge SHA,
    bucketing each path by longest-matching `DOMAIN:` prefix — mechanical, and
    re-derivable from the recipe in
    [`sdd/traces/bk-338-review-roster.yml`](../traces/bk-338-review-roster.yml).

@@ -484,10 +484,14 @@ Then stop. **`/ship` never merges.** It hands over a PR that is ready to be.
 - Never end the loop on a state no unprimed reviewer has seen.
 - Never end the loop on a behavioural claim no measuring pass has executed.
 - Never end the loop on a red or unread CI.
-- Reviewers are read-only and fresh each round; fixers may decline with evidence.
+- Reviewers are read-only and fresh each round; the **subagents** — authors, and
+  fixers delegated for depth — may decline an instruction with evidence. The
+  default fixer is the main loop, which has nobody to decline to.
 - Reviewers are picked by lens and method. **Never pin or prefer a model, and
   never by domain** — a persona staffs a lens, it does not select one.
-- Every panel carries a member that runs something.
+- Every panel carries **exactly one** member that runs something — one, because
+  `rvw-pr`'s base-branch recipe uses a fixed `tmp/base` path that two concurrent
+  measurers would collide on.
 - The main loop fixes and owns the sweep; delegate a fix only for depth inside
   one file tree.
 - Findings that are real but out of scope get filed, not silently dropped.
