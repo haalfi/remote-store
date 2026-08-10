@@ -86,11 +86,13 @@ phases:
           docstrings) and store-backend (owns whether the claim is true).
         outcome: ok
       - file: sdd/traces/bk-344-vary-method-not-model.yml
-        section: "verify (rounds 1-4)"
+        section: "verify"
         read_type: verify
         extract: >-
-          The same classification over 12 findings: 3 reachable by a persona
-          lens, 9 not, and 6 reached by executing. Nine land in .claude/,
+          The same classification over the 12 findings its verify phase records
+          (a finding count, not a round count - that file owns its own
+          review_rounds and it moved after this was written): 3 reachable by a
+          persona lens, 9 not, and 6 reached by executing. Nine land in .claude/,
           pyproject.toml or CLAUDE.md — files no DOMAIN line contains. A process
           delivery is invisible to the roster by construction, which is the
           strongest single number in this item and is why the fix is a lens
@@ -100,13 +102,21 @@ phases:
         section: "[tool.hatch.envs.default.scripts]"
         read_type: verify
         extract: >-
-          Wrote tmp/classify_domains.py to classify the changed files of PRs
-          #944, #945, #949, #952 and #954 against the DOMAIN lines, reading
-          those lines rather than restating them. 20 of 135 files (15%) fall
-          outside every domain; the two process deliveries are 45% and 31%
-          against 6-12% for the three code deliveries. File-level coverage is
-          the weaker measurement and is reported as corroboration, not as the
-          decision's basis - the finding-level classification above is.
+          Classified the changed files of PRs #944, #945, #949, #952 and #954
+          against the DOMAIN lines, reading those lines rather than restating
+          them. 20 of 135 files (15%) fall outside every domain; the two process
+          deliveries are 45% and 31% against 6-12% for the three code
+          deliveries. Done with a throwaway script under the gitignored tmp/,
+          not shipped - it guards nothing, and adding it to scripts/ would owe a
+          hatch alias and a guard under tests/scripts/ for a one-off count. So
+          the recipe is recorded here instead, since a citation to a file that
+          does not ship is not a citation: git show --pretty= --name-only
+          <merge-sha> per delivery (c285391, 7bd48d1, b25baca, fbb5c9e,
+          758e998), bucket each path by longest-matching DOMAIN prefix with
+          src/remote_store/ext/ winning over src/remote_store/, and count the
+          residue. File-level coverage is the weaker measurement and is reported
+          as corroboration - the finding-level classification above is the
+          decision's basis.
         outcome: ok
       - file: .claude/skills/ship/SKILL.md
         section: "Roles table"
