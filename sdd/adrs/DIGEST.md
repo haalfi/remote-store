@@ -1174,13 +1174,13 @@ repeat-site check and the CI check are operational contract and live in
   finding more than the five-persona fan-out did.
 
 - **The repository's own tooling and process contract is a lens, not a
-  domain.** Gates in `scripts/`, skills and personas in `.claude/`, aliases in
-  `pyproject.toml`, CI in `.github/`, and the root process docs are selectable
-  like any other lens. A sixth persona was rejected: the surface needs looking
-  at, not owning, and a persona whose domain is "everything left over" grows the
-  roster on the axis with no yield. *Reverse if* the lens is reliably selected
-  for the same deliveries a domain assignment would have covered, at which point
-  the assignment is cheaper.
+  domain.** Its extent is *everything no `DOMAIN:` line contains* — derived per
+  path, never enumerated, because an enumeration read as exhaustive is how an
+  unlisted file gets handed to a persona that excludes it. A sixth persona was
+  rejected: the surface needs looking at, not owning, and a persona whose domain
+  is "everything left over" grows the roster on the axis with no yield.
+  *Reverse if* the lens is reliably selected for the same deliveries a domain
+  assignment would have covered, at which point the assignment is cheaper.
 
 - **The main loop fixes and owns the sweep; delegation to a domain expert is by
   depth, not by default.** [ADR-0034](0034-ship-panel-rounds-and-unprimed-exit.md)

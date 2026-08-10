@@ -108,9 +108,9 @@ one is in
 [§ Consequences](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md#consequences).
 
 1. **Write down the subject set** — whatever the change's own words claim
-   something about. Not a fixed vocabulary: a backend, a capability, an
-   operation, a caller, a gate and a skill have all been subjects here, and the
-   next change will name something none of those cover. Ask what the words pick
+   something about. Not a fixed vocabulary. A backend, a capability, an
+   operation, a caller, a gate, a skill: illustrations, not a menu, and the next
+   change will name something none of them cover. Ask what the words pick
    out, not which of a list they match. This is also not the file list, and the
    gap between the two is where defects survive.
 2. **Pick a lens per reviewer** from `/ship`'s
@@ -198,13 +198,34 @@ git status --porcelain --untracked-files=all
 git diff HEAD
 ```
 
-`git diff HEAD` is the content-sensitive one; porcelain adds the paths diff
-cannot see (new and deleted untracked files); `rev-parse` catches a moved
-revision. **Residual, stated rather than papered over:** an edit to the
-*contents* of an already-untracked file changes none of the three. The `tmp/`
-write bound is what shrinks that hole, and committing before review — which
-would restore `/ship`'s empty-porcelain model exactly — is the structural
-closure this skill has not taken.
+`git diff HEAD` is the content-sensitive one, and it is what catches an edit to a
+file the authors already modified — porcelain prints ` M path` either way.
+Porcelain adds the paths diff cannot see: new and deleted untracked files, **as
+long as they are not gitignored**. `rev-parse` catches a moved revision.
+
+**Residual, measured rather than reasoned.** Running the three captures against
+each tamper in a throwaway worktree:
+
+| Tamper | Detected by |
+|---|---|
+| Edit a tracked file the authors already modified | `git diff HEAD` |
+| Create or delete an untracked, non-ignored file | porcelain |
+| Overwrite an existing untracked file's contents | — |
+| Create or edit **anything on a gitignored path** | — |
+
+The last row is the wide one, and it is not restricted to content edits or to
+files that already exist: `--untracked-files=all` lists untracked-but-not-ignored
+paths only, so a *creation* under `site/`, `dist/`, `build/`, `htmlcov/`,
+`.venv/`, `__pycache__/`, `.benchmarks/` or the ignored part of `.claude/` is as
+invisible as an overwrite. A reviewer writing `.claude/settings.local.json` —
+plausible for a subagent with a full tool set — defeats all three.
+
+The `tmp/` write bound narrows the *honest* reviewer's blast radius, but it is
+not the answer here: these captures exist for the reviewer that broke the bound,
+so assuming the bound holds is assuming what the check is testing. Committing
+before review — which would restore `/ship`'s empty-porcelain model exactly, and
+with it detection of every case above — is the structural closure this skill has
+not taken.
 
 Never pin or prefer a model
 ([ADR-0035 § Decision](../../../sdd/adrs/0035-vary-method-not-model.md#decision)).

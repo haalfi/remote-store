@@ -60,9 +60,9 @@ description: ask.
 
 **Write down every subject the change's own words pick out**, as a list, before
 building. A subject is whatever the change claims something about — not a fixed
-vocabulary: a backend, a capability, an operation and a caller are the ones this
-skill's deliveries have hit so far, and the next change will name something none
-of them cover. Ask what the words pick out, not which of a list they match. This
+vocabulary. A backend, a capability, an operation, a caller, a gate, a skill:
+illustrations, not a menu, and the next change will name something none of them
+cover. Ask what the words pick out, not which of a list they match. This
 is a different question from which files the diff edits, and the gap between the
 two answers is where defects survive review — the diff is what you touched, the
 subject set is what you are answerable for.
@@ -246,9 +246,13 @@ missed:
   Docker-gated fixtures, backends with no fixture, `# pragma: no cover`. A green
   gate proves the *covered* code works; it never says what is covered.
 - **Consumer.** Docs, guides, and API read from outside.
-- **Tooling and process contract.** The repo's own machinery: gates in
-  `scripts/`, skills and personas in `.claude/`, aliases in `pyproject.toml`, CI
-  in `.github/`, `infra/`, and the root process docs. **No persona's `DOMAIN:`
+- **Tooling and process contract.** The repo's own machinery — **everything no
+  `DOMAIN:` line contains**. Derive it by checking a path against the five lines
+  rather than against a list: `/orchestrate`'s
+  [Nobody's domain](../orchestrate/SKILL.md#nobodys-domain) is the single home
+  for that reasoning and for why no enumeration is given, and this lens covers
+  the same set. It is wider than it looks — `benchmarks/` and `FEATURES.md` both
+  fall in it, and both read as some persona's work. **No persona's `DOMAIN:`
   line contains any of it**, so a roster cannot aim at it and a reviewer staffed
   by domain will not look — 9 of PR #954's 12 findings landed here
   ([ADR-0036 § Context](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md#context)). Staff

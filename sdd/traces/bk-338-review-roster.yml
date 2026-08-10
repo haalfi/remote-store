@@ -30,16 +30,16 @@ surprising_ripples:
   - .claude/skills/rvw-pr/SKILL.md
 # Commits that exist because feedback was incorporated, per the schema, counted
 # from `git log` rather than from memory of posted rounds — which is how the two
-# earlier values here went wrong. Six commits on the branch: 741687a is the
-# implementation; the other five are feedback-driven — 483338c (the /pr
+# earlier values here went wrong. Seven commits on the branch: 741687a is the
+# implementation; the other six are feedback-driven — 483338c (the /pr
 # qualitative gate's findings against this PR's own prose, pre-PR), then dc10a23,
-# 96329f2, fce9735 and this one for PR #956's four review rounds. An earlier value of 1
+# 96329f2, fce9735, 582b7a6 and this one for PR #956's five review rounds. An earlier value of 1
 # excluded 483338c as "pre-PR", which inverts the clause it cited — the schema
 # says feedback before the PR was opened counts the same *if it produced a commit
 # on the branch*, and that one did. bk-344's trace counted the identical case the
 # same way one PR ago; two traces cannot both be right and the aggregator sees
 # only the numbers.
-review_rounds: 5
+review_rounds: 6
 phases:
   - id: orient
     name: Orient
@@ -392,6 +392,66 @@ phases:
           points at the trace step holding the reproducible recipe. The ADR's
           whole claim to authority is measured-rather-than-argued, so a sentence
           that misdescribes the measurement costs more than its wording.
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Reviewer selection (tamper-check residual)"
+        read_type: verify
+        extract: >-
+          PR #956 round 5, and the first round of this PR's review to reach its
+          verdict by executing rather than reading - which is the axis the PR
+          itself argues for, applied to the PR at last. It refuted my stated
+          residual by measurement. I reproduced it before fixing rather than
+          taking it: a throwaway worktree, one modified tracked file and one new
+          untracked file standing in for expert output, then each tamper applied
+          against the three captures. Confirmed - an edit to an already-modified
+          tracked file is caught by `git diff HEAD` and NOT by porcelain (which
+          prints ` M path` either way); a new non-ignored untracked file is
+          caught by porcelain only; overwriting an existing untracked file is
+          caught by nothing. And the case I had not claimed: creating anything on
+          a *gitignored* path defeats all three, because --untracked-files=all
+          lists untracked-but-not-ignored paths only. Verified for site/ and for
+          .claude/settings.local.json, which is a plausible write for a subagent
+          with a full tool set. My residual was "an edit to the contents of an
+          already-untracked file", a category narrower than the truth in two
+          directions - it excluded creations and excluded ignored paths. Replaced
+          with the measured table, and with the note that the tmp/ write bound
+          cannot be the answer here since these captures exist for the reviewer
+          that broke it.
+        outcome: ok
+      - file: CLAUDE.md
+        section: "GitHub operations (ADR chain)"
+        read_type: verify
+        extract: >-
+          Round-5 finding on a file that had carried none in four rounds. I
+          appended ADR-0036 to a list whose grammatical object is ADR-0033
+          ("Rationale: ADR-0033, amended by 0034, 0035 and 0036") - and 0036's
+          Amends field is ADR-0020, ADR-0035, with its own prose saying "ADR-0033
+          and ADR-0034 are untouched". The sentence was true before my edit,
+          because 0034 and 0035 do both amend 0033, and my edit is what made it
+          false. Rewritten as a chain naming what each record amends. The
+          neglected-surface lens found this: CLAUDE.md, ship/SKILL.md,
+          rvw-pr/SKILL.md and both backlog files had gone four rounds unexamined
+          while 16 of 24 findings landed on one file.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Lens menu (Tooling and process contract); Step 1 subject list"
+        read_type: verify
+        extract: >-
+          Round 5 found the same PR instructing two opposite things about
+          enumerating the uncovered surface: /orchestrate's clause says never
+          work from a list and gives none, while /ship's lens hands the reviewer
+          a list - and the /ship copy is the one a reviewer executes against.
+          Measured three enumerations, three different sets: /ship's lens had
+          infra/ but not benchmarks/; ADR-0036's Decision had neither; ADR-0036's
+          Context had both. Reconciled by deletion rather than by alignment -
+          both the lens and the ADR Decision now derive from the DOMAIN lines and
+          point at /orchestrate's clause as the single home, so there is one
+          enumeration left in the repo and it is the one marked non-exhaustive.
+          Separately the two subject-set lists had been swept to matching framing
+          but not matching content, four items against six, and /ship's "the ones
+          this skill's deliveries have hit so far" was falsified by this delivery,
+          whose own subjects include a gate (BK-347) and three skills. Both now
+          carry the same six as illustrations with no claim about history.
         outcome: ok
       - file: .claude/agents/store-backend-expert.md
         section: "CONSTRAINTS, closing /orchestrate paragraph"
