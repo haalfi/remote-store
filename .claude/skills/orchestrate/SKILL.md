@@ -6,9 +6,11 @@ argument-hint: "[BACKLOG-ID] [optional: task description]"
 ---
 
 Orchestrate a complex task by delegating authoring to domain experts and
-reviewing by lens and method. See ADR-0020 for architecture rationale, and
-[ADR-0036](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md) for why
-the two halves select differently.
+reviewing by lens and method. See
+[ADR-0020 § Decision](../../../sdd/adrs/0020-orchestrate-iterative-convergence.md#decision)
+for architecture rationale, and
+[ADR-0036 § Decision](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md#decision)
+for why the two halves select differently.
 
 Reviews here are capped at two rounds. When a defect reaching `master` would be
 costly enough to justify reviewing to convergence instead, [`/ship`](../ship/SKILL.md)
@@ -52,7 +54,8 @@ direction is uncertain.
 
 These govern **Step 4**, where work is written. Review selection is a different
 question with a different answer — see [Reviewer selection](#reviewer-selection)
-below and [ADR-0036](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md).
+below and
+[ADR-0036 § Decision](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md#decision).
 
 **Code change (feature, refactor, bug fix):** activate the experts whose domain
 the change writes into. A pure backend change needs no Extension Expert; a
@@ -87,14 +90,18 @@ not the unit of selection. Two measurements, over different samples: across the
 **two** deliveries whose traces record findings round by round, a persona lens
 reaches a minority of them; across **five** deliveries' changed files, the
 surface no persona owns is where most of the findings on process work landed.
-[ADR-0036](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md) carries
-both, with the bound that the first is a per-finding judgement and the second is
-the mechanical one.
+Both, with their samples, are in
+[ADR-0036 § Context](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md#context);
+the bound that the first is a per-finding judgement and the second the mechanical
+one is in
+[§ Consequences](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md#consequences).
 
-1. **Write down the subject set** — what the change's own words claim something
-   about (a backend, a capability, an operation, a caller, a gate, a skill).
-   This is not the file list, and the gap between the two is where defects
-   survive.
+1. **Write down the subject set** — whatever the change's own words claim
+   something about. Not a fixed vocabulary: a backend, a capability, an
+   operation, a caller, a gate and a skill have all been subjects here, and the
+   next change will name something none of those cover. Ask what the words pick
+   out, not which of a list they match. This is also not the file list, and the
+   gap between the two is where defects survive.
 2. **Pick a lens per reviewer** from `/ship`'s
    [lens menu](../ship/SKILL.md#lens-menu), which this skill shares rather than
    copies. Pick by what the work is and what earlier rounds did not look at.
@@ -179,7 +186,7 @@ the mechanical one.
    owns.
 
 Never pin or prefer a model
-([ADR-0035](../../../sdd/adrs/0035-vary-method-not-model.md)).
+([ADR-0035 § Decision](../../../sdd/adrs/0035-vary-method-not-model.md#decision)).
 
 ## Step 3: Refine (Standard and Complex only)
 
@@ -193,8 +200,9 @@ Each returns:
 A plan has nothing built yet, so the measuring reviewer measures **what the plan
 asserts about existing behaviour**. That is the cheapest place in the whole run
 to catch a false premise, and it is where the premise obligation
-([ADR-0035](../../../sdd/adrs/0035-vary-method-not-model.md)) has the most to
-buy: a plan built on a premise nobody ran is the one that costs rounds later.
+([ADR-0035 § Decision](../../../sdd/adrs/0035-vary-method-not-model.md#decision))
+has the most to buy: a plan built on a premise nobody ran is the one that costs
+rounds later.
 
 **One round only.** The orchestrator integrates feedback and adjusts the plan.
 Any unresolved disagreements or open questions → escalate to user. Do not

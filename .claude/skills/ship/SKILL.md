@@ -42,7 +42,7 @@ surface.
 | Orchestrator | main loop | **Never delegated.** It holds the convergence judgement |
 | Designer / planner | main loop, plan mode | One role, not two, unless the task is architectural |
 | Author | domain-expert subagents where the work is theirs | May decline an instruction **with evidence** |
-| Fixer | **main loop by default.** Delegate only for depth inside one file tree | The fixer owns the sibling sweep ([ADR-0034](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md)), and the sweeps that pay are cross-file — a domain-scoped fixer cannot perform them ([ADR-0036](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md)). A delegate still returns the sweep across what it touched |
+| Fixer | **main loop by default.** Delegate only for depth inside one file tree | The fixer owns the sibling sweep ([ADR-0034 § Decision](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md#decision)), and the sweeps that pay are cross-file — a domain-scoped fixer cannot perform them ([ADR-0036 § Decision](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md#decision)). A delegate still returns the sweep across what it touched |
 | Reviewer | fresh subagents — one per panel member | **Never resumed.** A resumed reviewer inherits its own prior conclusions |
 
 ## Step 1: Frame
@@ -59,11 +59,13 @@ description: ask.
 ### Enumerate the subjects, not the files
 
 **Write down every subject the change's own words pick out**, as a list, before
-building. A subject is whatever the change claims something about: a backend, a
-capability, an operation, a caller. This is a different question from which
-files the diff edits, and the gap between the two answers is where defects
-survive review — the diff is what you touched, the subject set is what you are
-answerable for.
+building. A subject is whatever the change claims something about — not a fixed
+vocabulary: a backend, a capability, an operation and a caller are the ones this
+skill's deliveries have hit so far, and the next change will name something none
+of them cover. Ask what the words pick out, not which of a list they match. This
+is a different question from which files the diff edits, and the gap between the
+two answers is where defects survive review — the diff is what you touched, the
+subject set is what you are answerable for.
 
 Mark each subject as **executed**, **read only**, or **not reached**, and keep
 the list current: it is what sizes panels (below), what a completeness critic
@@ -122,12 +124,13 @@ Reviewers are chosen by **lens and method**, never by model and never by domain.
 Nothing in this skill pins, prefers, or diversifies an LLM model: the axis was
 never measured to pay, and the axis that was — reading versus executing — is the
 measuring member below
-([ADR-0035](../../../sdd/adrs/0035-vary-method-not-model.md)). A domain persona
+([ADR-0035 § Decision](../../../sdd/adrs/0035-vary-method-not-model.md#decision)).
+A domain persona
 is one way to **staff** a lens, never the unit of selection: pick it when the
 lens sits inside one domain and its foundation docs help, `general-purpose`
 otherwise, which is the normal case for a lens spanning domains or aimed at the
 surface no persona owns
-([ADR-0036](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md)).
+([ADR-0036 § Decision](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md#decision)).
 
 **Panels run in parallel against the same pushed state.** Each member is
 fresh and blind to the others: scoped members get briefs per the requirements
@@ -248,7 +251,7 @@ missed:
   in `.github/`, `infra/`, and the root process docs. **No persona's `DOMAIN:`
   line contains any of it**, so a roster cannot aim at it and a reviewer staffed
   by domain will not look — 9 of PR #954's 12 findings landed here
-  ([ADR-0036](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md)). Staff
+  ([ADR-0036 § Context](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md#context)). Staff
   this lens with `general-purpose`. Ask what a *reader* of the changed
   instruction would be permitted to do, not whether the instruction reads well:
   the recurring defect is an obligation written without the permission that

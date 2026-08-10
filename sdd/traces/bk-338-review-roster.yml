@@ -18,15 +18,17 @@ expected_ripples:
   - sdd/adrs/DIGEST.md
 surprising_ripples: []
 # Commits that exist because feedback was incorporated, per the schema, counted
-# from `git log` rather than from posted review rounds. Three commits on the
-# branch: one implementation, then 483338c (the /pr qualitative gate's findings
-# against this PR's own prose, pre-PR) and dc10a23 (PR #956 round 1). An earlier
-# value of 1 excluded 483338c as "pre-PR", which inverts the clause it cited —
-# the schema says feedback before the PR was opened counts the same *if it
-# produced a commit on the branch*, and that one did. bk-344's trace counted the
-# identical case the same way one PR ago; two traces cannot both be right and the
-# aggregator sees only the numbers. Later rounds add to this.
-review_rounds: 2
+# from `git log` rather than from memory of posted rounds — which is how the two
+# earlier values here went wrong. Five commits on the branch: 741687a is the
+# implementation; the other four are feedback-driven — 483338c (the /pr
+# qualitative gate's findings against this PR's own prose, pre-PR), then dc10a23,
+# 96329f2 and this one for PR #956's three review rounds. An earlier value of 1
+# excluded 483338c as "pre-PR", which inverts the clause it cited — the schema
+# says feedback before the PR was opened counts the same *if it produced a commit
+# on the branch*, and that one did. bk-344's trace counted the identical case the
+# same way one PR ago; two traces cannot both be right and the aggregator sees
+# only the numbers.
+review_rounds: 4
 phases:
   - id: orient
     name: Orient
@@ -311,6 +313,37 @@ phases:
           the branch length, not the field. The same wrong number is frozen in
           483338c's commit message and cannot be corrected without a force-push
           that would invalidate the review; recorded here instead.
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "ADR citations; Reviewer selection step 1"
+        read_type: verify
+        extract: >-
+          PR #956 round 3, four findings, all on citation and enumeration
+          hygiene rather than on behaviour. Three named ADR links that load a
+          whole record where a section would do - a context-load cost paid by
+          every reader of a skill file. Swept the class rather than the three
+          lines: this PR adds eleven ADR links across the two skills, and each
+          now points at the section that carries the claim it supports. That is
+          not uniformly `#decision`, which is the part worth recording - the
+          measurement counts live in ADR-0036's Context and the judgement bound
+          in its Consequences, so pointing all of them at Decision would have
+          traded a context-load defect for a wrong-target one. Pre-existing
+          whole-doc links and CLAUDE.md's read-all-four chain are left alone:
+          there the instruction really is to read the record.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Enumerate the subjects, not the files"
+        read_type: verify
+        extract: >-
+          Round-3 finding on my own step 1 - "a backend, a capability, an
+          operation, a caller, a gate, a skill" reads as a closed vocabulary of
+          what a subject may be, when the whole point of the subject set is that
+          it is whatever the change's words pick out. Swept to the source: the
+          same list with the same defect is in /ship's Step 1, which is where I
+          copied mine from, so fixing only the flagged copy would have left the
+          two disagreeing about whether the list is closed. Both now say the
+          enumeration is what deliveries have hit so far and instruct the reader
+          to ask what the words pick out rather than which entry they match.
         outcome: ok
       - file: .claude/agents/store-backend-expert.md
         section: "CONSTRAINTS, closing /orchestrate paragraph"
