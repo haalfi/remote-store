@@ -199,7 +199,14 @@ properties:
       counts the same as post-creation PR-review feedback if it produced
       a commit on the branch. 0 means the first push merged without
       revision; higher counts signal the trace under-modelled the actual
-      work surface. Where a deterministic
+      work surface.
+
+      **Name the commits the value was counted from, in a comment above
+      the field** (CLAUDE.md principle 9). This is a judgement over a
+      fixed list, so naming the list is what makes the judgement
+      checkable. It has gone wrong twice in one PR (#956), the second
+      time inside the paragraph correcting the first — a total offers a
+      later reader nothing to check it against. Where a deterministic
       independent measurement is needed (e.g. for aggregator code), use
       GitHub's review-submission count from
       `gh pr view --json reviews | length` instead — it counts a

@@ -479,15 +479,23 @@ phases:
         read_type: verify
         extract: >-
           Author-initiated pass over all twelve changed files after the review
-          closed, reading each whole rather than as a diff. It found **15**
-          defects no round had named - counted from the diff hunks of 1fe4749,
-          six in orchestrate, three in BACKLOG-DONE, two in ship, one each in
-          rvw-pr, CLAUDE.md, BK-347 and ADR-0036's provenance paragraph. That
-          commit's own message says "nine", which is wrong and is the **seventh**
-          miscount in this PR, inside the commit documenting the miscount
-          pattern; the message is immutable, this is the correction, and the
-          count above names its derivation for exactly that reason. Every one of
-          the 15 was a sibling of an earlier fix -
+          closed, reading each whole rather than as a diff. It found defects no
+          round had named in **seven** files - orchestrate, ship, rvw-pr,
+          CLAUDE.md, BACKLOG-DONE, BK-347 and ADR-0036's provenance paragraph.
+          Derivation, since the totals here have a history:
+          `gh api repos/haalfi/remote-store/commits/1fe4749` shows eight changed
+          files carrying 15 hunks, of which 12 across those seven files fix
+          something and three are this trace recording the pass. **No defect
+          total is asserted**, because none is reconstructable from the commit -
+          hunks merge adjacent fixes. That commit's own message says "nine", the
+          **seventh** miscount in this PR, inside the commit documenting the
+          miscount pattern; the message is immutable. An earlier correction here
+          said "15, counted from the diff hunks of 1fe4749, six in orchestrate";
+          BK-348 re-ran exactly that count and got **four** hunks in
+          orchestrate, 15 being the whole-commit figure including this file's
+          three. Rewritten rather than left standing: a derivation that does not
+          reproduce is worth less than no derivation, because it reads as
+          checked. Every one of the defects was a sibling of an earlier fix -
           which is the fix-pass blind spot ADR-0034 exists for, showing up in a
           run that had already been told about it five times. The frontmatter
           `description` still advertised "delegates to domain experts", falsified

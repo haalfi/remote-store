@@ -1,0 +1,214 @@
+id: BK-348
+title: "Adapt the review loop from PR #956's evidence"
+trigger: >-
+  Fourth in the series after BK-342 (PR #949), BK-344 (PR #952) and BK-338
+  (PR #956), and the first drawn from a delivery whose own subject was review
+  selection. That run converged - five posted rounds, a clean last round, green
+  CI - and an author pass reading each changed file whole then found defects in
+  seven of the eight files it touched. The item recorded three signals and
+  withheld a prescription, so the design was chosen against the evidence, with
+  the user, before anything was written.
+source_items:
+  - BK-348
+  - BK-338
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/adrs/DIGEST.md
+  - sdd/backlogid.json
+# The ripple-check's "Authority direction amended" row anticipated CLAUDE.md and
+# the persona CONSTRAINTS blocks; it did not anticipate that a new *exit gate*
+# obliges editing the two ADRs whose clauses it joins, the skill that spawns the
+# pass, the skill that must accept its findings (rvw-pr's FILE route), and the
+# skill that authors the replies the same principle binds. Nor that citing a
+# trace's figure obliges re-running that figure's derivation - which is how the
+# bk-338 correction below was found.
+surprising_ripples:
+  - .claude/skills/rvw-pr/SKILL.md
+  - .claude/skills/fix-pr/SKILL.md
+  - sdd/traces/bk-338-review-roster.yml
+  - sdd/traces/_schema.yml
+# Counted from `git log --oneline origin/master..HEAD` on this branch, per the
+# schema clause this PR adds to that field: commits that exist because feedback
+# was incorporated. Filled at close; see the review phase for which commit
+# answers which round.
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-348 (item)"
+        read_type: gate
+        extract: >-
+          Three signals, no prescription, and an explicit instruction to read the
+          trace before designing anything. Signal 1: eight claims asserted from
+          memory, and the invariant is the last column of its table, not the
+          fourth - not one was caught by re-reading the artifact, every one fell
+          when someone opened the source. Signal 2: 15 defects lived in the files
+          and fell to one whole-file read. Signal 3: brief requirement 3 asks a
+          question the loop has no instrument for.
+        outcome: ok
+      - file: sdd/traces/bk-338-review-roster.yml
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          The per-round detail behind the item, read rather than the item's
+          summary of it per the user's instruction. Two things the summary does
+          not carry: the finishing pass's defects are enumerated per file in the
+          commit message, and the trace's own stated derivation for the count is
+          checkable - which is what made re-running it the first thing to do.
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Step 1; Step 4 (Comment rules)"
+        read_type: gate
+        extract: >-
+          Confirms the item's diagnosis and refutes the obvious reading of it.
+          Step 1 already obliges reading every changed file in full, and Step 4
+          step 2 already offers subjectType FILE - so neither "reviewers do not
+          read the files" nor "the anchoring rule forbids file-level findings" is
+          the mechanism. What is left is that the block headed *comment rules*
+          mentions only the `+`-line constraint, 56 lines below the FILE option,
+          so a reviewer working from the rules section concludes wrongly. That
+          set the fix as visibility, and the pass as a separate decision.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Pre-work index"
+        read_type: gate
+        extract: >-
+          Triggered rows: Backlog item touched (trace + schema), Authority
+          direction amended (a new CLAUDE.md principle - sweep the principles,
+          the persona CONSTRAINTS blocks and sibling sdd/ authority docs by
+          wording), CHANGELOG entry (assessed and not required). No row covers
+          "a skill gains an exit gate", which is what the surprising_ripples
+          above record.
+        outcome: ok
+  - id: measure
+    name: Measure the evidence rather than restate it
+    steps:
+      - file: sdd/traces/bk-338-review-roster.yml
+        section: "verify / author-initiated finishing pass"
+        read_type: verify
+        extract: >-
+          Ran the derivation the trace names for its own defect count -
+          `gh api repos/haalfi/remote-store/commits/1fe4749` - and it does not
+          reproduce: four hunks in orchestrate against the six recorded, and the
+          15 total is the whole commit including this trace file's own three
+          hunks, which record the pass rather than fix anything. So the
+          correction written to document a miscount carried a derivation that
+          fails when run. Corrected in that trace to the reproducible figures,
+          with no defect total asserted, since none is reconstructable from a
+          commit whose hunks merge adjacent fixes. This is instance 8's shape
+          rather than a ninth instance, and it is the strongest single argument
+          for the principle this PR ships: it was checkable at all only because
+          a derivation was named.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BK-348 signal 3 (distribution)"
+        read_type: verify
+        extract: >-
+          Re-measured the concentration the item reports, since the design turns
+          it into a per-round instrument and an instrument is worth what its
+          numbers are. Grouping `pulls/956/comments?per_page=100&page=1` by
+          .path (page 2 returns 0) against `pulls/956/files?per_page=100`: 12
+          changed files, 29 inline comments over 6 review submissions, 17 on one
+          file; before the last submission, 25 comments, 16 on that file, 8 of
+          12 files with none. The item says 16 of 24 - comments are not
+          findings, and the run counted 28 findings against 29 comments. The
+          concentration and the untouched-file set reproduce exactly, which is
+          what a brief needs; the denominator does not, which is why the skill
+          says the instrument counts comments.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience (derived CHANGELOG rule)"
+        read_type: verify
+        extract: >-
+          Checked rather than assumed whether this delivery owes a CHANGELOG
+          entry. The rule fires on any `user.` audience or on
+          contributor.process introducing a new user-facing framework; this is
+          repo-internal process, so no entry. Corroborated against the three
+          predecessors - grepping CHANGELOG.md for BK-338, BK-342 and BK-344
+          returns nothing, so the same call was made three times before.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/templates/adr-template.md
+        section: "Status, Decision"
+        read_type: gate
+        extract: >-
+          Amends is clause-level and the amended clause is named in prose below
+          the table; the whole Decision section is lifted verbatim into
+          DIGEST.md. Set ADR-0037's split - two decisions with reversal
+          conditions in Decision, the cost and the residual in Consequences, and
+          the gate's mechanics left in ship/SKILL.md, which is the division
+          ADR-0036 states for operational contract.
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Principles"
+        read_type: gate
+        extract: >-
+          The new principle is **appended as 9, never inserted**: principles are
+          cited by number across BACKLOG.md, BACKLOG-DONE.md, DRIFT-RULES.md,
+          several specs and audits, and mutation/SKILL.md, so renumbering would
+          falsify every one of those citations in a diff that never touches them.
+        outcome: ok
+      - file: CLAUDE.md
+        section: "GitHub operations (ADR chain)"
+        read_type: verify
+        extract: >-
+          The site that broke twice in PR #956 - once as a list whose
+          grammatical object was ADR-0033, once as an overcorrection false for
+          ADR-0036 - and whose second fix predicted it would go stale on
+          ADR-0037. It did: the passage ended "every one of them withdraws a
+          clause a reader lands on in an earlier one", which ADR-0037 falsifies
+          by adding one. Rewritten so the parentheses are topics rather than
+          amendment claims, with the reader sent to each record's own Amends
+          field and told a record may withdraw or add.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "When not to use this; Round composition; The whole-file member; brief requirements; Stop rule; Rules; Step 5"
+        read_type: verify
+        extract: >-
+          The gate lands as a *method* beside the measuring member, not as a
+          lens - which is what keeps it out of /orchestrate, since that skill
+          shares the lens menu by link and has no exit gate to join. Sibling
+          sweep of adding it: the cost paragraph said "two exit gates ... up to
+          two further reviewer passes", the closing-gate row said "both exit
+          gates", the stop rule said "all four" clauses and the ADR-reading list
+          said "all three". Each is a cardinality claim about the same thing and
+          each was false on arrival of the third gate.
+        outcome: ok
+      - file: .claude/skills/fix-pr/SKILL.md
+        section: "Rules"
+        read_type: verify
+        extract: >-
+          Where the action-claim half of principle 9 binds, because this is
+          where replies are authored. The bound is stated rather than hidden: no
+          reviewer fetches replies - rvw-pr Step 1 forbids it, and that
+          restraint is what keeps /ship's unprimed passes unprimed - so a false
+          "I swept X" in a reply is seen by nobody and re-read by /fix-pr on
+          every later round. The check is the author's or there is none.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: .claude/agents/store-backend-expert.md
+        section: "CONSTRAINTS (all five persona files)"
+        read_type: verify
+        extract: >-
+          The "Authority direction amended" row sends a new principle to the
+          persona CONSTRAINTS blocks. Read all five. The first pass through this
+          step asserted "none restates a CLAUDE.md principle" and that was
+          wrong - store-backend-expert's first CONSTRAINT is principle 5's
+          content in full, down to the 000-process Rule 7 qualifier. The claim
+          the sweep actually supports is narrower and is the one that decides
+          the edit: no persona file states, contradicts, or is falsified by
+          principle 9, which governs how a figure is written rather than any
+          persona's domain, and none cites CLAUDE.md at all (grep for
+          "principle|CLAUDE.md" over .claude/agents/ returns nothing). So none
+          was edited. Recorded rather than left silent, because a sweep that
+          found nothing reads exactly like one that never ran - and because the
+          first version of this sentence is the class of claim this PR ships a
+          rule about, caught by running the check the rule requires.
+        outcome: ok

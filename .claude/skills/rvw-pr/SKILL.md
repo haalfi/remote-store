@@ -175,6 +175,7 @@ intended, plus a public claim that posting had failed when it had not.
 
 **Comment rules:**
 - `line` must be a `+` line in the diff. If finding is on an unchanged line, attach to nearest `+` line and reference actual location in body.
+- **A finding that belongs to the file rather than to any line is postable as-is**: `subjectType: "FILE"`, no `line`, no `side` (step 2 above). Use it for frontmatter falsified by the change, a broken antecedent, a claim about another file — anything whose subject is the file's current state. **Never drop such a finding for want of a `+` line, and do not anchor it to an unrelated one**: a reviewer reading only this block once concluded file-level findings were unpostable, and a whole class of defect went unreported for it ([ADR-0037 § Context](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md#context)).
 - Deleted lines: `side: "LEFT"` with base-branch line number
 - Tag with category: `Bug:` / `Spec:` / `Test:` / `Consistency:` / `Ripple:` / `Perf:` / `Security:`
 - Uncertain: `Possible:` prefix

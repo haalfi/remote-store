@@ -8,6 +8,65 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 ## Unreleased
 
+- [x] **BK-348 — Adapt the review loop from PR #956's evidence**
+  spec: — · effort: M · audience: contributor.process
+  Fourth in the series after BK-342 (PR #949), BK-344 (PR #952) and BK-338
+  (PR #956) — all three in this file — and the first drawn from a delivery whose
+  own subject was review.
+  The item recorded three signals and withheld a prescription; the design was
+  chosen against them, with the user, before anything was written.
+  **Shipped as [ADR-0037](adrs/0037-whole-file-gate-and-derived-figures.md)**,
+  amending ADR-0033's convergence clause and ADR-0034's exit-gate clause. Two
+  decisions: a **third exit gate** — the loop cannot end until every changed
+  file has been read whole against the final state — and a repo-wide rule that
+  **a figure, or a claim about an action, names the derivation it came from**,
+  landing as [`CLAUDE.md` principle 9](../CLAUDE.md#principles).
+  **Signal 2 decided the gate, and the obvious mechanism was wrong.** `/rvw-pr`
+  Step 1 already obliges reading every changed file in full, and Step 4 already
+  offers `subjectType: "FILE"`, so neither "reviewers do not read the files" nor
+  "the anchoring rule forbids file-level findings" explains why a converged loop
+  left defects in seven of the eight files a whole-file read then had to touch.
+  What remained: the block headed *comment rules* names only the `+`-line
+  constraint, 56 lines below the `FILE` option, so a reviewer working from the
+  rules section concludes wrongly. The fix is therefore **two** things — the
+  `FILE` route made visible where reviewers look, and a pass whose subject is
+  the file rather than the diff. It lands as a *method* beside the measuring
+  member, not as a lens, which is what keeps it out of `/orchestrate`: that
+  skill shares the lens menu by link and has no exit gate for it to join.
+  **The gate has no vacuous case**, unlike the measuring gate, so the floor
+  under `/ship` is now two passes.
+  **Signal 1's cure is derivation in the artifact, and it has two bounds.**
+  A number can show its working; a claim about an action ("I swept both sites")
+  has only the check you did or did not run, so that half binds in `/fix-pr`,
+  where replies are authored. The surface is also wider than files: instance 8
+  sat in a **review reply**, which is durable, is re-read by `/fix-pr`'s own
+  comment fetch on every later round, and is reviewed by nobody — no reviewer
+  fetches replies, by design, because that restraint is what keeps `/ship`'s
+  unprimed passes unprimed. The bound is stated in the rule rather than closed:
+  the check is the author's or there is none.
+  **Signal 3 became an instrument rather than an exhortation.** Brief
+  requirement 3 now carries two `gh api` reads — comments grouped by `.path`,
+  and the changed-file set they are subtracted from — so "what previous rounds
+  have not examined" is a query with named files in it instead of an adjective.
+  No script: it guards nothing, and a `scripts/` entry would owe a hatch alias
+  and a guard under `tests/scripts/` for a two-call recipe (the same call
+  BK-338's trace made for its own one-off count).
+  **The item's own evidence carried a derivation that does not reproduce**, and
+  running it is what found that. `sdd/traces/bk-338-review-roster.yml` recorded
+  the finishing pass as "15 defects, counted from the diff hunks of `1fe4749`,
+  six in orchestrate"; `gh api repos/haalfi/remote-store/commits/1fe4749` shows
+  **four** hunks in that file, and 15 is the whole-commit hunk count including
+  that trace file's own three, which record the pass rather than fix anything.
+  Corrected there to the figures that reproduce — eight files, 15 hunks, 12 of
+  them fixing something across seven files — with **no defect total asserted**,
+  since hunks merge adjacent fixes and none is reconstructable. This is
+  instance 8's shape rather than a ninth instance, and it is the argument for
+  principle 9 in miniature: the claim was checkable in one command *because* it
+  named one.
+  **No CHANGELOG entry**: `contributor.process` with no user-facing framework,
+  per the schema's derived rule — the same call BK-338, BK-342 and BK-344 each
+  made (a grep of `CHANGELOG.md` for those three IDs returns nothing).
+
 - [x] **ID-238 — Decide whether the trace-outcome report gets a review trigger, and what fires it**
   spec: — · effort: S · audience: contributor.process
   Closed as **yes, release-anchored**. `CONTRIBUTING.md` § Release Phase 0 gains
@@ -299,10 +358,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   residual was two categories narrower than what running it showed — plus
   findings on two of the eight untouched files. Method over identity, on the PR
   arguing for it. **Produced two items**: [BK-347](BACKLOG.md), an ADR-only diff
-  routed away from the ADR drift gate locally and in CI; and
-  [BK-348](BACKLOG.md), which carries this delivery's review evidence for the
-  loop itself, filed after the item closed and shipped separately so this PR
-  stayed at the state its rounds and CI certified.
+  routed away from the ADR drift gate locally and in CI; and BK-348 (closed
+  above), which carried this delivery's review evidence for the loop itself,
+  filed after the item closed and shipped separately so this PR stayed at the
+  state its rounds and CI certified.
 
 - [x] **BK-344 — Adapt `/ship` from PR #952's review evidence**
   spec: — · effort: M · audience: contributor.process

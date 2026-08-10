@@ -2,7 +2,7 @@
 
 <!-- doc: repo-only -->
 
-Compiled from 36 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
+Compiled from 37 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
 
 ## Accepted
 
@@ -1024,6 +1024,10 @@ directly.
   *Amended by [ADR-0034](0034-ship-panel-rounds-and-unprimed-exit.md):* a
   third stop clause — no ending until an unprimed reviewer has seen the final
   state clean.
+  *Amended by [ADR-0037](0037-whole-file-gate-and-derived-figures.md):* a
+  further stop clause — no ending until every changed file has been read whole
+  against the final state. Convergence itself is unchanged; what a round must
+  have looked at before it can be clean is not.
 
 - **The loop may not end on an unreviewed fix pass.** Whatever the last round
   changed is itself reviewed before the PR is declared ready; that verification
@@ -1096,6 +1100,10 @@ operational contract and lives in `.claude/skills/ship/SKILL.md`.
   *Amended by [ADR-0035](0035-vary-method-not-model.md):* "model terms" is
   withdrawn — briefing terms only — and a second, parallel exit gate joins this
   one for behavioural claims.
+  *Amended by [ADR-0037](0037-whole-file-gate-and-derived-figures.md):* a
+  third gate joins them, for the file as a whole. Unlike the measuring gate it
+  has no vacuous case, so the close appends a pass whenever the last round
+  carried no whole-file member.
 
 - **Every fix sweeps the sibling descriptions of what it changed.** The
   sibling-sweep obligation that already attaches to review findings extends
@@ -1196,6 +1204,36 @@ contract and live in `.claude/skills/orchestrate/SKILL.md` and
 `.claude/skills/ship/SKILL.md`.
 
 > amends ADR-0020, ADR-0035 (clause).
+
+### [ADR-0037](0037-whole-file-gate-and-derived-figures.md): A Whole-File Exit Gate, and Figures That Name Their Derivation
+
+- **The loop cannot end until a pass has read every changed file whole against
+  the final state.** A third exit gate, on the same terms as the unprimed and
+  measuring gates: the closing round supplies it or one pass is appended, and
+  like a verification round it counts toward the ceiling only if it finds
+  something. The gate is a reading mode, not a lens — its subject is each
+  file's current state, with the diff as context rather than as the thing
+  reviewed. It is a *detection* backstop for an obligation that already exists
+  and demonstrably did not fire: ADR-0034 put the sibling sweep on the fixer,
+  and every one of the defects a whole-file pass found was a sibling of a fix
+  made under that obligation. *Reverse if* whole-file passes stop finding what
+  the diff-anchored rounds do not, or if the sibling sweep starts catching
+  those defects where they are born.
+
+- **A figure, or a claim about an action, names the derivation it came from,
+  and the derivation is run before the sentence is written.** Binding on every
+  durable artifact — spec, ADR, trace, backlog item, commit message, PR body,
+  review reply — and stated once as [`CLAUDE.md`
+  principle 9](../../CLAUDE.md#principles) rather than per skill. The measured
+  failure mode is that re-reading never worked and opening the source always
+  did, so the remedy is the one that leaves the source named where the claim
+  sits. Neither [CONTENT-RULES Rule 3](../CONTENT-RULES.md#rules) nor BK-330's
+  stale-hand-count lesson covers this class: these figures were about fixed
+  history and were simply never counted. *Reverse if* stated derivations prove
+  as unreliable as the totals they replace, at which point the cheaper honest
+  answer is to state fewer figures.
+
+> amends ADR-0033, ADR-0034 (clause).
 
 ## Superseded
 

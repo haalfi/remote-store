@@ -16,6 +16,7 @@ Spec-Driven Development (SDD).
 6. **Run it, don't just type-check it**: verify behavior, not signatures. Reproduce bugs before claiming fixes. Test what matters, not just what type-checks.
 7. **Be critical, not agreeable**: challenge assumptions, question completeness, flag what's missing. Especially in reviews: a rubber-stamp is worse than no review. Ask what's untested, what could break, what's absent from the checklist.
 8. **Minimize mismatched detail, not detail**: durable artifacts — code, docs, specs, tests — keep the detail whose change-rate and correctness-locus fit the artifact, and relocate detail that belongs to another layer to its authoritative home (per principle 4). Brevity is a byproduct of correct placement, never the target: never delete a load-bearing reason to hit a length budget.
+9. **A figure names its derivation**: a number, a count, or a claim about an action you took — in a spec, ADR, trace, backlog item, commit message, PR body, or review reply — states the command, query, or enumeration it came from, and that derivation is **run before the sentence is written**, not recalled. Re-reading the sentence does not catch the error; opening the source does. A reader can disagree with a derivation, and can only trust a total. Measured failure modes: [ADR-0037](sdd/adrs/0037-whole-file-gate-and-derived-figures.md).
 
 ## Feature reference
 
@@ -142,17 +143,22 @@ PR workflows are codified as skills: `/pr`, `/rvw-pr`, `/fix-pr`. Use those inst
 Use `/rvw-pr` for PR reviews, not the built-in `/review` CLI command.
 
 `/ship` delivers a whole task as one merge-ready PR, planning and building before
-reviewing to convergence rather than to a round count. Rationale:
-[ADR-0033](sdd/adrs/0033-ship-convergence-driven-review.md), amended by
+reviewing to convergence rather than to a round count. Its rationale is spread
+across five records, each covering a different part of the loop:
+[ADR-0033](sdd/adrs/0033-ship-convergence-driven-review.md) (convergence over a
+round count),
 [ADR-0034](sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md) (panel rounds,
 unprimed exit gate),
-[ADR-0035](sdd/adrs/0035-vary-method-not-model.md) (method over model) and
+[ADR-0035](sdd/adrs/0035-vary-method-not-model.md) (method over model),
 [ADR-0036](sdd/adrs/0036-reviewers-by-subject-and-method.md) (subject and method
-over domain persona; the fixer role). **Read all four, and read each record's own
-`Amends` field rather than assuming the chain is linear** — it is not, and which
-record withdraws which clause is the thing a reader most needs and the thing
-most easily got wrong from a summary. Every one of them withdraws a clause a
-reader lands on in an earlier one.
+over domain persona; the fixer role) and
+[ADR-0037](sdd/adrs/0037-whole-file-gate-and-derived-figures.md) (the whole-file
+exit gate; figures that name their derivation). **Read all five, and take each
+record's amendment targets from its own `Amends` field** — the parentheses above
+are topics, not amendment claims, and the chain is not linear. Which record
+changes which clause is the thing a reader most needs and the thing most easily
+got wrong from a summary; a record here is as likely to withdraw a clause you
+landed on earlier as to add one.
 
 `/orchestrate` shares the review half of that model — reviewers picked by lens
 and method — while keeping its own capped rounds and persona-based **authoring**

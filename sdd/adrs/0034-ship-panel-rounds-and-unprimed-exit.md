@@ -78,6 +78,10 @@ passes, which is how the decisions below are split.
   *Amended by [ADR-0035](0035-vary-method-not-model.md):* "model terms" is
   withdrawn — briefing terms only — and a second, parallel exit gate joins this
   one for behavioural claims.
+  *Amended by [ADR-0037](0037-whole-file-gate-and-derived-figures.md):* a
+  third gate joins them, for the file as a whole. Unlike the measuring gate it
+  has no vacuous case, so the close appends a pass whenever the last round
+  carried no whole-file member.
 
 - **Every fix sweeps the sibling descriptions of what it changed.** The
   sibling-sweep obligation that already attaches to review findings extends

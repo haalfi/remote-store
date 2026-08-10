@@ -75,6 +75,10 @@ it, since the figure is one delivery's history and not a forward estimate.
   *Amended by [ADR-0034](0034-ship-panel-rounds-and-unprimed-exit.md):* a
   third stop clause — no ending until an unprimed reviewer has seen the final
   state clean.
+  *Amended by [ADR-0037](0037-whole-file-gate-and-derived-figures.md):* a
+  further stop clause — no ending until every changed file has been read whole
+  against the final state. Convergence itself is unchanged; what a round must
+  have looked at before it can be clean is not.
 
 - **The loop may not end on an unreviewed fix pass.** Whatever the last round
   changed is itself reviewed before the PR is declared ready; that verification

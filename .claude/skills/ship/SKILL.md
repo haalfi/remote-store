@@ -20,15 +20,17 @@ loop.
 
 The loop is the dominant cost: every round is one or more reviewer passes — a
 panel, from round 3, one of whose members runs the code rather than reading it —
-plus a fix pass and a full `hatch run all`, and the two exit gates can append
-up to two further reviewer passes at the close — one unprimed, one measuring,
-and never the same reviewer. What the
+plus a fix pass and a full `hatch run all`, and the three exit gates can append
+up to three further reviewer passes at the close — one unprimed, one measuring,
+one whole-file, and never the same reviewer. What the
 pre-panel shape came to on a large delivery is recorded in
 [ADR-0033](../../../sdd/adrs/0033-ship-convergence-driven-review.md); the cost
 the panel and exit gate add on top is recorded in
-[ADR-0034](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md); and
+[ADR-0034](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md);
 what the measuring member costs and replaces is in
-[ADR-0035](../../../sdd/adrs/0035-vary-method-not-model.md).
+[ADR-0035](../../../sdd/adrs/0035-vary-method-not-model.md); and what the third
+gate compounds is in
+[ADR-0037 § Consequences](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md#consequences).
 
 Use `/orchestrate` or plain implementation when the change is small, mechanical,
 or easily reverted. Use `/ship` when a defect that reaches `master` is costly:
@@ -118,7 +120,7 @@ push → reply and resolve.
 | 1 | One reviewer: **broad, unprimed** |
 | 2 | One reviewer, one scoped lens |
 | 3..N | Panel sized by the subject set's reach, the diff's breadth and the prior round's yield, one scoped lens per member. **Odd rounds add one unprimed member; every panel carries one measuring member** |
-| Closing gate | Not a round in the sequence: whichever round ends the loop must review the last fix pass **and** satisfy both exit gates — unprimed, and measuring if the PR asserts anything about existing behaviour. Each missing member is supplied by one appended pass; they may be the same round but never the same reviewer (see Stop rule) |
+| Closing gate | Not a round in the sequence: whichever round ends the loop must review the last fix pass **and** satisfy all three exit gates — unprimed, whole-file, and measuring if the PR asserts anything about existing behaviour. Each missing member is supplied by one appended pass; they may be the same round but never the same reviewer (see Stop rule) |
 
 Reviewers are chosen by **lens and method**, never by model and never by domain.
 Nothing in this skill pins, prefers, or diversifies an LLM model: the axis was
@@ -303,13 +305,64 @@ panel the scoped member is the measuring one.
 The obligation is a floor, not a cap: a solo round may be a measuring round, and
 on a diff whose whole risk is a behavioural claim it should be.
 
+### The whole-file member
+
+**Its subject is each changed file's current state; the diff is context, not the
+thing under review.** The other method axis, and the third exit gate
+([ADR-0037 § Decision](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md#decision)).
+Every reviewer already reads the changed files in full — `rvw-pr` Step 1
+requires it — so what this brief changes is not *what is read* but *what is
+judged*: the file as it now stands has to be true, whether or not the untrue
+part sits in a `+` line.
+
+That is where a whole class of defect lives, and diff-anchored rounds do not
+reach it. The shapes measured on PR #956, all of them siblings of an earlier
+fix and all invisible in a hunk: frontmatter falsified by the change it
+describes; an antecedent broken by a paragraph inserted above it; a premise true
+for one of a section's two callers; a cardinality claim that disagrees with a
+different file. Ask of each file: does its opening still describe what it now
+does, does every "the X above" still have its referent, and is each claim it
+makes about another file still true of that file?
+
+**A finding here is postable — do not drop it for want of a `+` line.**
+`rvw-pr` Step 4 takes `subjectType: "FILE"` with no `line` for exactly this,
+and its Comment rules say so.
+
+This member is scoped, never the unprimed one: the paragraph above is a brief.
+It is not the measuring member either — a whole-file pass reads, and cannot see
+a false premise about behaviour that exists only on the base branch. The two
+gates are not substitutes.
+
 ### Every scoped brief must carry
 
 1. **Areas as areas, not conclusions:** "verify or refute each independently."
 2. **What the previous fix pass changed**, so it gets reviewed.
-3. **What previous rounds have not examined.**
-4. **Whether the verdict is to be reached by reading or by running**, and for a
-   measuring member, what to run and against which revision.
+3. **What previous rounds have not examined** — computed, not recalled. Two
+   reads give it: the per-file comment distribution, and the changed-file set
+   it is subtracted from.
+
+   ```bash
+   gh api "repos/haalfi/remote-store/pulls/<N>/comments?per_page=100&page=1" --jq 'group_by(.path)[] | [(.[0].path), length] | @tsv'
+   ```
+   ```bash
+   gh api "repos/haalfi/remote-store/pulls/<N>/files?per_page=100" --jq '.[].filename'
+   ```
+
+   Page both per the discipline [`/rvw-pr`](../rvw-pr/SKILL.md) Step 4 pins for
+   its own count — a page returning exactly `per_page` means there is more —
+   and put the *named untouched files* in the brief, not the adjective
+   "neglected". This costs two calls and the alternative is an impression: on
+   PR #956 the loop ran four rounds with 16 of 25 comments on one file and 8 of
+   12 files carrying none, and nobody knew until an ad-hoc query while a brief
+   was being written. The round that query redistributed put three of its four
+   findings on two of those eight files
+   ([ADR-0037 § Context](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md#context)).
+   It counts comments, not findings, and the two differ slightly — the
+   concentration and the untouched set are what a brief needs, and both survive
+   that gap.
+4. **Whether the verdict is to be reached by reading the diff, by reading each
+   changed file whole, or by running**, and for a measuring member, what to run
+   and against which revision.
 5. **Explicit permission to find nothing**, or round N manufactures a finding.
    On the closing round, add: weight toward what would be *wrong once merged*,
    away from stylistic refinement.
@@ -356,10 +409,11 @@ what was refuted and why. The PR record is where that survives.
 
 > **Stop when the most recent round yields zero must-fix findings, that round
 > reviewed the most recent fix pass, an unprimed reviewer has seen the
-> final state and found nothing must-fix, *and* every behavioural claim the PR
+> final state and found nothing must-fix, every changed file has been read
+> whole against that final state, *and* every behavioural claim the PR
 > makes has been executed by a measuring pass.**
 
-The second, third and fourth clauses close the loop's measured blind spots.
+The last four clauses close the loop's measured blind spots.
 **The loop cannot end on an unreviewed fix pass**: a fix pass is not trusted
 work — it is new code written under time pressure by someone who has already
 been wrong once in this file. **It cannot end on a state no unprimed reviewer
@@ -368,6 +422,18 @@ loop creates are created by its fixes, after round 1's unprimed pass has come
 and gone. If the would-be closing round had no unprimed member, append one
 unprimed pass; like a verification round, it counts toward the ceiling only if
 it finds something.
+
+**It cannot end on a file nobody read whole.** Every round before the close
+reviews a diff, and the defect that survives all of them is the one the diff
+does not contain: on PR #956 a loop converged clean with green CI, and a single
+whole-file pass then found defects in seven of the eight files it touched,
+every one a sibling of a fix made under an obligation to sweep exactly those
+([ADR-0037 § Context](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md#context)).
+If the closing round had no whole-file member, append one, on the same terms as
+the unprimed pass. This clause has **no vacuous case**: a diff that changes a
+file can falsify that file's surrounding text, so the gate always applies. A
+one-round delivery therefore closes on an appended pass, never on round 1
+itself — the floor under this skill is two passes.
 
 **And it cannot end on a behavioural claim nobody ran.** The measuring member
 is a panel obligation, and panels start at round 3 — so without this clause a
@@ -379,13 +445,12 @@ PR asserts anything about existing behaviour, append one, on the same terms as
 the unprimed pass. A PR that makes no such claim satisfies the clause
 vacuously, exactly as a round that fixed nothing satisfies the fix-pass clause.
 
-A clean unprimed round 1 on a diff warranting no other lens still satisfies all
-four **provided the diff asserts nothing about existing behaviour** — stopping
-there is still correct. It cannot satisfy the fourth clause any other way: an
-unprimed pass gets the PR number alone, so it never carries the `measuring`
-token and never reaches a measuring brief, by the two rules above. A one-round
-delivery that *does* assert something therefore closes on the appended
-measuring pass, never on round 1 itself.
+A clean unprimed round 1 on a diff warranting no other lens still leaves two
+clauses to discharge, and cannot discharge either itself: an unprimed pass gets
+the PR number alone, so it never carries a whole-file brief or the `measuring`
+token, by the rules above. Such a delivery closes on the appended pass or
+passes — one whole-file, plus one measuring if the diff asserts anything about
+existing behaviour — never on round 1.
 
 - **Floor: lens coverage, not a round count.** Every lens the diff *warrants*
   must have been applied. A one-surface change may warrant only the broad round,
@@ -426,12 +491,16 @@ round; the second delivery — the one that added the panel structure and
 the unprimed exit gate — in
 [ADR-0034](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md); and
 the third — which dropped the model axis and added the measuring member — in
-[ADR-0035](../../../sdd/adrs/0035-vary-method-not-model.md).
-Read all three before tuning any of the above: they are the evidence that finding
+[ADR-0035](../../../sdd/adrs/0035-vary-method-not-model.md); and the fourth —
+which added the whole-file gate after a converged, CI-green loop left defects
+in seven of the eight files a single whole-file read then had to touch — in
+[ADR-0037](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md).
+Read all four before tuning any of the above: they are the evidence that finding
 counts plateau while severity keeps falling, that consecutive rounds each
 found defects in the previous round's fixes, that scoped rounds leave
-unnamed surface unexamined, and that what separated the productive rounds was
-method rather than reviewer identity.
+unnamed surface unexamined, that what separated the productive rounds was
+method rather than reviewer identity, and that a clean round is silent about
+everything outside the hunks it read.
 
 **Repeat-site check:** if two consecutive rounds refute **the same condition** —
 a gate, a predicate, a carve-out, a scope criterion — stop arguing the condition
@@ -468,12 +537,15 @@ condemned it.
 1. Ripple-check audit: [`sdd/CLAUDE-REFERENCE.md` § Detailed checklist](../../../sdd/CLAUDE-REFERENCE.md#detailed-checklist).
 2. CHANGELOG, BACKLOG/BACKLOG-DONE, and the trace, including `review_rounds`,
    `discovery_followups`, and `surprising_ripples`.
-3. Report: rounds run, findings per round with their character, the class swept
+3. Report: rounds run, findings per round with their character, the **final
+   per-file distribution** from requirement 3's query, the class swept
    per must-fix finding and the sibling sweep per fix — each with what it
    caught — what was filed rather than fixed, any surface the gate never
    executed, the **final state of the Step 1 subject list** with each entry
    marked executed / read only / not reached, and **CI's verdict on the final
-   push**.
+   push**. Every figure in it names its derivation
+   ([CLAUDE.md principle 9](../../../CLAUDE.md#principles)); a report about a
+   loop cannot be the one artifact that asserts its counts from memory.
 
 Then stop. **`/ship` never merges.** It hands over a PR that is ready to be.
 
@@ -482,6 +554,7 @@ Then stop. **`/ship` never merges.** It hands over a PR that is ready to be.
 - Never push to master.
 - Never end the loop on an unreviewed fix pass.
 - Never end the loop on a state no unprimed reviewer has seen.
+- Never end the loop on a changed file no pass has read whole.
 - Never end the loop on a behavioural claim no measuring pass has executed.
 - Never end the loop on a red or unread CI.
 - Reviewers are read-only and fresh each round; the **subagents** — authors, and
@@ -497,5 +570,11 @@ Then stop. **`/ship` never merges.** It hands over a PR that is ready to be.
 - Findings that are real but out of scope get filed, not silently dropped.
 - If a reviewer and a fixer disagree on fact, **measure**. Neither wins by assertion.
 - A premise about existing behaviour is executed before it ships, not read.
+- Every figure this loop states — in the PR body, a brief, a reply, a commit
+  message or the Step 5 report — names the derivation it came from, and the
+  derivation is run before the sentence is written
+  ([CLAUDE.md principle 9](../../../CLAUDE.md#principles)). Round counts and
+  finding counts are the figures this loop invents, so they are the ones it is
+  answerable for.
 - A verification step that can fail silently is worse than none, because it is
   trusted. Fix the instrument or delete it.
