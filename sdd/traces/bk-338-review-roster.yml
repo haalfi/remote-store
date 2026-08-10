@@ -484,9 +484,10 @@ phases:
           CLAUDE.md, BACKLOG-DONE, BK-347 and ADR-0036's provenance paragraph.
           Derivation, since the totals here have a history:
           `gh api repos/haalfi/remote-store/commits/1fe4749` shows eight changed
-          files carrying 15 hunks, of which 12 across those seven files fix
-          something and three are this trace recording the pass. **No defect
-          total is asserted**, because none is reconstructable from the commit -
+          files carrying 15 hunks: 12 across those seven files fix something,
+          and of the three in this file two also correct defects (a re-pointed
+          "this one", and instance 6's false clause) while one records the pass.
+          **No defect total is asserted**, because none is reconstructable from the commit -
           hunks merge adjacent fixes. That commit's own message says "nine", the
           **seventh** miscount in this PR, inside the commit documenting the
           miscount pattern; the message is immutable. An earlier correction here

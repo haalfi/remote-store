@@ -11,7 +11,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 - [x] **BK-348 — Adapt the review loop from PR #956's evidence**
   spec: — · effort: M · audience: contributor.process
   **Third** in the *Adapt … from PR #NNN's evidence* series — BK-342, BK-344,
-  BK-348, the three findable by that title pattern, as the item's own body
+  BK-348 — the ellipsis before "evidence" is load-bearing, since the two
+  earlier titles carry "review evidence" and this one does not — as the item's
+  own body
   derived. Its evidence is PR #956, which BK-338 delivered; that item is not in
   this series (its subject was the reviewer roster) and its record, ADR-0036,
   is not in the four that carry round-by-round evidence. First of the series
@@ -93,10 +95,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   the finishing pass as "15 defects, counted from the diff hunks of `1fe4749`,
   six in orchestrate"; `gh api repos/haalfi/remote-store/commits/1fe4749` shows
   **four** hunks in that file, and 15 is the whole-commit hunk count including
-  that trace file's own three, which record the pass rather than fix anything.
-  Corrected there to the figures that reproduce — eight files, 15 hunks, 12 of
-  them fixing something across seven files — with **no defect total asserted**,
-  since hunks merge adjacent fixes and none is reconstructable. This is
+  the three in the trace file itself — and even those are not all record: two
+  correct defects (a re-pointed "this one", and instance 6's false clause) and
+  one adds the new steps. Corrected there to the figures that reproduce — eight
+  files, 15 hunks, 12 of them fixing something across seven files and two more
+  correcting defects in the eighth — with **no defect total asserted**, since
+  hunks merge adjacent fixes and none is reconstructable. This is
   instance 8's shape rather than a ninth instance, and it is the argument for
   principle 9 in miniature: the claim was checkable in one command *because* it
   named one.
@@ -395,8 +399,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   residual was two categories narrower than what running it showed — plus
   findings on two of the eight untouched files. Method over identity, on the PR
   arguing for it. **Produced two items**: [BK-347](BACKLOG.md), a diff outside
-  CI's `CODE_PAT` routed away from the ADR drift gate locally and in CI (filed
-  as "ADR-only", widened by BK-348's own CI); and BK-348 (closed
+  CI's `CODE_PAT` routed away from the ADR drift gate (filed as "ADR-only",
+  widened by BK-348's own CI; the local gate misses a different set, on a
+  different classifier); and BK-348 (closed
   above), which carried this delivery's review evidence for the loop itself,
   filed after the item closed and shipped separately so this PR stayed at the
   state its rounds and CI certified.

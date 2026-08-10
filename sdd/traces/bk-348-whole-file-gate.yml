@@ -2,12 +2,15 @@ id: BK-348
 title: "Adapt the review loop from PR #956's evidence"
 trigger: >-
   Third in the "Adapt ... from PR #NNN's evidence" series - BK-342, BK-344,
-  BK-348, the three findable by that title pattern - and the first drawn from a
+  BK-348 (the ellipsis before "evidence" is load-bearing: the two earlier
+  titles carry "review evidence" and this one does not) - and the first drawn
+  from a
   delivery whose own subject was review selection. Its evidence is PR #956,
   BK-338's delivery, which is not itself in this series. That run converged -
   five posted rounds, a clean last round, green
   CI - and an author pass reading each changed file whole then found defects in
-  seven of the eight files it touched. The item recorded three signals and
+  seven of the eight files it then had to touch. The item recorded three
+  signals and
   withheld a prescription, so the design was chosen against the evidence, with
   the user, before anything was written.
 source_items:
@@ -34,7 +37,7 @@ surprising_ripples:
   - sdd/adrs/0035-vary-method-not-model.md
 # Commits on this branch that exist because feedback was incorporated, named
 # rather than totalled, per the schema clause this PR adds to that field.
-# `git log --oneline origin/master..HEAD` returns three:
+# `git log --oneline origin/master..HEAD` at the final push:
 #   26cf75b - the implementation. Does not count.
 #   789d72d - PR #958 round 1's seven findings. Counts.
 #   e0cacce - author-initiated, not feedback: I ran the shipped distribution
@@ -42,10 +45,15 @@ surprising_ripples:
 #             count, on the same reading bk-338's trace states for its own
 #             finishing commit - the schema counts feedback incorporated, and
 #             the honest reading is the one that does not inflate the field.
-# Value is the count of the counting commits above, which is 1. Not the number
-# of steps in the `review` phase: a round can take more than one step to record,
-# and a round refuted whole produces no commit at all.
-review_rounds: 1
+#   7cba3a2 - PR #958 round 2's seven findings. Counts.
+#   a later commit answers round 3; the `review` phase records its findings.
+# Value is the count of the counting commits above. Not the number of steps in
+# the `review` phase: a round can take more than one step to record, and a round
+# refuted whole produces no commit at all.
+# Finalised at the close. It was stale for one round before that, and round 3
+# caught it - all three panel members independently - which is this PR's own
+# new clause working on the delivery that ships it.
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -94,10 +102,13 @@ phases:
           Step 1 already obliges reading every changed file in full, and Step 4
           step 2 already offers subjectType FILE - so neither "reviewers do not
           read the files" nor "the anchoring rule forbids file-level findings" is
-          the mechanism. What is left is that the block headed *comment rules*
-          mentions only the `+`-line constraint, 56 lines below the FILE option,
-          so a reviewer working from the rules section concludes wrongly. That
-          set the fix as visibility, and the pass as a separate decision.
+          the mechanism. What was left, on the base branch: the block headed
+          *comment rules* named only the `+`-line constraint, well below the FILE
+          option, so a reviewer working from the rules section concluded wrongly.
+          Past tense and no line distance, both deliberately - this PR's own fix
+          adds a FILE bullet to that block, and a line distance moves on the next
+          edit to the file. That set the fix as visibility, and the pass as a
+          separate decision.
         outcome: ok
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check table / Pre-work index"
@@ -120,8 +131,9 @@ phases:
           Ran the derivation the trace names for its own defect count -
           `gh api repos/haalfi/remote-store/commits/1fe4749` - and it does not
           reproduce: four hunks in orchestrate against the six recorded, and the
-          15 total is the whole commit including this trace file's own three
-          hunks, which record the pass rather than fix anything. So the
+          15 total is the whole commit including the bk-338 trace file's own
+          three hunks - two of which, round 3's measuring member then showed by
+          reading the patch, also correct defects rather than recording. So the
           correction written to document a miscount carried a derivation that
           fails when run. Corrected in that trace to the reproducible figures,
           with no defect total asserted, since none is reconstructable from a
@@ -262,9 +274,17 @@ phases:
           now meets an instruction that looks like principle 9's opposite. The
           boundary was stated only inside ADR-0037, which is not where a reader
           of Rule 3 goes. Fixed by a pointer from Rule 3 rather than a copy of
-          the principle, per principle 4. Also checked AUTHORING.md and
-          DOCUMENTATION.md, the other two members of the documentation trio:
-          neither states a rule about figures or counts, so neither was edited.
+          the principle, per principle 4. **The set swept is the row's, not the
+          documentation trio's** - round 3 caught the first cut naming three
+          where the row names nine. CONTRIBUTING.md's Authoritative Document
+          Format enumerates them: 000-process, AUTHORING, CI-OPERATIONS, DESIGN,
+          DOCUMENTATION, DRIFT-RULES, TESTING, CONTENT-RULES, CLAUDE-REFERENCE.
+          All nine read for any rule about stating figures or counts. One hit,
+          CONTENT-RULES Rule 3, edited. DRIFT-RULES was the near miss worth
+          naming: its rules 3, 4 and 8 are about derivation paths for *checks*,
+          not about stating a figure in prose, and rule 4 already points at the
+          CLAUDE.md principles generically, so it needs nothing. The other seven
+          state no rule about figures.
         outcome: ok
   - id: review
     name: Review (PR #958)
@@ -296,7 +316,8 @@ phases:
         section: "Context (ordinals); Consequences (/orchestrate)"
         read_type: verify
         extract: >-
-          The other four round-1 findings, and two are miscounts of the kind this
+          Five more round-1 findings - the seventh, the CONTENT-RULES sweep
+          gap, is in the verify phase above - and two are miscounts of the kind this
           PR ships a rule about - written while writing the rule. "Fourth in the
           series after BK-342, BK-344 and BK-338" is wrong twice over: the item's
           own body derives **third**, and names its derivation (the two other
@@ -318,8 +339,9 @@ phases:
         extract: >-
           Round 2, scoped to neglected surface and briefed with the measured
           distribution - round 1 had put its 7 findings on 4 of 16 files, so the
-          other 12 were named in the brief. It returned 7 findings, 5 of them on
-          files that had never carried one. The lens is doing exactly what
+          other 12 were named in the brief. It returned 7 findings, 6 of them on
+          four files that had never carried one (5 is the count of distinct
+          paths it touched - two quantities, and the first cut conflated them). The lens is doing exactly what
           ADR-0033 says it does. The sharpest: deleting the item body deleted
           the eight-row instance table, and **ADR-0037 cites that table as the
           named derivation for its own headline figure** ("the row count of the
@@ -345,8 +367,9 @@ phases:
         read_type: verify
         extract: >-
           Round 2's best structural finding, and one no diff-scoped reading would
-          reach: the clause this PR adds to `review_rounds` is contradicted 146
-          lines below by the schema's own `examples:` block, which carries a bare
+          reach: the clause this PR adds to `review_rounds` is contradicted
+          further down the same file by its own `examples:` block, which carries
+          a bare
           `review_rounds: 1` - and CLAUDE.md routes every new trace author
           through exactly that block ("create one from the schema example"). The
           first thing an author does after the clause lands is copy a
@@ -358,4 +381,48 @@ phases:
           are now manifest placeholders with an explicit instruction to
           substitute real short SHAs, because a plausible-looking SHA that
           resolves to nothing is worse than no derivation at all.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Unprimed reviewers; Members are analysts; Stop rule; brief requirement 3"
+        read_type: verify
+        extract: >-
+          Round 3, the first panel: unprimed + measuring + whole-file, in
+          parallel against one pushed state. 24 raw findings, 18 distinct after
+          dedup. **The severe one is the gate shipping inert.** Adding a third
+          exit gate left "Unprimed reviewers - round 1, one member of every odd
+          panel, and the exit gate's appended pass" untouched, and that singular
+          now covered all three appended passes - so an orchestrator following it
+          hands the appended whole-file pass the PR number alone, the pass never
+          receives the brief, and the gate is discharged by a reviewer that could
+          not have satisfied it. Exactly the inert-obligation failure this file
+          warns about for the `measuring` token, one section later, in the same
+          PR that adds the gate. Also: three appended passes falsify "one
+          reviewer, no contention", so a multi-pass close now takes the panel
+          path explicitly; "two clauses to discharge" ignored the measuring
+          clause's vacuous case; the instrument's `files` call carried the
+          saturating spelling its own paging paragraph forbids, and it is the
+          *minuend*, so truncation makes a file vanish from the brief rather than
+          look neglected; and "the paragraph above is a brief" pointed at the
+          postability note, which is the broken-antecedent shape the section four
+          lines above exists to catch.
+        outcome: ok
+      - file: sdd/adrs/0037-whole-file-gate-and-derived-figures.md
+        section: "Context (instance table); Consequences"
+        read_type: verify
+        extract: >-
+          Round 3's other half, and all of it is the record misdescribing its own
+          evidence. Three claims about the eight-instance table, each checkable
+          against the table and each wrong: "the correction to the last of them"
+          attributed row 7's disproved derivation to row 8; "Instance 8 was found
+          this way, in this delivery" contradicted the table's own Who-caught-it
+          column (row 8 was caught during PR #957, before this delivery existed) -
+          the careful "instance 8's *shape*" survived in two other files and only
+          the ADR dropped the word; and "eight claims in that PR" is falsified by
+          row 8's own artifact column, which locates it in #957, so the scope is
+          the delivery rather than the PR. The measuring member separately
+          **refuted the partition this PR itself introduced**: "12 fix / 3
+          record" is wrong because two of the bk-338 trace's three hunks correct
+          defects (a re-pointed "this one", instance 6's false clause) rather
+          than record. It read the patch instead of taking the number, which is
+          the axis ADR-0035 exists for, applied to a figure this delivery wrote.
         outcome: ok

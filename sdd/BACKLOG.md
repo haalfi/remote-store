@@ -387,7 +387,7 @@ and the highest ID already in this file, then take the next integer. Run
   question. Any row change lands in **both** presentations — `check_ripple_parity.py`
   enforces trigger-parity.
 
-- [ ] **BK-347 — A diff outside `CODE_PAT` is routed away from the ADR drift gate, locally and in CI**
+- [ ] **BK-347 — A diff outside CI's `CODE_PAT` is routed away from the ADR drift gate, and the local gate misses a different set**
   spec: — · effort: S · audience: contributor.process, infra.ci
   `gen_adr_digest.py --check` gates `sdd/adrs/DIGEST.md` freshness **and**
   supersession-graph consistency. Exactly one composite gate runs it: `preflight`,
@@ -408,10 +408,20 @@ and the highest ID already in this file, then take the next integer. Run
   `gh api repos/haalfi/remote-store/commits/26cf75b/check-runs` still reports
   `lint` skipped, with every test lane skipped alongside it. (Named as a commit,
   not as "head": that PR's branch moved twice after the measurement.) The
-  trigger is not how narrow the diff is; it is that **no path in it matches
-  `CODE_PAT`**, which is true of most process deliveries. The title was widened
-  to match on that evidence; **the fix shape below still reads narrower than it
-  and has not been re-scoped.**
+  trigger in CI is not how narrow the diff is; it is that **no path in it
+  matches `CODE_PAT`**, which is true of most process deliveries.
+  **The two halves have different triggers, and conflating them is a third
+  defect this item should not carry.** `CODE_PAT` is CI's, in `ci.yml`; the
+  local mechanical gate routes on the different list in
+  [PR validation gates](CLAUDE-REFERENCE.md#pr-validation-gates). They disagree
+  in both directions: an ADR plus a `.claude/hooks/` edit is outside `CODE_PAT`
+  yet locally runs `all` → `preflight` → the check, while an ADR plus a
+  `.github/workflows/` edit is inside `CODE_PAT` yet locally routes to
+  `lint` + `docs-gate`, which compose it nowhere. So the CI half is
+  "outside `CODE_PAT`" and the local half is "the classifier sends it to
+  `lint` + `docs-gate`" — scope any fix to both classifiers, not to one name.
+  The title was widened on the CI evidence; **the fix shape below still reads
+  narrower than the evidence and has not been re-scoped.**
   **Consequence:** a hand-edited or stale `DIGEST.md` ships on the author's care
   alone, and the `STALE:` failure lands on the *next* PR that happens to touch
   code — the wrong PR to pay for it, and one whose author did not cause it.

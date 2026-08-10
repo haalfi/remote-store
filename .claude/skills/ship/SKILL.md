@@ -98,8 +98,8 @@ Implement, delegating to domain experts where the work is theirs. Then:
 
 **The PR body states what changed and why, not what to doubt.** Every
 unprimed reviewer — round 1, each odd panel's unprimed member, and the
-closing gate's appended pass — reads the body as part of PR content, so
-anything you would
+closing gate's unprimed appended pass — reads the body as part of PR content,
+so anything you would
 flag as risky primes the passes that must not be primed, and the body must
 stay doubt-free for the life of the loop, not only at round 1. Doubts belong
 in scoped briefs, where priming is the point. The same discipline covers
@@ -156,10 +156,15 @@ constraints keep that parallelism sound:
   call that flow forbids drops findings silently, and the members who would
   have caught it no longer post — and runs a single triage and fix pass. A
   round with exactly one reviewer — rounds 1 and 2, an **even** round
-  narrowed to a single scoped member, or the closing gate's appended pass —
-  keeps `rvw-pr`'s full posting flow: one reviewer, no contention. From
+  narrowed to a single scoped member, or a close that appends exactly one
+  pass — keeps `rvw-pr`'s full posting flow: one reviewer, no contention. From
   round 3 on, an odd round is never solo; it always carries its unprimed
-  member.
+  member. **A close that appends two or three passes is a panel** and takes
+  the panel path — analyze-only members, orchestrator posts — because the
+  contention this bullet describes does not care that the passes are appended
+  rather than scheduled. Run them serially as solo posting passes only if you
+  want the later ones to see the earlier ones' findings, which for the
+  unprimed pass is exactly what must not happen.
 - **Member enforcement is by instruction, and honestly so.** No tool
   restriction that leaves a reviewer functional removes the hazards: reading
   PR content needs `gh`/MCP, so the posting path cannot be tool-stripped, and
@@ -186,18 +191,25 @@ loud round, or a subject list with entries still marked `not reached` widens
 the next. Width follows the subject set, not the file list: sizing a panel by
 the diff's breadth is how a bound subject the diff never touched goes unnamed.
 
-**Unprimed reviewers — round 1, one member of every odd panel, and the exit
-gate's appended pass — are unprimed on purpose.** They receive the diff, the
-goal, and repo conventions, never your areas of concern, prior findings, or
-round history: a reviewer handed conclusions confirms them, and the second
-delivery's evidence for what that costs is in
+**Unprimed reviewers — round 1, one member of every odd panel, and the closing
+gate's *unprimed* appended pass — are unprimed on purpose.** They receive the
+diff, the goal, and repo conventions, never your areas of concern, prior
+findings, or round history: a reviewer handed conclusions confirms them, and
+the second delivery's evidence for what that costs is in
 [ADR-0034](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md).
+**Only that one.** The close can append up to three passes and the other two
+are *scoped* — a whole-file brief and a measuring brief are briefs, which is
+why each of those sections says its member is never the unprimed one. Handing
+an appended whole-file or measuring pass the PR number alone leaves it never
+told what it was appended to do, and the gate is then discharged by a pass that
+could not have satisfied it: the same inert-obligation failure this file warns
+about for the `measuring` token, one gate later.
 Unprimed-ness is the whole of the mechanism — what differs is what the reviewer
 was *not* told, and that is independent of who or what reviews.
 
 **Solo passes invoke [`/rvw-pr`](../rvw-pr/SKILL.md) directly.** That is rounds
-1 and 2, an even round narrowed to a single scoped member, and the closing
-gate's appended pass. Direct invocation keeps the skill's `allowed-tools`
+1 and 2, an even round narrowed to a single scoped member, and a close that
+appends exactly one pass. Direct invocation keeps the skill's `allowed-tools`
 frontmatter, which withholds `Edit` and `Write` — the guarantee the spawn path
 loses and has to restate as an instruction. It is not a read-only guarantee:
 that frontmatter grants `Bash`, and this file's own panel-constraints bullet
@@ -328,10 +340,11 @@ makes about another file still true of that file?
 `rvw-pr` Step 4 takes `subjectType: "FILE"` with no `line` for exactly this,
 and its Comment rules say so.
 
-This member is scoped, never the unprimed one: the paragraph above is a brief.
-It is not the measuring member either — a whole-file pass reads, and cannot see
-a false premise about behaviour that exists only on the base branch. The two
-gates are not substitutes.
+This member is scoped, never the unprimed one: a whole-file brief names the
+questions to ask of each file, and that is a brief. It is not the measuring
+member either — a whole-file pass reads, and cannot see a false premise about
+behaviour that exists only on the base branch. The two gates are not
+substitutes.
 
 ### Every scoped brief must carry
 
@@ -363,6 +376,13 @@ gates are not substitutes.
    for the tag. Group only after every page is in hand: a file with comments on
    two pages is one entry, and the untouched set is the changed-file list minus
    the **union** of `finding` paths, never minus page 1's.
+
+   **Page the `files` call too — it is the minuend, and truncating it is the
+   worse failure.** That endpoint paginates on the same terms (measured: at
+   `per_page=10` a 16-file PR returns 10 rows then 6). A file missing from a
+   truncated changed-file list appears neither touched nor untouched; it drops
+   out of the brief entirely. A truncated subtrahend over-reports neglect,
+   which is visible; a truncated minuend under-reports it, which is not.
 
    Put the *named untouched files* in the brief, not the adjective
    "neglected". This costs two calls and the alternative is an impression: on
@@ -437,7 +457,7 @@ it finds something.
 **It cannot end on a file nobody read whole.** Every round before the close
 reviews a diff, and the defect that survives all of them is the one the diff
 does not contain: on PR #956 a loop converged clean with green CI, and a single
-whole-file pass then found defects in seven of the eight files it touched,
+whole-file pass then found defects in seven of the eight files it had to touch,
 every one a sibling of a fix made under an obligation to sweep exactly those
 ([ADR-0037 § Context](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md#context)).
 If the closing round had no whole-file member, append one, on the same terms as
@@ -456,12 +476,13 @@ PR asserts anything about existing behaviour, append one, on the same terms as
 the unprimed pass. A PR that makes no such claim satisfies the clause
 vacuously, exactly as a round that fixed nothing satisfies the fix-pass clause.
 
-A clean unprimed round 1 on a diff warranting no other lens still leaves two
-clauses to discharge, and cannot discharge either itself: an unprimed pass gets
-the PR number alone, so it never carries a whole-file brief or the `measuring`
-token, by the rules above. Such a delivery closes on the appended pass or
-passes — one whole-file, plus one measuring if the diff asserts anything about
-existing behaviour — never on round 1.
+A clean unprimed round 1 on a diff warranting no other lens still leaves the
+whole-file clause to discharge — plus the measuring clause when the diff
+asserts anything about existing behaviour, and only then, since that clause is
+otherwise satisfied vacuously. It can discharge neither itself: an unprimed
+pass gets the PR number alone, so it never carries a whole-file brief or the
+`measuring` token, by the rules above. Such a delivery closes on one appended
+pass, or two, never on round 1.
 
 - **Floor: lens coverage, not a round count.** Every lens the diff *warrants*
   must have been applied. A one-surface change may warrant only the broad round.

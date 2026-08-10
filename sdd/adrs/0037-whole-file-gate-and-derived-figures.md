@@ -33,16 +33,18 @@ is the **fourth** delivery whose review evidence produced a record —
 [ADR-0033](0033-ship-convergence-driven-review.md) (PR #945),
 [ADR-0034](0034-ship-panel-rounds-and-unprimed-exit.md) (PR #949),
 [ADR-0035](0035-vary-method-not-model.md) (PR #952), this one. BK-348 is the
-**third** item in the *Adapt … from PR #NNN's evidence* series — BK-342, BK-344,
-BK-348, the three findable by that title pattern. It is the first of either
-drawn from a delivery whose own subject was review. Two of its signals are
-structural rather than incidental.
+**third** item in the *Adapt … from PR #NNN's … evidence* series — BK-342,
+BK-344, BK-348. (The two earlier titles carry "review evidence" and this one
+does not, so the ellipsis before "evidence" is load-bearing: a pattern without
+it finds one of the three.) It is the first of either sequence drawn from a
+delivery whose own subject was review. Two of its signals are structural rather
+than incidental.
 
 **The loop converged and the files were still wrong.** Five posted rounds, a
 clean final round, green CI — then an author-initiated pass that read each
 changed file *whole* rather than as a diff found defects no round had named,
-across seven of the eight files it touched, every one a sibling of an earlier
-fix. That is the fix-pass blind spot ADR-0034 exists for, surfacing in a run
+in seven of the eight files it then had to touch, every one a sibling of an
+earlier fix. That is the fix-pass blind spot ADR-0034 exists for, in a run
 that had been told about it five times. What survived five rounds: frontmatter
 falsified by the very change it describes; an antecedent broken by a paragraph
 inserted above it; a premise true for one of a section's two callers; a
@@ -71,25 +73,29 @@ carried it. A derivation was named, so the error survived one round and no
 longer; the instrument in `.claude/skills/ship/SKILL.md` now tags replies rather
 than counting them.
 
-**Eight claims in that PR were asserted from memory and were wrong**: seven
-numbers across three unrelated fields and one claim about an action, that being
-the row count of the table in the BK-348 item rather than a remembered total.
-The invariant is not who caught them. **Not one was caught by re-reading the
-artifact the claim sat in** — including in rounds explicitly hunting stale
-claims — and every one fell when someone opened the source the figure derived
-from: a schema clause, a commit, a corpus, a diff.
+**Eight claims across that delivery were asserted from memory and were
+wrong**: seven numbers across three unrelated fields and one claim about an
+action. Seven sat in PR #956 and the eighth in a review reply on its follow-up
+#957, which is why the scope is the delivery rather than the one PR. The count
+is the row count of the table in
+[`sdd/BACKLOG-DONE.md`](../BACKLOG-DONE.md)'s BK-348 entry rather than a
+remembered total. The invariant is not who caught them. **Not one was caught by
+re-reading the artifact the claim sat in** — including in rounds explicitly
+hunting stale claims — and every one fell when someone opened the source the
+figure derived from: a schema clause, a commit, a corpus, a diff.
 
-The correction to the last of them is the sharpest evidence for the second
-decision below, and re-running its own stated derivation is what found it.
-`sdd/traces/bk-338-review-roster.yml` records the finishing pass's defect count
+The correction to **row 7** is the sharpest evidence for the second decision
+below, and re-running its own stated derivation is what found it.
+`sdd/traces/bk-338-review-roster.yml` recorded the finishing pass's defect count
 as counted from the diff hunks of `1fe4749`, six of them in
 `.claude/skills/orchestrate/SKILL.md`; the commit has **four** hunks in that
-file, and its 15 hunks total are reached only by counting the trace file's own
-three, which record the pass rather than fix anything. A correction written to
-document a miscount carries a derivation that does not reproduce — and it was
-checkable in one command precisely because it named one. This is the argument
-in miniature: a reader can disagree with a derivation, and can only trust a
-total.
+file, and its 15 hunks total are reached only by counting the three in the trace
+file itself — and even those are not all record, since two of them correct
+defects (a re-pointed "this one", and instance 6's false clause) while one adds
+the new steps. A correction written to document a miscount carries a derivation
+that does not reproduce — and it was checkable in one command precisely because
+it named one. This is the argument in miniature: a reader can disagree with a
+derivation, and can only trust a total.
 
 ## Decision
 
@@ -128,8 +134,9 @@ total.
   was previously a reviewer's impression; it is now a query, and its recipe is
   operational contract in `.claude/skills/ship/SKILL.md`.
 - **Positive:** a wrong figure becomes findable by a reader rather than only by
-  the author who happens to re-derive it. Instance 8 of that PR's table was
-  found this way, in this delivery, in one command.
+  the author who happens to re-derive it. Row 7's own correction failed this
+  way in this delivery, in one command — instance 8's *shape* rather than a
+  ninth instance, since row 8 itself was caught during PR #957.
 - **Negative:** a third gate compounds the closing cost ADR-0034 already
   records. Worst case the close appends three passes rather than two — none may
   be the same reviewer, and a whole-file brief primes, so it can never double
