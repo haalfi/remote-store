@@ -473,8 +473,15 @@ phases:
         read_type: verify
         extract: >-
           Author-initiated pass over all twelve changed files after the review
-          closed, reading each whole rather than as a diff. It found nine defects
-          no round had named, and every one was a sibling of an earlier fix -
+          closed, reading each whole rather than as a diff. It found **15**
+          defects no round had named - counted from the diff hunks of 1fe4749,
+          six in orchestrate, three in BACKLOG-DONE, two in ship, one each in
+          rvw-pr, CLAUDE.md, BK-347 and ADR-0036's provenance paragraph. That
+          commit's own message says "nine", which is wrong and is the **seventh**
+          miscount in this PR, inside the commit documenting the miscount
+          pattern; the message is immutable, this is the correction, and the
+          count above names its derivation for exactly that reason. Every one of
+          the 15 was a sibling of an earlier fix -
           which is the fix-pass blind spot ADR-0034 exists for, showing up in a
           run that had already been told about it five times. The frontmatter
           `description` still advertised "delegates to domain experts", falsified
