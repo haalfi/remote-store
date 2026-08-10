@@ -14,8 +14,10 @@ audience:
   - contributor.process
 discovery_followups:
   - BK-347
-  # Filed after this item closed, from its own review evidence: the fourth entry
-  # in the BK-342 / BK-344 series. Ships as its own PR rather than here, so #956
+  # Filed after this item closed, from its own review evidence: the third entry
+  # in the BK-342 / BK-344 series — those two are the only members findable by
+  # that title pattern, so "fourth" here and in the item was a total nobody could
+  # reconstruct. Ships as its own PR rather than here, so #956
   # stays at the state its five rounds and CI actually certified.
   - BK-348
 expected_ripples:
