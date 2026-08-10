@@ -342,33 +342,35 @@ gates are not substitutes.
    it is subtracted from.
 
    ```bash
-   gh api "repos/haalfi/remote-store/pulls/<N>/comments?per_page=100&page=1" --jq '.[].path'
+   gh api "repos/haalfi/remote-store/pulls/<N>/comments?per_page=100&page=1" --jq '.[] | [(if .in_reply_to_id then "reply" else "finding" end), .path] | @tsv'
    ```
    ```bash
    gh api "repos/haalfi/remote-store/pulls/<N>/files?per_page=100" --jq '.[].filename'
    ```
 
-   **One path per comment, deliberately un-grouped**, so the output length *is*
-   the page length and [`/rvw-pr`](../rvw-pr/SKILL.md) Step 4's paging
-   discipline applies unchanged — a page returning exactly `per_page` rows means
-   there is another. Group only after every page is in hand: a file with
-   comments on two pages is one entry, and the untouched set is the changed-file
-   list minus the **union** of paths, never minus page 1's. Grouping per page
-   and concatenating silently under-reports the concentration and over-reports
-   the untouched set — the same failure `/rvw-pr` Step 4 pins its own
-   instrument against, arriving exactly when the loop has run long enough for
-   the distribution to be worth measuring.
+   **Count the `finding` rows only.** That endpoint returns your own replies
+   alongside the findings, and by the closing rounds they outnumber them — a
+   loop that answers every thread doubles its own comment count, so an
+   unfiltered tally reports the surface as more examined than it is, and worst
+   exactly where the loop has been most diligent. Measured: this delivery's own
+   round 1 returned 15 rows for 7 findings.
+
+   **One row per comment, tagged rather than filtered in the query, and
+   deliberately un-grouped**, so the output length is still the *page* length
+   and [`/rvw-pr`](../rvw-pr/SKILL.md) Step 4's paging discipline applies
+   unchanged — a page returning exactly `per_page` rows means there is another.
+   A `--jq` that dropped the replies would break that test, which is the reason
+   for the tag. Group only after every page is in hand: a file with comments on
+   two pages is one entry, and the untouched set is the changed-file list minus
+   the **union** of `finding` paths, never minus page 1's.
 
    Put the *named untouched files* in the brief, not the adjective
    "neglected". This costs two calls and the alternative is an impression: on
-   PR #956 the loop ran four rounds with 16 of 25 comments on one file and 8 of
-   12 files carrying none, and nobody knew until an ad-hoc query while a brief
-   was being written. The round that query redistributed put three of its four
-   findings on two of those eight files
+   PR #956 the loop ran four rounds with 16 of its 24 findings on one file and
+   8 of 12 files carrying none, and nobody knew until an ad-hoc query while a
+   brief was being written. The round that query redistributed put three of its
+   four findings on two of those eight files
    ([ADR-0037 § Context](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md#context)).
-   It counts comments, not findings, and the two differ slightly — the
-   concentration and the untouched set are what a brief needs, and both survive
-   that gap.
 4. **Whether the verdict is to be reached by reading the diff, by reading each
    changed file whole, or by running**, and for a measuring member, what to run
    and against which revision.

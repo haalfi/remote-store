@@ -130,15 +130,23 @@ phases:
         extract: >-
           Re-measured the concentration the item reports, since the design turns
           it into a per-round instrument and an instrument is worth what its
-          numbers are. Grouping `pulls/956/comments?per_page=100&page=1` by
-          .path (page 2 returns 0) against `pulls/956/files?per_page=100`: 12
-          changed files, 29 inline comments over 6 review submissions, 17 on one
-          file; before the last submission, 25 comments, 16 on that file, 8 of
-          12 files with none. The item says 16 of 24 - comments are not
-          findings, and the run counted 28 findings against 29 comments. The
-          concentration and the untouched-file set reproduce exactly, which is
-          what a brief needs; the denominator does not, which is why the skill
-          says the instrument counts comments.
+          numbers are. **Got it wrong first, and the failure is the item's own
+          class.** The first measurement counted every row
+          `pulls/956/comments` returns - 29 over 6 submissions, 25 before the
+          last, 16 of 25 on one file - and I wrote that into the ADR, the skill
+          and this trace as a correction of the item's "16 of 24", with a gloss
+          inventing a reason for the gap ("comments are not findings"). The
+          endpoint returns replies. Filtering `in_reply_to_id == null` gives 28
+          findings over 5 submissions (5, 8, 4, 7, 4), 24 across rounds 1-4, 16
+          of those on orchestrate/SKILL.md, and 4 distinct paths touched so 8 of
+          12 files with none - the item's figures exactly. The item was right;
+          my correction was wrong. Caught by running the shipped instrument on
+          this PR's own round 1, where 7 findings came back as 15 rows. Two
+          things kept: a named derivation is what made a wrong number
+          recoverable in one command, and an instrument must be exercised on a
+          PR that has been *replied to* before it is trusted - the pollution is
+          invisible on a PR with no replies yet, which is every PR at the moment
+          its first brief is written.
         outcome: ok
       - file: sdd/traces/_schema.yml
         section: "audience (derived CHANGELOG rule)"

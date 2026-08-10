@@ -53,18 +53,23 @@ them are visible in the file. Derivation: the finishing commit
 
 **Review attention concentrated, and nothing in the loop measured it.** `/ship`
 obliges every scoped brief to say what previous rounds have not examined and
-supplies no instrument for knowing. Measured by grouping
-`gh api "repos/haalfi/remote-store/pulls/956/comments?per_page=100&page=1"` by
-`.path` (page 2 returns 0) against `.../pulls/956/files?per_page=100`: 12
-changed files, 29 inline comments across 6 review submissions, 17 of them on
-one file. Over the submissions before the last: 25 comments, 16 still on that
-one file, and **8 of the 12 files carrying none at all**. On that run the
+supplies no instrument for knowing. Measured over
+`gh api "repos/haalfi/remote-store/pulls/956/comments?per_page=100&page=1"`,
+keeping the rows with a null `in_reply_to_id` (the endpoint returns replies
+too), grouped by `.path` and set against `.../pulls/956/files?per_page=100`:
+12 changed files, **28 findings across 5 review submissions** — 5, 8, 4, 7, 4 —
+with 17 on one file. Over rounds 1–4: **24 findings, 16 of them still on that
+one file, and 8 of the 12 files carrying none at all**. On that run the
 distribution was discovered by an ad-hoc query while a brief was being written,
 and the round it redistributed put three of its four findings on two of those
-eight untouched files. Comments are not findings — the run counted 28 findings
-against the API's 29 comments, and 16 of 24 against 16 of 25 — but the
-concentration and the untouched-file set reproduce exactly, and it is those two
-a brief needs.
+eight untouched files.
+
+That filter is not a detail. The first cut of this record counted every row and
+reported 29 comments over 6 submissions, "correcting" the item's 28 — which was
+right. The extra row was a reply, and the extra submission was the review that
+carried it. A derivation was named, so the error survived one round and no
+longer; the instrument in `.claude/skills/ship/SKILL.md` now tags replies rather
+than counting them.
 
 **Eight claims in that PR were asserted from memory and were wrong**: seven
 numbers across three unrelated fields and one claim about an action, that being
