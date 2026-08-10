@@ -36,12 +36,12 @@ Two measurements decide it, both derived from those traces rather than argued.
 
 2. **The five domains do not cover the repository.** The `DOMAIN:` lines are
    `src/remote_store/`, `src/remote_store/ext/`, `tests/`, `docs-src/` +
-   `examples/` + `docs/`, and `sdd/`. Nothing contains `scripts/`, `.claude/`,
-   `pyproject.toml`, `CLAUDE.md`, `CHANGELOG.md`, `.github/` or `infra/`. Over
-   the five deliveries, 20 of 135 changed files (15%) fall outside every domain;
-   for the two process deliveries it is 45% and 31%. Nine of PR #954's twelve
-   findings landed there. A process delivery is invisible to a persona roster by
-   construction.
+   `examples/` + `docs/`, and `sdd/`; everything else is uncovered, `scripts/`,
+   `.claude/`, `pyproject.toml`, `.github/`, `infra/` and the root files among
+   it. Over the five deliveries, 20 of 135 changed files (15%) fall outside every
+   domain; for the two process deliveries it is 45% and 31%. Nine of PR #954's
+   twelve findings landed there. A process delivery is invisible to a persona
+   roster by construction.
 
 The two between-lenses cases sharpen the first measurement, because in both the
 owning persona existed. `GraphBackend` is the store-backend expert's, and went
@@ -82,7 +82,7 @@ alone, whose Steps 3 and 6 spawn all five experts to review.
   for the same deliveries a domain assignment would have covered, at which point
   the assignment is cheaper.
 
-- **The author fixes and owns the sweep; delegation to a domain expert is by
+- **The main loop fixes and owns the sweep; delegation to a domain expert is by
   depth, not by default.** [ADR-0034](0034-ship-panel-rounds-and-unprimed-exit.md)
   puts the sibling sweep on the fixer, and the sweeps that paid across both
   traces were cross-file — a claim in five homes spanning `sdd/`, `CHANGELOG.md`

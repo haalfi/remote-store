@@ -12,14 +12,21 @@ source_items:
   - BK-338
 audience:
   - contributor.process
-discovery_followups: []
+discovery_followups:
+  - BK-347
 expected_ripples:
   - sdd/adrs/DIGEST.md
 surprising_ripples: []
-# 1: PR #956's review produced one fix commit. The two /pr-gate corrections
-# before it were pre-PR and are not review-driven under the schema's clause,
-# which counts feedback that produced a commit on the branch.
-review_rounds: 1
+# Commits that exist because feedback was incorporated, per the schema, counted
+# from `git log` rather than from posted review rounds. Three commits on the
+# branch: one implementation, then 483338c (the /pr qualitative gate's findings
+# against this PR's own prose, pre-PR) and dc10a23 (PR #956 round 1). An earlier
+# value of 1 excluded 483338c as "pre-PR", which inverts the clause it cited —
+# the schema says feedback before the PR was opened counts the same *if it
+# produced a commit on the branch*, and that one did. bk-344's trace counted the
+# identical case the same way one PR ago; two traces cannot both be right and the
+# aggregator sees only the numbers. Later rounds add to this.
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -248,6 +255,62 @@ phases:
           That is the one-copy-per-fact rule yielding to the true-where-it-sits
           rule, recorded so the next editor sees the choice rather than the
           divergence.
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Reviewer selection step 3 (tamper check, command bound)"
+        read_type: verify
+        extract: >-
+          PR #956 round 2, and round 1's fix to the same paragraph was itself
+          defective - the third time in this PR that an obligation shipped
+          without the thing that makes it work. (1) Replacing "clean porcelain"
+          with "porcelain unchanged since spawn" installed a narrower version of
+          the same fail-silently defect: porcelain prints status codes and paths
+          and nothing derived from content, so a reviewer editing a file the
+          experts already modified leaves ` M path` byte-identical - and that is
+          the most likely violation, since a reviewer is looking straight at the
+          files it was asked to review. /ship's version escapes this only because
+          its required state is empty. Now three captures, with `git diff HEAD`
+          carrying content sensitivity, and the residual named: an edit to an
+          already-untracked file's contents defeats all three. (2) I treated "no
+          permission gate here" as though it also discharged the hazard. The
+          /rvw-pr allowlist exists because of pyproject.toml facts - no suffix or
+          args-shape rule identifies a writing alias - which are unchanged for a
+          reviewer spawned from this skill, and the blast radius is larger here
+          because the work is uncommitted. Now bounded by reference to that
+          allowlist, plus the write-only-under-tmp/ rule.
+        outcome: ok
+      - file: sdd/adrs/DIGEST.md
+        section: "(generated)"
+        read_type: verify
+        extract: >-
+          Round-2 finding, half refuted and half filed. The claim that this file
+          was hand-edited is wrong - I ran gen_adr_digest.py after each round of
+          ADR edits, and --check confirms it is current. The structural half is
+          right and is the part worth keeping: gen_adr_digest.py --check lives
+          only in preflight, so the no-code gate path (lint + docs-gate) never
+          runs it, and CI's lint job is gated on code == 'true' and reports
+          skipped on head dc10a23 - verified against the check-runs API. So
+          nothing on this PR gated the digest; running the generator by hand is
+          not the gate. Filed as BK-347 rather than fixed here, since the fix is
+          a routing change to the shared gates and CLAUDE-REFERENCE's
+          "equivalent on docs coverage" claim.
+        outcome: ok
+      - file: sdd/traces/bk-344-vary-method-not-model.yml
+        section: "review_rounds (comment)"
+        read_type: verify
+        extract: >-
+          Round 2 caught two review_rounds errors in the paragraph explaining a
+          review_rounds error, which is its own comment on the field. My value of
+          1 excluded the /pr-gate commit as "pre-PR" while citing the clause that
+          says pre-PR-ness is exactly what does not matter if it produced a
+          commit - and it did (483338c). bk-344's trace counted the identical
+          case the opposite way one PR ago and named this very gate; two traces
+          cannot both be right. Corrected to 2, counted from git log. Separately
+          the PR body said #955 moved that file to 6; git show 40c6d34 shows
+          4 -> 5. The 6 came from its commit message's "six commits", which is
+          the branch length, not the field. The same wrong number is frozen in
+          483338c's commit message and cannot be corrected without a force-push
+          that would invalidate the review; recorded here instead.
         outcome: ok
       - file: .claude/agents/store-backend-expert.md
         section: "CONSTRAINTS, closing /orchestrate paragraph"

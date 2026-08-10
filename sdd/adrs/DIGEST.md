@@ -1182,7 +1182,7 @@ repeat-site check and the CI check are operational contract and live in
   for the same deliveries a domain assignment would have covered, at which point
   the assignment is cheaper.
 
-- **The author fixes and owns the sweep; delegation to a domain expert is by
+- **The main loop fixes and owns the sweep; delegation to a domain expert is by
   depth, not by default.** [ADR-0034](0034-ship-panel-rounds-and-unprimed-exit.md)
   puts the sibling sweep on the fixer, and the sweeps that paid across both
   traces were cross-file — a claim in five homes spanning `sdd/`, `CHANGELOG.md`

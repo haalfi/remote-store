@@ -61,11 +61,22 @@ docs-only change needs only the Documentation Expert.
 **SDD-only change (spec/RFC/ADR/process):** The SDD Expert leads
 implementation.
 
-**Nobody's domain.** `scripts/`, `.claude/`, `pyproject.toml`, `CLAUDE.md`,
-`CHANGELOG.md`, `.github/` and `infra/` are in no persona's `DOMAIN:` line. The
-orchestrator authors those directly. Do not stretch a persona over them — a
-`DOMAIN:` line is what the persona reads its constraints against, and widening
-it silently is how a change gets an owner who has no foundation docs for it.
+<a id="nobodys-domain"></a>
+#### Nobody's domain
+
+The five `DOMAIN:` lines are `src/remote_store/` (excluding
+`ext/`), `src/remote_store/ext/`, `tests/`, `docs-src/` + `examples/` + `docs/` +
+docstrings, and `sdd/`. **Anything else is the orchestrator's** — derive it from
+those five lines rather than from a list, because a list read as exhaustive plus
+the instruction below is exactly how an unlisted file gets handed to a persona
+whose `DOMAIN:` excludes it. What falls out today: `scripts/`, `.claude/`,
+`pyproject.toml`, `.github/`, `infra/`, and the root files — `CLAUDE.md`,
+`CHANGELOG.md`, `README.md`, `CONTRIBUTING.md`.
+
+Do not stretch a persona over them. A `DOMAIN:` line is what the persona reads
+its constraints against, and widening it silently is how a change gets an owner
+who has no foundation docs for it. This clause is the single home for the
+question; the Rules entry below points here rather than restating the set.
 
 <a id="reviewer-selection"></a>
 ### Reviewer selection (Steps 3 and 6)
@@ -91,23 +102,53 @@ the mechanical one.
    running the gate, measuring the base branch, exercising each subject. It
    reports what it *ran* and what came back, and a finding it cannot reproduce
    is reported as unreproduced. Reviewers here are plain subagents against the
-   working tree, so there is no permission to open and no `measuring` keyword to
-   pass: that word belongs to [`/rvw-pr`](../rvw-pr/SKILL.md), which reviews a
-   *pushed PR* under an allowlist this skill's reviewers do not run under. What
-   this skill owes instead is the opposite caution, in two parts — and both
-   differ from `/ship`'s versions because the state under review differs.
+   working tree, so there is no `measuring` keyword to pass: that word belongs to
+   [`/rvw-pr`](../rvw-pr/SKILL.md), and it opens a permission gate this skill has
+   no equivalent of. **That is a difference in mechanism, not in hazard.** What
+   this skill owes instead is three cautions, each differing from `/ship`'s
+   version because the state under review differs — it is uncommitted work that
+   exists nowhere else, so here a bad command is unrecoverable rather than
+   re-fetchable.
 
-   **Tamper check: unchanged since spawn, not clean.** These reviewers **can**
-   write, so say read-only in the prompt. But `/ship` compares against a
-   *pushed, committed, gate-green* tree, where any dirt is tampering; here Step 6
-   runs **before** Step 7 commits, so the tree necessarily carries every
-   authoring expert's uncommitted output and `git status --porcelain` is
-   non-empty by construction. Requiring it to be empty is unsatisfiable, and
-   reading it loosely detects nothing — a verification that cannot fail. Capture
-   the baseline instead: `git status --porcelain` **and** `git rev-parse HEAD`
-   when the reviewers spawn, and require both unchanged before triage. A
-   reviewer write shows up as a diff against that baseline; the authors' work is
-   already in it.
+   **Run only the allowlisted set, and write only under `tmp/`.** No permission
+   gate does not mean no bound: `/rvw-pr`'s
+   [allowlist](../rvw-pr/SKILL.md) is the single home for which commands are
+   safe, and it is a fact about `pyproject.toml` — that no suffix or args-shape
+   rule identifies a writing alias, proved by two live counterexamples — so it
+   holds identically for a reviewer spawned from here. Read it there and obey it
+   here. The `tmp/` write bound matters more in this skill than in that one,
+   because what a stray `format` or `drift-check refresh-baseline` would
+   overwrite has never been committed.
+
+   **Tamper check: unchanged since spawn, and content-sensitive.** These
+   reviewers **can** write, so say read-only in the prompt. `/ship` requires an
+   *empty* `git status --porcelain`, which works only because its tree is pushed
+   and committed; here Step 6 runs **before** Step 7 commits, so the tree
+   necessarily carries every authoring expert's output and porcelain is
+   non-empty by construction. Requiring empty is unsatisfiable; comparing
+   porcelain strings is worse, because porcelain prints status codes and paths
+   and nothing derived from content — a reviewer editing a file the experts
+   already modified leaves ` M path` byte-identical, and that is the single most
+   likely violation. Capture three things at spawn and require all three
+   unchanged before triage:
+
+   ```bash
+   git rev-parse HEAD
+   ```
+   ```bash
+   git status --porcelain --untracked-files=all
+   ```
+   ```bash
+   git diff HEAD
+   ```
+
+   `git diff HEAD` is the content-sensitive one; porcelain adds the paths that
+   diff cannot see (new and deleted untracked files); `rev-parse` catches a moved
+   revision. **Residual, stated rather than papered over:** an edit to the
+   *contents* of an already-untracked file changes none of the three. The `tmp/`
+   bound above is what shrinks that hole, and committing before review — which
+   would restore `/ship`'s empty-porcelain model exactly — is the structural
+   closure this skill has not taken.
 
    **Reaching the base branch.** `git checkout` would destroy the very
    uncommitted work under review, so never move the checked-out revision. Use a
@@ -122,7 +163,9 @@ the mechanical one.
    git worktree remove tmp/base
    ```
 
-   `tmp/` is gitignored, so the worktree does not perturb the baseline above. If
+   `tmp/` is gitignored, so the worktree perturbs none of the three captures
+   above — it is absent from `git diff HEAD` and from `--untracked-files=all`
+   alike. If
    `worktree remove` fails on a stale entry, `git worktree prune` then retry.
    [`/rvw-pr`](../rvw-pr/SKILL.md)'s measuring block carries the same three
    commands for a *different* reason — there the checked-out revision is the
@@ -242,7 +285,13 @@ Spawn reviewers per [Reviewer selection](#reviewer-selection). Each reviews
 - What it **ran** and what came back, if it is the measuring reviewer
 - "Clean — no issues" if nothing to report
 
-**Simple mode:** Single pass. If issues found, orchestrator fixes directly.
+**Simple mode:** Single pass — **and that pass is the measuring one**, since it
+is the only review the mode ever performs (Step 3 is skipped entirely), so a
+reviewer that only reads leaves the execution obligation with nothing to attach
+to. Simple mode is where it is cheapest to drop and most valuable to keep: the
+small, clear-scope changes it exists for are where a false premise goes
+unexamined and there is no second round to catch it. If issues found,
+orchestrator fixes directly.
 
 **Standard/Complex mode:** If issues found:
 1. **The orchestrator fixes, and owns the sweep.** A fix changes a thing, and
@@ -286,11 +335,10 @@ Spawn reviewers per [Reviewer selection](#reviewer-selection). Each reviews
 - If an expert reports a spec contradiction, **stop and ask the user**.
 - If `hatch run all` fails after 2 fix attempts, report the failure and stop.
 - Commit message: `<BACKLOG-ID>: <short description>`.
-- The orchestrator handles cross-domain files (CHANGELOG, BACKLOG, README tables,
-  pyproject.toml extras) and everything in no persona's domain (`scripts/`,
-  `.claude/`, `CLAUDE.md`, `.github/`, `infra/`). Experts stay in their domain
-  when authoring. The Documentation Expert assesses README/CHANGELOG impact but
-  does not write to them.
+- The orchestrator handles cross-domain files and everything in
+  [nobody's domain](#nobodys-domain), which is that clause's set and is not
+  restated here. Experts stay in their domain when authoring. The Documentation
+  Expert assesses README/CHANGELOG impact but does not write to them.
 - **Reviewers are picked by lens and method, never by domain or model.** A
   persona staffs a lens; it is not the unit of selection.
 - **Every review round carries a reviewer that runs something**, and it reports

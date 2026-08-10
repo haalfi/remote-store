@@ -387,6 +387,30 @@ and the highest ID already in this file, then take the next integer. Run
   question. Any row change lands in **both** presentations — `check_ripple_parity.py`
   enforces trigger-parity.
 
+- [ ] **BK-347 — An ADR-only diff is routed away from the ADR drift gate, locally and in CI**
+  spec: — · effort: S · audience: contributor.process, infra.ci
+  `gen_adr_digest.py --check` gates `sdd/adrs/DIGEST.md` freshness **and**
+  supersession-graph consistency. It appears in exactly one hatch target:
+  `preflight`. Not `lint`, not `docs-gate`.
+  **Both paths miss it for the one diff class that always regenerates the file.**
+  The [PR validation gates](CLAUDE-REFERENCE.md#pr-validation-gates) route a
+  no-code diff to `lint` + `docs-gate`, so an ADR-only change never runs the
+  check locally. CI cannot backstop it: the `lint` job (which runs
+  `uvx hatch run preflight`) is gated on `code == 'true'`, and on an ADR-only
+  head it reports `skipped`. **Measured on PR #956 head `dc10a23`**: `gate`,
+  `docs` and `setup` ran; `lint` skipped.
+  **Consequence:** a hand-edited or stale `DIGEST.md` ships on the author's care
+  alone, and the `STALE:` failure lands on the *next* PR that happens to touch
+  code — the wrong PR to pay for it, and one whose author did not cause it.
+  **Two claims to fix or qualify, not just the routing.** The gates section says
+  "the two paths stay equivalent on docs coverage despite composing different
+  targets", which is false for this checker; and the Detailed checklist's **ADR**
+  row names `preflight` as the gate, which is accurate and is precisely why the
+  routing is wrong. Fix shape is open: add `gen-adr-digest-check` to `docs-gate`,
+  widen CI's path filter to treat `sdd/adrs/**` as lint-triggering, or both.
+  Surfaced by the PR #956 round-2 review. That PR's own digest was verified by
+  running the generator by hand, which is not the gate — which is the point.
+
 - [ ] **BK-334 — No ripple-check row covers adding a `hatch` script alias**
   spec: — · effort: S · audience: contributor.process
   The [Pre-work index](CLAUDE-REFERENCE.md#pre-work-index) has no trigger for

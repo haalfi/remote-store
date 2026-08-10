@@ -270,7 +270,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   a persona **staffs** a lens rather than selecting one, `/orchestrate`'s Steps 3
   and 6 adopt that model while its authoring fan-out stays persona-based, the
   uncovered surface becomes a **lens** rather than a sixth persona, and the
-  author fixes and owns the sweep with delegation by depth.
+  main loop fixes and owns the sweep with delegation by depth.
   **`/ship` needed only two edits, which is itself the finding**: ADR-0035 had
   already answered this item for that skill and said so in its own Consequences.
   The residual was `/orchestrate` alone — and `/ship`'s Roles table, which
