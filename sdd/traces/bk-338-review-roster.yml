@@ -14,6 +14,10 @@ audience:
   - contributor.process
 discovery_followups:
   - BK-347
+  # Filed after this item closed, from its own review evidence: the fourth entry
+  # in the BK-342 / BK-344 series. Ships as its own PR rather than here, so #956
+  # stays at the state its five rounds and CI actually certified.
+  - BK-348
 expected_ripples:
   - sdd/adrs/DIGEST.md
 # Reached by sibling sweeps and class sweeps, not by any ripple-check row. The

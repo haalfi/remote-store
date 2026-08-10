@@ -361,6 +361,81 @@ and the highest ID already in this file, then take the next integer. Run
   without it the next divergence is equally invisible. Expect it to turn a
   backend red on arrival; that is the item working, not a regression.
 
+- [ ] **BK-348 — Adapt the review loop from PR #956's evidence**
+  spec: — · effort: M · audience: contributor.process
+  Fourth in the series after [BK-342](BACKLOG-DONE.md) (PR #949) and
+  [BK-344](BACKLOG-DONE.md) (PR #952), and the first drawn from a delivery whose
+  own subject was review selection.
+  **This item records the evidence and withholds a prescription**, for the reason
+  both predecessors gave and proved: direction narrows attention, so the design
+  is chosen against the evidence, with the user, before anything is written. The
+  [Item authority](#how-this-file-works) rule makes every prescription advisory;
+  carrying none is the stronger form of the same posture.
+  **Shape of the run:** five posted review rounds, 28 findings, six
+  feedback-driven commits, then an author-initiated pass over all twelve changed
+  files that found 15 more. The loop converged — the last round was clean and CI
+  was green — and the finishing pass then found 15 defects anyway.
+
+  **Signal 1 — a number written from memory was wrong at a rate no amount of
+  reading fixed.** Seven instances in one PR, across three unrelated fields. The
+  count is the row count of this table, not a remembered total:
+
+  | # | Claim | Artifact | Caught by |
+  |---|---|---|---|
+  | 1 | `review_rounds: 1`, justified by a clause that says the opposite | trace | review round 2 |
+  | 2 | `review_rounds: 3`, with a confused composition | trace (pre-commit) | running `git log` |
+  | 3 | "#955 moved that field to 6" — it moved 4 → 5 | PR body | review round 4 |
+  | 4 | "both measurements derived from those traces" | ADR-0036 | review round 4 |
+  | 5 | "four deliveries carry per-round detail" (inherited, unchecked) | ADR-0036 | parsing the corpus |
+  | 6 | "#944 and #945 carry no per-round detail" | ADR-0036 | parsing the corpus |
+  | 7 | "nine defects" where the diff shows 15 | commit + trace | counting diff hunks |
+
+  **Not one was caught by re-reading the sentence**, including by rounds
+  explicitly hunting stale claims; every one died to a single command. Instances
+  5 and 6 are the same paragraph corrected twice and wrong both times. Instance 7
+  is inside the commit documenting the pattern, which is what rules out "be more
+  careful" as the fix. **The shape that worked, twice, is derivation in the
+  artifact**: the trace's `review_rounds` comment names each commit, and the
+  correction to instance 7 names the SHA and the per-file split. A reader can
+  disagree with a derivation; they can only trust a total. Neither
+  [CONTENT-RULES Rule 3](CONTENT-RULES.md#rules) (pseudo-precision in prose) nor
+  BK-330's lesson (a hand count of a *growing* corpus goes stale) covers this:
+  these figures were about fixed history and were simply never counted.
+
+  **Signal 2 — the loop reviews diffs, and 15 defects lived in the files.**
+  They survived five rounds and fell to one whole-file read, and every one was a
+  sibling of an earlier fix — the fix-pass blind spot
+  [ADR-0034](adrs/0034-ship-panel-rounds-and-unprimed-exit.md) exists for,
+  appearing in a run that had been told about it five times. What they were:
+  falsified frontmatter, an antecedent broken by an insert three paragraphs
+  above, a premise true for one of a section's two callers, cross-file
+  cardinality mismatches. **A mechanism, not a disposition:** `/rvw-pr` Step 1
+  says read every changed file in full, but its posting rule requires `line` to
+  be a `+` line in the diff, so a defect in the file and not in the diff must be
+  anchored elsewhere and explained in prose — expensive to file, cheap to skip.
+  Diagnosis only; whether the answer is a whole-file pass, a change to the
+  anchoring rule, or neither is exactly the question this item does not answer.
+
+  **Signal 3 — a brief requirement asks a question the loop cannot answer.**
+  `/ship` obliges every scoped brief to state "what previous rounds have not
+  examined" and supplies no instrument for knowing. The distribution here was
+  stark — after four rounds, 16 of 24 findings sat on one file and eight of the
+  twelve changed files had none — and it was discovered only by an ad-hoc API
+  query while writing the round-5 brief. That discovery is what redistributed
+  round 5.
+  **Corroboration, not a fourth signal.** Round 5 was briefed to *execute* and
+  aimed at that neglected surface: 4 findings, two of them on previously
+  untouched files, and the only measured refutation of the run — the
+  `/orchestrate` tamper check's stated residual was two categories narrower than
+  running it showed. That is [ADR-0035](adrs/0035-vary-method-not-model.md) and
+  [ADR-0036](adrs/0036-reviewers-by-subject-and-method.md) paying out rather than
+  new evidence, and it belongs here as support for signals 1 and 2 rather than as
+  its own finding.
+  **Read the trace before designing anything:**
+  [`sdd/traces/bk-338-review-roster.yml`](traces/bk-338-review-roster.yml)
+  carries the per-round detail and the finishing pass. PR #956 carries the five
+  posted rounds.
+
 - [ ] **BK-346 — Three ripple-check rows answered a question adjacent to the one asked**
   spec: — · effort: S · audience: contributor.process
   Three `outcome: unclear` tags in
