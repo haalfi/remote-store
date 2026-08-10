@@ -16,7 +16,7 @@
         <link rel="prev" href="../0034-ship-panel-rounds-and-unprimed-exit/">
       
       
-        <link rel="next" href="../../audits/">
+        <link rel="next" href="../0036-reviewers-by-subject-and-method/">
       
       
         
@@ -6437,6 +6437,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../0036-reviewers-by-subject-and-method/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0036: Select Reviewers by Subject and Method, Not by Domain Persona
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -10637,7 +10665,11 @@ pin predated it and survived.</p>
   its own: what makes an unprimed pass independent is what it was <em>not</em> told,
   which is a property of the brief and not of who reads it. <em>Reverse if</em> a
   measured comparison attributes findings to model difference at a rate that
-  justifies the per-round cost.</p>
+  justifies the per-round cost.
+  <em>Amended by <a href="../0036-reviewers-by-subject-and-method/">ADR-0036</a>:</em> lens-and-method
+  selection extends to <code>/orchestrate</code>'s review steps, domain persona is ruled out
+  as a selection unit alongside model, and the menu gains a lens for the tooling
+  and process surface no persona's <code>DOMAIN:</code> line covers.</p>
 </li>
 <li>
 <p><strong>Every panel carries one measuring member</strong>, reaching its verdict by
@@ -10686,7 +10718,9 @@ repeat-site check and the CI check are operational contract and live in
 <li><strong>Positive:</strong> reviewer selection no longer depends on which models exist or
   what they cost, so the skill stops carrying a fact that changes underneath it.
   BK-338's "do not pin a model in a repo skill" is discharged; its roster
-  question is untouched and still open.</li>
+  question was untouched here and has since been decided by BK-338 itself —
+  <a href="../0036-reviewers-by-subject-and-method/">ADR-0036</a> rules out domain persona
+  as a selection unit alongside model.</li>
 <li><strong>Positive:</strong> solo reviewer passes now invoke <code>/rvw-pr</code> directly instead of
   spawning an <code>Agent</code>, since the model override was the only reason to spawn.
   That restores the skill's <code>allowed-tools</code> withholding of <code>Edit</code> and <code>Write</code>,
@@ -10773,13 +10807,13 @@ repeat-site check and the CI check are operational contract and live in
         
         
           
-          <a href="../../audits/" class="md-footer__link md-footer__link--next" aria-label="Next: Audits">
+          <a href="../0036-reviewers-by-subject-and-method/" class="md-footer__link md-footer__link--next" aria-label="Next: 0036: Select Reviewers by Subject and Method, Not by Domain Persona">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Audits
+                0036: Select Reviewers by Subject and Method, Not by Domain Persona
               </div>
             </div>
             <div class="md-footer__button md-icon">
