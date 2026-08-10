@@ -15,7 +15,7 @@ _Captured 2026-07-14 on Python 3.13._
 
 ## `[azure]`
 
-_Captured 2026-07-28 on Python 3.13._
+_Captured 2026-08-10 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
@@ -24,22 +24,22 @@ _Captured 2026-07-28 on Python 3.13._
 
 ## `[dagster]`
 
-_Captured 2026-07-28 on Python 3.13._
+_Captured 2026-08-10 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
-| `dagster` | `1.13.15` |
+| `dagster` | `1.13.17` |
 
 ## `[graph]`
 
-_Captured 2026-07-28 on Python 3.13._
+_Captured 2026-08-10 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
 | `httpx` | `0.28.1` |
 | `msal` | `1.38.0rc2` |
 | `msal-extensions` | `1.3.1` |
-| `platformdirs` | `4.11.0` |
+| `platformdirs` | `4.11.2` |
 
 ## `[httpx]`
 
@@ -59,11 +59,11 @@ _Captured 2026-07-21 on Python 3.13._
 
 ## `[pydantic]`
 
-_Captured 2026-07-28 on Python 3.13._
+_Captured 2026-08-10 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
-| `pydantic-settings` | `2.14.2` |
+| `pydantic-settings` | `2.15.0` |
 
 ## `[requests]`
 
@@ -76,24 +76,24 @@ _Captured 2026-07-28 on Python 3.13._
 
 ## `[s3]`
 
-_Captured 2026-07-28 on Python 3.13._
+_Captured 2026-08-10 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
-| `s3fs` | `2026.6.0` |
+| `s3fs` | `2026.7.0` |
 
 ## `[s3-pyarrow]`
 
-_Captured 2026-07-28 on Python 3.13._
+_Captured 2026-08-10 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
-| `pyarrow` | `25.0.0` |
-| `s3fs` | `2026.6.0` |
+| `pyarrow` | `25.0.1` |
+| `s3fs` | `2026.7.0` |
 
 ## `[sftp]`
 
-_Captured 2026-07-13 on Python 3.13._
+_Captured 2026-08-10 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
