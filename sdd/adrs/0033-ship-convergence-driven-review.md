@@ -17,10 +17,13 @@ decision the `/ship` skill documents, not one this record makes.
 
 ## Context
 
-`/orchestrate` reviews with five domain experts, each reading every expert's
+`/orchestrate` reviewed with five domain experts, each reading every expert's
 output, capped at **two rounds**; anything unresolved goes to the user. That
 model assumes review findings are a fixed population to be drained, and that two
-passes drain enough of it.
+passes drain enough of it. (The five-expert half has since been withdrawn by
+[ADR-0036](0036-reviewers-by-subject-and-method.md) — `/orchestrate` now selects
+reviewers by lens and method too. The two-round cap, which is what this record
+argues against, is unchanged and still ADR-0020's.)
 
 A contract-reconciliation delivery (BK-324 / BK-331, PR #945: four backend
 divergences across prose, Dafny, conformance and six backends) ran six review

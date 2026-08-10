@@ -35,6 +35,10 @@ git worktree remove tmp/base
 If `worktree remove` fails on a stale entry, `git worktree prune` then retry.
 Tear down even when the measurement failed: one reviewer runs at a time, so a
 surviving `tmp/base` is what breaks the next round's `worktree add`.
+[`/orchestrate`](../orchestrate/SKILL.md#reviewer-selection) carries the same
+three commands for a different reason — its reviewers run against *uncommitted*
+work, so moving the revision would destroy what is under review rather than
+invalidate a certified state. Edit both when the commands change.
 
 **Running the gate is safe for `/ship`'s clean-tree check, and that was measured rather than assumed.** Two consecutive full `hatch run all` runs left `git status --porcelain` empty. **The invariant is that every output of `all` lands on a gitignored path** — not that its targets are check-only, which is false: `docs-build` writes the whole site, `examples` and `notebooks` execute scripts, `test-cov-s1` writes coverage data. Apply the gitignored-output test, not a check-only test, when asking whether a newly added `all` member is still safe to run here. This paragraph is the single home for that claim; `/ship` and ADR-0035 cite it rather than restating it.
 

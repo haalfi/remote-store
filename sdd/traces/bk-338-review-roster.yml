@@ -15,10 +15,11 @@ audience:
 discovery_followups: []
 expected_ripples:
   - sdd/adrs/DIGEST.md
-  - sdd/backlogid.json
-  - .claude/agents/
 surprising_ripples: []
-review_rounds: 0
+# 1: PR #956's review produced one fix commit. The two /pr-gate corrections
+# before it were pre-PR and are not review-driven under the schema's clause,
+# which counts feedback that produced a commit on the branch.
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -195,6 +196,58 @@ phases:
           omission rather than by contradiction - the list said read all three.
           Added ADR-0036 and a sentence for /orchestrate, which the section named
           nowhere despite this change altering how it reviews.
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Reviewer selection step 3; Step 4"
+        read_type: verify
+        extract: >-
+          PR #956 round 1, and the two findings that would have been wrong once
+          merged were both mine and both the same shape: an instruction a reader
+          cannot execute as written. (1) I imported /ship's clean
+          `git status --porcelain` tamper check without checking that its
+          precondition holds here. It does not - /ship reviews a pushed,
+          committed, gate-green tree, while Step 6 runs before Step 7 commits, so
+          the tree necessarily carries the authoring experts' uncommitted output
+          and the check is non-empty by construction. Read strictly no round can
+          pass; read loosely it detects nothing, which is the fail-silently class
+          /ship's own Rules call worse than none. Replaced with a captured
+          baseline - status and HEAD at spawn, both required unchanged - and the
+          base-branch route the same paragraph prescribed with no way to reach
+          it, since a naive checkout would destroy the work under review. (2) The
+          new activation rule said it governs Step 4 while Step 4 itself still
+          said "spawn all experts" and enumerated all five for bug fixes, ~70
+          lines apart, with the imperative in the executed step being the old
+          one. I had also deleted the sentence that was the only thing
+          qualifying that list.
+        outcome: ok
+      - file: sdd/adrs/0033-ship-convergence-driven-review.md
+        section: "Context (opening paragraph)"
+        read_type: verify
+        extract: >-
+          Class sweep of the round-1 Step 4 finding, which found a site the
+          review did not name. The finding was about /orchestrate's own file;
+          the class is "a live present-tense description of /orchestrate's
+          five-expert review that this PR falsifies", and ADR-0033's Context
+          opens with one. Qualified rather than rewritten - the sentence is the
+          premise this record argues against, so it moves to past tense and gains
+          a note that the five-expert half is withdrawn here while the two-round
+          cap it actually attacks is untouched. Also swept two "all experts"
+          phrasings inside Step 5 and Step 6 of the skill itself.
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Measuring pass (worktree recipe)"
+        read_type: verify
+        extract: >-
+          Sibling sweep of my own round-1 fix rather than of a finding. Giving
+          /orchestrate a base-branch route created a second copy of the same
+          three worktree commands, and the two carry different reasons - there
+          the revision is a certified pushed state, here it is uncommitted work
+          that exists nowhere else. Kept as two copies deliberately, because
+          linking would send a reader to a paragraph whose stated reason is false
+          where they landed, and both sides now say the other exists and why.
+          That is the one-copy-per-fact rule yielding to the true-where-it-sits
+          rule, recorded so the next editor sees the choice rather than the
+          divergence.
         outcome: ok
       - file: .claude/agents/store-backend-expert.md
         section: "CONSTRAINTS, closing /orchestrate paragraph"

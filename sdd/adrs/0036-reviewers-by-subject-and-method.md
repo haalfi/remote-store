@@ -50,9 +50,10 @@ docstring claim sits between documentation, which owns docstrings, and
 store-backend, which owns whether the claim is true across backends; neither
 lens asks whether a docstring's claim holds elsewhere.
 
-`/ship` already selects by lens and method and says in ADR-0035's Consequences
-that BK-338's roster question is untouched. So the live instance is
-`/orchestrate` alone, whose Steps 3 and 6 spawn all five experts to review.
+`/ship` already selects by lens and method, and ADR-0035 recorded that BK-338's
+roster question was untouched at the time — this record is what closes it, so
+that Consequences bullet now points here. The live instance is `/orchestrate`
+alone, whose Steps 3 and 6 spawn all five experts to review.
 
 ## Decision
 

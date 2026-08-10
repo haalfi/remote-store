@@ -254,8 +254,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Filed on PR #944 and reopened after PR #945 reverted a first attempt that
   bundled the roster question with a single-session model pin. BK-344 discharged
   the model half; this closes the rest.
-  **Answered by measuring the roster against four deliveries rather than
-  arguing it.** Two numbers decided it, and the second is the sharp one. (1)
+  **Answered by measuring the roster rather than arguing it.** Two measurements
+  over two different samples decided it, and the second is the sharp one. (1)
   Classifying every review finding in the two richest traces by whether a
   persona lens, scoped as its `.claude/agents/` file scopes it, would plausibly
   have caught it: PR #952, 7 of 19 reachable, 7 more inside the persona's domain

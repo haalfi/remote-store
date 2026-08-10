@@ -47,6 +47,7 @@ before each review round in Step 6, present the plan/findings to the user
 and wait for confirmation. This prevents wasted expert cycles when the
 direction is uncertain.
 
+<a id="expert-activation-rules-authoring-only"></a>
 ### Expert activation rules (authoring only)
 
 These govern **Step 4**, where work is written. Review selection is a different
@@ -71,9 +72,13 @@ it silently is how a change gets an owner who has no foundation docs for it.
 
 **A reviewer is selected by the subject set it is aimed at and the method it
 uses, never by which directory it owns.** A persona is one way to staff a lens,
-not the unit of selection. Measured across four deliveries, a persona lens
-reaches a minority of findings, and the surface no persona owns carried most of
-the findings on process work: [ADR-0036](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md).
+not the unit of selection. Two measurements, over different samples: across the
+**two** deliveries whose traces record findings round by round, a persona lens
+reaches a minority of them; across **five** deliveries' changed files, the
+surface no persona owns is where most of the findings on process work landed.
+[ADR-0036](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md) carries
+both, with the bound that the first is a per-finding judgement and the second is
+the mechanical one.
 
 1. **Write down the subject set** — what the change's own words claim something
    about (a backend, a capability, an operation, a caller, a gate, a skill).
@@ -89,9 +94,42 @@ the findings on process work: [ADR-0036](../../../sdd/adrs/0036-reviewers-by-sub
    working tree, so there is no permission to open and no `measuring` keyword to
    pass: that word belongs to [`/rvw-pr`](../rvw-pr/SKILL.md), which reviews a
    *pushed PR* under an allowlist this skill's reviewers do not run under. What
-   this skill owes instead is the opposite caution — these reviewers **can**
-   write, so say read-only in the prompt and confirm a clean
-   `git status --porcelain` before trusting a round.
+   this skill owes instead is the opposite caution, in two parts — and both
+   differ from `/ship`'s versions because the state under review differs.
+
+   **Tamper check: unchanged since spawn, not clean.** These reviewers **can**
+   write, so say read-only in the prompt. But `/ship` compares against a
+   *pushed, committed, gate-green* tree, where any dirt is tampering; here Step 6
+   runs **before** Step 7 commits, so the tree necessarily carries every
+   authoring expert's uncommitted output and `git status --porcelain` is
+   non-empty by construction. Requiring it to be empty is unsatisfiable, and
+   reading it loosely detects nothing — a verification that cannot fail. Capture
+   the baseline instead: `git status --porcelain` **and** `git rev-parse HEAD`
+   when the reviewers spawn, and require both unchanged before triage. A
+   reviewer write shows up as a diff against that baseline; the authors' work is
+   already in it.
+
+   **Reaching the base branch.** `git checkout` would destroy the very
+   uncommitted work under review, so never move the checked-out revision. Use a
+   worktree under the gitignored `tmp/`, one Bash call per line, and tear it
+   down — `worktree add` is not idempotent and the next round runs the same
+   command:
+
+   ```bash
+   git worktree add tmp/base <base-ref>
+   ```
+   ```bash
+   git worktree remove tmp/base
+   ```
+
+   `tmp/` is gitignored, so the worktree does not perturb the baseline above. If
+   `worktree remove` fails on a stale entry, `git worktree prune` then retry.
+   [`/rvw-pr`](../rvw-pr/SKILL.md)'s measuring block carries the same three
+   commands for a *different* reason — there the checked-out revision is the
+   pushed state `/ship` certifies, here it is uncommitted work that has never
+   been saved anywhere. Deliberately a second copy rather than a link: sending a
+   reader there would hand them a paragraph whose stated reason is false in this
+   skill. Edit both when the commands change.
 4. **Staff each lens.** A domain persona when the lens sits inside one domain
    and its foundation docs help; `general-purpose` otherwise — which is the
    normal case for a lens spanning domains or aimed at the surface no persona
@@ -126,15 +164,23 @@ loop — if the user needs to decide, present the options and wait.
 Each expert is spawned via its `subagent_type` (referenced below), with the
 (refined) plan and per-call task passed in the invocation prompt.
 
-**Feature/refactor:** Spawn all experts using multiple Agent tool calls.
+Which experts spawn is decided by the [activation
+rules](#expert-activation-rules-authoring-only) above — the experts whose domain
+the change writes into, not a fixed list. Anything in no persona's domain, the
+orchestrator authors itself.
+
+**Feature/refactor:** Spawn the activated experts using multiple Agent tool
+calls, in parallel.
 
 **Bug fix (TDD):** Sequential — Testing Expert goes first. This follows the
 bug-fix protocol in CLAUDE.md (backlog → changelog → failing test → fix):
 1. Spawn **Testing Expert only** — write a failing test that clearly reproduces
    the bug, conforming to the full testing guide (`sdd/TESTING.md`).
 2. Verify the test fails for the right reason.
-3. Then spawn remaining experts (Store & Backend, Extension, Documentation)
-   to fix the bug, plus the **SDD Expert** to assess spec/ADR impact.
+3. Then spawn the remaining **activated** experts to fix the bug. Which those
+   are follows the same rule: a bug fixed entirely in `src/remote_store/` needs
+   the Store & Backend Expert and no other, and the SDD Expert joins only when
+   the fix changes a spec, ADR or process doc rather than merely citing one.
 
 ### Store & Backend Expert
 
@@ -174,7 +220,7 @@ plan.
 
 ## Step 5: Consolidate (Standard and Complex only)
 
-After all experts complete, collect and categorize results:
+After the activated experts complete, collect and categorize results:
 
 | Status | Meaning | Action |
 |--------|---------|--------|
@@ -191,7 +237,7 @@ and wait.
 ## Step 6: Review
 
 Spawn reviewers per [Reviewer selection](#reviewer-selection). Each reviews
-*all output from all experts*, within its lens, and returns:
+*the whole of the authoring output*, not only its own lens's files, and returns:
 - Issues found (with file, line, category)
 - What it **ran** and what came back, if it is the measuring reviewer
 - "Clean — no issues" if nothing to report
