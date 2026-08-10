@@ -377,8 +377,9 @@ and the highest ID already in this file, then take the next integer. Run
   files that found 15 more. The loop converged — the last round was clean and CI
   was green — and the finishing pass then found 15 defects anyway.
 
-  **Signal 1 — a number written from memory was wrong at a rate no amount of
-  reading fixed.** Seven instances in one PR, across three unrelated fields. The
+  **Signal 1 — a claim asserted from memory was wrong at a rate no amount of
+  reading fixed.** Eight instances in one PR: seven numbers across three
+  unrelated fields, and one claim about an action. The
   count is the row count of this table, not a remembered total:
 
   | # | Claim | Artifact | Who caught it | By consulting |
@@ -390,6 +391,7 @@ and the highest ID already in this file, then take the next integer. Run
   | 5 | "four deliveries carry per-round detail" (inherited, unchecked) | ADR-0036 | author, finishing pass | parsing every trace's `review_rounds` and phases |
   | 6 | "#944 and #945 carry no per-round detail" | ADR-0036 | author, finishing pass | the same parse |
   | 7 | "nine defects" where the diff shows 15 | commit message + trace | author, closing discussion | counting the diff hunks of `1fe4749` |
+  | 8 | "swept the same claim to the trace too" — it had not been | a review reply on PR #957 | author, immediately after posting | re-grepping the two files |
 
   **The invariant is the last column, not the fourth.** Rounds 2 and 4 were
   reading rounds by the trace's own account, so the honest claim is not "a
@@ -398,15 +400,27 @@ and the highest ID already in this file, then take the next integer. Run
   source the figure was derived from: a schema clause, a commit, a corpus, a
   diff. Re-reading the sentence never worked, including in rounds explicitly
   hunting stale claims; consulting the source always did. Instances
-  5 and 6 are the same paragraph corrected twice and wrong both times. Instance 7
-  is inside the commit documenting the pattern, which is what rules out "be more
-  careful" as the fix. **The shape that worked, twice, is derivation in the
+  5 and 6 are the same paragraph corrected twice and wrong both times. Instances
+  7 and 8 are each inside the material describing the pattern — a commit message
+  documenting miscounts, and a reply about an unreconstructable total — which is
+  what rules out "be more careful" as the fix.
+  **The shape that worked, for the seven numbers, is derivation in the
   artifact**: the trace's `review_rounds` comment names each commit, and the
   correction to instance 7 names the SHA and the per-file split. A reader can
   disagree with a derivation; they can only trust a total. Neither
   [CONTENT-RULES Rule 3](CONTENT-RULES.md#rules) (pseudo-precision in prose) nor
   BK-330's lesson (a hand count of a *growing* corpus goes stale) covers this:
   these figures were about fixed history and were simply never counted.
+  **Two bounds on that cure, both from instance 8, and both reasons a design
+  built only on the seven numbers would be incomplete.** First, *derivation does
+  not reach a claim about an action*: "I swept both sites" has no figure to show
+  its working, only a check to run before saying it, so the remedy that fixes a
+  number leaves this class untouched. Second, *the surface is wider than files*:
+  instances 1–7 sit in a trace, an ADR, a PR body and a commit message, all of
+  which the loop at least reads; instance 8 sat in a **review reply**, which is
+  durable, is re-read by `/fix-pr`'s own comment-fetch on later rounds, and is
+  reviewed by nobody. Replies are where "I swept X" and "I measured Y" are
+  asserted, and they are outside every check this loop has.
 
   **Signal 2 — the loop reviews diffs, and 15 defects lived in the files.**
   They survived five rounds and fell to one whole-file read, and every one was a
