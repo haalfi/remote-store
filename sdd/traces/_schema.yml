@@ -347,6 +347,13 @@ examples:
       - BK-192
     expected_ripples:
       - sdd/backlogid.json
+    # Name the commits, per the review_rounds description above — this example
+    # is what CLAUDE.md tells a new trace author to copy, so it must comply with
+    # the clause it illustrates. Shape, with placeholders rather than invented
+    # SHAs: "<impl-sha> implements and does not count; <fix-sha> incorporates
+    # the round-1 review; value is 1." Replace both with real short SHAs from
+    # `git log --oneline origin/master..HEAD` — a plausible-looking SHA that
+    # resolves to nothing is worse than no derivation.
     review_rounds: 1
     phases:
       - id: orient

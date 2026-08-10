@@ -29,9 +29,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   offers `subjectType: "FILE"`, so neither "reviewers do not read the files" nor
   "the anchoring rule forbids file-level findings" explains why a converged loop
   left defects in seven of the eight files a whole-file read then had to touch.
-  What remained: the block headed *comment rules* names only the `+`-line
-  constraint, 56 lines below the `FILE` option, so a reviewer working from the
-  rules section concludes wrongly. The fix is therefore **two** things — the
+  What remained, on the base branch: the `FILE` option sat inside step 2 of the
+  posting flow, while the block headed *comment rules* well below it named only
+  the `+`-line constraint, so a reviewer working from the rules section
+  concluded wrongly. (Present tense would be false at this commit — the fix
+  below is a Comment-rules bullet whose subject is that route. No line distance
+  is quoted: it moves with every edit to the file, and this record is read long
+  after.) The fix is therefore **two** things — the
   `FILE` route made visible where reviewers look, and a pass whose subject is
   the file rather than the diff. It lands as a *method* beside the measuring
   member rather than as a lens. What keeps the **gate** out of `/orchestrate` is
@@ -41,7 +45,29 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   open, on its own evidence. **The gate has no vacuous case**, unlike the
   measuring gate, so the floor under `/ship` is now two passes, and the stop
   rule's lens-coverage floor stops doubling as a licence to stop.
-  **Signal 1's cure is derivation in the artifact, and it has two bounds.**
+  **Signal 1's evidence, carried here because ADR-0037 and the trace both cite
+  it.** Eight claims in PR #956 were asserted from memory and were wrong — the
+  row count of this table, not a remembered total. The item body that held it is
+  deleted by this entry, so it lives here:
+
+  | # | Claim | Artifact | Who caught it | By consulting |
+  |---|---|---|---|---|
+  | 1 | `review_rounds: 1`, justified by a clause that says the opposite | trace | review round 2 | the schema clause and the branch's commits |
+  | 2 | `review_rounds: 3`, with a confused composition | trace, pre-commit — never reached the repo, so this row is the one a reader cannot verify | author | `git log` |
+  | 3 | "#955 moved that field to 6" — it moved 4 → 5 | PR body | review round 2 | `git show 40c6d34` |
+  | 4 | "both measurements derived from those traces" | ADR-0036 | review round 4 | the ADR against the trace it cites |
+  | 5 | "four deliveries carry per-round detail" (inherited, unchecked) | ADR-0036 | author, finishing pass | parsing every trace's `review_rounds` and phases |
+  | 6 | "#944 and #945 carry no per-round detail" | ADR-0036 | author, finishing pass | the same parse |
+  | 7 | "nine defects" in the finishing commit's own message | commit message | author, closing discussion | the commit's per-file enumeration |
+  | 8 | "swept the same claim to the trace too" — it had not been | a review reply on PR #957 | author, immediately after posting | re-grepping the two files |
+
+  **The invariant is the last column, not the fourth.** Not one was caught by
+  re-reading the artifact the claim sat in, including in rounds explicitly
+  hunting stale claims; every one fell when someone opened the source the figure
+  derived from. Row 7's own correction to "15" is the one BK-348 then found
+  does not reproduce (below) — which is why this row now cites the commit's
+  enumeration rather than a total.
+  **The cure is derivation in the artifact, and it has two bounds.**
   A number can show its working; a claim about an action ("I swept both sites")
   has only the check you did or did not run, so that half binds in `/fix-pr`,
   where replies are authored. The surface is also wider than files: instance 8
@@ -51,9 +77,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   unprimed passes unprimed. The bound is stated in the rule rather than closed:
   the check is the author's or there is none.
   **Signal 3 became an instrument rather than an exhortation.** Brief
-  requirement 3 now carries two `gh api` reads — comments grouped by `.path`,
-  and the changed-file set they are subtracted from — so "what previous rounds
-  have not examined" is a query with named files in it instead of an adjective.
+  requirement 3 now carries two `gh api` reads — one row per review comment,
+  tagged reply-or-finding, and the changed-file set the finding paths are
+  subtracted from — so "what previous rounds have not examined" is a query with
+  named files in it instead of an adjective. Un-grouped deliberately: grouping
+  in the query destroys the page length that `/rvw-pr` Step 4's paging
+  discipline tests, so grouping waits until every page is in hand. Tagged rather
+  than filtered for the same reason, and filtered at all because the endpoint
+  returns replies — this delivery's round 1 came back as 15 rows for 7 findings.
   No script: it guards nothing, and a `scripts/` entry would owe a hatch alias
   and a guard under `tests/scripts/` for a two-call recipe (the same call
   BK-338's trace made for its own one-off count).

@@ -402,14 +402,16 @@ and the highest ID already in this file, then take the next integer. Run
   `uvx hatch run preflight`) is gated on `code == 'true'`, and on an ADR-only
   head it reports `skipped`. **Measured on PR #956 head `dc10a23`**: `gate`,
   `docs` and `setup` ran; `lint` skipped.
-  **The class is wider than "ADR-only", measured on a second PR.** PR #958 head
-  `26cf75b` adds an ADR *and* touches `.claude/skills/`, `CLAUDE.md` and
-  `sdd/traces/` — not an ADR-only diff by any reading — and
+  **The class is wider than "ADR-only", measured on a second PR.** Commit
+  `26cf75b` on PR #958 adds an ADR *and* touches `.claude/skills/`, `CLAUDE.md`
+  and `sdd/traces/` — not an ADR-only diff by any reading — and
   `gh api repos/haalfi/remote-store/commits/26cf75b/check-runs` still reports
-  `lint` skipped, with every test lane skipped alongside it. The trigger is not
-  how narrow the diff is; it is that **no path in it matches `CODE_PAT`**, which
-  is true of most process deliveries. The title and the fix shape below both
-  read as narrower than the evidence supports — widen before scoping.
+  `lint` skipped, with every test lane skipped alongside it. (Named as a commit,
+  not as "head": that PR's branch moved twice after the measurement.) The
+  trigger is not how narrow the diff is; it is that **no path in it matches
+  `CODE_PAT`**, which is true of most process deliveries. The title was widened
+  to match on that evidence; **the fix shape below still reads narrower than it
+  and has not been re-scoped.**
   **Consequence:** a hand-edited or stale `DIGEST.md` ships on the author's care
   alone, and the `STALE:` failure lands on the *next* PR that happens to touch
   code — the wrong PR to pay for it, and one whose author did not cause it.

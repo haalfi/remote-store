@@ -34,11 +34,17 @@ surprising_ripples:
   - sdd/adrs/0035-vary-method-not-model.md
 # Commits on this branch that exist because feedback was incorporated, named
 # rather than totalled, per the schema clause this PR adds to that field.
-# Enumerated from `git log --oneline origin/master..HEAD`: 26cf75b is the
-# implementation and does not count. Feedback-driven so far: PR #958 round 1.
-# The `review` phase below carries one step per round; this value is the count
-# of commits named there, not the count of rounds - they can diverge if a round
-# is refuted whole.
+# `git log --oneline origin/master..HEAD` returns three:
+#   26cf75b - the implementation. Does not count.
+#   789d72d - PR #958 round 1's seven findings. Counts.
+#   e0cacce - author-initiated, not feedback: I ran the shipped distribution
+#             instrument on this PR and found it counting replies. Does not
+#             count, on the same reading bk-338's trace states for its own
+#             finishing commit - the schema counts feedback incorporated, and
+#             the honest reading is the one that does not inflate the field.
+# Value is the count of the counting commits above, which is 1. Not the number
+# of steps in the `review` phase: a round can take more than one step to record,
+# and a round refuted whole produces no commit at all.
 review_rounds: 1
 phases:
   - id: orient
@@ -305,4 +311,51 @@ phases:
           other half (no exit gate to join) and the reading mode is now left
           open rather than silently excluded. Class-swept to the two copies in
           BACKLOG-DONE and this trace.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-348 (closure entry); BK-347; _schema.yml example"
+        read_type: verify
+        extract: >-
+          Round 2, scoped to neglected surface and briefed with the measured
+          distribution - round 1 had put its 7 findings on 4 of 16 files, so the
+          other 12 were named in the brief. It returned 7 findings, 5 of them on
+          files that had never carried one. The lens is doing exactly what
+          ADR-0033 says it does. The sharpest: deleting the item body deleted
+          the eight-row instance table, and **ADR-0037 cites that table as the
+          named derivation for its own headline figure** ("the row count of the
+          table in the BK-348 item") - so the record shipping principle 9 had
+          made its own derivation unresolvable at the commit that ships it, with
+          four sentences across three files pointing at nothing. Table carried
+          into the closure entry, with row 7 rewritten to cite the commit's
+          per-file enumeration rather than the "15" this delivery disproved.
+          Also: two sibling descriptions of the round-1 recipe fix that the
+          round-1 sweep did not reach (the closure entry and the PR body both
+          still said "comments grouped by .path", naming the property removed
+          *because* it broke the paging test); a present-tense description of
+          /rvw-pr falsified by this PR's own fix to /rvw-pr, with a line-distance
+          figure that no longer reproduced - dropped rather than recomputed,
+          since a line distance in a closure record goes stale on the next edit;
+          BK-347's "widen before scoping" surviving the widening done four lines
+          above it in the same diff, which is that file's Item-authority rule
+          violated inside the correction it governs; and "PR #958 head 26cf75b"
+          naming a moving referent for an open PR.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "examples (review_rounds)"
+        read_type: verify
+        extract: >-
+          Round 2's best structural finding, and one no diff-scoped reading would
+          reach: the clause this PR adds to `review_rounds` is contradicted 146
+          lines below by the schema's own `examples:` block, which carries a bare
+          `review_rounds: 1` - and CLAUDE.md routes every new trace author
+          through exactly that block ("create one from the schema example"). The
+          first thing an author does after the clause lands is copy a
+          non-compliant instance of the field it governs. Nothing mechanical can
+          catch it: a YAML comment is not data, so check_traces.py cannot see the
+          absence, which makes the example the clause's only enforcement surface.
+          Fixed by making the example compliant. My first fix invented two
+          SHA-shaped strings to illustrate it - caught before commit - and they
+          are now manifest placeholders with an explicit instruction to
+          substitute real short SHAs, because a plausible-looking SHA that
+          resolves to nothing is worse than no derivation at all.
         outcome: ok
