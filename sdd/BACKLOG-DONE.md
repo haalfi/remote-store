@@ -10,7 +10,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 - [x] **BK-348 — Adapt the review loop from PR #956's evidence**
   spec: — · effort: M · audience: contributor.process
-  **Third** in the *Adapt … from PR #NNN's evidence* series — BK-342, BK-344,
+  **Third** in the *Adapt … from PR #NNN's … evidence* series — BK-342, BK-344,
   BK-348 — the ellipsis before "evidence" is load-bearing, since the two
   earlier titles carry "review evidence" and this one does not — as the item's
   own body
@@ -30,7 +30,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Step 1 already obliges reading every changed file in full, and Step 4 already
   offers `subjectType: "FILE"`, so neither "reviewers do not read the files" nor
   "the anchoring rule forbids file-level findings" explains why a converged loop
-  left defects in seven of the eight files a whole-file read then had to touch.
+  left defects in all eight files a whole-file read then had to touch.
   What remained, on the base branch: the `FILE` option sat inside step 2 of the
   posting flow, while the block headed *comment rules* well below it named only
   the `+`-line constraint, so a reviewer working from the rules section

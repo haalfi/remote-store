@@ -1,7 +1,7 @@
 id: BK-348
 title: "Adapt the review loop from PR #956's evidence"
 trigger: >-
-  Third in the "Adapt ... from PR #NNN's evidence" series - BK-342, BK-344,
+  Third in the "Adapt ... from PR #NNN's ... evidence" series - BK-342, BK-344,
   BK-348 (the ellipsis before "evidence" is load-bearing: the two earlier
   titles carry "review evidence" and this one does not) - and the first drawn
   from a
@@ -9,7 +9,7 @@ trigger: >-
   BK-338's delivery, which is not itself in this series. That run converged -
   five posted rounds, a clean last round, green
   CI - and an author pass reading each changed file whole then found defects in
-  seven of the eight files it then had to touch. The item recorded three
+  all eight files it then had to touch. The item recorded three
   signals and
   withheld a prescription, so the design was chosen against the evidence, with
   the user, before anything was written.
@@ -30,6 +30,8 @@ expected_ripples:
 # trace's figure obliges re-running that figure's derivation - which is how the
 # bk-338 correction below was found.
 surprising_ripples:
+  - sdd/adrs/0033-ship-convergence-driven-review.md
+  - sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md
   - .claude/skills/rvw-pr/SKILL.md
   - .claude/skills/fix-pr/SKILL.md
   - sdd/traces/bk-338-review-roster.yml
@@ -46,14 +48,18 @@ surprising_ripples:
 #             finishing commit - the schema counts feedback incorporated, and
 #             the honest reading is the one that does not inflate the field.
 #   7cba3a2 - PR #958 round 2's seven findings. Counts.
-#   a later commit answers round 3; the `review` phase records its findings.
+#   179e46f - PR #958 round 3's eighteen findings. Counts.
+#   the commit carrying this line answers round 4 and counts; a commit cannot
+#             name its own SHA, so the final entry is nameable only from the
+#             commit after it. That bound is stated rather than papered over -
+#             the enumeration is complete except for its last member, always.
 # Value is the count of the counting commits above. Not the number of steps in
 # the `review` phase: a round can take more than one step to record, and a round
 # refuted whole produces no commit at all.
 # Finalised at the close. It was stale for one round before that, and round 3
 # caught it - all three panel members independently - which is this PR's own
 # new clause working on the delivery that ships it.
-review_rounds: 3
+review_rounds: 4
 phases:
   - id: orient
     name: Orient
@@ -425,4 +431,47 @@ phases:
           defects (a re-pointed "this one", instance 6's false clause) rather
           than record. It read the patch instead of taking the number, which is
           the axis ADR-0035 exists for, applied to a figure this delivery wrote.
+        outcome: ok
+      - file: sdd/adrs/0037-whole-file-gate-and-derived-figures.md
+        section: "Context (headline figure); brief requirement 3; trigger patterns"
+        read_type: verify
+        extract: >-
+          Round 4, the closing panel, run against the state round 3 certified.
+          14 raw findings, 10 distinct. **The sharpest is that round 3's own
+          measured correction invalidated the record's headline figure and the
+          figure did not move.** Refuting "12 fix / 3 record" meant the eighth
+          file carried corrected defects too, so "seven of the eight files"
+          became false the moment that correction landed - and it survived in
+          five artifacts, including the sentence ADR-0037 leans on hardest for
+          the gate existing at all. Two members found it independently; the
+          measuring member re-verified the hunk classification underneath it.
+          Corrected to all eight everywhere. The lesson is narrower than "sweep
+          harder": a *correction* has ripples exactly as a change does, and this
+          loop's sibling-sweep obligation is written for changes.
+          Also: the ellipsis fix from round 3 reached the ADR and neither of the
+          two copies, which is the fourth time in this PR a correction shipped
+          for the site named in the finding and not for its class; two residues
+          of round 3's definite-singular sweep; "is a panel" asserted where only
+          the posting path was meant, which collides with "every panel carries
+          one measuring member"; the two amended ADRs missing from this trace's
+          own ripple fields while the comment above them argued for their
+          inclusion; and "moved twice" - an in-flight count, inside the
+          parenthetical explaining why in-flight referents falsify themselves.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Every scoped brief must carry (requirement 3)"
+        read_type: verify
+        extract: >-
+          The round-4 finding that came from a reviewer's own disclosure rather
+          than from its findings, and the only structural one. Verifying the
+          distribution instrument required fetching PR comments - which
+          /rvw-pr Step 1 forbids reviewers to do, and that prohibition is the
+          entire mechanism keeping unprimed passes unprimed. The member was
+          scoped rather than unprimed so nothing was consumed, and it said so
+          unprompted. But the skill invited the collision by never saying whose
+          job the instrument is. It is the **orchestrator's**, run while writing
+          the brief; the brief carries the *result*, never the query. Written
+          into requirement 3, because an instrument that quietly converts its
+          verifier into a primed reviewer is the fail-silently class this skill's
+          own Rules call worse than none.
         outcome: ok

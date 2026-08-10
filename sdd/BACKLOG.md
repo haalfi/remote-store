@@ -407,7 +407,8 @@ and the highest ID already in this file, then take the next integer. Run
   and `sdd/traces/` — not an ADR-only diff by any reading — and
   `gh api repos/haalfi/remote-store/commits/26cf75b/check-runs` still reports
   `lint` skipped, with every test lane skipped alongside it. (Named as a commit,
-  not as "head": that PR's branch moved twice after the measurement.) The
+  not as "head": that PR's branch has moved since, and "head" would have
+  falsified itself.) The
   trigger in CI is not how narrow the diff is; it is that **no path in it
   matches `CODE_PAT`**, which is true of most process deliveries.
   **The two halves have different triggers, and conflating them is a third

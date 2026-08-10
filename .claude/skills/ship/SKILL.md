@@ -159,8 +159,7 @@ constraints keep that parallelism sound:
   narrowed to a single scoped member, or a close that appends exactly one
   pass — keeps `rvw-pr`'s full posting flow: one reviewer, no contention. From
   round 3 on, an odd round is never solo; it always carries its unprimed
-  member. **A close that appends two or three passes is a panel** and takes
-  the panel path — analyze-only members, orchestrator posts — because the
+  member. **A close that appends two or three passes takes the panel path** — analyze-only members, orchestrator posts — because the
   contention this bullet describes does not care that the passes are appended
   rather than scheduled. Run them serially as solo posting passes only if you
   want the later ones to see the earlier ones' findings, which for the
@@ -173,15 +172,15 @@ constraints keep that parallelism sound:
   mutate the shared working tree. So the read-only and analyze-only
   constraints are restated in **every panel member's** prompt — a solo pass
   needs no restatement because direct `/rvw-pr` invocation carries the
-  frontmatter itself — and **every reviewer pass — panel, solo, and the closing
-  gate's appended pass** — carries a cheap check: capture `git rev-parse HEAD` when
+  frontmatter itself — and **every reviewer pass — panel, solo, and each of the
+  closing gate's appended passes** — carries a cheap check: capture `git rev-parse HEAD` when
   the reviewers spawn (the just-pushed, gate-green state — the premise that
   makes the check meaningful), then require an unchanged HEAD **and** a clean
   `git status --porcelain` before triage. Dirtiness or a moved HEAD means the
   reviewers did not see the state being certified, and the pass is re-run,
   not trusted. A tree already dirty at spawn is a failed precondition, not
   tampering — clean it and re-push before spawning, since the check cannot
-  tell the two apart. The appended pass is the reviewer whose silence ends
+  tell the two apart. An appended pass is a reviewer whose silence ends
   the loop; it is the last place to skip the check, not the first.
 
 Width is a judgement, not a formula: a quiet previous round keeps the next
@@ -358,7 +357,7 @@ substitutes.
    gh api "repos/haalfi/remote-store/pulls/<N>/comments?per_page=100&page=1" --jq '.[] | [(if .in_reply_to_id then "reply" else "finding" end), .path] | @tsv'
    ```
    ```bash
-   gh api "repos/haalfi/remote-store/pulls/<N>/files?per_page=100" --jq '.[].filename'
+   gh api "repos/haalfi/remote-store/pulls/<N>/files?per_page=100&page=1" --jq '.[].filename'
    ```
 
    **Count the `finding` rows only.** That endpoint returns your own replies
@@ -377,12 +376,22 @@ substitutes.
    two pages is one entry, and the untouched set is the changed-file list minus
    the **union** of `finding` paths, never minus page 1's.
 
-   **Page the `files` call too — it is the minuend, and truncating it is the
-   worse failure.** That endpoint paginates on the same terms (measured: at
-   `per_page=10` a 16-file PR returns 10 rows then 6). A file missing from a
-   truncated changed-file list appears neither touched nor untouched; it drops
-   out of the brief entirely. A truncated subtrahend over-reports neglect,
-   which is visible; a truncated minuend under-reports it, which is not.
+   **Both calls carry `page=1` because both must be walked.** The `files`
+   endpoint paginates on the same terms (measured: at `per_page=10` a 16-file PR
+   returns 10 rows then 6), and it is the **minuend** — a file missing from a
+   truncated changed-file list appears neither touched nor untouched and drops
+   out of the brief entirely. A truncated subtrahend over-reports neglect, which
+   is visible; a truncated minuend under-reports it, which is not. The cursor is
+   in the spelling rather than only in this paragraph for the reason
+   [`/rvw-pr`](../rvw-pr/SKILL.md) Step 4 gives for pinning its own walk: a
+   reader copies the command, not the prose around it.
+
+   **This instrument is the orchestrator's, run while writing the brief — never
+   a reviewer's to verify.** It reads PR *comments*, and `/rvw-pr` Step 1
+   forbids a reviewer from fetching those; that prohibition is the whole
+   mechanism keeping unprimed passes unprimed. A measuring brief that asks a
+   member to check this recipe turns that member into one that has read the
+   conversation. Put the *result* in the brief; never the query.
 
    Put the *named untouched files* in the brief, not the adjective
    "neglected". This costs two calls and the alternative is an impression: on
@@ -457,8 +466,8 @@ it finds something.
 **It cannot end on a file nobody read whole.** Every round before the close
 reviews a diff, and the defect that survives all of them is the one the diff
 does not contain: on PR #956 a loop converged clean with green CI, and a single
-whole-file pass then found defects in seven of the eight files it had to touch,
-every one a sibling of a fix made under an obligation to sweep exactly those
+whole-file pass then found defects in all eight files it had to touch,
+each a sibling of a fix made under an obligation to sweep exactly those
 ([ADR-0037 § Context](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md#context)).
 If the closing round had no whole-file member, append one, on the same terms as
 the unprimed pass. This clause has **no vacuous case**: a diff that changes a
@@ -533,8 +542,8 @@ second (PR #949), which added the panel structure and the unprimed exit gate;
 which dropped the model axis and added the measuring member; and
 [ADR-0037](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md) the
 fourth (PR #956), which added the whole-file gate after a converged, CI-green
-loop left defects in seven of the eight files a single whole-file read then had
-to touch.
+loop left defects in all eight files a single whole-file read then had to
+touch.
 Read all four before tuning any of the above: they are the evidence that finding
 counts plateau while severity keeps falling, that consecutive rounds each
 found defects in the previous round's fixes, that scoped rounds leave

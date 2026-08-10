@@ -36,8 +36,9 @@ surprising_ripples:
   - .claude/skills/rvw-pr/SKILL.md
 # Commits that exist because feedback was incorporated, per the schema, counted
 # from `git log` rather than from memory of posted rounds — which is how the two
-# earlier values here went wrong. Seven commits on the branch: 741687a is the
-# implementation; the other six are feedback-driven — 483338c (the /pr
+# earlier values here went wrong. Eight commits on the branch, seven of which
+# this paragraph enumerates and one of which it excludes below: 741687a is the
+# implementation; six are feedback-driven — 483338c (the /pr
 # qualitative gate's findings against this PR's own prose, pre-PR), then dc10a23,
 # 96329f2, fce9735, 582b7a6 and d52a3ff for PR #956's five posted rounds. An
 # earlier value of 1
@@ -46,10 +47,14 @@ surprising_ripples:
 # on the branch*, and that one did. bk-344's trace counted the identical case the
 # same way one PR ago; two traces cannot both be right and the aggregator sees
 # only the numbers.
-# The finishing commit after d52a3ff does NOT increment this: it is an
-# author-initiated pass over the whole diff, not feedback incorporated, and the
-# schema counts the latter. Stated because the honest reading is the one that
-# does not inflate the field.
+# The eighth, the finishing commit 1fe4749 after d52a3ff, does NOT increment
+# this: it is an author-initiated pass over the whole diff, not feedback
+# incorporated, and the schema counts the latter. Stated because the honest
+# reading is the one that does not inflate the field.
+# The total above said "Seven" until BK-348's round 4 counted it: the exclusion
+# note was appended without revisiting the total, making this the third
+# arithmetic slip in the one comment block the schema now cites as the working
+# model for the field.
 review_rounds: 6
 phases:
   - id: orient
@@ -480,8 +485,10 @@ phases:
         extract: >-
           Author-initiated pass over all twelve changed files after the review
           closed, reading each whole rather than as a diff. It found defects no
-          round had named in **seven** files - orchestrate, ship, rvw-pr,
-          CLAUDE.md, BACKLOG-DONE, BK-347 and ADR-0036's provenance paragraph.
+          round had named in **all eight** files it touched - orchestrate, ship,
+          rvw-pr, CLAUDE.md, BACKLOG-DONE, BK-347, ADR-0036's provenance
+          paragraph, and this trace itself (two of its three hunks correct
+          defects; see below).
           Derivation, since the totals here have a history:
           `gh api repos/haalfi/remote-store/commits/1fe4749` shows eight changed
           files carrying 15 hunks: 12 across those seven files fix something,

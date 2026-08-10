@@ -43,7 +43,7 @@ than incidental.
 **The loop converged and the files were still wrong.** Five posted rounds, a
 clean final round, green CI — then an author-initiated pass that read each
 changed file *whole* rather than as a diff found defects no round had named,
-in seven of the eight files it then had to touch, every one a sibling of an
+in **every one of the eight files** it then had to touch, each a sibling of an
 earlier fix. That is the fix-pass blind spot ADR-0034 exists for, in a run
 that had been told about it five times. What survived five rounds: frontmatter
 falsified by the very change it describes; an antecedent broken by a paragraph
