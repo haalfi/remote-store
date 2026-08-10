@@ -67,6 +67,11 @@ orchestrator-owned cross-domain files (CHANGELOG, BACKLOG, README), and bug-fix
 TDD ordering (Testing Expert first) are unchanged. *Reverse per those
 mechanisms' own records* (ADR-0019 and its amendments) if the delegation
 structure itself is revisited.
+*Amended by [ADR-0036](0036-reviewers-by-subject-and-method.md):* per-domain
+boundaries continue to govern **authoring** and stop governing **review** —
+reviewers are selected by subject set and method, with a persona staffing a lens
+rather than selecting one, and the orchestrator fixes and owns the sibling
+sweep. The round cap, the three modes and the user-as-tie-breaker are unchanged.
 
 The concrete step sequence, per-mode flow, consolidation status legend, exact
 round cap, expert-response format, and the current expert roster are

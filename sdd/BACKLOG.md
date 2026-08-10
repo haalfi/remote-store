@@ -361,29 +361,6 @@ and the highest ID already in this file, then take the next integer. Run
   without it the next divergence is equally invisible. Expect it to turn a
   backend red on arrival; that is the item working, not a regression.
 
-- [ ] **BK-338 — Decide what a PR review roster should be**
-  spec: — · effort: S · audience: contributor.process
-  Open question, not a committed design. Evidence from PR #944: the only
-  user-facing bug found came from the pass that ran the tool rather than reading
-  the diff, and expert-persona reviewers each reported findings inside their own
-  lens while the defect sat between lenses.
-  **A first attempt was reverted in PR #945.** It replaced the expert roster
-  with a single unguided reviewer and pinned a specific model — the pin was
-  proposed for one session only and had no business in a shared skill, and the
-  roster change was made on one PR's evidence. Reopened as a question:
-  `/rvw-pr` and `/orchestrate` should select the experts a change actually
-  requires rather than run a fixed numbered list, and whether the author or an
-  expert applies a fix is a separate question the reverted attempt conflated
-  with it.
-  **The model half is discharged; the roster question is not.** BK-344 removed
-  every model instruction from every repo skill and recorded the rule in
-  [ADR-0035](adrs/0035-vary-method-not-model.md), so "do not pin a model in a
-  repo skill" no longer needs holding here. It also supplies evidence this item
-  should weigh: what separated the productive review rounds in PR #952 was
-  method — reading versus executing — not reviewer identity, which is the axis a
-  roster varies. A roster design that only re-picks personas is varying the axis
-  with no measured yield.
-
 - [ ] **BK-346 — Three ripple-check rows answered a question adjacent to the one asked**
   spec: — · effort: S · audience: contributor.process
   Three `outcome: unclear` tags in
@@ -409,6 +386,33 @@ and the highest ID already in this file, then take the next integer. Run
   rows, three widened rows, or a note about the table's granularity is the open
   question. Any row change lands in **both** presentations — `check_ripple_parity.py`
   enforces trigger-parity.
+
+- [ ] **BK-347 — An ADR-only diff is routed away from the ADR drift gate, locally and in CI**
+  spec: — · effort: S · audience: contributor.process, infra.ci
+  `gen_adr_digest.py --check` gates `sdd/adrs/DIGEST.md` freshness **and**
+  supersession-graph consistency. Exactly one composite gate runs it: `preflight`,
+  which inlines the command. Not `lint`, not `docs-gate`. A standalone
+  `gen-adr-digest-check` alias also exists in `pyproject.toml` and **nothing
+  composes it** — so the checker is one alias away from any gate that wants it,
+  which is what makes the fix cheap and the omission easy to miss.
+  **Both paths miss it for the one diff class that always regenerates the file.**
+  The [PR validation gates](CLAUDE-REFERENCE.md#pr-validation-gates) route a
+  no-code diff to `lint` + `docs-gate`, so an ADR-only change never runs the
+  check locally. CI cannot backstop it: the `lint` job (which runs
+  `uvx hatch run preflight`) is gated on `code == 'true'`, and on an ADR-only
+  head it reports `skipped`. **Measured on PR #956 head `dc10a23`**: `gate`,
+  `docs` and `setup` ran; `lint` skipped.
+  **Consequence:** a hand-edited or stale `DIGEST.md` ships on the author's care
+  alone, and the `STALE:` failure lands on the *next* PR that happens to touch
+  code — the wrong PR to pay for it, and one whose author did not cause it.
+  **Two claims to fix or qualify, not just the routing.** The gates section says
+  "the two paths stay equivalent on docs coverage despite composing different
+  targets", which is false for this checker; and the Detailed checklist's **ADR**
+  row names `preflight` as the gate, which is accurate and is precisely why the
+  routing is wrong. Fix shape is open: add `gen-adr-digest-check` to `docs-gate`,
+  widen CI's path filter to treat `sdd/adrs/**` as lint-triggering, or both.
+  Surfaced by the PR #956 round-2 review. That PR's own digest was verified by
+  running the generator by hand, which is not the gate — which is the point.
 
 - [ ] **BK-334 — No ripple-check row covers adding a `hatch` script alias**
   spec: — · effort: S · audience: contributor.process
@@ -773,9 +777,11 @@ would have caught what this programme has actually caught so far. Detecting thos
 needs semantic comparison of prose, which § 1 marks as having no general oracle.
 The mechanisms that did catch them were an author-side sibling sweep and running
 the code rather than reading the diff — neither in the research doc's ranking.
-The sweep is now shipped as [BK-336](BACKLOG-DONE.md); the second is still open
-as BK-338 under Lint / CI Completeness. Weigh a future step-2 argument against
-that.
+The sweep is now shipped as [BK-336](BACKLOG-DONE.md), and the second as
+[BK-344](BACKLOG-DONE.md) (a measuring reviewer, `/ship`) and
+[BK-338](BACKLOG-DONE.md) (the same for `/orchestrate`, plus the finding that a
+domain-persona roster reaches a minority of findings and none at all on the
+surface no persona owns). Weigh a future step-2 argument against that.
 
 Shipped so far: step 1 (Dafny twin parity) as BK-328, step 5.1 (the attribution
 rule) as BK-329, step 4 (037's per-backend table) as BK-331, and **step 3's

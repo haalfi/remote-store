@@ -249,6 +249,58 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Produced **ID-245** (generate spec 003's reachability table rather than count
   it) and left ID-244 as the next item in the section's chain.
 
+- [x] **BK-338 — Decide what a PR review roster should be**
+  spec: — · effort: S · audience: contributor.process
+  Filed on PR #944 and reopened after PR #945 reverted a first attempt that
+  bundled the roster question with a single-session model pin. BK-344 discharged
+  the model half; this closes the rest.
+  **Answered by measuring the roster rather than arguing it.** Two measurements
+  over two different samples decided it, and the second is the sharp one. (1)
+  Classifying every review finding in the two richest traces by whether a
+  persona lens, scoped as its `.claude/agents/` file scopes it, would plausibly
+  have caught it: PR #952, 7 of 19 reachable, 7 more inside the persona's domain
+  but reachable only by execution it is not briefed to do; PR #954, 3 of 12.
+  (2) The five `DOMAIN:` lines cover only part of the repository, so everything
+  else is unowned — 20 of 135 changed files across five deliveries, and **9 of
+  PR #954's 12 findings**. The 20 landed in `scripts/` (8), `.claude/` (7),
+  `CLAUDE.md` (2), `CHANGELOG.md` (2) and `pyproject.toml` (1); the uncovered
+  surface is wider than what these five PRs happened to touch, which is why
+  neither the ADR nor the skills enumerate it. A process delivery is invisible to
+  a persona roster by construction.
+  **Shipped as [ADR-0036](adrs/0036-reviewers-by-subject-and-method.md)**,
+  amending ADR-0020's delegation clause (review half only) and ADR-0035: a
+  reviewer is selected by the subject set it is aimed at and the method it uses,
+  a persona **staffs** a lens rather than selecting one, `/orchestrate`'s Steps 3
+  and 6 adopt that model while its authoring fan-out stays persona-based, the
+  uncovered surface becomes a **lens** rather than a sixth persona, and the
+  main loop fixes and owns the sweep with delegation by depth.
+  **`/ship` needed no new selection rule, which is itself the finding**: ADR-0035
+  had already answered this item for that skill and said so in its own
+  Consequences, so the roster residual was `/orchestrate` alone. What `/ship` did
+  owe was its Roles table, which assigned the fixer role to domain-expert
+  subagents and so contradicted the sibling-sweep obligation ADR-0034 puts on the
+  fixer. Both traces show the
+  sweeps that paid were cross-file (a claim in five homes spanning `sdd/`,
+  `CHANGELOG.md` and a guide; a fifth restatement in a different skill), which a
+  domain-scoped fixer cannot perform.
+  **A sixth persona was considered and rejected.** The uncovered surface needs
+  looking at, not owning; a persona whose domain is "everything left over" grows
+  the roster on the axis ADR-0035 already found unpaying, and would have given
+  those files an owner with no foundation docs for them.
+  **Bound worth stating:** the finding-level classification is a per-finding
+  judgement made by the agent proposing the decision. The file-level count is
+  mechanical and corroborates it, but it is the weaker measurement. Both are
+  recorded with the ADR's reversal conditions rather than as settled fact.
+  **The review is evidence for the item's own thesis, so it is recorded here.**
+  Five posted rounds, six feedback-driven commits. Four rounds of reading put 16
+  of 24 findings on one file while eight of the twelve changed files carried
+  none; a fifth round briefed to *execute* and aimed at that neglected surface
+  produced the only measured refutation of the run — the tamper check's stated
+  residual was two categories narrower than what running it showed — plus
+  findings on two of the eight untouched files. Method over identity, on the PR
+  arguing for it. **Produced [BK-347](BACKLOG.md)**: an ADR-only diff is routed
+  away from the ADR drift gate, locally and in CI.
+
 - [x] **BK-344 — Adapt `/ship` from PR #952's review evidence**
   spec: — · effort: M · audience: contributor.process
   Third delivery under ADR-0033, first to run the ADR-0034 machinery. The item
@@ -311,7 +363,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   guarantee replacing an instruction the skill itself calls weaker than the
   frontmatter it stands in for. `Agent` spawning remains for panels.
   **Co-shipped:** BK-338's "do not pin a model in a repo skill" is discharged
-  (its roster question stays open, annotated with signal 2's evidence).
+  (its roster question was left open here, annotated with signal 2's evidence,
+  and closed by BK-338 itself immediately after — that annotation is what the
+  measurement was built on).
   **Produced BK-346** — three ripple-check rows that answered a question adjacent
   to the one asked, recorded as `unclear` in PR #952's trace and filed rather
   than fixed here, since this item's subject was the loop and not the table.
@@ -498,9 +552,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   the refutation looked settled. Dropped. **A refuted finding is not a closed
   one**: refutation is where a sibling hides best, since the reasoning that
   dismisses it is never swept against the code the way a fix is.
-  **[BK-338](BACKLOG.md) stays open.** The reverted attempt bundled the
-  review-roster question and a single-session model pin into the same commit;
-  neither is touched here.
+  **BK-338 stayed open here.** The reverted attempt bundled the review-roster
+  question and a single-session model pin into the same commit; neither was
+  touched by this item. Both have since shipped — the pin as part of BK-344, the
+  roster as BK-338 itself, above.
 
 - [x] **BK-341 — Interview mode: route decision questions through `AskUserQuestion`**
   spec: — · effort: M · audience: contributor.process, contributor.tooling, infra.ci

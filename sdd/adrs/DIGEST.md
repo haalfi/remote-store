@@ -2,7 +2,7 @@
 
 <!-- doc: repo-only -->
 
-Compiled from 35 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
+Compiled from 36 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
 
 ## Accepted
 
@@ -564,6 +564,11 @@ orchestrator-owned cross-domain files (CHANGELOG, BACKLOG, README), and bug-fix
 TDD ordering (Testing Expert first) are unchanged. *Reverse per those
 mechanisms' own records* (ADR-0019 and its amendments) if the delegation
 structure itself is revisited.
+*Amended by [ADR-0036](0036-reviewers-by-subject-and-method.md):* per-domain
+boundaries continue to govern **authoring** and stop governing **review** —
+reviewers are selected by subject set and method, with a persona staffing a lens
+rather than selecting one, and the orchestrator fixes and owns the sibling
+sweep. The round cap, the three modes and the user-as-tie-breaker are unchanged.
 
 The concrete step sequence, per-mode flow, consolidation status legend, exact
 round cap, expert-response format, and the current expert roster are
@@ -1113,6 +1118,10 @@ rule are operational contract and live in `.claude/skills/ship/SKILL.md` and
   which is a property of the brief and not of who reads it. *Reverse if* a
   measured comparison attributes findings to model difference at a rate that
   justifies the per-round cost.
+  *Amended by [ADR-0036](0036-reviewers-by-subject-and-method.md):* lens-and-method
+  selection extends to `/orchestrate`'s review steps, domain persona is ruled out
+  as a selection unit alongside model, and the menu gains a lens for the tooling
+  and process surface no persona's `DOMAIN:` line covers.
 
 - **Every panel carries one measuring member**, reaching its verdict by
   execution rather than reading. This is the axis the model requirement vacates,
@@ -1145,6 +1154,48 @@ repeat-site check and the CI check are operational contract and live in
 `.claude/skills/rvw-pr/SKILL.md`.
 
 > amends ADR-0033, ADR-0034 (clause).
+
+### [ADR-0036](0036-reviewers-by-subject-and-method.md): Select Reviewers by Subject and Method, Not by Domain Persona
+
+- **A reviewer is selected by the subject set it is aimed at and the method it
+  uses, never by which directory it owns.** Domain personas remain a way to
+  *staff* a scoped lens; they stop being the unit of selection. The measured
+  reachability of a persona lens is a minority of findings, and identity is the
+  axis [ADR-0035](0035-vary-method-not-model.md) already found unpaying.
+  *Reverse if* a delivery's findings cluster by domain such that a persona
+  roster would have reached them and a subject-and-method selection did not.
+
+- **`/orchestrate`'s review steps select by lens and method; its authoring
+  fan-out stays persona-based.** Authoring genuinely is domain-partitioned — a
+  backend change is written in `src/remote_store/`, and ADR-0020's delegation
+  structure holds for that half. Review is not, which is what the measurements
+  show. This keeps one review model across both skills instead of two.
+  *Reverse if* `/orchestrate`'s reviews become materially more expensive without
+  finding more than the five-persona fan-out did.
+
+- **The repository's own tooling and process contract is a lens, not a
+  domain.** Its extent is *everything no `DOMAIN:` line contains* — derived per
+  path, never enumerated, because an enumeration read as exhaustive is how an
+  unlisted file gets handed to a persona that excludes it. A sixth persona was
+  rejected: the surface needs looking at, not owning, and a persona whose domain
+  is "everything left over" grows the roster on the axis with no yield.
+  *Reverse if* the lens is reliably selected for the same deliveries a domain
+  assignment would have covered, at which point the assignment is cheaper.
+
+- **The main loop fixes and owns the sweep; delegation to a domain expert is by
+  depth, not by default.** [ADR-0034](0034-ship-panel-rounds-and-unprimed-exit.md)
+  puts the sibling sweep on the fixer, and the sweeps that paid across both
+  traces were cross-file — a claim in five homes spanning `sdd/`, `CHANGELOG.md`
+  and a guide; a fifth restatement in a different skill. A domain-scoped fixer
+  cannot perform those. Delegate when the fix needs depth inside one file tree.
+  *Reverse if* delegated fixes stop producing the divergences that motivated the
+  sweep obligation.
+
+The step sequences, the lens menu, and the brief requirements are operational
+contract and live in `.claude/skills/orchestrate/SKILL.md` and
+`.claude/skills/ship/SKILL.md`.
+
+> amends ADR-0020, ADR-0035 (clause).
 
 ## Superseded
 

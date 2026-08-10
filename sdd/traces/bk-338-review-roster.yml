@@ -1,0 +1,533 @@
+id: BK-338
+title: "Decide what a PR review roster should be"
+trigger: >-
+  Filed after PR #944, where the only user-facing bug came from the pass that
+  ran the tool rather than reading the diff, and expert-persona reviewers each
+  reported inside their own lens while the defect sat between lenses. A first
+  attempt was reverted in PR #945 for bundling the roster question with a
+  single-session model pin. BK-344 discharged the model half and handed this
+  item signal 2's evidence: a roster varies reviewer identity, which is the
+  axis with no measured yield.
+source_items:
+  - BK-338
+audience:
+  - contributor.process
+discovery_followups:
+  - BK-347
+expected_ripples:
+  - sdd/adrs/DIGEST.md
+# Reached by sibling sweeps and class sweeps, not by any ripple-check row. The
+# ADR row points at digest freshness and the Status table; nothing in it
+# anticipates that an amending ADR falsifies a *different, non-amended* ADR's
+# Context (0033), or that editing a list in one skill obliges editing the skill
+# it was copied from (ship), or that binding one skill to another's allowlist
+# obliges annotating that allowlist (rvw-pr). Recorded rather than left empty:
+# `[]` is a claim that the table anticipated everything, and this field is
+# aggregated across traces.
+surprising_ripples:
+  - sdd/adrs/0033-ship-convergence-driven-review.md
+  - .claude/skills/ship/SKILL.md
+  - .claude/skills/rvw-pr/SKILL.md
+# Commits that exist because feedback was incorporated, per the schema, counted
+# from `git log` rather than from memory of posted rounds — which is how the two
+# earlier values here went wrong. Seven commits on the branch: 741687a is the
+# implementation; the other six are feedback-driven — 483338c (the /pr
+# qualitative gate's findings against this PR's own prose, pre-PR), then dc10a23,
+# 96329f2, fce9735, 582b7a6 and d52a3ff for PR #956's five posted rounds. An
+# earlier value of 1
+# excluded 483338c as "pre-PR", which inverts the clause it cited — the schema
+# says feedback before the PR was opened counts the same *if it produced a commit
+# on the branch*, and that one did. bk-344's trace counted the identical case the
+# same way one PR ago; two traces cannot both be right and the aggregator sees
+# only the numbers.
+# The finishing commit after d52a3ff does NOT increment this: it is an
+# author-initiated pass over the whole diff, not feedback incorporated, and the
+# schema counts the latter. Stated because the honest reading is the one that
+# does not inflate the field.
+review_rounds: 6
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-338 (item)"
+        read_type: gate
+        extract: >-
+          Three questions tangled in one item, and PR #945 was reverted for
+          conflating two of them. Separating them is the precondition for
+          deciding any: which reviewers a change selects, what a reviewer is
+          typed by, and whether the author or an expert applies a fix. The
+          model half is annotated as discharged by BK-344, so only the first
+          two and the fixer question remain.
+        outcome: ok
+      - file: sdd/adrs/0035-vary-method-not-model.md
+        section: "Decision"
+        read_type: gate
+        extract: >-
+          Already answers this item's question for /ship and says so in its own
+          Consequences ("its roster question is untouched and still open").
+          Reviewers there are picked by lens and method, personas appear only as
+          one way to staff a scoped member, and width follows the subject set.
+          So the residual is not "design a roster" but "why does /orchestrate
+          still select differently", which narrows the item to one skill.
+        outcome: ok
+      - file: sdd/adrs/0020-orchestrate-iterative-convergence.md
+        section: "Decision"
+        read_type: gate
+        extract: >-
+          Decides whether /orchestrate's roster is even amendable here. It is
+          not drift against RFC-0009 (superseded), because this record assigns
+          "the current expert roster" to the skill as operational contract in
+          its own words. But it also carries "Carry forward ADR-0019's
+          delegation structure ... per-domain boundaries", which is the clause a
+          review-selection change actually touches — so the amendment target is
+          this ADR's delegation clause, review half only.
+        outcome: ok
+      - file: .claude/agents/store-backend-expert.md
+        section: "DOMAIN"
+        read_type: gate
+        extract: >-
+          Read all five DOMAIN lines to derive coverage rather than assume it:
+          src/remote_store/, src/remote_store/ext/, tests/, docs-src/ +
+          examples/ + docs/, sdd/. Nothing owns scripts/, .claude/,
+          pyproject.toml, CLAUDE.md, CHANGELOG.md, .github/ or infra/. That gap
+          is the mechanism behind the item's original "the defect sat between
+          lenses", and it is measurable rather than impressionistic.
+        outcome: ok
+  - id: measure
+    name: Measure the roster against the traces
+    steps:
+      - file: sdd/traces/bug-243-missing-ok-absent-container.yml
+        section: "review (rounds 1-8)"
+        read_type: verify
+        extract: >-
+          Classified all 19 recorded review findings by whether a persona lens,
+          scoped as the persona file scopes it, would plausibly have caught it.
+          7 yes, 7 inside the persona's domain but reachable only by execution
+          it is not briefed to do, 5 not reachable by any single lens. 8 of 19
+          were reached by executing. The two between-lenses cases are the
+          informative ones: GraphBackend is owned by the store-backend expert
+          and went unnamed for six rounds because the diff never touched it, and
+          the missing_ok docstring claim sits between documentation (owns
+          docstrings) and store-backend (owns whether the claim is true).
+        outcome: ok
+      - file: sdd/traces/bk-344-vary-method-not-model.yml
+        section: "verify"
+        read_type: verify
+        extract: >-
+          The same classification over the 12 findings its verify phase records
+          (a finding count, not a round count - that file owns its own
+          review_rounds and it moved after this was written): 3 reachable by a
+          persona lens, 9 not, and 6 reached by executing. Nine land in .claude/,
+          pyproject.toml or CLAUDE.md — files no DOMAIN line contains. A process
+          delivery is invisible to the roster by construction, which is the
+          strongest single number in this item and is why the fix is a lens
+          rather than a sixth persona: the surface needs looking at, not owning.
+        outcome: ok
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts]"
+        read_type: verify
+        extract: >-
+          Classified the changed files of PRs #944, #945, #949, #952 and #954
+          against the DOMAIN lines, reading those lines rather than restating
+          them. 20 of 135 files (15%) fall outside every domain; the two process
+          deliveries are 45% and 31% against 6-12% for the three code
+          deliveries. Done with a throwaway script under the gitignored tmp/,
+          not shipped - it guards nothing, and adding it to scripts/ would owe a
+          hatch alias and a guard under tests/scripts/ for a one-off count. So
+          the recipe is recorded here instead, since a citation to a file that
+          does not ship is not a citation: git show --pretty= --name-only
+          <merge-sha> per delivery (c285391, 7bd48d1, b25baca, fbb5c9e,
+          758e998), bucket each path by longest-matching DOMAIN prefix with
+          src/remote_store/ext/ winning over src/remote_store/, and count the
+          residue. File-level coverage is the weaker measurement and is reported
+          as corroboration - the finding-level classification above is the
+          decision's basis.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Roles table"
+        read_type: verify
+        extract: >-
+          Checked what /ship leaves for the fixer half of the item, per the
+          handover's instruction not to assume it was already answered. It
+          assigns "Author, fixer" to domain-expert subagents, which contradicts
+          the decision taken here and is refuted by both traces: the sweeps that
+          paid were cross-file (a fifth Bash site in a different skill, a claim
+          in five homes spanning sdd/, CHANGELOG and a guide), and a
+          domain-scoped fixer cannot perform them.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/templates/adr-template.md
+        section: "Status, Decision"
+        read_type: gate
+        extract: >-
+          Amends is clause-level and the amended clause must be named in prose
+          below the table, and the whole Decision section is lifted verbatim into
+          DIGEST.md. Set ADR-0036's split: four decisions with reversal
+          conditions, the selection procedure and the lens text left in the two
+          SKILL.md files. Decision came in at 352 words against a 350 budget,
+          which the digest reports as advisory.
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Reviewer selection (new), Steps 3 and 6, Rules"
+        read_type: verify
+        extract: >-
+          Wrote the selection procedure, then caught my own copy being untrue
+          where it sits before any reviewer did: the draft told /orchestrate to
+          spawn its measuring reviewer "with the word `measuring`, which is what
+          opens /rvw-pr's allowlisted command set". /orchestrate does not route
+          reviewers through /rvw-pr at all - they are plain subagents against the
+          working tree, with no permission to open and the opposite hazard, since
+          they can write. Rewritten to say that, with the read-only prompt and
+          clean-porcelain check /ship already requires. Exactly the defect class
+          BK-344 shipped a rule for, committed while applying that rule.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Roles, Round composition, Lens menu, Rules"
+        read_type: verify
+        extract: >-
+          Two edits, not a rewrite, because ADR-0035 had already answered this
+          item for this skill. Roles gains a separate Fixer row (main loop by
+          default, delegate for depth) since the old row conflated author and
+          fixer and put both on domain experts; the lens menu gains the tooling
+          and process lens; round composition drops "Repo domain experts, or
+          general-purpose" from the round-2 cell, which was the last place the
+          skill implied domain was a selection unit.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/adrs/0035-vary-method-not-model.md
+        section: "Consequences"
+        read_type: verify
+        extract: >-
+          Sibling sweep of closing the item, which falsifies every live sentence
+          saying it is open. Four sites, found by searching for the ID rather
+          than for the wording I had just written: this Consequences bullet
+          ("its roster question is untouched and still open"), BACKLOG.md's
+          consistency-programme paragraph, BK-336's entry in BACKLOG-DONE (which
+          also linked BK-338 to BACKLOG.md, now a dead pointer), and BK-344's
+          own Co-shipped line. ADR-0035's Context is left alone deliberately - it
+          records the state that motivated the decision and was true then.
+        outcome: ok
+      - file: CLAUDE.md
+        section: "GitHub operations"
+        read_type: verify
+        extract: >-
+          BK-344 had already fixed the amendment chain here after a review
+          finding, so this is a live copy that a new amending ADR falsifies by
+          omission rather than by contradiction - the list said read all three.
+          Added ADR-0036 and a sentence for /orchestrate, which the section named
+          nowhere despite this change altering how it reviews.
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Reviewer selection step 3; Step 4"
+        read_type: verify
+        extract: >-
+          PR #956 round 1, and the two findings that would have been wrong once
+          merged were both mine and both the same shape: an instruction a reader
+          cannot execute as written. (1) I imported /ship's clean
+          `git status --porcelain` tamper check without checking that its
+          precondition holds here. It does not - /ship reviews a pushed,
+          committed, gate-green tree, while Step 6 runs before Step 7 commits, so
+          the tree necessarily carries the authoring experts' uncommitted output
+          and the check is non-empty by construction. Read strictly no round can
+          pass; read loosely it detects nothing, which is the fail-silently class
+          /ship's own Rules call worse than none. Replaced with a captured
+          baseline - status and HEAD at spawn, both required unchanged - and the
+          base-branch route the same paragraph prescribed with no way to reach
+          it, since a naive checkout would destroy the work under review. (2) The
+          new activation rule said it governs Step 4 while Step 4 itself still
+          said "spawn all experts" and enumerated all five for bug fixes, ~70
+          lines apart, with the imperative in the executed step being the old
+          one. I had also deleted the sentence that was the only thing
+          qualifying that list.
+        outcome: ok
+      - file: sdd/adrs/0033-ship-convergence-driven-review.md
+        section: "Context (opening paragraph)"
+        read_type: verify
+        extract: >-
+          Class sweep of the round-1 Step 4 finding, which found a site the
+          review did not name. The finding was about /orchestrate's own file;
+          the class is "a live present-tense description of /orchestrate's
+          five-expert review that this PR falsifies", and ADR-0033's Context
+          opens with one. Qualified rather than rewritten - the sentence is the
+          premise this record argues against, so it moves to past tense and gains
+          a note that the five-expert half is withdrawn here while the two-round
+          cap it actually attacks is untouched. Also swept two "all experts"
+          phrasings inside Step 5 and Step 6 of the skill itself.
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Measuring pass (worktree recipe)"
+        read_type: verify
+        extract: >-
+          Sibling sweep of my own round-1 fix rather than of a finding. Giving
+          /orchestrate a base-branch route created a second copy of the same
+          three worktree commands, and the two carry different reasons - there
+          the revision is a certified pushed state, here it is uncommitted work
+          that exists nowhere else. Kept as two copies deliberately, because
+          linking would send a reader to a paragraph whose stated reason is false
+          where they landed, and both sides now say the other exists and why.
+          That is the one-copy-per-fact rule yielding to the true-where-it-sits
+          rule, recorded so the next editor sees the choice rather than the
+          divergence.
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Reviewer selection step 3 (tamper check, command bound)"
+        read_type: verify
+        extract: >-
+          PR #956 round 2, and round 1's fix to the same paragraph was itself
+          defective - the third time in this PR that an obligation shipped
+          without the thing that makes it work. (1) Replacing "clean porcelain"
+          with "porcelain unchanged since spawn" installed a narrower version of
+          the same fail-silently defect: porcelain prints status codes and paths
+          and nothing derived from content, so a reviewer editing a file the
+          experts already modified leaves ` M path` byte-identical - and that is
+          the most likely violation, since a reviewer is looking straight at the
+          files it was asked to review. /ship's version escapes this only because
+          its required state is empty. Now three captures, with `git diff HEAD`
+          carrying content sensitivity, and the residual named: an edit to an
+          already-untracked file's contents defeats all three. (2) I treated "no
+          permission gate here" as though it also discharged the hazard. The
+          /rvw-pr allowlist exists because of pyproject.toml facts - no suffix or
+          args-shape rule identifies a writing alias - which are unchanged for a
+          reviewer spawned from this skill, and the blast radius is larger here
+          because the work is uncommitted. Now bounded by reference to that
+          allowlist, plus the write-only-under-tmp/ rule.
+        outcome: ok
+      - file: sdd/adrs/DIGEST.md
+        section: "(generated)"
+        read_type: verify
+        extract: >-
+          Round-2 finding, half refuted and half filed. The claim that this file
+          was hand-edited is wrong - I ran gen_adr_digest.py after each round of
+          ADR edits, and --check confirms it is current. The structural half is
+          right and is the part worth keeping: gen_adr_digest.py --check lives
+          only in preflight, so the no-code gate path (lint + docs-gate) never
+          runs it, and CI's lint job is gated on code == 'true' and reports
+          skipped on head dc10a23 - verified against the check-runs API. So
+          nothing on this PR gated the digest; running the generator by hand is
+          not the gate. Filed as BK-347 rather than fixed here, since the fix is
+          a routing change to the shared gates and CLAUDE-REFERENCE's
+          "equivalent on docs coverage" claim.
+        outcome: ok
+      - file: sdd/traces/bk-344-vary-method-not-model.yml
+        section: "review_rounds (comment)"
+        read_type: verify
+        extract: >-
+          Round 2 caught two review_rounds errors in the paragraph explaining a
+          review_rounds error, which is its own comment on the field. My value of
+          1 excluded the /pr-gate commit as "pre-PR" while citing the clause that
+          says pre-PR-ness is exactly what does not matter if it produced a
+          commit - and it did (483338c). bk-344's trace counted the identical
+          case the opposite way one PR ago and named this very gate; two traces
+          cannot both be right. Corrected to 2, counted from git log. Separately
+          the PR body said #955 moved that file to 6; git show 40c6d34 shows
+          4 -> 5. The 6 came from its commit message's "six commits", which is
+          the branch length, not the field. The same wrong number is frozen in
+          483338c's commit message and cannot be corrected without a force-push
+          that would invalidate the review; recorded here instead.
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "ADR citations; Reviewer selection step 1"
+        read_type: verify
+        extract: >-
+          PR #956 round 3, four findings, all on citation and enumeration
+          hygiene rather than on behaviour. Three named ADR links that load a
+          whole record where a section would do - a context-load cost paid by
+          every reader of a skill file. Swept the class rather than the three
+          lines: this PR adds eleven ADR links across the two skills, and each
+          now points at the section that carries the claim it supports. That is
+          not uniformly `#decision`, which is the part worth recording - the
+          measurement counts live in ADR-0036's Context and the judgement bound
+          in its Consequences, so pointing all of them at Decision would have
+          traded a context-load defect for a wrong-target one. Pre-existing
+          whole-doc links and CLAUDE.md's read-all-four chain are left alone:
+          there the instruction really is to read the record.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Enumerate the subjects, not the files"
+        read_type: verify
+        extract: >-
+          Round-3 finding on my own step 1 - "a backend, a capability, an
+          operation, a caller, a gate, a skill" reads as a closed vocabulary of
+          what a subject may be, when the whole point of the subject set is that
+          it is whatever the change's words pick out. Swept to the source: the
+          same list with the same defect is in /ship's Step 1, which is where I
+          copied mine from, so fixing only the flagged copy would have left the
+          two disagreeing about whether the list is closed. Both now say the
+          enumeration is what deliveries have hit so far and instruct the reader
+          to ask what the words pick out rather than which entry they match.
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Reviewer selection (read-only scope); Step 7 item 1"
+        read_type: verify
+        extract: >-
+          PR #956 round 4, seven findings, and the sharpest was the fourth
+          instance of this PR's own defect class sitting inside the fix for the
+          third. Round 2 asked me to bound what a measuring reviewer may run; I
+          put the read-only instruction and the tamper check inside the numbered
+          item whose subject is the measuring reviewer, so an obligation that
+          belongs to every reviewer this skill spawns was written where only one
+          reader reaches it - and the reading reviewers are the likelier
+          tamperers, since the violation this skill itself calls most probable is
+          editing a file the experts already modified. Hoisted to a clause
+          covering all four steps, with a Rules bullet, which is what /ship does
+          and says why. Separately Step 7's ripple-check audit still said
+          "for domain-specific gaps, re-spawn the relevant expert" - the routing
+          Step 6 had just inverted, in the step where cross-file sweeps are most
+          likely. Swept the class: Step 5's re-spawn of a *blocked author* and
+          /ship's re-spawn of a *mis-aimed reviewer* are different questions and
+          were correctly left alone.
+        outcome: ok
+      - file: sdd/adrs/0036-reviewers-by-subject-and-method.md
+        section: "Context (provenance of the two measurements)"
+        read_type: verify
+        extract: >-
+          Round 4 caught the record misstating where its own evidence came from,
+          on the measurement it calls the mechanical one. "Four deliveries now
+          carry per-round detail" followed by "both derived from those traces"
+          is false for measurement 2: that is a git-log count over five merge
+          SHAs, two of which (#944, #945) predate the loop, so they cannot be
+          among the four. It also left
+          "the five deliveries" as a definite article with no antecedent. Now
+          each measurement states its own sample and method, and measurement 2
+          points at the trace step holding the reproducible recipe. The ADR's
+          whole claim to authority is measured-rather-than-argued, so a sentence
+          that misdescribes the measurement costs more than its wording.
+          **The round-4 fix then carried its own false clause, found in the
+          finishing pass by measuring instead of asserting.** It said #944 and
+          #945 "carry no per-round detail", which is false — bk-330 (#944) has
+          review_rounds: 4 and a per-round review phase, and a scan of the corpus
+          finds round-by-round detail in bk-324, bk-329, bk-340, bk-342 and
+          bug-243 besides. The real referent of "four" is deliveries run *under
+          the loop* (#946, #949, #952, #954), which is what BK-344 meant and what
+          I inherited without checking. Three provenance errors in one paragraph
+          across three rounds; the third was caught by running a query rather
+          than by a reviewer.
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Reviewer selection (tamper-check residual)"
+        read_type: verify
+        extract: >-
+          PR #956 round 5, and the first round of this PR's review to reach its
+          verdict by executing rather than reading - which is the axis the PR
+          itself argues for, applied to the PR at last. It refuted my stated
+          residual by measurement. I reproduced it before fixing rather than
+          taking it: a throwaway worktree, one modified tracked file and one new
+          untracked file standing in for expert output, then each tamper applied
+          against the three captures. Confirmed - an edit to an already-modified
+          tracked file is caught by `git diff HEAD` and NOT by porcelain (which
+          prints ` M path` either way); a new non-ignored untracked file is
+          caught by porcelain only; overwriting an existing untracked file is
+          caught by nothing. And the case I had not claimed: creating anything on
+          a *gitignored* path defeats all three, because --untracked-files=all
+          lists untracked-but-not-ignored paths only. Verified for site/ and for
+          .claude/settings.local.json, which is a plausible write for a subagent
+          with a full tool set. My residual was "an edit to the contents of an
+          already-untracked file", a category narrower than the truth in two
+          directions - it excluded creations and excluded ignored paths. Replaced
+          with the measured table, and with the note that the tmp/ write bound
+          cannot be the answer here since these captures exist for the reviewer
+          that broke it.
+        outcome: ok
+      - file: CLAUDE.md
+        section: "GitHub operations (ADR chain)"
+        read_type: verify
+        extract: >-
+          Round-5 finding on a file that had carried none in four rounds. I
+          appended ADR-0036 to a list whose grammatical object is ADR-0033
+          ("Rationale: ADR-0033, amended by 0034, 0035 and 0036") - and 0036's
+          Amends field is ADR-0020, ADR-0035, with its own prose saying "ADR-0033
+          and ADR-0034 are untouched". The sentence was true before my edit,
+          because 0034 and 0035 do both amend 0033, and my edit is what made it
+          false. Rewritten as a chain naming what each record amends. The
+          neglected-surface lens found this: CLAUDE.md, ship/SKILL.md,
+          rvw-pr/SKILL.md and both backlog files had gone four rounds unexamined
+          while 16 of 24 findings landed on one file.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Lens menu (Tooling and process contract); Step 1 subject list"
+        read_type: verify
+        extract: >-
+          Round 5 found the same PR instructing two opposite things about
+          enumerating the uncovered surface: /orchestrate's clause says never
+          work from a list and gives none, while /ship's lens hands the reviewer
+          a list - and the /ship copy is the one a reviewer executes against.
+          Measured three enumerations, three different sets: /ship's lens had
+          infra/ but not benchmarks/; ADR-0036's Decision had neither; ADR-0036's
+          Context had both. Reconciled by deletion rather than by alignment -
+          both the lens and the ADR Decision now derive from the DOMAIN lines and
+          point at /orchestrate's clause as the single home, so there is one
+          enumeration left in the repo and it is the one marked non-exhaustive.
+          Separately the two subject-set lists had been swept to matching framing
+          but not matching content, four items against six, and /ship's "the ones
+          this skill's deliveries have hit so far" was falsified by this delivery,
+          whose own subjects include a gate (BK-347) and three skills. Both now
+          carry the same six as illustrations with no claim about history.
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "(full) — author-initiated finishing pass"
+        read_type: verify
+        extract: >-
+          Author-initiated pass over all twelve changed files after the review
+          closed, reading each whole rather than as a diff. It found **15**
+          defects no round had named - counted from the diff hunks of 1fe4749,
+          six in orchestrate, three in BACKLOG-DONE, two in ship, one each in
+          rvw-pr, CLAUDE.md, BK-347 and ADR-0036's provenance paragraph. That
+          commit's own message says "nine", which is wrong and is the **seventh**
+          miscount in this PR, inside the commit documenting the miscount
+          pattern; the message is immutable, this is the correction, and the
+          count above names its derivation for exactly that reason. Every one of
+          the 15 was a sibling of an earlier fix -
+          which is the fix-pass blind spot ADR-0034 exists for, showing up in a
+          run that had already been told about it five times. The frontmatter
+          `description` still advertised "delegates to domain experts", falsified
+          by the change it describes. "Do not stretch a persona over them" lost
+          its antecedent when the round-4 examples paragraph was inserted between.
+          The tamper block justified itself with "Step 6 runs before Step 7
+          commits", true for Step 6 and false for Step 3, which routes through the
+          same section - the round-2 fix scoped to one of its two readers, again.
+          /ship's Rules still said "fixers may decline with evidence" after the
+          Roles split moved that clause to Author. /ship's Rules said "a member
+          that runs something" while /orchestrate asserted /ship had a
+          one-measurer rule keeping a fixed path safe. rvw-pr's tmp/ bullet, which
+          /orchestrate is now told to obey, carried a /ship-only reason.
+          CLAUDE.md's round-5 fix overcorrected into "each amends the record
+          before it", false for 0036 which amends 0020. BACKLOG-DONE still said
+          "/ship needed only two edits" after six, and enumerated the uncovered
+          surface a fourth time. BK-347 claimed the checker "appears in exactly
+          one hatch target" while a standalone gen-adr-digest-check alias exists,
+          which is what its own proposed fix wants to compose.
+        outcome: ok
+      - file: sdd/adrs/0036-reviewers-by-subject-and-method.md
+        section: "Context (sample framing) — measured, not read"
+        read_type: verify
+        extract: >-
+          The finishing pass caught the third provenance error in one paragraph,
+          and this time by running a query rather than by being told. The round-4
+          fix asserted #944 and #945 "carry no per-round detail"; parsing every
+          trace's review_rounds and phase ids shows bk-330 (#944) has
+          review_rounds 4 and a per-round review phase, and that round-by-round
+          detail is common across the corpus - bk-324, bk-329, bk-340, bk-342 and
+          bug-243 all carry it. So the clause was false and the framing inherited
+          from BK-344 was miscited: the real referent of "four" is deliveries run
+          *under the /ship loop* (#946, #949, #952, #954), not traces with
+          per-round detail. Corrected in the ADR, the skill and this trace.
+          The lesson is the item's own: four reading passes over this paragraph
+          left the error, and one query removed it.
+        outcome: ok
+      - file: .claude/agents/store-backend-expert.md
+        section: "CONSTRAINTS, closing /orchestrate paragraph"
+        read_type: verify
+        extract: >-
+          Checked all five persona files for statements this change falsifies and
+          found none, so none were edited. Their closing line says the invocation
+          prompt "may add task- and mode-specific instructions", which stays true
+          when a persona staffs a lens; their CONSTRAINTS bound where they may
+          write, which review does not exercise. Recorded here rather than left
+          silent, because a sweep that found nothing reads exactly like one that
+          never ran.
+        outcome: ok
