@@ -298,8 +298,11 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   produced the only measured refutation of the run — the tamper check's stated
   residual was two categories narrower than what running it showed — plus
   findings on two of the eight untouched files. Method over identity, on the PR
-  arguing for it. **Produced [BK-347](BACKLOG.md)**: an ADR-only diff is routed
-  away from the ADR drift gate, locally and in CI.
+  arguing for it. **Produced two items**: [BK-347](BACKLOG.md), an ADR-only diff
+  routed away from the ADR drift gate locally and in CI; and
+  [BK-348](BACKLOG.md), which carries this delivery's review evidence for the
+  loop itself, filed after the item closed and shipped separately so this PR
+  stayed at the state its rounds and CI certified.
 
 - [x] **BK-344 — Adapt `/ship` from PR #952's review evidence**
   spec: — · effort: M · audience: contributor.process
