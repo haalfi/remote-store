@@ -21,7 +21,14 @@ expected_ripples:
 surprising_ripples:
   - sdd/CLAUDE-REFERENCE.md
   - CLAUDE.md
-review_rounds: 4
+# Commits that exist because feedback was incorporated, per the schema — not
+# posted review rounds, which were 4. Six commits on the branch: one
+# implementation, then five driven by feedback. Two of those five predate the
+# PR and count under the schema's "reviewer notes during development" clause —
+# a parallel session's findings, and the /pr qualitative gate's own findings
+# against this PR's prose. Counted from `git log`, after the first value here
+# was written from memory and was wrong by one.
+review_rounds: 5
 phases:
   - id: orient
     name: Orient
