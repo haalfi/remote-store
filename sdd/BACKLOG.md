@@ -363,9 +363,10 @@ and the highest ID already in this file, then take the next integer. Run
 
 - [ ] **BK-348 — Adapt the review loop from PR #956's evidence**
   spec: — · effort: M · audience: contributor.process
-  Fourth in the series after [BK-342](BACKLOG-DONE.md) (PR #949) and
-  [BK-344](BACKLOG-DONE.md) (PR #952), and the first drawn from a delivery whose
-  own subject was review selection.
+  Third in the series after [BK-342](BACKLOG-DONE.md) (PR #949) and
+  [BK-344](BACKLOG-DONE.md) (PR #952) — the two members findable by that title
+  pattern — and the first drawn from a delivery whose own subject was review
+  selection.
   **This item records the evidence and withholds a prescription**, for the reason
   both predecessors gave and proved: direction narrows attention, so the design
   is chosen against the evidence, with the user, before anything is written. The
@@ -380,18 +381,23 @@ and the highest ID already in this file, then take the next integer. Run
   reading fixed.** Seven instances in one PR, across three unrelated fields. The
   count is the row count of this table, not a remembered total:
 
-  | # | Claim | Artifact | Caught by |
-  |---|---|---|---|
-  | 1 | `review_rounds: 1`, justified by a clause that says the opposite | trace | review round 2 |
-  | 2 | `review_rounds: 3`, with a confused composition | trace (pre-commit) | running `git log` |
-  | 3 | "#955 moved that field to 6" — it moved 4 → 5 | PR body | review round 4 |
-  | 4 | "both measurements derived from those traces" | ADR-0036 | review round 4 |
-  | 5 | "four deliveries carry per-round detail" (inherited, unchecked) | ADR-0036 | parsing the corpus |
-  | 6 | "#944 and #945 carry no per-round detail" | ADR-0036 | parsing the corpus |
-  | 7 | "nine defects" where the diff shows 15 | commit + trace | counting diff hunks |
+  | # | Claim | Artifact | Who caught it | By consulting |
+  |---|---|---|---|---|
+  | 1 | `review_rounds: 1`, justified by a clause that says the opposite | trace | review round 2 | the schema clause and the branch's commits |
+  | 2 | `review_rounds: 3`, with a confused composition | trace, pre-commit — never reached the repo, so this row is the one a reader cannot verify | author | `git log` |
+  | 3 | "#955 moved that field to 6" — it moved 4 → 5 | PR body | review round 2 | `git show 40c6d34` |
+  | 4 | "both measurements derived from those traces" | ADR-0036 | review round 4 | the ADR against the trace it cites |
+  | 5 | "four deliveries carry per-round detail" (inherited, unchecked) | ADR-0036 | author, finishing pass | parsing every trace's `review_rounds` and phases |
+  | 6 | "#944 and #945 carry no per-round detail" | ADR-0036 | author, finishing pass | the same parse |
+  | 7 | "nine defects" where the diff shows 15 | commit message + trace | author, closing discussion | counting the diff hunks of `1fe4749` |
 
-  **Not one was caught by re-reading the sentence**, including by rounds
-  explicitly hunting stale claims; every one died to a single command. Instances
+  **The invariant is the last column, not the fourth.** Rounds 2 and 4 were
+  reading rounds by the trace's own account, so the honest claim is not "a
+  command caught every one" — it is that **not one was caught by re-reading the
+  artifact the number sat in.** Every instance fell when someone opened the
+  source the figure was derived from: a schema clause, a commit, a corpus, a
+  diff. Re-reading the sentence never worked, including in rounds explicitly
+  hunting stale claims; consulting the source always did. Instances
   5 and 6 are the same paragraph corrected twice and wrong both times. Instance 7
   is inside the commit documenting the pattern, which is what rules out "be more
   careful" as the fix. **The shape that worked, twice, is derivation in the
@@ -409,12 +415,21 @@ and the highest ID already in this file, then take the next integer. Run
   appearing in a run that had been told about it five times. What they were:
   falsified frontmatter, an antecedent broken by an insert three paragraphs
   above, a premise true for one of a section's two callers, cross-file
-  cardinality mismatches. **A mechanism, not a disposition:** `/rvw-pr` Step 1
-  says read every changed file in full, but its posting rule requires `line` to
-  be a `+` line in the diff, so a defect in the file and not in the diff must be
-  anchored elsewhere and explained in prose — expensive to file, cheap to skip.
-  Diagnosis only; whether the answer is a whole-file pass, a change to the
-  anchoring rule, or neither is exactly the question this item does not answer.
+  cardinality mismatches.
+  **A mechanism, not a disposition — and the obvious one is wrong.** `/rvw-pr`
+  Step 4 *does* offer a file-level route: `subjectType: "FILE"`, at line 121. So
+  a defect that lives in the file and not in the diff is postable, and "the
+  anchoring rule forbids it" is not the diagnosis. What the skill actually does
+  is contradict itself: the Comment-rules block 56 lines later (line 177) says
+  only that `line` must be a `+` line and never mentions the `FILE` option
+  above it, so a reviewer working from that block — the block headed
+  *comment rules* — reasonably concludes a file-level finding is unpostable and
+  either anchors it awkwardly or drops it. The escape hatch exists and the rules
+  section hides it.
+  Diagnosis only. Whether the answer is a whole-file pass, making the `FILE`
+  route visible where reviewers look for it, or neither, is exactly the question
+  this item does not answer — and the distinction matters, because those are
+  different fixes and the first cut of this item pointed at the wrong one.
 
   **Signal 3 — a brief requirement asks a question the loop cannot answer.**
   `/ship` obliges every scoped brief to state "what previous rounds have not
@@ -424,8 +439,9 @@ and the highest ID already in this file, then take the next integer. Run
   query while writing the round-5 brief. That discovery is what redistributed
   round 5.
   **Corroboration, not a fourth signal.** Round 5 was briefed to *execute* and
-  aimed at that neglected surface: 4 findings, two of them on previously
-  untouched files, and the only measured refutation of the run — the
+  aimed at that neglected surface: 4 findings, **three of them on two previously
+  untouched files** (`CLAUDE.md` and `ship/SKILL.md`), and the only measured
+  refutation of the run — the
   `/orchestrate` tamper check's stated residual was two categories narrower than
   running it showed. That is [ADR-0035](adrs/0035-vary-method-not-model.md) and
   [ADR-0036](adrs/0036-reviewers-by-subject-and-method.md) paying out rather than
