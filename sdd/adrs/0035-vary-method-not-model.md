@@ -132,11 +132,15 @@ repeat-site check and the CI check are operational contract and live in
   that a sentence is a claim about existing behaviour, so it rests on the
   brief and on review, like the sibling-sweep obligation it sits beside. It
   needed the stop-rule clause because the panel obligation alone starts at
-  round 3: a one- or two-round delivery is solo throughout, and the stop rule
-  expressly permits ending on a clean round 1, so the absolute wording would
-  have been aspirational on exactly the short deliveries where nobody is
-  watching. Same structure, and the same reason, as ADR-0034's unprimed exit
-  gate.
+  round 3: a one- or two-round delivery is solo throughout, and at the time the
+  stop rule expressly permitted ending on a clean round 1, so the absolute
+  wording would have been aspirational on exactly the short deliveries where
+  nobody is watching. Same structure, and the same reason, as ADR-0034's
+  unprimed exit gate. (That permission is gone —
+  [ADR-0037](0037-whole-file-gate-and-derived-figures.md)'s whole-file gate has
+  no vacuous case, so no delivery closes on round 1 alone. The reasoning holds a
+  fortiori and this record's decisions are unchanged; only the premise's tense
+  is.)
 - **Negative:** subject enumeration is a new judgement at Step 1, made before
   the work exists to be judged, and an under-enumerated list understates panel
   width for the whole run.

@@ -27,6 +27,16 @@ framework](../CLAUDE.md#documentation-framework)): placement →
    Exact counts, latency figures, and percentages belong in generated artefacts
    (FEATURES.md, benchmark output, API reference). In prose: qualitative categories
    and a link. Write "significantly faster via caching" + link, not "+17% / 29×".
+   **This rule removes a figure from user-facing narrative; it does not govern
+   the figures that legitimately belong elsewhere.** A count in an ADR, a trace,
+   a backlog item, or a commit message is inside this file's stated scope
+   neither as prose to qualify nor as an artefact to link — it is measured
+   history, and what binds it is
+   [`CLAUDE.md` principle 9](../CLAUDE.md#principles): it names the derivation it
+   came from. Rule 3 asks *should this number be here at all*; principle 9 asks
+   *can a reader check it*. Applying Rule 3 to a trace would delete the record;
+   applying principle 9 to a benchmark percentage in a guide would keep a figure
+   this rule exists to remove.
 
 4. **One copy per fact.** [review-enforced]
    Every fact lives in exactly one authoritative place; everywhere else is a link

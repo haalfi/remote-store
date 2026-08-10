@@ -10,9 +10,12 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
 
 - [x] **BK-348 — Adapt the review loop from PR #956's evidence**
   spec: — · effort: M · audience: contributor.process
-  Fourth in the series after BK-342 (PR #949), BK-344 (PR #952) and BK-338
-  (PR #956) — all three in this file — and the first drawn from a delivery whose
-  own subject was review.
+  **Third** in the *Adapt … from PR #NNN's evidence* series — BK-342, BK-344,
+  BK-348, the three findable by that title pattern, as the item's own body
+  derived. Its evidence is PR #956, which BK-338 delivered; that item is not in
+  this series (its subject was the reviewer roster) and its record, ADR-0036,
+  is not in the four that carry round-by-round evidence. First of the series
+  drawn from a delivery whose own subject was review.
   The item recorded three signals and withheld a prescription; the design was
   chosen against them, with the user, before anything was written.
   **Shipped as [ADR-0037](adrs/0037-whole-file-gate-and-derived-figures.md)**,
@@ -31,10 +34,13 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   rules section concludes wrongly. The fix is therefore **two** things — the
   `FILE` route made visible where reviewers look, and a pass whose subject is
   the file rather than the diff. It lands as a *method* beside the measuring
-  member, not as a lens, which is what keeps it out of `/orchestrate`: that
-  skill shares the lens menu by link and has no exit gate for it to join.
-  **The gate has no vacuous case**, unlike the measuring gate, so the floor
-  under `/ship` is now two passes.
+  member rather than as a lens. What keeps the **gate** out of `/orchestrate` is
+  that it has no exit gate for one to join, not the method/lens distinction —
+  methods reach that skill by restatement, which is how its measuring reviewer
+  got there. Whether its capped rounds should adopt the *reading mode* is left
+  open, on its own evidence. **The gate has no vacuous case**, unlike the
+  measuring gate, so the floor under `/ship` is now two passes, and the stop
+  rule's lens-coverage floor stops doubling as a licence to stop.
   **Signal 1's cure is derivation in the artifact, and it has two bounds.**
   A number can show its working; a claim about an action ("I swept both sites")
   has only the check you did or did not run, so that half binds in `/fix-pr`,
@@ -357,8 +363,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   produced the only measured refutation of the run — the tamper check's stated
   residual was two categories narrower than what running it showed — plus
   findings on two of the eight untouched files. Method over identity, on the PR
-  arguing for it. **Produced two items**: [BK-347](BACKLOG.md), an ADR-only diff
-  routed away from the ADR drift gate locally and in CI; and BK-348 (closed
+  arguing for it. **Produced two items**: [BK-347](BACKLOG.md), a diff outside
+  CI's `CODE_PAT` routed away from the ADR drift gate locally and in CI (filed
+  as "ADR-only", widened by BK-348's own CI); and BK-348 (closed
   above), which carried this delivery's review evidence for the loop itself,
   filed after the item closed and shipped separately so this PR stayed at the
   state its rounds and CI certified.

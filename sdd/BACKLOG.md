@@ -387,7 +387,7 @@ and the highest ID already in this file, then take the next integer. Run
   question. Any row change lands in **both** presentations — `check_ripple_parity.py`
   enforces trigger-parity.
 
-- [ ] **BK-347 — An ADR-only diff is routed away from the ADR drift gate, locally and in CI**
+- [ ] **BK-347 — A diff outside `CODE_PAT` is routed away from the ADR drift gate, locally and in CI**
   spec: — · effort: S · audience: contributor.process, infra.ci
   `gen_adr_digest.py --check` gates `sdd/adrs/DIGEST.md` freshness **and**
   supersession-graph consistency. Exactly one composite gate runs it: `preflight`,
@@ -402,6 +402,14 @@ and the highest ID already in this file, then take the next integer. Run
   `uvx hatch run preflight`) is gated on `code == 'true'`, and on an ADR-only
   head it reports `skipped`. **Measured on PR #956 head `dc10a23`**: `gate`,
   `docs` and `setup` ran; `lint` skipped.
+  **The class is wider than "ADR-only", measured on a second PR.** PR #958 head
+  `26cf75b` adds an ADR *and* touches `.claude/skills/`, `CLAUDE.md` and
+  `sdd/traces/` — not an ADR-only diff by any reading — and
+  `gh api repos/haalfi/remote-store/commits/26cf75b/check-runs` still reports
+  `lint` skipped, with every test lane skipped alongside it. The trigger is not
+  how narrow the diff is; it is that **no path in it matches `CODE_PAT`**, which
+  is true of most process deliveries. The title and the fix shape below both
+  read as narrower than the evidence supports — widen before scoping.
   **Consequence:** a hand-edited or stale `DIGEST.md` ships on the author's care
   alone, and the `STALE:` failure lands on the *next* PR that happens to touch
   code — the wrong PR to pay for it, and one whose author did not cause it.

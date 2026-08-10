@@ -342,15 +342,24 @@ gates are not substitutes.
    it is subtracted from.
 
    ```bash
-   gh api "repos/haalfi/remote-store/pulls/<N>/comments?per_page=100&page=1" --jq 'group_by(.path)[] | [(.[0].path), length] | @tsv'
+   gh api "repos/haalfi/remote-store/pulls/<N>/comments?per_page=100&page=1" --jq '.[].path'
    ```
    ```bash
    gh api "repos/haalfi/remote-store/pulls/<N>/files?per_page=100" --jq '.[].filename'
    ```
 
-   Page both per the discipline [`/rvw-pr`](../rvw-pr/SKILL.md) Step 4 pins for
-   its own count — a page returning exactly `per_page` means there is more —
-   and put the *named untouched files* in the brief, not the adjective
+   **One path per comment, deliberately un-grouped**, so the output length *is*
+   the page length and [`/rvw-pr`](../rvw-pr/SKILL.md) Step 4's paging
+   discipline applies unchanged — a page returning exactly `per_page` rows means
+   there is another. Group only after every page is in hand: a file with
+   comments on two pages is one entry, and the untouched set is the changed-file
+   list minus the **union** of paths, never minus page 1's. Grouping per page
+   and concatenating silently under-reports the concentration and over-reports
+   the untouched set — the same failure `/rvw-pr` Step 4 pins its own
+   instrument against, arriving exactly when the loop has run long enough for
+   the distribution to be worth measuring.
+
+   Put the *named untouched files* in the brief, not the adjective
    "neglected". This costs two calls and the alternative is an impression: on
    PR #956 the loop ran four rounds with 16 of 25 comments on one file and 8 of
    12 files carrying none, and nobody knew until an ad-hoc query while a brief
@@ -453,12 +462,17 @@ passes — one whole-file, plus one measuring if the diff asserts anything about
 existing behaviour — never on round 1.
 
 - **Floor: lens coverage, not a round count.** Every lens the diff *warrants*
-  must have been applied. A one-surface change may warrant only the broad round,
-  and then a clean round 1 ends the loop; stopping there is correct. A diff that
+  must have been applied. A one-surface change may warrant only the broad round.
+  A diff that
   adds code the gate never executes, spreads a claim across artifacts that can
   disagree, or changes a published surface warrants those lenses, and round 1 by
   construction did not apply them: a clean sweep is silent about questions
   nobody asked.
+  **This bullet is a floor on what has been *looked at*, never a licence to
+  stop** — that is the stop rule's five clauses, and they bind independently.
+  Until the whole-file gate this bullet could say "a clean round 1 ends the
+  loop", and that gate has no vacuous case, so it cannot: the narrowest possible
+  delivery still closes on an appended pass.
 - **Ceiling: 5 finding-rounds, and it is soft.** On reaching it, escalate to the
   user **with the evidence, not the count**: findings per round with their
   character, the severity trend across rounds, what the last round found, and
@@ -485,22 +499,31 @@ worthless and the clean unvalidated. The remedy is member-scoped — re-spawn
 the mis-aimed member, keep the valid passes; a solo round is re-run whole. Do
 not count an unvalidated clean.
 
-The delivery this rule was derived from is tabulated in
-[ADR-0033](../../../sdd/adrs/0033-ship-convergence-driven-review.md), round by
-round; the second delivery — the one that added the panel structure and
-the unprimed exit gate — in
-[ADR-0034](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md); and
-the third — which dropped the model axis and added the measuring member — in
-[ADR-0035](../../../sdd/adrs/0035-vary-method-not-model.md); and the fourth —
-which added the whole-file gate after a converged, CI-green loop left defects
-in seven of the eight files a single whole-file read then had to touch — in
-[ADR-0037](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md).
+**Four records carry the round-by-round evidence** — one per delivery whose
+review was itself measured, which is the set, and the ordinals below are
+positions in it rather than in any other series:
+[ADR-0033](../../../sdd/adrs/0033-ship-convergence-driven-review.md) tabulates
+the first (PR #945) round by round;
+[ADR-0034](../../../sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md) the
+second (PR #949), which added the panel structure and the unprimed exit gate;
+[ADR-0035](../../../sdd/adrs/0035-vary-method-not-model.md) the third (PR #952),
+which dropped the model axis and added the measuring member; and
+[ADR-0037](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md) the
+fourth (PR #956), which added the whole-file gate after a converged, CI-green
+loop left defects in seven of the eight files a single whole-file read then had
+to touch.
 Read all four before tuning any of the above: they are the evidence that finding
 counts plateau while severity keeps falling, that consecutive rounds each
 found defects in the previous round's fixes, that scoped rounds leave
 unnamed surface unexamined, that what separated the productive rounds was
 method rather than reviewer identity, and that a clean round is silent about
 everything outside the hunks it read.
+
+**Reviewer *selection* is not in that set** —
+[ADR-0036](../../../sdd/adrs/0036-reviewers-by-subject-and-method.md) decides
+it, from a classification of findings across two traces rather than from one
+delivery's rounds, and it is the record behind the lens-and-method rule and the
+fixer role above. Tuning either sends you there, not to the four.
 
 **Repeat-site check:** if two consecutive rounds refute **the same condition** —
 a gate, a predicate, a carve-out, a scope criterion — stop arguing the condition

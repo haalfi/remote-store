@@ -14,17 +14,29 @@ review loop on convergence* clause, which a further stop clause joins, and
 [ADR-0034](0034-ship-panel-rounds-and-unprimed-exit.md)'s *the loop cannot end
 until an unprimed reviewer has seen the final state* clause, whose exit-gate
 shape this record instantiates a third time. Neither clause loses anything.
-[ADR-0035](0035-vary-method-not-model.md) and
-[ADR-0036](0036-reviewers-by-subject-and-method.md) are untouched, and
-[ADR-0020](0020-orchestrate-iterative-convergence.md) with them: nothing here
-changes how a reviewer is selected, only what the loop may close on and how an
-artifact states a figure.
+[ADR-0036](0036-reviewers-by-subject-and-method.md) and
+[ADR-0020](0020-orchestrate-iterative-convergence.md) are untouched: nothing
+here changes how a reviewer is selected, only what the loop may close on and how
+an artifact states a figure.
+**[ADR-0035](0035-vary-method-not-model.md)'s decisions are untouched, but one
+sentence of its Consequences is not**: it argued from the stop rule "expressly
+permit[ting] ending on a clean round 1", and the gate below removes that
+permission. Qualified in place rather than amended — the reasoning it supports
+holds a fortiori — and named here because a reader checking this claim against
+that record would otherwise find the two disagreeing.
 
 ## Context
 
-BK-348, from PR #956 — the fourth delivery to adapt `/ship` from its own review
-evidence, and the first drawn from one whose subject was review itself. Two of
-its signals are structural rather than incidental.
+BK-348, from PR #956. Two sequences meet here and they have different lengths,
+so both are stated with their membership rather than as bare ordinals. PR #956
+is the **fourth** delivery whose review evidence produced a record —
+[ADR-0033](0033-ship-convergence-driven-review.md) (PR #945),
+[ADR-0034](0034-ship-panel-rounds-and-unprimed-exit.md) (PR #949),
+[ADR-0035](0035-vary-method-not-model.md) (PR #952), this one. BK-348 is the
+**third** item in the *Adapt … from PR #NNN's evidence* series — BK-342, BK-344,
+BK-348, the three findable by that title pattern. It is the first of either
+drawn from a delivery whose own subject was review. Two of its signals are
+structural rather than incidental.
 
 **The loop converged and the files were still wrong.** Five posted rounds, a
 clean final round, green CI — then an author-initiated pass that read each
@@ -127,7 +139,13 @@ total.
 - **Negative:** the evidence is one delivery, as ADR-0034's was two. Both
   decisions follow from measured failures rather than from a schedule, which is
   why each carries its own reversal condition.
-- **Neutral:** `/orchestrate` is unaffected. It shares `/ship`'s lens menu by
-  link, and this record adds a *method* and a gate rather than a lens, so
-  nothing crosses that link; its rounds are capped by ADR-0020 and it has no
-  exit gate for this one to join.
+- **Neutral:** the *gate* does not reach `/orchestrate`, which has no exit gate
+  for it to join — its rounds are capped by ADR-0020, and nothing there is
+  waiting on a clean state to close. The *reading mode* is a different question
+  and is left open rather than answered: methods reach that skill by
+  restatement, not by the shared lens-menu link, which is how the measuring
+  reviewer got there, so "it is a method, not a lens" would not have excluded
+  it. Its reviewers read a diff-shaped surface too, and the same evidence would
+  apply. Not adopted here because this record's evidence is one `/ship`
+  delivery; adopt it there on that skill's own evidence, as ADR-0036 did for
+  selection.

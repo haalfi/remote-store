@@ -1,9 +1,11 @@
 id: BK-348
 title: "Adapt the review loop from PR #956's evidence"
 trigger: >-
-  Fourth in the series after BK-342 (PR #949), BK-344 (PR #952) and BK-338
-  (PR #956), and the first drawn from a delivery whose own subject was review
-  selection. That run converged - five posted rounds, a clean last round, green
+  Third in the "Adapt ... from PR #NNN's evidence" series - BK-342, BK-344,
+  BK-348, the three findable by that title pattern - and the first drawn from a
+  delivery whose own subject was review selection. Its evidence is PR #956,
+  BK-338's delivery, which is not itself in this series. That run converged -
+  five posted rounds, a clean last round, green
   CI - and an author pass reading each changed file whole then found defects in
   seven of the eight files it touched. The item recorded three signals and
   withheld a prescription, so the design was chosen against the evidence, with
@@ -16,6 +18,7 @@ audience:
 expected_ripples:
   - sdd/adrs/DIGEST.md
   - sdd/backlogid.json
+  - sdd/CONTENT-RULES.md
 # The ripple-check's "Authority direction amended" row anticipated CLAUDE.md and
 # the persona CONSTRAINTS blocks; it did not anticipate that a new *exit gate*
 # obliges editing the two ADRs whose clauses it joins, the skill that spawns the
@@ -28,11 +31,15 @@ surprising_ripples:
   - .claude/skills/fix-pr/SKILL.md
   - sdd/traces/bk-338-review-roster.yml
   - sdd/traces/_schema.yml
-# Counted from `git log --oneline origin/master..HEAD` on this branch, per the
-# schema clause this PR adds to that field: commits that exist because feedback
-# was incorporated. Filled at close; see the review phase for which commit
-# answers which round.
-review_rounds: 0
+  - sdd/adrs/0035-vary-method-not-model.md
+# Commits on this branch that exist because feedback was incorporated, named
+# rather than totalled, per the schema clause this PR adds to that field.
+# Enumerated from `git log --oneline origin/master..HEAD`: 26cf75b is the
+# implementation and does not count. Feedback-driven so far: PR #958 round 1.
+# The `review` phase below carries one step per round; this value is the count
+# of commits named there, not the count of rounds - they can diverge if a round
+# is refuted whole.
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -45,10 +52,17 @@ phases:
           trace before designing anything. Signal 1: eight claims asserted from
           memory, and the invariant is the last column of its table, not the
           fourth - not one was caught by re-reading the artifact, every one fell
-          when someone opened the source. Signal 2: 15 defects lived in the files
+          when someone opened the source. Signal 2: defects lived in the files
           and fell to one whole-file read. Signal 3: brief requirement 3 asks a
           question the loop has no instrument for.
-        outcome: ok
+          Tagged `misleading` for signal 2's figure, not for the diagnosis: the
+          item states "15 defects" and cites a derivation that does not
+          reproduce when run (see the measure phase). The diagnosis this item
+          exists for is sound and is what the delivery was designed against; the
+          number it carries is the class of claim the delivery ships a rule
+          about. My own miss is that I restated the 15 in the first cut of the
+          ADR, the skill and the backlog entry before checking it.
+        outcome: misleading
       - file: sdd/traces/bk-338-review-roster.yml
         section: "(full)"
         read_type: gate
@@ -58,7 +72,14 @@ phases:
           not carry: the finishing pass's defects are enumerated per file in the
           commit message, and the trace's own stated derivation for the count is
           checkable - which is what made re-running it the first thing to do.
-        outcome: ok
+          Tagged `misleading` because that is exactly what running it found: the
+          recorded derivation ("counted from the diff hunks of 1fe4749, six in
+          orchestrate") returns four hunks in that file, so this artifact told a
+          reader something that proved wrong. Corrected in the same PR. The tag
+          belongs on this file rather than nowhere - a trace reporting `ok` here
+          would tell `report-trace-outcomes` that the delivery's own headline
+          evidence never happened.
+        outcome: misleading
       - file: .claude/skills/rvw-pr/SKILL.md
         section: "Step 1; Step 4 (Comment rules)"
         read_type: gate
@@ -170,9 +191,13 @@ phases:
         section: "When not to use this; Round composition; The whole-file member; brief requirements; Stop rule; Rules; Step 5"
         read_type: verify
         extract: >-
-          The gate lands as a *method* beside the measuring member, not as a
-          lens - which is what keeps it out of /orchestrate, since that skill
-          shares the lens menu by link and has no exit gate to join. Sibling
+          The gate lands as a *method* beside the measuring member rather than
+          as a lens. The first draft justified /orchestrate's exclusion by that
+          distinction - "a method does not cross the shared lens-menu link" -
+          and round 1 refuted it: /orchestrate carries the measuring method
+          already, written out locally, so methods reach it by restatement. What
+          actually excludes the gate is that it has no exit gate to join; the
+          reading mode is left open on that skill's own evidence. Sibling
           sweep of adding it: the cost paragraph said "two exit gates ... up to
           two further reviewer passes", the closing-gate row said "both exit
           gates", the stop rule said "all four" clauses and the ADR-reading list
@@ -211,4 +236,65 @@ phases:
           found nothing reads exactly like one that never ran - and because the
           first version of this sentence is the class of claim this PR ships a
           rule about, caught by running the check the rule requires.
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules (Rule 3)"
+        read_type: verify
+        extract: >-
+          The third target of the same ripple row - sibling sdd/ authority docs -
+          which the first cut of this phase did not sweep at all, caught by PR
+          #958 round 1. Rule 3 forbids exact counts in narrative and is
+          [review-enforced] over "all content", so a contributor landing there
+          now meets an instruction that looks like principle 9's opposite. The
+          boundary was stated only inside ADR-0037, which is not where a reader
+          of Rule 3 goes. Fixed by a pointer from Rule 3 rather than a copy of
+          the principle, per principle 4. Also checked AUTHORING.md and
+          DOCUMENTATION.md, the other two members of the documentation trio:
+          neither states a rule about figures or counts, so neither was edited.
+        outcome: ok
+  - id: review
+    name: Review (PR #958)
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Stop rule (Floor bullet); ADR-reading list; brief requirement 3"
+        read_type: verify
+        extract: >-
+          Round 1, unprimed and solo, 7 findings, all must-fix, answered by one
+          commit. The two that would have been wrong once merged were both the
+          shape this PR exists to intercept, in the paragraphs describing it.
+          (1) Adding a stop clause falsified the Floor bullet four lines below
+          it, which still said "a clean round 1 ends the loop; stopping there is
+          correct" - and the same permission is asserted in ADR-0035's
+          Consequences, a record ADR-0037 declared untouched. The bullet is where
+          an operator asks "may I stop here?", so the contradiction sat in the
+          more consulted of the two. Now the bullet is explicitly a floor on what
+          has been looked at and never a licence to stop, and ADR-0035's premise
+          moves to past tense with its reasoning noted as holding a fortiori.
+          (2) The brief-requirement recipe imported /rvw-pr's paging discipline
+          onto output that cannot carry it: `group_by(.path)` prints per-path
+          counts, never the page length the "exactly per_page means more" test
+          needs, and grouping per page then concatenating splits a file across
+          two rows. Both under-report the concentration exactly when the loop has
+          run long enough for it to matter. Changed to emit one bare path per
+          comment, so the output length is the page length, with the union stated.
+        outcome: ok
+      - file: sdd/adrs/0037-whole-file-gate-and-derived-figures.md
+        section: "Context (ordinals); Consequences (/orchestrate)"
+        read_type: verify
+        extract: >-
+          The other four round-1 findings, and two are miscounts of the kind this
+          PR ships a rule about - written while writing the rule. "Fourth in the
+          series after BK-342, BK-344 and BK-338" is wrong twice over: the item's
+          own body derives **third**, and names its derivation (the two other
+          members findable by that title pattern), and BK-338 is not in the
+          series at all. A second sequence - deliveries whose review evidence
+          produced a record - genuinely does put this fourth, and conflating the
+          two is what produced the error. Both now state their membership rather
+          than an ordinal. Separately the /orchestrate exclusion was argued from
+          "a method does not cross the shared lens-menu link", which is false:
+          that skill carries the measuring method already, written out locally,
+          so methods reach it by restatement. The conclusion survives on the
+          other half (no exit gate to join) and the reading mode is now left
+          open rather than silently excluded. Class-swept to the two copies in
+          BACKLOG-DONE and this trace.
         outcome: ok
