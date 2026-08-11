@@ -181,9 +181,16 @@ if evidence changes; these are retired.
   a **Reader lens** in `/ship`'s lens menu, which
   [`/orchestrate`](../.claude/skills/orchestrate/SKILL.md) takes by the shared
   link, and a **reader test** in the `documentation-expert` persona for any page
-  it creates or substantially rewrites. Both work the same way: predict 5-10
-  questions from what the page *promises*, run them, and treat an unanswerable
-  question as a finding about the page.
+  it creates or substantially rewrites: predict 5-10 questions from what the page
+  *promises*, run them, and treat an unanswerable question as a finding about the
+  page.
+  **The method has one home, and the first cut did not.** Both hosts stated it,
+  which is [`DRIFT-RULES.md`](DRIFT-RULES.md#one-driver)'s second-description
+  trigger — caught by this branch's own `/pr` qualitative-review gate rather than
+  by a reviewer. The persona block is now normative and says so; the lens states
+  only its scope and bound and cites the block for the steps. Leaving it would
+  have reproduced the `tmp/base` duplication **BK-351** had just recorded as the
+  one genuine defect in the three large skills, one item later.
   **The lens is distinct from the Consumer lens beside it, on method rather than
   subject.** Consumer judges docs from outside; Reader runs the questions and
   reports what came back. That is the axis

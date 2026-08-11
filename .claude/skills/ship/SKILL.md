@@ -263,15 +263,20 @@ missed:
   gate proves the *covered* code works; it never says what is covered.
 - **Consumer.** Docs, guides, and API read from outside.
 - **Reader.** Can someone who was not in this conversation answer the questions
-  the changed documentation exists to answer? Its brief names 5 to 10 questions a
-  reader arrives with — taken from what the page promises, never from what it
-  happens to cover — and the member's verdict is which ones it could not answer
-  from the changed files alone. **The verdict is the reader's failure, not the
-  reviewer's opinion**, and that is what separates this from the Consumer lens
-  above: that one judges docs from outside, this one runs the questions and
-  reports what came back. The defect it reaches is a page that is accurate,
-  correctly placed and CONTENT-RULES-clean and still leaves a reader unable to
-  act, which no lens judging correctness can see.
+  the changed documentation exists to answer? **The method — how the questions
+  are chosen, run and scored — is not stated here.** Its one normative home is
+  the `READER TEST` block in
+  [`.claude/agents/documentation-expert.md`](../../agents/documentation-expert.md),
+  and a brief written for this lens cites that block rather than paraphrasing it,
+  because a paraphrase is a second description that drifts
+  ([`DRIFT-RULES.md` Rules 1 and 4](../../../sdd/DRIFT-RULES.md#one-driver)).
+  What belongs here is only what is true of this lens and not of that block.
+  **The member's verdict is the reader's failure, not the reviewer's opinion**,
+  and that is what separates this from the Consumer lens above: that one judges
+  docs from outside, this one runs the questions and reports what came back. The
+  defect it reaches is a page that is accurate, correctly placed and
+  CONTENT-RULES-clean and still leaves a reader unable to act, which no lens
+  judging correctness can see.
   **Its bound, stated rather than implied:** the member has read the change
   under review, so it is a weaker instrument than a reader who has not — under
   this skill that means the diff and the PR body `rvw-pr` Step 1 requires, and

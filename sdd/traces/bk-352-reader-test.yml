@@ -158,6 +158,37 @@ phases:
           advisory lens adds neither, so both are untouched and correct as they
           stand.
         outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Intent & Scope; Rules 1 and 4"
+        read_type: gate
+        extract: >-
+          Reached from the `/pr` validation gates' qualitative-review step, which
+          routes any new or changed cross-artifact mechanism here. **It caught a
+          real defect in my own first cut.** The scope line fires on a change that
+          "adds a second description of something already described", and the lens
+          and the persona block both stated the reader-test method - so the two
+          could drift with no authority declared, which Rule 4 requires in writing
+          before the mechanism exists. Fixed by making the persona block normative
+          and saying so there, and reducing the lens to its scope and bound with a
+          citation for the steps. Worth recording that no reviewer found this: the
+          gate did, on a branch whose two items are both about instruments that
+          catch what reviewers miss. Declining it would have reproduced the
+          `tmp/base` duplication BK-351 flagged one item earlier.
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 3 and 4"
+        read_type: verify
+        extract: >-
+          The other half of the qualitative gate. Rule 3 forbids exact counts in
+          narrative and **carves out** `sdd/` records, backlog items, commit
+          messages and `.claude/skills/`, which is where every figure this branch
+          adds lives; each names its derivation per principle 9, so the carve-out
+          is satisfied rather than merely invoked. Checked the one file outside
+          that list, `.claude/agents/documentation-expert.md`: it carries an
+          instruction range (5-10 questions), not a measured figure, so no count
+          crosses the boundary. Rule 4 is what the DRIFT-RULES finding above also
+          answers, from the documentation side.
+        outcome: ok
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check table / Pre-work index"
         read_type: verify

@@ -32,6 +32,13 @@ CONSTRAINTS:
 
 READER TEST — for any page you create or substantially rewrite:
 
+This block is the **normative home for the reader-test method**. `/ship`'s Reader
+lens is the other host and deliberately states none of the method, citing this
+block instead, so there is one description to keep true rather than two that
+drift ([`sdd/DRIFT-RULES.md` Rules 1 and 4](../../sdd/DRIFT-RULES.md#one-driver)).
+Change the method here; anything that also needs changing there is a scope or
+bound, never a step.
+
 Your IDENTITY question ("can a citizen developer figure this out from the docs
 alone?") is answerable by experiment rather than by judgement, and the two give
 different answers. A page can be accurate, correctly placed and
