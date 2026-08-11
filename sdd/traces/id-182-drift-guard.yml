@@ -240,10 +240,12 @@ review_rounds: 6
 
 # Operational firing (2026-08-10, run 31371305547 -> rolling issue #943).
 # Seven extras drifted, all seven smokes green, all seven refreshed — including
-# the cryptography 49->50 major across azure/graph/sftp, signed off on the
-# strength of those smokes. ID-231 has since landed, so "green smoke proves the
-# committed pins were the ones tested" now holds on the candidate-artifact path.
-# Both findings are about that qualifier — the path itself:
+# the cryptography 49->50 major across azure/graph/sftp, the first major accepted
+# on sign-off rather than held. ID-231 has since landed, so "green smoke proves
+# the committed pins were the ones tested" now holds on the candidate-artifact
+# path. Every finding here is about that qualifier: which path produced the lock
+# (#30, #31) and what a green verdict on one extra actually covers (#32). None
+# is about the pins, which were verified correct against the run snapshot.
 #  30. The candidate-artifact route (the fix for #27, documented for #28) is
 #      unreachable from a sandboxed agent session. `gh run download` fetches
 #      from productionresultssa8.blob.core.windows.net, which the session's
@@ -256,26 +258,57 @@ review_rounds: 6
 #      so the default 3.11 would have written `# python: 3.11` into every lock
 #      while resolving a 3.11 dependency set. Verified no packages were added
 #      or removed in any lock, which is what confirms the platform matched.
+#      Resolved in review: the artifact is not the only way to obtain the run's
+#      resolution. The candidate freeze IS the committed baseline with the issue
+#      body's rows applied — the report enumerates every differing package, so a
+#      package absent from its tables is unchanged. Reconstructing it offline is
+#      byte-identical to the download and needs only api.github.com. Both
+#      procedure sites now document that route (README § Refreshing and the
+#      /drift skill), which is #28's lesson applied rather than re-learned: a
+#      caveat recorded only in the trace that hit it is not recorded where the
+#      procedure is read.
 #  31. The local-resolve `--pre` gap README § Refreshing warns about is real,
-#      not theoretical. Re-resolving at commit time moved four packages past the
-#      smoked snapshot: platformdirs 4.11.1->4.11.2 (dagster, graph),
-#      typing-inspection 0.4.2->0.4.3 (dagster, pydantic) and pyarrow
-#      25.0.0->25.0.1 (s3-pyarrow) — the latter two never appeared in the issue
-#      body at all, so nothing in the drift report would have flagged them.
-#      Per README they do not self-heal: once committed they become the
-#      baseline, the next run reports `ok`, and the smoke skips them forever.
-#      Rather than only noting them, the workflow's smoke step was reproduced
-#      locally against the COMMITTED locks (same `-c <lock>` pinning, same
-#      drift_smoke_map targets): [pydantic] 11 passed, [dagster] 61 passed /
-#      12 skipped, [graph] import smoke passed. [s3-pyarrow]'s smoke is
-#      minio-backed conformance and no docker daemon was available, so pyarrow
-#      25.0.1 was exercised against tests/ext/test_arrow.py + test_parquet.py
-#      (165 passed) instead — the pyarrow API surface, not the S3-over-pyarrow
-#      path. That one delta ships with weaker evidence than the other three.
+#      not theoretical. Re-resolving at commit time landed 3 packages above what
+#      the run smoked, across 4 extras and 5 (extra, package) pairs:
+#      platformdirs 4.11.1->4.11.2 (dagster, graph), typing-inspection
+#      0.4.2->0.4.3 (dagster, pydantic), pyarrow 25.0.0->25.0.1 (s3-pyarrow).
+#      The latter two never appeared in the issue body at all, so nothing in the
+#      drift report would have flagged them. Per README they do not self-heal:
+#      once committed they become the baseline, the next run reports `ok`, and
+#      the smoke skips them forever.
+#      First response was to disclose them and reproduce the smokes locally.
+#      Review showed disclosure is the wrong instrument: the unqualified claim
+#      still ships to the generated tested-versions.md, whose preamble tells
+#      readers "Tested up to" is "what CI was last green against", and by the
+#      non-self-healing property it stays there. All 5 pairs were pinned back to
+#      the run's snapshot, making every committed lock byte-identical to the
+#      smoked freeze; the next run flags those 3 packages and smokes them on
+#      evidence. README and the skill now prescribe pinning back rather than
+#      disclosing. Cost: one weekly cycle. What disclosure bought: nothing the
+#      docs page reflected.
+#  32. `check-graph` going green licences none of [graph]'s drifted packages.
+#      drift_smoke_map routes graph to an import-only smoke of
+#      remote_store.aio.backends._graph.http, whose only third-party import is
+#      httpx; auth.py imports msal / msal-extensions / platformdirs lazily
+#      inside methods. Probed rather than reasoned: importing that module loads
+#      httpx and none of cffi, cryptography, platformdirs, msal,
+#      msal_extensions. So the smoke reaches 1 of the extra's 4 declared deps
+#      and 0 of the 3 that drifted — and the local reproduction reported as
+#      "[graph] import smoke passed" was the same target, so it proved the same
+#      nothing. The cryptography 49->50 major was still genuinely smoked, but by
+#      [azure] (azurite conformance) and [sftp] (conformance + legacy-sftp e2e)
+#      on identical pins, and platformdirs by the [dagster] run — cross-extra
+#      luck, not the per-extra gate the skill calls non-negotiable. A green
+#      verdict on an extra whose smoke cannot load the drifted package is a
+#      verdict about nothing; same family as #26 and ID-231, where the smoke's
+#      reach did not match what the smoke was trusted to prove. Filed as BUG-250
+#      rather than fixed here — widening the smoke is not a baseline refresh, and
+#      the import-only shape it must preserve was itself deliberate (BUG-225).
 
 discovery_followups:
   - BUG-232  # [s3-pyarrow] / [bench] float past the pyarrow<25 ceiling
   - ID-231   # drift smoke validates a mixed version set, not the candidate baseline
+  - BUG-250  # [graph] smoke loads 1 of 4 declared deps, 0 of the 3 that drifted
 
 surprising_ripples:
   - scripts/check_infra_settings.py

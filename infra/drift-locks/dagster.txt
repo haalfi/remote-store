@@ -27,7 +27,7 @@ markupsafe==3.0.3
 mdurl==0.1.2
 packaging==26.3
 pathlib-abc==0.5.2
-platformdirs==4.11.2
+platformdirs==4.11.1
 protobuf==6.33.6
 pydantic==2.14.0b1
 pydantic-core==2.48.0
@@ -46,7 +46,7 @@ tomlkit==0.15.1
 toposort==1.10
 tqdm==4.70.0
 typing-extensions==4.16.0
-typing-inspection==0.4.3
+typing-inspection==0.4.2
 tzdata==2026.3
 universal-pathlib==0.3.10
 urllib3==2.7.0

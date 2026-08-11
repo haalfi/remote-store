@@ -79,10 +79,13 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   Actions run, not the issue body.
 - **How to act:** run the **`/drift` skill**. It reads the rolling issue, then
   for each drifted extra reads that extra's smoke-job conclusion in the linked
-  run — the load-bearing signal — and refreshes only the baselines whose smoke is
-  green and whose bump is non-major. A red smoke is never refreshed until its
-  cause (real regression vs smoke-harness gap) is explained. The skill prepares a
-  pushed branch and stops; the maintainer opens the PR.
+  run — the load-bearing signal — and never refreshes a baseline whose smoke is
+  red until its cause (real regression vs smoke-harness gap) is explained. Green
+  smoke plus a non-major bump is the skill's default recommendation, not its
+  boundary: a **major** bump is gated on explicit maintainer sign-off rather than
+  forbidden, so a major can be accepted on the strength of a green smoke. The
+  skill's own steps are authoritative on that gating. The skill prepares a pushed
+  branch and stops; the maintainer opens the PR.
 
 ### `mutation.yml` — mutation testing
 

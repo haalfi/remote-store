@@ -402,8 +402,14 @@ hatch run drift-check render-docs                  # regenerate the docs page
 ```
 
 Then commit `infra/drift-locks/<extra>.txt` and
-`docs-src/reference/tested-versions.md`. Run on Python 3.13 (matching the
-workflow's runner) so the lock is comparable.
+`docs-src/reference/tested-versions.md`. Run on **Linux with Python 3.13** —
+a lock is OS-specific as well as Python-specific, and resolving elsewhere pulls
+platform-conditional dependencies the workflow never sees, so the next run
+reports them as drift and the rolling issue never clears. On any other host,
+take the resolution from the drift-guard run instead of resolving locally:
+[`infra/drift-locks/README.md` § Refreshing](infra/drift-locks/README.md#refreshing)
+is authoritative on that route and on what to do when the artifact download is
+blocked.
 
 `hatch run drift-check refresh-baseline all` refreshes every extra at once.
 

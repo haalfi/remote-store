@@ -39,7 +39,7 @@ _Captured 2026-08-10 on Python 3.13._
 | `httpx` | `0.28.1` |
 | `msal` | `1.38.0rc2` |
 | `msal-extensions` | `1.3.1` |
-| `platformdirs` | `4.11.2` |
+| `platformdirs` | `4.11.1` |
 
 ## `[httpx]`
 
@@ -88,7 +88,7 @@ _Captured 2026-08-10 on Python 3.13._
 
 | Package | Tested up to |
 |---|---|
-| `pyarrow` | `25.0.1` |
+| `pyarrow` | `25.0.0` |
 | `s3fs` | `2026.7.0` |
 
 ## `[sftp]`

@@ -95,27 +95,65 @@ falling back to `gh` for GraphQL-only flows. Repo: `haalfi/remote-store`.
      blank line) followed by the artifact's freeze **sorted by package name**
      (the part before `==`, so `dagster` precedes `dagster-pipes`) — matching
      `scripts/drift_check.py::write_lock` exactly.
+
+     **This download fails from a sandboxed agent session.** Artifacts come from
+     a storage host separate from `api.github.com`, so an egress policy scoped to
+     the GitHub API denies it: `gh run download` gets a 403 on CONNECT while
+     every other `gh` call works. That is a policy denial, not a transient error
+     — do not retry it or route around it. Use the reconstruction below.
+   - **Artifacts unreachable — reconstruct the same freeze from the issue.** The
+     candidate freeze is exactly *the committed baseline with the issue body's
+     rows applied*: the report enumerates every package whose version differs,
+     so a package absent from those tables is unchanged from the baseline. Apply
+     both the **stable** and the **pre-release** tables (they describe one
+     resolution, split only for presentation), keep every other line as-is, and
+     the result is byte-identical to the artifact — same guarantee, no download.
+     Verify by re-deriving it: the lock must differ from the baseline in exactly
+     the issue's rows, with nothing added or removed.
    - **On Linux 3.13 (matches the runner) — local resolve is fine.** Assert
      `python --version` is 3.13, then per approved extra:
-     `hatch run drift-check refresh-baseline <extra>`.
+     `hatch run drift-check refresh-baseline <extra>`. Note `python`, not the
+     hatch env: `write_lock` stamps `# python:` from the *running* interpreter,
+     so driving the script with 3.11 writes `# python: 3.11` into every lock
+     while resolving a 3.11 dependency set. Prefer the reconstruction above when
+     the run's resolution is what you want — a local resolve re-resolves with
+     `--pre` at commit time and can drift past it (see step 8).
 
    Either way, once the locks are written run `hatch run drift-check render-docs`.
 
 8. **Verify the diff.** `git diff infra/drift-locks docs-src/reference/tested-versions.md`:
    - only the approved extras' locks changed;
-   - the package deltas match the issue's rows. The candidate-artifact path
-     matches the snapshot exactly (same run); a later local `refresh-baseline`
-     re-resolves with `--pre` and may show *newer* stable/pre-release than the
-     snapshot — expect the latest at refresh time, not the frozen versions;
+   - the package deltas match the issue's rows. The candidate-artifact and
+     reconstruction paths match the snapshot exactly; a local `refresh-baseline`
+     re-resolves with `--pre` at commit time and can land *newer* versions than
+     the run smoked — including packages absent from the issue body entirely, so
+     nothing in the drift report flags them. **Enumerate that difference rather
+     than accepting it:** any package whose committed pin exceeds the snapshot is
+     one no smoke has ever exercised, and per `infra/drift-locks/README.md` it
+     does not self-heal — once committed it becomes the baseline, the next run
+     reports `ok`, and it is skipped from then on. It also falsifies the
+     generated docs page, which tells readers "Tested up to" is "what CI was last
+     green against". Default to pinning those packages back to the snapshot and
+     letting the next run smoke them; keep a higher pin only with evidence for
+     it, and say in the PR which smoke produced that evidence;
    - each refreshed lock's `# captured:` advanced.
    Then `hatch run drift-check render-docs --check` (also a `preflight` gate) to
    confirm the docs page is in sync.
 
 9. **CHANGELOG / trace.** A pure baseline + tested-versions refresh is
-   infra-and-generated-docs only: no CHANGELOG entry, and a routine refresh
-   neither implements nor closes the drift-guard item, so no trace. Add a
-   CHANGELOG entry only if this refresh accompanies a deliberate
-   `pyproject.toml` floor bump.
+   infra-and-generated-docs only, so no CHANGELOG entry — add one only if this
+   refresh accompanies a deliberate `pyproject.toml` floor bump.
+
+   A routine refresh neither implements nor closes the drift-guard item, so a
+   trace is not *required* ([CLAUDE.md § Trace authoring](../../../CLAUDE.md#trace-authoring)
+   exempts a pure advisory annotation; it does not forbid one). In practice
+   every firing so far has annotated the trace anyway, because what a firing
+   teaches is how the guard behaves in production and that record has nowhere
+   else to live. **So: append an "Operational firing" block to the drift-guard
+   trace whenever the refresh taught you something** — a path that failed, a
+   smoke that proved weaker than its verdict implied, a caveat a procedure doc
+   missed. Follow the existing blocks' shape. A refresh that genuinely surprised
+   you in no way needs no block.
 
 10. **Commit** the locks + regenerated docs together. Prefix the subject with
     the drift-guard backlog item ID (named in the `drift-guard.yml` header and

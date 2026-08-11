@@ -9,4 +9,4 @@ pydantic-core==2.48.0
 pydantic-settings==2.15.0
 python-dotenv==1.2.2
 typing-extensions==4.16.0
-typing-inspection==0.4.3
+typing-inspection==0.4.2

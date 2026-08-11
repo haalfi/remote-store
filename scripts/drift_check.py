@@ -339,8 +339,9 @@ def render_docs() -> str:
             any_pending = True
             buf.write(
                 "_First population pending. Run "
-                f"`hatch run drift-check refresh-baseline {extra}` on the "
-                "primary Python and commit the generated "
+                f"`hatch run drift-check refresh-baseline {extra}` on Linux "
+                "with the primary Python — a lock is OS- as well as "
+                "Python-specific — and commit the generated "
                 f"`infra/drift-locks/{extra}.txt`._\n\n"
             )
             continue
@@ -356,7 +357,8 @@ def render_docs() -> str:
             "\n---\n\n"
             '_Sections marked "first population pending" will fill in once a '
             "maintainer runs `hatch run drift-check refresh-baseline <extra>` "
-            "and commits the generated `infra/drift-locks/<extra>.txt`._\n"
+            "on Linux with the primary Python and commits the generated "
+            "`infra/drift-locks/<extra>.txt`._\n"
         )
 
     return buf.getvalue()

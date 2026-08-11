@@ -65,6 +65,20 @@ Write `infra/drift-locks/<extra>.txt` as the header above followed by the
 artifact's freeze sorted by package name, matching `write_lock` in
 `scripts/drift_check.py`, then run `hatch run drift-check render-docs`.
 
+**If that download is blocked** — artifacts are served from a storage host
+separate from `api.github.com`, so an egress policy scoped to the GitHub API
+denies the fetch even though every other `gh` call works. The symptom is a 403 on
+CONNECT from `gh run download` alone; that is a policy denial, not a transient
+failure, so retrying will not clear it. Reconstruct the freeze from the rolling
+issue instead:
+it is the committed baseline with the issue body's rows applied, because the
+report enumerates every package whose version differs — a package absent from
+those tables is unchanged. Apply the **stable** and **pre-release** tables both;
+they describe one resolution, split only for presentation. The result is
+byte-identical to the artifact, so the guarantee below still holds. Verify by
+re-deriving: the new lock must differ from the baseline in exactly the issue's
+rows, with nothing added or removed.
+
 Either way, commit the changed `infra/drift-locks/<extra>.txt` and
 `docs-src/reference/tested-versions.md` in the same PR as whatever
 deliberate change motivated the refresh (e.g. a floor bump).
@@ -76,12 +90,23 @@ deliberate change motivated the refresh (e.g. a floor bump).
 > candidate set fails the install loudly (red smoke) rather than silently moving
 > a shared dependency off its pin.
 
-This guarantee is unconditional only on the candidate-artifact path, where the
-committed lock is byte-identical to the smoked freeze. On the local-resolve
-path, `refresh-baseline` re-resolves with `--pre` at commit time, which can be
-later than the run that produced the drift report; a package that moved
-between the two resolves lands in the new lock without ever being smoked. The
-gap does not self-heal: the workflow only smokes packages whose `status` is
-`drift` against the committed baseline, so once the later version becomes that
-baseline, a clean run reports `ok` and skips the smoke for it going forward.
-Note any such deltas in the refresh PR's description.
+This guarantee is unconditional on the candidate-artifact and reconstruction
+paths, where the committed lock is byte-identical to the smoked freeze. On the
+local-resolve path, `refresh-baseline` re-resolves with `--pre` at commit time,
+which can be later than the run that produced the drift report; a package that
+moved between the two resolves lands in the new lock without ever being smoked —
+including packages absent from the issue body entirely, so nothing in the drift
+report flags them. The gap does not self-heal: the workflow only smokes packages
+whose `status` is `drift` against the committed baseline, so once the later
+version becomes that baseline, a clean run reports `ok` and skips the smoke for
+it going forward.
+
+**Pin such packages back to the run's snapshot** rather than only disclosing
+them. Disclosure in the PR description was the earlier mitigation and it is not
+enough: the unqualified claim still ships to the generated
+`docs-src/reference/tested-versions.md`, whose preamble tells readers "Tested up
+to" is "what CI was last green against", and by the non-self-healing property
+above it stays there indefinitely. Pinning back costs one more weekly cycle —
+the next run flags those packages, smokes them, and they are accepted on
+evidence. Keep a higher pin only when you have evidence for it, and name the
+smoke that produced it in the PR.

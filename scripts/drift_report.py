@@ -48,8 +48,10 @@ def _render_body(reports: dict[str, dict], run_url: str) -> str:
         lines.append("")
         lines.append(
             "The following extras have stub baselines. Run "
-            "`hatch run drift-check refresh-baseline <extra>` on Python 3.13 "
-            "and commit `infra/drift-locks/<extra>.txt` (plus the regenerated "
+            "`hatch run drift-check refresh-baseline <extra>` on Linux with "
+            "Python 3.13 (a lock is OS- as well as Python-specific; see "
+            "`infra/drift-locks/README.md` § Refreshing) and commit "
+            "`infra/drift-locks/<extra>.txt` (plus the regenerated "
             "`docs-src/reference/tested-versions.md`):"
         )
         lines.append("")
