@@ -12188,6 +12188,12 @@ diagnosis, logged before this document was written. That changes finding 2's
 conclusion in one respect worth stating: "stated bound, therefore correctly held"
 and "stated bound, <strong>and we have already decided to remove it</strong>" are different
 claims, and only the second matches the backlog.</p>
+<blockquote>
+<p><strong>Correction, after this document was written.</strong> Only item 4 is still booked:
+ID-207 was re-scoped to steps 3 and 4, and item 2 (clause granularity) was
+dropped on its own measurement rather than deferred. So of the two bounds
+above, one has a decision to remove it and one has a decision <strong>not</strong> to.</p>
+</blockquote>
 <p>So the honest characterization of our best T6 mechanism is: <strong>a set difference over
 the intersection of two derived enumerations, minus a reviewer-maintained
 allow-list, with the removal of both limits already logged as ID-207.</strong> That is a
@@ -12591,7 +12597,16 @@ largest and most contract-bearing member. Steps 2a and 4 face the same choice
 between "exempt the item" and "pin what the exemption covers"; prefer the pin.</p>
 <h3 id="step-2-bidirectional-traceability-the-canonical-claim-space">Step 2: Bidirectional traceability (the canonical claim space)<a class="headerlink" href="#step-2-bidirectional-traceability-the-canonical-claim-space" title="Permanent link">&para;</a></h3>
 <p><strong>Closes:</strong> G-3, § 2.1's bottleneck, and BK-324 facet 4 concretely ·
-<strong>Mechanism:</strong> E2 · <strong>Size:</strong> M (2a) + S (2b) · <strong>Owner: ID-207</strong></p>
+<strong>Mechanism:</strong> E2 · <strong>Size:</strong> M (2a) + S (2b) · <strong>Owner: — (unowned)</strong></p>
+<blockquote>
+<p><strong>Correction, after this document was written.</strong> ID-207 was re-scoped to its
+steps 3 and 4 and no longer carries step 2: measured at L effort over ~2.5% of
+the claim space, having caught none of the four instances that motivated it.
+This step is therefore <strong>unowned by design</strong> — see <code>sdd/BACKLOG.md</code> § 6 and
+ID-207's own body, which asks that the dropped half not be re-filed without
+new evidence. The mapping below is preserved as written and describes ID-207's
+shape at the time, not now.</p>
+</blockquote>
 <p><strong>This step largely <em>is</em> <code>sdd/BACKLOG.md</code> ID-207, which predates this document.</strong>
 ID-207 ("Strengthen <code>check_formal_trace.py</code> from citation hygiene to clause
 enforcement", effort L) already logs four hardening steps against the same script.
@@ -12699,13 +12714,13 @@ whichever comes first</strong> — the two events that can invalidate the guide.
 it to contract change rather than to the calendar follows <strong>S9</strong> and gives the
 step actual content beyond the word "scheduled".</p>
 <h3 id="step-7-publish-the-characteristic-accountability-record">Step 7: Publish the characteristic-accountability record<a class="headerlink" href="#step-7-publish-the-characteristic-accountability-record" title="Permanent link">&para;</a></h3>
-<p><strong>Closes:</strong> G-5 · <strong>Mechanism:</strong> E2 · <strong>Size:</strong> S · <strong>Owner: ID-236</strong></p>
+<p><strong>Closes:</strong> G-5 · <strong>Mechanism:</strong> E2 · <strong>Size:</strong> S · <strong>Owner: ID-245</strong></p>
 <p>Render <code>check_formal_trace.py</code>'s coverage matrix as a generated artifact at
 release time: every spec ID, its verification evidence (test marker, Dafny tag,
 TLA+ invariant), and its status. Makes "what was verified, and by what" answerable
 historically rather than only at HEAD.</p>
 <h3 id="step-8-derive-the-artifact-pair-inventory-instead-of-hand-maintaining-it">Step 8: Derive the artifact-pair inventory instead of hand-maintaining it<a class="headerlink" href="#step-8-derive-the-artifact-pair-inventory-instead-of-hand-maintaining-it" title="Permanent link">&para;</a></h3>
-<p><strong>Closes:</strong> the § 4b reflexive gap · <strong>Mechanism:</strong> E3 · <strong>Size:</strong> S · <strong>Owner: ID-237</strong></p>
+<p><strong>Closes:</strong> the § 4b reflexive gap · <strong>Mechanism:</strong> E3 · <strong>Size:</strong> S · <strong>Owner: ID-245</strong></p>
 <p>§ 4b's inventory of which artifact pairs are checked was assembled by hand and the
 document says of it: "The table will drift, and nothing will notice." Leaving a
 self-diagnosed gap out of the plan is conspicuous in a document whose thesis is

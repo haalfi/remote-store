@@ -11087,12 +11087,14 @@ filesystem, masking a category error. Callers that need a string use
 <h3 id="pathlib-parity-scope-informative">pathlib parity scope (informative)<a class="headerlink" href="#pathlib-parity-scope-informative" title="Permanent link">&para;</a></h3>
 <p><code>RemotePath</code> is a deliberately minimal subset of <code>pathlib.PurePath</code>, not a
 drop-in replacement. Beyond <code>as_posix()</code> (PATH-016), the following <code>PurePath</code>
-members are intentionally absent and tracked as deferred parity candidates:
+members are intentionally absent:
 <code>stem</code>, <code>suffixes</code>, <code>with_name</code>, <code>with_suffix</code>, <code>with_stem</code>, <code>joinpath</code>,
 <code>parents</code>, <code>match</code>, <code>relative_to</code> / <code>is_relative_to</code>, and <code>is_absolute</code>. The
 <code>as_uri</code> and <code>drive</code> / <code>root</code> / <code>anchor</code> accessors are out of scope entirely
-(meaningless for a rootless remote key). See the backlog for the follow-up
-that may close the deferred candidates.</p>
+(meaningless for a rootless remote key). The follow-up that once tracked them
+was retired for want of demand, so <strong>this list is the durable record</strong> rather
+than a pointer into the backlog. Each member would need its own <code>PATH-NNN</code>
+clause and spec-tagged test; file one per member if a concrete need appears.</p>
 
 
 

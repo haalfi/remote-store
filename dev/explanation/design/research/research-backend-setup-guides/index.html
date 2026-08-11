@@ -11213,11 +11213,11 @@ guide says so explicitly.</p>
 <p><strong>Pain it retires.</strong> Disabling shared-key auth and public access on a
 storage account, then wiring <code>DefaultAzureCredential</code> plus Storage Blob
 Data Contributor RBAC plus firewall rules for CI runners. Trips up users
-on Microsoft Q&amp;A 5769536 and similar threads. Adjacent to our iceboxed
-ID-118b (Azure TLS CA bundle, Phase 2 — Azure Stack Hub / on-prem).</p>
+on Microsoft Q&amp;A 5769536 and similar threads. Adjacent to ID-118b (Azure TLS CA bundle, Phase 2 — Azure Stack Hub /
+on-prem), since retired; see BACKLOG-DONE § Decided against.</p>
 <p><strong>Evidence pointers.</strong></p>
 <ul>
-<li>In-repo: BACKLOG ID-118b (iceboxed) for the on-prem variant;
+<li>In-repo: ID-118b (retired) for the on-prem variant;
   <code>azure-hns-setup.md</code> covers account-key auth only.</li>
 <li>External Tier-1 #6 (OIDC + RBAC + firewall for CI runners), #5 (SAS
   token expiry that fails silently on stream-style writes); Tier-2.C
@@ -11237,7 +11237,8 @@ with the required RBAC is confirmed available. Otherwise defer the
 entire guide — partial coverage (keyless without private endpoints, or
 vice versa) would mis-set user expectations.</p>
 <p><strong>Out of scope.</strong> Microsoft Entra ID administration (link to Microsoft
-docs); Azure Stack Hub specifics (fold into ID-118b if it reactivates).</p>
+docs); Azure Stack Hub specifics (ID-118b was retired — re-file under a new
+ID if a user reports the need).</p>
 <p><strong>Cross-links.</strong> From <code>azure.md</code> and <code>azure-hns-setup.md</code>. To <code>retry.md</code>
 and <code>troubleshooting.md</code>.</p>
 <h3 id="36-credential-secret-rotation">3.6 Credential &amp; secret rotation<a class="headerlink" href="#36-credential-secret-rotation" title="Permanent link">&para;</a></h3>
@@ -11455,7 +11456,7 @@ once; after that they are independent. Phase 3 is gated on §8 Q5.</p>
 </li>
 <li>
 <p><strong>Code-side flags (§6).</strong> Should the third-S3-lane question be folded
-   into ID-114 (iceboxed PyArrow bucket-path research) or get its own
+   into ID-114 (PyArrow bucket-path research, since retired) or get its own
    ID? Recommendation: <strong>own ID</strong> — different design question, different
    evidence base.</p>
 </li>
