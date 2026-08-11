@@ -181,6 +181,22 @@ phases:
           measured blind spot rather than a new one, and not filed here - one
           instance is not a diagnosis.
         outcome: unclear
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-351 (word counts)"
+        read_type: verify
+        extract: >-
+          Re-derived while drafting the PR body, and the figures had gone stale
+          inside the branch that wrote them. The entry quoted `/ship` 6,380 and
+          `/rvw-pr` 3,479 in the present tense; at the branch head the same
+          measurement gives 6,667 and 3,547, because this item's own description
+          edit grew one file and BK-352's Reader lens grew the other. A named
+          derivation that no longer reproduces is worse than a bare number, since
+          it invites the check and fails it. Fixed by pinning the counts to
+          `origin/master`, saying so, and giving both. The defect is the class
+          ADR-0037 exists for, arriving in the same PR - which is the argument for
+          re-running a derivation at the moment of writing rather than trusting
+          one taken earlier in the same session.
+        outcome: ok
       - file: .claude/skills/
         section: "grep for the two original description strings"
         read_type: verify

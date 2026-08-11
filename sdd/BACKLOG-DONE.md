@@ -244,10 +244,19 @@ if evidence changes; these are retired.
   **Source:** *The Complete Guide to Building Skills for Claude* (Anthropic, 33pp),
   supplied by the user. Its other applicable claim was **declined**, and the
   reasoning is the durable half: it prescribes moving detail out of `SKILL.md`
-  into `references/` under a 5,000-word budget, and `/ship` (6,380 words),
-  `/rvw-pr` (3,479) and `/orchestrate` (3,395) exceed or approach it — word
-  counts from `wc -w` over the three files. All three were read whole against the
-  prescription. Their bulk is **unconditionally binding instruction**, and a
+  into `references/` under a 5,000-word budget, and `/ship`, `/rvw-pr` and
+  `/orchestrate` exceed or approach it. All three were read whole against the
+  prescription.
+  **The counts are of `origin/master`, and are stated that way because this
+  branch moved two of them.** Measured with `git show origin/master:<path>` piped
+  through a word count: `/ship` 6,380, `/rvw-pr` 3,479, `/orchestrate` 3,395. At
+  this branch's head the same measurement gives 6,667, 3,547 and 3,395 — this
+  item's own description edit grew `/rvw-pr`, and BK-352's Reader lens grew
+  `/ship`. The first cut quoted the base figures in the present tense, so a
+  reader running `wc -w` would have got three numbers, two of them different, from
+  a sentence that named its derivation and still could not be reproduced. Caught
+  while drafting the PR body, which is where
+  [principle 9](../CLAUDE.md#principles) binds `/pr`. Their bulk is **unconditionally binding instruction**, and a
   `references/` file is loaded at the model's discretion, so the move would
   convert rules that must hold on every invocation into rules that might be read.
   That is the inert-obligation failure those very files record shipping three
