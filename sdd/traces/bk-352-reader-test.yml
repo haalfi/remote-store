@@ -1,0 +1,173 @@
+id: BK-352
+title: "Reader failure is detected only after a document has already failed someone"
+trigger: >-
+  The user surfaced Anthropic's doc-coauthoring skill and asked whether to try
+  it and include it here. Assessing it against the repo turned up one stage with
+  no local equivalent and two that duplicate or would fight existing machinery,
+  so the question became which part to take rather than whether to take it.
+source_items:
+  - BK-352
+  - BK-351
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+# The lens menu reaching /orchestrate is anticipated by the menu's own shared
+# link, so it is expected rather than surprising - but it is the reason the
+# lens's bound had to be written to be true in two skills at once.
+surprising_ripples:
+  - .claude/agents/documentation-expert.md
+# No ripple-check row covers "a review lens is added", and none covers a persona
+# file gaining an obligation. The persona was reached by asking which artifact
+# could host a genuine no-context reader when the /ship lens structurally
+# cannot, not by any anticipatory authority. Same shape as BK-351's miss, one
+# artifact class over.
+# Name the commits the value was counted from, per the schema's review_rounds
+# clause. `git log --oneline origin/master..HEAD` at the final push:
+#   05f9524 - BK-351. A different item, co-carried on this branch; not this
+#     item's work and not a review round on it.
+#   the commit carrying this line - this item's implementation, authored in one
+#     pass. Does not count.
+# No PR was open and no review round had run when this value was written, so
+# there are no feedback commits and the value is 0.
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/adrs/0036-reviewers-by-subject-and-method.md
+        section: "Decision (closing paragraph)"
+        read_type: gate
+        extract: >-
+          Decides whether adding a lens needs an ADR amendment: it does not. The
+          record states that the step sequences, the lens menu and the brief
+          requirements are operational contract living in the two skills. Read
+          before editing rather than after, because the alternative reading -
+          that the menu is ADR-governed - would have made a one-line lens
+          addition into an ADR supersession.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-330; ID-238"
+        read_type: gate
+        extract: >-
+          The two entries that establish the existing loop and its deliberate
+          shape. BK-330 shipped the outcome report as "a report, not a gate" per
+          DRIFT-RULES Rule 5; ID-238 added a release-anchored review rather than
+          a calendar. Together they are why this item ships advisory instruments:
+          a blocking reader gate would reopen a decision made twice on stated
+          reasoning, and nothing here is new evidence against it.
+        outcome: ok
+      - file: .claude/agents/documentation-expert.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          The persona's IDENTITY already asks the reader question - "can a
+          citizen developer figure this out from the docs alone?" - and every
+          mechanism under it answers by judgement. FOUNDATION, CONSTRAINTS and
+          DONE WHEN are placement, structure, longevity and completeness checks;
+          not one is an experiment. That gap is what the reader test fills, and
+          it is why the persona rather than a new skill is the right host.
+        outcome: ok
+  - id: measure
+    name: Measure the gap rather than assert it
+    steps:
+      - file: scripts/report_trace_outcomes.py
+        section: "(report output at this commit)"
+        read_type: verify
+        extract: >-
+          Ran `hatch run report-trace-outcomes` instead of quoting ID-238's
+          figures, which that item's own body requires of an inherited number.
+          275 traces, 3,981 steps, 1,793 tagged (45.0%), 220 negative tags across
+          113 traces.
+          **The run corrected the argument rather than confirming it.** The split
+          is 189 `misleading` to 31 `unclear`, and only `unclear` is the class a
+          reader test reaches - the schema defines it as on-topic but vague, the
+          reader compensating, where `misleading` is a confident false answer a
+          no-context reader cannot check. My framing to the user before this run
+          cited the negative total and would have claimed about seven times the
+          reach the mechanism has. Scope narrowed in the item, the lens and the
+          persona to what 31 tags support.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "outcome (unclear vs misleading)"
+        read_type: gate
+        extract: >-
+          The definitions the split turns on, read to check the narrowing rather
+          than assume it. `unclear` is the doc-improvement signal and names
+          compensation by the reader; `misleading` is called the strongest
+          doc-failure signal in the schema and is a correctness failure. Confirms
+          that the instruments for the larger half already exist - the measuring
+          member and the whole-file gate - and that this item should not claim
+          them.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Lens menu (Consumer, Reader)"
+        read_type: verify
+        extract: >-
+          The lens is placed directly below Consumer because that is the lens it
+          would otherwise be confused with, and the distinction is method rather
+          than subject - Consumer judges docs from outside, Reader runs the
+          questions. Same axis as ADR-0035's reading-versus-executing, applied to
+          prose.
+          Sibling sweep of adding it: the menu is taken by /orchestrate through a
+          shared link, so a bound written in /ship's vocabulary would be false
+          there. The first draft said the member "has read the diff and the PR
+          body", which under /orchestrate is a PR that does not exist. Rewritten
+          to state the bound once and name what was read on each side. This is
+          the failure /orchestrate's own worktree block documents for a different
+          paragraph - a reader sent to a page whose stated reason is false in
+          their skill.
+        outcome: ok
+      - file: .claude/agents/documentation-expert.md
+        section: "READER TEST; DONE WHEN; OUTPUT"
+        read_type: verify
+        extract: >-
+          Hosts the genuine no-context reader the /ship lens structurally cannot:
+          a scoped member has read the change under review, a spawned reader has
+          not. Two clauses carry the honesty the instrument depends on - questions
+          come from what the page promises rather than from what it covers, since
+          questions derived from the text can only confirm it; and a
+          self-administered fallback must be labelled, because an author knows
+          what the page meant to say. Adapted from doc-coauthoring's own
+          with/without-subagent split rather than invented.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience (derived CHANGELOG rule)"
+        read_type: verify
+        extract: >-
+          Checked rather than assumed. Repo-internal agent tooling, no `user.`
+          audience, no new user-facing framework, so no CHANGELOG entry - the
+          same call BK-351 made one commit earlier and BK-348 before it.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Lens menu; Stop rule; Rules"
+        read_type: verify
+        extract: >-
+          Swept for cardinality claims about the menu before adding to it, since
+          an enumeration falsified by an addition is this repo's most-repeated
+          defect. `rg -i 'lens'` across the tree returns no count of the /ship
+          menu's entries; the "eight catalog lenses" hits belong to
+          audit-019 and the expectation-driven-review research, a different
+          catalog. The stop rule and Rules bind gates and methods, and an
+          advisory lens adds neither, so both are untouched and correct as they
+          stand.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Pre-work index"
+        read_type: verify
+        extract: >-
+          Triggered rows: Backlog item touched (trace owed) and CHANGELOG entry
+          (assessed, not required). **No row covers adding a review lens or
+          amending a persona's obligations**, which is the second consecutive
+          item whose real ripple the table does not anticipate - BK-351's was a
+          skill's frontmatter. Two instances in two items is worth naming to
+          BK-346, which owns the table's measured blind spots, but not worth
+          filing from here: that item's open question is the shape of the fix,
+          and two more instances do not change it.
+        outcome: unclear

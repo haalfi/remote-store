@@ -262,6 +262,28 @@ missed:
   Docker-gated fixtures, backends with no fixture, `# pragma: no cover`. A green
   gate proves the *covered* code works; it never says what is covered.
 - **Consumer.** Docs, guides, and API read from outside.
+- **Reader.** Can someone who was not in this conversation answer the questions
+  the changed documentation exists to answer? Its brief names 5 to 10 questions a
+  reader arrives with — taken from what the page promises, never from what it
+  happens to cover — and the member's verdict is which ones it could not answer
+  from the changed files alone. **The verdict is the reader's failure, not the
+  reviewer's opinion**, and that is what separates this from the Consumer lens
+  above: that one judges docs from outside, this one runs the questions and
+  reports what came back. The defect it reaches is a page that is accurate,
+  correctly placed and CONTENT-RULES-clean and still leaves a reader unable to
+  act, which no lens judging correctness can see.
+  **Its bound, stated rather than implied:** the member has read the change
+  under review, so it is a weaker instrument than a reader who has not — under
+  this skill that means the diff and the PR body `rvw-pr` Step 1 requires, and
+  under [`/orchestrate`](../orchestrate/SKILL.md#reviewer-selection), which takes
+  this menu by link, it means the authoring output in the working tree. The bound
+  is the same either way and so is the reason; only what was read differs. It is
+  never the unprimed member — a question list is a brief. Where a genuine
+  no-context read is wanted, the `documentation-expert` persona's reader test
+  spawns one.
+  This is the prospective half of a signal the repo otherwise collects only
+  after the fact, as trace `outcome: unclear` tags aggregated by
+  `hatch run report-trace-outcomes`.
 - **Tooling and process contract.** The repo's own machinery — **everything no
   `DOMAIN:` line contains**. Derive it by checking a path against the five lines
   rather than against a list: `/orchestrate`'s

@@ -155,6 +155,57 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-352 — Reader failure is detected only after a document has already failed someone**
+  spec: — · effort: S · audience: contributor.process
+  The repo instruments reader failure thoroughly and every step of it is
+  downstream of the failure: a trace author tags `outcome: unclear` after a doc
+  did not deliver, `hatch run report-trace-outcomes` ranks the documents those
+  tags accuse, and **ID-238** fires that review at each release. Nothing tests a
+  document against a reader *before* it ships.
+  **The figure was re-derived rather than inherited**, as ID-238's own body
+  requires of the figure it took from BK-330. Running the report at this commit:
+  275 traces, 3,981 steps, 1,793 carrying an explicit outcome (45.0%), and 220
+  negative tags across 113 traces.
+  **Only 31 of those 220 are `unclear`; 189 are `misleading`, and the difference
+  decides the scope.** A reader test catches "I could not answer this from the
+  page", which is the schema's `unclear` — on-topic but vague or incomplete, the
+  reader compensating. It cannot catch `misleading`, where the page gave a
+  confident answer that was false; a reader with no context has nothing to check
+  that against, and the instruments for it already exist (the measuring member,
+  the whole-file gate). A first framing of this item cited the 220 and would have
+  claimed roughly seven times the reach the mechanism has. The largest single
+  concentration is `sdd/CLAUDE-REFERENCE.md` at 11 `unclear` over 294 reads,
+  about a third of the corpus total in one file.
+  **Shipped as two advisory instruments, no gate**, which keeps
+  [BK-330](#unreleased)'s report-not-a-gate posture rather than reopening it:
+  a **Reader lens** in `/ship`'s lens menu, which
+  [`/orchestrate`](../.claude/skills/orchestrate/SKILL.md) takes by the shared
+  link, and a **reader test** in the `documentation-expert` persona for any page
+  it creates or substantially rewrites. Both work the same way: predict 5-10
+  questions from what the page *promises*, run them, and treat an unanswerable
+  question as a finding about the page.
+  **The lens is distinct from the Consumer lens beside it, on method rather than
+  subject.** Consumer judges docs from outside; Reader runs the questions and
+  reports what came back. That is the axis
+  [ADR-0035](adrs/0035-vary-method-not-model.md) established — reading versus
+  executing — applied to prose, and the reason it lands as a lens and not as a
+  rename. Its bound is stated in the lens: a scoped member has read the change
+  under review, so it is weaker than a reader who has not, and only the persona's
+  test spawns a genuine no-context reader. No ADR is amended — ADR-0036 puts the
+  lens menu in the skills as operational contract.
+  **Source:** Anthropic's `doc-coauthoring` skill, Stage 3 (Reader Testing),
+  supplied by the user. **The other two stages were declined.** Stage 1 (context
+  gathering by 5-10 prose questions) is interview mode in a weaker form — this
+  repo routes decisions through `AskUserQuestion` blocking dialogs precisely
+  because prose questions get scrolled past. Stage 2 (brainstorm 5-20 options per
+  section) has no knowledge of `AUTHORING.md` → `DOCUMENTATION.md` →
+  `CONTENT-RULES.md`, the five `sdd/templates/`, or `check_docs_framework.py`'s
+  G-01..G-07. Vendoring the skill whole was declined on over-triggering: its
+  description fires on "create a spec" and "RFC", which here are governed
+  artifacts with templates and a pipeline in `000-process.md`, so a hit would
+  route an author away from `rfc-template.md` into freeform drafting. That is the
+  same failure class **BK-351** had just added negative triggers to prevent.
+
 - [x] **BK-351 — The model-invocable skills' descriptions say what they do and never when to use them**
   spec: — · effort: S · audience: contributor.process
   A skill's `description` is the only part loaded before the body, so it is the
