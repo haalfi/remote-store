@@ -150,6 +150,18 @@ derivation, and can only trust a total.
   and it will be under-applied silently. Nothing gates it; the whole-file pass
   and the review rounds are its only enforcement, which is weaker than the
   mechanical checks the repo prefers.
+- **Positive, and the corollary this delivery discovered:** when a figure is
+  refuted twice, **retire it rather than correct it again**. Two figures here
+  were corrected three and four times, each correction introducing the next
+  error, until they were replaced by an enumeration plus the query that
+  regenerates them. The signal that a figure has reached that point is not the
+  error count but *careful readers disagreeing*: three reviewers derived three
+  different values from one command, because the set it counted admitted three
+  defensible partitions. That is the repeat-site check in
+  `.claude/skills/ship/SKILL.md` — stop arguing the condition, enumerate the
+  space — applied to a number instead of a gate, and it is the honest reading of
+  this record's own decision: a derivation a reader can run beats a total, and
+  where the two conflict the total is what goes.
 - **Negative:** a whole-file pass reads the file as it is. It cannot see a
   false premise about behaviour that exists only on the base branch — that
   remains the measuring gate's job, and the two gates are not substitutes.
@@ -165,4 +177,5 @@ derivation, and can only trust a total.
   it. Its reviewers read a diff-shaped surface too, and the same evidence would
   apply. Not adopted here because this record's evidence is one `/ship`
   delivery; adopt it there on that skill's own evidence, as ADR-0036 did for
-  selection.
+  selection. Tracked as BK-349, because an invitation with no item behind it is
+  one nobody finds.

@@ -363,6 +363,17 @@ substitutes.
    gh api "repos/haalfi/remote-store/pulls/<N>/files?per_page=100&page=1" --jq '.[].filename'
    ```
 
+   Put the *named untouched files* in the brief, not the adjective
+   "neglected". This costs two calls and the alternative is an impression: on
+   PR #956 the loop ran four rounds with 16 of its 24 findings on one file and
+   8 of 12 files carrying none, and nobody knew until an ad-hoc query while a
+   brief was being written. The round that query redistributed put three of its
+   four findings on two of those eight files
+   ([ADR-0037 § Context](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md#context)).
+
+   **Why each part is shaped this way**, since every one of these fixed a
+   regression a review round caught:
+
    **Count the `finding` rows only.** That endpoint returns your own replies
    alongside the findings, and by the closing rounds they outnumber them — a
    loop that answers every thread doubles its own comment count, so an
@@ -407,13 +418,6 @@ substitutes.
    PR #958, and both members disclosed the collision unprompted, which is how
    the missing permission was found.
 
-   Put the *named untouched files* in the brief, not the adjective
-   "neglected". This costs two calls and the alternative is an impression: on
-   PR #956 the loop ran four rounds with 16 of its 24 findings on one file and
-   8 of 12 files carrying none, and nobody knew until an ad-hoc query while a
-   brief was being written. The round that query redistributed put three of its
-   four findings on two of those eight files
-   ([ADR-0037 § Context](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md#context)).
 4. **Whether the verdict is to be reached by reading the diff, by reading each
    changed file whole, or by running**, and for a measuring member, what to run
    and against which revision.

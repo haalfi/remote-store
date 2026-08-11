@@ -106,6 +106,23 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   instance 8's shape rather than a ninth instance, and it is the argument for
   principle 9 in miniature: the claim was checkable in one command *because* it
   named one.
+  **The review, because it is this item's own subject.** Seven posted rounds on
+  PR #958, then an author finishing pass; the per-round detail is in
+  [`sdd/traces/bk-348-whole-file-gate.yml`](traces/bk-348-whole-file-gate.yml).
+  Two results are worth carrying forward. **The gate shipped inert and a panel
+  caught it**: adding a third exit gate left the unprimed-reviewer definition's
+  singular "the exit gate's appended pass" untouched, so that rule swallowed all
+  three appended passes and an orchestrator following it would hand the
+  whole-file pass the PR number alone. **And a figure refuted twice should be
+  retired, not corrected again** — two were corrected three and four times, each
+  correction introducing the next error, until they were replaced by an
+  enumeration and the query that regenerates them. The signal is not the error
+  count but careful readers disagreeing: three reviewers derived three values
+  from one command. That is the repeat-site check applied to a number, and it is
+  now [ADR-0037](adrs/0037-whole-file-gate-and-derived-figures.md)'s corollary.
+  **The loop was ended by the user after round 7 rather than by the stop rule**,
+  so three exit gates are undischarged against the final commit. Produced
+  [BK-349](BACKLOG.md).
   **No CHANGELOG entry**: `contributor.process` with no user-facing framework,
   per the schema's derived rule — the same call BK-338, BK-342 and BK-344 each
   made (a grep of `CHANGELOG.md` for those three IDs returns nothing).

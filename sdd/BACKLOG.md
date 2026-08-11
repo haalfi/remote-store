@@ -387,6 +387,24 @@ and the highest ID already in this file, then take the next integer. Run
   question. Any row change lands in **both** presentations — `check_ripple_parity.py`
   enforces trigger-parity.
 
+- [ ] **BK-349 — Decide whether `/orchestrate` adopts the whole-file reading mode**
+  spec: — · effort: S · audience: contributor.process
+  [ADR-0037](adrs/0037-whole-file-gate-and-derived-figures.md) leaves this open
+  in its Consequences and invites a decision "on that skill's own evidence, as
+  ADR-0036 did for selection" — an invitation with no tracker behind it, which
+  this repo's own reasoning says is the same as no invitation.
+  **What is settled and what is not.** The *gate* is settled: `/orchestrate` has
+  no exit gate for one to join, since ADR-0020 caps its rounds and nothing there
+  waits on a clean state to close. The *reading mode* is not. Its reviewers read
+  a diff-shaped surface exactly as `/ship`'s did, and methods reach that skill by
+  restatement rather than through the shared lens-menu link — which is how its
+  measuring reviewer got there, so "it is a method, not a lens" does not exclude
+  this one.
+  **What deciding it needs:** evidence from `/orchestrate`'s own deliveries, not
+  `/ship`'s. ADR-0037 rests on one `/ship` run, and ADR-0036 set the precedent
+  that a cross-skill claim is decided on the target skill's traces. Until such a
+  run exists this is a question, not a gap.
+
 - [ ] **BK-347 — A diff outside CI's `CODE_PAT` is routed away from the ADR drift gate, and the local gate misses a different set**
   spec: — · effort: S · audience: contributor.process, infra.ci
   `gen_adr_digest.py --check` gates `sdd/adrs/DIGEST.md` freshness **and**

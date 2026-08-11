@@ -18,6 +18,12 @@ source_items:
   - BK-338
 audience:
   - contributor.process
+discovery_followups:
+  - BK-349
+# Born from ADR-0037's own Consequences, which leaves the reading mode open for
+# /orchestrate and invites a later decision without a tracker behind it. Filed
+# rather than left as prose: this repo's own reasoning is that an invitation
+# nobody can find is the same as no invitation.
 expected_ripples:
   - sdd/adrs/DIGEST.md
   - sdd/backlogid.json
@@ -54,9 +60,12 @@ surprising_ripples:
 #   1d8eaa8 - PR #958 round 4. Counts.
 #   b5d5cc6 - PR #958 round 5. Counts.
 #   6354d31 - PR #958 round 6. Counts.
-#   the commit carrying this line - PR #958 round 7. Counts, and is the one
-#             entry no version of this block can name, since a commit cannot
-#             contain its own SHA.
+#   f32b03d - PR #958 round 7. Counts.
+#   the commit carrying this line - the author-initiated finishing pass, made
+#             after the user ended the loop. Does NOT count, on the reading
+#             bk-338's trace states for its own finishing commit: the schema
+#             counts feedback incorporated. It is also the one entry no version
+#             of this block can name, since a commit cannot contain its own SHA.
 # Value is the count of the counting commits above, the unnameable carrier
 # included. Not the number of steps in the `review` phase: a round can take more
 # than one step to record, and a round refuted whole produces no commit at all.
@@ -630,4 +639,31 @@ phases:
           short: "this skill's own delivery" (the same referent round 6 fixed 35
           lines above), the same phrase in BACKLOG-DONE, and a "see Stop rule"
           pointer to a rule the Stop rule does not contain.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "(full) — author-initiated finishing pass"
+        read_type: verify
+        extract: >-
+          **The loop was ended by the user after round 7, not by the stop rule.**
+          Recorded plainly because the skill's Rules forbid ending on an
+          unreviewed fix pass and on a state no unprimed, whole-file or
+          measuring pass has seen, and round 7's fix pass has had none of those.
+          The user's instruction was to finish by my own pass rather than run an
+          eighth round; that is the ceiling-escalation clause working - it hands
+          the decision to the user - and it means three exit gates are
+          undischarged against the final commit. Stated rather than implied.
+          What the finishing pass changed. Brief requirement 3 had grown to five
+          paragraphs with the instruction last; reordered so the payload sits
+          under the commands and the four rationale paragraphs follow under a
+          heading that says what they are. None deleted - each prevents a
+          regression a round caught, and principle 8 forbids trading a
+          load-bearing reason for brevity. /rvw-pr's header said "three things
+          and nothing else" while round 7 had added a fourth; reconciled, which
+          is the same enumeration-versus-addition defect this delivery kept
+          finding, caught this time in my own fix rather than by a reviewer.
+          ADR-0037 gained the corollary the delivery actually discovered:
+          retire a figure refuted twice rather than correct it again, and the
+          signal to do so is careful readers disagreeing rather than the error
+          count. And BK-349 was filed for the /orchestrate question the ADR left
+          as an invitation with no tracker.
         outcome: ok
