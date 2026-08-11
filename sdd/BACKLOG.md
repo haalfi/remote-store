@@ -27,6 +27,12 @@ maintainers. Within a section the order is execution sequence, so a dependency
 never sits below the thing that needs it. No section declares its own
 exception.
 
+**Dependencies may cross sections, and the ordering rule does not reach them.**
+Sections are ordered by payoff, not by sequence, so an item in section 1 can
+wait on one in section 2 — BK-345 does. A cross-section dependency is stated by
+ID inside the item that has it, and named in the depending section's
+`Closes when`, because nothing about position will show it.
+
 **Granularity.** Work that shares a fix surface is one item with sub-bullets. A
 sub-bullet is not an ID and does not become one. A section that outgrows
 itself splits into two promises, never into loose items.
@@ -60,9 +66,23 @@ Effort: S = <1 day · M = 1–3 days · L = >3 days. `—` = not applicable.
 - Partially done → split: ship the done part to `BACKLOG-DONE.md` as `[x]`
   under its original ID, create a new ID here for the remaining work, and
   link both.
-- Decided against → delete from here, and fix every artifact that asserts the
-  item exists. A removed item leaves no tracker behind, so an inbound citation
-  becomes a claim about nothing.
+- Decided against → delete from here, **record one line in `BACKLOG-DONE.md`
+  § Decided against** naming the ID and why it was not worth doing, then fix
+  every artifact that asserts the item is currently tracked.
+  The register is not optional and not bookkeeping. It is what keeps
+  [§ Item authority](#how-this-file-works) true for this outcome — a decision
+  *about* a diagnosis is still a decision, and deleting both is how the same
+  idea returns in six months with the argument had from scratch. It also makes
+  the retired-ID set **derivable** rather than hand-maintained, which is what
+  stops `gen_backlogid.py` reoffering a burned number.
+  **Which artifacts to fix, and which to leave.** Fix anything asserting the
+  item is *currently* tracked: an `Owner:` field, a "tracked as", a routing
+  row. Leave anything *narrating* what was decided at the time —
+  `sdd/traces/**`, `sdd/research/**` prose, `sdd/audits/**`, and **Accepted
+  ADRs, which [`000-process.md` Rule 4](000-process.md#rules) forbids editing
+  at all**. An ADR citing a since-removed ID is a correct record of what was
+  true when it was accepted; supersede it if the decision itself changed, and
+  otherwise let it stand.
 
 **ID prefixes:**
 
@@ -79,16 +99,22 @@ and the highest ID already in this file, then take the next integer. Run
 `hatch run gen-backlogid` after moving items to BACKLOG-DONE.md to keep the JSON current.
 `hatch run lint` flags drift and collisions.
 
-**Retired IDs — never reassign:** `BK-334`, `BK-335`, `BK-337`, `BK-347`,
-`BK-349`, `BK-350`, `BK-139d`, `ID-066`, `ID-067`, `ID-105`, `ID-114`,
-`ID-118b`, `ID-123`, `ID-197`, `ID-205`, `ID-215`, `ID-218`, `ID-236`,
-`ID-237`, `ID-239`, `ID-240`, `ID-246`, `ID-248`. Nine were absorbed into a
-surviving item and fourteen were removed as unearned; traces and
-`BACKLOG-DONE.md` still cite them as historical fact.
-**`gen_backlogid.py` cannot see this list** — it derives each prefix's maximum
-from the two backlog files, so removing the highest-numbered item lowers the
-next "safe" number and offers a burned one. `BK-349` is offered today and must
-not be taken. Teaching the generator to read this list is part of ID-235.
+**Retired IDs are not listed here**, deliberately: a hand-maintained
+"never reassign" list is the parallel artifact
+[`DRIFT-RULES.md` Rule 3](DRIFT-RULES.md#rules) tells us not to build, and it
+would have to stay right on a path nothing tests. Twenty-three IDs were retired
+by the restructure that produced this file's shape — fourteen **removed**, each
+with an entry in [`BACKLOG-DONE.md` § Decided against](BACKLOG-DONE.md#decided-against),
+and nine **absorbed** into a surviving item, each marked `(was ID-NNN, absorbed
+here)` at the sub-bullet carrying its evidence.
+Both classes get a header in `BACKLOG-DONE.md`, which is what makes this safe by
+construction rather than by vigilance: `gen_backlogid.py` counts headers, so a
+retired number is never reoffered and `hatch run gen-backlogid` keeps
+`backlogid.json` right on its own. Registering the absorbed nine is not
+bookkeeping for its own sake — a sub-bullet is not an ID, so without an entry
+their citations elsewhere in `sdd/` would resolve nowhere, and an absorbed ID
+that happened to be the highest of its prefix would hand the next author a
+number already in use.
 
 ---
 
@@ -105,12 +131,19 @@ store answers the same way on every backend.
 
 **Closes when:** BE-004, BE-005 and BE-021 hold on every registered backend
 against a container that does not exist, and a newly registered backend cannot
-pass CI without meeting them.
+pass CI without meeting them. **The second half waits on ID-244 in section 2**,
+whose seeding-hook decision BK-345 below consumes — so this section cannot
+close on its own items alone.
 
-Four adapters currently disagree with the contract and with each other, so the
-group ships together or not at all: fixing four backends and leaving the fifth
-leaves portable error handling impossible, which is the whole promise. BUG-248
-comes first because it decides what two of the others owe.
+**Six backend classes** disagree with the contract or with each other, counted
+from the items below: `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend`
+(BUG-246, which collapses the two Azure adapters into one row because they
+answer identically and take one fix), `SQLBlobBackend` (BUG-246 and BUG-245),
+`LocalBackend` (BUG-247) and `GraphBackend` (BUG-248). The group ships together
+or not at all: any one left behind leaves portable error handling impossible,
+which is the whole promise. BUG-248 comes first because it is a spec
+adjudication rather than a code fix, and BK-345's exemption list cannot be
+written until it lands.
 
 - [ ] **BUG-248 — BE-021's absent-container rule and GR-031's drive-identity escalation contradict each other**
   spec: BE-021, GR-031 · effort: M · audience: user.api
@@ -302,8 +335,11 @@ no clause of the contract ships unexercised.
 no contract clause is reachable only by a fixture that does not exist.
 
 A corrected clause nobody tests is the same defect one layer up, which is why
-the wrong-answer defects and the coverage holes are one promise. ID-244 leads
-because it owns the seeding decision BK-345 above also consumes.
+the wrong-answer defects and the coverage holes are one promise. The two
+wrong-answer defects come first because a user can hit them today. **ID-244 is
+the cross-section dependency**: section 1's BK-345 waits on the per-fixture
+seeding decision it owns, so section 1 cannot close before it does, even though
+it sits here.
 
 - [ ] **BUG-241 — SQL prefix probes build `LIKE` patterns without escaping `_` and `%`**
   spec: — · effort: S · audience: user.api
@@ -640,8 +676,21 @@ permanently that we will not.
     owns both.
   - Custom tables (`create_table=False`): rowid may not exist; substring
     path is schema-agnostic and works as a universal fallback.
-  - `tests/backends/sqlblob/test_config.py:148` asserts LAZY_READ is NOT
-    declared — must split into dialect-conditional assertions.
+
+  **Ripple checks the ripple-check table does not carry.** Process steps are
+  omitted per [§ Item scope](#how-this-file-works); these three are not process
+  steps, and each would be missed by a reader following the table alone:
+  - `FEATURES.md`'s capability matrix is the authoritative capability surface
+    per [`CLAUDE.md` § Feature reference](../CLAUDE.md#feature-reference), and
+    this item's whole subject is making a `Capability` declaration
+    dialect-conditional — the first such declaration in the repo that is not a
+    flat per-backend fact.
+  - `tests/backends/sqlblob/test_config.py:148` asserts LAZY_READ is **not**
+    declared, so it must split into dialect-conditional assertions rather than
+    simply flip.
+  - Verification shape: a large blob (e.g. 50 MiB) read in 4 KiB chunks with
+    bounded RSS. Content and chunking assertions alone pass against an eager
+    read, which is the same hole ID-244 records for SIO-009.
 
   **Open decisions for whoever picks this up:**
   1. SQLite-only first, or SQLite + PG `bytea` substring together?
@@ -728,12 +777,19 @@ permanently that we will not.
 
 ## 5. A release cannot ship a surprise
 
-**Promise:** what we tested is what ships, and no dependency or toolchain
-change reaches a user through a gate that never ran.
+**Promise:** nothing reaches a user that we did not test, publish, or watch.
 
 **Closes when:** every checker a diff can invalidate is reachable from a gate
-that diff actually triggers, and every extra's drift smoke exercises the
-packages it pins.
+that diff actually triggers; every extra's drift smoke exercises the packages
+it pins; every channel we tell users to install from is live; and every
+upstream that can break us on its own schedule has a standing watch.
+
+The last two clauses are why ID-018 and ID-225 sit here rather than with the
+docs work: a publishing channel and a feature-frozen toolchain are both ways a
+release surprises someone, and neither is a gate. Stated explicitly because an
+earlier draft's `Closes when` named only gates and drift, which those two items
+cannot move — a section whose promise its own members cannot serve is the
+admission test failing on its first population.
 
 - [ ] **BUG-250 — `[graph]`'s drift smoke reaches one of the extra's four declared dependencies**
   spec: — · effort: S · audience: infra.ci
@@ -904,16 +960,23 @@ ranking behind the programme:
 [research](research/research-inconsistency-detection-multi-artifact.md) § 9.
 
 **Measured qualification on that research doc's ranking**, recorded here
-because the doc is point-in-time and does not get rewritten. It designates
-ID-207 (the canonical claim space) as the strategic item. ID-207 builds an
-*omission detector* — research § 1 class E. BK-324's four instances were class
-A/C/D: one claim restated in several homes and updated in one. So ID-207 is
-**not** the item that would have caught what this programme has actually
-caught. Detecting those needs semantic comparison of prose, which § 1 marks as
-having no general oracle. The mechanisms that did catch them were an
-author-side sibling sweep ([BK-336](BACKLOG-DONE.md)) and running the code
-rather than reading the diff ([BK-344](BACKLOG-DONE.md) and
+because the doc is point-in-time and does not get rewritten. It designates the
+canonical claim space — research § 9 step 2, which ID-207 used to carry — as
+the strategic item. That step builds an *omission detector*, research § 1 class
+E. BK-324's four instances were class A/C/D: one claim restated in several homes
+and updated in one. So step 2 is **not** what would have caught anything this
+programme has actually caught, which is why ID-207 below is scoped to steps 3
+and 4 and step 2 is gone. Detecting the rest needs semantic comparison of prose,
+which § 1 marks as having no general oracle. The mechanisms that did catch them
+were an author-side sibling sweep ([BK-336](BACKLOG-DONE.md)) and running the
+code rather than reading the diff ([BK-344](BACKLOG-DONE.md) and
 [BK-338](BACKLOG-DONE.md)) — neither in the research doc's ranking.
+
+**Order within this section:** ID-207 precedes ID-245 because ID-245's
+accountability-record bullet waits on it — step 3 changes what counts as a
+satisfied trace, which moves the matrix that bullet renders. ID-245's first
+bullet additionally waits on **ID-244 in section 2**, per the cross-section
+rule in [§ How this file works](#how-this-file-works).
 
 Shipped so far: step 1 as BK-328, step 5.1 as BK-329, step 4 as BK-331, step 3
 as BK-330 plus ID-238. Four findings from them apply to what follows: a
@@ -934,6 +997,11 @@ the commit that writes it lands, so cite the generator instead.
     `gen_backlogid.py` derives IDs from headers, the stale JSON was masked too.
     Lint the structure: every metadata line follows an entry header, headers
     unique across both files, BACKLOG-DONE status `[x]` only.
+    **Add the retirement sections to the structural rules**: every entry under
+    `BACKLOG-DONE.md` § Absorbed names a host that exists in `BACKLOG.md`, and
+    every ID retired by either route appears exactly once across both files.
+    That is what keeps the ID space safe by construction rather than by whoever
+    last remembered to add an entry.
   - **Inbound citations resolve** (was ID-246, absorbed here). Specs cite
     backlog coordinates as provenance, and `check_no_tracker_refs.py` actively
     *pushes* IDs here — it fails a docstring or `docs-src/` page and tells the
@@ -956,14 +1024,22 @@ the commit that writes it lands, so cite the generator instead.
 
 - [ ] **BK-346 — The ripple-check table answers questions adjacent to the ones asked**
   spec: — · effort: S/M · audience: contributor.process
-  One class with four measured instances, not four items. Each is a reader who
-  consulted the [Pre-work index](CLAUDE-REFERENCE.md#pre-work-index), got an
-  answer, and acted on it — and the answer was to a neighbouring question. Any
-  row change lands in **both** presentations; `check_ripple_parity.py` enforces
-  trigger-parity, so a row added to one and not the other fails `lint`.
+  One class with **six** measured instances, not six items — counted from the
+  numbered list below, which is the only derivation this figure has. Each is a
+  reader who consulted the
+  [Pre-work index](CLAUDE-REFERENCE.md#pre-work-index), got an answer, and acted
+  on it — and the answer was to a neighbouring question. Any row change lands in
+  **both** presentations; `check_ripple_parity.py` enforces trigger-parity, so a
+  row added to one and not the other fails `lint`.
   **The open question is the shape of the fix**, not whether there is a defect:
-  N rows, N widened rows, or a note about the table's granularity. Decide once,
-  across all four.
+  N rows, N widened rows, or a note about the table's granularity. That question
+  is shared by instances **1 to 4**, which want a row and differ only in trigger.
+  **Instances 5 and 6 each carry a second disposition of their own**, stated in
+  place: 5's is deleting the restating copies rather than adding a row, and 6's
+  is that a gate over "an assertion went stale" is harder than it looks. So this
+  is one class with one shared question and two members that may not answer it
+  the same way — and instance 5's choice sets the effort for the group, which is
+  why `effort:` is a range.
   1. **New test file** asks whether the file needs an `os_sensitive` mark and is
      silent on placement, so nothing routes an author to TEST-003 when adding
      one. `check_test_placement.py` enforces three other rules and not this one.
@@ -1026,6 +1102,36 @@ the commit that writes it lands, so cite the generator instead.
      it, and the open question is whether the row can say anything more useful
      than "grep the ID and read every hit".
 
+- [ ] **ID-207 — Push `check_formal_trace.py` past citation hygiene (steps 3 and 4 only)**
+  spec: — · effort: S/M · audience: contributor.tooling
+  ID-206 shipped `scripts/check_formal_trace.py`; a PR #663 review confirmed it
+  certifies *citation hygiene at spec-ID granularity*, not clause-level
+  enforcement. Two of the four hardening steps originally proposed are cheap,
+  have measured motivation, and are what remains of this item:
+  3. **Push T past citation.** A marker only cites an ID; it does not prove the
+     test asserts the clause, is enabled, or cites the *right* ID — a
+     wrong-but-real ID passes F2 and even satisfies F1. This is the
+     "citation ≠ assertion" half of what BK-324's four instances exhibited.
+  4. **Bar baseline growth mechanically.** `_BASELINE` shrink-only is a review
+     convention; a new violation can be parked by editing the frozenset. A
+     committed count or hash pinned by a separate check would make it mechanical.
+  **Steps 1 and 2 were dropped, on this item's own measurement.** Step 2 (clause
+  granularity instead of ID granularity) carries an L cost over roughly **2.5%**
+  of the claim space — the Dafny model reaches 26 of 933 declared sections and 94
+  tag sites of a corpus estimated near 3,600 clauses — and a design investigation
+  found it would have caught **none** of the four motivating instances. The
+  decisive case is review findings 1/3/4: BE-021's F1 was green for the entire
+  life of the divergence, because the tests existed, cited the right ID, and were
+  enabled, while carrying per-fixture skips and capability gates. Finer
+  identifiers make omission detection finer; they do not convert it into a
+  contradiction detector. It also needed an ADR before implementation, since
+  sub-IDs change the spec-ID grammar
+  ([`000-process.md` Rule 5](000-process.md#rules)) on which ~11,800 citations
+  across 518 files depend. Step 1 (derive D mechanically from contract `ensures`)
+  goes with it, being step 2's precondition.
+  **Do not re-file the dropped half without new evidence** — the measurement
+  above is the reason, and it is recorded here so the argument is not had twice.
+
 - [ ] **ID-245 — Derived inventories replacing hand-maintained ones**
   spec: — · effort: M · audience: infra.test, contributor.tooling
   Three generated surfaces, one shared design decision, and the same
@@ -1066,36 +1172,6 @@ the commit that writes it lands, so cite the generator instead.
   convention or a curated mapping, and a curated mapping is precisely the
   parallel-artifact-that-drifts problem these exist to close. That decision is
   unmade and it is one decision, not three.
-
-- [ ] **ID-207 — Push `check_formal_trace.py` past citation hygiene (steps 3 and 4 only)**
-  spec: — · effort: S/M · audience: contributor.tooling
-  ID-206 shipped `scripts/check_formal_trace.py`; a PR #663 review confirmed it
-  certifies *citation hygiene at spec-ID granularity*, not clause-level
-  enforcement. Two of the four hardening steps originally proposed are cheap,
-  have measured motivation, and are what remains of this item:
-  3. **Push T past citation.** A marker only cites an ID; it does not prove the
-     test asserts the clause, is enabled, or cites the *right* ID — a
-     wrong-but-real ID passes F2 and even satisfies F1. This is the
-     "citation ≠ assertion" half of what BK-324's four instances exhibited.
-  4. **Bar baseline growth mechanically.** `_BASELINE` shrink-only is a review
-     convention; a new violation can be parked by editing the frozenset. A
-     committed count or hash pinned by a separate check would make it mechanical.
-  **Steps 1 and 2 were dropped, on this item's own measurement.** Step 2 (clause
-  granularity instead of ID granularity) carries an L cost over roughly **2.5%**
-  of the claim space — the Dafny model reaches 26 of 933 declared sections and 94
-  tag sites of a corpus estimated near 3,600 clauses — and a design investigation
-  found it would have caught **none** of the four motivating instances. The
-  decisive case is review findings 1/3/4: BE-021's F1 was green for the entire
-  life of the divergence, because the tests existed, cited the right ID, and were
-  enabled, while carrying per-fixture skips and capability gates. Finer
-  identifiers make omission detection finer; they do not convert it into a
-  contradiction detector. It also needed an ADR before implementation, since
-  sub-IDs change the spec-ID grammar
-  ([`000-process.md` Rule 5](000-process.md#rules)) on which ~11,800 citations
-  across 518 files depend. Step 1 (derive D mechanically from contract `ensures`)
-  goes with it, being step 2's precondition.
-  **Do not re-file the dropped half without new evidence** — the measurement
-  above is the reason, and it is recorded here so the argument is not had twice.
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   spec: — · effort: S · audience: library.maintainer

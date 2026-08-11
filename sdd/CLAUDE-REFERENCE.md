@@ -315,7 +315,7 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 | Propose a significant change             | Write an RFC in `sdd/rfcs/` (see [`sdd/templates/rfc-template.md`](templates/rfc-template.md)) |
 | Explore feasibility of an idea           | Write a research doc in `sdd/research/`              |
 | Record a new design decision             | Add an ADR in `sdd/adrs/`                            |
-| Log a bug or improvement idea            | Append to `sdd/BACKLOG.md` (Ideas section)           |
+| Log a bug or improvement idea            | Add to the `sdd/BACKLOG.md` section whose promise it serves — it is not filed if none does, and there is no holding area. See [§ How this file works](BACKLOG.md#how-this-file-works) |
 | Document a user-facing change            | `CHANGELOG.md` — under `[Unreleased]` or version     |
 | Share a process insight or lesson learned | `DEVELOPMENT_STORY.md`                               |
 | Check or update code style conventions   | `sdd/DESIGN.md`                                      |

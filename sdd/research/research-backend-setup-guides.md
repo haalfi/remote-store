@@ -259,12 +259,12 @@ guide says so explicitly.
 **Pain it retires.** Disabling shared-key auth and public access on a
 storage account, then wiring `DefaultAzureCredential` plus Storage Blob
 Data Contributor RBAC plus firewall rules for CI runners. Trips up users
-on Microsoft Q&A 5769536 and similar threads. Adjacent to our iceboxed
-ID-118b (Azure TLS CA bundle, Phase 2 — Azure Stack Hub / on-prem).
+on Microsoft Q&A 5769536 and similar threads. Adjacent to ID-118b (Azure TLS CA bundle, Phase 2 — Azure Stack Hub /
+on-prem), since retired; see BACKLOG-DONE § Decided against.
 
 **Evidence pointers.**
 
-- In-repo: BACKLOG ID-118b (iceboxed) for the on-prem variant;
+- In-repo: ID-118b (retired) for the on-prem variant;
   `azure-hns-setup.md` covers account-key auth only.
 - External Tier-1 #6 (OIDC + RBAC + firewall for CI runners), #5 (SAS
   token expiry that fails silently on stream-style writes); Tier-2.C
@@ -287,7 +287,8 @@ entire guide — partial coverage (keyless without private endpoints, or
 vice versa) would mis-set user expectations.
 
 **Out of scope.** Microsoft Entra ID administration (link to Microsoft
-docs); Azure Stack Hub specifics (fold into ID-118b if it reactivates).
+docs); Azure Stack Hub specifics (ID-118b was retired — re-file under a new
+ID if a user reports the need).
 
 **Cross-links.** From `azure.md` and `azure-hns-setup.md`. To `retry.md`
 and `troubleshooting.md`.
@@ -468,7 +469,7 @@ once; after that they are independent. Phase 3 is gated on §8 Q5.
    each guide is committed to.
 
 4. **Code-side flags (§6).** Should the third-S3-lane question be folded
-   into ID-114 (iceboxed PyArrow bucket-path research) or get its own
+   into ID-114 (PyArrow bucket-path research, since retired) or get its own
    ID? Recommendation: **own ID** — different design question, different
    evidence base.
 

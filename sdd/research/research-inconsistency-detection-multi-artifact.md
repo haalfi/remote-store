@@ -1083,7 +1083,7 @@ it to contract change rather than to the calendar follows **S9** and gives the
 step actual content beyond the word "scheduled".
 
 ### Step 7: Publish the characteristic-accountability record
-**Closes:** G-5 · **Mechanism:** E2 · **Size:** S · **Owner: ID-236**
+**Closes:** G-5 · **Mechanism:** E2 · **Size:** S · **Owner: ID-245**
 
 Render `check_formal_trace.py`'s coverage matrix as a generated artifact at
 release time: every spec ID, its verification evidence (test marker, Dafny tag,
@@ -1091,7 +1091,7 @@ TLA+ invariant), and its status. Makes "what was verified, and by what" answerab
 historically rather than only at HEAD.
 
 ### Step 8: Derive the artifact-pair inventory instead of hand-maintaining it
-**Closes:** the § 4b reflexive gap · **Mechanism:** E3 · **Size:** S · **Owner: ID-237**
+**Closes:** the § 4b reflexive gap · **Mechanism:** E3 · **Size:** S · **Owner: ID-245**
 
 § 4b's inventory of which artifact pairs are checked was assembled by hand and the
 document says of it: "The table will drift, and nothing will notice." Leaving a

@@ -266,8 +266,7 @@ constructor.
   *avoid* materialisation, this is more dangerous than over a sync
   REST backend. Users wrapping an async backend should set
   `max_content_size` explicitly; the cache extension should learn to
-  warn when wrapped over a bridged backend (tracked under ID-217, which
-  owns the async extension surface as a whole).
+  warn when wrapped over a bridged backend (tracked as ID-218).
 - **Bridged read streams are forward-only.** The `BinaryIO` returned
   by `read()` is not natively seekable: `seekable()` returns `False`
   and `seek()`, `tell()`, and `fileno()` are not provided.
