@@ -14,18 +14,13 @@ name: Drift Guard
 # This is one of the scheduled/automated CI guards; the cross-guard inventory
 # and the durable-TODO principle live in sdd/CI-OPERATIONS.md.
 #
-# Refreshing baselines: a lock is Python- AND OS-specific. Resolving on a
-# non-Linux host pulls platform-conditional deps this workflow never sees
-# (colorama, pywin32, ...), which the next run then reports as drift — so the
-# rolling issue never clears. On Linux + the pinned Python in `.python-version`,
-# the maintainer runs `hatch run drift-check refresh-baseline <extra>` locally.
-# On any other host, download this run's `candidate-baseline-<extra>` artifact
-# (uploaded below for exactly that purpose) and write the lock from it. That
-# download needs the artifact blob host, not just api.github.com, so an egress
-# policy scoped to the GitHub API denies it; the same freeze can be rebuilt from
-# the rolling issue instead (baseline + the issue body's rows). Either way,
-# commit the updated lock + regenerated docs page in the same PR as whatever
-# motivated the refresh. See infra/drift-locks/README.md § Refreshing.
+# Refreshing baselines: a lock is Python- AND OS-specific, so the route depends
+# on the host AND on which of the two refresh scenarios you are in (accepting a
+# drift finding vs shipping a deliberate floor bump — they do not share routes).
+# The `candidate-baseline-<extra>` artifact uploaded below exists to serve the
+# first of those from any host. infra/drift-locks/README.md § Refreshing is
+# authoritative on all of it; commit the updated lock + regenerated docs page in
+# the same PR as whatever motivated the refresh.
 #
 # The smoke as a refresh gate (ID-231): the extra is resolved ONCE per leg
 # (`drift_check.py diff --emit-freeze`), and that single freeze is what the

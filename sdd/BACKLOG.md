@@ -424,6 +424,32 @@ and the highest ID already in this file, then take the next integer. Run
   that a cross-skill claim is decided on the target skill's traces. Until such a
   run exists this is a question, not a gap.
 
+- [ ] **BK-350 — The drift-refresh procedure spans five prose sites with no gate over any of them**
+  spec: — · effort: M · audience: contributor.process, infra.ci
+  `infra/drift-locks/README.md` § Refreshing, `.claude/skills/drift/SKILL.md`,
+  `sdd/CI-OPERATIONS.md`, `CONTRIBUTING.md` and the `.github/workflows/drift-guard.yml`
+  header all describe how a baseline is refreshed. No `check_*` script covers any of
+  them, so when they disagree nothing reports it — the divergence is unnoticed rather
+  than tolerated, which [`DRIFT-RULES.md` rule 6](DRIFT-RULES.md#rules) distinguishes.
+  Evidence: PR #959's review found 15 findings across these files, 4 rated high, in a
+  round whose entire purpose was to make them agree. Three were cases where a literal
+  follower produces a wrong artifact silently. See trace `id-182-drift-guard.yml`
+  finding #33 for the diagnosis — the round treated two distinct procedures (drift
+  finding vs deliberate floor bump) as five copies of one.
+  PR #959 responded structurally rather than with a gate: README became the single
+  description and the other four sites were cut back to links plus what is true at
+  their own altitude. That is [rule 1](DRIFT-RULES.md#one-driver)'s "one normative
+  description driving N artifacts" and it may be the whole answer — **this item may
+  legitimately close as "no gate needed"**. What is untracked is the question, not a
+  committed mechanism.
+  If a gate is wanted, [rule 3](DRIFT-RULES.md#claim-space) is the hard part: the
+  claim space here is prose, which has no stable identifiers to enumerate from. A
+  check that cannot name the differing element is not ready to add (rule 2). Plausible
+  narrow forms: assert the four non-authority sites contain no fenced command block
+  for a refresh, or that each links to README § Refreshing. Both are shape checks, not
+  agreement checks, and should be evaluated against whether they would have caught any
+  of the 15.
+
 - [ ] **BK-347 — A diff outside CI's `CODE_PAT` is routed away from the ADR drift gate, and the local gate misses a different set**
   spec: — · effort: S · audience: contributor.process, infra.ci
   `gen_adr_digest.py --check` gates `sdd/adrs/DIGEST.md` freshness **and**

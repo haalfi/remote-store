@@ -261,12 +261,12 @@ review_rounds: 6
 #      Resolved in review: the artifact is not the only way to obtain the run's
 #      resolution. The candidate freeze IS the committed baseline with the issue
 #      body's rows applied — the report enumerates every differing package, so a
-#      package absent from its tables is unchanged. Reconstructing it offline is
-#      byte-identical to the download and needs only api.github.com. Both
-#      procedure sites now document that route (README § Refreshing and the
-#      /drift skill), which is #28's lesson applied rather than re-learned: a
-#      caveat recorded only in the trace that hit it is not recorded where the
-#      procedure is read.
+#      package absent from its tables is unchanged. Reconstructing it offline
+#      reproduces the artifact's payload byte for byte and needs only
+#      api.github.com. README § Refreshing documents it; the other sites link.
+#      Note the precondition found later: reconstruction needs a non-stub
+#      baseline and status=drift, so a stub reconstructs to an EMPTY lock and the
+#      artifact route is the one that serves it.
 #  31. The local-resolve `--pre` gap README § Refreshing warns about is real,
 #      not theoretical. Re-resolving at commit time landed 3 packages above what
 #      the run smoked, across 4 extras and 5 (extra, package) pairs:
@@ -304,11 +304,38 @@ review_rounds: 6
 #      reach did not match what the smoke was trusted to prove. Filed as BUG-250
 #      rather than fixed here — widening the smoke is not a baseline refresh, and
 #      the import-only shape it must preserve was itself deliberate (BUG-225).
+#  33. The fix round for #30/#31 introduced more defects than it closed, and the
+#      cause was a category error, not carelessness. Propagating the caveat to
+#      "every procedure site" treated FIVE documents as five copies of one
+#      procedure. They are not. There are two procedures — refresh after a drift
+#      finding (three routes, all aimed at the run's resolution) and refresh after
+#      a deliberate floor bump (local resolve ONLY, because the run resolves from
+#      master and its published resolution predates your bump) — plus one shared
+#      constraint, the OS+Python specificity of a lock. Writing the drift-finding
+#      routes into CONTRIBUTING.md, whose section is scoped to floor bumps, sent
+#      an external contributor to a route that cannot produce the lock their PR
+#      exists to ship, and would have failed silently: the lock is well-formed and
+#      the next run reports it ok. Two independent reviewers found the symptom;
+#      neither named the conflation, which is why the fix is the scenario split in
+#      README rather than a corrected link.
+#      Two more from the same round, both self-inflicted by the fix: the
+#      reconstruction self-check said the lock must differ from the baseline "in
+#      nothing else" while step 8 required `# captured:` to advance — an
+#      unsatisfiable pair, created by broadening a package-scoped clause to a
+#      file-scoped one — and "byte-identical to the artifact" compared a lock file
+#      to a headerless freeze. The payload is byte-identical; the file cannot be.
+#      Both docs now scope the claim and the check to the payload.
+#      Structural lesson, stronger than #28's: #28 said record the caveat where
+#      the procedure is read. Doing that by writing it into five documents created
+#      the divergence it was meant to prevent, because no check_* gate covers
+#      prose. The durable form is one description plus links, and the sites that
+#      are not the authority carry only what is true at their own altitude.
 
 discovery_followups:
   - BUG-232  # [s3-pyarrow] / [bench] float past the pyarrow<25 ceiling
   - ID-231   # drift smoke validates a mixed version set, not the candidate baseline
   - BUG-250  # [graph] smoke loads 1 of 4 declared deps, 0 of the 3 that drifted
+  - BK-350   # the five-site refresh procedure has no check_* gate over any of it
 
 surprising_ripples:
   - scripts/check_infra_settings.py
