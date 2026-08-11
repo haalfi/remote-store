@@ -132,7 +132,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   contradicts. All three fixed on this branch, in a commit that is itself
   unreviewed — the same gate open one state later, which is what ending a
   convergence loop by hand costs and is recorded rather than smoothed over.
-  Produced [BK-349](BACKLOG.md).
+  Produced an `/orchestrate` reading-mode item, since removed for want of
+  evidence from an `/orchestrate` delivery; see ADR-0037 § Consequences.
   **No CHANGELOG entry**: `contributor.process` with no user-facing framework,
   per the schema's derived rule — the same call BK-338, BK-342 and BK-344 each
   made (a grep of `CHANGELOG.md` for those three IDs returns nothing).
@@ -427,7 +428,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   produced the only measured refutation of the run — the tamper check's stated
   residual was two categories narrower than what running it showed — plus
   findings on two of the eight untouched files. Method over identity, on the PR
-  arguing for it. **Produced two items**: [BK-347](BACKLOG.md), a diff outside
+  arguing for it. **Produced two items**: the ADR-drift-gate routing defect, now carried by
+  [BK-333](BACKLOG.md) — a diff outside
   CI's `CODE_PAT` routed away from the ADR drift gate (filed as "ADR-only",
   widened by BK-348's own CI; the local gate misses a different set, on a
   different classifier); and BK-348 (closed
@@ -832,7 +834,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Python defect fix; and `const Root := "."` with the adapter mapping `""` onto
   it was already the model's position, so facet 1 aligned Python to Dafny. The
   one unmodelled half — `Valid()` never asserts `Root in fs` — is
-  **[ID-240](BACKLOG.md)**.
+  left unmodelled deliberately: adding the conjunct obliges every existing
+  lemma to re-establish it, and the conformance suite already covers the
+  empty-store case, so no item carries it.
   **Round-trip consequence, recorded in all four homes.** `native_path(".")` and
   `native_path("")` share one native path, so `to_key(native_path("."))` is `""`.
   Forced — an inverse cannot return two spellings. BE-025 and BE-029 took it in
@@ -2849,7 +2853,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   bullet (the real cause is blocking spool I/O, now mitigated in-backend) and a
   pointer was added at the superseded bullet. Spec: GR-015 / GR-019 gained
   event-loop-liveness postconditions. Out of scope and left as follow-ups: token
-  single-flight (**BK-292**), `ext.cache` stampede (**ID-218**). Trace:
+  single-flight (**BK-292**), `ext.cache` stampede (folded into **ID-217**). Trace:
   `sdd/traces/BK-290-graph-io-robustness.yml`.
 
 - [x] **BK-288 — Cross-backend concurrent-use-posture documentation (docs leg of the concurrency contract)**
@@ -3179,14 +3183,15 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
     `AsyncStore` consumer reaches `ext.*` only via `AsyncBackendSyncAdapter`,
     forfeiting async streaming. Decision (build vs. formally decline) left to
     scoping.
-  - **ID-218 — `ext.cache` warn over a bridged backend.** Owns ADR-0025 § Risks'
+  - **`ext.cache` warn over a bridged backend** (filed as ID-218, since folded
+    into ID-217). Owns ADR-0025 § Risks'
     promised guard: `CachedStore` with unset `max_content_size` over an
     async-native backend silently materialises what the backend exists to stream.
   Closing the loop on the source side: GR-003 now cites ID-217 instead of "a
-  separate backlog item", and ADR-0025 § Risks cites ID-218 instead of "(tracked
+  separate backlog item", and ADR-0025 § Risks cites ID-217 instead of "(tracked
   separately)" — so neither promise dangles. The named async-ext surface
   (glob / observe / otel / cache / integrity) now has owners: glob / observe /
-  otel / integrity under ID-217, the sync-cache guard under ID-218. No code, no
+  otel / integrity under ID-217, and the sync-cache guard with them. No code, no
   spec-behaviour change, no CHANGELOG (library.maintainer / contributor.process,
   no `user.*` audience). Trace: `sdd/traces/BK-268-file-deferred-async-ext-followups.yml`.
 
@@ -4705,10 +4710,11 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   - **Spec correction.** The backlog cited `NPR-020`, which is
     `Backend.native_path` — unrelated. The contract lives in the path model;
     added `PATH-016` / `PATH-017` to `sdd/specs/004-path-model.md`.
-  - **Parity audit → ID-215.** Catalogued the remaining `PurePath` members
+  - **Parity audit.** Catalogued the remaining `PurePath` members
     (`stem`, `suffixes`, `with_*`, `joinpath`, `parents`, `match`,
     `relative_to`, …) as deferred candidates; recorded informatively in spec
-    004 and spun out as ID-215 rather than widening this S-sized item.
+    004 rather than widening this S-sized item. Spun out as a deferred item,
+    since removed: no demand materialised, and spec 004 is the durable record.
   Trace: `sdd/traces/id-196-as-posix-pathlib-parity.yml`.
 
 - [x] **ID-203 — Align `tests/` folder structure with `src/` package layout**
@@ -8759,7 +8765,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   5. Extended conformance suite — 42 test functions derived from Dafny
      postconditions (`@pytest.mark.extended_conformance`)
   7. `ResourceWarning` safety net — `__del__` on SFTP, Azure, AsyncAzure
-  Item 6 (`check_error_handling.py` AST script) deferred; see BK-139d in BACKLOG.md.
+  Item 6 (`check_error_handling.py` AST script) deferred and no longer tracked:
+  the BLE rules (item 4) and the extended conformance error-fidelity category
+  (item 5) cover the same error-swallowing bug class. Re-file if one escapes.
 
 - [x] **BK-139a — Bug prevention: `_safe_wrap` + PBT (deliverables 1–3)**
   From [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md):
@@ -9083,7 +9091,9 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
     `PythonFile` overhead acceptable. Phases 3–4 not needed.
     ([Verdict](research/research-azure-pyarrow-optimization.md#9-phase-2-verdict-real-workload-benchmarks))
   - Deferred: C++ Tier 1 via `pyarrow.fs.AzureFileSystem` — see
-    [ID-105](BACKLOG.md#integrations).
+    the [Phase 2 verdict](research/research-azure-pyarrow-optimization.md#9-phase-2-verdict-real-workload-benchmarks);
+    no item tracks it, pending a benchmark that shows the Tier 3 reader is the
+    bottleneck.
 
 - [x] **ID-100 — Seekable read capability + extension** (v0.20.0)
   `Capability.SEEKABLE_READ` flag for backends that always return seekable
@@ -9100,7 +9110,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `S3PyArrowBackend`. Env var fallback chain (`AWS_CA_BUNDLE` >
   `REQUESTS_CA_BUNDLE` > `SSL_CERT_FILE`), early path validation,
   `setdefault` injection for backward compat. Spec 039.
-  Phase 2 (Azure) deferred as ID-118b.
+  Phase 2 (Azure) deferred and untracked — primarily Azure Stack Hub /
+  on-premises; re-file when a user reports the need.
 
 - [x] **ID-112 — Non-recursive `get_folder_info` optimization** (v0.20.0)
   Added `max_depth` parameter to `Store.get_folder_info()`. When set,

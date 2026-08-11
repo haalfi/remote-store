@@ -1,7 +1,7 @@
 # Development Backlog
 <!-- doc: repo-only -->
 
-Active work items and ideas. Completed items live in
+Active work items. Completed items live in
 [BACKLOG-DONE.md](BACKLOG-DONE.md).
 
 Items graduate through the SDD pipeline:
@@ -12,15 +12,28 @@ Items graduate through the SDD pipeline:
 
 **Status legend:** `[ ]` pending · `[~]` in progress
 
-**Ordering:** within each topic group, higher-priority or blocking items come
-first — **except** where a section declares its own ordering, which it must state
-in its own preamble. A section whose items form a dependency chain may order by
-execution instead; readers who open the file at a heading need that stated where
-they land, not only here.
+**Sections are promises, not topics.** Each section states one outcome and the
+condition under which it closes. Its items are mutually reinforcing: shipping
+half a section under-delivers its promise, which is why they sit together
+rather than under the subsystem they happen to touch.
+
+**Admission test.** An item that fits no section's promise has no demonstrated
+value and is not filed. There is no holding area — the previous Icebox was a
+slow deletion that charged review attention on every pass, and items that
+belonged in it were removed rather than migrated.
+
+**Ordering.** Sections are in priority order: 1–3 pay users, 4–6 pay
+maintainers. Within a section the order is execution sequence, so a dependency
+never sits below the thing that needs it. No section declares its own
+exception.
+
+**Granularity.** Work that shares a fix surface is one item with sub-bullets. A
+sub-bullet is not an ID and does not become one. A section that outgrows
+itself splits into two promises, never into loose items.
 
 **Item scope:** idea + decision-relevant constraints + open questions.
-Do not repeat process steps (those live in `sdd/000-process.md` and the ripple-check table).
-Existing items may be more verbose — trim on next touch.
+Do not repeat process steps (those live in `sdd/000-process.md` and the
+ripple-check table).
 
 **Item authority:** an item's **diagnosis** — the observed problem and the
 evidence for it — is durable, and is what the item is for. Any **prescription**
@@ -47,6 +60,9 @@ Effort: S = <1 day · M = 1–3 days · L = >3 days. `—` = not applicable.
 - Partially done → split: ship the done part to `BACKLOG-DONE.md` as `[x]`
   under its original ID, create a new ID here for the remaining work, and
   link both.
+- Decided against → delete from here, and fix every artifact that asserts the
+  item exists. A removed item leaves no tracker behind, so an inbound citation
+  becomes a claim about nothing.
 
 **ID prefixes:**
 
@@ -63,6 +79,17 @@ and the highest ID already in this file, then take the next integer. Run
 `hatch run gen-backlogid` after moving items to BACKLOG-DONE.md to keep the JSON current.
 `hatch run lint` flags drift and collisions.
 
+**Retired IDs — never reassign:** `BK-334`, `BK-335`, `BK-337`, `BK-347`,
+`BK-349`, `BK-350`, `BK-139d`, `ID-066`, `ID-067`, `ID-105`, `ID-114`,
+`ID-118b`, `ID-123`, `ID-197`, `ID-205`, `ID-215`, `ID-218`, `ID-236`,
+`ID-237`, `ID-239`, `ID-240`, `ID-246`, `ID-248`. Nine were absorbed into a
+surviving item and fourteen were removed as unearned; traces and
+`BACKLOG-DONE.md` still cite them as historical fact.
+**`gen_backlogid.py` cannot see this list** — it derives each prefix's maximum
+from the two backlog files, so removing the highest-numbered item lowers the
+next "safe" number and offers a burned one. `BK-349` is offered today and must
+not be taken. Teaching the generator to read this list is part of ID-235.
+
 ---
 
 ## Release Blockers
@@ -71,104 +98,19 @@ and the highest ID already in this file, then take the next integer. Run
 
 ---
 
-## SFTP
+## 1. Failures are predictable
 
-- [ ] **ID-181 — Per-backend `ssh-rsa` opt-in via `paramiko.Transport` subclass**
-  spec: SFTP-007 · effort: M · audience: user.api
-  `SFTPUtils.enable_ssh_rsa_compat()` mutates paramiko's class attributes
-  so every `Transport` instance in the process accepts SHA-1 host keys
-  thereafter. For single-server use cases this is fine and documented as
-  a security tradeoff. For processes that talk to a mix of modern and
-  legacy SFTP backends (e.g. a Dagster job, a multi-tenant pipeline),
-  the shim leaks SHA-1 acceptance into every other transport. A
-  per-backend escape hatch would scope the tradeoff to one backend.
-  Sketch: `BackendConfig(type="sftp", options={..., "allow_legacy_ssh_rsa": True})`
-  constructs a `Transport` subclass whose instance-level `_preferred_keys`
-  / `_preferred_pubkeys` include `ssh-rsa`, leaving `paramiko.Transport`
-  class attrs untouched. `Transport._key_info` and `RSAKey.HASHES` are
-  read at class scope so they still need a module-level patch — but
-  those are algorithm-name → impl lookup tables, not security policy.
-  Surfaced during BK-198 (PR 613) review.
+**Promise:** a caller catches one exception type, and an absent or denied
+store answers the same way on every backend.
 
----
+**Closes when:** BE-004, BE-005 and BE-021 hold on every registered backend
+against a container that does not exist, and a newly registered backend cannot
+pass CI without meeting them.
 
-## Lint / CI Completeness
-
-- [ ] **BK-345 — BE-021's absent-container rule has no registry-driven gate, so a new backend is silently exempt**
-  spec: BE-021 · effort: M · audience: infra.test
-  The rule binds every backend that can delete and whose container can be
-  absent, and it is verified by six hand-written per-backend suites
-  (`tests/backends/{s3,azure,azure/aio,sqlblob,sftp,local,graph/aio}/`).
-  `tests/backends/conformance/` gained nothing, so a seventh such backend
-  inherits no cell and passes CI without ever meeting the clause.
-  This is not hypothetical. `GraphBackend` went unexamined through six review
-  rounds of the change that wrote the rule (BUG-243) and turned out to
-  contradict it, which is BUG-248. A registry-driven cell would have failed on
-  the first run.
-  The repo already has the shape for this: [`sdd/TESTING.md`](TESTING.md)
-  Rule 13 § "Declaring an exemption" — a self-pruning exemption list where
-  silence is not consent. The work is a conformance cell parametrised over the
-  backend registry, plus an explicit exemption entry for the four backends BE-021
-  names as out of scope (`MemoryBackend` and `AsyncMemoryBackend`, whose
-  container is an in-process dict; `SQLQueryBackend` and `ReadOnlyHttpBackend`,
-  which do not declare `DELETE`).
-  **Note the fixture problem before scoping this.** An absent container is not
-  a state most conformance fixtures can reach: the S3 and Azure lanes need a
-  stub that 404s at container level (BUG-243 built those), SQLBlob needs a
-  dropped table, Local needs its root deleted, and Graph needs a respx route.
-  The per-backend suites exist partly because arranging the state is
-  per-backend. A registry cell may need a fixture-declared "make the container
-  absent" hook rather than a single shared arrangement.
-  Surfaced by the PR #952 round-8 review, which noted the PR records the lesson
-  in prose (BACKLOG-DONE: "scope a contract change by which backends have the
-  thing the clause names") without building the mechanism that would enforce it.
-
-- [ ] **BUG-250 — `[graph]`'s drift smoke reaches one of the extra's four declared dependencies**
-  spec: — · effort: S · audience: infra.ci
-  `scripts/drift_smoke_map.py:79` routes `graph` to
-  `["--import-only", "remote_store.aio.backends._graph.http"]`. That module's only
-  third-party import is `httpx`; `_graph/auth.py` imports `msal`, `msal-extensions`
-  and `platformdirs` lazily inside the methods that need them (`auth.py:173`,
-  `auth.py:194`). Reproduction: import the module and diff `sys.modules` — `httpx`
-  loads, `cffi` / `cryptography` / `platformdirs` / `msal` / `msal_extensions` do not.
-  So `check-graph` can go green while every drifted package in
-  `infra/drift-locks/graph.txt` is unexercised, and a `cryptography` or `msal` major
-  rides that verdict into a refresh. Hit in the 2026-08-10 firing (trace finding #32):
-  all three drifted packages were outside the smoke's reach, and the accepted
-  `cryptography` 49→50 major turned out to be covered only incidentally, by `[azure]`
-  and `[sftp]` smoking identical pins.
-  The import-only shape is deliberate (BUG-225) — it catches a graph-hostile `httpx`
-  without needing msal or a network. A fix must widen reach without regressing that:
-  import the lazy call sites behind a no-network path, or add a cassette-backed target.
-  Worth auditing the other `--import-only` entry (`otel`) for the same shape.
-
-- [ ] **BUG-249 — Three `S3Boto3Backend` listings leak a raw `botocore.ClientError`**
-  spec: BE-021 · effort: S · audience: user.api
-  BE-021's first invariant: "Backend-native exceptions never leak. All
-  exceptions are mapped to `remote_store` error types." `list_files`,
-  `list_folders` and `iter_children` are the only methods on the class that call
-  the wire without `_boto_errors` around it — every other method wraps, at
-  fourteen sites. So the paginator's exception reaches the caller untouched.
-  Measured against the missing-bucket stub, and against a 403 stub to show the
-  cause is local rather than contractual:
-  | Backend | `list_files` on an absent bucket | on a denied bucket |
-  | --- | --- | --- |
-  | S3, S3-PyArrow | empty listing | `PermissionDenied` |
-  | S3-Boto3 | raises `botocore.exceptions.ClientError` | raises `botocore` `AccessDenied` |
-  Two backends answer correctly against the identical wire response, so this is
-  an omission in one adapter, not an unstated contract question. The escaping
-  type is the worst part: a caller caching `except RemoteStoreError` catches
-  every backend but this one, and `ClientError` comes from a library they may
-  never have imported.
-  Pinned by `tests/backends/s3/test_denied_probe.py::TestS3Boto3ListingsLeakTheirNativeError`,
-  which asserts both that the error *is* a `ClientError` and that it is *not* a
-  `RemoteStoreError` — so the fix breaks the cell rather than making it vacuous.
-  The fix is one `with self._boto_errors(path):` per method, but note all three
-  are generators: the wrapper must be inside the generator body, not around the
-  call that returns it, or it will not be entered until the first `next()`.
-  Pre-existing. Surfaced by the PR #952 round-8 review, which enumerated every
-  operation on every backend against an absent container rather than only the
-  ones the clause governs.
+Four adapters currently disagree with the contract and with each other, so the
+group ships together or not at all: fixing four backends and leaving the fifth
+leaves portable error handling impossible, which is the whole promise. BUG-248
+comes first because it decides what two of the others owe.
 
 - [ ] **BUG-248 — BE-021's absent-container rule and GR-031's drive-identity escalation contradict each other**
   spec: BE-021, GR-031 · effort: M · audience: user.api
@@ -188,9 +130,9 @@ and the highest ID already in this file, then take the next integer. Run
   `tests/backends/graph/aio/test_absent_drive.py`. The probe row is not a
   divergence: GR-031's probe scope flattens every `404`, so BE-004/BE-005 hold.
   Only the two tolerant deletes disagree.
-  This is not a bug in either implementation — each matches its own spec — so it
-  needs adjudicating before anything is coded. The case for GR-031: a drive that
-  has been deleted or misconfigured is not the same event as an empty bucket, and
+  Neither implementation is buggy — each matches its own spec — so this needs
+  adjudicating before anything is coded. The case for GR-031: a drive that has
+  been deleted or misconfigured is not the same event as an empty bucket, and
   silently returning from a delete against a store the caller cannot reach hides a
   configuration error behind a success. The case for BE-021: it binds every
   backend precisely because the earlier per-backend answers disagreed, and a
@@ -202,36 +144,6 @@ and the highest ID already in this file, then take the next integer. Run
   does not cover. Weigh how much a rule is worth when nobody has seen it fire.
   Whichever clause loses must say so explicitly — an amended cross-reference in
   both specs, not silence in one.
-  Surfaced by the PR #952 round-7 review: `GraphBackend` went unexamined for six
-  rounds because the work was framed around flat-namespace backends, and Graph is
-  hierarchical.
-
-- [ ] **BUG-247 — `LocalBackend` reports a deleted root as "Path escapes root directory"**
-  spec: BE-004, BE-012, BE-013, BE-021 · effort: S · audience: user.api
-  Delete a `LocalBackend`'s root directory out from under it and **every** operation
-  raises `InvalidPath("Path escapes root directory")` — including
-  `delete(missing_ok=True)` and `delete_folder(missing_ok=True)`, which BE-021's
-  absent-container rule requires to return cleanly, and `exists()`, which BE-004
-  forbids from raising at all.
-  Nothing is escaping. `_within_root` walks up from the target to the deepest
-  *lexically existing* ancestor for its symlink-escape check; once the root is
-  gone that walk climbs past the root, so
-  `anchor.resolve().relative_to(self._root)` raises `ValueError` and containment
-  is reported as an escape. `InvalidPath` is the worst of the plausible answers:
-  it tells the caller their path is malformed when the path is fine and the store
-  is simply absent.
-  Reproduction and the current behaviour are pinned in
-  `tests/backends/local/test_absent_root.py` — the contract cells are
-  `xfail(strict=True)`, so fixing this flips them to XPASS and fails the suite
-  until the markers come off.
-  **Care required:** `_within_root` is the symlink-escape guard, so a fix must
-  distinguish "anchor escaped because the root is gone" from "anchor escaped
-  because the path really does point outside" without weakening the second. A
-  root-existence check before the walk is the obvious shape, at the cost of a
-  `stat` per call — measure before adopting it.
-  Surfaced by BUG-243, whose spec rationale asserted the opposite (that Local
-  already treated an absent root as an absent path) on the strength of two
-  code readings; the first test that ran it disproved it.
 
 - [ ] **BUG-246 — An absent container raises where the contract says `False`, `NotFound`, or an empty listing**
   spec: BE-004, BE-005, BE-021 · effort: M · audience: user.api
@@ -246,8 +158,8 @@ and the highest ID already in this file, then take the next integer. Run
   | S3-Boto3 | raises `NotFound` | `False` | raises `NotFound` |
   | Azure non-HNS (sync and async) | raises `NotFound` | `False` | raises `NotFound` |
   | SQLBlob | raises `BackendUnavailable` | raises `BackendUnavailable` | raises `BackendUnavailable` |
-  Four backends, three rows: `AzureBackend` and `AsyncAzureBackend` share one
-  because they answer identically and need the same fix.
+  `AzureBackend` and `AsyncAzureBackend` share a row because they answer
+  identically and need the same fix.
   Two different root causes, so budget for two fixes. On S3-Boto3 and Azure the
   `is_file` column shows it is local: the HEAD-backed probe already absorbs the
   404 and only the prefix-listing-backed ones do not. On SQLBlob all three run
@@ -279,14 +191,60 @@ and the highest ID already in this file, then take the next integer. Run
   rows above fixes this with them; there is nothing separate to decide.
   Pre-existing — BUG-243 neither introduced nor touched it, having decided only
   what `missing_ok` owes on the two deletes.
-  Surfaced by the PR #952 round-2 review; the SQLBlob probe row added in round
-  5, which caught BE-021's divergence list claiming backlog coverage this item
-  did not yet provide. Widened to the full operation set in round 8, which
-  caught the *same* gap a second time: the round-5 fix added the three probes
-  the finding named and left the eight other operations BE-021's own bullet
-  claimed were tracked. A divergence list that says "every operation except X"
-  needs an item scoped to every operation except X, not to the subset a reviewer
-  happened to measure.
+
+- [ ] **BUG-249 — Three `S3Boto3Backend` listings leak a raw `botocore.ClientError`**
+  spec: BE-021 · effort: S · audience: user.api
+  BE-021's first invariant: "Backend-native exceptions never leak. All
+  exceptions are mapped to `remote_store` error types." `list_files`,
+  `list_folders` and `iter_children` are the only methods on the class that call
+  the wire without `_boto_errors` around it — every other method wraps, at
+  fourteen sites. So the paginator's exception reaches the caller untouched.
+  Measured against the missing-bucket stub, and against a 403 stub to show the
+  cause is local rather than contractual:
+  | Backend | `list_files` on an absent bucket | on a denied bucket |
+  | --- | --- | --- |
+  | S3, S3-PyArrow | empty listing | `PermissionDenied` |
+  | S3-Boto3 | raises `botocore.exceptions.ClientError` | raises `botocore` `AccessDenied` |
+  Two backends answer correctly against the identical wire response, so this is
+  an omission in one adapter, not an unstated contract question. The escaping
+  type is the worst part: a caller catching `except RemoteStoreError` catches
+  every backend but this one, and `ClientError` comes from a library they may
+  never have imported.
+  Pinned by `tests/backends/s3/test_denied_probe.py::TestS3Boto3ListingsLeakTheirNativeError`,
+  which asserts both that the error *is* a `ClientError` and that it is *not* a
+  `RemoteStoreError` — so the fix breaks the cell rather than making it vacuous.
+  The fix is one `with self._boto_errors(path):` per method, but note all three
+  are generators: the wrapper must be inside the generator body, not around the
+  call that returns it, or it will not be entered until the first `next()`.
+  **Co-ship with BUG-246's S3-Boto3 row** — same adapter, same idiom, and
+  BUG-246's diagnosis puts its S3-Boto3 failures on the prefix-listing paths
+  this item wraps.
+
+- [ ] **BUG-247 — `LocalBackend` reports a deleted root as "Path escapes root directory"**
+  spec: BE-004, BE-012, BE-013, BE-021 · effort: S · audience: user.api
+  Delete a `LocalBackend`'s root directory out from under it and **every** operation
+  raises `InvalidPath("Path escapes root directory")` — including
+  `delete(missing_ok=True)` and `delete_folder(missing_ok=True)`, which BE-021's
+  absent-container rule requires to return cleanly, and `exists()`, which BE-004
+  forbids from raising at all.
+  Nothing is escaping. `_within_root` walks up from the target to the deepest
+  *lexically existing* ancestor for its symlink-escape check; once the root is
+  gone that walk climbs past the root, so
+  `anchor.resolve().relative_to(self._root)` raises `ValueError` and containment
+  is reported as an escape. `InvalidPath` is the worst of the plausible answers:
+  it tells the caller their path is malformed when the path is fine and the store
+  is simply absent.
+  Reproduction and the current behaviour are pinned in
+  `tests/backends/local/test_absent_root.py` — the contract cells are
+  `xfail(strict=True)`, so fixing this flips them to XPASS and fails the suite
+  until the markers come off.
+  **Care required:** `_within_root` is the symlink-escape guard, so a fix must
+  distinguish "anchor escaped because the root is gone" from "anchor escaped
+  because the path really does point outside" without weakening the second. A
+  root-existence check before the walk is the obvious shape, at the cost of a
+  `stat` per call — measure before adopting it.
+  Local is the most-used backend, so this reaches more callers than any other
+  item in this section.
 
 - [ ] **BUG-245 — `SQLBlobBackend(create_table=False)` leaks `NoSuchTableError` from its constructor**
   spec: BE-021, SQL-BLOB-012 · effort: S · audience: user.api
@@ -305,8 +263,129 @@ and the highest ID already in this file, then take the next integer. Run
   itself is right — refusing to bind to an absent table is a sound thing to do,
   and is pinned by `tests/backends/sqlblob/test_absent_table.py`; only the error
   type is wrong.
-  Surfaced by BUG-243, which measured the constructor while scoping BE-012's
-  absent-container clause.
+
+- [ ] **BK-345 — BE-021's absent-container rule has no registry-driven gate, so a new backend is silently exempt**
+  spec: BE-021 · effort: M · audience: infra.test
+  The rule binds every backend that can delete and whose container can be
+  absent, and it is verified by six hand-written per-backend suites
+  (`tests/backends/{s3,azure,azure/aio,sqlblob,sftp,local,graph/aio}/`).
+  `tests/backends/conformance/` gained nothing, so a seventh such backend
+  inherits no cell and passes CI without ever meeting the clause.
+  This is not hypothetical. `GraphBackend` went unexamined through six review
+  rounds of the change that wrote the rule (BUG-243) and turned out to
+  contradict it, which is BUG-248 above. A registry-driven cell would have failed
+  on the first run.
+  The repo already has the shape for this: [`sdd/TESTING.md`](TESTING.md)
+  Rule 13 § "Declaring an exemption" — a self-pruning exemption list where
+  silence is not consent. The work is a conformance cell parametrised over the
+  backend registry, plus an explicit exemption entry for the four backends BE-021
+  names as out of scope (`MemoryBackend` and `AsyncMemoryBackend`, whose
+  container is an in-process dict; `SQLQueryBackend` and `ReadOnlyHttpBackend`,
+  which do not declare `DELETE`).
+  **Depends on ID-244 for the mechanism, and on BUG-248 for the exemption list.**
+  An absent container is not a state most conformance fixtures can reach: the S3
+  and Azure lanes need a stub that 404s at container level (BUG-243 built those),
+  SQLBlob needs a dropped table, Local needs its root deleted, and Graph needs a
+  respx route. That is the same per-fixture arrangement hook ID-244 has to decide
+  where to bind, so this item consumes that decision rather than making its own.
+  This is the item that makes the section's promise stay true for backend seven,
+  which is why it sits here and not with the coverage work.
+
+---
+
+## 2. Answers are correct, and the contract is proven
+
+**Promise:** the same call returns the same right result on every backend, and
+no clause of the contract ships unexercised.
+
+**Closes when:** no two backends can legally answer one call differently, and
+no contract clause is reachable only by a fixture that does not exist.
+
+A corrected clause nobody tests is the same defect one layer up, which is why
+the wrong-answer defects and the coverage holes are one promise. ID-244 leads
+because it owns the seeding decision BK-345 above also consumes.
+
+- [ ] **BUG-241 — SQL prefix probes build `LIKE` patterns without escaping `_` and `%`**
+  spec: — · effort: S · audience: user.api
+  `SQLBlobBackend._reject_folder` builds `LIKE key + "/%"`, and every other
+  prefix probe in `_sqlalchemy.py` follows the same convention. In SQL `LIKE`,
+  `_` matches any single character and `%` matches any sequence, so a key
+  containing either over-matches: probing `a_b` also matches `axb/...`, and a
+  key containing `%` matches far more.
+  **Consequence:** the wrong-type probe can report a folder that does not
+  exist, turning a `NotFound` into an `InvalidPath` for a sibling key whose
+  name merely resembles the target. Underscores in object keys are common, so
+  this is a wrong answer on ordinary data rather than a wrong error type.
+  The convention is file-wide, so fixing one site without the rest would be the
+  inconsistency this section exists to remove. Fix them together with
+  `ESCAPE`, or a dialect-appropriate equivalent.
+  **Test shape:** seed sibling keys that differ only in a `LIKE` metacharacter
+  position and assert the probe does not confuse them.
+
+- [ ] **BUG-240 — ASYNC-014 and DEPTH-003 state opposite rules, and `GraphBackend` implements the async one**
+  spec: ASYNC-014, DEPTH-003 · effort: S/M · audience: user.api
+  [ASYNC-014](specs/029-async-store-backend-api.md) says "`max_depth` limits
+  traversal depth (when set, `recursive` is ignored)" **while citing DEPTH-003**,
+  which states the opposite for the Backend ABC: `max_depth` applies only when
+  `recursive=True`. `GraphBackend.list_files` follows ASYNC-014 and pins it at
+  `tests/backends/graph/aio/test_list.py:183` — `recursive=False, max_depth=2`
+  returns depth-2 files, where a sync backend returns immediate children only.
+  So identical arguments return different files depending on the backend.
+  **Both readings are asserted by a passing test, on different backends.** That
+  is the state Rule 7 calls a live disagreement rather than a defect in one side,
+  so which way it resolves is a decision, not a lookup.
+  **The split is inside the async lane, not between the lanes.**
+  `AsyncMemoryBackend` and `AsyncAzureBackend` implement DEPTH-003's reading;
+  `GraphBackend` implements ASYNC-014's — two async backends already disagree
+  with a third.
+  **Three artifacts assert the ASYNC-014 reading, not one.** ASYNC-014 itself,
+  `tests/backends/graph/aio/test_list.py:183`, and `GraphBackend.list_files`'s
+  own docstring — which BK-331 made *authoritative* for depth strategy by
+  replacing spec 037's per-backend table with a pointer to each backend's
+  docstring. So closing this means changing a doc BK-331 promoted to source of
+  truth.
+  **Why nothing caught it:** there is no async twin of
+  `test_list_files_non_recursive_ignores_max_depth`, so conformance never
+  cross-checks the two; and both `Store` and `AsyncStore` normalise `max_depth`
+  into `recursive` before delegating, so the divergence is invisible to every
+  caller above the ABC. Reachable only by a direct backend call.
+  **Whichever way it goes, the async conformance cell is part of the fix** —
+  without it the next divergence is equally invisible. Expect it to turn a
+  backend red on arrival; that is the item working, not a regression.
+
+- [ ] **ID-244 — A read-only backend cannot reach any WRITE-gated contract cell**
+  spec: — · effort: M · audience: infra.test
+  Sibling of [ID-241](BACKLOG-DONE.md) (shipped), and the same class: a rule
+  gated so no fixture ever runs it. Here the gate is the **seeding discipline** —
+  conformance cells that need data call `backend.write`, so they sit behind
+  `fixture_params(Capability.WRITE)`. Any contract that happens to live in such a
+  class is therefore unreachable for a read-only backend, *including contracts
+  that have nothing to do with writing*.
+  **Measured instance.** SIO-009 (laziness: a LAZY_READ backend must not return a
+  BytesIO-backed stream) lives in `TestStreamingConformance`, a WRITE-gated class.
+  `ReadOnlyHttpBackend` is the registry's **only read-only LAZY_READ declarer** —
+  streaming is the whole justification for its capability set, per
+  `tests/backends/http/test_config.py::test_capabilities_are_read_metadata_lazy` —
+  and it was structurally excluded from the only cells asserting that contract.
+  The two per-backend read tests did not compensate: both assert content and
+  chunking, which a pre-loaded `BytesIO` satisfies identically.
+  Pinned per-backend by BK-340 in `test_read_is_lazy_not_bytesio`; that is a patch
+  over a structural hole, exactly as `tests/backends/sqlquery/test_config.py`'s
+  root cells were before BK-340 registered a fixture.
+  **The same hole is why BK-340's own `sqlquery` fixture reaches only 77 cells.**
+  Its content-bearing surface — read, glob, listing with keys present — is
+  WRITE-gated end to end, so registering the fixture bought the
+  capability-independent contract and nothing else.
+  **This item owns the arrangement-hook decision for BK-345 too.** The fix is a
+  seeding indirection (a per-fixture `seed` hook the cells call instead of
+  `backend.write`), and *where it binds* is unmade — on the fixture, on the
+  helper, or as a capability-neutral rewrite of the affected classes. The answer
+  decides how much of the conformance suite changes, and a hook whose seeded
+  content cannot round-trip (SQLQueryBackend materialises result sets, so
+  `read(k)` never returns the bytes a seeder "wrote") constrains it further: the
+  hook must express *presence*, not content, or the cells that use it must not
+  assert content. BK-345 needs the same indirection to make a container absent,
+  so decide the binding once for both shapes.
 
 - [ ] **ID-242 — Four `moto doesn't raise PermissionError` pragmas are coverage holes, not exemptions**
   spec: — · effort: S · audience: contributor
@@ -321,464 +400,8 @@ and the highest ID already in this file, then take the next integer. Run
   time, so it never gets revisited.
   **Now cheap to close:** `tests/backends/s3/test_denied_probe.py` established a
   `pytest-httpserver` harness that serves real 403s at Stage 1, no Docker and no
-  credentials. Each remaining pragma is a few params on that harness.
-  Surfaced by the PR #945 round-6 review, which noted the commit's own
-  "permanent hole" argument applies verbatim to the four it left behind.
-
-- [ ] **BUG-241 — SQL prefix probes build `LIKE` patterns without escaping `_` and `%`**
-  spec: — · effort: S · audience: user.api
-  `SQLBlobBackend._reject_folder` builds `LIKE key + "/%"`, and every other
-  prefix probe in `_sqlalchemy.py` follows the same convention. In SQL `LIKE`,
-  `_` matches any single character and `%` matches any sequence, so a key
-  containing either over-matches: probing `a_b` also matches `axb/...`, and a
-  key containing `%` matches far more.
-  **Consequence:** the wrong-type probe can report a folder that does not
-  exist, turning a `NotFound` into an `InvalidPath` for a sibling key whose
-  name merely resembles the target. Underscores in object keys are common.
-  **Not a blocker for the work that surfaced it** — it predates BK-324 and the
-  convention is file-wide, so fixing one site without the rest would be the
-  inconsistency this section exists to remove. Fix them together with
-  `ESCAPE`, or a dialect-appropriate equivalent.
-  **Test shape:** seed sibling keys that differ only in a `LIKE` metacharacter
-  position and assert the probe does not confuse them. Surfaced by the PR #945
-  round-5 review, which considered and deliberately did not block on it.
-
-- [ ] **BUG-240 — ASYNC-014 and DEPTH-003 state opposite rules, and `GraphBackend` implements the async one**
-  spec: ASYNC-014, DEPTH-003 · effort: S/M · audience: user.api
-  [ASYNC-014](specs/029-async-store-backend-api.md) says "`max_depth` limits
-  traversal depth (when set, `recursive` is ignored)" **while citing DEPTH-003**,
-  which states the opposite for the Backend ABC: `max_depth` applies only when
-  `recursive=True`. `GraphBackend.list_files` follows ASYNC-014 and pins it at
-  `tests/backends/graph/aio/test_list.py:183` — `recursive=False, max_depth=2`
-  returns depth-2 files, where a sync backend returns immediate children only.
-  **Both readings are asserted by a passing test, on different backends.** That
-  is the state Rule 7 calls a live disagreement rather than a defect in one side,
-  so which way it resolves is a decision, not a lookup.
-  **The split is inside the async lane, not between the lanes.**
-  `AsyncMemoryBackend` and `AsyncAzureBackend` implement DEPTH-003's reading;
-  `GraphBackend` implements ASYNC-014's. So this is not "sync says one thing,
-  async says another" — two async backends already disagree with a third.
-  The practical consequence: **the missing async conformance cell cannot be
-  added neutrally.** Whichever way it asserts, it turns a currently-green
-  backend red, which is why the cell's absence is load-bearing rather than an
-  oversight, and why this needs deciding before it can be closed.
-  **Three artifacts assert the ASYNC-014 reading, not one.** ASYNC-014 itself,
-  `tests/backends/graph/aio/test_list.py:183`, and `GraphBackend.list_files`'s
-  own docstring — which BK-331 made *authoritative* for depth strategy in this
-  same PR, by replacing spec 037's per-backend table with a pointer to each
-  backend's docstring. So closing this means changing a doc BK-331 just
-  promoted to source of truth.
-  **Why nothing caught it:** there is no async twin of
-  `test_list_files_non_recursive_ignores_max_depth`, so conformance never
-  cross-checks the two; and both `Store` and `AsyncStore` normalise `max_depth`
-  into `recursive` before delegating, so the divergence is invisible to every
-  caller above the ABC. Reachable only by a direct backend call.
-  **Predates BK-324** — the two clauses already disagreed; BK-324 only made
-  DEPTH-003 explicit enough for the contradiction to surface. Surfaced by the
-  PR #945 round-3 fix pass.
-  **Whichever way it goes, the async conformance cell is part of the fix** —
-  without it the next divergence is equally invisible. Expect it to turn a
-  backend red on arrival; that is the item working, not a regression.
-
-- [ ] **BK-346 — Three ripple-check rows answered a question adjacent to the one asked**
-  spec: — · effort: S · audience: contributor.process
-  Three `outcome: unclear` tags in
-  [`sdd/traces/bug-243-missing-ok-absent-container.yml`](traces/bug-243-missing-ok-absent-container.yml),
-  each a reader who consulted the ripple-check, got an answer, and acted on it —
-  and each answer was to a neighbouring question. Filed rather than fixed by
-  BK-344, whose subject was the review loop, not the table.
-  1. **New test file** asks whether the file needs an `os_sensitive` mark and is
-     silent on placement, so nothing routes an author to TEST-003 when adding
-     one. `check_test_placement.py` enforces three other rules and not this one.
-     Two files landed mixing sync and async in one module; a round-1 reviewer
-     caught it.
-  2. **Public method signature** answers for signatures. A spec clause can change
-     what an operation *tolerates* without touching a signature, and then no row
-     points from the clause to the ABC docstrings that define it — four of them
-     said nothing about the new rule for seven rounds.
-  3. **CHANGELOG entry** says where a new entry goes and stops. It does not ask
-     whether an *unreleased sibling* entry has been invalidated by the new one.
-     One had been, by the same item, in the same section.
-  **The shape is one class, not three instances**, which is why they are one
-  item: each row answers the question its title suggests, and a reader with the
-  adjacent question reads the answer as authoritative. Whether the fix is three
-  rows, three widened rows, or a note about the table's granularity is the open
-  question. Any row change lands in **both** presentations — `check_ripple_parity.py`
-  enforces trigger-parity.
-
-- [ ] **BK-349 — Decide whether `/orchestrate` adopts the whole-file reading mode**
-  spec: — · effort: S · audience: contributor.process
-  [ADR-0037](adrs/0037-whole-file-gate-and-derived-figures.md) leaves this open
-  in its Consequences and invites a decision "on that skill's own evidence, as
-  ADR-0036 did for selection" — an invitation with no tracker behind it, which
-  this repo's own reasoning says is the same as no invitation.
-  **What is settled and what is not.** The *gate* is settled: `/orchestrate` has
-  no exit gate for one to join, since ADR-0020 caps its rounds and nothing there
-  waits on a clean state to close. The *reading mode* is not. Its reviewers read
-  a diff-shaped surface exactly as `/ship`'s did, and methods reach that skill by
-  restatement rather than through the shared lens-menu link — which is how its
-  measuring reviewer got there, so "it is a method, not a lens" does not exclude
-  this one.
-  **What deciding it needs:** evidence from `/orchestrate`'s own deliveries, not
-  `/ship`'s. ADR-0037 rests on one `/ship` run, and ADR-0036 set the precedent
-  that a cross-skill claim is decided on the target skill's traces. Until such a
-  run exists this is a question, not a gap.
-
-- [ ] **BK-350 — The drift-refresh procedure spans five prose sites with no gate over any of them**
-  spec: — · effort: M · audience: contributor.process, infra.ci
-  `infra/drift-locks/README.md` § Refreshing, `.claude/skills/drift/SKILL.md`,
-  `sdd/CI-OPERATIONS.md`, `CONTRIBUTING.md` and the `.github/workflows/drift-guard.yml`
-  header all describe how a baseline is refreshed. No `check_*` script covers any of
-  them, so when they disagree nothing reports it — the divergence is unnoticed rather
-  than tolerated, which [`DRIFT-RULES.md` rule 6](DRIFT-RULES.md#rules) distinguishes.
-  Evidence: PR #959's review found 15 findings across these files, 4 rated high, in a
-  round whose entire purpose was to make them agree. Three were cases where a literal
-  follower produces a wrong artifact silently. See trace `id-182-drift-guard.yml`
-  finding #33 for the diagnosis — the round treated two distinct procedures (drift
-  finding vs deliberate floor bump) as five copies of one.
-  PR #959 responded structurally rather than with a gate: README became the single
-  description and the other four sites were cut back to links plus what is true at
-  their own altitude. That is [rule 1](DRIFT-RULES.md#one-driver)'s "one normative
-  description driving N artifacts" and it may be the whole answer — **this item may
-  legitimately close as "no gate needed"**. What is untracked is the question, not a
-  committed mechanism.
-  If a gate is wanted, [rule 3](DRIFT-RULES.md#claim-space) is the hard part: the
-  claim space here is prose, which has no stable identifiers to enumerate from. A
-  check that cannot name the differing element is not ready to add (rule 2). Plausible
-  narrow forms: assert the four non-authority sites contain no fenced command block
-  for a refresh, or that each links to README § Refreshing. Both are shape checks, not
-  agreement checks, and should be evaluated against whether they would have caught any
-  of the 15.
-
-- [ ] **BK-347 — A diff outside CI's `CODE_PAT` is routed away from the ADR drift gate, and the local gate misses a different set**
-  spec: — · effort: S · audience: contributor.process, infra.ci
-  `gen_adr_digest.py --check` gates `sdd/adrs/DIGEST.md` freshness **and**
-  supersession-graph consistency. Exactly one composite gate runs it: `preflight`,
-  which inlines the command. Not `lint`, not `docs-gate`. A standalone
-  `gen-adr-digest-check` alias also exists in `pyproject.toml` and **nothing
-  composes it** — so the checker is one alias away from any gate that wants it,
-  which is what makes the fix cheap and the omission easy to miss.
-  **Both paths miss it for the one diff class that always regenerates the file.**
-  The [PR validation gates](CLAUDE-REFERENCE.md#pr-validation-gates) route a
-  no-code diff to `lint` + `docs-gate`, so an ADR-only change never runs the
-  check locally. CI cannot backstop it: the `lint` job (which runs
-  `uvx hatch run preflight`) is gated on `code == 'true'`, and on a head matching
-  no `CODE_PAT` path it reports `skipped`. **Measured on commit `dc10a23`**
-  (PR #956, not its head): `gate`, `docs` and `setup` ran; `lint` skipped. That
-  commit touches two skills, two ADRs, a trace and BACKLOG-DONE — so the first
-  measurement was already of the wider class below, and "ADR-only" was the
-  item's label rather than its evidence.
-  **The class is wider than "ADR-only", measured on a second PR.** Commit
-  `26cf75b` on PR #958 adds an ADR *and* touches `.claude/skills/`, `CLAUDE.md`
-  and `sdd/traces/` — not an ADR-only diff by any reading — and
-  `gh api repos/haalfi/remote-store/commits/26cf75b/check-runs` still reports
-  `lint` skipped, with every test lane skipped alongside it. (Named as a commit,
-  not as "head": that PR's branch has moved since, and "head" would have
-  falsified itself.) The
-  trigger in CI is not how narrow the diff is; it is that **no path in it
-  matches `CODE_PAT`**, which is true of most process deliveries.
-  **The two halves have different triggers, and conflating them is a third
-  defect this item should not carry.** `CODE_PAT` is CI's, in `ci.yml`; the
-  local mechanical gate routes on the different list in
-  [PR validation gates](CLAUDE-REFERENCE.md#pr-validation-gates). They disagree
-  in both directions: an ADR plus a `.claude/hooks/` edit is outside `CODE_PAT`
-  yet locally runs `all` → `preflight` → the check, while an ADR plus a
-  `.github/workflows/` edit is inside `CODE_PAT` yet locally routes to
-  `lint` + `docs-gate`, which compose it nowhere. So the CI half is
-  "outside `CODE_PAT`" and the local half is "the classifier sends it to
-  `lint` + `docs-gate`" — scope any fix to both classifiers, not to one name.
-  The title was widened on the CI evidence; **the fix shape below still reads
-  narrower than the evidence and has not been re-scoped.**
-  **Consequence:** a hand-edited or stale `DIGEST.md` ships on the author's care
-  alone, and the `STALE:` failure lands on the *next* PR that happens to touch
-  code — the wrong PR to pay for it, and one whose author did not cause it.
-  **Two claims to fix or qualify, not just the routing.** The gates section says
-  "the two paths stay equivalent on docs coverage despite composing different
-  targets", which is false for this checker; and the Detailed checklist's **ADR**
-  row names `preflight` as the gate, which is accurate and is precisely why the
-  routing is wrong. Fix shape is open: add `gen-adr-digest-check` to `docs-gate`,
-  widen CI's path filter to treat `sdd/adrs/**` as lint-triggering, or both.
-  Surfaced by the PR #956 round-2 review. That PR's own digest was verified by
-  running the generator by hand, which is not the gate — which is the point.
-
-- [ ] **BK-334 — No ripple-check row covers adding a `hatch` script alias**
-  spec: — · effort: S · audience: contributor.process
-  The [Pre-work index](CLAUDE-REFERENCE.md#pre-work-index) has no trigger for
-  adding an entry to `pyproject.toml`'s `[tool.hatch.envs.default.scripts]`.
-  That edit is what decides whether a new `scripts/*.py` is reachable by
-  anything — whether it joins `lint` / `preflight` / `docs-gate` / `all`, or is
-  deliberately left out — and the table is silent on it.
-  **The trigger class, not the instance, is what makes this worth a row.** It
-  fires on every new script in `scripts/`, of which the repo has dozens and every
-  one carries an alias. Surfaced by the PR #944 review: BK-330 reasoned to the
-  right answer only via the adjacent cross-artifact row — which this same PR then
-  widened to name drift reports, so it now covers the report case and still says
-  nothing about a `gen_*`, a `bench-*`, or any other script.
-  Fix shape: one trigger row in **both** presentations of the ripple-check table
-  (`check_ripple_parity.py` enforces trigger-parity, so a row added to one and
-  not the other fails `lint`), naming the reachability question and the
-  `docs-gate`-vs-`lint` choice `check_traces` documents three lines above the
-  `report-trace-outcomes` alias.
-  **Distinct from BK-333**, which is scoped to three gates that CI *path filters*
-  misroute and whose fix is a `docs-gate` entry. This is a missing row in a
-  documentation table; different artifact, different fix, different verification.
-  BK-333's enumeration of exactly three is load-bearing and should not absorb it.
-
-- [ ] **BK-337 — Widening an authority doc's scope reaches no row that finds its restating copies**
-  spec: — · effort: S/M · audience: contributor.process
-  The [Pre-work index](CLAUDE-REFERENCE.md#pre-work-index) has a row for a **new**
-  authoritative process doc, and one for an authority **direction** amended (which
-  side governs). Neither fires on the commonest amendment: an existing authority
-  doc's **scope or subject sentence** widening. Nothing then finds the copies that
-  restate that scope to route readers in.
-  **Measured target set — six live restating copies** of one direction, at the
-  time of filing: `CLAUDE.md` § Drift checks, `sdd/CI-OPERATIONS.md`,
-  `sdd/CLAUDE-REFERENCE.md` in both ripple presentations,
-  `.claude/agents/sdd-expert.md` and `documentation-expert.md`, and
-  `.claude/skills/rvw-pr/SKILL.md` and `audit/SKILL.md`.
-  **Demonstrated recurrence:** PR #944 widened `DRIFT-RULES.md`'s scope sentence
-  and took four review rounds to find them all, being one copy short in three of
-  those rounds. `scripts/check_ripple_parity.py` structurally cannot help — it
-  enforces parity between the two ripple presentations, not between them and the
-  copies scattered through `.claude/**`.
-  **Two candidate dispositions, and choosing between them is the first half.**
-  Add a trigger row keyed on "an authority doc's scope or subject sentence is
-  widened", naming the `.claude/**` step lists and agent FOUNDATION blocks as
-  targets — or attack the cause and **delete the restatements**, leaving each
-  reader to link to the doc that states its own scope, as `CLAUDE.md` § Drift
-  checks already half-does ("that file states its own scope"). The second is
-  strictly better if it is achievable: a row keeps N copies synchronised, while
-  deletion removes the synchronisation problem. The obstacle is that agent-facing
-  files are read cold by a process that may not follow a link, which is the
-  reasoning BK-329 recorded when it accepted the copies in the first place.
-  **Distinct from BK-334**, which is scoped to `hatch` script aliases — a
-  different trigger with a different target set — and from BK-333's CI path
-  filters. Surfaced by the PR #944 review, which noted the diagnosis had been
-  recorded in that PR's trace and filed nowhere.
-
-- [ ] **ID-249 — Trace-outcome report revisit at the next release**
-  spec: — · effort: S · audience: contributor.process
-  First revisit ticket for the release-anchored trigger ID-238 shipped. Per
-  [`CONTRIBUTING.md` § Release](../CONTRIBUTING.md#release) Phase 0, each release
-  reads `hatch run report-trace-outcomes` and closes the open revisit ticket.
-  This item is the pin that makes the ticket findable — the half of the ID-150
-  pattern that "record a backlog entry" alone drops.
-  **The pin lives here, not in the checklist.** `CONTRIBUTING.md` is a published
-  surface, so [CONTENT-RULES Rules 1 and 5](CONTENT-RULES.md#rules) bar a tracker
-  ID from it (`check_no_tracker_refs` enforces this, and caught the first attempt).
-  The checklist therefore describes the behaviour and points here; this file is
-  the single place that says *which* ticket is open — the same split
-  `sdd/formal/README.md` uses to pin ID-150.
-  **Record at the revisit:** the corpus totals (the baseline the following
-  release differences against — the report keeps no history); the references
-  selected (top-ranked row, plus any row with `rate` ≥ 1.5× the top row's at
-  `reads` ≥ 20 — a fitted threshold, re-check it rather than inherit it); and per
-  selected reference one of **act** (file work against
-  it), **defer** (leave it, say why), or **accept** (the tags are exposure, not a
-  defect).
-  **Baseline to difference against**, measured at `4076ed7`: 270 traces, 207
-  negative tags, `sdd/BACKLOG.md` top-ranked at 22 over 236 reads (9.3%).
-  **Exit criteria:** decision logged here, then the successor ticket opened and
-  its ID named in this item's close note. A calendar without a ticket is the same
-  as no calendar; a ticket without a successor is a calendar that runs once.
-
-- [ ] **ID-248 — Closing a backlog item reaches no row that finds the items citing it**
-  spec: — · effort: S · audience: contributor.process
-  The [Pre-work index](CLAUDE-REFERENCE.md#pre-work-index)'s **Backlog item
-  touched** row names the trace, the schema and the CHANGELOG-audience rule. It
-  does not name the **inbound** references: other items, section preambles, and
-  `BACKLOG-DONE.md` entries that cite the closing item by ID and assert something
-  about its state.
-  **Measured instances, from closing ID-238 in one PR** — four, each carrying a
-  claim the close falsified rather than a bare cross-reference. Two were caught by
-  the author's grep; **two more only by review**, which is itself the measurement:
-  1. The Cross-Artifact Consistency section preamble ("BK-327 and ID-238 are
-     independent of the chain … both sit at the section's tail").
-  2. BK-330's DONE entry, in two places ("nothing yet causes anyone to read it";
-     a Rule 6 register entry naming ID-238 as the owner that "will settle" its
-     fate).
-  3. The same section's "Shipped so far" paragraph ("the cadence is open as
-     ID-238 … so step 3 is not closed") — which the *same commit* contradicted in
-     `BACKLOG-DONE.md` with "Step 3 is whole". Two files, one commit, opposite
-     states of the same fact.
-  4. ID-239's `Why ID, not BK`, citing reasoning ID-238 stated. **The close
-     deleted the referent rather than moving it**: the rewrite into
-     `BACKLOG-DONE.md` dropped that paragraph, so the ID resolved and the sentence
-     around it pointed at nothing.
-  **Instance 4 is a distinct sub-shape** worth naming separately: not a stale
-  assertion *about* the closed item, but a live citation *of* it whose target the
-  close destroyed. A close migrates an item; anything the item was the sole home
-  of has to migrate too, or move to the citing site.
-  The asserting kind is what makes this more than a link-rot problem:
-  [principle 3](../CLAUDE.md#principles) is violated the moment the item closes,
-  and the stale sentence reads as current.
-  **Distinct from ID-246**, which is the nearest neighbour and the one most likely
-  to be mistaken for this. ID-246 catches a tracker ID that **resolves nowhere**;
-  this catches one that resolves perfectly well while the sentence around it
-  asserts something the close falsified. ID-246's proposed inverted pass would run
-  clean on **instances 1 to 3**, because the ID resolves in every one — so neither
-  item subsumes the other, and the fix shapes do not share a mechanism.
-  **Instance 4 is the contested member**, and it is contested in ID-246's
-  direction rather than this one: the *referent* was destroyed, which is closer to
-  a dangling reference. It still is not ID-246's case, because the ID itself keeps
-  resolving and ID-246's pass keys on the ID. Which item should own that shape is
-  the one genuine overlap to settle when either is picked up.
-  Also distinct from **BK-337**, scoped to authority docs' restating copies in
-  `.claude/**`, and from **BK-334**'s `hatch` aliases — different trigger,
-  different target set. This one is `sdd/BACKLOG*.md` internal.
-  **Prescription advisory** per [§ How this file works](#how-this-file-works),
-  and the disposition was re-derived once the count moved. An earlier draft said
-  n=2 was "thin evidence for a ripple row". At **n=4 from a single close, half of
-  them missed by an author who was grepping the ID deliberately**, thin is the
-  wrong reading: the base rate is high enough that a ripple row is the likely
-  answer, and the open question is narrower — whether the row can say anything
-  more useful than "grep the ID and read every hit". Note a gate is harder than it
-  looks: the defect is an assertion going stale, not a reference dangling, which
-  is precisely why ID-246's mechanism does not reach it. Instance 4 may be the
-  exception — a citation whose target the close deleted is closer to ID-246's
-  shape, though still not identical, since the *ID* keeps resolving.
-
-- [ ] **BK-335 — `check_links.py` cannot see Markdown links inside Python docstrings**
-  spec: — · effort: S/M · audience: contributor.tooling
-  [`scripts/docs/check_links.py`](../scripts/docs/check_links.py) walks git-tracked
-  `.md` only, and guards on `tgt_path.suffix != ".md"`. So a
-  `](../sdd/DRIFT-RULES.md#anchor)` link written inside a `scripts/*.py` docstring
-  is validated by nothing: rename the anchor and every reference to it breaks
-  silently.
-  Measured, not hypothetical: at the time of filing, `scripts/report_trace_outcomes.py`
-  and `scripts/_trace_corpus.py` carry several such links between them, pointing at
-  anchors minted three PRs earlier in `sdd/DRIFT-RULES.md`. All resolve today —
-  this is an unchecked surface, not a live break. `scripts/check_test_placement.py`
-  had the pattern first, so BK-330 multiplied it rather than introducing it.
-  **Why it was not fixed in BK-330:** the remedy is a new cross-artifact check in
-  its own right — it needs a claim space, a stated bound and a decision about what
-  counts as a link in Python source, and it will surface pre-existing breakage
-  across `scripts/` unrelated to the PR that found it. Adding that inside a review
-  round is how a check ships without the design [`DRIFT-RULES.md`](DRIFT-RULES.md#rules)
-  requires of it.
-  Fix shape: extend the walk to extract links from `.py` docstrings (or a narrower
-  "repo-relative Markdown link in any tracked text file" pass), and expect a first
-  run that reports existing breakage — decide up front whether that is fixed or
-  baselined, since [Rule 6](DRIFT-RULES.md#tolerated) wants tolerated divergence
-  registered rather than unnoticed.
-
-- [ ] **ID-239 — Sweep backlog IDs used as provenance anchors out of durable artifacts**
-  spec: — · effort: — · audience: contributor.process
-  A backlog ID is a short-lived coordinate; the code, config and comments it gets
-  stamped into are long-lived. `pyproject.toml` alone carries dozens of
-  `# BK-NNN:` / `# ID-NNN:` comment prefixes, and source docstrings across
-  `scripts/` open the same way. Once the item is closed the ID explains nothing a
-  reader can act on — it points at an archive entry rather than describing the
-  thing in front of them.
-  Surfaced by the PR #944 review, where the user objected to a
-  `# BK-330.`-prefixed `pyproject.toml` comment. That PR's own new and modified
-  files were fixed in place; the pre-existing sites were explicitly left out of
-  its scope, since the sweep needs its own verification.
-  **Preserve the distinction that makes this tractable:** an ID used as a
-  *provenance anchor* ("BK-330: rank references by…") is what goes — rewrite the
-  sentence to describe the thing on its own terms. An ID that is *data* stays: a
-  comment recording that several traces share `id: ID-127`, a test fixture using
-  an ID as a literal trace identifier, or a backlog/CHANGELOG cross-reference are
-  all load-bearing. Where a fact like that is kept, pin it rather than restating
-  it loose.
-  **Open, and the reason this is not purely mechanical.** The carve-out lives in
-  exactly one place: the ripple-check
-  ["Tracker ID in published prose" row](CLAUDE-REFERENCE.md#pre-work-index),
-  whose "Out of scope" clause names `sdd/**`, CHANGELOG, DEVELOPMENT_STORY and
-  source `#` comments. [`CONTENT-RULES.md`](CONTENT-RULES.md) carries **no**
-  tracker-ID carve-out — its scope line says the opposite ("Applies to all
-  content: README, guides, docstrings, and inline doc comments"), so there is
-  nothing to narrow there and an implementer should not go looking.
-  A sharper form of the question than "should the carve-out narrow", because it
-  does not need a policy judgement to be a defect: `DRIFT-RULES.md`,
-  `CONTENT-RULES.md` and `000-process.md` all carry `<!-- doc: dual dest=... -->`
-  and `scripts/gen_pages.py` renders them into the published site — so parts of
-  `sdd/**` **are** published prose, and "Out of scope: `sdd/**`" already
-  contradicts the dual-dest mechanism today. Settle that first; it bounds
-  everything else.
-  **Why ID, not BK:** the question is filed, not a commitment — whether the
-  mechanism is the right one at all is unevaluated, so no outcome is promised. The
-  scope question above is unevaluated and the item's own body says deciding it
-  "bounds everything else", so the size of the committed half is unknown — which
-  is also why `effort:` is `—` rather than a guess. Contrast BK-334 above, which
-  has a stated fix shape, a named enforcement mechanism and a stated
-  verification, and is `BK` for exactly those reasons.
-
-- [ ] **ID-235 — Structural lint for BACKLOG files (entry-header integrity)**
-  spec: — · effort: S · audience: contributor.tooling
-  A string-anchored edit swallowed an entry header in `BACKLOG-DONE.md`
-  (PR #932), merging two items — and because `gen_backlogid.py` derives
-  IDs from headers, the stale JSON was masked too. Lint the structure:
-  every metadata line follows an entry header, headers unique across both
-  files, BACKLOG-DONE status `[x]` only. Home: extend
-  `scripts/gen_backlogid.py`.
-  Stays here rather than under Cross-Artifact Consistency: it checks one
-  artifact against a structural rule, not two descriptions against each other.
-
-- [ ] **BK-333 — Three `lint`/`preflight` gates are unreachable for the `sdd/` change that trips them**
-  spec: — · effort: S · audience: contributor.tooling
-  The remaining instances of the "an `sdd/`-only change reaches no gate" shape,
-  after BK-329 closed it for `check_traces` and `gen_backlogid --check`. `CODE_PAT`
-  does not match `^sdd/`, so CI's `lint` job (and `preflight` inside it) is skipped;
-  `FORMAL_PAT` is `^sdd/(formal|specs)/` **minus `sdd/formal/tla/`**, so the
-  second-wiring escape hatch used for `check_spec_marks`, `check_formal_trace`,
-  `check_capability_parity` and `check_dafny_twin_parity` does not reach these
-  three; and `docs-gate` invokes none of them:
-  - `gen_adr_digest.py --check` (in `preflight`) reads `sdd/adrs/`. Adding an ADR,
-    accepting a draft or recording a supersession is exactly what bumps the
-    **committed generated** `sdd/adrs/DIGEST.md` and can break supersession-graph
-    consistency, so staleness ships.
-  - `check_tla_no_emdash.py` reads `sdd/formal/tla/**/*.tla` — the one subtree
-    `FORMAL_PAT` deliberately excludes, so a TLA-only change skips the check
-    written for TLA files.
-  - `check_ci_inventory.py` compares `.github/workflows/` against
-    `sdd/CI-OPERATIONS.md`. The workflow side is covered (`CODE_PAT` matches
-    `^\.github/workflows/`); editing the handbook alone is not.
-  Fix shape: add each to `docs-gate` beside the two BK-329 wired, following the
-  precedent `check_ripple_parity` documents. Filed rather than fixed in BK-329
-  because that PR touched no ADR, no TLA module and not the handbook: its own
-  artefacts were the other two, and wiring gates it did not exercise would have
-  been scope it could not verify.
-  Surfaced by the PR #941 review, which named `gen_adr_digest` as the last
-  instance; enumerating `lint` and `preflight` against the path filters found two
-  more, so the item is scoped to all three rather than to the one reported.
-
-- [ ] **ID-246 — No gate verifies that a tracker ID cited under `sdd/` resolves**
-  spec: — · effort: S · audience: contributor.tooling
-  Specs cite backlog coordinates as provenance — the clause says what it binds,
-  the ID says which work produced it. `check_no_tracker_refs.py` is built to
-  *push* IDs here: it fails a docstring or `docs-src/` page and tells the author
-  to "move the coordinate into the corresponding `sdd/specs/` or
-  `sdd/BACKLOG-DONE.md` entry", and lists `sdd/**` as out of scope because "the
-  trackers are how those documents are addressed". So the citations are correct
-  by design. **Nothing checks that they resolve.**
-  **Measured** (all 50 specs): 166 citations, 80 distinct IDs, 28 files, **zero
-  dangling** — 69 resolve into `BACKLOG-DONE.md`, the rest into `BACKLOG.md`.
-  The invariant holds today by discipline, not by construction: no script
-  validates sdd-internal tracker citations (`check_no_tracker_refs` looks away
-  by design, `check_formal_trace` covers spec IDs not backlog IDs), and
-  [`DRIFT-RULES.md`](DRIFT-RULES.md) does not mention the backlog at all.
-  **Failure mode:** `BACKLOG-DONE.md` is ~8,000 lines and append-only *by
-  convention*. A prune, a bad merge, or a renumber silently rots every spec
-  clause pointing into it, and the rot is invisible — a reader meets an ID that
-  resolves nowhere and cannot tell whether the evidence was deleted or never
-  existed.
-  **Fix shape:** extend `check_no_tracker_refs.py` — it already parses the ID
-  pattern and already knows both backlog files — with a second, inverted pass:
-  every `PREFIX-NNN` under `sdd/` must appear as an item in `BACKLOG.md` or
-  `BACKLOG-DONE.md`, failing with the citing file and line
-  ([DRIFT-RULES Rule 2](DRIFT-RULES.md#rules): localize, don't merely fail).
-  Rule 3 is what makes this cheap and worth doing: the claim space is *derived*
-  from the citing documents rather than maintained beside them, and the
-  identifiers are already stable. Rule 4 needs a decision the item does not
-  presuppose — when a spec cites an ID no backlog file carries, which side is
-  wrong. Note the wiring trap BK-333 above documents: a check reading `sdd/`
-  must reach a gate an `sdd/`-only change actually runs.
-  Surfaced during the ID-241 review by the question "why do specs carry backlog
-  IDs at all, aren't they temporary?" The premise turned out to be wrong —
-  completed items migrate to `BACKLOG-DONE.md` rather than being deleted, per
-  this file's own § Completing work — but the question exposed that nothing
-  enforces the migration's promise.
+  credentials. Each remaining pragma is a few params on that harness. Ship it
+  independently of ID-244 — nothing here waits on the seeding decision.
 
 - [ ] **ID-247 — Record the Graph root-path cassettes**
   spec: BE-029 · effort: S · audience: infra.test
@@ -798,283 +421,25 @@ and the highest ID already in this file, then take the next integer. Run
 
 ---
 
-## Cross-Artifact Consistency
+## 3. Users succeed without asking us
 
-Work whose purpose is detecting or settling disagreement between two or more
-descriptions of the same thing. Design and review rules for anything added here:
-[`DRIFT-RULES.md`](DRIFT-RULES.md#rules). The argument, evidence and gap ranking
-behind the programme: [research](research/research-inconsistency-detection-multi-artifact.md)
-§ 9, whose step numbers each item cites — that document carries the reasoning,
-this section carries the work.
+**Promise:** a user gets set up, picks the right backend, or writes their own,
+without opening an issue.
 
-**This section orders by execution, not by priority** — the declared exception to
-[the file's default](#how-this-file-works), because its items form a dependency
-chain. Position therefore says nothing about importance, and dependencies are
-stated by ID inside each item so re-sequencing cannot silently invalidate them.
-**ID-244 comes first** (ID-241, its sibling, has shipped), then ID-207's steps 3
-and 4. This is a
-re-sequencing on measured evidence, not the original plan: BK-324 was expected to
-clear the way for ID-207 step 2, and instead supplied four instances of the drift
-this programme exists to detect — none of which step 2 would have caught. BK-340,
-ID-241 (both shipped) and ID-244 are what those four actually exhibited (a rule
-gated so no fixture ever runs it), and ID-207 step 3 is the other half (a
-citation is not an assertion).
-Step 2 keeps its L cost and its ~2.5% reach; it follows rather than leads, and
-ID-207 states the evidence. BK-332, ID-236 and ID-237 are follow-ons that get
-cheaper once the earlier work lands. BK-327 is independent of the chain and can
-be taken at any point; it sits at the section's tail. ID-238 was the other such
-item and [shipped](BACKLOG-DONE.md), settling BK-330's
-[Rule 6](DRIFT-RULES.md#tolerated) register entry.
+**Closes when:** every published page a user decides from is true, reachable,
+and walked end-to-end by a maintainer.
 
-**BK-340 shipped and produced ID-244, its own successor in this ordering.**
-Registering the `sqlquery` fixture closed the reachability hole for the *gate*
-mechanism it named (a family with no fixture) and, in doing so, measured a second
-gate underneath it: the conformance suite seeds through `backend.write`, so every
-content-bearing contract sits behind `Capability.WRITE` and no read-only backend
-can reach any of it. That is ID-244, and it is why `sqlquery` reaches 77 cells
-rather than the whole surface. The `ReadOnlyHttpBackend` audit BK-340 also asked
-for found the same gate excluding the registry's only read-only LAZY_READ
-declarer from SIO-009, plus a vacuous assertion in that cell — shipped alongside
-it as [BUG-244](BACKLOG-DONE.md).
-
-**ID-241 shipped and produced ID-245, the same way.** Making the missing-cassette
-skip fire per unplayable request rather than per test name moved 52 conformance
-cells from skipped to executing — and the act of measuring that moved spec 003's
-hand-counted coverage table for the second time, which is ID-245. It sits after
-ID-244 rather than at the head: ID-244 changes which cells a read-only backend
-can reach, so a generator built first would measure a surface about to move. The
-pattern is now three for three: closing a reachability gate
-measures the next thing underneath it. Read the measured numbers in
-[BACKLOG-DONE.md](BACKLOG-DONE.md) before sizing further work here, because
-"skipped" and "unreachable" turned out not to be the same set.
-
-On importance, the research doc's designation, which this section adopts rather
-than restates: the two items that build what is actually missing are the authority
-model — shipped as BK-329, now
-[`000-process.md` Rule 7](000-process.md#intent-attribution) — and **ID-207** (the
-canonical claim space). BK-324 was the item they unblock and the evidence that the
-gap is real, not itself one of the two.
-
-**That designation now has a measured qualification, recorded here because the
-research doc is point-in-time and does not get rewritten.** ID-207 builds a
-*canonical claim space* — an omission detector, research § 1 class E. BK-324's
-four instances were class A/C/D: one claim restated in several homes and updated
-in one. So ID-207 remains the strategic item, and it is **not** the item that
-would have caught what this programme has actually caught so far. Detecting those
-needs semantic comparison of prose, which § 1 marks as having no general oracle.
-The mechanisms that did catch them were an author-side sibling sweep and running
-the code rather than reading the diff — neither in the research doc's ranking.
-The sweep is now shipped as [BK-336](BACKLOG-DONE.md), and the second as
-[BK-344](BACKLOG-DONE.md) (a measuring reviewer, `/ship`) and
-[BK-338](BACKLOG-DONE.md) (the same for `/orchestrate`, plus the finding that a
-domain-persona roster reaches a minority of findings and none at all on the
-surface no persona owns). Weigh a future step-2 argument against that.
-
-Shipped so far: step 1 (Dafny twin parity) as BK-328, step 5.1 (the attribution
-rule) as BK-329, step 4 (037's per-backend table) as BK-331, and **step 3's
-report half** as BK-330; see
-[BACKLOG-DONE.md](BACKLOG-DONE.md). Step 3 asked for a report *and* a review
-cadence; BK-330 shipped the report and ID-238 the cadence, so **step 3 is
-closed**. Four findings from them
-apply to what follows: a documented gap statement is not a measured one, pinning
-what an exemption covers beats exempting the whole item, an authority rule is
-worth exactly the live disagreements it decides — run a proposed one against them
-before believing it, because the case that does *not* resolve is the informative
-one — and a hand-counted figure about a growing corpus is stale before the commit
-that writes it lands, so cite the generator instead.
-
-- [ ] **ID-244 — A read-only backend cannot reach any WRITE-gated contract cell**
-  spec: — · effort: M · audience: infra.test
-  Sibling of [ID-241](BACKLOG-DONE.md) (shipped), and the same class: a rule
-  gated so no fixture ever runs it. Here the gate is not a cassette but the **seeding discipline** —
-  conformance cells that need data call `backend.write`, so they sit behind
-  `fixture_params(Capability.WRITE)`. Any contract that happens to live in such a
-  class is therefore unreachable for a read-only backend, *including contracts
-  that have nothing to do with writing*.
-  **Measured instance.** SIO-009 (laziness: a LAZY_READ backend must not return a
-  BytesIO-backed stream) lives in `TestStreamingConformance`, a WRITE-gated class.
-  `ReadOnlyHttpBackend` is the registry's **only read-only LAZY_READ declarer** —
-  streaming is the whole justification for its capability set, per
-  `tests/backends/http/test_config.py::test_capabilities_are_read_metadata_lazy` —
-  and it was structurally excluded from the only cells asserting that contract.
-  The two per-backend read tests did not compensate: both assert content and
-  chunking, which a pre-loaded `BytesIO` satisfies identically.
-  Pinned per-backend by BK-340 in `test_read_is_lazy_not_bytesio`; that is a patch
-  over a structural hole, exactly as `tests/backends/sqlquery/test_config.py`'s
-  root cells were before BK-340 registered a fixture.
-  **The same hole is why BK-340's own `sqlquery` fixture reaches only 77 cells.**
-  Its content-bearing surface — read, glob, listing with keys present — is
-  WRITE-gated end to end, so registering the fixture bought the
-  capability-independent contract and nothing else. That was the right scope for
-  BK-340; it is this item's subject.
-  **Why ID:** the fix is a seeding indirection (a per-fixture `seed` hook the
-  cells call instead of `backend.write`), and *where it binds* is unmade — on the
-  fixture, on the helper, or as a capability-neutral rewrite of the affected
-  classes. The answer decides how much of the conformance suite changes, and a
-  hook whose seeded content cannot round-trip (SQLQueryBackend materialises result
-  sets, so `read(k)` never returns the bytes a seeder "wrote") constrains it
-  further: the hook must express *presence*, not content, or the cells that use it
-  must not assert content.
-
-- [ ] **ID-245 — Spec 003's per-backend cassette-reachability table is hand-counted**
-  spec: — · effort: M · audience: infra.test
-  [`003-backend-adapter-contract.md`](specs/003-backend-adapter-contract.md)
-  BE-029's coverage note tabulates, per backend, which root-path conformance
-  cells execute and which are pinned only in a per-backend home. Every figure in
-  it was counted by hand, against a corpus that grows — the exact shape BK-330
-  warned about and this section's preamble quotes: *"a hand-counted figure about
-  a growing corpus is stale before the commit that writes it lands, so cite the
-  generator instead."* ID-241 has already rewritten the table once for the same
-  reason, which is the second data point.
-  **Fix shape:** a script that runs the conformance suite (or its collection plus
-  the replay guard's verdict) and emits, per replay fixture, which cells execute
-  and which skip for want of a cassette; spec 003 then cites the generator rather
-  than a count. The reachability figure is not derivable from collection alone —
-  whether a cell needs a cassette depends on whether the backend issues a request,
-  which only running it answers (ID-241).
-  **Design obligations:** [`DRIFT-RULES.md`](DRIFT-RULES.md#rules) applies in
-  full — Rule 3 (the claim space must be *derived*, and its granularity stated),
-  Rule 4 (which of spec and generator governs), Rule 5 (gating or advisory, and
-  why).
-  **Position:** after ID-244, not before it. ID-244 changes which cells a
-  read-only backend can reach, so building the generator first would measure a
-  surface about to move — the same reason ID-241 filed this rather than building
-  it inside its own diff.
-
-- [ ] **ID-207 — Strengthen `check_formal_trace.py` from citation hygiene to clause enforcement**
-  spec: — · effort: L · audience: contributor.tooling
-  Research § 9 step 2, the programme's strategic half: a canonical claim space,
-  extended toward the implementation and below identifier granularity.
-  **Re-sequenced after BK-324, on measured evidence — take steps 3 and 4 before
-  step 2.** BK-324 was expected to clear the way for step 2; instead it supplied
-  four instances of the drift this programme targets, and a design investigation
-  found step 2 would have caught none of them (see the step 2 bullet). What the
-  four exhibited was **coverage reachability** — a rule can be gated so no
-  fixture ever runs it, which is ID-244 in this file (and BK-340 and ID-241,
-  both shipped) — and
-  **citation ≠ assertion**, which is this item's own **step 3**. Both are cheaper than L and
-  both have measured instances behind them; step 2 has an L cost, a ~2.5% reach,
-  and no instance. Step 2 is not abandoned: after 3 and 4 land, its unresolved
-  scope question ("Dafny-backed only, or corpus-wide?") will have been answered
-  by what those two find.
-  ID-206 shipped `scripts/check_formal_trace.py`; a PR #663 review
-  confirmed it certifies *citation hygiene at spec-ID granularity*, not
-  clause-level enforcement (its docstring was narrowed to say so). Four
-  independent hardening steps would close the gap:
-  1. **Derive D mechanically.** D is built from author-typed `// @spec`
-     tags, so deleting a tag silently drops an F1 and a new untagged
-     `ensures` never enters D. Parse every contract `ensures` and fail on
-     an untagged one — needs an exemption marker for proof-helper lemma
-     `ensures` (e.g. `SlashCountZero`, the Safe/Unsafe pairs) that encode
-     no spec clause. (Research step 2b.)
-  2. **Clause granularity, not ID granularity.** D/T/S key on spec ID, so
-     one marker clears F1 for every `ensures` sharing that ID. Run
-     `hatch run python scripts/check_formal_trace.py` for the live per-ID
-     tag counts — do not restate them here, per BK-330's finding that a
-     hand-counted figure about a growing corpus is stale before the commit
-     that writes it lands. (This bullet previously claimed "~10 share
-     `BE-014`"; BE-014 carries 6 and the maximum is BE-018, so the count
-     and the exemplar were both wrong.) Per-clause sub-IDs, or a
-     tag→test-name link, would gate each postcondition individually.
-     **Read [`DRIFT-RULES.md` Rule 3](DRIFT-RULES.md#rules) before
-     choosing between them** — it requires the enumeration be *derived*
-     from the authoritative artifact rather than maintained beside it, and
-     that decides more of the question than either candidate's own framing.
-     **The binding-constraint claim is narrower than it was written.** The
-     research doc argued clause granularity is binding "since omission
-     detection is identifier-keyed while BK-324's claims are sub-ID
-     clauses." That holds for **facet 4 only** — an E-class orphan, spec'd
-     and unasserted. It does **not** transfer to the restatement instances
-     BK-324 actually kept hitting, and a design investigation measured why:
-     **neither candidate would have caught any of the four.** F1 is an
-     omission detector; the four were contradictions (research § 1 classes
-     A/C/D), one claim restated in several homes and updated in one.
-     Finer identifiers make omission detection finer; they do not convert
-     it into a contradiction detector. The decisive case is review findings
-     1/3/4 — BE-021's F1 was **green for the entire life of the
-     divergence**, because the tests existed, cited the right ID, and were
-     enabled, while carrying per-fixture skips and capability gates.
-     Sub-IDs leave that green.
-     **Scope reality:** the Dafny model reaches 26 of 933 declared sections
-     and 94 tag sites of a corpus estimated near 3,600 clauses. Step 2 as
-     written is a granularity improvement over roughly 2.5% of the claim
-     space, and the four motivating instances are not inside it. Corpus-wide
-     is the only scope under which any of them becomes reachable, and that
-     is a different, larger item.
-     **Needs an ADR before implementation, either way**: sub-IDs change the
-     spec-ID grammar that [`000-process.md` Rule 5](000-process.md#rules)
-     governs and on which ~11,800 citations across 518 files depend; a
-     tag→test-name link promotes pytest node IDs to a contract surface and
-     takes a Rule 3 exemption.
-  3. **Push T past citation.** A marker only cites an ID; it does not
-     prove the test asserts the clause, is enabled, or cites the *right*
-     ID — a wrong-but-real ID passes F2 and even satisfies F1.
-  4. **Bar baseline growth mechanically.** `_BASELINE` shrink-only is a
-     review convention; a new violation can be parked by editing the
-     frozenset. A committed count/hash pinned by a separate check would
-     make it mechanical.
-  **Not covered by any of the four:** the `Impl ⊆ S` direction (research step
-  2a) — enforced behaviour must have a parent spec section, as a pass over
-  raise sites where **the day-one allowlist is the deliverable**, not the gate.
-  Two things that scope decides: raise sites in the backend package run to the
-  *several hundreds*, so gate-or-report is a real question rather than a
-  formality; and facet 4's normative enforcement lives one layer above the
-  backend tree, so a backends-only pass reaches it through defensive duplicates
-  and records it a layer from where it is enforced.
-  Surfaced in the PR #663 review. Steps are independent and may split into
-  separate IDs; promote to BK-prefix when one is committed to.
-
-- [ ] **BK-332 — Schedule the custom-backend rehearsal**
-  spec: — · effort: S to define, M per run · audience: contributor.process
-  Research § 9 step 6. "Build a backend against the guide, from scratch,
-  without help" runs today only as a side effect of guide PRs. Its output is a
-  list of places the guide, the contract, or the conformance suite failed the
-  builder — BK-324 and BK-325 are one run's findings (PR #932), which is the
-  argument for scheduling it rather than running it by accident.
-  **Cadence:** once per minor release, or after any change to the `Backend` ABC
-  or the conformance suite, whichever comes first — the two events that can
-  invalidate the guide, per [`DRIFT-RULES.md` Rule 9](DRIFT-RULES.md#period).
-  **Evidence level, stated because the ranking flatters it:** n = 1. The claim
-  that rehearsal has the best findings-per-unit-noise rests on that single run.
-  **After BK-324**, which changes the contract a rehearsal would test against.
-
-- [ ] **ID-236 — Publish the characteristic-accountability record**
-  spec: — · effort: S · audience: contributor.tooling
-  Research § 9 step 7. `check_formal_trace.py` computes a spec-coverage matrix
-  and discards it. Render it at release time — every spec ID, its verification
-  evidence (test marker, Dafny tag, TLA+ invariant), its status — so "what was
-  verified, and by what" is answerable historically rather than only at HEAD.
-  **Why ID:** no committed outcome, and the matrix's shape changes under ID-207,
-  so the cost is unknown until that lands.
-
-- [ ] **ID-237 — Derive the cross-artifact checker inventory**
-  spec: — · effort: S · audience: contributor.tooling
-  Research § 9 step 8. The research doc's own inventory of which artifact pairs
-  are checked was assembled by hand, and it says of it: "The table will drift,
-  and nothing will notice." Derive it from the `check_*.py` docstrings and
-  publish it as a generated surface; it pairs naturally with ID-236, one
-  enumerating spec coverage and the other checker coverage.
-  Two complications belong in the scope rather than in the implementation
-  surprise. A substantial minority of gates are single-artifact rule checks
-  whose docstrings state a *rule*, not a pair (assertion presence, mock
-  discipline, forbidden RST roles, em dashes in TLA+), so the deliverable needs
-  an explicit "rule check, no pair" classification. And the `scripts/check_*.py`
-  glob under-reaches: `scripts/docs/check_links.py` is a genuine cross-artifact
-  gate outside it.
-  **Why ID:** both complications push toward either a docstring convention or a
-  curated mapping, and a curated mapping is precisely the
-  parallel-artifact-that-drifts problem this item would exist to close. That
-  decision is unmade.
+This is the group that converts directly into support load not arriving. The
+rehearsal sits with the guides because it is the only mechanism that has ever
+found their defects.
 
 - [ ] **BK-339 — Decide what replaces `store.md`'s hand-maintained Backend Behavior Matrix**
   spec: — · effort: M · audience: user.site
-  Found by BK-331's sibling sweep and deliberately not swept with it: the same
-  defect class as 037/027/020, but on the **user-facing** surface, where
-  deletion needs a replacement decision rather than a pointer.
   `docs-src/reference/api/store.md` § Backend Behavior Matrix hand-maintains five
   behavioural rows across ten backends, and carries the line *"Verify against
   actual code before relying on these in production"* — a reference page telling
-  readers not to trust it, which is the admission that it drifts.
+  readers not to trust it, which is the admission that it drifts. Users read this
+  table to choose a backend.
   **One measured error, not a suspicion.** The `copy()` preserves metadata` row
   says `—` for Memory, but `MemoryBackend.copy` constructs the destination with
   `metadata=src_node.metadata` (`src/remote_store/backends/_memory.py`), so user
@@ -1083,59 +448,18 @@ that writes it lands, so cite the generator instead.
   while Memory's concerns user metadata — one row conflating two different
   properties, which is why a reader cannot tell a wrong cell from an
   out-of-scope one. Fixing the cell without splitting the row re-hides it.
-  **The disposition is the work, and it is not the one BK-331 used.** Rows
-  divide three ways: derivable from capability declarations (`Native glob()`
-  duplicates the capabilities matrix's GLOB row — the two currently agree, so
-  this is duplication rather than contradiction); genuinely useful user
-  information available nowhere else (`move()` atomicity, `write_atomic()`
-  mechanism); and under-specified (`list_files()` ordering, which the specs do
-  not guarantee — publishing per-backend orderings invites reliance on an
-  unguaranteed property). Deleting outright would remove real value; deriving
-  needs declarations that do not exist for the middle group.
+  **The disposition is the work.** Rows divide three ways: derivable from
+  capability declarations (`Native glob()` duplicates the capabilities matrix's
+  GLOB row — the two currently agree, so this is duplication rather than
+  contradiction); genuinely useful user information available nowhere else
+  (`move()` atomicity, `write_atomic()` mechanism); and under-specified
+  (`list_files()` ordering, which the specs do not guarantee — publishing
+  per-backend orderings invites reliance on an unguaranteed property). Deleting
+  outright would remove real value; deriving needs declarations that do not exist
+  for the middle group.
   **Check `capabilities-matrix.md` at the same time** — it is the neighbouring
   ten-backend table and a candidate home for the derivable rows, but whether it
-  is generated or hand-maintained was not established by this sweep.
-
-- [ ] **ID-240 — Model "the root always exists" in the Dafny contract**
-  spec: BE-029 · effort: S · audience: contributor.process
-  Surfaced by BK-324 facet 1, and the only half of it the formal model does not
-  already carry. `BackendContract.dfy` declares `const Root: Path := "."` and
-  PATH-015 makes `"."` well-formed, so the *aliasing* half was Dafny's position
-  before it was Python's. But nothing in `Valid()` asserts `Root in fs`, so
-  BE-029's other clause — the root is a folder **even on an empty store**, which
-  is where SFTP was actually wrong (`base_path` is created lazily by the first
-  write) — has no formal twin.
-  **Why ID rather than BK:** the change itself is small, but adding a conjunct
-  to `Valid()` obliges every existing lemma and method postcondition to
-  re-establish it, and whether that proof cost is worth one clause is exactly
-  the judgement `sdd/formal/README.md` asks to be made deliberately rather than
-  by reflex. Measure the proof delta before committing.
-  **Do not treat the Python fix as the gap.** The conformance suite already
-  covers the empty-store case across the fixture registry; this item is about
-  the model, and closing it changes no runtime behaviour.
-
-- [ ] **BK-327 — Gate dual-doc nav reachability and index listing**
-  spec: — · effort: S · audience: contributor.tooling
-  Independent of every other item in this section — take it whenever. A
-  `<!-- doc: dual dest=explanation/design/*.md -->` marker publishes a page that
-  neither the docs-site nav nor the section index page lists, and nothing catches
-  either omission. `mkdocs.yml` sets only `validation: links: not_found: warn`, so
-  `nav.omitted_files` stays at its INFO default and `--strict` cannot promote it;
-  `scripts/docs/nav.py` builds `SUMMARY.md` *from* `_nav.yml` and never diffs it
-  against the pages `gen_pages.py` emitted; the `_index.tmpl` Documents list is
-  hand-written and unchecked. So `hatch run docs-gate` goes green on a page that is
-  unreachable, unlisted, or both. Each surface had a live instance repaired by hand
-  in PR #938: `drift-rules` was absent from both, `ci-operations` was in `_nav.yml`
-  and absent from `_index.tmpl`.
-  Fix shape: a G-08 in `scripts/check_docs_framework.py` differencing emitted dual
-  `dest` paths against both `_nav.yml` and the `_index.tmpl` Documents list;
-  raising `nav.omitted_files` to WARNING covers the nav half only.
-  Surfaced by the PR #938 review; an unstated bound on `docs-gate` being trusted
-  past its range ([`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)).
-
----
-
-## Docs & Discoverability
+  is generated or hand-maintained was not established.
 
 - [ ] **BK-325 — Custom-backend guide: registry-integration and remaining contract-topic gaps**
   spec: — · effort: M · audience: user.site
@@ -1154,48 +478,6 @@ that writes it lands, so cite the generator instead.
   - Small fixes: error-mapping checklist lacks a base-`RemoteStoreError`
     fallback row; `from exc` guidance omits the deliberate `from None`
     pattern; the `SEEKABLE_READ` note contradicts shipped range-readers.
-  Guide content, so it stays here rather than under Cross-Artifact Consistency —
-  but it and BK-324 are one rehearsal's findings, which is the argument BK-332
-  makes for scheduling the walkthrough rather than running it by accident.
-
-- [ ] **ID-225 — Evaluate migrating the docs stack from Material for MkDocs to Zensical**
-  spec: — · effort: L · audience: user.site, library.maintainer, contributor.tooling
-  Our docs foundation is entering maintenance mode as its authors converge on a
-  successor. [Material for MkDocs is feature-frozen](https://squidfunk.github.io/mkdocs-material/blog/2025/11/05/zensical/)
-  (critical bug/security fixes for ~12 months, no new features), MkDocs 1.x is
-  itself being forked (a `properdocs` MkDocs-1.x continuation now surfaces as a
-  transitive docs dep, and a build-time banner warns MkDocs 2.0 will break all
-  plugins/themes), and `mkdocs-llmstxt` (adopted in ID-220) is in maintenance
-  mode for the same reason. The whole ecosystem is pointing at
-  [**Zensical**](https://github.com/zensical/zensical) — a new MIT static site
-  generator (Rust core, reads `mkdocs.yml` natively, with a migration path) built
-  by the Material team. Crucially, `mkdocstrings`' author is rebuilding
-  API-reference-from-docstrings *inside* Zensical — the exact capability our docs
-  depend on `mkdocstrings` for.
-  **Not prioritized:** Zensical is pre-1.0 and does **not** yet ship the
-  API-reference feature we require, so "not yet — revisit when Zensical reaches
-  API-reference parity" is a legitimate outcome. Kept visible here as the
-  strategic anchor, not queued work.
-  **Scope when picked up:** trial `zensical build` against our `mkdocs.yml`;
-  confirm parity for the pieces we rely on (gen-files pages, mkdocstrings API
-  reference, literate-nav order, BK-171 link rewrites, mike/RTD versioning); and
-  fold in native `llms.txt` / `llms-full.txt` generation if Zensical ships it
-  (its roadmap already speaks of LLM/agent consumption). This item is the
-  **sunset trigger for the interim `mkdocs-llmstxt` adoption (ID-220)**: when the
-  migration lands, the HTML→Markdown plugin is a prime candidate for replacement
-  by a native feature.
-  Background: [research](research/research-llms-full-txt-tooling.md).
-  **Why ID, not BK:** unevaluated framework migration against a pre-1.0 upstream,
-  no committed outcome.
-
-- [ ] **ID-197 — Review context7.com docs page for framing and content gaps**
-  spec: — · effort: S · audience: library.maintainer
-  The context7 docs proxy surfaces how external tools and readers discover the
-  project; framing found there (e.g. "one consistent interface across environments")
-  may sharpen our own Getting Started, README, or guides. Walk the page, compare
-  framing and structure against `docs-src/`, note strong angles and coverage gaps,
-  then assess whether our source docs already cover them or could adopt the same
-  framing. Findings feed the next docs-improvement session or ID-161 content checklist.
 
 - [ ] **ID-199 — Backend setup & configuration guides expansion**
   spec: — · effort: L · audience: user.site, library.maintainer
@@ -1251,55 +533,76 @@ that writes it lands, so cite the generator instead.
 
   Effort `L` reflects the parent scope; each individual guide is M-sized.
 
-- [ ] **ID-205 — Migrate complex ASCII diagrams to Mermaid**
-  spec: — · effort: M · audience: library.maintainer
-  ASCII art diagrams in `sdd/`, `guides/`, and `docs-src/` are hard to
-  maintain and render poorly. Mermaid renders natively on GitHub and in
-  MkDocs via `pymdownx.superfences` (already used in `docs-src/index.md`
-  and several `sdd/` research docs). Convert all non-trivial ASCII diagrams; leave simple
-  inline flows (single arrows, short sequences) as text.
+- [ ] **ID-125 — Update medallion showcase to Dagster v2 resource pattern**
+  spec: — · effort: S · audience: user.api
+  Replace `dagster_io_manager(store)` calls in `examples/medallion_dagster/`
+  with `RemoteStoreIOManager`. Demonstrates the config-driven pattern.
+  Examples get copied verbatim, so a stale one teaches a superseded pattern
+  from a first-contact surface.
+
+- [ ] **BK-332 — Schedule the custom-backend rehearsal**
+  spec: — · effort: S to define, M per run · audience: contributor.process
+  "Build a backend against the guide, from scratch, without help" runs today
+  only as a side effect of guide PRs. Its output is a list of places the guide,
+  the contract, or the conformance suite failed the builder — BK-324 and BK-325
+  are one run's findings (PR #932), which is the argument for scheduling it
+  rather than running it by accident.
+  **Cadence:** once per minor release, or after any change to the `Backend` ABC
+  or the conformance suite, whichever comes first — the two events that can
+  invalidate the guide, per [`DRIFT-RULES.md` Rule 9](DRIFT-RULES.md#period).
+  **Evidence level, stated because the ranking flatters it:** n = 1. The claim
+  that rehearsal has the best findings-per-unit-noise rests on that single run.
 
 ---
 
-## API Ergonomics
+## 4. Users stop working around us
 
-- [ ] **ID-123 — Cache key derivation from `ResolutionPlan` (Phase 2)**
-  spec: RES-100 · effort: M · audience: user.api
-  `ext.cache` derives cache keys from `ResolutionPlan` fields instead of
-  ad-hoc `(operation, path)` tuples. Only valuable once `CompositeStore`
-  (ID-121) exists — single-backend cache keys are already correct *for the
-  default per-store cache*. The exception (audit-016 L8): a **shared**
-  `cache_backend=` across two top-level stores at different backends/drives
-  collides on `(op, path)` and serves one store's bytes for another's — not
-  Graph-specific (same for two Local roots or S3 buckets), opt-in, but exactly
-  the case identity-derived keys would close.
-  - Spec: RES-100 (proposed in [043](specs/043-resolution-plan.md))
-  - Depends on: ID-121 (CompositeStore)
+**Promise:** the library does the thing, instead of the user hand-rolling it
+or paying for our shortcut.
 
----
+**Closes when:** no shipped capability declaration is more pessimistic than
+what the backend can actually do, and no documented workaround stands in for a
+feature we agreed to build.
 
-## New Backends
+Each item here is something a user currently works around or eats. They are
+grouped because the decision in each is the same: build it, or say plainly and
+permanently that we will not.
 
-- [ ] **ID-121 — CompositeStore (research complete)**
-  spec: — · effort: L · audience: user.api
-  `CompositeStore(Store)` — core Store subclass (not extension) that composes
-  multiple stores into one. Deterministic fallthrough resolution for reads, union
-  LIST (deduplicated), writes to primary tier only.
-  - [Research](research/research-sqlalchemy-backend.md#52-compositestore-id-120)
-    (anchor uses historical ID-120 from research doc; now ID-121 after swap)
-  - Depends on: unified `resolve()` → `ResolutionPlan` (ID-120) — **satisfied**:
-    `Store.resolve()` ships and returns a `ResolutionPlan` (see BACKLOG-DONE.md).
-    Remaining: at least two working backends to be useful; pairs well with
-    ID-119 (landed) — so both conditions are already met.
-  - Next: design as separate spec — backend-agnostic, useful independently
+- [ ] **ID-217 — Async-native extension surface (owner for the deferred async `ext.*`)**
+  spec: GR-003 · effort: L · audience: user.api
+  `src/remote_store/aio/ext/` ships only `write.py` (`write_with_hash`); there is
+  no async equivalent of `ext.glob`, `ext.observe`, `ext.otel`, or `ext.integrity`
+  (audit-016 M6). A native `AsyncStore` consumer — the natural audience for an
+  async-native backend such as Graph — reaches the full `ext.*` surface only by
+  dropping to `AsyncBackendSyncAdapter` (ADR-0025), which forfeits the async
+  streaming the backend exists to provide. GR-003 calls this out for `GLOB`
+  specifically: async callers compose pattern matching over `list_files`
+  themselves "until an async equivalent of `ext.glob` lands as a separate backlog
+  item" — this is that item, and it owns the surface as a whole.
+  **Decision pending:** build per-extension async equivalents (glob first, as the
+  smallest and the one a spec promises), or formally decline the ecosystem and
+  document the sync-adapter route as the supported path. Declining is a
+  legitimate close; either outcome removes an open promise from a shipped spec.
+  - **`ext.cache` warning on a bridged backend** (was ID-218, absorbed here).
+    `CachedStore` with an unset `max_content_size` materialises whatever the
+    wrapped backend yields (`ext/cache.py`). Over a sync REST backend that is
+    merely inconvenient; over an async-native backend reached through
+    `AsyncBackendSyncAdapter` it silently defeats the streaming the user chose
+    the backend for. ADR-0025 § Risks flags this and promises the cache
+    extension "should learn to warn when wrapped over a bridged backend
+    (tracked separately)"; this bullet is that owner. Scope: emit a warning (or
+    require an explicit `max_content_size`) when `cache()` wraps a `Store` whose
+    backend is an `AsyncBackendSyncAdapter` and `max_content_size` is unset.
+    It is the same root cause — extensions do not understand async backends —
+    so it resolves with the decision above rather than beside it.
 
 - [ ] **ID-140 — SQLBlob lazy reads for SQLite & PostgreSQL**
   spec: SQL-BLOB-003, SQL-BLOB-020 · effort: L · audience: user.api
   The current blanket claim that `SQLBlobBackend` cannot do lazy reads is too
   strong (see spec 040 SQL-BLOB-020, `_sqlalchemy.py:47` excluding
-  `Capability.LAZY_READ`). Both primary dialects have a path to honest
-  `LAZY_READ`; MySQL does not. This item captures the direction — **no
-  implementation yet**.
+  `Capability.LAZY_READ`), so users materialise large blobs they need not.
+  Both primary dialects have a path to honest `LAZY_READ`; MySQL does not. This
+  item captures the direction — **no implementation yet**.
 
   **SQLite (Py 3.11+):** `sqlite3.Connection.blobopen(table, col, rowid)`
   returns a seekable, chunked `Blob` handle. Reachable through SQLAlchemy via
@@ -1337,16 +640,8 @@ that writes it lands, so cite the generator instead.
     owns both.
   - Custom tables (`create_table=False`): rowid may not exist; substring
     path is schema-agnostic and works as a universal fallback.
-
-  **Ripple checks when picked up** (per `sdd/CLAUDE-REFERENCE.md`):
-  - Spec 040 SQL-BLOB-003 (capabilities list) and SQL-BLOB-020 (`read()`).
-  - Spec 006 streaming-io — capability semantics already fit.
-  - `FEATURES.md` capability matrix.
   - `tests/backends/sqlblob/test_config.py:148` asserts LAZY_READ is NOT
     declared — must split into dialect-conditional assertions.
-  - Behavioral test: large blob (e.g. 50 MiB) read in 4 KiB chunks with
-    bounded RSS.
-  - CHANGELOG, this file.
 
   **Open decisions for whoever picks this up:**
   1. SQLite-only first, or SQLite + PG `bytea` substring together?
@@ -1358,63 +653,182 @@ that writes it lands, so cite the generator instead.
   Related: ID-136 (non-lazy **write** is by-design; this item is about
   **reads** only — writes remain eager).
 
+- [ ] **ID-181 — Per-backend `ssh-rsa` opt-in via `paramiko.Transport` subclass**
+  spec: SFTP-007 · effort: M · audience: user.api
+  `SFTPUtils.enable_ssh_rsa_compat()` mutates paramiko's class attributes
+  so every `Transport` instance in the process accepts SHA-1 host keys
+  thereafter. For single-server use cases this is fine and documented as
+  a security tradeoff. For processes that talk to a mix of modern and
+  legacy SFTP backends (e.g. a Dagster job, a multi-tenant pipeline),
+  the shim leaks SHA-1 acceptance into every other transport, so one legacy
+  server weakens every other connection in the process.
+  Sketch: `BackendConfig(type="sftp", options={..., "allow_legacy_ssh_rsa": True})`
+  constructs a `Transport` subclass whose instance-level `_preferred_keys`
+  / `_preferred_pubkeys` include `ssh-rsa`, leaving `paramiko.Transport`
+  class attrs untouched. `Transport._key_info` and `RSAKey.HASHES` are
+  read at class scope so they still need a module-level patch — but
+  those are algorithm-name → impl lookup tables, not security policy.
+
+- [ ] **BK-242 — Flat-NS file-ancestor pre-check perf (SQLBlob IN-list, memoisation)**
+  spec: — · effort: S · audience: infra.test, library.maintainer
+  Two perf optimisations the ID-211 disposition (b) opt-in didn't ship:
+  - **SQLBlob `WHERE key IN (ancestors)`**: today `_head_one` issues one
+    `SELECT 1` per ancestor — N round trips for a depth-N path. The
+    research note (`sdd/research/research-id-211-flat-ns-file-ancestor-precheck.md`
+    § 5.4) already flagged this; a single `SELECT key FROM table WHERE
+    key IN (:ancestors)` collapses the walk to one RTT. On in-memory
+    SQLite the win is sub-ms; on PostgreSQL/MySQL over the network at
+    depth 6 it is 6 RTTs → 1 RTT (~10-50 ms each).
+  - **`head_one` memoisation**: bulk-write workloads (`a/b/c/file-{i}.bin`
+    for i in 1..N) re-HEAD the same `a`, `a/b`, `a/b/c` ancestors N
+    times. A bounded per-instance `TTLCache(maxsize=…, ttl=…)` on the
+    closure collapses O(N×D) HEADs to ~O(D) per distinct prefix without
+    changing the contract (the TTL accepts staleness within its window).
+    Applies to S3, S3PyArrow, Azure non-HNS, and SQLBlob.
+  Both ship behind the existing `reject_write_under_file_ancestor=True`
+  opt-in only, so there is no contract risk. Includes refreshing `§ 4` /
+  `§ 5.4` in the research note with measured before/after numbers. Touches
+  `src/remote_store/backends/_flat_ns.py`,
+  `src/remote_store/backends/_sqlalchemy.py`,
+  `src/remote_store/backends/_s3.py`,
+  `src/remote_store/backends/_s3_pyarrow.py`,
+  `src/remote_store/backends/_azure.py`,
+  `src/remote_store/aio/backends/_azure.py`.
+
+- [ ] **ID-121 — CompositeStore (research complete)**
+  spec: — · effort: L · audience: user.api
+  `CompositeStore(Store)` — core Store subclass (not extension) that composes
+  multiple stores into one. Deterministic fallthrough resolution for reads, union
+  LIST (deduplicated), writes to primary tier only. The one genuinely new
+  user-facing capability in this file, and one a user cannot cheaply build
+  themselves.
+  - [Research](research/research-sqlalchemy-backend.md#52-compositestore-id-120)
+    (anchor uses historical ID-120 from research doc; now ID-121 after swap)
+  - Depends on: unified `resolve()` → `ResolutionPlan` (ID-120) — **satisfied**:
+    `Store.resolve()` ships and returns a `ResolutionPlan` (see BACKLOG-DONE.md).
+    Remaining: at least two working backends to be useful; pairs well with
+    ID-119 (landed) — so both conditions are already met.
+  - Next: design as a separate spec — backend-agnostic, useful independently.
+  - **Cache-key derivation from `ResolutionPlan`** (was ID-123, absorbed here).
+    `ext.cache` should derive cache keys from `ResolutionPlan` fields instead of
+    ad-hoc `(operation, path)` tuples (RES-100, proposed in
+    [043](specs/043-resolution-plan.md)). Single-backend cache keys are already
+    correct *for the default per-store cache*, so this is only valuable once
+    composition exists — with one exception that is reachable today
+    (audit-016 L8): a **shared** `cache_backend=` across two top-level stores at
+    different backends or drives collides on `(op, path)` and serves one store's
+    bytes for another's. Not Graph-specific (same for two Local roots or S3
+    buckets) and opt-in, but exactly the case identity-derived keys would close.
+    **Reproduce that collision before treating it as fact** — it is an audit
+    finding, and [`CLAUDE.md` principle 6](../CLAUDE.md#principles) wants it run,
+    not read. If it reproduces it is a defect that should not wait for this
+    item; file it as a `BUG` and fix it independently.
+
 ---
 
-## New Extensions
+## 5. A release cannot ship a surprise
 
-- [ ] **ID-217 — Async-native extension surface (owner for the deferred async `ext.*`)**
-  spec: GR-003 · effort: L · audience: user.api
-  `src/remote_store/aio/ext/` ships only `write.py` (`write_with_hash`); there is
-  no async equivalent of `ext.glob`, `ext.observe`, `ext.otel`, or `ext.integrity`
-  (audit-016 M6). A native `AsyncStore` consumer — the natural audience for an
-  async-native backend such as Graph — reaches the full `ext.*` surface only by
-  dropping to `AsyncBackendSyncAdapter` (ADR-0025), which forfeits the async
-  streaming the backend exists to provide. GR-003 calls this out for `GLOB`
-  specifically: async callers compose pattern matching over `list_files`
-  themselves "until an async equivalent of `ext.glob` lands as a separate backlog
-  item" — this is that item, and it owns the surface as a whole, not just glob.
-  **Decision pending:** build per-extension async equivalents (glob first, as the
-  smallest and the one a spec promises), or formally decline the ecosystem and
-  document the sync-adapter route as the supported path for extension features
-  over async backends. The `ext.cache`-over-bridged-backend guard is tracked
-  separately as ID-218. Filed (not yet scoped) per audit-016 L10 / BK-268.
+**Promise:** what we tested is what ships, and no dependency or toolchain
+change reaches a user through a gate that never ran.
 
-- [ ] **ID-218 — `ext.cache`: warn when wrapping a bridged (async-native) backend**
-  spec: — · effort: S · audience: user.api
-  `CachedStore` with an unset `max_content_size` materialises whatever the wrapped
-  backend yields (`ext/cache.py`). Over a sync REST backend that is merely
-  inconvenient; over an async-native backend reached through
-  `AsyncBackendSyncAdapter` (ADR-0025) — a backend that exists precisely to
-  *avoid* materialisation — it silently defeats the streaming the user chose the
-  backend for. ADR-0025 § Risks flags this and promises the cache extension
-  "should learn to warn when wrapped over a bridged backend (tracked separately)";
-  this is that owner. Scope: emit a warning (or require an explicit
-  `max_content_size`) when `cache()` wraps a `Store` whose backend is an
-  `AsyncBackendSyncAdapter` and `max_content_size` is unset. Sibling of ID-217
-  (async-native `ext.*`). Filed per audit-016 L10 / BK-268.
+**Closes when:** every checker a diff can invalidate is reachable from a gate
+that diff actually triggers, and every extra's drift smoke exercises the
+packages it pins.
 
----
+- [ ] **BUG-250 — `[graph]`'s drift smoke reaches one of the extra's four declared dependencies**
+  spec: — · effort: S · audience: infra.ci
+  `scripts/drift_smoke_map.py:79` routes `graph` to
+  `["--import-only", "remote_store.aio.backends._graph.http"]`. That module's only
+  third-party import is `httpx`; `_graph/auth.py` imports `msal`, `msal-extensions`
+  and `platformdirs` lazily inside the methods that need them (`auth.py:173`,
+  `auth.py:194`). Reproduction: import the module and diff `sys.modules` — `httpx`
+  loads, `cffi` / `cryptography` / `platformdirs` / `msal` / `msal_extensions` do not.
+  So `check-graph` can go green while every drifted package in
+  `infra/drift-locks/graph.txt` is unexercised, and a `cryptography` or `msal` major
+  rides that verdict into a refresh and into a user's install. Hit in the
+  2026-08-10 firing (trace finding #32): all three drifted packages were outside
+  the smoke's reach, and the accepted `cryptography` 49→50 major turned out to be
+  covered only incidentally, by `[azure]` and `[sftp]` smoking identical pins.
+  The import-only shape is deliberate (BUG-225) — it catches a graph-hostile `httpx`
+  without needing msal or a network. A fix must widen reach without regressing that:
+  import the lazy call sites behind a no-network path, or add a cassette-backed target.
+  Worth auditing the other `--import-only` entry (`otel`) for the same shape.
 
-## Formal Verification
+- [ ] **BK-333 — Gate routing: checkers unreachable for the diffs that invalidate them**
+  spec: — · effort: S · audience: contributor.tooling, infra.ci
+  Two classifiers decide which gates a diff runs, they disagree in both
+  directions, and between them three checkers are unreachable for exactly the
+  change that breaks them. `CODE_PAT` does not match `^sdd/`, so CI's `lint` job
+  (and `preflight` inside it) is skipped; `FORMAL_PAT` is `^sdd/(formal|specs)/`
+  **minus `sdd/formal/tla/`**, so the second-wiring escape hatch used for
+  `check_spec_marks`, `check_formal_trace`, `check_capability_parity` and
+  `check_dafny_twin_parity` does not reach these three; and `docs-gate` invokes
+  none of them:
+  - `gen_adr_digest.py --check` (in `preflight`) reads `sdd/adrs/`. Adding an ADR,
+    accepting a draft or recording a supersession is exactly what bumps the
+    **committed generated** `sdd/adrs/DIGEST.md` and can break supersession-graph
+    consistency, so staleness ships.
+  - `check_tla_no_emdash.py` reads `sdd/formal/tla/**/*.tla` — the one subtree
+    `FORMAL_PAT` deliberately excludes, so a TLA-only change skips the check
+    written for TLA files.
+  - `check_ci_inventory.py` compares `.github/workflows/` against
+    `sdd/CI-OPERATIONS.md`. The workflow side is covered (`CODE_PAT` matches
+    `^\.github/workflows/`); editing the handbook alone is not.
+  **The ADR digest half is measured, twice** (was BK-347, absorbed here). A
+  standalone `gen-adr-digest-check` alias exists in `pyproject.toml` and
+  **nothing composes it**, so the checker is one alias away from any gate that
+  wants it. Commit `dc10a23` (PR #956): `gate`, `docs` and `setup` ran, `lint`
+  skipped. Commit `26cf75b` (PR #958) adds an ADR *and* touches
+  `.claude/skills/`, `CLAUDE.md` and `sdd/traces/` — not an ADR-only diff by any
+  reading — and `lint` still skipped, with every test lane skipped alongside it.
+  So the CI trigger is not how narrow the diff is; it is that **no path in it
+  matches `CODE_PAT`**, which is true of most process deliveries. The local
+  classifier misses a different set: an ADR plus a `.claude/hooks/` edit is
+  outside `CODE_PAT` yet locally runs `all` → `preflight` → the check, while an
+  ADR plus a `.github/workflows/` edit is inside `CODE_PAT` yet routes to
+  `lint` + `docs-gate`, which compose it nowhere. **Scope any fix to both
+  classifiers, not to one name.**
+  **Consequence:** a hand-edited or stale `DIGEST.md` ships on the author's care
+  alone, and the `STALE:` failure lands on the *next* PR that happens to touch
+  code — the wrong PR to pay for it, and one whose author did not cause it.
+  **Two claims to fix or qualify, not just the routing.** The
+  [PR validation gates](CLAUDE-REFERENCE.md#pr-validation-gates) section says
+  "the two paths stay equivalent on docs coverage despite composing different
+  targets", which is false for this checker; and the Detailed checklist's **ADR**
+  row names `preflight` as the gate, which is accurate and is precisely why the
+  routing is wrong.
+  Fix shape: add each checker to `docs-gate` beside the two BK-329 wired,
+  following the precedent `check_ripple_parity` documents, and widen CI's path
+  filter to treat `sdd/adrs/**` as lint-triggering. Filed rather than fixed in
+  BK-329 because that PR touched no ADR, no TLA module and not the handbook.
 
-Dafny-section work earns its slot one of three ways: **(C)** prove a
-spec clause is internally consistent and satisfiable, **(T)** certify
-that a conformance test demands nothing the verified contract does not
-(via the compiled `MemoryBackend` oracle), or **(O)** supply an
-oracle-computed expected value for a property-based test. Runtime
-backend gaps downstream of a Dafny-backed clause — a backend not
-honouring a verified postcondition — are spec-conformance work, not
-Dafny-section work; file those under the relevant backend section
-(SFTP, Azure, S3, etc.).
+- [ ] **BK-327 — Gate dual-doc nav reachability and index listing**
+  spec: — · effort: S · audience: contributor.tooling
+  A `<!-- doc: dual dest=explanation/design/*.md -->` marker publishes a page that
+  neither the docs-site nav nor the section index page lists, and nothing catches
+  either omission — so a published page a user cannot navigate to is a page they
+  never read. `mkdocs.yml` sets only `validation: links: not_found: warn`, so
+  `nav.omitted_files` stays at its INFO default and `--strict` cannot promote it;
+  `scripts/docs/nav.py` builds `SUMMARY.md` *from* `_nav.yml` and never diffs it
+  against the pages `gen_pages.py` emitted; the `_index.tmpl` Documents list is
+  hand-written and unchecked. So `hatch run docs-gate` goes green on a page that is
+  unreachable, unlisted, or both. Each surface had a live instance repaired by hand
+  in PR #938: `drift-rules` was absent from both, `ci-operations` was in `_nav.yml`
+  and absent from `_index.tmpl`.
+  Fix shape: a G-08 in `scripts/check_docs_framework.py` differencing emitted dual
+  `dest` paths against both `_nav.yml` and the `_index.tmpl` Documents list;
+  raising `nav.omitted_files` to WARNING covers the nav half only.
+  An unstated bound on `docs-gate` being trusted past its range
+  ([`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)).
 
-Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
-§ "Three shapes of Dafny-section work: (C), (T), (O)".
-
-*(none)*
-
----
-
-## Maintenance / Long-horizon
+- [~] **ID-018 — conda-forge publishing**
+  spec: — · effort: — · audience: library.maintainer
+  Recipe, CI validation, release checklist steps all done.
+  - Done: [recipe](../packaging/conda-forge/recipe.yaml),
+    [conda-recipe workflow](../.github/workflows/conda-recipe.yml),
+    staged-recipes PR `conda-forge/staged-recipes#32401` (CI green).
+  - Blocked: waiting for conda-forge reviewer approval. When merged: add
+    `conda install -c conda-forge remote-store` to README.
 
 - [ ] **ID-229 — Evaluate porting to httpx 1.0 (lift the `<1.0` cap)**
   spec: GR-033 · effort: M · audience: user.api
@@ -1429,28 +843,259 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   `[httpx]` HTTP adapter are built on. Coding around a single missing
   symbol would only convert an honest import failure into a falsely-green
   import that then explodes at runtime on `httpx.AsyncClient(...)`, so the
-  cap is the honest interim posture.
+  cap is the honest interim posture. The cap constrains every dependency
+  set a user resolves, so it needs a watch rather than silent drift.
   **Upstream context:** the cap matches the maintainers' own guidance.
   httpx 0.28.x is still a pre-1.0 line; the "1.0.dev" / "httpx2" threads
   are about the project's next major API *direction*, not a released
   stable 1.x series. In the late-2024 V1 discussion the maintainers said
   httpx was not yet at a 1.0 SemVer release and recommended **pinning to
   0.28 while reviewing deprecations** — which is exactly what `<1.0` does.
-  So `<1.0` is not a defensive over-cap; it tracks the current usable
-  branch until a real stable 1.x ships.
   Ref: [encode/httpx#3344](https://github.com/encode/httpx/discussions/3344).
   **When picked up:** real httpx 1.0 stable is out and pins install
   cleanly against it. Diff the actual 1.0 public API against 0.28
   (`AsyncClient`, `Response`, `Timeout`/`Limits`, the transport-error and
   decoding-error bases, `respx` compatibility); decide port-vs-hold; if
   porting, update `_graph/*.py` + the `[httpx]` backend, raise the cap,
-  and refresh the `graph` / `httpx` drift baselines. The `graph` drift
-  smoke wired in BUG-225 (`scripts/drift_smoke_map.py`) now imports the
-  async graph module directly, so a future 1.0 break fails the graph leg
-  loudly instead of riding green on the top-level fallback.
+  and refresh the `graph` / `httpx` drift baselines.
   **Why ID, not BK:** unevaluated migration against an upstream whose 1.0
-  shape is not yet stable — the same posture as ID-225. Mirrors the
-  revisit discipline of ID-150.
+  shape is not yet stable. Mirrors the revisit discipline of ID-150.
+
+- [ ] **ID-225 — Evaluate migrating the docs stack from Material for MkDocs to Zensical**
+  spec: — · effort: L · audience: user.site, library.maintainer, contributor.tooling
+  Our docs foundation is entering maintenance mode as its authors converge on a
+  successor. [Material for MkDocs is feature-frozen](https://squidfunk.github.io/mkdocs-material/blog/2025/11/05/zensical/)
+  (critical bug/security fixes for ~12 months, no new features), MkDocs 1.x is
+  itself being forked (a `properdocs` MkDocs-1.x continuation now surfaces as a
+  transitive docs dep, and a build-time banner warns MkDocs 2.0 will break all
+  plugins/themes), and `mkdocs-llmstxt` (adopted in ID-220) is in maintenance
+  mode for the same reason. The whole ecosystem is pointing at
+  [**Zensical**](https://github.com/zensical/zensical) — a new MIT static site
+  generator (Rust core, reads `mkdocs.yml` natively, with a migration path) built
+  by the Material team. Crucially, `mkdocstrings`' author is rebuilding
+  API-reference-from-docstrings *inside* Zensical — the exact capability our docs
+  depend on `mkdocstrings` for.
+  **Not prioritized:** Zensical is pre-1.0 and does **not** yet ship the
+  API-reference feature we require, so "not yet — revisit when Zensical reaches
+  API-reference parity" is a legitimate outcome. Kept visible here as the
+  **sunset trigger for the interim `mkdocs-llmstxt` adoption (ID-220)**, which is
+  recorded nowhere else: when the migration lands, the HTML→Markdown plugin is a
+  prime candidate for replacement by a native feature.
+  **Scope when picked up:** trial `zensical build` against our `mkdocs.yml`;
+  confirm parity for the pieces we rely on (gen-files pages, mkdocstrings API
+  reference, literate-nav order, BK-171 link rewrites, mike/RTD versioning); and
+  fold in native `llms.txt` / `llms-full.txt` generation if Zensical ships it.
+  Background: [research](research/research-llms-full-txt-tooling.md).
+
+---
+
+## 6. The repo does not mislead the next person
+
+**Promise:** the artifacts maintainers coordinate through — this file, the
+ripple-check, the revisit pins, the generated inventories — say what is
+actually true.
+
+**Closes when:** no coordination artifact asserts a fact that a mechanism
+cannot check, and no figure in a durable artifact was counted by hand.
+
+Lowest priority and deliberately capped. Design and review rules for anything
+added here: [`DRIFT-RULES.md`](DRIFT-RULES.md#rules). The argument and gap
+ranking behind the programme:
+[research](research/research-inconsistency-detection-multi-artifact.md) § 9.
+
+**Measured qualification on that research doc's ranking**, recorded here
+because the doc is point-in-time and does not get rewritten. It designates
+ID-207 (the canonical claim space) as the strategic item. ID-207 builds an
+*omission detector* — research § 1 class E. BK-324's four instances were class
+A/C/D: one claim restated in several homes and updated in one. So ID-207 is
+**not** the item that would have caught what this programme has actually
+caught. Detecting those needs semantic comparison of prose, which § 1 marks as
+having no general oracle. The mechanisms that did catch them were an
+author-side sibling sweep ([BK-336](BACKLOG-DONE.md)) and running the code
+rather than reading the diff ([BK-344](BACKLOG-DONE.md) and
+[BK-338](BACKLOG-DONE.md)) — neither in the research doc's ranking.
+
+Shipped so far: step 1 as BK-328, step 5.1 as BK-329, step 4 as BK-331, step 3
+as BK-330 plus ID-238. Four findings from them apply to what follows: a
+documented gap statement is not a measured one; pinning what an exemption
+covers beats exempting the whole item; an authority rule is worth exactly the
+live disagreements it decides, so run a proposed one against them before
+believing it; and a hand-counted figure about a growing corpus is stale before
+the commit that writes it lands, so cite the generator instead.
+
+- [ ] **ID-235 — Backlog-file integrity lint (structure and inbound tracker citations)**
+  spec: — · effort: S · audience: contributor.tooling
+  Two passes over the same artifact, in the same script family, sharing one
+  wiring trap. Home: extend `scripts/gen_backlogid.py` and
+  `scripts/check_no_tracker_refs.py`, both of which already parse the ID
+  pattern and already know both backlog files.
+  - **Structural integrity.** A string-anchored edit swallowed an entry header
+    in `BACKLOG-DONE.md` (PR #932), merging two items — and because
+    `gen_backlogid.py` derives IDs from headers, the stale JSON was masked too.
+    Lint the structure: every metadata line follows an entry header, headers
+    unique across both files, BACKLOG-DONE status `[x]` only.
+  - **Inbound citations resolve** (was ID-246, absorbed here). Specs cite
+    backlog coordinates as provenance, and `check_no_tracker_refs.py` actively
+    *pushes* IDs here — it fails a docstring or `docs-src/` page and tells the
+    author to move the coordinate into `sdd/specs/` or `sdd/BACKLOG-DONE.md`,
+    listing `sdd/**` as out of scope because "the trackers are how those
+    documents are addressed". **Nothing checks that they resolve.** Measured
+    across all 50 specs: 166 citations, 80 distinct IDs, 28 files, **zero
+    dangling** — 69 resolve into `BACKLOG-DONE.md`, the rest here. The
+    invariant holds by discipline, not construction. Add a second, inverted
+    pass: every `PREFIX-NNN` under `sdd/` must appear as an item in either
+    backlog file, failing with the citing file and line
+    ([DRIFT-RULES Rule 2](DRIFT-RULES.md#rules): localize, don't merely fail).
+    Rule 3 makes it cheap — the claim space is *derived* from the citing
+    documents. Rule 4 needs a decision this does not presuppose: when a spec
+    cites an ID no backlog file carries, which side is wrong.
+  **Note the wiring trap BK-333 documents:** a check reading `sdd/` must reach a
+  gate an `sdd/`-only change actually runs. This item is a live instance of its
+  own subject — the deletions that produced this file's current shape are
+  exactly the event the second pass exists to catch.
+
+- [ ] **BK-346 — The ripple-check table answers questions adjacent to the ones asked**
+  spec: — · effort: S/M · audience: contributor.process
+  One class with four measured instances, not four items. Each is a reader who
+  consulted the [Pre-work index](CLAUDE-REFERENCE.md#pre-work-index), got an
+  answer, and acted on it — and the answer was to a neighbouring question. Any
+  row change lands in **both** presentations; `check_ripple_parity.py` enforces
+  trigger-parity, so a row added to one and not the other fails `lint`.
+  **The open question is the shape of the fix**, not whether there is a defect:
+  N rows, N widened rows, or a note about the table's granularity. Decide once,
+  across all four.
+  1. **New test file** asks whether the file needs an `os_sensitive` mark and is
+     silent on placement, so nothing routes an author to TEST-003 when adding
+     one. `check_test_placement.py` enforces three other rules and not this one.
+     Two files landed mixing sync and async in one module; a round-1 reviewer
+     caught it.
+  2. **Public method signature** answers for signatures. A spec clause can change
+     what an operation *tolerates* without touching a signature, and then no row
+     points from the clause to the ABC docstrings that define it — four of them
+     said nothing about the new rule for seven rounds.
+  3. **CHANGELOG entry** says where a new entry goes and stops. It does not ask
+     whether an *unreleased sibling* entry has been invalidated by the new one.
+     One had been, by the same item, in the same section.
+  4. **Adding a `hatch` script alias** (was BK-334). No trigger covers adding an
+     entry to `pyproject.toml`'s `[tool.hatch.envs.default.scripts]`. That edit
+     decides whether a new `scripts/*.py` is reachable by anything — whether it
+     joins `lint` / `preflight` / `docs-gate` / `all`, or is deliberately left
+     out. It fires on every new script in `scripts/`, of which the repo has
+     dozens and every one carries an alias. BK-330 reasoned to the right answer
+     only via the adjacent cross-artifact row, which now covers drift reports and
+     still says nothing about a `gen_*` or a `bench-*`.
+  5. **Widening an authority doc's scope** (was BK-337). There is a row for a
+     **new** authoritative process doc, and one for an authority **direction**
+     amended. Neither fires on the commonest amendment: an existing doc's scope
+     or subject sentence widening, after which nothing finds the copies that
+     restate that scope. Measured target set at filing — six live restating
+     copies of one direction: `CLAUDE.md` § Drift checks, `sdd/CI-OPERATIONS.md`,
+     `sdd/CLAUDE-REFERENCE.md` in both ripple presentations,
+     `.claude/agents/sdd-expert.md` and `documentation-expert.md`, and
+     `.claude/skills/rvw-pr/SKILL.md` and `audit/SKILL.md`. PR #944 widened
+     `DRIFT-RULES.md`'s scope sentence and took four review rounds to find them
+     all, being one copy short in three of those rounds. `check_ripple_parity.py`
+     structurally cannot help — it enforces parity between the two ripple
+     presentations, not between them and copies scattered through `.claude/**`.
+     **This instance has a better second disposition:** delete the restatements
+     and let each reader link to the doc that states its own scope, as
+     `CLAUDE.md` § Drift checks already half-does. A row keeps N copies
+     synchronised; deletion removes the synchronisation problem. The obstacle is
+     that agent-facing files are read cold by a process that may not follow a
+     link, which is the reasoning BK-329 recorded when it accepted the copies.
+     **Choosing between the two is the first half of this item**, and it decides
+     the effort for the whole group.
+  6. **Closing a backlog item** (was ID-248). The **Backlog item touched** row
+     names the trace, the schema and the CHANGELOG-audience rule. It does not
+     name the **inbound** references: other items, section preambles, and
+     `BACKLOG-DONE.md` entries that cite the closing item by ID and assert
+     something about its state. Measured from closing ID-238 in one PR — four
+     instances, each carrying a claim the close falsified rather than a bare
+     cross-reference; two caught by the author's grep, **two more only by
+     review**, which is itself the measurement. The asserting kind is what makes
+     this more than link rot: [principle 3](../CLAUDE.md#principles) is violated
+     the moment the item closes, and the stale sentence reads as current. One
+     instance is a **distinct sub-shape**: not a stale assertion *about* the
+     closed item, but a live citation *of* it whose referent the close destroyed
+     — the rewrite into `BACKLOG-DONE.md` dropped the paragraph, so the ID
+     resolved and the sentence around it pointed at nothing. That sub-shape sits
+     between this row and ID-235's inbound-citation pass, because the ID keeps
+     resolving while the target is gone; **decide which owns it when either is
+     picked up.** Note a gate is harder than it looks: the defect is an assertion
+     going stale, not a reference dangling, so ID-235's mechanism does not reach
+     it, and the open question is whether the row can say anything more useful
+     than "grep the ID and read every hit".
+
+- [ ] **ID-245 — Derived inventories replacing hand-maintained ones**
+  spec: — · effort: M · audience: infra.test, contributor.tooling
+  Three generated surfaces, one shared design decision, and the same
+  [`DRIFT-RULES.md`](DRIFT-RULES.md#rules) obligations on each: Rule 3 (the claim
+  space must be *derived*, and its granularity stated), Rule 4 (which of document
+  and generator governs), Rule 5 (gating or advisory, and why).
+  - **Spec 003's cassette-reachability table.**
+    [`003-backend-adapter-contract.md`](specs/003-backend-adapter-contract.md)
+    BE-029's coverage note tabulates, per backend, which root-path conformance
+    cells execute and which are pinned only in a per-backend home. Every figure
+    was counted by hand, against a corpus that grows, and ID-241 has already
+    rewritten it once for that reason. This is the direct instance of
+    [principle 9](../CLAUDE.md#principles) on a published spec. Fix shape: a
+    script that runs the conformance suite (or its collection plus the replay
+    guard's verdict) and emits, per replay fixture, which cells execute and which
+    skip for want of a cassette; spec 003 then cites the generator. Not derivable
+    from collection alone — whether a cell needs a cassette depends on whether
+    the backend issues a request, which only running it answers (ID-241).
+    **Position: after ID-244**, which changes which cells a read-only backend can
+    reach, so building this first would measure a surface about to move.
+  - **The characteristic-accountability record** (was ID-236, research § 9 step
+    7). `check_formal_trace.py` computes a spec-coverage matrix and discards it.
+    Render it at release time — every spec ID, its verification evidence (test
+    marker, Dafny tag, TLA+ invariant), its status — so "what was verified, and
+    by what" is answerable historically rather than only at HEAD. Its shape
+    changes under ID-207, so cost is unknown until that lands.
+  - **The cross-artifact checker inventory** (was ID-237, research § 9 step 8).
+    The research doc's own inventory of which artifact pairs are checked was
+    assembled by hand, and says of itself: "The table will drift, and nothing
+    will notice." Derive it from the `check_*.py` docstrings. Two complications
+    belong in the scope rather than in the implementation surprise: a substantial
+    minority of gates are single-artifact rule checks whose docstrings state a
+    *rule*, not a pair (assertion presence, mock discipline, forbidden RST roles,
+    em dashes in TLA+), so the deliverable needs an explicit "rule check, no
+    pair" classification; and the `scripts/check_*.py` glob under-reaches —
+    `scripts/docs/check_links.py` is a genuine cross-artifact gate outside it.
+  **The shared open question:** both complications push toward either a docstring
+  convention or a curated mapping, and a curated mapping is precisely the
+  parallel-artifact-that-drifts problem these exist to close. That decision is
+  unmade and it is one decision, not three.
+
+- [ ] **ID-207 — Push `check_formal_trace.py` past citation hygiene (steps 3 and 4 only)**
+  spec: — · effort: S/M · audience: contributor.tooling
+  ID-206 shipped `scripts/check_formal_trace.py`; a PR #663 review confirmed it
+  certifies *citation hygiene at spec-ID granularity*, not clause-level
+  enforcement. Two of the four hardening steps originally proposed are cheap,
+  have measured motivation, and are what remains of this item:
+  3. **Push T past citation.** A marker only cites an ID; it does not prove the
+     test asserts the clause, is enabled, or cites the *right* ID — a
+     wrong-but-real ID passes F2 and even satisfies F1. This is the
+     "citation ≠ assertion" half of what BK-324's four instances exhibited.
+  4. **Bar baseline growth mechanically.** `_BASELINE` shrink-only is a review
+     convention; a new violation can be parked by editing the frozenset. A
+     committed count or hash pinned by a separate check would make it mechanical.
+  **Steps 1 and 2 were dropped, on this item's own measurement.** Step 2 (clause
+  granularity instead of ID granularity) carries an L cost over roughly **2.5%**
+  of the claim space — the Dafny model reaches 26 of 933 declared sections and 94
+  tag sites of a corpus estimated near 3,600 clauses — and a design investigation
+  found it would have caught **none** of the four motivating instances. The
+  decisive case is review findings 1/3/4: BE-021's F1 was green for the entire
+  life of the divergence, because the tests existed, cited the right ID, and were
+  enabled, while carrying per-fixture skips and capability gates. Finer
+  identifiers make omission detection finer; they do not convert it into a
+  contradiction detector. It also needed an ADR before implementation, since
+  sub-IDs change the spec-ID grammar
+  ([`000-process.md` Rule 5](000-process.md#rules)) on which ~11,800 citations
+  across 518 files depend. Step 1 (derive D mechanically from contract `ensures`)
+  goes with it, being step 2's precondition.
+  **Do not re-file the dropped half without new evidence** — the measurement
+  above is the reason, and it is recorded here so the argument is not had twice.
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   spec: — · effort: S · audience: library.maintainer
@@ -1462,123 +1107,33 @@ Full doctrine and intake rules: [`sdd/formal/README.md`](formal/README.md)
   **remove** (no catches, no active modules — drop the job), or **re-defer**
   (still useful but no catch yet — open the next revisit ticket). A calendar
   without a ticket is the same as no calendar, which is why this item exists.
-
   **Exit criteria:** decision logged in the ticket's close note; if re-deferred,
   the successor ticket is linked here; if promoted, `verify-tla` joins the
   `gate.needs` list in `.github/workflows/ci.yml` and the caveat in
   `sdd/formal/README.md` is updated.
 
-- [ ] **BK-242 — Flat-NS file-ancestor pre-check perf (SQLBlob IN-list, memoisation)**
-  spec: — · effort: S · audience: infra.test, library.maintainer
-  ID-211 review surfaced two perf optimisations the disposition (b)
-  opt-in didn't ship. Bundle here so they don't get lost:
-  - **SQLBlob `WHERE key IN (ancestors)`**: today `_head_one` issues one
-    `SELECT 1` per ancestor — N round trips for a depth-N path. The
-    research note (`sdd/research/research-id-211-flat-ns-file-ancestor-precheck.md`
-    § 5.4) already flagged this; a single `SELECT key FROM table WHERE
-    key IN (:ancestors)` collapses the walk to one RTT. On in-memory
-    SQLite the win is sub-ms; on PostgreSQL/MySQL over the network at
-    depth 6 it is 6 RTTs → 1 RTT (~10-50 ms each).
-  - **`head_one` memoisation**: bulk-write workloads (`a/b/c/file-{i}.bin`
-    for i in 1..N) re-HEAD the same `a`, `a/b`, `a/b/c` ancestors N
-    times. A bounded per-instance `TTLCache(maxsize=…, ttl=…)` on the
-    closure collapses O(N×D) HEADs to ~O(D) per distinct prefix without
-    changing the contract (the TTL accepts staleness within its window).
-    Applies to S3, S3PyArrow, Azure non-HNS, and SQLBlob.
-  Both are perf optimisations that don't change the gate's contract —
-  ship behind the existing `reject_write_under_file_ancestor=True`
-  opt-in only. Includes refreshing `§ 4` / `§ 5.4` in the research note
-  with measured before/after numbers. Touches
-  `src/remote_store/backends/_flat_ns.py`,
-  `src/remote_store/backends/_sqlalchemy.py`,
-  `src/remote_store/backends/_s3.py`,
-  `src/remote_store/backends/_s3_pyarrow.py`,
-  `src/remote_store/backends/_azure.py`,
-  `src/remote_store/aio/backends/_azure.py`. Discovered in PR #686 review.
-
-- [~] **ID-018 — conda-forge publishing**
-  spec: — · effort: — · audience: library.maintainer
-  Recipe, CI validation, release checklist steps all done.
-  - Done: [recipe](../packaging/conda-forge/recipe.yaml),
-    [conda-recipe workflow](../.github/workflows/conda-recipe.yml),
-    staged-recipes PR `conda-forge/staged-recipes#32401` (CI green).
-  - Blocked: waiting for conda-forge reviewer approval. When merged: add
-    `conda install -c conda-forge remote-store` to README.
-
----
-
-## Icebox
-
-Deferred indefinitely — revisit only if demand or circumstances change.
-
-- [ ] **ID-215 — `RemotePath` deferred pathlib-parity members**
-  spec: PATH-016, PATH-017 · effort: S · audience: user.api
-  Follow-up from ID-196. That item shipped `as_posix()` (PATH-016) and pinned
-  the deliberate non-goal that `RemotePath` is **not** `os.PathLike`
-  (PATH-017). The accompanying parity audit catalogued the `pathlib.PurePath`
-  members still absent from `RemotePath`:
-  - **Cheap, safe read accessors** complementing the existing `name` / `suffix`:
-    `stem` (name without final suffix) and `suffixes` (list of all suffixes).
-  - **Copy-with mutators:** `with_name`, `with_suffix`, `with_stem`. Each must
-    re-run normalisation/validation and reject empty results per PATH-008.
-  - **Other:** `joinpath` (n-ary `/`), `parents` (ancestor sequence),
-    `match` (glob), `relative_to` / `is_relative_to`, `is_absolute`.
-  Out of scope (meaningless for a rootless remote key): `drive`, `root`,
-  `anchor`, `as_uri`. No demand for any of these yet — `as_posix()` covered the
-  one concrete need. Reactivate per-member if a user hits a specific gap; each
-  would need a `PATH-NNN` clause + spec-tagged test.
-  Surfaced during the ID-196 parity audit.
-
-- [ ] **BK-139d — Implement remaining bug prevention measures from research**
-  spec: — · effort: M · audience: library.maintainer
-  Items 1–3 shipped as BK-139a; items 4, 5, 7 shipped as BK-139b (see
-  BACKLOG-DONE.md). Only item 6 remains: `scripts/check_error_handling.py`
-  (~80 lines) — an AST script flagging broad exception handlers that silently
-  return without checking `errno`. Deferred because BLE rules (item 4) and the
-  extended conformance error-fidelity category (item 5) cover the same
-  error-swallowing bug class with less maintenance overhead. Reactivate if a
-  new error-swallowing bug escapes those nets.
-  Related: [research](research/research-bug-prevention-beyond-testing.md).
-
-- [ ] **ID-114 — PyArrow-style bucket path support (research)**
-  spec: — · effort: S · audience: user.api
-  PyArrow convention: `"bucket/prefix"` embeds bucket in path. Current
-  `S3Backend` requires split (`bucket=...`, `path=...`). Research feasibility
-  of factory method or native convention for easier PyArrow→remote-store
-  migration.
-  - Deliverable: RFC only — low commitment, no code change guaranteed
-
-- [ ] **ID-118b — TLS CA bundle for Azure (Phase 2)**
-  spec: — · effort: M · audience: user.api
-  Extend `tls_ca_bundle` to `AzureBackend` if demand materializes.
-  Primarily benefits Azure Stack Hub / on-premises deployments.
-  Wrap `ClientOptions(ca_cert=...)`, check `AZURE_CA_CERTIFICATE_PATH`.
-  S3 Phase 1 shipped — see BACKLOG-DONE.md.
-
-- [ ] **ID-105 — AzurePyArrowBackend (C++ Tier 1)**
-  spec: — · effort: L · audience: user.api
-  Optional upgrade from the Tier 3 range reader shipped in
-  [ID-102](BACKLOG-DONE.md#streaming--io). Only worth pursuing if real-Azure
-  benchmarks show GIL overhead or missing I/O coalescing matters for target
-  workloads. Approach: `pyarrow.fs.AzureFileSystem` (C++, ships with PyArrow)
-  following the `S3PyArrowBackend` dual-library pattern.
-  [Research § 6](research/research-azure-pyarrow-optimization.md#6-full-tier-1-path-if-needed).
-  - Spike: validate auth methods, HNS/non-HNS, `ReadRangeCache` activation.
-  - If viable: `AzurePyArrowBackend` — spec, tests, docs.
-
-- [ ] **ID-125 — Update medallion showcase to Dagster v2 resource pattern**
-  spec: — · effort: S · audience: user.api
-  Replace `dagster_io_manager(store)` calls in `examples/medallion_dagster/`
-  with `RemoteStoreIOManager`. Demonstrates the config-driven pattern.
-
-- [ ] **ID-066 — PR preview deployments**
-  spec: — · effort: L · audience: library.maintainer
-  Deploy PR previews to Cloudflare Pages, Netlify, or GitHub Pages artifacts.
-  Inspired by FastAPI's Cloudflare Pages pattern. Infrastructure decision needed.
-  [Research](research/research-fastapi-docs.md) P6.
-
-- [ ] **ID-067 — griffe-typingdoc for `Annotated[T, Doc("...")]` docstrings**
-  spec: — · effort: S · audience: library.maintainer
-  Only relevant if migrating from Google-style docstrings to PEP 727
-  `Annotated[T, Doc("...")]`. Not recommended near-term.
-  [Research](research/research-fastapi-docs.md) P5.
+- [ ] **ID-249 — Trace-outcome report revisit at the next release**
+  spec: — · effort: S · audience: contributor.process
+  First revisit ticket for the release-anchored trigger ID-238 shipped. Per
+  [`CONTRIBUTING.md` § Release](../CONTRIBUTING.md#release) Phase 0, each release
+  reads `hatch run report-trace-outcomes` and closes the open revisit ticket.
+  This item is the pin that makes the ticket findable.
+  **The pin lives here, not in the checklist.** `CONTRIBUTING.md` is a published
+  surface, so [CONTENT-RULES Rules 1 and 5](CONTENT-RULES.md#rules) bar a tracker
+  ID from it (`check_no_tracker_refs` enforces this, and caught the first attempt).
+  The checklist therefore describes the behaviour and points here; this file is
+  the single place that says *which* ticket is open — the same split
+  `sdd/formal/README.md` uses to pin ID-150. **Separate from ID-150 for that
+  reason**: two published documents pin two different tickets, with different
+  triggers and different exit sets, and each mints its own successor. One merged
+  ticket would falsely close one trigger with the other.
+  **Record at the revisit:** the corpus totals (the baseline the following
+  release differences against — the report keeps no history); the references
+  selected (top-ranked row, plus any row with `rate` ≥ 1.5× the top row's at
+  `reads` ≥ 20 — a fitted threshold, re-check it rather than inherit it); and per
+  selected reference one of **act** (file work against it), **defer** (leave it,
+  say why), or **accept** (the tags are exposure, not a defect).
+  **Baseline to difference against**, measured at `4076ed7`: 270 traces, 207
+  negative tags, `sdd/BACKLOG.md` top-ranked at 22 over 236 reads (9.3%).
+  **Exit criteria:** decision logged here, then the successor ticket opened and
+  its ID named in this item's close note.

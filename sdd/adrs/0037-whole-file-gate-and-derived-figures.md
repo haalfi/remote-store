@@ -177,5 +177,7 @@ derivation, and can only trust a total.
   it. Its reviewers read a diff-shaped surface too, and the same evidence would
   apply. Not adopted here because this record's evidence is one `/ship`
   delivery; adopt it there on that skill's own evidence, as ADR-0036 did for
-  selection. Tracked as BK-349, because an invitation with no item behind it is
-  one nobody finds.
+  selection. Deliberately untracked: an item was filed and then removed, because
+  the question needs evidence from an `/orchestrate` delivery that does not yet
+  exist, and a tracker carrying no evidence is one nobody acts on either. File
+  it when such a run supplies the evidence.
