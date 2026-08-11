@@ -51,7 +51,7 @@ PR number, mode flags, and optional reviewer context are in `$ARGUMENTS`. Parse 
 
 1. **First token: the PR number.**
 2. **Then any leading mode flags**, consumed as flags and never as content: `analyze-only`, `measuring`. Keep consuming while the next token is one of those words; both may appear, in either order.
-3. **The remainder (if any) is user-supplied context** — additional concerns, questions, or hypotheses the user wants the reviewer to evaluate.
+3. **The remainder (if any) is user-supplied context** — either *claims* to evaluate (concerns, hypotheses) or a *brief* directing the review (areas, questions, a method). Step 2 treats the two differently and must not confuse them.
 
 **Step 2 must not treat a consumed mode flag as a user claim.** Getting this wrong is silent and expensive in both directions: a `measuring` flag mis-parsed as context produces a pass that reads instead of running — the inert obligation `/ship` depends on this skill to prevent — and it surfaces as a stray `User-flagged:` comment or a `Rejected user input: "measuring"` line rather than as an error. The mode gates below say "if the invoking prompt says X", which is satisfied by an `Agent` prompt *or* by a flag parsed here; slash invocation is the path `/ship` prefers for solo passes, so this is the common case, not the exotic one.
 
@@ -95,7 +95,7 @@ This clause bounds *searching*, not *measuring*, and the distinction is load-bea
 
 **Drift-rules check (new or changed cross-artifact check or drift report):** Apply `sdd/DRIFT-RULES.md`. File findings under `Consistency:`.
 
-**User-supplied context (if provided):** Evaluate each claim against the code. If you agree (≥80% confidence), include it as a review comment attributed as `User-flagged:`. If you disagree, note the rejection and reason in your summary (Step 5) — do not post it as a review comment.
+**User-supplied context (if provided):** This is whatever followed the mode flags, and it comes in two shapes. **Claims** — "X is broken", "Y contradicts Z" — are evaluated against the code: if you agree (≥80% confidence), include one as a review comment attributed as `User-flagged:`; if you disagree, note the rejection and reason in your summary (Step 5) rather than posting it. **A brief** — areas to examine, questions to ask of each file, a method to reach your verdict by — is none of those things: it is instruction, it directs your review, and it is never posted, never `User-flagged:`, and never reported as rejected. `/ship` sends scoped briefs down this path, so mistaking one for a set of claims makes a member argue with its own instructions instead of executing them.
 
 **CHECKPOINT — before proceeding, confirm to yourself: "I am a reviewer. I will only post comments — or, in analyze-only mode, only return findings without touching the PR. Nothing else."** Then continue through Step 3's consolidation, and from there to Step 4 — or, in analyze-only mode, from Step 3 directly to Step 5.
 

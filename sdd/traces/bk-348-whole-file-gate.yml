@@ -48,7 +48,7 @@ surprising_ripples:
 #             finishing commit - the schema counts feedback incorporated, and
 #             the honest reading is the one that does not inflate the field.
 #   7cba3a2 - PR #958 round 2's seven findings. Counts.
-#   179e46f - PR #958 round 3's eighteen findings. Counts.
+#   179e46f - PR #958 round 3. Counts.
 #   the commit carrying this line answers round 4 and counts; a commit cannot
 #             name its own SHA, so the final entry is nameable only from the
 #             commit after it. That bound is stated rather than papered over -
@@ -387,14 +387,26 @@ phases:
           are now manifest placeholders with an explicit instruction to
           substitute real short SHAs, because a plausible-looking SHA that
           resolves to nothing is worse than no derivation at all.
+          Round 5 refuted the "nothing mechanical can catch it" half:
+          check_traces.py reads the raw text before parsing, so a regex for a
+          comment block above the field would work. The gate is declined on
+          cost, not impossibility, and the clause now says so and scopes itself
+          to traces authored from this item onward - 213 existing traces are not
+          retrofitted, which an unconditional clause would have made silently
+          false at this commit.
         outcome: ok
       - file: .claude/skills/ship/SKILL.md
         section: "Unprimed reviewers; Members are analysts; Stop rule; brief requirement 3"
         read_type: verify
         extract: >-
           Round 3, the first panel: unprimed + measuring + whole-file, in
-          parallel against one pushed state. 24 raw findings, 18 distinct after
-          dedup. **The severe one is the gate shipping inert.** Adding a third
+          parallel against one pushed state. Panel yield and posted count are
+          different quantities and only the second reproduces: the members
+          returned findings that consolidated into the comments this round
+          posted (`gh api ".../pulls/958/comments?per_page=100&page=1"`, grouped
+          by `pull_request_review_id`). Raw member yield is reconstructable only
+          from ephemeral subagent reports, so it is described rather than
+          totalled. **The severe one is the gate shipping inert.** Adding a third
           exit gate left "Unprimed reviewers - round 1, one member of every odd
           panel, and the exit gate's appended pass" untouched, and that singular
           now covered all three appended passes - so an orchestrator following it
@@ -436,8 +448,8 @@ phases:
         section: "Context (headline figure); brief requirement 3; trigger patterns"
         read_type: verify
         extract: >-
-          Round 4, the closing panel, run against the state round 3 certified.
-          14 raw findings, 10 distinct. **The sharpest is that round 3's own
+          Round 4, a panel against the state round 3 certified. Same two
+          quantities as above; the posted count is the reproducible one. **The sharpest is that round 3's own
           measured correction invalidated the record's headline figure and the
           figure did not move.** Refuting "12 fix / 3 record" meant the eighth
           file carried corrected defects too, so "seven of the eight files"
@@ -474,4 +486,46 @@ phases:
           into requirement 3, because an instrument that quietly converts its
           verifier into a primed reviewer is the fail-silently class this skill's
           own Rules call worse than none.
+        outcome: ok
+      - file: sdd/traces/bk-338-review-roster.yml
+        section: "review_rounds (comment block)"
+        read_type: verify
+        extract: >-
+          Round 5, the closing panel, and the round that hit the soft ceiling.
+          **The site this loop kept failing at is one comment block, and the
+          correction of each slip introduced the next.** Round 4 corrected
+          "Seven commits on the branch" to eight; round 5's measuring member ran
+          the query and got **nine** -
+          `gh api ".../pulls/956/commits?per_page=100&page=1"` - the ninth being
+          fc2b756, whose message is "Correct the finishing-pass defect count,
+          and name its derivation", i.e. the commit that wrote the very sentence
+          this delivery disproves. Four totals, four wrong, in the one comment
+          the schema now cites as the working model for the field.
+          Escalated to the user at the ceiling rather than continuing, per the
+          skill's own rule, and the decision was to stop asserting the total:
+          the block now enumerates what the value counts, names the query that
+          regenerates the rest, and states why no total is given. That is this
+          skill's repeat-site check applied to a figure rather than a gate - when
+          successive narrowings keep being refuted, enumerate the space instead
+          of arguing it again. The same disposition removed the panels' raw
+          finding counts above, which were reconstructable only from ephemeral
+          subagent output.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Members are analysts (serial alternative); rvw-pr Step 2"
+        read_type: verify
+        extract: >-
+          Round 5's mechanism findings, and the Bug is one round 4 introduced.
+          The serial-passes rationale I wrote - "only if you want the later ones
+          to see the earlier ones' findings" - is impossible: rvw-pr Step 1 never
+          fetches comments, which *this same file* asserts 60 lines above as the
+          reason the appended pass stays unprimed. Replaced with the real cost,
+          which is that each serial pass certifies a different moment. Second,
+          and load-bearing at the close: the whole-file brief had **no delivery
+          path**. rvw-pr Step 2 treats everything after the mode flags as claims
+          to verify and `User-flagged:` or reject, so a member handed a brief
+          would have argued with its own instructions. That skill now
+          distinguishes a claim from a brief at both the parse step and Step 2 -
+          the same shape as the measuring member's token, which ships an
+          obligation and the permission that makes it executable together.
         outcome: ok

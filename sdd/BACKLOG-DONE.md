@@ -48,8 +48,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   measuring gate, so the floor under `/ship` is now two passes, and the stop
   rule's lens-coverage floor stops doubling as a licence to stop.
   **Signal 1's evidence, carried here because ADR-0037 and the trace both cite
-  it.** Eight claims in PR #956 were asserted from memory and were wrong — the
-  row count of this table, not a remembered total. The item body that held it is
+  it.** Eight claims **across that delivery** were asserted from memory and were
+  wrong — the row count of this table, not a remembered total. Seven sat in
+  PR #956 and the eighth in a review reply on its follow-up #957, which is why
+  the scope is the delivery rather than the one PR. The item body that held it is
   deleted by this entry, so it lives here:
 
   | # | Claim | Artifact | Who caught it | By consulting |

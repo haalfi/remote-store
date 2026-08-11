@@ -49,9 +49,11 @@ that had been told about it five times. What survived five rounds: frontmatter
 falsified by the very change it describes; an antecedent broken by a paragraph
 inserted above it; a premise true for one of a section's two callers; a
 cross-file cardinality claim. None of them is visible in a diff hunk. All of
-them are visible in the file. Derivation: the finishing commit
-`1fe4749`, whose message enumerates the defects per file
-(`gh api repos/haalfi/remote-store/commits/1fe4749`).
+them are visible in the file. Derivation: `gh api
+repos/haalfi/remote-store/commits/1fe4749`, reading the patch hunk by hunk —
+not that commit's message, whose per-file enumeration supports seven and whose
+own total this record elsewhere calls wrong. The eighth file's two
+defect-correcting hunks are visible only in the patch.
 
 **Review attention concentrated, and nothing in the loop measured it.** `/ship`
 obliges every scoped brief to say what previous rounds have not examined and

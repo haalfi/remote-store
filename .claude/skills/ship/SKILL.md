@@ -161,9 +161,12 @@ constraints keep that parallelism sound:
   round 3 on, an odd round is never solo; it always carries its unprimed
   member. **A close that appends two or three passes takes the panel path** — analyze-only members, orchestrator posts — because the
   contention this bullet describes does not care that the passes are appended
-  rather than scheduled. Run them serially as solo posting passes only if you
-  want the later ones to see the earlier ones' findings, which for the
-  unprimed pass is exactly what must not happen.
+  rather than scheduled. Serial solo passes are the alternative, and their
+  cost is not priming — `rvw-pr` Step 1 never fetches comments, so a later
+  pass cannot see an earlier one's findings however they are run. The cost is
+  that each pass certifies a different moment: fix anything between them and
+  the earlier passes attested to a state that no longer exists, so the gates
+  they discharged are undischarged.
 - **Member enforcement is by instruction, and honestly so.** No tool
   restriction that leaves a reviewer functional removes the hazards: reading
   PR content needs `gh`/MCP, so the posting path cannot be tool-stripped, and

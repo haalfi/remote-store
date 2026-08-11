@@ -156,9 +156,11 @@ executed.
   the sentence.** "I swept both sites", "I measured it", "I checked every
   backend" — in a reply, a commit message, or the Step 6 report — carries the
   command, path list, or enumeration behind it. This is
-  [`CLAUDE.md` principle 9](../../../CLAUDE.md#principles) applied to the class
-  it does not otherwise reach: a number can show its working, an action has
-  only the check you did or did not run. The bound is why the check is yours.
+  [`CLAUDE.md` principle 9](../../../CLAUDE.md#principles) applied to the half
+  of its class its *mechanism* cannot reach. The principle names action-claims
+  explicitly; what it cannot supply for them is a derivation, because a number
+  can show its working and an action has only the check you did or did not run.
+  So the enforcement for that half lands here, where replies are authored. The bound is why the check is yours.
   Replies are durable, are re-read by Step 1's own comment fetch on every later
   round, and are reviewed by **nobody** — no reviewer fetches them, by design,
   because that is what keeps `/ship`'s unprimed passes unprimed. A false "I

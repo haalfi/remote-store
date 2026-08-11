@@ -399,9 +399,12 @@ and the highest ID already in this file, then take the next integer. Run
   The [PR validation gates](CLAUDE-REFERENCE.md#pr-validation-gates) route a
   no-code diff to `lint` + `docs-gate`, so an ADR-only change never runs the
   check locally. CI cannot backstop it: the `lint` job (which runs
-  `uvx hatch run preflight`) is gated on `code == 'true'`, and on an ADR-only
-  head it reports `skipped`. **Measured on PR #956 head `dc10a23`**: `gate`,
-  `docs` and `setup` ran; `lint` skipped.
+  `uvx hatch run preflight`) is gated on `code == 'true'`, and on a head matching
+  no `CODE_PAT` path it reports `skipped`. **Measured on commit `dc10a23`**
+  (PR #956, not its head): `gate`, `docs` and `setup` ran; `lint` skipped. That
+  commit touches two skills, two ADRs, a trace and BACKLOG-DONE — so the first
+  measurement was already of the wider class below, and "ADR-only" was the
+  item's label rather than its evidence.
   **The class is wider than "ADR-only", measured on a second PR.** Commit
   `26cf75b` on PR #958 adds an ADR *and* touches `.claude/skills/`, `CLAUDE.md`
   and `sdd/traces/` — not an ADR-only diff by any reading — and
