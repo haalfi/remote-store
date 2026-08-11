@@ -10805,6 +10805,43 @@ never adds one when absent; re-record byte-identity rests on that.</p>
 the named-rule audit; its defence is the forbidden-pattern envelope
 (REC-006) plus per-PR cassette diff review. Neither half may be assumed
 to cover the other.</p>
+<p><strong><code>filter_query_parameters</code> carries a second duty beyond credential
+removal: a query parameter the <em>client</em> generates cannot be matched on.</strong>
+An id the SDK mints per call — not derived from anything the backend asked
+for — is not part of what a recording pins, and leaving it in the match key
+makes the corpus assert an implementation detail of the installed SDK
+version. Such a parameter is declared on the profile whether or not it is a
+secret. The filter is what makes this fixable without a re-record: vcrpy
+applies the native half on cassette <em>load</em> as well as to outgoing requests,
+so the recorded value stops being matched on the committed corpus.</p>
+<p><strong>Two obligations follow, and both turn on the distinction between the
+removed <em>parameter</em> and the <code>match_on</code> <em>matcher</em> it sat under.</strong> Deleting
+<code>blockid</code> does not remove <code>query</code> from the match key; it weakens what <code>query</code>
+can still tell apart.</p>
+<p><em>The control.</em> A profile doing this owes a negative control proving the
+weakened matcher still discriminates, which means varying <strong>that matcher
+through some other parameter under it</strong> — not the removed parameter, and not a
+different matcher. Varying the removed parameter is the <em>positive</em> case by
+construction: it must play, which is the whole point of the filter. Varying a
+different matcher (a different path, say) is satisfied by that matcher alone
+and holds even with the weakened one dropped from <code>match_on</code> entirely, so it
+proves nothing about the filter it was written for. The check is mechanical:
+run the candidate assertion under the profile's config and again with the
+weakened matcher dropped from <code>match_on</code>. An assertion whose verdict does not
+change between the two is not a control.</p>
+<p><em>The cost.</em> Removing a parameter also collapses onto one key every recorded
+interaction that differed only in it — several staged blocks for one blob all
+become the same <code>PUT</code>. vcrpy then disambiguates by recorded order alone, which
+is <a href="#rec-004-pre-signed-round-trip-consistency">REC-004</a>'s Consequence reached
+by a different route: same order-dependence, same loss of support for
+concurrent such requests within a single test. A profile weighing this filter
+against a re-record is choosing between an implementation detail in the match
+key and order-dependent replay of the affected interactions.</p>
+<p>Azure block ids are the case that established this: <code>azure-storage-blob</code>
+derived them from the chunk offset (stable across runs, so they recorded and
+replayed by accident) until 12.31.0b1 switched to a per-call UUID, which no
+recording can match (BUG-252). No Azure cassette records more than one staged
+block today, so the order-dependence above is latent there rather than live.</p>
 <p><code>filter_post_data_parameters</code> is excluded from the native half: vcrpy's
 implementation is POST-only and re-serialises every <code>application/json</code>
 body even when no parameter matches, churning the security-review diff on
