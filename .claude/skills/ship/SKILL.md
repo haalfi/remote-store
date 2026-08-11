@@ -120,7 +120,7 @@ push → reply and resolve.
 | 1 | One reviewer: **broad, unprimed** |
 | 2 | One reviewer, one scoped lens |
 | 3..N | Panel sized by the subject set's reach, the diff's breadth and the prior round's yield, one scoped lens per member. **Odd rounds add one unprimed member; every panel carries one measuring member** |
-| Closing gate | Not a round in the sequence: whichever round ends the loop must review the last fix pass **and** satisfy all three exit gates — unprimed, whole-file, and measuring if the PR asserts anything about existing behaviour. Each missing member is supplied by one appended pass; they may be the same round but never the same reviewer (see Stop rule) |
+| Closing gate | Not a round in the sequence: whichever round ends the loop must review the last fix pass **and** satisfy all three exit gates — unprimed, whole-file, and measuring if the PR asserts anything about existing behaviour. Each missing member is supplied by one appended pass; they may be the same round but **never the same reviewer** — reviewers are fresh per pass (Roles) and none is ever resumed |
 
 Reviewers are chosen by **lens and method**, never by model and never by domain.
 Nothing in this skill pins, prefers, or diversifies an LLM model: the axis was
@@ -401,8 +401,11 @@ substitutes.
    claims change: it asserts that the row count is the page length and that the
    `files` call pages, and those are behavioural claims like any other. Such a
    member fetches counts, review ids and paths — never comment bodies — and is
-   never the unprimed one. Both halves of that carve-out were exercised on this
-   skill's own delivery, and both members disclosed it unprompted.
+   never the unprimed one. That is a carve-out
+   [`/rvw-pr`](../rvw-pr/SKILL.md) Step 1 pins, without which this obligation
+   would have no permission and would be inert. Both halves were exercised on
+   PR #958, and both members disclosed the collision unprompted, which is how
+   the missing permission was found.
 
    Put the *named untouched files* in the brief, not the adjective
    "neglected". This costs two calls and the alternative is an impression: on

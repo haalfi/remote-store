@@ -88,7 +88,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   in the query destroys the page length that `/rvw-pr` Step 4's paging
   discipline tests, so grouping waits until every page is in hand. Tagged rather
   than filtered for the same reason, and filtered at all because the endpoint
-  returns replies — this delivery's round 1 came back as 15 rows for 7 findings.
+  returns replies — PR #958's round 1 came back as 15 rows for 7 findings.
   No script: it guards nothing, and a `scripts/` entry would owe a hatch alias
   and a guard under `tests/scripts/` for a two-call recipe (the same call
   BK-338's trace made for its own one-off count).

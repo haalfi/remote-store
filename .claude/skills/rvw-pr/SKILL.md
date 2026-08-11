@@ -77,6 +77,10 @@ Read the diff via `gh pr diff $ARGUMENTS --repo haalfi/remote-store` (fall back 
 
 **Never fetch PR comments, reviews, or review threads.** This step reads diff and files only, and that restraint is load-bearing, not incidental: `/ship`'s unprimed reviewers — including the unprimed pass its close appends to certify the final state — stay unprimed precisely because this skill never reads the conversation. Widening Step 1 to the comment sources `/fix-pr` uses would silently turn every unprimed pass into a primed one while all other artifacts still claim otherwise.
 
+**One pinned exception, metadata only, for a measuring pass.** When the invoking prompt says **measuring** *and* the brief is to verify a recipe that reads the comments endpoint, you may fetch `path`, `pull_request_review_id`, the presence of `in_reply_to_id`, and counts — **never `body`, never `user`, never any comment text**. The reasoning is Step 4's, extended: a path and a count carry no content, so they prime nobody, and the prohibition above exists to stop a reviewer *reading the conversation* rather than to stop it counting rows. State in your Step 5 report exactly which fields you fetched.
+
+This exists because [`/ship`](../ship/SKILL.md) brief requirement 3 ships an instrument built on that endpoint whose own behavioural claims its stop rule requires a measuring pass to execute. Without this bullet that obligation has no permission and is inert — the failure [ADR-0035](../../../sdd/adrs/0035-vary-method-not-model.md) records for the measuring member and this repo has now shipped twice. **A measuring member is never the unprimed pass**, so no unprimed guarantee is spent here; and the bound stays narrow deliberately, because a reviewer that reads one comment body has read the conversation whatever it was counting.
+
 ## Step 2: Analyze
 
 Priority order: (1) Correctness, (2) Spec compliance, (3) Test coverage, (4) Consistency, (5) Ripple gaps, (6) Performance, (7) Security.

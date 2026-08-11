@@ -29,7 +29,10 @@ that record would otherwise find the two disagreeing.
 
 BK-348, from PR #956. Two sequences meet here and they have different lengths,
 so both are stated with their membership rather than as bare ordinals. PR #956
-is the **fourth** delivery whose review evidence produced a record —
+is the **fourth** delivery whose *round-by-round* review evidence produced a
+record (ADR-0036 came from review evidence too, but from a finding
+classification across two traces rather than one delivery's rounds, so it is not
+in this set) —
 [ADR-0033](0033-ship-convergence-driven-review.md) (PR #945),
 [ADR-0034](0034-ship-panel-rounds-and-unprimed-exit.md) (PR #949),
 [ADR-0035](0035-vary-method-not-model.md) (PR #952), this one. BK-348 is the

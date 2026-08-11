@@ -30,6 +30,8 @@ expected_ripples:
 # trace's figure obliges re-running that figure's derivation - which is how the
 # bk-338 correction below was found.
 surprising_ripples:
+  - .claude/skills/pr/SKILL.md
+  - sdd/CLAUDE-REFERENCE.md
   - sdd/adrs/0033-ship-convergence-driven-review.md
   - sdd/adrs/0034-ship-panel-rounds-and-unprimed-exit.md
   - .claude/skills/rvw-pr/SKILL.md
@@ -51,7 +53,8 @@ surprising_ripples:
 #   179e46f - PR #958 round 3. Counts.
 #   1d8eaa8 - PR #958 round 4. Counts.
 #   b5d5cc6 - PR #958 round 5. Counts.
-#   the commit carrying this line - PR #958 round 6. Counts, and is the one
+#   6354d31 - PR #958 round 6. Counts.
+#   the commit carrying this line - PR #958 round 7. Counts, and is the one
 #             entry no version of this block can name, since a commit cannot
 #             contain its own SHA.
 # Value is the count of the counting commits above, the unnameable carrier
@@ -64,7 +67,7 @@ surprising_ripples:
 # under-counted by one. Any further round must renumber the carrier and add the
 # commit that has just become nameable. There is no "finalised at the close"
 # short of the close actually happening.
-review_rounds: 6
+review_rounds: 7
 phases:
   - id: orient
     name: Orient
@@ -581,4 +584,50 @@ phases:
           "Rejected user input" block still read as covering a brief - and named
           PR #958 where the skill said "this delivery", which resolves to the
           reader's own run in a file read long after.
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "Step 1 (never fetch comments); measuring allowlist"
+        read_type: verify
+        extract: >-
+          Round 7, and the Bug is round 6's fix shipping an obligation with no
+          permission - the shape ADR-0035 exists to record, arriving for the
+          third time in this delivery. Round 6 wrote into /ship that "a scoped
+          measuring member may verify the recipe, fetching counts, review ids
+          and paths". Nothing in /rvw-pr was widened: Step 1 forbids fetching
+          comments outright, the measuring allowlist enumerates only gates,
+          read-only git and python, and Step 4's feedback carve-out is pinned to
+          its own posted-count check, which an analyze-only member skips.
+          CLAUDE-REFERENCE's GitHub PR I/O split said the same in an unchanged
+          file - "the feedback row for **one** narrow purpose". So a member
+          briefed to verify the recipe would refuse or violate, and the stop
+          rule's measuring clause would be discharged by a pass that could not
+          have satisfied it. Both reading members found it independently. Fixed
+          in all three files at once, which is the point: a metadata-only
+          carve-out pinned in /rvw-pr (path, review id, in_reply_to_id presence,
+          counts - never a body), the second purpose recorded in the I/O split,
+          and /ship's paragraph pointing at the permission rather than assuming
+          it.
+        outcome: ok
+      - file: .claude/skills/pr/SKILL.md
+        section: "Rules"
+        read_type: verify
+        extract: >-
+          Round 7's ripple finding, and the gap is precise: principle 9 binds the
+          PR body; /fix-pr got a rule for replies and commit messages, /ship for
+          the figures its loop invents - and /pr, which drafts the body for every
+          delivery that does not run /ship, got nothing. Its Step 5 builds the
+          body from commit subjects, so those are the figures nobody re-checks,
+          and the evidence table's row 3 is itself a PR-body defect. The artifact
+          class with a named instance and a dedicated authoring skill was the one
+          class with no enforcement site. Added there.
+          Also this round: the schema's fallback command
+          `gh pr view --json reviews | length` does not run - `| length` is not a
+          command, and even the intended --jq form returns 1, the object's key
+          count, since the flag emits a wrapper object. Pre-existing, in the
+          paragraph this PR edits, and a deterministic measurement that silently
+          returns 1 is the fail-silently class. Corrected with the working
+          spelling and the reason. Plus three sweeps the earlier rounds left
+          short: "this skill's own delivery" (the same referent round 6 fixed 35
+          lines above), the same phrase in BACKLOG-DONE, and a "see Stop rule"
+          pointer to a rule the Stop rule does not contain.
         outcome: ok

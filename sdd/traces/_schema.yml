@@ -219,9 +219,14 @@ properties:
       silence. Where a deterministic
       independent measurement is needed (e.g. for aggregator code), use
       GitHub's review-submission count from
-      `gh pr view --json reviews | length` instead — it counts a
-      different thing (formal review events, not fix commits) and is
-      reported separately.
+      `gh pr view <N> --json reviews --jq '.reviews | length'` instead —
+      it counts a different thing (formal review events, not fix commits)
+      and is reported separately. The `--jq` filter must reach into
+      `.reviews`: the flag emits `{"reviews": [...]}`, so `| length` is
+      not a command at all and a bare `--jq 'length'` returns 1, the
+      object's key count. Corrected by BK-348's round 7 — a
+      "deterministic independent measurement" that silently returns 1 is
+      the fail-silently class this repo calls worse than none.
 
   phases:
     type: array
