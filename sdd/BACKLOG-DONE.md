@@ -155,6 +155,58 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-252 — Azure cassettes matched on a `blockid` the SDK mints, so `[azure]`'s drift smoke went red on a block-id change**
+  spec: REC-005 · effort: S · audience: infra.ci
+  The Monday Drift Guard run's `check-azure` leg failed its smoke —
+  3 failed, 382 passed, 37 skipped
+  ([run 31517095293](https://github.com/haalfi/remote-store/actions/runs/31517095293/job/93864940038)).
+  All three failures were stream writes
+  (`test_write_from_binaryio`, `test_write_from_binaryio_streams_content`,
+  `test_write_binaryio_reads_from_current_position`), all reporting a cassette
+  miss with `Matchers succeeded : ['method', 'scheme', 'host', 'port', 'path']`
+  and `query` failing on `blockid`.
+  **Cause: an SDK implementation detail sat in vcrpy's match key.**
+  `AzureBackend.write` hands `bytes` straight to `upload_blob` (single-shot
+  `PUT Blob`, no `blockid`) and wraps anything else in `_ByteCountingIO` —
+  unknown length, so the SDK stages blocks (`?comp=block&blockid=…`) and commits
+  a block list. `azure-storage-blob` 12.30.0 computed the id from the chunk
+  offset, so every run produced the same value and it recorded and replayed by
+  accident. Reading `_shared/uploads.py` out of both wheels:
+
+  | version | `BlockBlobChunkUploader._upload_chunk` block id |
+  |---------|------------------------------------------------|
+  | 12.30.0 | `encode_base64(url_quote(encode_base64(f"{chunk_offset:032d}")))` |
+  | 12.31.0b1 | `encode_base64(f"{uuid4().int:048d}")` |
+
+  Decoding confirms it: the recorded id double-decodes to 32 zeros; the three
+  ids the failing run sent decode to 48-digit decimals. `AZURE_PROFILE` set no
+  `match_on`, so vcrpy's default matcher set included `query`, and
+  `filter_query_parameters` listed only SAS parameters.
+  **Not a library defect.** remote_store works against 12.31.0b1; unique
+  per-block ids are a legitimate SDK change. Only the replay harness broke.
+  Two packages moved against `infra/drift-locks/azure.txt` — `azure-storage-blob`
+  12.30.0 → 12.31.0b1 and `azure-storage-file-datalake` 12.25.0 → 12.26.0b1 —
+  and upgrading blob **alone**, with datalake held at 12.25.0, reproduced the
+  three failures, so datalake is incidental.
+  **Re-recording would not have fixed it**, which is what makes the filter the
+  only route: the new ids are random per call, so a freshly recorded cassette
+  fails on its very next replay.
+  **Shipped:** `blockid` added to the Azure profile's
+  `filter_query_parameters`. vcrpy applies native filters on cassette *load*
+  (`Cassette._load` → `append` → `_before_record_request`) as well as to
+  outgoing requests, so the committed corpus replays unmodified — no re-record,
+  no cassette edits. Guarded by two cells in
+  `tests/backends/fixtures/test_cassettes.py` that drive the *committed*
+  cassette through `use_cassette`: one plays a stage-block call under the exact
+  id the failing run minted, and a negative control asserts a stage-block call
+  against an unrecorded blob still does **not** play, so the first cannot pass
+  on a match key that stopped discriminating.
+  **Verified both sides of the pin** (`conformance/ -k azure`): 364 passed /
+  58 skipped under 12.31.0b1 (was 3 failed / 361 passed) and 12.30.0 green
+  unchanged.
+  Five cassettes carry a `blockid=`; only these three were load-bearing — the
+  two `TestWriteErrorFidelity` stream cells never reach a stage call.
+
 - [x] **BK-348 — Adapt the review loop from PR #956's evidence**
   spec: — · effort: M · audience: contributor.process
   **Third** in the *Adapt … from PR #NNN's … evidence* series — BK-342, BK-344,

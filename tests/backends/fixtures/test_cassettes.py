@@ -39,6 +39,7 @@ from tests.backends.fixtures._cassettes import (
 )
 from tests.backends.fixtures._cassettes_azure import (
     AZURE_PROFILE,
+    CASSETTE_DIR_AZURE,
     FAKE_ACCOUNT,
     FAKE_FILESYSTEM,
     LIVE_HNS_ROOT_FS,
@@ -771,6 +772,48 @@ class TestAzureCassetteScrub:
             "DefaultEndpointsProtocol=https;AccountName=realacct;AccountKey=abc==;EndpointSuffix=core.windows.net",
         )
         assert _resolve_live_account() == "realacct"
+
+
+@pytest.mark.spec("REC-005")
+class TestAzureBlockIdOutOfMatchKey:
+    """A stream write's ``blockid`` is minted by the SDK, so it cannot be matched (BUG-252).
+
+    ``upload_blob`` on a stream stages blocks under an id the client generates;
+    the id is not derived from anything in the request the backend asked for.
+    ``azure-storage-blob`` 12.30.0 derived it from the chunk offset (identical on
+    every run, so it recorded and replayed by accident) and 12.31.0b1 switched to
+    a per-call UUID. Neither belongs in vcrpy's match key: the corpus must replay
+    against whatever the installed SDK mints, so the assertions below run against
+    the *committed* cassette rather than a synthetic one.
+    """
+
+    _CASSETTE = CASSETTE_DIR_AZURE / "TestBackendWrite.test_write_from_binaryio[azure].yaml"
+    _BLOB = f"https://{FAKE_ACCOUNT}.blob.core.windows.net/{FAKE_FILESYSTEM}/stream.txt"
+    # The exact id a 12.31.0b1 run minted for this cassette's stage-block call
+    # (base64 of a zero-padded ``uuid4().int``); the recorded one is the 12.30.0
+    # offset-derived form, so the two never match component-wise.
+    _UNRECORDED_BLOCK_ID = "MDAwMDAwMDAwMDg1MTAwOTIyNDY1NDc4NTQ4NzUyOTIwMzI1MTA4ODgxODQzMjkx"
+
+    def _plays(self, uri: str) -> bool:
+        """Whether the committed cassette can serve *uri*, through the real load path.
+
+        ``use_cassette`` is what the replay fixtures go through, so this exercises
+        vcrpy re-applying the profile's native filters to the *recorded* requests
+        on load — the half that makes a filter fix work without re-recording.
+        """
+        with vcr.VCR(**_azure_cfg()).use_cassette(str(self._CASSETTE), record_mode="none") as cassette:
+            return cassette.can_play_response_for(_request({}, uri=uri, method="PUT"))
+
+    def test_stage_block_plays_under_an_unrecorded_block_id(self) -> None:
+        assert self._plays(f"{self._BLOB}?comp=block&blockid={self._UNRECORDED_BLOCK_ID}")
+
+    def test_block_id_removal_does_not_collapse_distinct_requests(self) -> None:
+        """Negative control: dropping ``blockid`` must not widen the match key into
+        matching anything. A stage-block call against another blob has no recorded
+        counterpart and must still fail to play — otherwise the first assertion
+        would pass on a cassette layer that had stopped discriminating at all."""
+        other = f"https://{FAKE_ACCOUNT}.blob.core.windows.net/{FAKE_FILESYSTEM}/not-recorded.txt"
+        assert not self._plays(f"{other}?comp=block&blockid={self._UNRECORDED_BLOCK_ID}")
 
 
 class TestScrubCore:

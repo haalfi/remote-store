@@ -130,6 +130,22 @@ the named-rule audit; its defence is the forbidden-pattern envelope
 (REC-006) plus per-PR cassette diff review. Neither half may be assumed
 to cover the other.
 
+**`filter_query_parameters` carries a second duty beyond credential
+removal: a query component the *client* generates cannot be matched on.**
+An id the SDK mints per call — not derived from anything the backend asked
+for — is not part of what a recording pins, and leaving it in the match key
+makes the corpus assert an implementation detail of the installed SDK
+version. Such a parameter is declared on the profile whether or not it is a
+secret. The filter is what makes this fixable without a re-record: vcrpy
+applies the native half on cassette *load* as well as to outgoing requests,
+so the recorded value stops being matched on the committed corpus. Removing
+the component widens the match key, so a profile doing this owes a negative
+control proving the remaining key still discriminates. Azure block ids are
+the case that established this: `azure-storage-blob` derived them from the
+chunk offset (stable across runs, so they recorded and replayed by accident)
+until 12.31.0b1 switched to a per-call UUID, which no recording can match
+(BUG-252).
+
 `filter_post_data_parameters` is excluded from the native half: vcrpy's
 implementation is POST-only and re-serialises every `application/json`
 body even when no parameter matches, churning the security-review diff on
