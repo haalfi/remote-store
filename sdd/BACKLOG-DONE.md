@@ -213,12 +213,12 @@ if evidence changes; these are retired.
   some other parameter** — never the deleted one (which must play) and never a
   different matcher. The way to find out whether it does is to make the
   harness produce the failure it claims to catch.
-  The cells also assert the precondition those controls rest on — a recorded
-  `PUT` on the blob, not merely a loaded cassette. The file is named after
-  another test's cell; `Cassette._load` swallows `CassetteNotFoundError`, so a
-  rename loads zero interactions, and a re-record that stopped routing this
+  The cells also assert the precondition the two `assert not` cells rest on — a
+  recorded `PUT` on the blob, not merely a loaded cassette. The file is named
+  after another test's cell; `Cassette._load` swallows `CassetteNotFoundError`,
+  so a rename loads zero interactions, and a re-record that stopped routing this
   write through `upload_blob` on a stream would keep the file non-empty while
-  still dropping what the controls need. Either would otherwise have left an
+  still dropping what they need. Either would otherwise have left an
   `assert not …` passing for the wrong reason.
   **Verified both sides of the pin** (`conformance/ -k azure`): 364 passed /
   58 skipped under 12.31.0b1 (was 3 failed / 361 passed) and 12.30.0 green

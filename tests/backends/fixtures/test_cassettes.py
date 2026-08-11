@@ -812,7 +812,7 @@ class TestAzureBlockIdOutOfMatchKey:
         ``CassetteNotFoundError``, so a renamed cassette loads zero
         interactions; a re-record that stops routing this write through
         ``upload_blob`` on a stream would keep the file non-empty and still
-        drop the recording the controls rest on. Both are asserted, so neither
+        drop the recording those cells rest on. Both are asserted, so neither
         turns an ``assert not self._plays(...)`` vacuous.
         """
         assert self._CASSETTE.exists(), f"borrowed cassette is gone: {self._CASSETTE.name}"

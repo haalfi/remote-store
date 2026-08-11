@@ -220,7 +220,7 @@ class CassetteProfile:
     """vcrpy-native query-parameter delete, with two distinct duties (REC-005).
 
     Credential parameters (SAS tokens, pre-signed URL signatures) are the
-    obvious one. The other is nondeterminism: a query component the *client*
+    obvious one. The other is nondeterminism: a query parameter the *client*
     mints per call is removed because it is part of vcrpy's match key, so
     leaving it in would pin an implementation detail of the installed SDK
     version. Both go in this tuple; the profile says which is which, because
