@@ -11749,8 +11749,15 @@ known-breaking upstream release), refresh the baseline in the same PR:</p>
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>hatch run drift-check render-docs                  # regenerate the docs page
 </code></pre></div>
 <p>Then commit <code>infra/drift-locks/&lt;extra&gt;.txt</code> and
-<code>docs-src/reference/tested-versions.md</code>. Run on Python 3.13 (matching the
-workflow's runner) so the lock is comparable.</p>
+<code>docs-src/reference/tested-versions.md</code>. Run on <strong>Linux with Python 3.13</strong>: a lock
+is OS-specific as well as Python-specific, and resolving elsewhere can pull
+platform-conditional dependencies the workflow never sees, which the next weekly
+run then reports as drift.</p>
+<p>A floor bump has no run-derived shortcut — the drift-guard run resolves from
+<code>master</code>, so its published resolution predates your change. If you cannot resolve
+on Linux 3.13, use a container or ask a maintainer.
+<a href="https://github.com/haalfi/remote-store/blob/master/infra/drift-locks/README.md#refresh-floor-bump"><code>infra/drift-locks/README.md</code> § Refreshing after a deliberate floor bump</a>
+is authoritative.</p>
 <p><code>hatch run drift-check refresh-baseline all</code> refreshes every extra at once.</p>
 <p><a id="versioning"></a></p>
 <h2 id="versioning">Versioning<a class="headerlink" href="#versioning" title="Permanent link">&para;</a></h2>

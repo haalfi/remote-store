@@ -10921,12 +10921,13 @@ documented in <a href="../../contributing/"><code>CONTRIBUTING.md</code></a>.</p
   Issue</strong> — opened or updated when any extra drifts, commented "cleared" and
   closed when all are clean. The per-extra <strong>smoke verdict</strong> lives in the linked
   Actions run, not the issue body.</li>
-<li><strong>How to act:</strong> run the <strong><code>/drift</code> skill</strong>. It reads the rolling issue, then
-  for each drifted extra reads that extra's smoke-job conclusion in the linked
-  run — the load-bearing signal — and refreshes only the baselines whose smoke is
-  green and whose bump is non-major. A red smoke is never refreshed until its
-  cause (real regression vs smoke-harness gap) is explained. The skill prepares a
-  pushed branch and stops; the maintainer opens the PR.</li>
+<li><strong>How to act:</strong> run the <strong><code>/drift</code> skill</strong>. Refreshes are gated per extra on
+  that extra's smoke-job conclusion in the linked run; the skill's steps 3–5 are
+  authoritative on the gating, including how a major bump and a red smoke are
+  each handled. The skill prepares a pushed branch and stops; the maintainer
+  opens the PR. Note the gate's reach is per-extra and uneven — an extra whose
+  smoke cannot load the package that drifted returns a green verdict about
+  nothing (BUG-250).</li>
 </ul>
 <h3 id="mutationyml-mutation-testing"><code>mutation.yml</code> — mutation testing<a class="headerlink" href="#mutationyml-mutation-testing" title="Permanent link">&para;</a></h3>
 <ul>
