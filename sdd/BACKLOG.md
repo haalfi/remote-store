@@ -42,22 +42,29 @@ An item in section 1 can wait on one in section 2 — BK-345 does. A cross-secti
 dependency is stated by ID inside the item that has it, **and named in the
 depending section's `Closes when`**, because nothing about position will show it.
 
-**Granularity.** Work whose fix surface *coincides* is one item with sub-bullets;
-work whose surfaces merely *overlap* stays separate, with each side naming the
-other and the co-ship recorded in the trace. A sub-bullet is not itself tracked
-and does not get an ID **for the work it describes** — an item may still
-designate future work that will need its own ID, as ID-199 and ID-140 do. A
-section that outgrows itself splits into two promises, never into loose items.
+**Granularity.** Two tests fold work into one item: its fix surface
+*coincides* with the host's, **or** one pending decision resolves both. Surfaces
+that merely *overlap* stay separate, with each side naming the other and the
+co-ship recorded in the trace — BUG-249 and BUG-246 are that case. The decision
+test is why ID-218 sits inside ID-217 and ID-123 inside ID-121: those pairs touch
+disjoint paths and would be misfiled on the surface test alone.
+A sub-bullet is not itself tracked and does not get an ID **for the work it
+describes** — an item may still designate future work that will need its own ID,
+as ID-199 and ID-140 do. **Splitting:** a section that outgrows itself becomes
+two promises, never loose items.
 
-**None of the three rules above is gated.** The only backlog check is
-`gen-backlogid --check`, which covers the ID floor and active/done collisions
-and nothing about placement, granularity or section membership. So they are
-**review-enforced**, recorded here as [`DRIFT-RULES.md` Rule
-5](DRIFT-RULES.md#rules) requires of an advisory check. That is a real weakness
-and worth stating plainly: the diagnosis behind this structure is that topic
-groups decayed because nothing stopped unearned items accumulating, and
-conventions without a mechanism decay the same way. ID-235 in section 6 is the
-host for whatever part of this becomes checkable.
+**The admission test, granularity and splitting are not gated.** The only
+backlog check is `gen-backlogid --check`, which covers the ID floor and
+active/done collisions and nothing about placement, granularity or section
+membership. So all three are **review-enforced**, and that is a real weakness
+worth stating plainly rather than a citation: the diagnosis behind this
+structure is that topic groups decayed because nothing stopped unearned items
+accumulating, and conventions without a mechanism decay the same way. ID-235 in
+section 6 is the host for whatever part of this becomes checkable.
+(No [`DRIFT-RULES.md`](DRIFT-RULES.md#rules) obligation is claimed here — that
+file scopes itself to changes that add a check, a drift report, a second
+description, or a period, and an authoring convention with no mechanism is none
+of those.)
 
 **Item scope:** idea + decision-relevant constraints + open questions.
 Do not repeat process steps (those live in `sdd/000-process.md` and the
@@ -88,9 +95,16 @@ Effort: S = <1 day · M = 1–3 days · L = >3 days. `—` = not applicable.
 - Partially done → split: ship the done part to `BACKLOG-DONE.md` as `[x]`
   under its original ID, create a new ID here for the remaining work, and
   link both.
+- Absorbed → the work folds into another item under § Granularity above. Mark
+  the host's sub-bullet `(was PREFIX-NNN, absorbed here)`, record an entry in
+  `BACKLOG-DONE.md` § Absorbed naming the host, and run the same sweep as the
+  outcome below — absorption retires an ID, so it falsifies the same class of
+  sentence. In this file's own restructure it required repairs to two
+  `BACKLOG-DONE.md` entries and to `sdd/specs/044-graph-backend.md`. The entry
+  template and the tense rule below both apply unchanged.
 - Decided against → delete from here, record an entry in `BACKLOG-DONE.md`
   § Decided against, then sweep the artifacts that assert the item is currently
-  tracked. The entry **must** take the header shape the other two outcomes use,
+  tracked. The entry **must** take the header shape the other outcomes use,
   because `gen_backlogid.py` matches it and a line that merely says the same
   thing in prose is invisible to the generator, silently freeing the number for
   reuse:
@@ -123,11 +137,11 @@ Effort: S = <1 day · M = 1–3 days · L = >3 days. `—` = not applicable.
   ([`000-process.md` Rule 4](000-process.md#rules)): supersede if the decision
   changed, otherwise let the citation stand and let the § Absorbed or
   § Decided against entry be what makes it resolve.
-  **No trace is owed** for an item removed without being implemented.
-  [`CLAUDE.md` § Trace authoring](../CLAUDE.md#trace-authoring) exists to record
-  what reading and ripples the *work* met; there was no work, and the register
-  entry carries the decision. A trace **is** owed when an item closes by being
-  implemented, and when absorption is part of shipping the host.
+  **No trace is owed** for an item removed or absorbed without being
+  implemented. The rule and its reasoning live in
+  [`CLAUDE.md` § Trace authoring](../CLAUDE.md#trace-authoring), which is the
+  authoritative home and states the carve-out; it is named here only because
+  this is where a contributor closing an item is reading.
 
 **ID prefixes:**
 
@@ -146,7 +160,7 @@ and the highest ID already in this file, then take the next integer. Run
 
 **Retired IDs are not listed here**, deliberately: a hand-maintained
 "never reassign" list is the parallel artifact
-[`DRIFT-RULES.md` Rule 3](DRIFT-RULES.md#rules) tells us not to build, and it
+[`DRIFT-RULES.md` Rule 3](DRIFT-RULES.md#claim-space) tells us not to build, and it
 would have to stay right on a path nothing tests. Twenty-three IDs were retired
 by the restructure that produced this file's shape — fourteen **removed**, each
 with an entry in [`BACKLOG-DONE.md` § Decided against](BACKLOG-DONE.md#decided-against),
@@ -183,15 +197,17 @@ be edited to point elsewhere.
 **Promise:** a caller catches one exception type, and an absent or denied
 store answers the same way on every backend.
 
-**Closes when:** BE-004, BE-005 and BE-021 hold on every registered backend
-against a container that does not exist **and against one that denies access**;
-and a newly registered backend cannot pass CI without meeting them.
+**Closes when:** the spec contradiction is adjudicated (BUG-248); the four
+adapters answer the contract against an absent container (BUG-246, BUG-249,
+BUG-247, BUG-245); no native exception escapes on either the absent or the
+**denied** path (BUG-249); and a newly registered backend cannot pass CI without
+meeting BE-004, BE-005 and BE-021 (BK-345).
 **Two cross-section dependencies**, per
-[§ How this file works](#how-this-file-works): the registry-gate half waits on
-**ID-244** in section 2, whose seeding-hook decision BK-345 below consumes, and
-the denied half waits on **ID-242** in section 2, which is the only item whose
-subject is the denied path's coverage. So this section cannot close on its own
-items alone.
+[§ How this file works](#how-this-file-works): BK-345 waits on **ID-244** in
+section 2 for the seeding hook, and BUG-249's denied half waits on **ID-242** in
+section 2, the only item whose subject is that path's coverage. Both are stated
+inside the items that carry them, as the rule requires; this section cannot
+close on its own items alone.
 
 **Six backend classes** disagree with the contract or with each other, counted
 from the items below: `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend`
@@ -313,6 +329,11 @@ written until it lands.
   *overlap* rather than coincide: BUG-246 spans four backends and this is one
   adapter, which is the distinction
   [§ Granularity](#how-this-file-works) draws. Record the co-ship in the trace.
+  **Cross-section dependency:** the denied-bucket column above is measured on a
+  stub, and the only item that puts it behind a fixture the suite runs is
+  **ID-242** in section 2 — four `moto doesn't raise PermissionError` pragmas
+  that are coverage holes. Closing this item without ID-242 leaves the denied
+  path asserted by one hand-written probe and by nothing in conformance.
 
 - [ ] **BUG-247 — `LocalBackend` reports a deleted root as "Path escapes root directory"**
   spec: BE-004, BE-012, BE-013, BE-021 · effort: S · audience: user.api
@@ -393,10 +414,11 @@ written until it lands.
 **Promise:** the same call returns the same right result on every backend, and
 no clause of the contract ships unexercised.
 
-**Closes when:** the five defects and holes enumerated below are closed — two
+**Closes when:** the six defects and holes enumerated below are closed — three
 wrong answers (BUG-241's unescaped `LIKE` metacharacters, BUG-240's `max_depth`
-contradiction) and three coverage holes measured in cells (ID-244's WRITE-gated
-classes, ID-242's four pragmas, ID-247's 22 root-path cells).
+contradiction, BUG-251's cross-store cache collision) and three coverage holes
+measured in cells (ID-244's WRITE-gated classes, ID-242's four pragmas,
+ID-247's 22 root-path cells).
 **Bounded deliberately.** "No clause ships unexercised" is the promise, not the
 closing condition: nothing derives the full set of unreachable clauses today,
 which is what ID-245's inventory in section 6 would supply. Until it does, this
@@ -405,11 +427,34 @@ saying otherwise would make the promise unfalsifiable, which is the failure this
 structure exists to remove.
 
 A corrected clause nobody tests is the same defect one layer up, which is why
-the wrong-answer defects and the coverage holes are one promise. The two
-wrong-answer defects come first because a user can hit them today. **ID-244 is
-the cross-section dependency**: section 1's BK-345 waits on the per-fixture
-seeding decision it owns, so section 1 cannot close before it does, even though
-it sits here.
+the wrong-answer defects and the coverage holes are one promise. The wrong-answer
+defects come first because a user can hit them today. **Two items here are
+depended on from section 1**: BK-345 waits on ID-244's per-fixture seeding
+decision, and BUG-249's denied path waits on ID-242's coverage, so section 1
+cannot close before both land even though they sit here.
+
+- [ ] **BUG-251 — A shared `cache_backend=` serves one store's bytes for another's**
+  spec: RES-100 · effort: S/M · audience: user.api
+  `ext.cache` derives keys from `(operation, path)` with nothing identifying the
+  store, so two `Store`s at different roots sharing one `cache_backend=` collide
+  on any path they both hold, and the second reader gets the first store's
+  content. Silent wrong data, not a wrong error type.
+  **Reproduced**, `hatch run python` against two `LocalBackend` roots each
+  holding a distinct `same.txt`, sharing one `MemoryCache`:
+  `store_a.read_bytes("same.txt")` → `b"FROM-STORE-A"`, then
+  `store_b.read_bytes("same.txt")` → `b"FROM-STORE-A"`. Not Graph-specific —
+  identical for two S3 buckets or two Azure containers.
+  Filed from audit-016 L8, which diagnosed it as an aside to ID-123's
+  key-derivation work. It is not an aside: it needs no `CompositeStore`, it is
+  reachable on shipped code, and leaving it inside an idea that may legitimately
+  close as "declined" would retire a data-correctness defect with it.
+  **Fix shape is open and belongs with ID-121's design**, which is where
+  identity-derived keys are being decided: the narrow fix is to mix the backend
+  identity into the key, the wide one is the `ResolutionPlan`-derived scheme
+  ID-121 carries. Opt-in surface, so no contract risk either way — but decide
+  whether an unkeyed shared cache should raise rather than silently collide.
+  **Test shape:** two stores at different roots, one shared cache, same relative
+  path, assert each reads its own bytes.
 
 - [ ] **BUG-241 — SQL prefix probes build `LIKE` patterns without escaping `_` and `%`**
   spec: — · effort: S · audience: user.api
@@ -864,15 +909,11 @@ here as legitimately as "built".
     ad-hoc `(operation, path)` tuples (RES-100, proposed in
     [043](specs/043-resolution-plan.md)). Single-backend cache keys are already
     correct *for the default per-store cache*, so this is only valuable once
-    composition exists — with one exception that is reachable today
-    (audit-016 L8): a **shared** `cache_backend=` across two top-level stores at
-    different backends or drives collides on `(op, path)` and serves one store's
-    bytes for another's. Not Graph-specific (same for two Local roots or S3
-    buckets) and opt-in, but exactly the case identity-derived keys would close.
-    **Reproduce that collision before treating it as fact** — it is an audit
-    finding, and [`CLAUDE.md` principle 6](../CLAUDE.md#principles) wants it run,
-    not read. If it reproduces it is a defect that should not wait for this
-    item; file it as a `BUG` and fix it independently.
+    composition exists. **The one case that was reachable today is now
+    BUG-251** in section 2: it reproduced, so it is a defect rather than a
+    motivating example, and it is filed where declining CompositeStore cannot
+    retire it. Keep it in view when designing here — identity-derived keys are
+    the wide fix for it, and this is where that scheme gets decided.
 
 ---
 
@@ -1113,10 +1154,19 @@ the commit that writes it lands, so cite the generator instead.
     invariant holds by discipline, not construction. Add a second, inverted
     pass: every `PREFIX-NNN` under `sdd/` must appear as an item in either
     backlog file, failing with the citing file and line
-    ([DRIFT-RULES Rule 2](DRIFT-RULES.md#rules): localize, don't merely fail).
+    ([DRIFT-RULES Rule 2](DRIFT-RULES.md#localize): localize, don't merely fail).
     Rule 3 makes it cheap — the claim space is *derived* from the citing
     documents. Rule 4 needs a decision this does not presuppose: when a spec
     cites an ID no backlog file carries, which side is wrong.
+    **Extend the walk to `.py` docstrings while building it.** A repo-relative
+    Markdown link written in a `scripts/*.py` docstring is validated by nothing
+    (`scripts/docs/check_links.py` walks git-tracked `.md` only) — 7 such links
+    into `sdd/DRIFT-RULES.md` anchors exist today, per
+    `rg -n '\.md#' scripts/report_trace_outcomes.py scripts/_trace_corpus.py`.
+    That was BK-335, retired because its own trigger ("the first time a rename
+    breaks one") is unobservable: a silent break is what nobody notices. The
+    marginal cost here is near zero once this pass walks non-`.md` files, and it
+    makes the trigger a check rather than an aspiration.
   **Both passes key on an ID, and the measured misses do not carry one.**
   Retiring 23 IDs in one change falsified three sites a grep-for-IDs pass cannot
   reach: `sdd/specs/004-path-model.md` forward-pointed to "the follow-up" in

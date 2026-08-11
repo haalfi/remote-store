@@ -570,6 +570,11 @@ conclusion in one respect worth stating: "stated bound, therefore correctly held
 and "stated bound, **and we have already decided to remove it**" are different
 claims, and only the second matches the backlog.
 
+> **Correction, after this document was written.** Only item 4 is still booked:
+> ID-207 was re-scoped to steps 3 and 4, and item 2 (clause granularity) was
+> dropped on its own measurement rather than deferred. So of the two bounds
+> above, one has a decision to remove it and one has a decision **not** to.
+
 So the honest characterization of our best T6 mechanism is: **a set difference over
 the intersection of two derived enumerations, minus a reviewer-maintained
 allow-list, with the removal of both limits already logged as ID-207.** That is a
@@ -958,7 +963,15 @@ between "exempt the item" and "pin what the exemption covers"; prefer the pin.
 
 ### Step 2: Bidirectional traceability (the canonical claim space)
 **Closes:** G-3, § 2.1's bottleneck, and BK-324 facet 4 concretely ·
-**Mechanism:** E2 · **Size:** M (2a) + S (2b) · **Owner: ID-207**
+**Mechanism:** E2 · **Size:** M (2a) + S (2b) · **Owner: — (unowned)**
+
+> **Correction, after this document was written.** ID-207 was re-scoped to its
+> steps 3 and 4 and no longer carries step 2: measured at L effort over ~2.5% of
+> the claim space, having caught none of the four instances that motivated it.
+> This step is therefore **unowned by design** — see `sdd/BACKLOG.md` § 6 and
+> ID-207's own body, which asks that the dropped half not be re-filed without
+> new evidence. The mapping below is preserved as written and describes ID-207's
+> shape at the time, not now.
 
 **This step largely *is* `sdd/BACKLOG.md` ID-207, which predates this document.**
 ID-207 ("Strengthen `check_formal_trace.py` from citation hygiene to clause

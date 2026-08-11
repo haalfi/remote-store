@@ -47,7 +47,7 @@ the failing test, run it, see it fail** before implementing the fix.
 <a id="trace-authoring"></a>
 ## Trace authoring (mandatory)
 
-When working on a backlog item, maintain `sdd/traces/<id>-<slug>.yml` as you work, not after merge. Schema: `sdd/traces/_schema.yml`. **"Working on" means implementing or closing the item.** A pure advisory annotation to a body (e.g. recording a verification-run result) that neither implements nor closes the item does not require a trace; the trace is authored when implementation begins.
+When working on a backlog item, maintain `sdd/traces/<id>-<slug>.yml` as you work, not after merge. Schema: `sdd/traces/_schema.yml`. **"Working on" means implementing the item, or closing it by implementing it.** Two closes do not require a trace, because a trace records what reading and ripples the *work* met and there was no work: an item **decided against** and an item **absorbed** into another, both defined in [`sdd/BACKLOG.md` § Completing work](sdd/BACKLOG.md#how-this-file-works), which carry their decision in the `BACKLOG-DONE.md` register entry instead. A pure advisory annotation to a body (e.g. recording a verification-run result) that neither implements nor closes the item does not require one either; the trace is authored when implementation begins.
 
 - **Before starting:** open the trace if it exists, otherwise create one from the schema example.
 - **As you read:** record each gate and reference read as a step. Tag `outcome: unclear | misleading` on any read that did not deliver — these are aggregated by `hatch run report-trace-outcomes`, which ranks the documents that failed readers, so tag the artifact that actually misled and put your own misses in the `extract`.

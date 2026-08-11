@@ -15,7 +15,9 @@ fi
 # --- Backlog [~] items ---
 PENDING=""
 if [ -f sdd/BACKLOG.md ]; then
-  PENDING=$(grep '\[~\]' sdd/BACKLOG.md | head -10)
+  # Anchor to item headers: '[~]' also appears in the status legend and in
+  # section prose, and an unanchored grep reports those as in-progress items.
+  PENDING=$(grep '^- \[~\] ' sdd/BACKLOG.md | head -10)
   if [ -n "$PENDING" ]; then
     echo ""
     echo "In-progress backlog items [~]:"

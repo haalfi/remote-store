@@ -188,7 +188,7 @@ members are intentionally absent:
 `stem`, `suffixes`, `with_name`, `with_suffix`, `with_stem`, `joinpath`,
 `parents`, `match`, `relative_to` / `is_relative_to`, and `is_absolute`. The
 `as_uri` and `drive` / `root` / `anchor` accessors are out of scope entirely
-(meaningless for a rootless remote key). **No backlog item tracks them** — the
-follow-up that once did was retired for want of demand, so this list is the
-durable record. Each member would need its own `PATH-NNN` clause and
-spec-tagged test; file one per member if a concrete need appears.
+(meaningless for a rootless remote key). The follow-up that once tracked them
+was retired for want of demand, so **this list is the durable record** rather
+than a pointer into the backlog. Each member would need its own `PATH-NNN`
+clause and spec-tagged test; file one per member if a concrete need appears.

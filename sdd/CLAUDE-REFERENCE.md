@@ -77,7 +77,7 @@ Read this before starting. One line per trigger.
 | Trigger                       | Ripples (at a glance) |
 |-------------------------------|-----------------------|
 | Bug fix                       | BACKLOG item, CHANGELOG stub under `[Unreleased]`, failing test **before** fix, spec if invariant contradicted |
-| Backlog item touched          | Live trace at `sdd/traces/<id>-<slug>.yml` ([CLAUDE.md § Trace authoring](../CLAUDE.md#trace-authoring)); schema at `sdd/traces/_schema.yml`; `audience` drives the CHANGELOG-required rule |
+| Backlog item touched          | Live trace at `sdd/traces/<id>-<slug>.yml` ([CLAUDE.md § Trace authoring](../CLAUDE.md#trace-authoring)) — not owed for an item decided against or absorbed, which carry a `BACKLOG-DONE.md` register entry instead; schema at `sdd/traces/_schema.yml`; `audience` drives the CHANGELOG-required rule |
 | CHANGELOG entry               | One-line `- <ID>: <Title>` at top of `[Unreleased]`; release skill expands and groups |
 | Version number                | `bump-my-version` (drives `pyproject` file list), then `hatch run gen-graph`; full checklist in [CONTRIBUTING § Phase 2](../CONTRIBUTING.md#phase-2) |
 | Source/test/spec counts       | README badge + CI coverage report (no manual table) |
@@ -253,7 +253,7 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 | **Bug fix**                | `sdd/BACKLOG.md` (item), `CHANGELOG.md` (stub line under  |
 |                            | `[Unreleased]`), failing test **before** the fix, spec if |
 |                            | the bug contradicts a spec invariant                      |
-| **Backlog item touched**   | Live trace at `sdd/traces/<id>-<slug>.yml` per [CLAUDE.md § Trace authoring](../CLAUDE.md#trace-authoring) |
+| **Backlog item touched**   | Live trace at `sdd/traces/<id>-<slug>.yml` per [CLAUDE.md § Trace authoring](../CLAUDE.md#trace-authoring); an item decided against or absorbed owes a `BACKLOG-DONE.md` register entry, not a trace |
 |                            | (mandatory). Created/updated as work                      |
 |                            | proceeds (not retrospectively); ships in same PR; schema  |
 |                            | at `sdd/traces/_schema.yml`. `audience` priority-sorted   |
