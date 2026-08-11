@@ -217,6 +217,18 @@ class CassetteProfile:
     case-insensitively; the declared key case is what a rewrite re-inserts,
     so it must match the case cassettes record (REC-005)."""
     filter_query_parameters: tuple[str, ...] = ()
+    """vcrpy-native query-parameter delete, with two distinct duties (REC-005).
+
+    Credential parameters (SAS tokens, pre-signed URL signatures) are the
+    obvious one. The other is nondeterminism: a query component the *client*
+    mints per call is removed because it is part of vcrpy's match key, so
+    leaving it in would pin an implementation detail of the installed SDK
+    version. Both go in this tuple; the profile says which is which, because
+    a reader who assumes the whole list is secrets will delete the second kind.
+    Removing for the second reason widens the match key and carries an
+    obligation on the control that must then prove the key still
+    discriminates; REC-005 states it, including what makes such a control
+    real rather than vacuous."""
     env_redacts: tuple[EnvRedact, ...] = ()
     uri_rewrites: tuple[UriRewrite, ...] = ()
     presigned: PresignedPolicy | None = None

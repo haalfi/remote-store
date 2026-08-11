@@ -140,7 +140,14 @@ secret. The filter is what makes this fixable without a re-record: vcrpy
 applies the native half on cassette *load* as well as to outgoing requests,
 so the recorded value stops being matched on the committed corpus. Removing
 the component widens the match key, so a profile doing this owes a negative
-control proving the remaining key still discriminates. Azure block ids are
+control proving the remaining key still discriminates — **and the control has
+to vary the component that was widened.** One varying a different component is
+satisfied by that component's own matcher and holds even with the widened one
+removed from the match key entirely, so it proves nothing about the filter it
+was written for. The check is mechanical: run the candidate assertion under the
+profile's config and again with the widened component dropped from `match_on`.
+An assertion whose verdict does not change between the two is not a control.
+Azure block ids are
 the case that established this: `azure-storage-blob` derived them from the
 chunk offset (stable across runs, so they recorded and replayed by accident)
 until 12.31.0b1 switched to a per-call UUID, which no recording can match

@@ -304,6 +304,12 @@ from URIs, header values (``x-ms-rename-source`` / ``x-ms-copy-source``),
 and bodies; the random ``write_atomic`` temp-file UUID and the live HNS
 per-session ``live-hns/<uuid>`` prefix; per-request response headers; and
 ``RequestId:`` / ``Time:`` fragments in error-response XML.
+
+What it strips for a non-secrecy reason: the SDK-minted ``blockid`` query
+parameter, which rides the same native filter but is not a credential.
+Removing it takes it out of vcrpy's match key, which is a behavioural
+change to what these cassettes replay against, not a redaction — see the
+``filter_query_parameters`` comment above and REC-005.
 """
 
 __all__ = [

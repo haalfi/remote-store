@@ -87,21 +87,32 @@ phases:
           Written and run before the filter existed: the play assertion failed,
           the negative control passed. The negative control is the load-bearing
           half — removing a component *widens* a match key, so without a cell
-          proving an unrecorded blob still fails to play, the first assertion
+          proving the remaining key still discriminates, the first assertion
           would pass just as well on a layer that had stopped matching at all.
+          Retrospectively: I knew that and still shipped a control that varied
+          the **path** rather than the query, which the path matcher alone
+          satisfies. It was the right *idea* aimed at the wrong component, which
+          is why writing it did not feel like a miss — see the review phase.
 
   - id: implement
     name: Implement
     steps:
       - file: tests/backends/fixtures/_cassettes.py
-        section: "Cassette._load → append → _before_record_request (vcrpy 8.3.0)"
+        section: "build_profile_vcr_config"
         read_type: verify
         extract: >-
-          Checked in the installed vcrpy that native filters are re-applied to
-          cassette-loaded requests, not only to outgoing ones. This is what
-          makes the one-line filter sufficient: had filtering been record-time
-          only, the committed corpus would have needed a rewrite. Verified
-          before relying on it, then again by replaying the untouched corpus.
+          How a profile becomes a vcrpy config, and which keys are native
+          filters rather than custom hooks. The load-time half of the claim is
+          a **third-party** read, not in this repo: inspect.getsource on
+          vcr.cassette.Cassette in the installed vcrpy 8.3.0 shows _load calling
+          append, which applies _before_record_request to every recorded
+          request. That is what makes the one-line filter sufficient — had
+          filtering been record-time only, the committed corpus would have
+          needed a rewrite. Verified before relying on it, then again by
+          replaying the untouched corpus. Retrospectively, this step first cited
+          the repo module for the vcrpy internals themselves, so its file/section
+          pair asserted something false about this repo and the most
+          load-bearing derivation in the PR was unreachable; a review caught it.
       - file: tests/backends/fixtures/_cassettes_azure.py
         section: "AZURE_PROFILE.filter_query_parameters"
         read_type: reference
@@ -136,7 +147,54 @@ phases:
         read_type: verify
         extract: "Full ripple audit at verify-end."
 
+  - id: review
+    name: Review round 1
+    steps:
+      - file: tests/backends/fixtures/test_cassettes.py
+        section: "TestAzureBlockIdOutOfMatchKey"
+        read_type: verify
+        extract: >-
+          Four findings, all confirmed by running them rather than by reading.
+          The one that mattered: both shipped cells pass with `query` removed
+          from the match key entirely, so neither could see the regression this
+          PR's own filter makes possible. Measured with a probe that ran each
+          candidate assertion under the shipped config and under
+          match_on=(method, scheme, host, port, path) — only "an unrecorded
+          query on a recorded path" changed verdict between the two columns.
+          A control that cannot fail is not a control, and the way to find that
+          out is to make the harness produce the failure it claims to catch.
+      - file: sdd/TESTING.md
+        section: "A green test can be vacuous — no positive control"
+        read_type: gate
+        extract: >-
+          The rule this round enforced twice. Second instance: the cassette is
+          borrowed from another cell's filename, and vcrpy's _load swallows
+          CassetteNotFoundError, so a rename would have made every negative
+          control pass on an empty cassette. Probed by pointing _CASSETTE at a
+          missing file — all three cells now fail loudly and name the file,
+          where two of them previously passed.
+      - file: tests/backends/fixtures/_cassettes_azure.py
+        section: "AZURE_PROFILE docstring (What it strips)"
+        read_type: verify
+        extract: >-
+          The profile's own summary still said SAS-only, so the behavioural
+          change this PR makes was absent from the place a reader looks instead
+          of scrolling into the tuple. Swept the class rather than the line: the
+          same claim lives in the CassetteProfile field declaration, which
+          carried no docstring at all while every sibling field had one.
+
+# Counted from `git log origin/master..HEAD --format='%h %s'` on this branch:
+# 770832d (the original work) plus the single `fix: address PR #961 review`
+# commit this round produced — one review-driven commit, so 1.
+review_rounds: 1
+
 expected_ripples:
   - sdd/BACKLOG-DONE.md
   - sdd/backlogid.json
   - sdd/specs/049-live-recording-architecture.md
+
+surprising_ripples:
+  # The ripple-check has no row pointing from "a profile field gains a duty" to
+  # that field's own declaration docstring in the backend-agnostic core; the
+  # review found it, not the table.
+  - tests/backends/fixtures/_cassettes.py
