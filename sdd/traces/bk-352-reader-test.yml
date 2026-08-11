@@ -33,21 +33,28 @@ surprising_ripples:
 # cannot, not by any anticipatory authority. Same shape as BK-351's miss, one
 # artifact class over.
 # Name the commits the value was counted from, per the schema's review_rounds
-# clause. `git log --oneline origin/master..HEAD` returns five, all named because
+# clause. `git log --oneline origin/master..HEAD` returns six, all named because
 # an enumeration shorter than the named command's output is not a derivation:
-#   05f9524 - BK-351's implementation. Co-shipped, not this item's work.
-#   162d132 - this item's implementation, which created this file. Does not count.
-#   d6d3f57 - this item's DRIFT-RULES correction, found by the /pr qualitative
+#   66d3453 - BK-351's implementation. Co-shipped, not this item's work.
+#   3c05f5c - this item's implementation, which created this file. Does not count.
+#   6620383 - this item's DRIFT-RULES correction, found by the /pr qualitative
 #     gate. Author-initiated on my own work, so it does not count, on the reading
 #     bk-348's trace states for its own finishing commit. Named by SHA rather than
-#     as "the commit carrying this line", which was ambiguous between 162d132 and
-#     this one - the ambiguity is why the schema asks for SHAs.
-#   58d425e - BK-351's word-count correction. Not this item's work.
-#   the commit carrying this line - answers PR #962's review (nine findings).
-#     Counts.
+#     as "the commit carrying this line", which was ambiguous between the commit
+#     that created this file and the one that rewrote it - that ambiguity is why
+#     the schema asks for SHAs.
+#   5f04434 - BK-351's word-count correction. Not this item's work.
+#   3fce92c - answers PR #962's review, nine findings. **Counts.**
+#   the commit carrying this line - the rebase onto 52b8328 and the re-derivation
+#     it forced. Mechanical, not feedback: does not count.
 # Value is 1: the review round, and not the author-initiated gate finding.
+# **Every SHA above was rewritten once already** - the rebase onto 52b8328
+# replaced 05f9524, 162d132, d6d3f57, 58d425e and 005911e with the six above. The
+# sibling trace's block carries the general lesson; the local one is that naming
+# 6620383 by SHA to escape an ambiguity did not survive a rebase either. Re-run
+# the named command after any rebase rather than translating the old list.
 # **"No review round had run" was false when written**, and PR #962's review
-# caught it: d6d3f57's own message says the /pr gate found a real defect, and the
+# caught it: 6620383's own message says the /pr gate found a real defect, and the
 # verify phase below records it. The claim that survives is narrower - a gate the
 # author ran on their own work is an author pass under bk-348's reading, so it
 # does not count toward this field. That is a reason, where the first version
@@ -106,15 +113,22 @@ phases:
           no-context reader cannot check. My framing to the user before this run
           cited the negative total and would have claimed about seven times the
           reach the mechanism has.
-          **The figures themselves were then wrong for two more rounds**, which is
-          the part worth recording. The first run happened mid-branch, after
-          BK-351's trace landed and before this file existed, so its 275 · 3,981 ·
-          1,793 · 220 · 31 described neither `origin/master` nor the head, and the
-          entry stated it as "at this commit". A corpus figure asserted inside a
-          commit that adds to the corpus cannot be pinned by re-running at the
-          head either. Fixed by measuring `origin/master` in a worktree - 274 ·
-          3,969 · 1,781 (44.9%) · 219 negative · 30 `unclear` - and giving the
-          head figures beside them.
+          **The figures were then wrong twice more, for two different reasons**,
+          which is the part worth recording. First, the run happened mid-branch,
+          after BK-351's trace landed and before this file existed, so its 275 ·
+          3,981 · 1,793 · 220 · 31 described neither `origin/master` nor the head
+          while the entry called it "at this commit"; a corpus figure asserted
+          inside a commit that adds to the corpus cannot be pinned by re-running at
+          the head either. PR #962's review caught that, and the fix was to measure
+          `origin/master` in a worktree - 274 · 3,969 · 1,781 (44.9%) at 16673b7 -
+          and give the head figures beside it.
+          Second, **the baseline then moved under the pin**: rebasing onto 52b8328
+          brought BUG-252 and its trace, so the same command now gives 275 · 3,988 ·
+          1,781 (44.7%) on master and 277 · 4,019 · 1,812 (45.1%) at the head.
+          Re-run rather than adjusted. The negative tags held at 219 and the
+          `unclear` split at 30, so the ratio the item's scope rests on survived
+          both corrections - which is a finding of the re-runs, not a reason to
+          have skipped them.
         outcome: ok
       - file: sdd/traces/_schema.yml
         section: "outcome (unclear vs misleading)"
@@ -279,8 +293,10 @@ phases:
           the report's documented glob to 274 on master and 276 at the head, said
           plainly that theirs was a reading pass, and asked for a measuring pass
           before any rewrite. Running it in an `origin/master` worktree confirmed
-          their corpus counts and refuted their predicted head figures - 221
-          negative across 114 and 32 `unclear`, not 222/115/33, and
+          their corpus counts and refuted their predicted head figures - **all
+          values in this step are against the pre-rebase base 16673b7, which is
+          what the round was measured on; the current ones are in the measure phase
+          above** - 221 negative across 114 and 32 `unclear`, not 222/115/33, and
           `CLAUDE-REFERENCE.md` at 15 total with 12 `unclear` over 295 reads, not
           13 over 296 - because those predictions were derived by adding to the
           off-by-one they were correcting. An error inherited by the correction is

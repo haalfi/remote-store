@@ -168,10 +168,17 @@ if evidence changes; these are retired.
   pin it either — the next commit moves it again. `origin/master` is the state the
   scope argument was actually made against, so that is what it cites. Measured by
   running `scripts/report_trace_outcomes.py` in a `git worktree` on
-  `origin/master` (16673b7): **274 traces, 3,969 steps, 1,781 carrying an explicit
-  outcome (44.9%), 219 negative tags across 112 traces.** The same script at this
-  branch's head gives 276 · 3,994 · 1,806 (45.2%) and 221 across 114; the two new
+  `origin/master` (52b8328): **275 traces, 3,988 steps, 1,781 carrying an explicit
+  outcome (44.7%), 219 negative tags across 112 traces.** The same script at this
+  branch's head gives 277 · 4,019 · 1,812 (45.1%) and 221 across 114; the two new
   traces are the whole of the difference.
+  **Re-derived after a rebase, not carried across it.** The first measurement was
+  against 16673b7 and gave 274 · 3,969 · 1,781 (44.9%); BUG-252 then landed with
+  a trace of its own, moving the corpus, the step count and the coverage
+  percentage while leaving the negative tags at 219. A baseline named by SHA is
+  falsified by every merge into that branch, so the figures were re-run rather
+  than adjusted — the ratio this item's scope rests on is unchanged, which is a
+  result of the re-run and not the reason for skipping it.
   **Only 30 of those 219 are `unclear`; 189 are `misleading`, and the difference
   decides the scope.** A reader test catches "I could not answer this from the
   page", which is the schema's `unclear` — on-topic but vague or incomplete, the
@@ -180,7 +187,7 @@ if evidence changes; these are retired.
   that against, and the instruments for it already exist (the measuring member,
   the whole-file gate). A first framing of this item cited the negative total and
   would have claimed roughly seven times the reach the mechanism has. The largest
-  single concentration is `sdd/CLAUDE-REFERENCE.md`: 13 negative tags over 293
+  single concentration is `sdd/CLAUDE-REFERENCE.md`: 13 negative tags over 295
   reads, 10 of them `unclear`, which is a third of the corpus's `unclear` in one
   file.
   **Every figure above was wrong in the first cut, and PR #962 caught it.** The
@@ -188,9 +195,10 @@ if evidence changes; these are retired.
   `unclear` over 294 — the corpus as it stood mid-branch, after BK-351's trace
   landed and before this item's own, so it described neither endpoint. The review
   that found it reasoned from the report's documented glob rather than running it,
-  said so, and asked for a measuring pass before any rewrite; that pass is what
-  produced the numbers above, and it also refuted the review's own predicted head
-  figures (222 / 115 / 33, `CLAUDE-REFERENCE.md` 13 over 296), which inherited the
+  said so, and asked for a measuring pass before any rewrite. That pass established
+  the method the figures above still use — it is the rebase re-run that produced
+  their current values — and it refuted the review's own predicted head figures
+  (222 / 115 / 33, `CLAUDE-REFERENCE.md` 13 over 296), which inherited the
   off-by-one they were correcting. Three readings of one derivation, two of them
   careful, none reproducing until it was run.
   **Shipped as two advisory instruments, no gate**, which keeps
