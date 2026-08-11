@@ -367,7 +367,7 @@ substitutes.
    alongside the findings, and by the closing rounds they outnumber them — a
    loop that answers every thread doubles its own comment count, so an
    unfiltered tally reports the surface as more examined than it is, and worst
-   exactly where the loop has been most diligent. Measured: this delivery's own
+   exactly where the loop has been most diligent. Measured on PR #958: its
    round 1 returned 15 rows for 7 findings.
 
    **One row per comment, tagged rather than filtered in the query, and
@@ -389,12 +389,20 @@ substitutes.
    [`/rvw-pr`](../rvw-pr/SKILL.md) Step 4 gives for pinning its own walk: a
    reader copies the command, not the prose around it.
 
-   **This instrument is the orchestrator's, run while writing the brief — never
-   a reviewer's to verify.** It reads PR *comments*, and `/rvw-pr` Step 1
-   forbids a reviewer from fetching those; that prohibition is the whole
-   mechanism keeping unprimed passes unprimed. A measuring brief that asks a
-   member to check this recipe turns that member into one that has read the
-   conversation. Put the *result* in the brief; never the query.
+   **Computing the distribution is the orchestrator's job, done while writing
+   the brief. Put the *result* in the brief; never the query.** It reads PR
+   *comments*, and `/rvw-pr` Step 1 forbids a reviewer from fetching those —
+   that prohibition is the whole mechanism keeping unprimed passes unprimed, so
+   a brief that asks a member to derive the distribution turns that member into
+   one that has read the conversation.
+
+   **Verifying the recipe is a different act and a scoped measuring member may
+   do it**, which the stop rule requires whenever this block's own measured
+   claims change: it asserts that the row count is the page length and that the
+   `files` call pages, and those are behavioural claims like any other. Such a
+   member fetches counts, review ids and paths — never comment bodies — and is
+   never the unprimed one. Both halves of that carve-out were exercised on this
+   skill's own delivery, and both members disclosed it unprompted.
 
    Put the *named untouched files* in the brief, not the adjective
    "neglected". This costs two calls and the alternative is an impression: on

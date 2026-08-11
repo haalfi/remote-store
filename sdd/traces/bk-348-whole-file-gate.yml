@@ -49,17 +49,22 @@ surprising_ripples:
 #             the honest reading is the one that does not inflate the field.
 #   7cba3a2 - PR #958 round 2's seven findings. Counts.
 #   179e46f - PR #958 round 3. Counts.
-#   the commit carrying this line answers round 4 and counts; a commit cannot
-#             name its own SHA, so the final entry is nameable only from the
-#             commit after it. That bound is stated rather than papered over -
-#             the enumeration is complete except for its last member, always.
-# Value is the count of the counting commits above. Not the number of steps in
-# the `review` phase: a round can take more than one step to record, and a round
-# refuted whole produces no commit at all.
-# Finalised at the close. It was stale for one round before that, and round 3
-# caught it - all three panel members independently - which is this PR's own
-# new clause working on the delivery that ships it.
-review_rounds: 4
+#   1d8eaa8 - PR #958 round 4. Counts.
+#   b5d5cc6 - PR #958 round 5. Counts.
+#   the commit carrying this line - PR #958 round 6. Counts, and is the one
+#             entry no version of this block can name, since a commit cannot
+#             contain its own SHA.
+# Value is the count of the counting commits above, the unnameable carrier
+# included. Not the number of steps in the `review` phase: a round can take more
+# than one step to record, and a round refuted whole produces no commit at all.
+# **This block is rewritten by every fix pass and is correct only at the commit
+# that wrote it.** Rounds 3, 4 and 6 each caught it stale - the round-4 fix left
+# "the commit carrying this line answers round 4" in place while round 5's
+# commit carried it, so the self-reference named the wrong round and the value
+# under-counted by one. Any further round must renumber the carrier and add the
+# commit that has just become nameable. There is no "finalised at the close"
+# short of the close actually happening.
+review_rounds: 6
 phases:
   - id: orient
     name: Orient
@@ -391,9 +396,14 @@ phases:
           check_traces.py reads the raw text before parsing, so a regex for a
           comment block above the field would work. The gate is declined on
           cost, not impossibility, and the clause now says so and scopes itself
-          to traces authored from this item onward - 213 existing traces are not
-          retrofitted, which an unconditional clause would have made silently
-          false at this commit.
+          to traces authored from this item onward, with the corpus not
+          retrofitted - an unconditional clause would have made the repo
+          silently non-describing-of-reality at this commit. **No corpus total
+          is stated**, in the schema or here: round 6's three members each
+          derived one from `rg '^review_rounds:' sdd/traces` and got three
+          different answers, because "existing", "in scope" and "compliant"
+          partition that set differently. The query is what a reader can run;
+          the number was three readings of it.
         outcome: ok
       - file: .claude/skills/ship/SKILL.md
         section: "Unprimed reviewers; Members are analysts; Stop rule; brief requirement 3"
@@ -528,4 +538,47 @@ phases:
           distinguishes a claim from a brief at both the parse step and Step 2 -
           the same shape as the measuring member's token, which ships an
           obligation and the permission that makes it executable together.
+        outcome: ok
+      - file: sdd/traces/bk-348-whole-file-gate.yml
+        section: "review_rounds; the corpus figure"
+        read_type: verify
+        extract: >-
+          Round 6, the closing panel. Six distinct findings, none in the shipped
+          mechanism - bookkeeping and precision, which is what a converging tail
+          looks like. All three members independently caught this field stale
+          again: the round-4 fix wrote "the commit carrying this line answers
+          round 4" and round 5's commit then carried it, so the self-reference
+          named the wrong round and the value under-counted. Rewritten to name
+          every nameable commit and to say plainly that the block is correct only
+          at the commit that wrote it, that the carrier is the one entry no
+          version can name, and that there is no "finalised at the close" short
+          of the close. Rounds 3, 4 and 6 each caught this field; it is the most
+          error-prone figure in the delivery and now says so.
+          The corpus figure went the same way: three members derived one from
+          `rg '^review_rounds:' sdd/traces` and returned three different numbers,
+          because "existing", "in scope" and "compliant" partition that set
+          differently. Removed rather than arbitrated - a figure three careful
+          readers disagree about is one the query states better.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "brief requirement 3 (instrument ownership); rvw-pr Step 5"
+        read_type: verify
+        extract: >-
+          Round 6's structural finding, from the measuring member, and it is a
+          collision round 5's own fix created. "Never a reviewer's to verify"
+          contradicts the stop rule's measuring clause, because the block makes
+          measured behavioural claims - the row count is the page length, the
+          files call pages - and the stop rule requires every behavioural claim
+          to be executed by a measuring pass. Routing the result into the brief
+          does not discharge that, since the orchestrator ran it rather than a
+          measuring pass. Split into the two acts it had conflated: *computing*
+          the distribution is the orchestrator's, because a member that derives
+          it has read the conversation; *verifying the recipe* is a scoped
+          measuring member's, fetching counts and paths but never bodies, never
+          the unprimed one. Both halves were exercised on this delivery and both
+          members disclosed it unprompted, which is what surfaced the collision.
+          Also closed the claim-vs-brief split at its third site - Step 5's
+          "Rejected user input" block still read as covering a brief - and named
+          PR #958 where the skill said "this delivery", which resolves to the
+          reader's own run in a file read long after.
         outcome: ok

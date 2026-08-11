@@ -195,10 +195,12 @@ Bug: N | Spec: N | Test: N | Consistency: N | Ripple: N | Perf: N | Security: N 
 
 The `Subject:` line is a sanity check — if it doesn't match the PR's actual intent, you reviewed the wrong thing.
 
-If user-supplied context was provided but rejected, add:
+If a user-supplied **claim** was evaluated and rejected, add:
 ```
 Rejected user input: "<claim>" — <reason for rejection>
 ```
+A **brief** is never reported here: it directed the review rather than asserting
+anything, so there is nothing to accept or reject (Step 2).
 
 Then **stop**. Do not wait for feedback or user input.
 
