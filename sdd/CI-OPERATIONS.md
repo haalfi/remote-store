@@ -77,12 +77,13 @@ documented in [`CONTRIBUTING.md`](../CONTRIBUTING.md).
   Issue** — opened or updated when any extra drifts, commented "cleared" and
   closed when all are clean. The per-extra **smoke verdict** lives in the linked
   Actions run, not the issue body.
-- **How to act:** run the **`/drift` skill**. It reads the rolling issue, then
-  for each drifted extra reads that extra's smoke-job conclusion in the linked
-  run — the load-bearing signal — and refreshes only the baselines whose smoke is
-  green and whose bump is non-major. A red smoke is never refreshed until its
-  cause (real regression vs smoke-harness gap) is explained. The skill prepares a
-  pushed branch and stops; the maintainer opens the PR.
+- **How to act:** run the **`/drift` skill**. Refreshes are gated per extra on
+  that extra's smoke-job conclusion in the linked run; the skill's steps 3–5 are
+  authoritative on the gating, including how a major bump and a red smoke are
+  each handled. The skill prepares a pushed branch and stops; the maintainer
+  opens the PR. Note the gate's reach is per-extra and uneven — an extra whose
+  smoke cannot load the package that drifted returns a green verdict about
+  nothing (BUG-250).
 
 ### `mutation.yml` — mutation testing
 

@@ -123,6 +123,25 @@ and the highest ID already in this file, then take the next integer. Run
   in prose (BACKLOG-DONE: "scope a contract change by which backends have the
   thing the clause names") without building the mechanism that would enforce it.
 
+- [ ] **BUG-250 — `[graph]`'s drift smoke reaches one of the extra's four declared dependencies**
+  spec: — · effort: S · audience: infra.ci
+  `scripts/drift_smoke_map.py:79` routes `graph` to
+  `["--import-only", "remote_store.aio.backends._graph.http"]`. That module's only
+  third-party import is `httpx`; `_graph/auth.py` imports `msal`, `msal-extensions`
+  and `platformdirs` lazily inside the methods that need them (`auth.py:173`,
+  `auth.py:194`). Reproduction: import the module and diff `sys.modules` — `httpx`
+  loads, `cffi` / `cryptography` / `platformdirs` / `msal` / `msal_extensions` do not.
+  So `check-graph` can go green while every drifted package in
+  `infra/drift-locks/graph.txt` is unexercised, and a `cryptography` or `msal` major
+  rides that verdict into a refresh. Hit in the 2026-08-10 firing (trace finding #32):
+  all three drifted packages were outside the smoke's reach, and the accepted
+  `cryptography` 49→50 major turned out to be covered only incidentally, by `[azure]`
+  and `[sftp]` smoking identical pins.
+  The import-only shape is deliberate (BUG-225) — it catches a graph-hostile `httpx`
+  without needing msal or a network. A fix must widen reach without regressing that:
+  import the lazy call sites behind a no-network path, or add a cassette-backed target.
+  Worth auditing the other `--import-only` entry (`otel`) for the same shape.
+
 - [ ] **BUG-249 — Three `S3Boto3Backend` listings leak a raw `botocore.ClientError`**
   spec: BE-021 · effort: S · audience: user.api
   BE-021's first invariant: "Backend-native exceptions never leak. All
@@ -404,6 +423,32 @@ and the highest ID already in this file, then take the next integer. Run
   `/ship`'s. ADR-0037 rests on one `/ship` run, and ADR-0036 set the precedent
   that a cross-skill claim is decided on the target skill's traces. Until such a
   run exists this is a question, not a gap.
+
+- [ ] **BK-350 — The drift-refresh procedure spans five prose sites with no gate over any of them**
+  spec: — · effort: M · audience: contributor.process, infra.ci
+  `infra/drift-locks/README.md` § Refreshing, `.claude/skills/drift/SKILL.md`,
+  `sdd/CI-OPERATIONS.md`, `CONTRIBUTING.md` and the `.github/workflows/drift-guard.yml`
+  header all describe how a baseline is refreshed. No `check_*` script covers any of
+  them, so when they disagree nothing reports it — the divergence is unnoticed rather
+  than tolerated, which [`DRIFT-RULES.md` rule 6](DRIFT-RULES.md#rules) distinguishes.
+  Evidence: PR #959's review found 15 findings across these files, 4 rated high, in a
+  round whose entire purpose was to make them agree. Three were cases where a literal
+  follower produces a wrong artifact silently. See trace `id-182-drift-guard.yml`
+  finding #33 for the diagnosis — the round treated two distinct procedures (drift
+  finding vs deliberate floor bump) as five copies of one.
+  PR #959 responded structurally rather than with a gate: README became the single
+  description and the other four sites were cut back to links plus what is true at
+  their own altitude. That is [rule 1](DRIFT-RULES.md#one-driver)'s "one normative
+  description driving N artifacts" and it may be the whole answer — **this item may
+  legitimately close as "no gate needed"**. What is untracked is the question, not a
+  committed mechanism.
+  If a gate is wanted, [rule 3](DRIFT-RULES.md#claim-space) is the hard part: the
+  claim space here is prose, which has no stable identifiers to enumerate from. A
+  check that cannot name the differing element is not ready to add (rule 2). Plausible
+  narrow forms: assert the four non-authority sites contain no fenced command block
+  for a refresh, or that each links to README § Refreshing. Both are shape checks, not
+  agreement checks, and should be evaluated against whether they would have caught any
+  of the 15.
 
 - [ ] **BK-347 — A diff outside CI's `CODE_PAT` is routed away from the ADR drift gate, and the local gate misses a different set**
   spec: — · effort: S · audience: contributor.process, infra.ci

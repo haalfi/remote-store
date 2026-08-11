@@ -48,9 +48,13 @@ def _render_body(reports: dict[str, dict], run_url: str) -> str:
         lines.append("")
         lines.append(
             "The following extras have stub baselines. Run "
-            "`hatch run drift-check refresh-baseline <extra>` on Python 3.13 "
-            "and commit `infra/drift-locks/<extra>.txt` (plus the regenerated "
-            "`docs-src/reference/tested-versions.md`):"
+            "`hatch run drift-check refresh-baseline <extra>` on Linux with the "
+            "primary Python — a lock is OS- as well as Python-specific — and "
+            "commit `infra/drift-locks/<extra>.txt` (plus the regenerated "
+            "`docs-src/reference/tested-versions.md`). A stub cannot be "
+            "reconstructed from this issue (no rows to apply); use this run's "
+            "`candidate-baseline-<extra>` artifact if you cannot resolve "
+            "locally. See `infra/drift-locks/README.md` § Refreshing:"
         )
         lines.append("")
         for extra in needs_refresh:

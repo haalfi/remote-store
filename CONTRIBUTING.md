@@ -402,8 +402,16 @@ hatch run drift-check render-docs                  # regenerate the docs page
 ```
 
 Then commit `infra/drift-locks/<extra>.txt` and
-`docs-src/reference/tested-versions.md`. Run on Python 3.13 (matching the
-workflow's runner) so the lock is comparable.
+`docs-src/reference/tested-versions.md`. Run on **Linux with Python 3.13**: a lock
+is OS-specific as well as Python-specific, and resolving elsewhere can pull
+platform-conditional dependencies the workflow never sees, which the next weekly
+run then reports as drift.
+
+A floor bump has no run-derived shortcut — the drift-guard run resolves from
+`master`, so its published resolution predates your change. If you cannot resolve
+on Linux 3.13, use a container or ask a maintainer.
+[`infra/drift-locks/README.md` § Refreshing after a deliberate floor bump](infra/drift-locks/README.md#refresh-floor-bump)
+is authoritative.
 
 `hatch run drift-check refresh-baseline all` refreshes every extra at once.
 
