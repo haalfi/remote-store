@@ -103,13 +103,15 @@ falling back to `gh` for GraphQL-only flows. Repo: `haalfi/remote-store`.
      — do not retry it or route around it. Use the reconstruction below.
    - **Artifacts unreachable — reconstruct the same freeze from the issue.** The
      candidate freeze is exactly *the committed baseline with the issue body's
-     rows applied*: the report enumerates every package whose version differs,
-     so a package absent from those tables is unchanged from the baseline. Apply
-     both the **stable** and the **pre-release** tables (they describe one
-     resolution, split only for presentation), keep every other line as-is, and
-     the result is byte-identical to the artifact — same guarantee, no download.
-     Verify by re-deriving it: the lock must differ from the baseline in exactly
-     the issue's rows, with nothing added or removed.
+     rows applied*: the report diffs over the *union* of baseline and resolved
+     packages, so every difference is enumerated and a package absent from those
+     tables is unchanged from the baseline. Apply both the **stable** and the
+     **pre-release** tables (they describe one resolution, split only for
+     presentation), and treat `—` as a value rather than a blank: `—` under
+     Baseline means add the line, `—` under Resolved means drop it. Keep every
+     other line as-is and the result is byte-identical to the artifact — same
+     guarantee, no download. Verify by re-deriving it: the lock must differ from
+     the baseline in exactly the issue's rows, and in nothing else.
    - **On Linux 3.13 (matches the runner) — local resolve is fine.** Assert
      `python --version` is 3.13, then per approved extra:
      `hatch run drift-check refresh-baseline <extra>`. Note `python`, not the

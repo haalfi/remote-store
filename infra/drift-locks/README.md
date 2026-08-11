@@ -72,12 +72,14 @@ CONNECT from `gh run download` alone; that is a policy denial, not a transient
 failure, so retrying will not clear it. Reconstruct the freeze from the rolling
 issue instead:
 it is the committed baseline with the issue body's rows applied, because the
-report enumerates every package whose version differs — a package absent from
-those tables is unchanged. Apply the **stable** and **pre-release** tables both;
-they describe one resolution, split only for presentation. The result is
-byte-identical to the artifact, so the guarantee below still holds. Verify by
-re-deriving: the new lock must differ from the baseline in exactly the issue's
-rows, with nothing added or removed.
+report diffs over the *union* of baseline and resolved packages — so every
+difference is enumerated, and a package absent from those tables is unchanged.
+Apply the **stable** and **pre-release** tables both; they describe one
+resolution, split only for presentation. A `—` in either column is a value, not a
+blank: `—` under Baseline means the package is new (add the line), `—` under
+Resolved means it is gone (drop the line). The result is byte-identical to the
+artifact, so the guarantee below still holds. Verify by re-deriving: the new lock
+must differ from the baseline in exactly the issue's rows, and in nothing else.
 
 Either way, commit the changed `infra/drift-locks/<extra>.txt` and
 `docs-src/reference/tested-versions.md` in the same PR as whatever
