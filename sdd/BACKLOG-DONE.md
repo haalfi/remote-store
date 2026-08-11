@@ -122,14 +122,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   from one command. That is the repeat-site check applied to a number, and it is
   now [ADR-0037](adrs/0037-whole-file-gate-and-derived-figures.md)'s corollary.
   **And an author finishing pass is not an unprimed reader.** The loop was ended
-  by the user after round 7 rather than by the stop rule, so the three exit
-  gates were discharged by the author rather than by an appended pass; the
-  user's post-close unprimed review then returned three findings, every one in a
-  class this item ships a rule about — a frontmatter falsified by the very
-  change it describes (the first shape the whole-file lens names), two artifact
-  enumerations that disagreed about `.claude/skills/`, and a magnitude claim
-  this delivery's own ADR contradicts. All three fixed on this branch. Produced
-  [BK-349](BACKLOG.md).
+  by the user after round 7 rather than by the stop rule, so no appended pass ran
+  against the final state and the unprimed gate — the one an author cannot
+  discharge by construction — stayed open. The user's own post-close unprimed
+  review then returned three findings, every one in a class this item ships a
+  rule about: a frontmatter falsified by the very change it describes (the first
+  shape the whole-file lens names), two artifact enumerations that disagreed
+  about `.claude/skills/`, and a magnitude claim this delivery's own ADR
+  contradicts. All three fixed on this branch, in a commit that is itself
+  unreviewed — the same gate open one state later, which is what ending a
+  convergence loop by hand costs and is recorded rather than smoothed over.
+  Produced [BK-349](BACKLOG.md).
   **No CHANGELOG entry**: `contributor.process` with no user-facing framework,
   per the schema's derived rule — the same call BK-338, BK-342 and BK-344 each
   made (a grep of `CHANGELOG.md` for those three IDs returns nothing).

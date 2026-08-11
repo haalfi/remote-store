@@ -64,12 +64,16 @@ surprising_ripples:
 #   43c9dbd - the author-initiated finishing pass, made after the user ended the
 #             loop. Does NOT count, on the reading bk-338's trace states for its
 #             own finishing commit: the schema counts feedback incorporated.
-#   the commit carrying this line - PR #958 review 4903936676, initiated
-#             unprimed by the user after the loop closed. Three findings, all
-#             incorporated, so it Counts. It is also the one entry no version of
-#             this block can name, since a commit cannot contain its own SHA.
-# Value is the count of the counting commits above, the unnameable carrier
-# included. Not the number of steps in the `review` phase: a round can take more
+#   9ad8d38 - PR #958 review 4903936676, initiated unprimed by the user after
+#             the loop closed. Three findings, all incorporated. Counts.
+#   the commit carrying this line - the second author-initiated pass over every
+#             changed file, made at the user's instruction to finish rather than
+#             review again. Does NOT count, on the same reading as 43c9dbd. It is
+#             also the one entry no version of this block can name, since a
+#             commit cannot contain its own SHA.
+# Value is the count of the entries above marked "Counts" - all eight nameable
+# at this commit, since the carrier is an author pass and does not.
+# Not the number of steps in the `review` phase: a round can take more
 # than one step to record, and a round refuted whole produces no commit at all.
 # **This block is rewritten by every fix pass and is correct only at the commit
 # that wrote it.** Rounds 3, 4 and 6 each caught it stale - the round-4 fix left
@@ -652,8 +656,9 @@ phases:
           measuring pass has seen, and round 7's fix pass has had none of those.
           The user's instruction was to finish by my own pass rather than run an
           eighth round; that is the ceiling-escalation clause working - it hands
-          the decision to the user - and it means three exit gates are
-          undischarged against the final commit. Stated rather than implied.
+          the decision to the user - and it left all three exit gates
+          undischarged against 43c9dbd, the commit that pass produced. Stated
+          rather than implied.
           What the finishing pass changed. Brief requirement 3 had grown to five
           paragraphs with the instruction last; reordered so the payload sits
           under the commands and the four rationale paragraphs follow under a
@@ -700,4 +705,12 @@ phases:
           summaries. The ratio was never a property of the endpoint. Rewritten
           to give both measurements and state that the magnitude depends on the
           loop - the filter is what makes the difference stop mattering.
+          **What this review does not close.** It was unprimed and it read the
+          final state as of 43c9dbd, so it discharged that gate at that commit
+          and no other; the fix commit answering it is itself unreviewed, and a
+          second author pass over every changed file followed rather than a
+          ninth round. An author can read a file whole; an author cannot be
+          unprimed about their own work. That gate stays open at the head this
+          PR merges, which is the standing cost of ending a convergence loop by
+          hand and is recorded here rather than smoothed over.
         outcome: ok

@@ -347,7 +347,8 @@ and counts — **metadata only, never a body**. Its Step 1 still forbids *readin
 review feedback — load-bearing for `/ship`'s unprimed reviewers — and neither
 purpose reads any, so neither primes anybody. The second exists because
 `/ship`'s stop rule requires a measuring pass to execute the behavioural claims
-its distribution instrument makes; without it that obligation has no permission. That count is pinned to an explicit paginated `gh api` call in the
+its distribution instrument makes; without it that obligation has no permission.
+**The Step 4 count** is pinned to an explicit paginated `gh api` call in the
 skill rather than chosen per the rows below, because a saturating spelling
 reading as "the post failed" is what made pinning necessary.)
 
