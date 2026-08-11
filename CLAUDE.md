@@ -39,7 +39,9 @@ the failing test, run it, see it fail** before implementing the fix.
 ## Backlog (mandatory)
 
 - See `sdd/BACKLOG.md` for workflow rules, ID prefixes, completing-work
-  procedure, and active items. Completed items are in `sdd/BACKLOG-DONE.md`.
+  procedure, and active items. `sdd/BACKLOG-DONE.md` holds everything that left
+  it: completed work, IDs absorbed into a surviving item, and items decided
+  against. Only the first is "done" — read the section an entry sits under.
 - Commit messages start with item ID when applicable (e.g., `AF-008: Add credential masking`).
 
 <a id="trace-authoring"></a>

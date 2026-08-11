@@ -1,8 +1,9 @@
 # Development Backlog
 <!-- doc: repo-only -->
 
-Active work items. Completed items live in
-[BACKLOG-DONE.md](BACKLOG-DONE.md).
+Active work items. [BACKLOG-DONE.md](BACKLOG-DONE.md) holds everything that
+left this file: work that shipped, IDs **absorbed** into a surviving item whose
+work is still open, and items **decided against**. Only the first is "completed".
 
 Items graduate through the SDD pipeline:
 **Idea → Backlog → RFC/Spec → Tests → Code**.
@@ -19,23 +20,44 @@ rather than under the subsystem they happen to touch.
 
 **Admission test.** An item that fits no section's promise has no demonstrated
 value and is not filed. There is no holding area — the previous Icebox was a
-slow deletion that charged review attention on every pass, and items that
-belonged in it were removed rather than migrated.
+slow deletion that charged review attention on every pass. Of its eight items,
+seven were removed and one (ID-125) was re-argued against a promise and kept, so
+abolishing the Icebox was a re-decision of each item rather than a bulk delete.
+**Two carve-outs.** `## Release Blockers` carries no promise by design: a
+blocker is urgent by prefix, not by outcome, and is filed there regardless.
+And a **refused** idea is recorded the same way a removed one is — a line in
+[`BACKLOG-DONE.md` § Decided against](BACKLOG-DONE.md#decided-against), with a
+`—` where the ID would be. The reasoning under § Completing work applies
+identically: the argument was had, so throwing it away means having it again.
 
-**Ordering.** Sections are in priority order: 1–3 pay users, 4–6 pay
-maintainers. Within a section the order is execution sequence, so a dependency
+**Ordering.** Within a section the order is execution sequence, so a dependency
 never sits below the thing that needs it. No section declares its own
-exception.
+exception. **Between sections the order is how directly the promise is felt**,
+which is not the same as an audience split and is not claimed to be: sections
+3 and 4 both pay users, and section 5 holds two items tagged `user.*`. Read the
+promise, not the ordinal.
 
 **Dependencies may cross sections, and the ordering rule does not reach them.**
-Sections are ordered by payoff, not by sequence, so an item in section 1 can
-wait on one in section 2 — BK-345 does. A cross-section dependency is stated by
-ID inside the item that has it, and named in the depending section's
-`Closes when`, because nothing about position will show it.
+An item in section 1 can wait on one in section 2 — BK-345 does. A cross-section
+dependency is stated by ID inside the item that has it, **and named in the
+depending section's `Closes when`**, because nothing about position will show it.
 
-**Granularity.** Work that shares a fix surface is one item with sub-bullets. A
-sub-bullet is not an ID and does not become one. A section that outgrows
-itself splits into two promises, never into loose items.
+**Granularity.** Work whose fix surface *coincides* is one item with sub-bullets;
+work whose surfaces merely *overlap* stays separate, with each side naming the
+other and the co-ship recorded in the trace. A sub-bullet is not itself tracked
+and does not get an ID **for the work it describes** — an item may still
+designate future work that will need its own ID, as ID-199 and ID-140 do. A
+section that outgrows itself splits into two promises, never into loose items.
+
+**None of the three rules above is gated.** The only backlog check is
+`gen-backlogid --check`, which covers the ID floor and active/done collisions
+and nothing about placement, granularity or section membership. So they are
+**review-enforced**, recorded here as [`DRIFT-RULES.md` Rule
+5](DRIFT-RULES.md#rules) requires of an advisory check. That is a real weakness
+and worth stating plainly: the diagnosis behind this structure is that topic
+groups decayed because nothing stopped unearned items accumulating, and
+conventions without a mechanism decay the same way. ID-235 in section 6 is the
+host for whatever part of this becomes checkable.
 
 **Item scope:** idea + decision-relevant constraints + open questions.
 Do not repeat process steps (those live in `sdd/000-process.md` and the
@@ -66,23 +88,46 @@ Effort: S = <1 day · M = 1–3 days · L = >3 days. `—` = not applicable.
 - Partially done → split: ship the done part to `BACKLOG-DONE.md` as `[x]`
   under its original ID, create a new ID here for the remaining work, and
   link both.
-- Decided against → delete from here, **record one line in `BACKLOG-DONE.md`
-  § Decided against** naming the ID and why it was not worth doing, then fix
-  every artifact that asserts the item is currently tracked.
-  The register is not optional and not bookkeeping. It is what keeps
-  [§ Item authority](#how-this-file-works) true for this outcome — a decision
-  *about* a diagnosis is still a decision, and deleting both is how the same
-  idea returns in six months with the argument had from scratch. It also makes
-  the retired-ID set **derivable** rather than hand-maintained, which is what
-  stops `gen_backlogid.py` reoffering a burned number.
-  **Which artifacts to fix, and which to leave.** Fix anything asserting the
-  item is *currently* tracked: an `Owner:` field, a "tracked as", a routing
-  row. Leave anything *narrating* what was decided at the time —
-  `sdd/traces/**`, `sdd/research/**` prose, `sdd/audits/**`, and **Accepted
-  ADRs, which [`000-process.md` Rule 4](000-process.md#rules) forbids editing
-  at all**. An ADR citing a since-removed ID is a correct record of what was
-  true when it was accepted; supersede it if the decision itself changed, and
-  otherwise let it stand.
+- Decided against → delete from here, record an entry in `BACKLOG-DONE.md`
+  § Decided against, then sweep the artifacts that assert the item is currently
+  tracked. The entry **must** take the header shape the other two outcomes use,
+  because `gen_backlogid.py` matches it and a line that merely says the same
+  thing in prose is invisible to the generator, silently freeing the number for
+  reuse:
+
+  ```
+  - [x] **ID-NNN — Original title**
+    Why it was not worth doing, and where the diagnosis now lives.
+  ```
+
+  Em dash, not hyphen or en dash; `[x]`; ID inside `**`. Carry the diagnosis
+  across, not just the verdict — [§ Item authority](#how-this-file-works) makes
+  the diagnosis the durable half, and a verdict without it cannot be re-decided
+  without redoing the investigation.
+  **The sweep is unbounded and reviewer-enforced**, stated as a bound rather
+  than pretended away ([`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)).
+  Run `rg -n '<ID>' -- sdd .claude scripts docs-src tests *.md` and **read every
+  hit**, not only the ones that fail to resolve: the defect is an assertion
+  going stale, not a reference breaking, so a dangling-link check cannot find
+  it. BK-346 instance 6 measures the miss rate for exactly this task, including
+  hits missed by an author grepping the ID on purpose. Some sites name no ID at
+  all and no grep reaches them — `sdd/specs/004-path-model.md` forward-points to
+  a follow-up in prose — so budget a read of the specs the item touched.
+  **What to fix is decided by tense, not by directory.** Fix a present-tense
+  assertion that something is tracked wherever it lives, including an `Owner:`
+  field inside `sdd/research/**`. Leave past-tense narration of what was decided
+  at the time, which is most of `sdd/traces/**`, `sdd/research/**` and
+  `sdd/audits/**` — a recommendation a research doc made then is not a claim
+  about now, and `000-process.md` § Document types forbids rewriting it.
+  **Accepted ADRs are never edited either way**
+  ([`000-process.md` Rule 4](000-process.md#rules)): supersede if the decision
+  changed, otherwise let the citation stand and let the § Absorbed or
+  § Decided against entry be what makes it resolve.
+  **No trace is owed** for an item removed without being implemented.
+  [`CLAUDE.md` § Trace authoring](../CLAUDE.md#trace-authoring) exists to record
+  what reading and ripples the *work* met; there was no work, and the register
+  entry carries the decision. A trace **is** owed when an item closes by being
+  implemented, and when absorption is part of shipping the host.
 
 **ID prefixes:**
 
@@ -91,7 +136,7 @@ Effort: S = <1 day · M = 1–3 days · L = >3 days. `—` = not applicable.
 | `BL-NNN` | Release blocker — must resolve before next PyPI publish. Monotonic, not reset per release. |
 | `BK-NNN` | Committed backlog work, queued behind blockers. |
 | `BUG-NNN` | Confirmed defect with reproduction steps. |
-| `ID-NNN` | Idea — not evaluated, not committed to. |
+| `ID-NNN` | Evaluated enough to earn a section, not committed to. The open question is named in the body; what is unmade is the decision, not the value. (Was "idea — not evaluated"; the Icebox was where unevaluated ideas lived, and the admission test replaced it.) |
 | `AF-NNN` | Audit finding (retired — use `BUG` or `BK` for new items). |
 
 **Assigning a new ID:** check `sdd/backlogid.json` (max per prefix from BACKLOG-DONE.md)
@@ -105,16 +150,24 @@ and the highest ID already in this file, then take the next integer. Run
 would have to stay right on a path nothing tests. Twenty-three IDs were retired
 by the restructure that produced this file's shape — fourteen **removed**, each
 with an entry in [`BACKLOG-DONE.md` § Decided against](BACKLOG-DONE.md#decided-against),
-and nine **absorbed** into a surviving item, each marked `(was ID-NNN, absorbed
-here)` at the sub-bullet carrying its evidence.
-Both classes get a header in `BACKLOG-DONE.md`, which is what makes this safe by
-construction rather than by vigilance: `gen_backlogid.py` counts headers, so a
-retired number is never reoffered and `hatch run gen-backlogid` keeps
-`backlogid.json` right on its own. Registering the absorbed nine is not
-bookkeeping for its own sake — a sub-bullet is not an ID, so without an entry
-their citations elsewhere in `sdd/` would resolve nowhere, and an absorbed ID
-that happened to be the highest of its prefix would hand the next author a
-number already in use.
+and nine **absorbed** into a surviving item. Every absorbed ID is marked
+`(was <PREFIX-NNN>, absorbed here)` in the body that took it over — enumerate
+them with `rg -c '\(was [A-Z]+-[0-9]+, absorbed here\)' sdd/BACKLOG.md`, which
+returns 9 and is the only derivation this count has. Keep the marker in that
+literal form when absorbing anything else; a variant spelling is invisible to
+the enumeration and to any check built on it.
+Both classes also get a header in `BACKLOG-DONE.md`, so `gen_backlogid.py`
+counts them and `hatch run gen-backlogid` keeps `backlogid.json` right.
+**That is safe only as far as the entry shape is right**, which is why
+§ Completing work states it as a template: the generator matches
+`^- \[.\] \*\*PREFIX-NNN — ` and silently ignores anything else, so a
+well-meant prose line frees the number again. Making that mechanical rather
+than conventional is ID-235's structural pass, and until it lands this is a
+convention with a stated failure mode rather than a guarantee.
+Registering the absorbed nine is not bookkeeping for its own sake — a sub-bullet
+is not separately tracked, so without an entry their citations elsewhere in
+`sdd/` would resolve nowhere, including one inside an Accepted ADR that cannot
+be edited to point elsewhere.
 
 ---
 
@@ -124,16 +177,21 @@ number already in use.
 
 ---
 
+<a id="predictable-failure"></a>
 ## 1. Failures are predictable
 
 **Promise:** a caller catches one exception type, and an absent or denied
 store answers the same way on every backend.
 
 **Closes when:** BE-004, BE-005 and BE-021 hold on every registered backend
-against a container that does not exist, and a newly registered backend cannot
-pass CI without meeting them. **The second half waits on ID-244 in section 2**,
-whose seeding-hook decision BK-345 below consumes — so this section cannot
-close on its own items alone.
+against a container that does not exist **and against one that denies access**;
+and a newly registered backend cannot pass CI without meeting them.
+**Two cross-section dependencies**, per
+[§ How this file works](#how-this-file-works): the registry-gate half waits on
+**ID-244** in section 2, whose seeding-hook decision BK-345 below consumes, and
+the denied half waits on **ID-242** in section 2, which is the only item whose
+subject is the denied path's coverage. So this section cannot close on its own
+items alone.
 
 **Six backend classes** disagree with the contract or with each other, counted
 from the items below: `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend`
@@ -251,7 +309,10 @@ written until it lands.
   call that returns it, or it will not be entered until the first `next()`.
   **Co-ship with BUG-246's S3-Boto3 row** — same adapter, same idiom, and
   BUG-246's diagnosis puts its S3-Boto3 failures on the prefix-listing paths
-  this item wraps.
+  this item wraps. Separate items rather than one, because the surfaces
+  *overlap* rather than coincide: BUG-246 spans four backends and this is one
+  adapter, which is the distinction
+  [§ Granularity](#how-this-file-works) draws. Record the co-ship in the trace.
 
 - [ ] **BUG-247 — `LocalBackend` reports a deleted root as "Path escapes root directory"**
   spec: BE-004, BE-012, BE-013, BE-021 · effort: S · audience: user.api
@@ -326,13 +387,22 @@ written until it lands.
 
 ---
 
+<a id="correct-and-proven"></a>
 ## 2. Answers are correct, and the contract is proven
 
 **Promise:** the same call returns the same right result on every backend, and
 no clause of the contract ships unexercised.
 
-**Closes when:** no two backends can legally answer one call differently, and
-no contract clause is reachable only by a fixture that does not exist.
+**Closes when:** the five defects and holes enumerated below are closed — two
+wrong answers (BUG-241's unescaped `LIKE` metacharacters, BUG-240's `max_depth`
+contradiction) and three coverage holes measured in cells (ID-244's WRITE-gated
+classes, ID-242's four pragmas, ID-247's 22 root-path cells).
+**Bounded deliberately.** "No clause ships unexercised" is the promise, not the
+closing condition: nothing derives the full set of unreachable clauses today,
+which is what ID-245's inventory in section 6 would supply. Until it does, this
+section closes on a counted list rather than on a claim nobody can check —
+saying otherwise would make the promise unfalsifiable, which is the failure this
+structure exists to remove.
 
 A corrected clause nobody tests is the same defect one layer up, which is why
 the wrong-answer defects and the coverage holes are one promise. The two
@@ -457,17 +527,23 @@ it sits here.
 
 ---
 
+<a id="users-succeed-unaided"></a>
 ## 3. Users succeed without asking us
 
-**Promise:** a user gets set up, picks the right backend, or writes their own,
-without opening an issue.
+**Promise:** a user gets set up, picks the right backend, writes their own, or
+copies an example, without opening an issue.
 
-**Closes when:** every published page a user decides from is true, reachable,
-and walked end-to-end by a maintainer.
+**Closes when:** every published page and shipped example a user decides from is
+**true** (BK-339, BK-325, ID-125), **reachable** (BK-327), and **walked
+end-to-end by a maintainer** (BK-332, and ID-199's authoring contract). Each
+clause names the items that move it, so closure is checkable rather than
+asserted.
 
 This is the group that converts directly into support load not arriving. The
 rehearsal sits with the guides because it is the only mechanism that has ever
-found their defects.
+found their defects, and BK-327 sits here rather than with the gates because a
+page nobody can navigate to is a page nobody reads — the gate is the mechanism,
+not the payoff.
 
 - [ ] **BK-339 — Decide what replaces `store.md`'s hand-maintained Backend Behavior Matrix**
   spec: — · effort: M · audience: user.site
@@ -576,6 +652,25 @@ found their defects.
   Examples get copied verbatim, so a stale one teaches a superseded pattern
   from a first-contact surface.
 
+- [ ] **BK-327 — Gate dual-doc nav reachability and index listing**
+  spec: — · effort: S · audience: contributor.tooling
+  A `<!-- doc: dual dest=explanation/design/*.md -->` marker publishes a page that
+  neither the docs-site nav nor the section index page lists, and nothing catches
+  either omission — so a published page a user cannot navigate to is a page they
+  never read. `mkdocs.yml` sets only `validation: links: not_found: warn`, so
+  `nav.omitted_files` stays at its INFO default and `--strict` cannot promote it;
+  `scripts/docs/nav.py` builds `SUMMARY.md` *from* `_nav.yml` and never diffs it
+  against the pages `gen_pages.py` emitted; the `_index.tmpl` Documents list is
+  hand-written and unchecked. So `hatch run docs-gate` goes green on a page that is
+  unreachable, unlisted, or both. Each surface had a live instance repaired by hand
+  in PR #938: `drift-rules` was absent from both, `ci-operations` was in `_nav.yml`
+  and absent from `_index.tmpl`.
+  Fix shape: a G-08 in `scripts/check_docs_framework.py` differencing emitted dual
+  `dest` paths against both `_nav.yml` and the `_index.tmpl` Documents list;
+  raising `nav.omitted_files` to WARNING covers the nav half only.
+  An unstated bound on `docs-gate` being trusted past its range
+  ([`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)).
+
 - [ ] **BK-332 — Schedule the custom-backend rehearsal**
   spec: — · effort: S to define, M per run · audience: contributor.process
   "Build a backend against the guide, from scratch, without help" runs today
@@ -591,18 +686,22 @@ found their defects.
 
 ---
 
+<a id="no-workarounds"></a>
 ## 4. Users stop working around us
 
 **Promise:** the library does the thing, instead of the user hand-rolling it
 or paying for our shortcut.
 
-**Closes when:** no shipped capability declaration is more pessimistic than
-what the backend can actually do, and no documented workaround stands in for a
-feature we agreed to build.
+**Closes when:** no shipped capability declaration is more pessimistic than what
+the backend can actually do (ID-140, ID-217); no capability a user cannot
+cheaply build themselves is left unbuilt without a recorded decision (ID-121,
+ID-217); no security tradeoff is scoped wider than the backend that needs it
+(ID-181); and no cost we know how to remove is left on the caller (BK-242).
 
 Each item here is something a user currently works around or eats. They are
 grouped because the decision in each is the same: build it, or say plainly and
-permanently that we will not.
+permanently that we will not — which is why "declined, recorded" closes an item
+here as legitimately as "built".
 
 - [ ] **ID-217 — Async-native extension surface (owner for the deferred async `ext.*`)**
   spec: GR-003 · effort: L · audience: user.api
@@ -630,7 +729,9 @@ permanently that we will not.
     require an explicit `max_content_size`) when `cache()` wraps a `Store` whose
     backend is an `AsyncBackendSyncAdapter` and `max_content_size` is unset.
     It is the same root cause — extensions do not understand async backends —
-    so it resolves with the decision above rather than beside it.
+    so it resolves with the decision above rather than beside it. ADR-0025's
+    sentence still reads "(tracked as ID-218)" and is Accepted, so it is not
+    edited; `BACKLOG-DONE.md` § Absorbed is what makes that citation resolve.
 
 - [ ] **ID-140 — SQLBlob lazy reads for SQLite & PostgreSQL**
   spec: SQL-BLOB-003, SQL-BLOB-020 · effort: L · audience: user.api
@@ -719,7 +820,7 @@ permanently that we will not.
   those are algorithm-name → impl lookup tables, not security policy.
 
 - [ ] **BK-242 — Flat-NS file-ancestor pre-check perf (SQLBlob IN-list, memoisation)**
-  spec: — · effort: S · audience: infra.test, library.maintainer
+  spec: — · effort: S · audience: user.api, library.maintainer
   Two perf optimisations the ID-211 disposition (b) opt-in didn't ship:
   - **SQLBlob `WHERE key IN (ancestors)`**: today `_head_one` issues one
     `SELECT 1` per ancestor — N round trips for a depth-N path. The
@@ -775,21 +876,24 @@ permanently that we will not.
 
 ---
 
+<a id="no-release-surprises"></a>
 ## 5. A release cannot ship a surprise
 
 **Promise:** nothing reaches a user that we did not test, publish, or watch.
 
 **Closes when:** every checker a diff can invalidate is reachable from a gate
-that diff actually triggers; every extra's drift smoke exercises the packages
-it pins; every channel we tell users to install from is live; and every
-upstream that can break us on its own schedule has a standing watch.
+that diff actually triggers (BK-333); every extra's drift smoke exercises the
+packages it pins (BUG-250); **every install channel we intend to offer is
+published and working** (ID-018); and every upstream that can break us on its
+own schedule has a standing watch (ID-229, ID-225).
 
-The last two clauses are why ID-018 and ID-225 sit here rather than with the
-docs work: a publishing channel and a feature-frozen toolchain are both ways a
-release surprises someone, and neither is a gate. Stated explicitly because an
-earlier draft's `Closes when` named only gates and drift, which those two items
-cannot move — a section whose promise its own members cannot serve is the
-admission test failing on its first population.
+Clause 3 is stated as *intend to offer* rather than *already advertised*
+deliberately: ID-018 creates a channel rather than repairing a dead one, so the
+narrower wording would be vacuously true while the item stays open.
+**This section's closure is externally gated.** ID-018 is `[~]` and blocked on a
+conda-forge reviewer, so no work in this repo can close section 5 — a real
+property of the section, not a defect in it, and stated so nobody reads the
+open item as neglect.
 
 - [ ] **BUG-250 — `[graph]`'s drift smoke reaches one of the extra's four declared dependencies**
   spec: — · effort: S · audience: infra.ci
@@ -857,25 +961,6 @@ admission test failing on its first population.
   following the precedent `check_ripple_parity` documents, and widen CI's path
   filter to treat `sdd/adrs/**` as lint-triggering. Filed rather than fixed in
   BK-329 because that PR touched no ADR, no TLA module and not the handbook.
-
-- [ ] **BK-327 — Gate dual-doc nav reachability and index listing**
-  spec: — · effort: S · audience: contributor.tooling
-  A `<!-- doc: dual dest=explanation/design/*.md -->` marker publishes a page that
-  neither the docs-site nav nor the section index page lists, and nothing catches
-  either omission — so a published page a user cannot navigate to is a page they
-  never read. `mkdocs.yml` sets only `validation: links: not_found: warn`, so
-  `nav.omitted_files` stays at its INFO default and `--strict` cannot promote it;
-  `scripts/docs/nav.py` builds `SUMMARY.md` *from* `_nav.yml` and never diffs it
-  against the pages `gen_pages.py` emitted; the `_index.tmpl` Documents list is
-  hand-written and unchecked. So `hatch run docs-gate` goes green on a page that is
-  unreachable, unlisted, or both. Each surface had a live instance repaired by hand
-  in PR #938: `drift-rules` was absent from both, `ci-operations` was in `_nav.yml`
-  and absent from `_index.tmpl`.
-  Fix shape: a G-08 in `scripts/check_docs_framework.py` differencing emitted dual
-  `dest` paths against both `_nav.yml` and the `_index.tmpl` Documents list;
-  raising `nav.omitted_files` to WARNING covers the nav half only.
-  An unstated bound on `docs-gate` being trusted past its range
-  ([`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)).
 
 - [~] **ID-018 — conda-forge publishing**
   spec: — · effort: — · audience: library.maintainer
@@ -945,22 +1030,37 @@ admission test failing on its first population.
 
 ---
 
+<a id="repo-does-not-mislead"></a>
 ## 6. The repo does not mislead the next person
 
 **Promise:** the artifacts maintainers coordinate through — this file, the
 ripple-check, the revisit pins, the generated inventories — say what is
 actually true.
 
-**Closes when:** no coordination artifact asserts a fact that a mechanism
-cannot check, and no figure in a durable artifact was counted by hand.
+**Closes when:** the backlog files are structurally linted (ID-235); the
+ripple-check's six measured blind spots are answered (BK-346); the three
+hand-maintained inventories are generated (ID-245); `check_formal_trace` proves
+assertion rather than citation (ID-207); and both open revisit pins have fired
+and named successors (ID-150, ID-249).
+**Bounded to those five deliberately.** "No artifact asserts what no mechanism
+can check" is the promise and cannot be a closing condition: this section's own
+preamble records that detecting the remaining class needs semantic comparison of
+prose, which research § 1 marks as having no general oracle. Nor is "no figure
+was counted by hand" the rule — [principle 9](../CLAUDE.md#principles) requires a
+figure to **name its derivation**, and counting a list below the sentence is a
+derivation. Items here comply with principle 9 by naming their counts' sources.
+**Cross-section dependencies**, per
+[§ How this file works](#how-this-file-works): ID-245's cassette inventory waits
+on **ID-244** in section 2, which moves the surface it would measure.
 
-Lowest priority and deliberately capped. Design and review rules for anything
-added here: [`DRIFT-RULES.md`](DRIFT-RULES.md#rules). The argument and gap
-ranking behind the programme:
+Lowest priority. Design and review rules for anything added here:
+[`DRIFT-RULES.md`](DRIFT-RULES.md#rules). The argument and gap ranking behind
+the programme:
 [research](research/research-inconsistency-detection-multi-artifact.md) § 9.
 
 **Measured qualification on that research doc's ranking**, recorded here
-because the doc is point-in-time and does not get rewritten. It designates the
+because [`000-process.md` § Document types](000-process.md) makes a research doc
+a point-in-time snapshot rather than a living one. It designates the
 canonical claim space — research § 9 step 2, which ID-207 used to carry — as
 the strategic item. That step builds an *omission detector*, research § 1 class
 E. BK-324's four instances were class A/C/D: one claim restated in several homes
@@ -1017,6 +1117,15 @@ the commit that writes it lands, so cite the generator instead.
     Rule 3 makes it cheap — the claim space is *derived* from the citing
     documents. Rule 4 needs a decision this does not presuppose: when a spec
     cites an ID no backlog file carries, which side is wrong.
+  **Both passes key on an ID, and the measured misses do not carry one.**
+  Retiring 23 IDs in one change falsified three sites a grep-for-IDs pass cannot
+  reach: `sdd/specs/004-path-model.md` forward-pointed to "the follow-up" in
+  prose without naming it, `tests/scripts/test_gen_backlogid.py` justified a
+  fixture in a comment, and `DEVELOPMENT_STORY.md` described the file's tier
+  structure. All three were found by reading rather than grepping. Scope the
+  item honestly against that: an ID-keyed pass is worth building and will not
+  close the class, so state its miss rate rather than implying coverage
+  ([`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)).
   **Note the wiring trap BK-333 documents:** a check reading `sdd/` must reach a
   gate an `sdd/`-only change actually runs. This item is a live instance of its
   own subject — the deletions that produced this file's current shape are
@@ -1052,7 +1161,7 @@ the commit that writes it lands, so cite the generator instead.
   3. **CHANGELOG entry** says where a new entry goes and stops. It does not ask
      whether an *unreleased sibling* entry has been invalidated by the new one.
      One had been, by the same item, in the same section.
-  4. **Adding a `hatch` script alias** (was BK-334). No trigger covers adding an
+  4. **Adding a `hatch` script alias** (was BK-334, absorbed here). No trigger covers adding an
      entry to `pyproject.toml`'s `[tool.hatch.envs.default.scripts]`. That edit
      decides whether a new `scripts/*.py` is reachable by anything — whether it
      joins `lint` / `preflight` / `docs-gate` / `all`, or is deliberately left
@@ -1060,7 +1169,7 @@ the commit that writes it lands, so cite the generator instead.
      dozens and every one carries an alias. BK-330 reasoned to the right answer
      only via the adjacent cross-artifact row, which now covers drift reports and
      still says nothing about a `gen_*` or a `bench-*`.
-  5. **Widening an authority doc's scope** (was BK-337). There is a row for a
+  5. **Widening an authority doc's scope** (was BK-337, absorbed here). There is a row for a
      **new** authoritative process doc, and one for an authority **direction**
      amended. Neither fires on the commonest amendment: an existing doc's scope
      or subject sentence widening, after which nothing finds the copies that
@@ -1081,7 +1190,7 @@ the commit that writes it lands, so cite the generator instead.
      link, which is the reasoning BK-329 recorded when it accepted the copies.
      **Choosing between the two is the first half of this item**, and it decides
      the effort for the whole group.
-  6. **Closing a backlog item** (was ID-248). The **Backlog item touched** row
+  6. **Closing a backlog item** (was ID-248, absorbed here). The **Backlog item touched** row
      names the trace, the schema and the CHANGELOG-audience rule. It does not
      name the **inbound** references: other items, section preambles, and
      `BACKLOG-DONE.md` entries that cite the closing item by ID and assert
@@ -1152,13 +1261,15 @@ the commit that writes it lands, so cite the generator instead.
     the backend issues a request, which only running it answers (ID-241).
     **Position: after ID-244**, which changes which cells a read-only backend can
     reach, so building this first would measure a surface about to move.
-  - **The characteristic-accountability record** (was ID-236, research § 9 step
-    7). `check_formal_trace.py` computes a spec-coverage matrix and discards it.
+  - **The characteristic-accountability record** (was ID-236, absorbed here),
+    research § 9 step 7.
+    `check_formal_trace.py` computes a spec-coverage matrix and discards it.
     Render it at release time — every spec ID, its verification evidence (test
     marker, Dafny tag, TLA+ invariant), its status — so "what was verified, and
     by what" is answerable historically rather than only at HEAD. Its shape
     changes under ID-207, so cost is unknown until that lands.
-  - **The cross-artifact checker inventory** (was ID-237, research § 9 step 8).
+  - **The cross-artifact checker inventory** (was ID-237, absorbed here),
+    research § 9 step 8.
     The research doc's own inventory of which artifact pairs are checked was
     assembled by hand, and says of itself: "The table will drift, and nothing
     will notice." Derive it from the `check_*.py` docstrings. Two complications

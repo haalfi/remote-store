@@ -288,7 +288,7 @@ For completeness, comparing against ID-067 (griffe-typingdoc):
 | Ecosystem | Standard across Python ecosystem | FastAPI-specific pattern |
 
 **Verdict:** Google style is the right move now. PEP 727 remains a future
-option (ID-067 was parked, and has since been retired).
+option (ID-067 stays in parking lot).
 
 ---
 
@@ -301,7 +301,7 @@ option (ID-067 was parked, and has since been retired).
 2. **Do not migrate to Zensical yet** — cross-reference support is broken,
    0.0.x versioning signals instability. Monitor issue #237.
 
-3. **ID-067 (PEP 727) was parked, and is now retired** — not recommended until PEP is
+3. **Keep ID-067 (PEP 727) in parking lot** — not recommended until PEP is
    accepted and ecosystem tooling matures.
 
 4. **Suggested backlog item:** New ID for Google-style migration (distinct from

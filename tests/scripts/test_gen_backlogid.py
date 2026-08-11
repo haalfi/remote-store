@@ -214,7 +214,8 @@ class TestCheck:
         assert "gen-backlogid" in capsys.readouterr().out
 
     def test_suffix_variant_not_false_positive(self, tmp_path, monkeypatch):
-        # BK-139d is active; BK-139b is done — different IDs, no collision.
+        # Suffixed IDs must not false-positive against each other: the fixture
+        # puts BK-139d in the active file and BK-139b in the done file.
         done_text = f"- [x] **BK-139b {_EM} Done item**\n"
         active_text = f"- [ ] **BK-139d {_EM} Active remainder**\n"
         done, active, id_file = self._setup(

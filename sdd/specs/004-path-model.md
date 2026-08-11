@@ -184,9 +184,11 @@ with pytest.raises(TypeError):
 
 `RemotePath` is a deliberately minimal subset of `pathlib.PurePath`, not a
 drop-in replacement. Beyond `as_posix()` (PATH-016), the following `PurePath`
-members are intentionally absent and tracked as deferred parity candidates:
+members are intentionally absent:
 `stem`, `suffixes`, `with_name`, `with_suffix`, `with_stem`, `joinpath`,
 `parents`, `match`, `relative_to` / `is_relative_to`, and `is_absolute`. The
 `as_uri` and `drive` / `root` / `anchor` accessors are out of scope entirely
-(meaningless for a rootless remote key). See the backlog for the follow-up
-that may close the deferred candidates.
+(meaningless for a rootless remote key). **No backlog item tracks them** — the
+follow-up that once did was retired for want of demand, so this list is the
+durable record. Each member would need its own `PATH-NNN` clause and
+spec-tagged test; file one per member if a concrete need appears.

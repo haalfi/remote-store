@@ -45,6 +45,19 @@ a decision *about* a diagnosis is still a decision and deleting both is how the
 same idea returns with the argument had from scratch. Re-file under a **new** ID
 if evidence changes; these are retired.
 
+- [x] **— `ext.cache` stampede guard** *(refused at admission; never had an ID)*
+  BK-290 left the stampede — concurrent identical misses each hitting the backend
+  — as an out-of-scope follow-up and named ID-218 as its owner. That attribution
+  was wrong: ID-218 was the bridged-backend materialisation guard, a different
+  defect. Verified nothing else carries it: `rg -n 'stampede'` across the tree
+  returns only research prose, BK-290's own entry, BK-292's trace and a test
+  comment.
+  Refused rather than filed because it fits no section's promise on today's
+  evidence: no user has reported it, `ext.cache` is opt-in, and the failure mode
+  is redundant fetches rather than a wrong answer. Recorded here so the argument
+  is not had from scratch — re-file under a new ID the first time a stampede is
+  measured against a real backend.
+
 - [x] **BK-350 — The drift-refresh procedure spans five prose sites with no gate**
   PR #959 answered it structurally: `infra/drift-locks/README.md` became the
   single normative description and the other four sites were cut back to links.
@@ -55,13 +68,31 @@ if evidence changes; these are retired.
   Needs evidence from an `/orchestrate` delivery, and none exists; the item's own
   body says so. The *gate* half is already settled as inapplicable, since
   ADR-0020 caps that skill's rounds and nothing there waits on a clean state.
-  [ADR-0037](adrs/0037-whole-file-gate-and-derived-figures.md) § Consequences
-  keeps the invitation, correctly, as a record of what was true when accepted.
+  **This does not refute ADR-0037's reason for filing it** — "an invitation with
+  no item behind it is one nobody finds" — which the ADR wrote knowing both
+  points above. It answers it differently: a tracker with nothing to act on is
+  found and then skipped, every pass, which is the cost the admission test
+  exists to stop paying. The findability half is discharged here instead, so the
+  question survives somewhere a reader reaches: `/orchestrate`'s own
+  [`SKILL.md`](../.claude/skills/orchestrate/SKILL.md) now carries a one-line
+  note under its review step pointing at ADR-0037 § Consequences. Re-file under a
+  new ID when an `/orchestrate` trace supplies the evidence.
 - [x] **BK-335 — `check_links.py` cannot see Markdown links inside Python docstrings**
-  An unchecked surface, not a live break — every such link resolved at filing.
-  The remedy is a new cross-artifact check needing its own claim space, stated
-  bound, and a decision about what counts as a link in Python source, which is
-  more than the defect justifies.
+  **Diagnosis, carried across because the verdict alone is not re-decidable.**
+  [`scripts/docs/check_links.py`](../scripts/docs/check_links.py) walks
+  git-tracked `.md` only and guards on `tgt_path.suffix != ".md"`, so a
+  `](../sdd/DRIFT-RULES.md#anchor)` link written inside a `scripts/*.py`
+  docstring is validated by nothing: rename the anchor and every reference to it
+  breaks silently. Measured instances at filing, still live —
+  `rg -n '\.md#' scripts/report_trace_outcomes.py scripts/_trace_corpus.py`
+  returns 7 links into `sdd/DRIFT-RULES.md` anchors, all resolving today.
+  `scripts/check_test_placement.py` had the pattern first, so BK-330 multiplied
+  it rather than introducing it.
+  **Why retired anyway:** an unchecked surface, not a live break. The remedy is
+  a new cross-artifact check needing its own claim space, stated bound, and a
+  decision about what counts as a link in Python source, and it would surface
+  pre-existing breakage across `scripts/` unrelated to whatever PR built it.
+  Re-file under a new ID the first time an anchor rename actually breaks one.
 - [x] **BK-139d — Remaining bug-prevention measures from research**
   Only item 6 remained, an ~80-line `scripts/check_error_handling.py`. The BLE
   ruleset (item 4) and the extended conformance error-fidelity category (item 5)
@@ -2966,9 +2997,10 @@ if evidence changes; these are retired.
   bullet (the real cause is blocking spool I/O, now mitigated in-backend) and a
   pointer was added at the superseded bullet. Spec: GR-015 / GR-019 gained
   event-loop-liveness postconditions. Out of scope and left as follow-ups: token
-  single-flight (**BK-292**), `ext.cache` stampede (**never tracked** — the ID-218
-  this line used to name was the bridged-backend materialisation guard, a
-  different defect, now carried by ID-217). Trace:
+  single-flight (**BK-292**), `ext.cache` stampede (the ID-218 this line
+  originally named was the bridged-backend materialisation guard, a different
+  defect; the stampede itself was never tracked and is now recorded under
+  [§ Decided against](#decided-against)). Trace:
   `sdd/traces/BK-290-graph-io-robustness.yml`.
 
 - [x] **BK-288 — Cross-backend concurrent-use-posture documentation (docs leg of the concurrency contract)**
@@ -3303,8 +3335,10 @@ if evidence changes; these are retired.
     promised guard: `CachedStore` with unset `max_content_size` over an
     async-native backend silently materialises what the backend exists to stream.
   Closing the loop on the source side: GR-003 now cites ID-217 instead of "a
-  separate backlog item", and ADR-0025 § Risks cites ID-217 instead of "(tracked
-  separately)" — so neither promise dangles. The named async-ext surface
+  separate backlog item", and ADR-0025 § Risks cites ID-218 instead of "(tracked
+  separately)" — so neither promise dangles. (ID-218 has since been absorbed into
+  ID-217; the ADR is Accepted and unedited, and
+  [§ Absorbed](#absorbed) is what keeps its citation resolving.) The named async-ext surface
   (glob / observe / otel / cache / integrity) now has owners: glob / observe /
   otel / integrity under ID-217, and the sync-cache guard with them. No code, no
   spec-behaviour change, no CHANGELOG (library.maintainer / contributor.process,
