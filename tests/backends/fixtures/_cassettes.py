@@ -225,10 +225,17 @@ class CassetteProfile:
     leaving it in would pin an implementation detail of the installed SDK
     version. Both go in this tuple; the profile says which is which, because
     a reader who assumes the whole list is secrets will delete the second kind.
-    Removing for the second reason widens the match key and carries an
-    obligation on the control that must then prove the key still
-    discriminates; REC-005 states it, including what makes such a control
-    real rather than vacuous."""
+    Removing for the second reason weakens the match key and carries two
+    obligations — a control that proves the weakened matcher still
+    discriminates, and order-dependent replay of whatever collapses onto one
+    key; REC-005 states both, including what makes such a control real rather
+    than vacuous.
+
+    Names match **case-sensitively**, unlike ``filter_headers`` above: vcrpy's
+    ``replace_query_parameters`` tests ``k not in replacements`` against a
+    plain dict of the declared names, with no casefolding. Both spellings are
+    live in-tree (``blockid``, ``Expires``), so an entry that does not match
+    the wire spelling exactly is a silent no-op."""
     env_redacts: tuple[EnvRedact, ...] = ()
     uri_rewrites: tuple[UriRewrite, ...] = ()
     presigned: PresignedPolicy | None = None

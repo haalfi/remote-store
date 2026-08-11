@@ -804,15 +804,23 @@ class TestAzureBlockIdOutOfMatchKey:
         vcrpy re-applying the profile's native filters to the *recorded* requests
         on load — the half that makes a filter fix work without re-recording.
 
-        The two asserts guard the negative control's failure mode, not this
-        helper's: ``Cassette._load`` swallows ``CassetteNotFoundError``, so a
-        renamed or re-recorded-away cassette loads zero interactions, plays
-        nothing, and makes every ``assert not self._plays(...)`` below pass
-        vacuously.
+        The asserts guard the ``assert not`` cells' failure mode, not this
+        helper's. What those cells need is not merely a cassette but a recorded
+        ``PUT`` on ``_BLOB``: their ``False`` means "the match key rejected
+        this", and an absent recording produces the same ``False`` for an
+        unrelated reason. ``Cassette._load`` swallows
+        ``CassetteNotFoundError``, so a renamed cassette loads zero
+        interactions; a re-record that stops routing this write through
+        ``upload_blob`` on a stream would keep the file non-empty and still
+        drop the recording the controls rest on. Both are asserted, so neither
+        turns an ``assert not self._plays(...)`` vacuous.
         """
         assert self._CASSETTE.exists(), f"borrowed cassette is gone: {self._CASSETTE.name}"
         with vcr.VCR(**_azure_cfg()).use_cassette(str(self._CASSETTE), record_mode="none") as cassette:
-            assert len(cassette) > 0, f"cassette loaded no interactions: {self._CASSETTE.name}"
+            blob_path = urlsplit(self._BLOB).path
+            assert any(r.method == "PUT" and r.path == blob_path for r in cassette.requests), (
+                f"cassette records no PUT on {blob_path}: {self._CASSETTE.name}"
+            )
             return cassette.can_play_response_for(_request({}, uri=uri, method="PUT"))
 
     def test_stage_block_plays_under_an_unrecorded_block_id(self) -> None:
@@ -821,11 +829,12 @@ class TestAzureBlockIdOutOfMatchKey:
     def test_unrecorded_query_on_a_recorded_path_still_does_not_play(self) -> None:
         """Negative control: removing ``blockid`` must not stop ``query`` discriminating.
 
-        Removing a component *widens* the match key, so the control has to vary the
-        query on a path the cassette **does** record. Varying the path instead is
-        satisfied by the ``path`` matcher alone: it holds even with ``query`` dropped
-        from the match key entirely, and so proves nothing about the component this
-        profile filters. ``comp=metadata`` is unrecorded on ``stream.txt`` (the
+        Deleting a *parameter* does not remove the *matcher* it sat under — it
+        weakens ``query`` — so the control has to vary ``query`` through some other
+        parameter, on a path the cassette **does** record. Varying the path instead
+        is satisfied by the ``path`` matcher alone: it holds even with ``query``
+        dropped from the match key entirely, and so proves nothing about the matcher
+        this profile weakened. ``comp=metadata`` is unrecorded on ``stream.txt`` (the
         cassette holds ``comp=block`` and ``comp=blocklist`` for it) and *does* play
         under a query-blind key, which is what makes this the assertion that fails
         when the match key stops discriminating.

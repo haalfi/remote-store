@@ -7,9 +7,15 @@ trigger: >-
   moved azure-storage-blob from 12.30.0 to 12.31.0b1.
 source_items:
   - BUG-252
+# Dominant first, per the schema. The CI leg is what surfaced the defect, but
+# the change surface is test infrastructure. Counted from
+# `git diff origin/master...HEAD --name-only`: 7 files, of which 3 are
+# tests/backends/fixtures/* and 3 are sdd/ records about that layer (spec 049,
+# this trace, the BACKLOG-DONE entry). Only sdd/backlogid.json — a generated
+# counter — is unrelated to it.
 audience:
-  - infra.ci
   - infra.test
+  - infra.ci
 
 phases:
   - id: orient
@@ -86,9 +92,10 @@ phases:
         extract: >-
           Written and run before the filter existed: the play assertion failed,
           the negative control passed. The negative control is the load-bearing
-          half — removing a component *widens* a match key, so without a cell
-          proving the remaining key still discriminates, the first assertion
-          would pass just as well on a layer that had stopped matching at all.
+          half — deleting a parameter weakens the matcher it sat under, so
+          without a cell proving that matcher still discriminates, the first
+          assertion would pass just as well on a layer that had stopped
+          matching at all.
           Retrospectively: I knew that and still shipped a control that varied
           the **path** rather than the query, which the path matcher alone
           satisfies. It was the right *idea* aimed at the wrong component, which
@@ -183,10 +190,56 @@ phases:
           same claim lives in the CassetteProfile field declaration, which
           carried no docstring at all while every sibling field had one.
 
+  - id: review_2
+    name: Review round 2
+    steps:
+      - file: sdd/specs/049-live-recording-architecture.md
+        section: "REC-005 (filter_query_parameters paragraph)"
+        read_type: verify
+        extract: >-
+          The round-1 fix wrote the obligation into the spec in a form that
+          instructs a control that cannot exist. "Vary the component that was
+          widened" used "component" for the query *parameter* two sentences
+          earlier and for the `match_on` *matcher* here, and read literally it
+          demands varying `blockid` — which is the positive cell by
+          construction. The shipped test docstring had it right; the durable
+          artifact a future profile author reads was the one that misled. Split
+          into parameter vs matcher throughout, and added the consequence the
+          clause omitted: removing a parameter collapses interactions that
+          differed only in it onto one key, which is REC-004's order-dependence
+          reached by another route. Verified the collapse is latent rather than
+          live here — each of the five blockid-bearing cassettes records
+          exactly one, counted with a re.findall over the corpus.
+      - file: tests/backends/fixtures/test_cassettes.py
+        section: "TestAzureBlockIdOutOfMatchKey._plays"
+        read_type: verify
+        extract: >-
+          Round 1's own guard was weaker than the docstring above it claimed:
+          len(cassette) > 0 catches a total wipe, but the controls rest on a
+          recorded PUT for the blob, and a re-record could keep the file
+          non-empty while dropping exactly that. Replaced with an assertion on
+          the precondition itself, and checked it fires by pointing _CASSETTE
+          at TestBackendRead.test_read_bytes[azure].yaml — 5 interactions and
+          PUTs present, so the old check passed there and the new one fails.
+          Second round running, second guard that could not see its own
+          failure mode; both were found by asking what makes this assertion
+          false, not by re-reading it.
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "CassetteProfile.filter_query_parameters"
+        read_type: reference
+        extract: >-
+          The docstring round 1 added omitted the one mechanical property that
+          differs from its filter_headers sibling: query names match
+          case-sensitively (vcrpy's replace_query_parameters tests membership
+          against a plain dict, no casefolding). Live in-tree rather than
+          hypothetical — the Graph profile declares "Expires" capitalised while
+          this one declares "blockid" lowercase.
+
 # Counted from `git log origin/master..HEAD --format='%h %s'` on this branch:
-# 770832d (the original work) plus the single `fix: address PR #961 review`
-# commit this round produced — one review-driven commit, so 1.
-review_rounds: 1
+# 770832d (the original work) plus two `fix: address PR #961 review` commits,
+# db99253 (round 1) and the one this round produced — two review-driven
+# commits, so 2.
+review_rounds: 2
 
 expected_ripples:
   - sdd/BACKLOG-DONE.md

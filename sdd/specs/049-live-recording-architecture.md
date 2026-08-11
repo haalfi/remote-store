@@ -131,27 +131,46 @@ the named-rule audit; its defence is the forbidden-pattern envelope
 to cover the other.
 
 **`filter_query_parameters` carries a second duty beyond credential
-removal: a query component the *client* generates cannot be matched on.**
+removal: a query parameter the *client* generates cannot be matched on.**
 An id the SDK mints per call — not derived from anything the backend asked
 for — is not part of what a recording pins, and leaving it in the match key
 makes the corpus assert an implementation detail of the installed SDK
 version. Such a parameter is declared on the profile whether or not it is a
 secret. The filter is what makes this fixable without a re-record: vcrpy
 applies the native half on cassette *load* as well as to outgoing requests,
-so the recorded value stops being matched on the committed corpus. Removing
-the component widens the match key, so a profile doing this owes a negative
-control proving the remaining key still discriminates — **and the control has
-to vary the component that was widened.** One varying a different component is
-satisfied by that component's own matcher and holds even with the widened one
-removed from the match key entirely, so it proves nothing about the filter it
-was written for. The check is mechanical: run the candidate assertion under the
-profile's config and again with the widened component dropped from `match_on`.
-An assertion whose verdict does not change between the two is not a control.
-Azure block ids are
-the case that established this: `azure-storage-blob` derived them from the
-chunk offset (stable across runs, so they recorded and replayed by accident)
-until 12.31.0b1 switched to a per-call UUID, which no recording can match
-(BUG-252).
+so the recorded value stops being matched on the committed corpus.
+
+**Two obligations follow, and both turn on the distinction between the
+removed *parameter* and the `match_on` *matcher* it sat under.** Deleting
+`blockid` does not remove `query` from the match key; it weakens what `query`
+can still tell apart.
+
+*The control.* A profile doing this owes a negative control proving the
+weakened matcher still discriminates, which means varying **that matcher
+through some other parameter under it** — not the removed parameter, and not a
+different matcher. Varying the removed parameter is the *positive* case by
+construction: it must play, which is the whole point of the filter. Varying a
+different matcher (a different path, say) is satisfied by that matcher alone
+and holds even with the weakened one dropped from `match_on` entirely, so it
+proves nothing about the filter it was written for. The check is mechanical:
+run the candidate assertion under the profile's config and again with the
+weakened matcher dropped from `match_on`. An assertion whose verdict does not
+change between the two is not a control.
+
+*The cost.* Removing a parameter also collapses onto one key every recorded
+interaction that differed only in it — several staged blocks for one blob all
+become the same `PUT`. vcrpy then disambiguates by recorded order alone, which
+is [REC-004](#rec-004-pre-signed-round-trip-consistency)'s Consequence reached
+by a different route: same order-dependence, same loss of support for
+concurrent such requests within a single test. A profile weighing this filter
+against a re-record is choosing between an implementation detail in the match
+key and order-dependent replay of the affected interactions.
+
+Azure block ids are the case that established this: `azure-storage-blob`
+derived them from the chunk offset (stable across runs, so they recorded and
+replayed by accident) until 12.31.0b1 switched to a per-call UUID, which no
+recording can match (BUG-252). No Azure cassette records more than one staged
+block today, so the order-dependence above is latent there rather than live.
 
 `filter_post_data_parameters` is excluded from the native half: vcrpy's
 implementation is POST-only and re-serialises every `application/json`

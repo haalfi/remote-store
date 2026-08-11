@@ -156,7 +156,7 @@ if evidence changes; these are retired.
 ## Unreleased
 
 - [x] **BUG-252 — Azure cassettes matched on a `blockid` the SDK mints, so `[azure]`'s drift smoke went red on a block-id change**
-  spec: REC-005 · effort: S · audience: infra.ci
+  spec: REC-005 · effort: S · audience: infra.test · infra.ci
   The Monday Drift Guard run's `check-azure` leg failed its smoke —
   3 failed, 382 passed, 37 skipped
   ([run 31517095293](https://github.com/haalfi/remote-store/actions/runs/31517095293/job/93864940038)).
@@ -198,22 +198,28 @@ if evidence changes; these are retired.
   no cassette edits. Guarded by three cells in
   `tests/backends/fixtures/test_cassettes.py` that drive the *committed*
   cassette through `use_cassette`: one plays a stage-block call under an
-  unrecorded block id, and two negative controls hold the widened match key —
-  an unrecorded **query** on a recorded path, and an unrecorded **path**.
-  **Only the query one is a control at all**, and the first shipped version of
-  this guard did not have it. Removing a component widens the match key, so a
-  control that varies the path is satisfied by the `path` matcher alone: it
-  holds even with `query` dropped from the match key entirely. Measured by
-  running each candidate assertion under the shipped config and under
+  unrecorded block id, **one negative control** — an unrecorded query on a
+  recorded path — and a third cell holding the `path` matcher.
+  **Only the query cell is a control**, and the first shipped version of this
+  guard did not have it: it offered the `path` cell as the control, and that
+  is satisfied by the `path` matcher alone, holding even with `query` dropped
+  from the match key entirely. Measured by running each candidate assertion
+  under the shipped config and under
   `match_on=("method", "scheme", "host", "port", "path")` — the query
   assertion is the only one whose verdict changes between the two. The lesson
-  generalises past this cassette: **a negative control has to vary the
-  component the change widened**, and the way to find out whether it does is to
-  make the harness produce the failure it claims to catch.
-  The cells also assert the borrowed cassette loaded: it is named after another
-  test's cell, and `Cassette._load` swallows `CassetteNotFoundError`, so a
-  rename would otherwise have left both negative controls passing on an empty
-  cassette.
+  generalises past this cassette, and it turns on a distinction the first
+  version elided: deleting a **parameter** does not remove the **matcher** it
+  sat under, it weakens it, so **the control has to vary that matcher through
+  some other parameter** — never the deleted one (which must play) and never a
+  different matcher. The way to find out whether it does is to make the
+  harness produce the failure it claims to catch.
+  The cells also assert the precondition those controls rest on — a recorded
+  `PUT` on the blob, not merely a loaded cassette. The file is named after
+  another test's cell; `Cassette._load` swallows `CassetteNotFoundError`, so a
+  rename loads zero interactions, and a re-record that stopped routing this
+  write through `upload_blob` on a stream would keep the file non-empty while
+  still dropping what the controls need. Either would otherwise have left an
+  `assert not …` passing for the wrong reason.
   **Verified both sides of the pin** (`conformance/ -k azure`): 364 passed /
   58 skipped under 12.31.0b1 (was 3 failed / 361 passed) and 12.30.0 green
   unchanged.
