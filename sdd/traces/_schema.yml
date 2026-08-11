@@ -199,12 +199,34 @@ properties:
       counts the same as post-creation PR-review feedback if it produced
       a commit on the branch. 0 means the first push merged without
       revision; higher counts signal the trace under-modelled the actual
-      work surface. Where a deterministic
+      work surface.
+
+      **Name the commits the value was counted from, in a comment above
+      the field** (CLAUDE.md principle 9). This is a judgement over a
+      fixed list, so naming the list is what makes the judgement
+      checkable. It has gone wrong repeatedly in one PR (#956), including
+      inside the paragraph correcting the previous error — a total offers
+      a later reader nothing to check it against.
+      **Binds traces authored from BK-348 onward.** The existing corpus
+      predates it and is not retrofitted: run
+      `rg '^review_rounds:' sdd/traces` for the extent. No gate enforces
+      this, and not because one is impossible — check_traces.py reads the
+      raw text before parsing, so a regex for a comment block above the
+      field would work. It is declined on cost: the clause's value is in
+      the authoring, a comment present but wrong passes any such regex,
+      and the review rounds that catch it are the ones that have. Recorded
+      here per DRIFT-RULES Rule 5, which asks for the reason rather than
+      silence. Where a deterministic
       independent measurement is needed (e.g. for aggregator code), use
       GitHub's review-submission count from
-      `gh pr view --json reviews | length` instead — it counts a
-      different thing (formal review events, not fix commits) and is
-      reported separately.
+      `gh pr view <N> --json reviews --jq '.reviews | length'` instead —
+      it counts a different thing (formal review events, not fix commits)
+      and is reported separately. The `--jq` filter must reach into
+      `.reviews`: the flag emits `{"reviews": [...]}`, so `| length` is
+      not a command at all and a bare `--jq 'length'` returns 1, the
+      object's key count. Corrected by BK-348's round 7 — a
+      "deterministic independent measurement" that silently returns 1 is
+      the fail-silently class this repo calls worse than none.
 
   phases:
     type: array
@@ -340,6 +362,13 @@ examples:
       - BK-192
     expected_ripples:
       - sdd/backlogid.json
+    # Name the commits, per the review_rounds description above — this example
+    # is what CLAUDE.md tells a new trace author to copy, so it must comply with
+    # the clause it illustrates. Shape, with placeholders rather than invented
+    # SHAs: "<impl-sha> implements and does not count; <fix-sha> incorporates
+    # the round-1 review; value is 1." Replace both with real short SHAs from
+    # `git log --oneline origin/master..HEAD` — a plausible-looking SHA that
+    # resolves to nothing is worse than no derivation.
     review_rounds: 1
     phases:
       - id: orient

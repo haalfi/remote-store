@@ -56,3 +56,11 @@ Fall back to `gh` CLI for GraphQL-only flows like review-thread resolution.
 
 - This skill only creates the PR. Do not merge or approve it.
 - Do not push to master.
+- **Every figure in the body names the derivation it came from**, run before the
+  sentence is written ([`CLAUDE.md` principle 9](../../../CLAUDE.md#principles)).
+  Step 5 builds the body from commits, so its counts and claims are exactly the
+  ones nobody re-checks: the measured instance behind this rule is a PR body
+  asserting a field had moved to 6 when `git show` showed 4 → 5
+  ([ADR-0037](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md)).
+  Applies to every PR, not only those `/ship` opens — a body drafted here gets
+  no other review of its figures.

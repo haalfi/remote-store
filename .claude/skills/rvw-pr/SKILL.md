@@ -4,12 +4,12 @@ description: Post inline review comments on a GitHub PR. Find real issues only.
 context: fork
 argument-hint: "[PR number] [optional context]"
 allowed-tools: Read, Grep, Glob, Bash, mcp__MCP_DOCKER__pull_request_read, mcp__MCP_DOCKER__list_pull_requests, mcp__MCP_DOCKER__list_commits, mcp__MCP_DOCKER__get_file_contents, mcp__MCP_DOCKER__pull_request_review_write, mcp__MCP_DOCKER__add_comment_to_pending_review
-# Intentional: no Edit or Write — review is read-only auditing. Bash is for `gh` PR-content reads, Step 4's posted-count verification, and — in a measuring pass — the allowlisted gates (never for fixing, regenerating, or filesystem scouting).
+# Intentional: no Edit or Write — review is read-only auditing. Bash is for `gh` PR-content reads, Step 4's posted-count verification, Step 1's metadata-only carve-out for a measuring pass verifying a comments-endpoint recipe, and — in a measuring pass — the allowlisted gates (never for fixing, regenerating, or filesystem scouting). Four uses; the body's opening paragraph enumerates the same four and the two must be changed together.
 ---
 
 ## ROLE: You are a REVIEWER. You are NOT an author. You do NOT fix anything.
 
-**IMPORTANT — no local filesystem scouting.** Use Bash for three things and nothing else: `gh` CLI reads of PR content (Steps 0–1); **Step 4's posted-count verification**, which is a `gh api` read of review *feedback* rather than content and is authorised here because Step 4 pins it (a count carries no content, so it primes nobody); and, when the invoking prompt designates a **measuring pass**, the allowlisted set below. Never to fix, write, regenerate, or locate memory files, home directories, or project paths. The review context is otherwise self-contained: the PR via `gh`/MCP, and the local repo files (Read/Grep/Glob only). Memory from the parent session is available in context — do not reload it.
+**IMPORTANT — no local filesystem scouting.** Use Bash for four things and nothing else: `gh` CLI reads of PR content (Steps 0–1); **Step 4's posted-count verification**, which is a `gh api` read of review *feedback* rather than content and is authorised here because Step 4 pins it (a count carries no content, so it primes nobody); **Step 1's metadata-only carve-out for a measuring pass verifying a comments-endpoint recipe**, pinned there on the same reasoning and bounded to paths, review ids and counts; and, when the invoking prompt designates a **measuring pass**, the allowlisted set below. Never to fix, write, regenerate, or locate memory files, home directories, or project paths. The review context is otherwise self-contained: the PR via `gh`/MCP, and the local repo files (Read/Grep/Glob only). Memory from the parent session is available in context — do not reload it.
 
 **Measuring pass.** If the invoking prompt says **measuring**, you reach your verdict by *executing*, not by reading, and Bash is opened to exactly this set:
 
@@ -51,7 +51,7 @@ PR number, mode flags, and optional reviewer context are in `$ARGUMENTS`. Parse 
 
 1. **First token: the PR number.**
 2. **Then any leading mode flags**, consumed as flags and never as content: `analyze-only`, `measuring`. Keep consuming while the next token is one of those words; both may appear, in either order.
-3. **The remainder (if any) is user-supplied context** — additional concerns, questions, or hypotheses the user wants the reviewer to evaluate.
+3. **The remainder (if any) is user-supplied context** — either *claims* to evaluate (concerns, hypotheses) or a *brief* directing the review (areas, questions, a method). Step 2 treats the two differently and must not confuse them.
 
 **Step 2 must not treat a consumed mode flag as a user claim.** Getting this wrong is silent and expensive in both directions: a `measuring` flag mis-parsed as context produces a pass that reads instead of running — the inert obligation `/ship` depends on this skill to prevent — and it surfaces as a stray `User-flagged:` comment or a `Rejected user input: "measuring"` line rather than as an error. The mode gates below say "if the invoking prompt says X", which is satisfied by an `Agent` prompt *or* by a flag parsed here; slash invocation is the path `/ship` prefers for solo passes, so this is the common case, not the exotic one.
 
@@ -75,7 +75,11 @@ Read PR **content** via `gh` CLI when available; fall back to MCP when `gh` is a
 
 Read the diff via `gh pr diff $ARGUMENTS --repo haalfi/remote-store` (fall back to `pull_request_read` when `gh` is unavailable). Read every changed file **in full** for surrounding context — from the local checkout via `Read`, or `gh pr view $ARGUMENTS --json files` / `get_file_contents` for the PR-head version.
 
-**Never fetch PR comments, reviews, or review threads.** This step reads diff and files only, and that restraint is load-bearing, not incidental: `/ship`'s unprimed reviewers — including the exit gate that certifies its final state — stay unprimed precisely because this skill never reads the conversation. Widening Step 1 to the comment sources `/fix-pr` uses would silently turn every unprimed pass into a primed one while all other artifacts still claim otherwise.
+**Never fetch PR comments, reviews, or review threads.** This step reads diff and files only, and that restraint is load-bearing, not incidental: `/ship`'s unprimed reviewers — including the unprimed pass its close appends to certify the final state — stay unprimed precisely because this skill never reads the conversation. Widening Step 1 to the comment sources `/fix-pr` uses would silently turn every unprimed pass into a primed one while all other artifacts still claim otherwise.
+
+**One pinned exception, metadata only, for a measuring pass.** When the invoking prompt says **measuring** *and* the brief is to verify a recipe that reads the comments endpoint, you may fetch `path`, `pull_request_review_id`, the presence of `in_reply_to_id`, and counts — **never `body`, never `user`, never any comment text**. The reasoning is Step 4's, extended: a path and a count carry no content, so they prime nobody, and the prohibition above exists to stop a reviewer *reading the conversation* rather than to stop it counting rows. State in your Step 5 report exactly which fields you fetched.
+
+This exists because [`/ship`](../ship/SKILL.md) brief requirement 3 ships an instrument built on that endpoint whose own behavioural claims its stop rule requires a measuring pass to execute. Without this bullet that obligation has no permission and is inert — the failure [ADR-0035](../../../sdd/adrs/0035-vary-method-not-model.md) records for the measuring member and this repo has now shipped twice. **A measuring member is never the unprimed pass**, so no unprimed guarantee is spent here; and the bound stays narrow deliberately, because a reviewer that reads one comment body has read the conversation whatever it was counting.
 
 ## Step 2: Analyze
 
@@ -95,7 +99,7 @@ This clause bounds *searching*, not *measuring*, and the distinction is load-bea
 
 **Drift-rules check (new or changed cross-artifact check or drift report):** Apply `sdd/DRIFT-RULES.md`. File findings under `Consistency:`.
 
-**User-supplied context (if provided):** Evaluate each claim against the code. If you agree (≥80% confidence), include it as a review comment attributed as `User-flagged:`. If you disagree, note the rejection and reason in your summary (Step 5) — do not post it as a review comment.
+**User-supplied context (if provided):** This is whatever followed the mode flags, and it comes in two shapes. **Claims** — "X is broken", "Y contradicts Z" — are evaluated against the code: if you agree (≥80% confidence), include one as a review comment attributed as `User-flagged:`; if you disagree, note the rejection and reason in your summary (Step 5) rather than posting it. **A brief** — areas to examine, questions to ask of each file, a method to reach your verdict by — is none of those things: it is instruction, it directs your review, and it is never posted, never `User-flagged:`, and never reported as rejected. `/ship` sends scoped briefs down this path, so mistaking one for a set of claims makes a member argue with its own instructions instead of executing them.
 
 **CHECKPOINT — before proceeding, confirm to yourself: "I am a reviewer. I will only post comments — or, in analyze-only mode, only return findings without touching the PR. Nothing else."** Then continue through Step 3's consolidation, and from there to Step 4 — or, in analyze-only mode, from Step 3 directly to Step 5.
 
@@ -175,6 +179,7 @@ intended, plus a public claim that posting had failed when it had not.
 
 **Comment rules:**
 - `line` must be a `+` line in the diff. If finding is on an unchanged line, attach to nearest `+` line and reference actual location in body.
+- **A finding that belongs to the file rather than to any line is postable as-is**: `subjectType: "FILE"`, no `line`, no `side` (step 2 above). Use it for frontmatter falsified by the change, a broken antecedent, a claim about another file — anything whose subject is the file's current state. **Never drop such a finding for want of a `+` line, and do not anchor it to an unrelated one**: read alone, this block used to name only the `+`-line constraint, and a reviewer working from it would conclude a file-level finding is unpostable. That is the diagnosis BK-348 recorded ([`sdd/BACKLOG-DONE.md`](../../../sdd/BACKLOG-DONE.md), BK-348, signal 2) — an inference from what the block said, not a measured attribution; what *was* measured is the defect class in [ADR-0037 § Context](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md#context), which a whole-file pass found after five diff-anchored rounds. This bullet closes the reading, whatever share of that it explains.
 - Deleted lines: `side: "LEFT"` with base-branch line number
 - Tag with category: `Bug:` / `Spec:` / `Test:` / `Consistency:` / `Ripple:` / `Perf:` / `Security:`
 - Uncertain: `Possible:` prefix
@@ -194,10 +199,12 @@ Bug: N | Spec: N | Test: N | Consistency: N | Ripple: N | Perf: N | Security: N 
 
 The `Subject:` line is a sanity check — if it doesn't match the PR's actual intent, you reviewed the wrong thing.
 
-If user-supplied context was provided but rejected, add:
+If a user-supplied **claim** was evaluated and rejected, add:
 ```
 Rejected user input: "<claim>" — <reason for rejection>
 ```
+A **brief** is never reported here: it directed the review rather than asserting
+anything, so there is nothing to accept or reject (Step 2).
 
 Then **stop**. Do not wait for feedback or user input.
 

@@ -361,111 +361,6 @@ and the highest ID already in this file, then take the next integer. Run
   without it the next divergence is equally invisible. Expect it to turn a
   backend red on arrival; that is the item working, not a regression.
 
-- [ ] **BK-348 — Adapt the review loop from PR #956's evidence**
-  spec: — · effort: M · audience: contributor.process
-  Third in the series after [BK-342](BACKLOG-DONE.md) (PR #949) and
-  [BK-344](BACKLOG-DONE.md) (PR #952) — the two members findable by that title
-  pattern — and the first drawn from a delivery whose own subject was review
-  selection.
-  **This item records the evidence and withholds a prescription**, for the reason
-  both predecessors gave and proved: direction narrows attention, so the design
-  is chosen against the evidence, with the user, before anything is written. The
-  [Item authority](#how-this-file-works) rule makes every prescription advisory;
-  carrying none is the stronger form of the same posture.
-  **Shape of the run:** five posted review rounds, 28 findings, six
-  feedback-driven commits, then an author-initiated pass over all twelve changed
-  files that found 15 more. The loop converged — the last round was clean and CI
-  was green — and the finishing pass then found 15 defects anyway.
-
-  **Signal 1 — a claim asserted from memory was wrong at a rate no amount of
-  reading fixed.** Eight instances in one PR: seven numbers across three
-  unrelated fields, and one claim about an action. The
-  count is the row count of this table, not a remembered total:
-
-  | # | Claim | Artifact | Who caught it | By consulting |
-  |---|---|---|---|---|
-  | 1 | `review_rounds: 1`, justified by a clause that says the opposite | trace | review round 2 | the schema clause and the branch's commits |
-  | 2 | `review_rounds: 3`, with a confused composition | trace, pre-commit — never reached the repo, so this row is the one a reader cannot verify | author | `git log` |
-  | 3 | "#955 moved that field to 6" — it moved 4 → 5 | PR body | review round 2 | `git show 40c6d34` |
-  | 4 | "both measurements derived from those traces" | ADR-0036 | review round 4 | the ADR against the trace it cites |
-  | 5 | "four deliveries carry per-round detail" (inherited, unchecked) | ADR-0036 | author, finishing pass | parsing every trace's `review_rounds` and phases |
-  | 6 | "#944 and #945 carry no per-round detail" | ADR-0036 | author, finishing pass | the same parse |
-  | 7 | "nine defects" where the diff shows 15 | commit message + trace | author, closing discussion | counting the diff hunks of `1fe4749` |
-  | 8 | "swept the same claim to the trace too" — it had not been | a review reply on PR #957 | author, immediately after posting | re-grepping the two files |
-
-  **The invariant is the last column, not the fourth.** Rounds 2 and 4 were
-  reading rounds by the trace's own account, so the honest claim is not "a
-  command caught every one" — it is that **not one was caught by re-reading the
-  artifact the number sat in.** Every instance fell when someone opened the
-  source the figure was derived from: a schema clause, a commit, a corpus, a
-  diff. Re-reading the sentence never worked, including in rounds explicitly
-  hunting stale claims; consulting the source always did. Instances
-  5 and 6 are the same paragraph corrected twice and wrong both times. Instances
-  7 and 8 are each inside the material describing the pattern — a commit message
-  documenting miscounts, and a reply about an unreconstructable total — which is
-  what rules out "be more careful" as the fix.
-  **The shape that worked, for the seven numbers, is derivation in the
-  artifact**: the trace's `review_rounds` comment names each commit, and the
-  correction to instance 7 names the SHA and the per-file split. A reader can
-  disagree with a derivation; they can only trust a total. Neither
-  [CONTENT-RULES Rule 3](CONTENT-RULES.md#rules) (pseudo-precision in prose) nor
-  BK-330's lesson (a hand count of a *growing* corpus goes stale) covers this:
-  these figures were about fixed history and were simply never counted.
-  **Two bounds on that cure, both from instance 8, and both reasons a design
-  built only on the seven numbers would be incomplete.** First, *derivation does
-  not reach a claim about an action*: "I swept both sites" has no figure to show
-  its working, only a check to run before saying it, so the remedy that fixes a
-  number leaves this class untouched. Second, *the surface is wider than files*:
-  instances 1–7 sit in a trace, an ADR, a PR body and a commit message, all of
-  which the loop at least reads; instance 8 sat in a **review reply**, which is
-  durable, is re-read by `/fix-pr`'s own comment-fetch on later rounds, and is
-  reviewed by nobody. Replies are where "I swept X" and "I measured Y" are
-  asserted, and they are outside every check this loop has.
-
-  **Signal 2 — the loop reviews diffs, and 15 defects lived in the files.**
-  They survived five rounds and fell to one whole-file read, and every one was a
-  sibling of an earlier fix — the fix-pass blind spot
-  [ADR-0034](adrs/0034-ship-panel-rounds-and-unprimed-exit.md) exists for,
-  appearing in a run that had been told about it five times. What they were:
-  falsified frontmatter, an antecedent broken by an insert three paragraphs
-  above, a premise true for one of a section's two callers, cross-file
-  cardinality mismatches.
-  **A mechanism, not a disposition — and the obvious one is wrong.** `/rvw-pr`
-  Step 4 *does* offer a file-level route: `subjectType: "FILE"`, at line 121. So
-  a defect that lives in the file and not in the diff is postable, and "the
-  anchoring rule forbids it" is not the diagnosis. What the skill actually does
-  is contradict itself: the Comment-rules block 56 lines later (line 177) says
-  only that `line` must be a `+` line and never mentions the `FILE` option
-  above it, so a reviewer working from that block — the block headed
-  *comment rules* — reasonably concludes a file-level finding is unpostable and
-  either anchors it awkwardly or drops it. The escape hatch exists and the rules
-  section hides it.
-  Diagnosis only. Whether the answer is a whole-file pass, making the `FILE`
-  route visible where reviewers look for it, or neither, is exactly the question
-  this item does not answer — and the distinction matters, because those are
-  different fixes and the first cut of this item pointed at the wrong one.
-
-  **Signal 3 — a brief requirement asks a question the loop cannot answer.**
-  `/ship` obliges every scoped brief to state "what previous rounds have not
-  examined" and supplies no instrument for knowing. The distribution here was
-  stark — after four rounds, 16 of 24 findings sat on one file and eight of the
-  twelve changed files had none — and it was discovered only by an ad-hoc API
-  query while writing the round-5 brief. That discovery is what redistributed
-  round 5.
-  **Corroboration, not a fourth signal.** Round 5 was briefed to *execute* and
-  aimed at that neglected surface: 4 findings, **three of them on two previously
-  untouched files** (`CLAUDE.md` and `ship/SKILL.md`), and the only measured
-  refutation of the run — the
-  `/orchestrate` tamper check's stated residual was two categories narrower than
-  running it showed. That is [ADR-0035](adrs/0035-vary-method-not-model.md) and
-  [ADR-0036](adrs/0036-reviewers-by-subject-and-method.md) paying out rather than
-  new evidence, and it belongs here as support for signals 1 and 2 rather than as
-  its own finding.
-  **Read the trace before designing anything:**
-  [`sdd/traces/bk-338-review-roster.yml`](traces/bk-338-review-roster.yml)
-  carries the per-round detail and the finishing pass. PR #956 carries the five
-  posted rounds.
-
 - [ ] **BK-346 — Three ripple-check rows answered a question adjacent to the one asked**
   spec: — · effort: S · audience: contributor.process
   Three `outcome: unclear` tags in
@@ -492,7 +387,25 @@ and the highest ID already in this file, then take the next integer. Run
   question. Any row change lands in **both** presentations — `check_ripple_parity.py`
   enforces trigger-parity.
 
-- [ ] **BK-347 — An ADR-only diff is routed away from the ADR drift gate, locally and in CI**
+- [ ] **BK-349 — Decide whether `/orchestrate` adopts the whole-file reading mode**
+  spec: — · effort: S · audience: contributor.process
+  [ADR-0037](adrs/0037-whole-file-gate-and-derived-figures.md) leaves this open
+  in its Consequences and invites a decision "on that skill's own evidence, as
+  ADR-0036 did for selection" — an invitation with no tracker behind it, which
+  this repo's own reasoning says is the same as no invitation.
+  **What is settled and what is not.** The *gate* is settled: `/orchestrate` has
+  no exit gate for one to join, since ADR-0020 caps its rounds and nothing there
+  waits on a clean state to close. The *reading mode* is not. Its reviewers read
+  a diff-shaped surface exactly as `/ship`'s did, and methods reach that skill by
+  restatement rather than through the shared lens-menu link — which is how its
+  measuring reviewer got there, so "it is a method, not a lens" does not exclude
+  this one.
+  **What deciding it needs:** evidence from `/orchestrate`'s own deliveries, not
+  `/ship`'s. ADR-0037 rests on one `/ship` run, and ADR-0036 set the precedent
+  that a cross-skill claim is decided on the target skill's traces. Until such a
+  run exists this is a question, not a gap.
+
+- [ ] **BK-347 — A diff outside CI's `CODE_PAT` is routed away from the ADR drift gate, and the local gate misses a different set**
   spec: — · effort: S · audience: contributor.process, infra.ci
   `gen_adr_digest.py --check` gates `sdd/adrs/DIGEST.md` freshness **and**
   supersession-graph consistency. Exactly one composite gate runs it: `preflight`,
@@ -504,9 +417,33 @@ and the highest ID already in this file, then take the next integer. Run
   The [PR validation gates](CLAUDE-REFERENCE.md#pr-validation-gates) route a
   no-code diff to `lint` + `docs-gate`, so an ADR-only change never runs the
   check locally. CI cannot backstop it: the `lint` job (which runs
-  `uvx hatch run preflight`) is gated on `code == 'true'`, and on an ADR-only
-  head it reports `skipped`. **Measured on PR #956 head `dc10a23`**: `gate`,
-  `docs` and `setup` ran; `lint` skipped.
+  `uvx hatch run preflight`) is gated on `code == 'true'`, and on a head matching
+  no `CODE_PAT` path it reports `skipped`. **Measured on commit `dc10a23`**
+  (PR #956, not its head): `gate`, `docs` and `setup` ran; `lint` skipped. That
+  commit touches two skills, two ADRs, a trace and BACKLOG-DONE — so the first
+  measurement was already of the wider class below, and "ADR-only" was the
+  item's label rather than its evidence.
+  **The class is wider than "ADR-only", measured on a second PR.** Commit
+  `26cf75b` on PR #958 adds an ADR *and* touches `.claude/skills/`, `CLAUDE.md`
+  and `sdd/traces/` — not an ADR-only diff by any reading — and
+  `gh api repos/haalfi/remote-store/commits/26cf75b/check-runs` still reports
+  `lint` skipped, with every test lane skipped alongside it. (Named as a commit,
+  not as "head": that PR's branch has moved since, and "head" would have
+  falsified itself.) The
+  trigger in CI is not how narrow the diff is; it is that **no path in it
+  matches `CODE_PAT`**, which is true of most process deliveries.
+  **The two halves have different triggers, and conflating them is a third
+  defect this item should not carry.** `CODE_PAT` is CI's, in `ci.yml`; the
+  local mechanical gate routes on the different list in
+  [PR validation gates](CLAUDE-REFERENCE.md#pr-validation-gates). They disagree
+  in both directions: an ADR plus a `.claude/hooks/` edit is outside `CODE_PAT`
+  yet locally runs `all` → `preflight` → the check, while an ADR plus a
+  `.github/workflows/` edit is inside `CODE_PAT` yet locally routes to
+  `lint` + `docs-gate`, which compose it nowhere. So the CI half is
+  "outside `CODE_PAT`" and the local half is "the classifier sends it to
+  `lint` + `docs-gate`" — scope any fix to both classifiers, not to one name.
+  The title was widened on the CI evidence; **the fix shape below still reads
+  narrower than the evidence and has not been re-scoped.**
   **Consequence:** a hand-edited or stale `DIGEST.md` ships on the author's care
   alone, and the `STALE:` failure lands on the *next* PR that happens to touch
   code — the wrong PR to pay for it, and one whose author did not cause it.

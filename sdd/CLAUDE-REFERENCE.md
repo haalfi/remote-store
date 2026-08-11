@@ -339,11 +339,16 @@ fork-vs-main distinction does **not** change the read tool; the only axis that
 does is whether `gh` is on `PATH`. (`/pr` is out of scope here: it gathers
 context from local git, not the PR API, and its only GitHub call is the
 `create_pull_request` write — already on the MCP write path below.
-`/rvw-pr` uses the content-read and write rows, and the feedback row for one
-narrow purpose: its Step 4 counts review comments to verify its own post
-landed. Its Step 1 still forbids *reading* review feedback — load-bearing for
-`/ship`'s unprimed reviewers — and a count carries no content, so it primes
-nobody. That count is pinned to an explicit paginated `gh api` call in the
+`/rvw-pr` uses the content-read and write rows, and the feedback row for two
+narrow purposes: its Step 4 counts review comments to verify its own post
+landed, and a **measuring** pass briefed to verify a recipe built on that
+endpoint may read `path`, `pull_request_review_id`, `in_reply_to_id` presence
+and counts — **metadata only, never a body**. Its Step 1 still forbids *reading*
+review feedback — load-bearing for `/ship`'s unprimed reviewers — and neither
+purpose reads any, so neither primes anybody. The second exists because
+`/ship`'s stop rule requires a measuring pass to execute the behavioural claims
+its distribution instrument makes; without it that obligation has no permission.
+**The Step 4 count** is pinned to an explicit paginated `gh api` call in the
 skill rather than chosen per the rows below, because a saturating spelling
 reading as "the post failed" is what made pinning necessary.)
 

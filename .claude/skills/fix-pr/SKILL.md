@@ -152,6 +152,21 @@ executed.
   instances it happened to see. Siblings share a failure mode, not a spelling,
   so for a rule spanning backends the question is which backends the tests
   execute against, not which lines match a grep.
+- **A claim about an action names what you ran, and you run it before you write
+  the sentence.** "I swept both sites", "I measured it", "I checked every
+  backend" — in a reply, a commit message, or the Step 6 report — carries the
+  command, path list, or enumeration behind it. This is
+  [`CLAUDE.md` principle 9](../../../CLAUDE.md#principles) applied to the half
+  of its class its *mechanism* cannot reach. The principle names action-claims
+  explicitly; what it cannot supply for them is a derivation, because a number
+  can show its working and an action has only the check you did or did not run.
+  So the enforcement for that half lands here, where replies are authored.
+  Replies are durable, are re-read by Step 1's own comment fetch on every later
+  round, and are reviewed by **nobody** — no reviewer fetches them, by design,
+  because that is what keeps `/ship`'s unprimed passes unprimed. That bound is
+  why the check is yours: a false "I swept X" in a reply survives to the end of
+  the loop and beyond
+  ([ADR-0037 § Context](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md#context)).
 - **A fix to a quantified claim is scoped to the quantifier, not to the
   finding.** When the artifact under repair says "every X", "all but Y", or
   "each of these", the fix covers that extent and the reply states the
