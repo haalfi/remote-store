@@ -1,0 +1,192 @@
+id: BK-351
+title: "The model-invocable skills' descriptions say what they do and never when to use them"
+trigger: >-
+  The user supplied Anthropic's "The Complete Guide to Building Skills for
+  Claude" (33pp) and asked whether the repo's ten skills could and should adopt
+  it. Not a defect report and not a backlog item: an open question whose answer
+  had to be derived from the ten skills rather than from the guide, since the
+  guide's audience is MCP vendors publishing skills for auto-triggering
+  distribution and this repo's are internal workflow automation invoked by
+  slash command.
+source_items:
+  - BK-351
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+# The only ripple the check anticipated. A description change reaches nothing
+# else: `rg` for both original description strings across the tree returned the
+# two SKILL.md lines and nothing more, so no doc, spec or check asserts them.
+surprising_ripples:
+  - .claude/skills/pr/SKILL.md
+# Not surprising as a file - surprising as a *member*. The work was scoped to
+# the two skills a first pass called model-invocable; /pr is the third and was
+# missed. Nothing in the ripple-check covers "a skill's frontmatter gains a
+# trigger phrase", and no row would have found it: the membership test is a key
+# in a frontmatter, not a citation anywhere.
+# Name the commits the value was counted from, per the schema's review_rounds
+# clause. `git log --oneline origin/master..HEAD` at the final push:
+#   the commit carrying this line - the implementation, authored in one pass.
+#     Does not count.
+# No PR had been opened and no review round had run when this value was written,
+# so there are no feedback commits to count and the value is 0. The self-
+# correction below is author-initiated within the authoring pass and produced no
+# separate commit; per bk-348's reading, an author pass does not count.
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .claude/skills/audit/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Read first because CLAUDE.md § Audits governs the shape of the answer,
+          not because this skill was invoked: the user's question is an audit
+          request in everything but name, so the report-only rule and the
+          "user decides next steps" rule bind before anything is edited. Set the
+          decision to report findings and route the disposition through
+          AskUserQuestion rather than to start editing skills.
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Principles 4 and 8; Interview mode; Backlog; Trace authoring"
+        read_type: gate
+        extract: >-
+          Principle 8 is the clause that decides the guide's central
+          prescription: detail is relocated to the layer whose change-rate and
+          correctness-locus fit it, and "brevity is a byproduct of correct
+          placement, never the target". That converts the guide's 5,000-word
+          budget from a rule to be adopted into a question to be asked, and the
+          question has a different answer than the budget does. Principle 4
+          (link, don't copy) is what makes the worktree duplicate a finding at
+          all.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works; ID prefixes; Completing work"
+        read_type: gate
+        extract: >-
+          Two things the work needed. The admission test - an item fitting no
+          section's promise is not filed - and the § Completing work rule that a
+          fully done item goes to BACKLOG-DONE.md in the same commit as the
+          change. Since this work ships in one commit, the item is entered
+          directly in BACKLOG-DONE under Unreleased and never appears in
+          BACKLOG.md, which also avoids editing section 6's `Closes when`
+          enumeration to add an item that closes in the same breath.
+        outcome: ok
+  - id: measure
+    name: Measure the skills against the guide
+    steps:
+      - file: .claude/skills/
+        section: "(all ten SKILL.md frontmatter)"
+        read_type: verify
+        extract: >-
+          Dumped every frontmatter with word and line counts rather than reading
+          the files first, because the guide's checkable claims are all frontmatter
+          properties. Compliant already: kebab-case folder names, exact SKILL.md
+          spelling, name matching folder, no README.md inside any skill folder,
+          no XML angle brackets. Non-compliant on one axis only: all ten
+          descriptions state what and none states when.
+        outcome: ok
+      - file: .claude/skills/
+        section: "disable-model-invocation across all ten"
+        read_type: verify
+        extract: >-
+          **Got this wrong first, and it changed the work.** Reading the same
+          dump I reported "8 of 10 disabled, exactly two model-invocable" and
+          scoped the fix to /fix-pr and /rvw-pr. Re-derived by testing each
+          frontmatter for the key instead of reading down the list: seven
+          disabled, three model-invocable, the third being /pr. It was missed
+          because /pr groups with the slash-only workflow skills by usage while
+          its frontmatter groups it with the PR skills, and I read the grouping
+          rather than the key. The correction is principle 9's whole point
+          arriving in the item that ships a description fix: the count was
+          checkable in one command and I had asserted it from a glance at output
+          I had already collected.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Read whole against the guide's progressive-disclosure prescription,
+          which the word count (6,380 via `wc -w`) puts over its 5,000 budget.
+          The prescription does not survive the read: every section is a rule
+          binding on every invocation, and the file's own repeated diagnosis is
+          the inert obligation - a duty shipped without the permission or the
+          reading that makes it executable. A `references/` file is loaded at the
+          model's discretion, so moving binding rules there manufactures exactly
+          that failure. Rationale is already externalised to ADRs 0033-0037 by
+          link, which is the same three-level structure the guide asks for with
+          the third level outside the skill folder.
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Reviewer selection (base-branch worktree)"
+        read_type: verify
+        extract: >-
+          Same verdict as /ship on the bulk. The one genuine finding is here and
+          in /rvw-pr: the `git worktree add tmp/base` recipe is duplicated
+          verbatim, each copy names the other, and both carry "edit both when the
+          commands change" with no mechanism behind it. Recorded in the item as
+          an open residue rather than filed - both copies argue the duplication
+          is deliberate because the stated *reason* differs per skill, so
+          collapsing them re-decides two skills' reasoning rather than fixing a
+          description.
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "header allowlist; Step 1; measuring block"
+        read_type: verify
+        extract: >-
+          The counterexample that settles the progressive-disclosure question in
+          the repo's favour: the measuring allowlist lives here and /orchestrate
+          binds its own reviewer to it *by link* rather than by copy. The
+          link-don't-copy pattern the guide's references/ would provide is
+          already in use where the content is genuinely shared, and declined
+          only where the reason differs. Nothing to move.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: .claude/skills/pr/SKILL.md
+        section: "frontmatter description"
+        read_type: gate
+        extract: >-
+          Read to write an accurate description, and it supplied the negative
+          trigger: the skill creates a PR and explicitly does not merge, approve
+          or update one. Paired with `.claude/hooks/warn-direct-pr.sh`, which
+          fired during this session's own first Bash attempt - the hook exists
+          because the description gave the model nothing to prefer this skill
+          on, which is the diagnosis restated as a mechanism.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience (derived CHANGELOG rule)"
+        read_type: verify
+        extract: >-
+          Checked rather than assumed whether a CHANGELOG entry is owed. The rule
+          fires on any `user.` audience, or on contributor.process introducing a
+          new user-facing framework. This is repo-internal agent tooling and
+          introduces no framework, so no entry - the same call BK-348 made and
+          recorded for the same class of change.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Pre-work index"
+        read_type: verify
+        extract: >-
+          Triggered rows: Backlog item touched (trace owed, schema followed) and
+          CHANGELOG entry (assessed, not required). **No row covers a change to a
+          skill's frontmatter**, which is why the missed third skill appears in
+          surprising_ripples: the anticipatory authority had nothing to say about
+          the membership test this work turns on. Adjacent to BK-346's class of
+          measured blind spot rather than a new one, and not filed here - one
+          instance is not a diagnosis.
+        outcome: unclear
+      - file: .claude/skills/
+        section: "grep for the two original description strings"
+        read_type: verify
+        extract: >-
+          Ran `rg` for both replaced description strings across the tree before
+          editing, to find anything asserting them. Two hits, both the SKILL.md
+          lines themselves. No doc, check, spec or test quotes a skill
+          description, so the sweep is closed rather than merely unattempted.
+        outcome: ok

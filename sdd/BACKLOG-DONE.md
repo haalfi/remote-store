@@ -155,6 +155,58 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-351 — The model-invocable skills' descriptions say what they do and never when to use them**
+  spec: — · effort: S · audience: contributor.process
+  A skill's `description` is the only part loaded before the body, so it is the
+  whole of what decides whether the skill fires on a request. **All ten
+  descriptions stated what the skill does and none stated when to use it**,
+  derived by dumping the frontmatter of every `.claude/skills/*/SKILL.md` and
+  reading the ten `description:` values.
+  For **seven** that is harmless by construction: `disable-model-invocation: true`
+  makes them slash-only, so no description is ever matched against a request.
+  **Three carry no such line** — `/pr`, `/fix-pr`, `/rvw-pr` — enumerated by
+  testing each frontmatter for the key rather than by reading the list, which is
+  the derivation that matters here: a first pass over the same dump asserted
+  **two** and missed `/pr`, because `/pr` sits among the slash-only workflow
+  skills by usage and among the model-invocable ones by frontmatter. The figure
+  that was wrong is the one nobody would have re-checked.
+  **The repo had already paid for this twice, in mechanisms that compensate for
+  it rather than fix it.** `CLAUDE.md` § GitHub operations instructs the reader
+  to prefer `/rvw-pr` over the built-in `/review` and the PR skills over ad-hoc
+  `gh`; and `.claude/hooks/warn-direct-pr.sh` fires on direct PR creation to say
+  the same thing — observed firing in this item's own session. Both exist because
+  the description gave the model nothing to discriminate on. An instruction in
+  `CLAUDE.md` and a `PreToolUse` hook are the two places a missing trigger
+  phrase surfaces once it has already gone wrong.
+  Fixed by rewriting the three descriptions to carry **what + when + trigger
+  phrases + a negative trigger** naming the sibling skill that owns the excluded
+  case. The seven slash-only descriptions are left alone: adding trigger phrases
+  to a description nothing matches is text that cannot be wrong in a way anything
+  would catch.
+  **Source:** *The Complete Guide to Building Skills for Claude* (Anthropic, 33pp),
+  supplied by the user. Its other applicable claim was **declined**, and the
+  reasoning is the durable half: it prescribes moving detail out of `SKILL.md`
+  into `references/` under a 5,000-word budget, and `/ship` (6,380 words),
+  `/rvw-pr` (3,479) and `/orchestrate` (3,395) exceed or approach it — word
+  counts from `wc -w` over the three files. All three were read whole against the
+  prescription. Their bulk is **unconditionally binding instruction**, and a
+  `references/` file is loaded at the model's discretion, so the move would
+  convert rules that must hold on every invocation into rules that might be read.
+  That is the inert-obligation failure those very files record shipping three
+  times (ADR-0035, and BK-348's rounds 6 and 7). Rationale is already externalised
+  the correct way, to ADRs 0020 and 0033–0037 by link. The budget also collides
+  with [principle 8](../CLAUDE.md#principles), which forbids trading a
+  load-bearing reason for a length target.
+  **One residue left open, deliberately untracked.** The `git worktree add tmp/base`
+  recipe is a self-declared duplicate across `/rvw-pr` and `/orchestrate` — three
+  commands and a `prune` fallback, with each copy naming the other and carrying a
+  manual "edit both when the commands change", enforced by nothing. It is the one
+  thing in the three files that a shared bundled file would hold correctly. It is
+  not filed: both copies argue their duplication is deliberate because the
+  *reason* differs per skill, and re-deciding that is a change to two skills'
+  stated reasoning, not a description fix. Re-open it under a new ID the first
+  time the two copies disagree.
+
 - [x] **BUG-252 — Azure cassettes matched on a `blockid` the SDK mints, so `[azure]`'s drift smoke went red on a block-id change**
   spec: REC-005 · effort: S · audience: infra.test · infra.ci
   The Monday Drift Guard run's `check-azure` leg failed its smoke —

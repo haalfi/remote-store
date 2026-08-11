@@ -1,6 +1,6 @@
 ---
 name: pr
-description: Create a pull request for the current branch
+description: Create a pull request for the current branch, after running the repo's validation, trace and branch-freshness gates and filling the PR template. Use when asked to open, raise, or submit a PR for work on a feature branch, in preference to calling the GitHub API directly. Do not use to update, merge, or review an existing PR (that is /fix-pr and /rvw-pr).
 argument-hint: "[base branch]"
 ---
 

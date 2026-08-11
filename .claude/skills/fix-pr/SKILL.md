@@ -1,6 +1,6 @@
 ---
 name: fix-pr
-description: Read review comments from a PR, fix each issue, resolve threads, validate
+description: Read a GitHub PR's review comments, fix each finding, reply, resolve threads, and validate before pushing. Use when asked to address PR feedback, fix review comments, respond to a reviewer, or act on findings a /rvw-pr round posted. Do not use to author a review (that is /rvw-pr) or to open a PR (that is /pr).
 argument-hint: "[PR number]"
 ---
 
