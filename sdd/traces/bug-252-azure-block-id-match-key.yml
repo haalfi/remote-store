@@ -1,0 +1,253 @@
+id: BUG-252
+title: "Azure cassettes matched on a blockid the SDK mints"
+trigger: >-
+  Drift Guard's check-azure leg went red in its smoke, not its resolve: three
+  stream-write conformance cells reported a cassette miss whose only failing
+  matcher was `query`, on a `blockid` parameter. The candidate resolution had
+  moved azure-storage-blob from 12.30.0 to 12.31.0b1.
+source_items:
+  - BUG-252
+# Dominant first, per the schema. The CI leg is what surfaced the defect, but
+# the change surface is test infrastructure. Counted from
+# `git diff origin/master...HEAD --name-only`: 7 files, of which 3 are
+# tests/backends/fixtures/* and 3 are sdd/ records about that layer (spec 049,
+# this trace, the BACKLOG-DONE entry). Only sdd/backlogid.json — a generated
+# counter — is unrelated to it.
+audience:
+  - infra.test
+  - infra.ci
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .github/workflows/drift-guard.yml
+        section: "check job — Install candidate resolution and run smokes"
+        read_type: reference
+        extract: >-
+          Which half of the leg failed. The resolve wrote status=drift and never
+          fails the job; the red came from the smoke pytest, so the question was
+          about the test corpus rather than about dependency resolution.
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Pre-work index"
+        read_type: gate
+        extract: >-
+          Triggered rows: Bug fix, Backlog item touched, Spec section. The
+          CHANGELOG row does not fire — the audience above is infra-only, which
+          the trace schema's derived rule excludes.
+      - file: tests/backends/fixtures/_cassettes_azure.py
+        section: "AZURE_PROFILE"
+        read_type: reference
+        extract: >-
+          match_on is unset, so vcrpy's default matcher set applies and `query`
+          is part of the match key; filter_query_parameters listed SAS
+          parameters only. Both halves of the defect are visible here.
+
+  - id: reproduce
+    name: Reproduce and bisect
+    steps:
+      - file: infra/drift-locks/azure.txt
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Diffed against the job log's `Successfully installed` line: exactly two
+          packages moved — azure-storage-blob 12.30.0 → 12.31.0b1 and
+          azure-storage-file-datalake 12.25.0 → 12.26.0b1. Everything else,
+          including azure-core, was already at its baseline pin, which narrowed
+          the search to two candidates before anything was installed.
+      - file: tests/backends/conformance/
+        section: "-k azure, under each of the two SDK versions"
+        read_type: verify
+        extract: >-
+          Built a venv at the lock's versions (3 cells pass), then upgraded
+          azure-storage-blob **alone**, holding datalake at 12.25.0, and got the
+          same 3 failures CI reported. That is the bisect: datalake is
+          incidental. Reading the two wheels' _shared/uploads.py then named the
+          mechanism — the block id moved from a chunk-offset derivation to
+          encode_base64(f"{uuid4().int:048d}").
+      - file: tests/backends/cassettes/azure/
+        section: "grep blockid= across the corpus"
+        read_type: verify
+        extract: >-
+          Five cassettes carry a blockid; only the three failing ones are
+          load-bearing. The two TestWriteErrorFidelity stream cells pass under
+          both SDKs because their write is rejected before a block is staged —
+          checked by running them, not inferred from the grep.
+
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: sdd/TESTING.md
+        section: "Rules 5 and 6 (mock discipline, prefer real dependencies)"
+        read_type: gate
+        extract: >-
+          Rule 5 ruled out the tempting test. Patching
+          BlockBlobChunkUploader._upload_chunk to mint a random id would have
+          reproduced the CI failure exactly, and it is a third-party internal.
+          The subject we own is the match key, so the cells drive the committed
+          cassette through vcr.VCR(**profile_config).use_cassette instead.
+      - file: tests/backends/fixtures/test_cassettes.py
+        section: "TestAzureBlockIdOutOfMatchKey"
+        read_type: verify
+        extract: >-
+          Written and run before the filter existed: the play assertion failed,
+          the negative control passed. The negative control is the load-bearing
+          half — deleting a parameter weakens the matcher it sat under, so
+          without a cell proving that matcher still discriminates, the first
+          assertion would pass just as well on a layer that had stopped
+          matching at all.
+          Retrospectively: I knew that and still shipped a control that varied
+          the **path** rather than the query, which the path matcher alone
+          satisfies. It was the right *idea* aimed at the wrong component, which
+          is why writing it did not feel like a miss — see the review phase.
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "build_profile_vcr_config"
+        read_type: verify
+        extract: >-
+          How a profile becomes a vcrpy config, and which keys are native
+          filters rather than custom hooks. The load-time half of the claim is
+          a **third-party** read, not in this repo: inspect.getsource on
+          vcr.cassette.Cassette in the installed vcrpy 8.3.0 shows _load calling
+          append, which applies _before_record_request to every recorded
+          request. That is what makes the one-line filter sufficient — had
+          filtering been record-time only, the committed corpus would have
+          needed a rewrite. Verified before relying on it, then again by
+          replaying the untouched corpus. Retrospectively, this step first cited
+          the repo module for the vcrpy internals themselves, so its file/section
+          pair asserted something false about this repo and the most
+          load-bearing derivation in the PR was unreachable; a review caught it.
+      - file: tests/backends/fixtures/_cassettes_azure.py
+        section: "AZURE_PROFILE.filter_query_parameters"
+        read_type: reference
+        extract: >-
+          Added `blockid`. The comment states the non-obvious part — that this
+          entry is not a secret and is there because the SDK mints the value —
+          so a later reader does not "tidy" it back out of a SAS-token list.
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: tests/backends/conformance/
+        section: "-k azure, both SDK versions again"
+        read_type: verify
+        extract: >-
+          364 passed / 58 skipped under 12.31.0b1, where the same command gave
+          3 failed / 361 passed before the fix; 12.30.0 green unchanged. Both
+          sides matter — a fix that only satisfied the candidate would break the
+          pinned lane every other CI run exercises.
+      - file: sdd/specs/049-live-recording-architecture.md
+        section: "REC-005"
+        read_type: reference
+        extract: >-
+          The clause governed only filter_headers and the
+          filter_post_data_parameters exclusion, so nothing said what
+          filter_query_parameters is for. Recorded the durable rule — a
+          client-minted query component cannot be matched on, secret or not —
+          rather than leaving the reason in a code comment where the next
+          profile would not find it.
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Detailed checklist"
+        read_type: verify
+        extract: "Full ripple audit at verify-end."
+
+  - id: review
+    name: Review round 1
+    steps:
+      - file: tests/backends/fixtures/test_cassettes.py
+        section: "TestAzureBlockIdOutOfMatchKey"
+        read_type: verify
+        extract: >-
+          Four findings, all confirmed by running them rather than by reading.
+          The one that mattered: both shipped cells pass with `query` removed
+          from the match key entirely, so neither could see the regression this
+          PR's own filter makes possible. Measured with a probe that ran each
+          candidate assertion under the shipped config and under
+          match_on=(method, scheme, host, port, path) — only "an unrecorded
+          query on a recorded path" changed verdict between the two columns.
+          A control that cannot fail is not a control, and the way to find that
+          out is to make the harness produce the failure it claims to catch.
+      - file: sdd/TESTING.md
+        section: "A green test can be vacuous — no positive control"
+        read_type: gate
+        extract: >-
+          The rule this round enforced twice. Second instance: the cassette is
+          borrowed from another cell's filename, and vcrpy's _load swallows
+          CassetteNotFoundError, so a rename would have made every negative
+          control pass on an empty cassette. Probed by pointing _CASSETTE at a
+          missing file — all three cells now fail loudly and name the file,
+          where two of them previously passed.
+      - file: tests/backends/fixtures/_cassettes_azure.py
+        section: "AZURE_PROFILE docstring (What it strips)"
+        read_type: verify
+        extract: >-
+          The profile's own summary still said SAS-only, so the behavioural
+          change this PR makes was absent from the place a reader looks instead
+          of scrolling into the tuple. Swept the class rather than the line: the
+          same claim lives in the CassetteProfile field declaration, which
+          carried no docstring at all while every sibling field had one.
+
+  - id: review_2
+    name: Review round 2
+    steps:
+      - file: sdd/specs/049-live-recording-architecture.md
+        section: "REC-005 (filter_query_parameters paragraph)"
+        read_type: verify
+        extract: >-
+          The round-1 fix wrote the obligation into the spec in a form that
+          instructs a control that cannot exist. "Vary the component that was
+          widened" used "component" for the query *parameter* two sentences
+          earlier and for the `match_on` *matcher* here, and read literally it
+          demands varying `blockid` — which is the positive cell by
+          construction. The shipped test docstring had it right; the durable
+          artifact a future profile author reads was the one that misled. Split
+          into parameter vs matcher throughout, and added the consequence the
+          clause omitted: removing a parameter collapses interactions that
+          differed only in it onto one key, which is REC-004's order-dependence
+          reached by another route. Verified the collapse is latent rather than
+          live here — each of the five blockid-bearing cassettes records
+          exactly one, counted with a re.findall over the corpus.
+      - file: tests/backends/fixtures/test_cassettes.py
+        section: "TestAzureBlockIdOutOfMatchKey._plays"
+        read_type: verify
+        extract: >-
+          Round 1's own guard was weaker than the docstring above it claimed:
+          len(cassette) > 0 catches a total wipe, but the controls rest on a
+          recorded PUT for the blob, and a re-record could keep the file
+          non-empty while dropping exactly that. Replaced with an assertion on
+          the precondition itself, and checked it fires by pointing _CASSETTE
+          at TestBackendRead.test_read_bytes[azure].yaml — 5 interactions and
+          PUTs present, so the old check passed there and the new one fails.
+          Second round running, second guard that could not see its own
+          failure mode; both were found by asking what makes this assertion
+          false, not by re-reading it.
+      - file: tests/backends/fixtures/_cassettes.py
+        section: "CassetteProfile.filter_query_parameters"
+        read_type: reference
+        extract: >-
+          The docstring round 1 added omitted the one mechanical property that
+          differs from its filter_headers sibling: query names match
+          case-sensitively (vcrpy's replace_query_parameters tests membership
+          against a plain dict, no casefolding). Live in-tree rather than
+          hypothetical — the Graph profile declares "Expires" capitalised while
+          this one declares "blockid" lowercase.
+
+# Counted from `git log origin/master..HEAD --format='%h %s'` on this branch:
+# 770832d (the original work) plus two `fix: address PR #961 review` commits,
+# db99253 (round 1) and the one this round produced — two review-driven
+# commits, so 2.
+review_rounds: 2
+
+expected_ripples:
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - sdd/specs/049-live-recording-architecture.md
+
+surprising_ripples:
+  # The ripple-check has no row pointing from "a profile field gains a duty" to
+  # that field's own declaration docstring in the backend-agnostic core; the
+  # review found it, not the table.
+  - tests/backends/fixtures/_cassettes.py

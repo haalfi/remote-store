@@ -39,6 +39,7 @@ from tests.backends.fixtures._cassettes import (
 )
 from tests.backends.fixtures._cassettes_azure import (
     AZURE_PROFILE,
+    CASSETTE_DIR_AZURE,
     FAKE_ACCOUNT,
     FAKE_FILESYSTEM,
     LIVE_HNS_ROOT_FS,
@@ -771,6 +772,79 @@ class TestAzureCassetteScrub:
             "DefaultEndpointsProtocol=https;AccountName=realacct;AccountKey=abc==;EndpointSuffix=core.windows.net",
         )
         assert _resolve_live_account() == "realacct"
+
+
+@pytest.mark.spec("REC-005")
+class TestAzureBlockIdOutOfMatchKey:
+    """A stream write's ``blockid`` is minted by the SDK, so it cannot be matched (BUG-252).
+
+    ``upload_blob`` on a stream stages blocks under an id the client generates;
+    the id is not derived from anything in the request the backend asked for.
+    ``azure-storage-blob`` 12.30.0 derived it from the chunk offset (identical on
+    every run, so it recorded and replayed by accident) and 12.31.0b1 switched to
+    a per-call UUID. Neither belongs in vcrpy's match key: the corpus must replay
+    against whatever the installed SDK mints, so the assertions below run against
+    the *committed* cassette rather than a synthetic one.
+    """
+
+    # Borrowed from another cell, so the filename is a coupling this class cannot
+    # see break; ``_plays`` asserts it loaded rather than trusting it.
+    _CASSETTE = CASSETTE_DIR_AZURE / "TestBackendWrite.test_write_from_binaryio[azure].yaml"
+    _BLOB = f"https://{FAKE_ACCOUNT}.blob.core.windows.net/{FAKE_FILESYSTEM}/stream.txt"
+    # A 12.31.0b1-shaped id (base64 of a zero-padded ``uuid4().int``), unrecorded
+    # by construction. Its *value* is inert once the filter is in place — the
+    # parameter is stripped before matching, so any id, or none, behaves the same.
+    # It is written out because it is what made the pre-filter cell fail.
+    _UNRECORDED_BLOCK_ID = "MDAwMDAwMDAwMDg1MTAwOTIyNDY1NDc4NTQ4NzUyOTIwMzI1MTA4ODgxODQzMjkx"
+
+    def _plays(self, uri: str) -> bool:
+        """Whether the committed cassette can serve *uri*, through the real load path.
+
+        ``use_cassette`` is what the replay fixtures go through, so this exercises
+        vcrpy re-applying the profile's native filters to the *recorded* requests
+        on load — the half that makes a filter fix work without re-recording.
+
+        The asserts guard the ``assert not`` cells' failure mode, not this
+        helper's. What those cells need is not merely a cassette but a recorded
+        ``PUT`` on ``_BLOB``: their ``False`` means "the match key rejected
+        this", and an absent recording produces the same ``False`` for an
+        unrelated reason. ``Cassette._load`` swallows
+        ``CassetteNotFoundError``, so a renamed cassette loads zero
+        interactions; a re-record that stops routing this write through
+        ``upload_blob`` on a stream would keep the file non-empty and still
+        drop the recording those cells rest on. Both are asserted, so neither
+        turns an ``assert not self._plays(...)`` vacuous.
+        """
+        assert self._CASSETTE.exists(), f"borrowed cassette is gone: {self._CASSETTE.name}"
+        with vcr.VCR(**_azure_cfg()).use_cassette(str(self._CASSETTE), record_mode="none") as cassette:
+            blob_path = urlsplit(self._BLOB).path
+            assert any(r.method == "PUT" and r.path == blob_path for r in cassette.requests), (
+                f"cassette records no PUT on {blob_path}: {self._CASSETTE.name}"
+            )
+            return cassette.can_play_response_for(_request({}, uri=uri, method="PUT"))
+
+    def test_stage_block_plays_under_an_unrecorded_block_id(self) -> None:
+        assert self._plays(f"{self._BLOB}?comp=block&blockid={self._UNRECORDED_BLOCK_ID}")
+
+    def test_unrecorded_query_on_a_recorded_path_still_does_not_play(self) -> None:
+        """Negative control: removing ``blockid`` must not stop ``query`` discriminating.
+
+        Deleting a *parameter* does not remove the *matcher* it sat under — it
+        weakens ``query`` — so the control has to vary ``query`` through some other
+        parameter, on a path the cassette **does** record. Varying the path instead
+        is satisfied by the ``path`` matcher alone: it holds even with ``query``
+        dropped from the match key entirely, and so proves nothing about the matcher
+        this profile weakened. ``comp=metadata`` is unrecorded on ``stream.txt`` (the
+        cassette holds ``comp=block`` and ``comp=blocklist`` for it) and *does* play
+        under a query-blind key, which is what makes this the assertion that fails
+        when the match key stops discriminating.
+        """
+        assert not self._plays(f"{self._BLOB}?comp=metadata")
+
+    def test_stage_block_on_an_unrecorded_path_does_not_play(self) -> None:
+        """The ``path`` matcher is still doing its own job alongside ``query``."""
+        other = f"https://{FAKE_ACCOUNT}.blob.core.windows.net/{FAKE_FILESYSTEM}/not-recorded.txt"
+        assert not self._plays(f"{other}?comp=block&blockid={self._UNRECORDED_BLOCK_ID}")
 
 
 class TestScrubCore:
