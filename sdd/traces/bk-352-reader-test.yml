@@ -8,6 +8,16 @@ trigger: >-
 source_items:
   - BK-352
   - BK-351
+co_shipped_items:
+  - BK-351
+# BK-351 appears in both fields and they are not redundant: `source_items` says
+# this trace was derived from it (its description work is what surfaced the
+# skill-assessment question), `co_shipped_items` says the same PR closed it. The
+# second is what stops an aggregator double-counting the reads these two traces
+# share - both cite sdd/traces/_schema.yml, sdd/BACKLOG-DONE.md and
+# sdd/CLAUDE-REFERENCE.md, and both tag the last `unclear`, which lands on the
+# very metric this item's scope argument is derived from. Missing until PR #962's
+# review; the field is established practice, not dormant.
 audience:
   - contributor.process
 expected_ripples:
@@ -23,14 +33,26 @@ surprising_ripples:
 # cannot, not by any anticipatory authority. Same shape as BK-351's miss, one
 # artifact class over.
 # Name the commits the value was counted from, per the schema's review_rounds
-# clause. `git log --oneline origin/master..HEAD` at the final push:
-#   05f9524 - BK-351. A different item, co-carried on this branch; not this
-#     item's work and not a review round on it.
-#   the commit carrying this line - this item's implementation, authored in one
-#     pass. Does not count.
-# No PR was open and no review round had run when this value was written, so
-# there are no feedback commits and the value is 0.
-review_rounds: 0
+# clause. `git log --oneline origin/master..HEAD` returns five, all named because
+# an enumeration shorter than the named command's output is not a derivation:
+#   05f9524 - BK-351's implementation. Co-shipped, not this item's work.
+#   162d132 - this item's implementation, which created this file. Does not count.
+#   d6d3f57 - this item's DRIFT-RULES correction, found by the /pr qualitative
+#     gate. Author-initiated on my own work, so it does not count, on the reading
+#     bk-348's trace states for its own finishing commit. Named by SHA rather than
+#     as "the commit carrying this line", which was ambiguous between 162d132 and
+#     this one - the ambiguity is why the schema asks for SHAs.
+#   58d425e - BK-351's word-count correction. Not this item's work.
+#   the commit carrying this line - answers PR #962's review (nine findings).
+#     Counts.
+# Value is 1: the review round, and not the author-initiated gate finding.
+# **"No review round had run" was false when written**, and PR #962's review
+# caught it: d6d3f57's own message says the /pr gate found a real defect, and the
+# verify phase below records it. The claim that survives is narrower - a gate the
+# author ran on their own work is an author pass under bk-348's reading, so it
+# does not count toward this field. That is a reason, where the first version
+# asserted the event had not happened.
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -77,16 +99,22 @@ phases:
         extract: >-
           Ran `hatch run report-trace-outcomes` instead of quoting ID-238's
           figures, which that item's own body requires of an inherited number.
-          275 traces, 3,981 steps, 1,793 tagged (45.0%), 220 negative tags across
-          113 traces.
           **The run corrected the argument rather than confirming it.** The split
-          is 189 `misleading` to 31 `unclear`, and only `unclear` is the class a
+          is 189 `misleading` to 30 `unclear`, and only `unclear` is the class a
           reader test reaches - the schema defines it as on-topic but vague, the
           reader compensating, where `misleading` is a confident false answer a
           no-context reader cannot check. My framing to the user before this run
           cited the negative total and would have claimed about seven times the
-          reach the mechanism has. Scope narrowed in the item, the lens and the
-          persona to what 31 tags support.
+          reach the mechanism has.
+          **The figures themselves were then wrong for two more rounds**, which is
+          the part worth recording. The first run happened mid-branch, after
+          BK-351's trace landed and before this file existed, so its 275 · 3,981 ·
+          1,793 · 220 · 31 described neither `origin/master` nor the head, and the
+          entry stated it as "at this commit". A corpus figure asserted inside a
+          commit that adds to the corpus cannot be pinned by re-running at the
+          head either. Fixed by measuring `origin/master` in a worktree - 274 ·
+          3,969 · 1,781 (44.9%) · 219 negative · 30 `unclear` - and giving the
+          head figures beside them.
         outcome: ok
       - file: sdd/traces/_schema.yml
         section: "outcome (unclear vs misleading)"
@@ -202,3 +230,60 @@ phases:
           filing from here: that item's open question is the shape of the fix,
           and two more instances do not change it.
         outcome: unclear
+  - id: review
+    name: Review (PR #962)
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Lens menu (Reader)"
+        read_type: verify
+        extract: >-
+          Round 1's sharpest finding, and it is this file's own inert-obligation
+          shape in the lens it had just added. The lens cites the persona block as
+          its normative method, and that block's step 2 spawns a fresh reader -
+          which a member here cannot do: a solo pass keeps `/rvw-pr`'s
+          `allowed-tools`, which grants no agent-spawning tool, and nesting from a
+          panel member is not established either. So the lens's stated reason for
+          existing ("runs the questions and reports what came back", the thing
+          separating it from Consumer) described something it could never do; the
+          fallback meant nothing broke, which is why a reading pass over the lens
+          alone would not have caught it. Fixed by briefing the member to
+          self-administer and label it, and by stating two bounds where the first
+          cut stated one - priming, and the sharper administration bound.
+        outcome: ok
+      - file: .claude/agents/documentation-expert.md
+        section: "READER TEST (Rule 7 bound); OUTPUT"
+        read_type: verify
+        extract: >-
+          Two findings on the file this PR declares the mechanism's normative
+          home. **DRIFT-RULES Rule 7 was unsatisfied there**: the bound that
+          decides the instrument's whole reach - it catches `unclear`, never
+          `misleading` - lived only in the backlog entry, which is a record rather
+          than the mechanism, and Rule 7 asks for it in the check itself. The
+          reviewer named `report_trace_outcomes.py`'s own "State the bound" section
+          as the standard the repo set for the sibling instrument in the same loop,
+          which is the right comparison. Added, with the 30-of-219 figure and two
+          further bounds the first cut also left implicit (self-administration is
+          the normal case, and questions bound the result). Separately the OUTPUT
+          clause was unconditional against a conditional obligation, so a
+          review-mode invocation - which `/orchestrate` Steps 3 and 6 and
+          `CLAUDE.md` § Audits all produce - was told to report a test it correctly
+          never ran.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-352 (corpus figures)"
+        read_type: verify
+        extract: >-
+          The figures finding, and the reason to record it is that **three
+          readings of one derivation disagreed and only running it settled them**.
+          The entry said 275 traces "at this commit"; the reviewer reasoned from
+          the report's documented glob to 274 on master and 276 at the head, said
+          plainly that theirs was a reading pass, and asked for a measuring pass
+          before any rewrite. Running it in an `origin/master` worktree confirmed
+          their corpus counts and refuted their predicted head figures - 221
+          negative across 114 and 32 `unclear`, not 222/115/33, and
+          `CLAUDE-REFERENCE.md` at 15 total with 12 `unclear` over 295 reads, not
+          13 over 296 - because those predictions were derived by adding to the
+          off-by-one they were correcting. An error inherited by the correction is
+          the same class as the error, which is the argument for the reviewer's own
+          instruction to measure first.
+        outcome: ok

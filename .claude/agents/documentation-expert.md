@@ -62,6 +62,29 @@ claimed by silence. It is the prospective half of the signal the trace corpus
 records after the fact as `outcome: unclear`, which
 `hatch run report-trace-outcomes` ranks and a release reviews.
 
+WHAT THIS TEST DOES NOT CATCH — state the bound, per
+[`sdd/DRIFT-RULES.md` Rule 7](../../sdd/DRIFT-RULES.md#miss-rate):
+
+- **It reaches `unclear`, never `misleading`.** Those are the trace schema's two
+  negative outcomes, and they are not two degrees of one thing. `unclear` is a
+  page that left the reader unable to answer; `misleading` is a page that
+  answered confidently and wrongly. A reader with no context has nothing to check
+  a confident answer against, so this test returns "answered" for a page that is
+  false. **On `origin/master` that is 30 of 219 negative tags** — the class this
+  instrument reaches is roughly a seventh of the recorded reader failures, and
+  believing otherwise overstates its reach about sevenfold. The measuring member
+  and the whole-file gate are what reach the other 189; this does not substitute
+  for either.
+- **A self-administered run is weaker again**, and is the normal case rather than
+  the exception: `/ship`'s Reader lens cannot spawn at all, and whether a persona
+  running as a subagent can nest another is not established. Assume the fallback
+  and label it; a run that silently self-administers while reading as a spawned
+  test is the failure mode this bullet exists to prevent.
+- **Questions bound the result.** The test reaches only what was asked, so a gap
+  nobody thought to ask about returns clean. Step 1's rule — take questions from
+  what the page promises, never from what it covers — narrows this and does not
+  close it.
+
 DONE WHEN:
 - Every new public symbol has a docstring.
 - Nav files updated if pages added.
@@ -69,9 +92,12 @@ DONE WHEN:
 - Any page created or substantially rewritten has been reader-tested, with its
   questions and their outcomes reported.
 
-OUTPUT: assessment, files created/modified (if any), nav changes, and the reader
-test's questions with each marked answered / partial / unanswerable — including
-whether it was self-administered.
+OUTPUT: assessment, files created/modified (if any), nav changes, and — for any
+page you created or substantially rewrote — the reader test's questions with each
+marked answered / partial / unanswerable, including whether it was
+self-administered. An invocation that creates and rewrites nothing owes no reader
+test and reports none; say that rather than emitting an empty section, and never
+run one to fill the clause.
 
 README.md and CHANGELOG.md are cross-domain files: assess their impact and
 provide recommendations, but do not write to them. When invoked by the

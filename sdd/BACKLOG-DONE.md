@@ -162,20 +162,37 @@ if evidence changes; these are retired.
   did not deliver, `hatch run report-trace-outcomes` ranks the documents those
   tags accuse, and **ID-238** fires that review at each release. Nothing tests a
   document against a reader *before* it ships.
-  **The figure was re-derived rather than inherited**, as ID-238's own body
-  requires of the figure it took from BK-330. Running the report at this commit:
-  275 traces, 3,981 steps, 1,793 carrying an explicit outcome (45.0%), and 220
-  negative tags across 113 traces.
-  **Only 31 of those 220 are `unclear`; 189 are `misleading`, and the difference
+  **The figures are of `origin/master`, and are stated that way because this item
+  cannot measure itself.** A corpus figure asserted inside a commit that adds to
+  the corpus is falsified by its own commit, and re-running at the head does not
+  pin it either — the next commit moves it again. `origin/master` is the state the
+  scope argument was actually made against, so that is what it cites. Measured by
+  running `scripts/report_trace_outcomes.py` in a `git worktree` on
+  `origin/master` (16673b7): **274 traces, 3,969 steps, 1,781 carrying an explicit
+  outcome (44.9%), 219 negative tags across 112 traces.** The same script at this
+  branch's head gives 276 · 3,994 · 1,806 (45.2%) and 221 across 114; the two new
+  traces are the whole of the difference.
+  **Only 30 of those 219 are `unclear`; 189 are `misleading`, and the difference
   decides the scope.** A reader test catches "I could not answer this from the
   page", which is the schema's `unclear` — on-topic but vague or incomplete, the
   reader compensating. It cannot catch `misleading`, where the page gave a
   confident answer that was false; a reader with no context has nothing to check
   that against, and the instruments for it already exist (the measuring member,
-  the whole-file gate). A first framing of this item cited the 220 and would have
-  claimed roughly seven times the reach the mechanism has. The largest single
-  concentration is `sdd/CLAUDE-REFERENCE.md` at 11 `unclear` over 294 reads,
-  about a third of the corpus total in one file.
+  the whole-file gate). A first framing of this item cited the negative total and
+  would have claimed roughly seven times the reach the mechanism has. The largest
+  single concentration is `sdd/CLAUDE-REFERENCE.md`: 13 negative tags over 293
+  reads, 10 of them `unclear`, which is a third of the corpus's `unclear` in one
+  file.
+  **Every figure above was wrong in the first cut, and PR #962 caught it.** The
+  entry stated 275 · 3,981 · 1,793 · 220 · 31 and `CLAUDE-REFERENCE.md` at 11
+  `unclear` over 294 — the corpus as it stood mid-branch, after BK-351's trace
+  landed and before this item's own, so it described neither endpoint. The review
+  that found it reasoned from the report's documented glob rather than running it,
+  said so, and asked for a measuring pass before any rewrite; that pass is what
+  produced the numbers above, and it also refuted the review's own predicted head
+  figures (222 / 115 / 33, `CLAUDE-REFERENCE.md` 13 over 296), which inherited the
+  off-by-one they were correcting. Three readings of one derivation, two of them
+  careful, none reproducing until it was run.
   **Shipped as two advisory instruments, no gate**, which keeps
   [BK-330](#unreleased)'s report-not-a-gate posture rather than reopening it:
   a **Reader lens** in `/ship`'s lens menu, which
@@ -241,22 +258,27 @@ if evidence changes; these are retired.
   case. The seven slash-only descriptions are left alone: adding trigger phrases
   to a description nothing matches is text that cannot be wrong in a way anything
   would catch.
+  **Both compensating mechanisms are retained, and the descriptions do not
+  govern them.** The fix adds a third statement of a direction the two already
+  carry — `/rvw-pr`'s description now says to prefer it over the built-in
+  `/review`, and `/pr`'s says to prefer it over calling the API directly — which
+  is [`DRIFT-RULES.md`](DRIFT-RULES.md#one-driver)'s second-description trigger,
+  the same test this branch applied to BK-352's reader-test method and, until
+  PR #962's review, did not apply here. Applying it: **`CLAUDE.md` § GitHub
+  operations governs.** It is read cold at session start, where a description is
+  matched only once a request is already being routed, so it reaches the case a
+  description cannot. The hook is not a third description but an enforcement of
+  the same direction at a different layer, and a `PreToolUse` gate is worth more
+  than either sentence. Neither is redundant and no follow-up is owed; what was
+  owed was this disposition, and diagnosing a symptom without one is what the
+  review caught.
   **Source:** *The Complete Guide to Building Skills for Claude* (Anthropic, 33pp),
   supplied by the user. Its other applicable claim was **declined**, and the
   reasoning is the durable half: it prescribes moving detail out of `SKILL.md`
   into `references/` under a 5,000-word budget, and `/ship`, `/rvw-pr` and
   `/orchestrate` exceed or approach it. All three were read whole against the
   prescription.
-  **The counts are of `origin/master`, and are stated that way because this
-  branch moved two of them.** Measured with `git show origin/master:<path>` piped
-  through a word count: `/ship` 6,380, `/rvw-pr` 3,479, `/orchestrate` 3,395. At
-  this branch's head the same measurement gives 6,667, 3,547 and 3,395 — this
-  item's own description edit grew `/rvw-pr`, and BK-352's Reader lens grew
-  `/ship`. The first cut quoted the base figures in the present tense, so a
-  reader running `wc -w` would have got three numbers, two of them different, from
-  a sentence that named its derivation and still could not be reproduced. Caught
-  while drafting the PR body, which is where
-  [principle 9](../CLAUDE.md#principles) binds `/pr`. Their bulk is **unconditionally binding instruction**, and a
+  **Those three files' bulk is unconditionally binding instruction**, and a
   `references/` file is loaded at the model's discretion, so the move would
   convert rules that must hold on every invocation into rules that might be read.
   That is the inert-obligation failure those very files record shipping three
@@ -264,6 +286,24 @@ if evidence changes; these are retired.
   the correct way, to ADRs 0020 and 0033–0037 by link. The budget also collides
   with [principle 8](../CLAUDE.md#principles), which forbids trading a
   load-bearing reason for a length target.
+  **The counts are of `origin/master`, and are stated that way because this
+  branch moved two of them.** Measured with `git show origin/master:<path>` and a
+  word count: `/ship` 6,380, `/rvw-pr` 3,479, `/orchestrate` 3,395. At this
+  branch's head the same measurement gives 6,667, 3,547 and 3,395 — this item's
+  own description edit grew `/rvw-pr`, and BK-352's Reader lens grew `/ship`. The
+  first cut quoted the base figures in the present tense, so a reader running
+  `wc -w` would have got three numbers, two of them different, from a sentence
+  that named its derivation and still could not be reproduced. Caught while
+  drafting the PR body, which is where
+  [principle 9](../CLAUDE.md#principles) binds `/pr`.
+  **This paragraph is where it was inserted, and the insertion broke the
+  antecedent above it** — the following sentence began "Their bulk", whose
+  referent is the three skills named two paragraphs up, and a reader landing after
+  the insertion resolved it to `/pr` or to the counts. Found by PR #962's review.
+  It is ADR-0037's own named shape, an antecedent broken by a paragraph inserted
+  above it, arriving inside the entry that cites that record — and invisible in
+  the hunk that caused it, which is the argument for the whole-file gate restated
+  as an instance.
   **One residue left open, deliberately untracked.** The `git worktree add tmp/base`
   recipe is a self-declared duplicate across `/rvw-pr` and `/orchestrate` — three
   commands and a `prune` fallback, with each copy naming the other and carrying a

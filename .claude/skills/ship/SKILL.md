@@ -277,15 +277,27 @@ missed:
   defect it reaches is a page that is accurate, correctly placed and
   CONTENT-RULES-clean and still leaves a reader unable to act, which no lens
   judging correctness can see.
-  **Its bound, stated rather than implied:** the member has read the change
-  under review, so it is a weaker instrument than a reader who has not — under
-  this skill that means the diff and the PR body `rvw-pr` Step 1 requires, and
-  under [`/orchestrate`](../orchestrate/SKILL.md#reviewer-selection), which takes
-  this menu by link, it means the authoring output in the working tree. The bound
-  is the same either way and so is the reason; only what was read differs. It is
-  never the unprimed member — a question list is a brief. Where a genuine
-  no-context read is wanted, the `documentation-expert` persona's reader test
-  spawns one.
+  **Under this skill the test is always the block's self-administered form, and
+  the brief must say so.** The block's step 2 spawns a fresh reader; a member here
+  cannot. A solo pass invokes `/rvw-pr` directly and keeps its `allowed-tools`,
+  which grants no agent-spawning tool at all, and a panel member's ability to
+  nest a further subagent is not something this loop has established. So brief the
+  member to self-administer and to **label the result as such**, which the block
+  already requires — never to attempt the spawn and report what it could not do.
+  Writing a brief that cites the spawn step is this file's inert-obligation
+  failure in its own newest lens: an obligation and the permission to execute it
+  ship together or the obligation is theatre.
+  **Two bounds, and the second is the sharper one.** First, priming: the member
+  has read the change under review, so it is weaker than a reader who has not —
+  under this skill the diff and the PR body `rvw-pr` Step 1 requires, and under
+  [`/orchestrate`](../orchestrate/SKILL.md#reviewer-selection), which takes this
+  menu by link, the authoring output in the working tree; same bound, same reason,
+  only what was read differs. Second, administration: it cannot run the test on
+  anyone, only on itself, against a page it has already read. Both are real and
+  the lens claims neither away. It is never the unprimed member — a question list
+  is a brief. Where a genuine no-context read is wanted, the
+  `documentation-expert` persona's reader test is the host that attempts the
+  spawn.
   This is the prospective half of a signal the repo otherwise collects only
   after the fact, as trace `outcome: unclear` tags aggregated by
   `hatch run report-trace-outcomes`.

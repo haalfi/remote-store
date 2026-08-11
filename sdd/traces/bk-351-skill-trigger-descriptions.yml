@@ -10,6 +10,8 @@ trigger: >-
   slash command.
 source_items:
   - BK-351
+co_shipped_items:
+  - BK-352
 audience:
   - contributor.process
 expected_ripples:
@@ -25,14 +27,26 @@ surprising_ripples:
 # trigger phrase", and no row would have found it: the membership test is a key
 # in a frontmatter, not a citation anywhere.
 # Name the commits the value was counted from, per the schema's review_rounds
-# clause. `git log --oneline origin/master..HEAD` at the final push:
-#   the commit carrying this line - the implementation, authored in one pass.
-#     Does not count.
-# No PR had been opened and no review round had run when this value was written,
-# so there are no feedback commits to count and the value is 0. The self-
-# correction below is author-initiated within the authoring pass and produced no
-# separate commit; per bk-348's reading, an author pass does not count.
-review_rounds: 0
+# clause. `git log --oneline origin/master..HEAD` returns five, and all five are
+# named because the command's output is the checkable half - an enumeration
+# shorter than what the named command prints is not a derivation:
+#   05f9524 - this item's implementation, authored in one pass. Does not count.
+#   162d132 - BK-352's implementation. Co-shipped, not this item's work.
+#   d6d3f57 - BK-352's DRIFT-RULES correction, found by the /pr qualitative gate.
+#     Author-initiated on my own work, so it does not count, on the reading
+#     bk-348's trace states for its own finishing commit.
+#   58d425e - this item's word-count correction, found by the same gate while
+#     drafting the PR body. Same reading: does not count.
+#   the commit carrying this line - answers PR #962's review (nine findings).
+#     Counts.
+# Value is 1: the review round, and neither author-initiated gate finding.
+# **The first version of this block was wrong three ways**, all caught by that
+# review: it enumerated one commit where the named command printed four, it
+# asserted the word-count correction "produced no separate commit" when 58d425e
+# is exactly that, and it said no review round had run. The command was named and
+# never run against its own claim - which is the defect class this branch ships a
+# fix about, in the field the schema added to prevent it.
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -205,4 +219,56 @@ phases:
           editing, to find anything asserting them. Two hits, both the SKILL.md
           lines themselves. No doc, check, spec or test quotes a skill
           description, so the sweep is closed rather than merely unattempted.
+        outcome: ok
+  - id: review
+    name: Review (PR #962)
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-351 (word-count paragraph; 'Their bulk')"
+        read_type: verify
+        extract: >-
+          **The word-count fix broke an antecedent, and the fix's own commit is
+          what broke it.** 58d425e inserted the `origin/master` pinning paragraph
+          between "All three were read whole against the prescription" and "Their
+          bulk is unconditionally binding instruction", so the pronoun's referent
+          moved two paragraphs away and a reader resolved it to `/pr` or to the
+          counts. ADR-0037's named shape - an antecedent broken by a paragraph
+          inserted above it - inside the entry that cites ADR-0037, and invisible
+          in the hunk that caused it. Fixed by restoring the order and naming the
+          subject ("Those three files' bulk") rather than repairing the pronoun,
+          since a pronoun across a paragraph boundary breaks again on the next
+          insertion.
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "frontmatter description; BK-351 entry (compensating mechanisms)"
+        read_type: verify
+        extract: >-
+          The finding that the second-description test was applied to one half of
+          the branch. This item diagnoses `CLAUDE.md` § GitHub operations and
+          `warn-direct-pr.sh` as mechanisms compensating for the missing triggers,
+          then adds a third statement of the same direction in the new
+          descriptions - which is DRIFT-RULES' own scope trigger, the test
+          d6d3f57 had applied to BK-352's reader-test method one commit earlier.
+          The reviewer explicitly did not ask for deletions, only for a
+          disposition, which is the right ask: all three are justified on
+          different grounds. Recorded in the entry - `CLAUDE.md` governs because it
+          is read cold at session start, where a description is matched only once
+          routing is already underway; the hook enforces rather than describes.
+          The gap was a diagnosis shipped without a decision.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "review_rounds; co_shipped_items"
+        read_type: verify
+        extract: >-
+          Two schema obligations both traces missed. `review_rounds` names a
+          command whose output the enumeration must match, and both enumerated
+          fewer commits than `git log --oneline origin/master..HEAD` prints - one
+          of five here, two of five in the sibling - while asserting facts the
+          omitted commits falsify. `co_shipped_items` was absent from both, though
+          the PR closes two items and the field exists precisely so an aggregator
+          does not double-count shared reads; both traces cite _schema.yml,
+          BACKLOG-DONE.md and CLAUDE-REFERENCE.md, and both tag the last
+          `unclear`, which inflates the metric BK-352 argues from. Established
+          practice rather than a dormant field - `rg co_shipped_items sdd/traces`
+          hits 20+ files, and neither author checked.
         outcome: ok
