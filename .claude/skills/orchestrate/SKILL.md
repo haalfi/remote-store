@@ -95,6 +95,14 @@ question; the Rules entry below points here rather than restating the set.
 <a id="reviewer-selection"></a>
 ### Reviewer selection (Steps 3 and 6)
 
+**Open question, deliberately untracked.** Whether this skill's reviewers should
+read each changed file *whole* rather than diff-shaped — the gate `/ship` adopted
+— is unsettled. [ADR-0037 §
+Consequences](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md)
+states the case and declines to decide it on `/ship`'s evidence alone. Deciding
+it needs evidence from an `/orchestrate` delivery's own traces; no backlog item
+carries it, so this note is where a reader of this skill meets the question.
+
 **A reviewer is selected by the subject set it is aimed at and the method it
 uses, never by which directory it owns.** A persona is one way to staff a lens,
 not the unit of selection. Two measurements, over different samples: across the
@@ -379,7 +387,9 @@ orchestrator fixes directly.
    see format in `sdd/CLAUDE-REFERENCE.md` ripple-check row **CHANGELOG entry**.
 3. **BACKLOG**: Delete completed items from BACKLOG.md, add as `[x]` to
    BACKLOG-DONE.md. Partially done → split: done part to BACKLOG-DONE.md as
-   `[x]`, new ID in BACKLOG.md for remainder.
+   `[x]`, new ID in BACKLOG.md for remainder. Decided against → delete and
+   record one line under BACKLOG-DONE.md § Decided against. Authoritative:
+   [`sdd/BACKLOG.md` § How this file works](../../../sdd/BACKLOG.md#how-this-file-works).
 4. **Validate**: Run `hatch run all`. Fix failures (max 2 attempts — see Rules).
 5. Stage all changes, commit with backlog ID prefix.
 6. Push feature branch (never master).

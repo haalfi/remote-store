@@ -1307,7 +1307,7 @@ the `quickXorHash`, `sha1Hash`, and `sha256Hash` values from Graph's
 **Postconditions:** Changing the target drive requires constructing
 a new backend. `drive_id` is reserved as a component of any future
 identity-derived consumer (e.g. a `cache_key`-discipline `ext.cache`
-revision per ID-123 — `ext.cache` in v0.27.0 builds plain
+revision per ID-121 — `ext.cache` in v0.27.0 builds plain
 `(op, path[, …])` tuples and does not yet derive keys from backend
 identity).
 

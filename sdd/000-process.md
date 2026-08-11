@@ -116,8 +116,12 @@ rules do not restate. The evidence and argument behind them:
 
 ### Backlog
 
-Active work and ideas are tracked in [`sdd/BACKLOG.md`](BACKLOG.md).
-Completed items live in [`sdd/BACKLOG-DONE.md`](BACKLOG-DONE.md).
+Active work is tracked in [`sdd/BACKLOG.md`](BACKLOG.md), whose sections are
+outcomes rather than topics: an item is filed under the promise it serves, and
+is not filed at all if none fits. [`sdd/BACKLOG-DONE.md`](BACKLOG-DONE.md) holds
+everything that left it, in three classes: completed work, IDs **absorbed** into
+a surviving item whose work is still open, and items **decided against**. Only
+the first is done — read the section an entry sits under.
 
 `BACKLOG.md` is the single source of truth for ID prefixes, status conventions,
 completion workflow, and section structure. See its "How this file works" header.

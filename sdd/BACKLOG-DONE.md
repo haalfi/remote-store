@@ -4,6 +4,153 @@
 Completed items, newest first. All items must use `[x]` status.
 Active work lives in [BACKLOG.md](BACKLOG.md).
 
+Three outcomes land here. Most entries are **work that shipped**, filed under
+the release that carried it. Two sections hold retired IDs instead:
+[§ Decided against](#decided-against), items removed without being implemented,
+and [§ Absorbed](#absorbed), IDs folded into a surviving item whose work is
+still open. In both, `[x]` is this file's structural convention, not a claim the
+work happened — read the line.
+
+Every retired ID gets an entry in one of the two, for two reasons: an inbound
+citation anywhere in `sdd/` still resolves, and `gen_backlogid.py` counts the
+header, so a retired number is never reoffered.
+
+---
+
+<a id="absorbed"></a>
+## Absorbed
+
+Folded into a surviving `BACKLOG.md` item as a sub-bullet carrying its evidence.
+**The work is open, not done** — follow the host. The ID is retired because a
+sub-bullet is not an ID.
+
+- [x] **BK-347 — A diff outside CI's `CODE_PAT` is routed away from the ADR drift gate** → **BK-333**
+- [x] **BK-337 — Widening an authority doc's scope reaches no row that finds its restating copies** → **BK-346**, instance 5
+- [x] **BK-334 — No ripple-check row covers adding a `hatch` script alias** → **BK-346**, instance 4
+- [x] **ID-248 — Closing a backlog item reaches no row that finds the items citing it** → **BK-346**, instance 6
+- [x] **ID-246 — No gate verifies that a tracker ID cited under `sdd/` resolves** → **ID-235**, second pass
+- [x] **ID-237 — Derive the cross-artifact checker inventory** → **ID-245**
+- [x] **ID-236 — Publish the characteristic-accountability record** → **ID-245**
+- [x] **ID-218 — `ext.cache`: warn when wrapping a bridged (async-native) backend** → **ID-217**. ADR-0025 § Risks names ID-218 and is Accepted, so it is not edited; this entry is what makes that citation resolve.
+- [x] **ID-123 — Cache key derivation from `ResolutionPlan` (Phase 2)** → **ID-121**
+
+---
+
+<a id="decided-against"></a>
+## Decided against
+
+Removed from `BACKLOG.md` without being implemented, per its
+[§ Completing work](BACKLOG.md#how-this-file-works). Each line says why, because
+a decision *about* a diagnosis is still a decision and deleting both is how the
+same idea returns with the argument had from scratch. Re-file under a **new** ID
+if evidence changes; these are retired.
+
+- [x] **— `ext.cache` stampede guard** *(refused at admission; never had an ID)*
+  BK-290 left the stampede — concurrent identical misses each hitting the backend
+  — as an out-of-scope follow-up and named ID-218 as its owner. That attribution
+  was wrong: ID-218 was the bridged-backend materialisation guard, a different
+  defect. Verified nothing else carries it: `rg -n 'stampede'` across the tree
+  returns only research prose, BK-290's own entry, BK-292's trace and a test
+  comment.
+  Refused rather than filed because it fits no section's promise on today's
+  evidence: no user has reported it, `ext.cache` is opt-in, and the failure mode
+  is redundant fetches rather than a wrong answer. Recorded here so the argument
+  is not had from scratch — re-file under a new ID the first time a stampede is
+  measured against a real backend.
+
+- [x] **BK-350 — The drift-refresh procedure spans five prose sites with no gate**
+  PR #959 answered it structurally: `infra/drift-locks/README.md` became the
+  single normative description and the other four sites were cut back to links.
+  Every candidate gate is a shape check (does this file contain a fenced refresh
+  command, does it link to README), and none would have caught any of the 15
+  findings that motivated it.
+- [x] **BK-349 — Decide whether `/orchestrate` adopts the whole-file reading mode**
+  Needs evidence from an `/orchestrate` delivery, and none exists; the item's own
+  body says so. The *gate* half is already settled as inapplicable, since
+  ADR-0020 caps that skill's rounds and nothing there waits on a clean state.
+  **This does not refute ADR-0037's reason for filing it** — "an invitation with
+  no item behind it is one nobody finds" — which the ADR wrote knowing both
+  points above. It answers it differently: a tracker with nothing to act on is
+  found and then skipped, every pass, which is the cost the admission test
+  exists to stop paying. The findability half is discharged here instead, so the
+  question survives somewhere a reader reaches: `/orchestrate`'s own
+  [`SKILL.md`](../.claude/skills/orchestrate/SKILL.md) now carries a one-line
+  note under its review step pointing at ADR-0037 § Consequences. Re-file under a
+  new ID when an `/orchestrate` trace supplies the evidence.
+- [x] **BK-335 — `check_links.py` cannot see Markdown links inside Python docstrings**
+  **Diagnosis, carried across because the verdict alone is not re-decidable.**
+  [`scripts/docs/check_links.py`](../scripts/docs/check_links.py) walks
+  git-tracked `.md` only and guards on `tgt_path.suffix != ".md"`, so a
+  `](../sdd/DRIFT-RULES.md#anchor)` link written inside a `scripts/*.py`
+  docstring is validated by nothing: rename the anchor and every reference to it
+  breaks silently. Measured instances at filing, still live —
+  `rg -n '\.md#' scripts/report_trace_outcomes.py scripts/_trace_corpus.py`
+  returns 7 links into `sdd/DRIFT-RULES.md` anchors, all resolving today.
+  `scripts/check_test_placement.py` had the pattern first, so BK-330 multiplied
+  it rather than introducing it.
+  **Why retired anyway:** an unchecked surface, not a live break. The remedy is
+  a new cross-artifact check needing its own claim space, stated bound, and a
+  decision about what counts as a link in Python source, and it would surface
+  pre-existing breakage across `scripts/` unrelated to whatever PR built it.
+  Re-file under a new ID the first time an anchor rename actually breaks one.
+- [x] **BK-139d — Remaining bug-prevention measures from research**
+  Only item 6 remained, an ~80-line `scripts/check_error_handling.py`. The BLE
+  ruleset (item 4) and the extended conformance error-fidelity category (item 5)
+  cover the same error-swallowing bug class with less maintenance. Reactivate
+  only if a bug escapes those nets.
+- [x] **ID-240 — Model "the root always exists" in the Dafny contract**
+  Changes no runtime behaviour, by the item's own statement, and the conformance
+  suite already covers the empty-store case across the fixture registry. Adding
+  `Root in fs` to `Valid()` obliges every existing lemma and method
+  postcondition to re-establish it — proof cost on the whole model for one
+  clause.
+- [x] **ID-239 — Sweep backlog IDs used as provenance anchors out of durable artifacts**
+  Cosmetic for any reader who can grep, and unsized (`effort: —`) because its own
+  scope question was unresolved.
+  **One live sub-question outlived it and is not retired:** parts of `sdd/**` are
+  published prose (`DRIFT-RULES.md`, `CONTENT-RULES.md` and `000-process.md` carry
+  `<!-- doc: dual dest=… -->` and `gen_pages.py` renders them), so the
+  ripple-check's "Tracker ID in published prose" row naming `sdd/**` as out of
+  scope contradicts the dual-dest mechanism today. That is a carve-out disagreeing
+  with a mechanism, not a sweep; it needs a new ID under `BACKLOG.md` section 6 if
+  anyone wants it tracked.
+- [x] **ID-215 — `RemotePath` deferred pathlib-parity members**
+  No demand for any of them, as the item recorded; `as_posix()` (PATH-016)
+  covered the one concrete need, and PATH-017 pinned the deliberate non-goal.
+  Spec 004 keeps the parity audit, so the catalogue survives the ticket. Each
+  member would need its own `PATH-NNN` clause and spec-tagged test — re-file
+  per member if a user hits a specific gap.
+- [x] **ID-205 — Migrate complex ASCII diagrams to Mermaid**
+  Cosmetic; the diagrams render readably today and no reader is blocked. "All
+  non-trivial diagrams" is unbounded across `sdd/`, `guides/` and `docs-src/`.
+  Convert opportunistically when a file is being touched for another reason.
+- [x] **ID-197 — Review context7.com docs page for framing and content gaps**
+  No deliverable and no acceptance criterion — its stated output was that
+  findings "feed the next docs-improvement session". A third-party proxy of our
+  docs is not authority over them, and ID-199 already owns docs improvement with
+  pain mined from real issues.
+- [x] **ID-118b — TLS CA bundle for Azure (Phase 2)**
+  Explicitly conditional on demand that never materialised, and narrow to Azure
+  Stack Hub / on-premises deployments. The S3 Phase 1 shipped and documents the
+  pattern, so re-filing costs little the day a user reports the need.
+- [x] **ID-114 — PyArrow-style bucket path support**
+  Deliverable was an RFC with no committed code, filed years ago with no demand
+  signal since. Requiring `bucket=` and `path=` separately costs a migrating
+  caller one line, and is a defensible API rather than a gap.
+- [x] **ID-105 — AzurePyArrowBackend (C++ Tier 1)**
+  Conditional on real-Azure benchmarks nobody has run or scheduled, and an L-sized
+  optional tier over the Tier 3 range reader that already ships (ID-102). The
+  [research doc](research/research-azure-pyarrow-optimization.md#6-full-tier-1-path-if-needed)
+  preserves the approach.
+- [x] **ID-067 — griffe-typingdoc for `Annotated[T, Doc("...")]` docstrings**
+  Conditional on a Google-style → PEP 727 docstring migration that
+  [its own research](research/research-google-docstring-migration.md) does not
+  recommend, so it is two unmade decisions deep. Renders identically for a reader.
+- [x] **ID-066 — PR preview deployments**
+  Contributor convenience with no user impact, needing an infrastructure decision
+  nobody proposed and L effort to make. Inspired by another project's setup rather
+  than by observed pain here; docs already build and publish.
+
 ---
 
 ## Unreleased
@@ -132,7 +279,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   contradicts. All three fixed on this branch, in a commit that is itself
   unreviewed — the same gate open one state later, which is what ending a
   convergence loop by hand costs and is recorded rather than smoothed over.
-  Produced [BK-349](BACKLOG.md).
+  Produced **BK-349**, since [decided against](#decided-against).
   **No CHANGELOG entry**: `contributor.process` with no user-facing framework,
   per the schema's derived rule — the same call BK-338, BK-342 and BK-344 each
   made (a grep of `CHANGELOG.md` for those three IDs returns nothing).
@@ -427,7 +574,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   produced the only measured refutation of the run — the tamper check's stated
   residual was two categories narrower than what running it showed — plus
   findings on two of the eight untouched files. Method over identity, on the PR
-  arguing for it. **Produced two items**: [BK-347](BACKLOG.md), a diff outside
+  arguing for it. **Produced two items**: the ADR-drift-gate routing defect, now carried by
+  [BK-333](BACKLOG.md) — a diff outside
   CI's `CODE_PAT` routed away from the ADR drift gate (filed as "ADR-only",
   widened by BK-348's own CI; the local gate misses a different set, on a
   different classifier); and BK-348 (closed
@@ -832,7 +980,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   Python defect fix; and `const Root := "."` with the adapter mapping `""` onto
   it was already the model's position, so facet 1 aligned Python to Dafny. The
   one unmodelled half — `Valid()` never asserts `Root in fs` — is
-  **[ID-240](BACKLOG.md)**.
+  **ID-240**, since [decided against](#decided-against).
   **Round-trip consequence, recorded in all four homes.** `native_path(".")` and
   `native_path("")` share one native path, so `to_key(native_path("."))` is `""`.
   Forced — an inverse cannot return two spellings. BE-025 and BE-029 took it in
@@ -2849,7 +2997,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   bullet (the real cause is blocking spool I/O, now mitigated in-backend) and a
   pointer was added at the superseded bullet. Spec: GR-015 / GR-019 gained
   event-loop-liveness postconditions. Out of scope and left as follow-ups: token
-  single-flight (**BK-292**), `ext.cache` stampede (**ID-218**). Trace:
+  single-flight (**BK-292**), `ext.cache` stampede (the ID-218 this line
+  originally named was the bridged-backend materialisation guard, a different
+  defect; the stampede itself was never tracked and is now recorded under
+  [§ Decided against](#decided-against)). Trace:
   `sdd/traces/BK-290-graph-io-robustness.yml`.
 
 - [x] **BK-288 — Cross-backend concurrent-use-posture documentation (docs leg of the concurrency contract)**
@@ -3179,14 +3330,17 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
     `AsyncStore` consumer reaches `ext.*` only via `AsyncBackendSyncAdapter`,
     forfeiting async streaming. Decision (build vs. formally decline) left to
     scoping.
-  - **ID-218 — `ext.cache` warn over a bridged backend.** Owns ADR-0025 § Risks'
+  - **`ext.cache` warn over a bridged backend** (filed as ID-218, since folded
+    into ID-217). Owns ADR-0025 § Risks'
     promised guard: `CachedStore` with unset `max_content_size` over an
     async-native backend silently materialises what the backend exists to stream.
   Closing the loop on the source side: GR-003 now cites ID-217 instead of "a
   separate backlog item", and ADR-0025 § Risks cites ID-218 instead of "(tracked
-  separately)" — so neither promise dangles. The named async-ext surface
+  separately)" — so neither promise dangles. (ID-218 has since been absorbed into
+  ID-217; the ADR is Accepted and unedited, and
+  [§ Absorbed](#absorbed) is what keeps its citation resolving.) The named async-ext surface
   (glob / observe / otel / cache / integrity) now has owners: glob / observe /
-  otel / integrity under ID-217, the sync-cache guard under ID-218. No code, no
+  otel / integrity under ID-217, and the sync-cache guard with them. No code, no
   spec-behaviour change, no CHANGELOG (library.maintainer / contributor.process,
   no `user.*` audience). Trace: `sdd/traces/BK-268-file-deferred-async-ext-followups.yml`.
 
@@ -4705,10 +4859,11 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   - **Spec correction.** The backlog cited `NPR-020`, which is
     `Backend.native_path` — unrelated. The contract lives in the path model;
     added `PATH-016` / `PATH-017` to `sdd/specs/004-path-model.md`.
-  - **Parity audit → ID-215.** Catalogued the remaining `PurePath` members
+  - **Parity audit.** Catalogued the remaining `PurePath` members
     (`stem`, `suffixes`, `with_*`, `joinpath`, `parents`, `match`,
     `relative_to`, …) as deferred candidates; recorded informatively in spec
-    004 and spun out as ID-215 rather than widening this S-sized item.
+    004 rather than widening this S-sized item, and spun out as **ID-215**,
+    since [decided against](#decided-against); spec 004 remains the record.
   Trace: `sdd/traces/id-196-as-posix-pathlib-parity.yml`.
 
 - [x] **ID-203 — Align `tests/` folder structure with `src/` package layout**
@@ -8759,7 +8914,8 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   5. Extended conformance suite — 42 test functions derived from Dafny
      postconditions (`@pytest.mark.extended_conformance`)
   7. `ResourceWarning` safety net — `__del__` on SFTP, Azure, AsyncAzure
-  Item 6 (`check_error_handling.py` AST script) deferred; see BK-139d in BACKLOG.md.
+  Item 6 (`check_error_handling.py` AST script) deferred as **BK-139d**, since
+  [decided against](#decided-against).
 
 - [x] **BK-139a — Bug prevention: `_safe_wrap` + PBT (deliverables 1–3)**
   From [research-bug-prevention-beyond-testing.md](research/research-bug-prevention-beyond-testing.md):
@@ -9083,7 +9239,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
     `PythonFile` overhead acceptable. Phases 3–4 not needed.
     ([Verdict](research/research-azure-pyarrow-optimization.md#9-phase-2-verdict-real-workload-benchmarks))
   - Deferred: C++ Tier 1 via `pyarrow.fs.AzureFileSystem` — see
-    [ID-105](BACKLOG.md#integrations).
+    **ID-105**, since [decided against](#decided-against).
 
 - [x] **ID-100 — Seekable read capability + extension** (v0.20.0)
   `Capability.SEEKABLE_READ` flag for backends that always return seekable
@@ -9100,7 +9256,7 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   `S3PyArrowBackend`. Env var fallback chain (`AWS_CA_BUNDLE` >
   `REQUESTS_CA_BUNDLE` > `SSL_CERT_FILE`), early path validation,
   `setdefault` injection for backward compat. Spec 039.
-  Phase 2 (Azure) deferred as ID-118b.
+  Phase 2 (Azure) deferred as **ID-118b**, since [decided against](#decided-against).
 
 - [x] **ID-112 — Non-recursive `get_folder_info` optimization** (v0.20.0)
   Added `max_depth` parameter to `Store.get_folder_info()`. When set,

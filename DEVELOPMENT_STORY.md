@@ -101,7 +101,7 @@ The type system validates the interface; it can't validate the behavior behind i
 
 **Process infrastructure compounds.** Skills codified repeatable workflows, research docs front-loaded decisions, quality gates caught regressions. Together they enabled v0.20.0's feature explosion: more output in one cycle than any previous release, because cross-cutting concerns were handled automatically.
 
-**A living backlog beats a static roadmap.** A tiered `BACKLOG.md` (Release Blockers → Backlog → Ideas) gives Claude Code structured context to work from. It proposes promotions, spots dependencies, and drafts entries in the right tier without re-explanation.
+**A living backlog beats a static roadmap.** A `BACKLOG.md` organised into sections that each state an outcome and the condition under which they close gives Claude Code structured context to work from. It spots dependencies, argues an item against the promise it would serve, and drafts entries in the right section without re-explanation. (It began as tiers — Release Blockers → Backlog → Ideas — and the tiers decayed, because nothing stopped unearned items accumulating in the lowest one.)
 
 **Legacy code as a knowledge source.** Pointing AI at battle-tested legacy code for the SFTP backend was more effective than describing requirements. The AI extracted proven patterns and adapted them to the new contract.
 
