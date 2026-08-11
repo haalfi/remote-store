@@ -375,11 +375,14 @@ substitutes.
    regression a review round caught:
 
    **Count the `finding` rows only.** That endpoint returns your own replies
-   alongside the findings, and by the closing rounds they outnumber them — a
-   loop that answers every thread doubles its own comment count, so an
-   unfiltered tally reports the surface as more examined than it is, and worst
-   exactly where the loop has been most diligent. Measured on PR #958: its
-   round 1 returned 15 rows for 7 findings.
+   alongside the findings, so an unfiltered tally reports the surface as more
+   examined than it is. **How much more depends on the loop, not on the
+   endpoint**, which is why no ratio is stated here: this loop replies to every
+   thread, so its replies roughly track its findings — PR #958's round 1
+   returned 15 rows for 7 findings — while PR #956 closed five rounds with 28
+   findings and one reply, because its replies went in review summaries rather
+   than inline. Same query, one row of inflation on one PR and a doubling on the
+   other. Filter, and the difference stops mattering.
 
    **One row per comment, tagged rather than filtered in the query, and
    deliberately un-grouped**, so the output length is still the *page* length

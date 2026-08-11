@@ -4,7 +4,7 @@ description: Post inline review comments on a GitHub PR. Find real issues only.
 context: fork
 argument-hint: "[PR number] [optional context]"
 allowed-tools: Read, Grep, Glob, Bash, mcp__MCP_DOCKER__pull_request_read, mcp__MCP_DOCKER__list_pull_requests, mcp__MCP_DOCKER__list_commits, mcp__MCP_DOCKER__get_file_contents, mcp__MCP_DOCKER__pull_request_review_write, mcp__MCP_DOCKER__add_comment_to_pending_review
-# Intentional: no Edit or Write — review is read-only auditing. Bash is for `gh` PR-content reads, Step 4's posted-count verification, and — in a measuring pass — the allowlisted gates (never for fixing, regenerating, or filesystem scouting).
+# Intentional: no Edit or Write — review is read-only auditing. Bash is for `gh` PR-content reads, Step 4's posted-count verification, Step 1's metadata-only carve-out for a measuring pass verifying a comments-endpoint recipe, and — in a measuring pass — the allowlisted gates (never for fixing, regenerating, or filesystem scouting). Four uses; the body's opening paragraph enumerates the same four and the two must be changed together.
 ---
 
 ## ROLE: You are a REVIEWER. You are NOT an author. You do NOT fix anything.

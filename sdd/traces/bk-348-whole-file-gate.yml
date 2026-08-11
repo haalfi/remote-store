@@ -61,11 +61,13 @@ surprising_ripples:
 #   b5d5cc6 - PR #958 round 5. Counts.
 #   6354d31 - PR #958 round 6. Counts.
 #   f32b03d - PR #958 round 7. Counts.
-#   the commit carrying this line - the author-initiated finishing pass, made
-#             after the user ended the loop. Does NOT count, on the reading
-#             bk-338's trace states for its own finishing commit: the schema
-#             counts feedback incorporated. It is also the one entry no version
-#             of this block can name, since a commit cannot contain its own SHA.
+#   43c9dbd - the author-initiated finishing pass, made after the user ended the
+#             loop. Does NOT count, on the reading bk-338's trace states for its
+#             own finishing commit: the schema counts feedback incorporated.
+#   the commit carrying this line - PR #958 review 4903936676, initiated
+#             unprimed by the user after the loop closed. Three findings, all
+#             incorporated, so it Counts. It is also the one entry no version of
+#             this block can name, since a commit cannot contain its own SHA.
 # Value is the count of the counting commits above, the unnameable carrier
 # included. Not the number of steps in the `review` phase: a round can take more
 # than one step to record, and a round refuted whole produces no commit at all.
@@ -76,7 +78,7 @@ surprising_ripples:
 # under-counted by one. Any further round must renumber the carrier and add the
 # commit that has just become nameable. There is no "finalised at the close"
 # short of the close actually happening.
-review_rounds: 7
+review_rounds: 8
 phases:
   - id: orient
     name: Orient
@@ -666,4 +668,36 @@ phases:
           signal to do so is careful readers disagreeing rather than the error
           count. And BK-349 was filed for the /orchestrate question the ADR left
           as an invitation with no tracker.
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "frontmatter; CONTENT-RULES Rule 3; brief requirement 3"
+        read_type: verify
+        extract: >-
+          A user-initiated unprimed review after the loop closed, and it found
+          three - all in the class this PR ships a rule about, which is the
+          honest measure of how far the delivery got rather than how far it
+          claimed to.
+          (1) **The frontmatter falsified by the change it describes** - the
+          exact first item in the whole-file member's own list of shapes. Round
+          7 added a fourth Bash use; my finishing pass reconciled the body's
+          "three things and nothing else" and stopped one line short of the
+          frontmatter comment saying the same thing. Both now enumerate four and
+          say they must move together.
+          (2) **The two artifact enumerations disagreed about skill files.**
+          CONTENT-RULES' new carve-out named sdd/ records, backlog items and
+          commit messages; principle 9 and ADR-0037's Decision named the same
+          set without skill files - while .claude/skills/ is where this PR puts
+          most of its new exact counts, and rvw-pr Step 2 sends every reviewer
+          to apply CONTENT-RULES to prose changes generally. So a reviewer
+          landing on those lines met a review-enforced "no exact counts" rule
+          with no carve-out to cite. All three enumerations now include skill
+          files.
+          (3) **A magnitude claim my own ADR contradicts.** "By the closing
+          rounds replies outnumber findings - a loop that answers every thread
+          doubles its own comment count" rested on one early round of one PR,
+          and ADR-0037 measures 28 findings to one reply on PR #956. Both are
+          true: #958 replies inline to every thread, #956 replied in review
+          summaries. The ratio was never a property of the endpoint. Rewritten
+          to give both measurements and state that the magnitude depends on the
+          loop - the filter is what makes the difference stop mattering.
         outcome: ok

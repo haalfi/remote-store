@@ -27,9 +27,9 @@ framework](../CLAUDE.md#documentation-framework)): placement →
    Exact counts, latency figures, and percentages belong in generated artefacts
    (FEATURES.md, benchmark output, API reference). In prose: qualitative categories
    and a link. Write "significantly faster via caching" + link, not "+17% / 29×".
-   Out of scope: counts in `sdd/` records, backlog items, and commit messages,
-   which are measured history rather than narrative and are bound by
-   [`CLAUDE.md` principle 9](../CLAUDE.md#principles) instead.
+   Out of scope: counts in `sdd/` records, backlog items, commit messages and
+   `.claude/skills/`, which are measured history rather than narrative and are
+   bound by [`CLAUDE.md` principle 9](../CLAUDE.md#principles) instead.
 
 4. **One copy per fact.** [review-enforced]
    Every fact lives in exactly one authoritative place; everywhere else is a link

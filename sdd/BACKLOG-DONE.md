@@ -107,9 +107,10 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   principle 9 in miniature: the claim was checkable in one command *because* it
   named one.
   **The review, because it is this item's own subject.** Seven posted rounds on
-  PR #958, then an author finishing pass; the per-round detail is in
+  PR #958, an author finishing pass, then an eighth review the user initiated
+  unprimed after the close (`4903936676`); the per-round detail is in
   [`sdd/traces/bk-348-whole-file-gate.yml`](traces/bk-348-whole-file-gate.yml).
-  Two results are worth carrying forward. **The gate shipped inert and a panel
+  Three results are worth carrying forward. **The gate shipped inert and a panel
   caught it**: adding a third exit gate left the unprimed-reviewer definition's
   singular "the exit gate's appended pass" untouched, so that rule swallowed all
   three appended passes and an orchestrator following it would hand the
@@ -120,8 +121,14 @@ Active work lives in [BACKLOG.md](BACKLOG.md).
   count but careful readers disagreeing: three reviewers derived three values
   from one command. That is the repeat-site check applied to a number, and it is
   now [ADR-0037](adrs/0037-whole-file-gate-and-derived-figures.md)'s corollary.
-  **The loop was ended by the user after round 7 rather than by the stop rule**,
-  so three exit gates are undischarged against the final commit. Produced
+  **And an author finishing pass is not an unprimed reader.** The loop was ended
+  by the user after round 7 rather than by the stop rule, so the three exit
+  gates were discharged by the author rather than by an appended pass; the
+  user's post-close unprimed review then returned three findings, every one in a
+  class this item ships a rule about — a frontmatter falsified by the very
+  change it describes (the first shape the whole-file lens names), two artifact
+  enumerations that disagreed about `.claude/skills/`, and a magnitude claim
+  this delivery's own ADR contradicts. All three fixed on this branch. Produced
   [BK-349](BACKLOG.md).
   **No CHANGELOG entry**: `contributor.process` with no user-facing framework,
   per the schema's derived rule — the same call BK-338, BK-342 and BK-344 each

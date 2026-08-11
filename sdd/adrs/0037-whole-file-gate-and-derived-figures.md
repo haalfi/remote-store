@@ -119,8 +119,8 @@ derivation, and can only trust a total.
 
 - **A figure, or a claim about an action, names the derivation it came from,
   and the derivation is run before the sentence is written.** Binding on every
-  durable artifact — spec, ADR, trace, backlog item, commit message, PR body,
-  review reply — and stated once as [`CLAUDE.md`
+  durable artifact — spec, ADR, trace, backlog item, skill file, commit message,
+  PR body, review reply — and stated once as [`CLAUDE.md`
   principle 9](../../CLAUDE.md#principles) rather than per skill. The measured
   failure mode is that re-reading never worked and opening the source always
   did, so the remedy is the one that leaves the source named where the claim
