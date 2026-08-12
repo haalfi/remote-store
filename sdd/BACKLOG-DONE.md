@@ -303,7 +303,7 @@ if evidence changes; these are retired.
   **The counts are of `origin/master`, and are stated that way because this
   branch moved two of them.** Measured with `git show origin/master:<path>` and a
   word count: `/ship` 6,380, `/rvw-pr` 3,479, `/orchestrate` 3,395. At this
-  branch's head the same measurement gives 6,818, 3,547 and 3,395 — this item's
+  branch's head the same measurement gives 6,916, 3,547 and 3,395 — this item's
   own description edit grew `/rvw-pr`, and BK-352's Reader lens grew `/ship`. The
   first cut quoted the base figures in the present tense, so a reader running
   `wc -w` would have got three numbers, two of them different, from a sentence
@@ -317,10 +317,20 @@ if evidence changes; these are retired.
   derivation left a stale derivation two lines from where it explains the hazard.
   Round 2 caught it structurally rather than by measuring — from the commit that
   changed the file and a hand count calibrated against `/rvw-pr`'s unaffected
-  figure — and asked for a re-run rather than proposing a value. Re-run: 6,818.
+  figure — and asked for a re-run rather than proposing a value.
+  **The re-run answered 6,818 and that was wrong too, for a fourth reason.** It
+  measured the file as it stood *before* the round-2 edit, and the same commit
+  then rewrote the Reader lens and took it to **6,916** — the value now. Measured
+  across the branch: 6,380 on base, 6,667 at 5f04434, 6,818 at 3fce92c, 6,916 at
+  4fde387. So the number written to satisfy a finding about a stale figure was
+  stale before its own commit closed, which no reviewer caught and a `/fix-pr`
+  pass found while counting something else.
   **What generalises is the trigger, not the number.** Any commit touching a file
-  a figure measures obliges re-running that figure, and "I already re-derived this
-  branch's figures" is not the same claim as "I re-derived this one".
+  a figure measures obliges re-running that figure — **after the last edit in
+  that commit, not before the first** — and "I already re-derived this branch's
+  figures" is not the same claim as "I re-derived this one". Four failures of one
+  sentence is the argument for a mechanism; none exists, and this is a convention
+  with a stated failure mode rather than a guarantee.
   **This paragraph is where it was inserted, and the insertion broke the
   antecedent above it** — the following sentence began "Their bulk", whose
   referent is the three skills named two paragraphs up, and a reader landing after

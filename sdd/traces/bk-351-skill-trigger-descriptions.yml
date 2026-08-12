@@ -300,13 +300,19 @@ phases:
           and b43fa3f re-derived the corpus figures after the rebase without
           re-running this one - a fix for a stale derivation leaving a stale
           derivation two lines from where it explains the hazard. Re-run on
-          request rather than adjusted from the reviewer's estimate: **6,818**,
+          request rather than adjusted from the reviewer's estimate: 6,818,
           against their structural hand count of ~440 added words versus the
           measured +438, and their calibration on `/rvw-pr`'s unaffected +68 which
           matches exactly. `/orchestrate` unchanged at 3,395.
+          **And 6,818 was wrong too**, found by a later `/fix-pr` pass counting
+          something else. The re-run measured the file before that same commit
+          rewrote the Reader lens, which took it to **6,916**. Four values across
+          the branch, each correct at some commit and none at the one that wrote
+          it: 6,667 at 5f04434, 6,818 at 3fce92c, 6,916 at 4fde387.
           The generalisable part is the trigger, now written into the entry: any
           commit touching a file a figure measures obliges re-running **that**
-          figure, and "I re-derived this branch's figures" is a different claim
-          from "I re-derived this one". Three misses on one sentence is the
-          argument for a mechanism rather than more care.
+          figure **after the last edit in that commit**, and "I re-derived this
+          branch's figures" is a different claim from "I re-derived this one".
+          Measuring first and editing after is how the fourth one happened, inside
+          the fix for the third.
         outcome: ok
