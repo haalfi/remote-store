@@ -221,10 +221,16 @@ if evidence changes; these are retired.
   reports what came back. That is the axis
   [ADR-0035](adrs/0035-vary-method-not-model.md) established — reading versus
   executing — applied to prose, and the reason it lands as a lens and not as a
-  rename. Its bound is stated in the lens: a scoped member has read the change
-  under review, so it is weaker than a reader who has not, and only the persona's
-  test spawns a genuine no-context reader. No ADR is amended — ADR-0036 puts the
-  lens menu in the skills as operational contract.
+  rename. Two bounds are stated in the lens: a scoped member has read the change
+  under review, so it is weaker than a reader who has not; and it cannot
+  administer the test on anyone, only on itself. **No host in this repo guarantees
+  a spawned no-context reader** — the persona is where one would be attempted, and
+  its own block says to assume the fallback. An earlier cut of this entry said
+  "only the persona's test spawns a genuine no-context reader", which the block
+  contradicts outright; PR #962's round 2 caught the lens promising the same
+  escape hatch. If a guaranteed spawned reader is wanted it has to be built.
+  No ADR is amended — ADR-0036 puts the lens menu in the skills as operational
+  contract.
   **Source:** Anthropic's `doc-coauthoring` skill, Stage 3 (Reader Testing),
   supplied by the user. **The other two stages were declined.** Stage 1 (context
   gathering by 5-10 prose questions) is interview mode in a weaker form — this
@@ -297,13 +303,24 @@ if evidence changes; these are retired.
   **The counts are of `origin/master`, and are stated that way because this
   branch moved two of them.** Measured with `git show origin/master:<path>` and a
   word count: `/ship` 6,380, `/rvw-pr` 3,479, `/orchestrate` 3,395. At this
-  branch's head the same measurement gives 6,667, 3,547 and 3,395 — this item's
+  branch's head the same measurement gives 6,818, 3,547 and 3,395 — this item's
   own description edit grew `/rvw-pr`, and BK-352's Reader lens grew `/ship`. The
   first cut quoted the base figures in the present tense, so a reader running
   `wc -w` would have got three numbers, two of them different, from a sentence
   that named its derivation and still could not be reproduced. Caught while
   drafting the PR body, which is where
   [principle 9](../CLAUDE.md#principles) binds `/pr`.
+  **The head figure for `/ship` then went stale twice more, and the second time
+  is the instructive one.** The paragraph was written at 6,667; answering PR #962's
+  round 1 grew the Reader lens by two paragraphs, and the rebase re-derivation
+  that followed re-ran the corpus figures and not this one, so a fix for a stale
+  derivation left a stale derivation two lines from where it explains the hazard.
+  Round 2 caught it structurally rather than by measuring — from the commit that
+  changed the file and a hand count calibrated against `/rvw-pr`'s unaffected
+  figure — and asked for a re-run rather than proposing a value. Re-run: 6,818.
+  **What generalises is the trigger, not the number.** Any commit touching a file
+  a figure measures obliges re-running that figure, and "I already re-derived this
+  branch's figures" is not the same claim as "I re-derived this one".
   **This paragraph is where it was inserted, and the insertion broke the
   antecedent above it** — the following sentence began "Their bulk", whose
   referent is the three skills named two paragraphs up, and a reader landing after

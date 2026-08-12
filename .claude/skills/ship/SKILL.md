@@ -277,11 +277,12 @@ missed:
   defect it reaches is a page that is accurate, correctly placed and
   CONTENT-RULES-clean and still leaves a reader unable to act, which no lens
   judging correctness can see.
-  **Under this skill the test is always the block's self-administered form, and
-  the brief must say so.** The block's step 2 spawns a fresh reader; a member here
-  cannot. A solo pass invokes `/rvw-pr` directly and keeps its `allowed-tools`,
-  which grants no agent-spawning tool at all, and a panel member's ability to
-  nest a further subagent is not something this loop has established. So brief the
+  **Assume the self-administered form, and brief for it.** The block's step 2
+  spawns a fresh reader; assume no member here can. Under this skill a solo pass
+  invokes `/rvw-pr` directly and keeps its `allowed-tools`, which grants no
+  agent-spawning tool at all; a panel member's ability to nest a further subagent
+  is not established, and neither is an `/orchestrate` reviewer's, which is a
+  plain subagent with a full tool set but no established nesting. So brief the
   member to self-administer and to **label the result as such**, which the block
   already requires — never to attempt the spawn and report what it could not do.
   Writing a brief that cites the spawn step is this file's inert-obligation
@@ -293,11 +294,17 @@ missed:
   [`/orchestrate`](../orchestrate/SKILL.md#reviewer-selection), which takes this
   menu by link, the authoring output in the working tree; same bound, same reason,
   only what was read differs. Second, administration: it cannot run the test on
-  anyone, only on itself, against a page it has already read. Both are real and
-  the lens claims neither away. It is never the unprimed member — a question list
-  is a brief. Where a genuine no-context read is wanted, the
-  `documentation-expert` persona's reader test is the host that attempts the
-  spawn.
+  anyone, only on itself, against a page it has already read. **That one binds
+  both skills too**, and for one reason rather than two — no host in this repo
+  currently guarantees a spawned no-context reader, so the mechanism is the same
+  wherever the lens is staffed. Both are real and the lens claims neither away.
+  It is never the unprimed member — a question list is a brief.
+  **There is no escape hatch to route to.** The `documentation-expert` persona is
+  where a spawn would be *attempted*, and its own block says to assume the
+  fallback — so sending a reader there for a genuine no-context read promises
+  something the normative home declines to promise. If a guaranteed spawned
+  reader is ever wanted, it has to be built; it does not exist today under either
+  skill or under the persona.
   This is the prospective half of a signal the repo otherwise collects only
   after the fact, as trace `outcome: unclear` tags aggregated by
   `hatch run report-trace-outcomes`.

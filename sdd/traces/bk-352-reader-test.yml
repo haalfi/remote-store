@@ -223,13 +223,30 @@ phases:
         extract: >-
           The other half of the qualitative gate. Rule 3 forbids exact counts in
           narrative and **carves out** `sdd/` records, backlog items, commit
-          messages and `.claude/skills/`, which is where every figure this branch
-          adds lives; each names its derivation per principle 9, so the carve-out
-          is satisfied rather than merely invoked. Checked the one file outside
-          that list, `.claude/agents/documentation-expert.md`: it carries an
-          instruction range (5-10 questions), not a measured figure, so no count
-          crosses the boundary. Rule 4 is what the DRIFT-RULES finding above also
-          answers, from the documentation side.
+          messages and `.claude/skills/`; each figure names its derivation per
+          principle 9, so the carve-out is satisfied rather than merely invoked.
+          Rule 4 is what the DRIFT-RULES finding above also answers, from the
+          documentation side.
+          **This step certified an invariant that a later commit then broke, and
+          the step is what recorded it as safe.** As written it said every figure
+          the branch adds lives inside the carve-out, and that the one file outside
+          it — `.claude/agents/documentation-expert.md` — carried an instruction
+          range rather than a measured figure. True when checked; falsified two
+          commits later by the Rule 7 bound this trace's own review phase records
+          adding, which put a measured corpus pair into exactly that file. Neither
+          the fix nor its trace step re-read the certification standing 40 lines
+          above. PR #962's round 2 caught it, and the disposition was to take the
+          figure back out of the persona and leave the qualitative magnitude with a
+          link, per Rule 3's own "qualitative categories and a link" - so the
+          invariant holds again, by removal rather than by carve-out. The
+          alternative, adding `.claude/agents/` to Rule 3's carve-out, is an edit to
+          `CONTENT-RULES.md` and was not made.
+          Tagged `ok`, deliberately: `CONTENT-RULES.md` said exactly what it says
+          and nothing here is its failure. The schema reserves `outcome` for the
+          document that failed a reader and sends the reader's own miss to this
+          field, so a `misleading` tag would blame Rule 3 for a certification that
+          went stale under me. A first cut of this correction tagged it
+          `misleading` anyway.
         outcome: ok
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check table / Pre-work index"
@@ -275,9 +292,16 @@ phases:
           than the mechanism, and Rule 7 asks for it in the check itself. The
           reviewer named `report_trace_outcomes.py`'s own "State the bound" section
           as the standard the repo set for the sibling instrument in the same loop,
-          which is the right comparison. Added, with the 30-of-219 figure and two
-          further bounds the first cut also left implicit (self-administration is
-          the normal case, and questions bound the result). Separately the OUTPUT
+          which is the right comparison. Added, at first with the measured pair
+          spelled out, plus two further bounds the first cut left implicit
+          (self-administration is the normal case, and questions bound the result).
+          **Round 2 then took the pair back out**: a corpus figure in a persona file
+          sits outside Rule 3's carve-out, names no derivation a reader of that file
+          can run, and pins to an `origin/master` that moves — this branch moved it
+          once already. What stays is the bound Rule 7 actually asks for, which is a
+          schema fact rather than a corpus fact, plus the qualitative magnitude and
+          a link to the entry that carries the pinned measurement.
+          Separately the OUTPUT
           clause was unconditional against a conditional obligation, so a
           review-mode invocation - which `/orchestrate` Steps 3 and 6 and
           `CLAUDE.md` § Audits all produce - was told to report a test it correctly
@@ -302,4 +326,26 @@ phases:
           off-by-one they were correcting. An error inherited by the correction is
           the same class as the error, which is the argument for the reviewer's own
           instruction to measure first.
+        outcome: ok
+      - file: .claude/agents/documentation-expert.md
+        section: "WHAT THIS TEST DOES NOT CATCH; ship/SKILL.md Reader lens"
+        read_type: verify
+        extract: >-
+          Round 2, a whole-file pass, and both of its findings on this item are the
+          shape the round exists to catch - a claim true when written and falsified
+          by a later commit in a different file. The Rule 7 bound shipped with a
+          measured corpus pair in a persona file: outside CONTENT-RULES Rule 3's
+          carve-out, no derivation a reader of that file can run, and pinned to an
+          `origin/master` this branch had already moved once. Removed in favour of
+          the qualitative magnitude and a link, per Rule 3's own remedy; the bound
+          Rule 7 asks for is a schema fact and stays.
+          The second is the lens's escape hatch: it routed a reader wanting a
+          genuine no-context read to the persona, whose own block says to assume
+          the fallback, and `BACKLOG-DONE.md` carried the unhedged form outright.
+          The honest claim is smaller - **no host in this repo guarantees a spawned
+          no-context reader** - and it is what the normative home supports. Also
+          caught that the administration bound was written only in `/ship`'s
+          vocabulary while the priming bound beside it had been deliberately
+          translated for `/orchestrate`: half a sibling sweep, in the paragraph
+          added *by* a sibling-sweep finding one round earlier.
         outcome: ok

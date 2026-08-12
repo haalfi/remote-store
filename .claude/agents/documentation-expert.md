@@ -70,11 +70,17 @@ WHAT THIS TEST DOES NOT CATCH — state the bound, per
   page that left the reader unable to answer; `misleading` is a page that
   answered confidently and wrongly. A reader with no context has nothing to check
   a confident answer against, so this test returns "answered" for a page that is
-  false. **On `origin/master` that is 30 of 219 negative tags** — the class this
-  instrument reaches is roughly a seventh of the recorded reader failures, and
-  believing otherwise overstates its reach about sevenfold. The measuring member
-  and the whole-file gate are what reach the other 189; this does not substitute
-  for either.
+  false. **`misleading` is by far the larger class**, so a small minority of the
+  corpus's recorded reader failures is what this instrument reaches; treating a
+  clean result as covering both overstates it by close to an order of magnitude.
+  The measuring member and the whole-file gate are what reach the rest, and this
+  does not substitute for either. No count is quoted here on purpose: the split
+  moves with every merge, this file is standing instruction rather than a record
+  of what was true on a particular day, and a figure nobody is present to re-run
+  goes stale silently. Run `hatch run report-trace-outcomes` for the current
+  split; the measured pair behind this bullet is in
+  [`sdd/BACKLOG-DONE.md`](../../sdd/BACKLOG-DONE.md), BK-352, pinned to the base
+  it was taken on.
 - **A self-administered run is weaker again**, and is the normal case rather than
   the exception: `/ship`'s Reader lens cannot spawn at all, and whether a persona
   running as a subagent can nest another is not established. Assume the fallback

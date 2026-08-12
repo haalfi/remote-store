@@ -280,3 +280,23 @@ phases:
           practice rather than a dormant field - `rg co_shipped_items sdd/traces`
           hits 20+ files, and neither author checked.
         outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-351 (word-count paragraph, head figure)"
+        read_type: verify
+        extract: >-
+          Round 2, whole-file, and it caught the same paragraph failing the same
+          way a third time. The head figure for `/ship` was measured at 6,667 when
+          5f04434 wrote it; 3fce92c then grew the Reader lens by two paragraphs,
+          and b43fa3f re-derived the corpus figures after the rebase without
+          re-running this one - a fix for a stale derivation leaving a stale
+          derivation two lines from where it explains the hazard. Re-run on
+          request rather than adjusted from the reviewer's estimate: **6,818**,
+          against their structural hand count of ~440 added words versus the
+          measured +438, and their calibration on `/rvw-pr`'s unaffected +68 which
+          matches exactly. `/orchestrate` unchanged at 3,395.
+          The generalisable part is the trigger, now written into the entry: any
+          commit touching a file a figure measures obliges re-running **that**
+          figure, and "I re-derived this branch's figures" is a different claim
+          from "I re-derived this one". Three misses on one sentence is the
+          argument for a mechanism rather than more care.
+        outcome: ok
