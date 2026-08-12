@@ -33,7 +33,7 @@ surprising_ripples:
 # cannot, not by any anticipatory authority. Same shape as BK-351's miss, one
 # artifact class over.
 # Name the commits the value was counted from, per the schema's review_rounds
-# clause. `git log --oneline origin/master..HEAD` returns six, all named because
+# clause. `git log --oneline origin/master..HEAD` returns eight, all named because
 # an enumeration shorter than the named command's output is not a derivation:
 #   66d3453 - BK-351's implementation. Co-shipped, not this item's work.
 #   3c05f5c - this item's implementation, which created this file. Does not count.
@@ -44,10 +44,18 @@ surprising_ripples:
 #     that created this file and the one that rewrote it - that ambiguity is why
 #     the schema asks for SHAs.
 #   5f04434 - BK-351's word-count correction. Not this item's work.
-#   3fce92c - answers PR #962's review, nine findings. **Counts.**
-#   the commit carrying this line - the rebase onto 52b8328 and the re-derivation
-#     it forced. Mechanical, not feedback: does not count.
-# Value is 1: the review round, and not the author-initiated gate finding.
+#   3fce92c - answers PR #962 round 1, nine findings. **Counts.**
+#   b43fa3f - the rebase onto 52b8328 and the re-derivation it forced.
+#     Mechanical, not feedback: does not count.
+#   4fde387 - answers PR #962 round 2, four whole-file findings. **Counts.**
+#   the commit carrying this line - a /fix-pr pass over the answered review.
+#     Author-initiated: does not count.
+# Value is 2: rounds 1 and 2, and neither author-initiated pass.
+# **Stale a third time in the commit that answered round 2**, which added a
+# seventh entry and left this block reading "returns six" at value 1. The sibling
+# trace's block carries the general lesson; both were caught by a /fix-pr pass
+# rather than by a reviewer. This block cannot be right at rest - it names
+# commits, and answering a review makes one.
 # **Every SHA above was rewritten once already** - the rebase onto 52b8328
 # replaced 05f9524, 162d132, d6d3f57, 58d425e and 005911e with the six above. The
 # sibling trace's block carries the general lesson; the local one is that naming
@@ -59,7 +67,7 @@ surprising_ripples:
 # author ran on their own work is an author pass under bk-348's reading, so it
 # does not count toward this field. That is a reason, where the first version
 # asserted the event had not happened.
-review_rounds: 1
+review_rounds: 2
 phases:
   - id: orient
     name: Orient

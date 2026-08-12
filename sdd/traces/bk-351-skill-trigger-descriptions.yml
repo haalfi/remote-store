@@ -27,7 +27,7 @@ surprising_ripples:
 # trigger phrase", and no row would have found it: the membership test is a key
 # in a frontmatter, not a citation anywhere.
 # Name the commits the value was counted from, per the schema's review_rounds
-# clause. `git log --oneline origin/master..HEAD` returns six, and all six are
+# clause. `git log --oneline origin/master..HEAD` returns eight, and all eight are
 # named because the command's output is the checkable half - an enumeration
 # shorter than what the named command prints is not a derivation:
 #   66d3453 - this item's implementation, authored in one pass. Does not count.
@@ -37,10 +37,13 @@ surprising_ripples:
 #     bk-348's trace states for its own finishing commit.
 #   5f04434 - this item's word-count correction, found by the same gate while
 #     drafting the PR body. Same reading: does not count.
-#   3fce92c - answers PR #962's review, nine findings. **Counts.**
-#   the commit carrying this line - the rebase onto 52b8328 and the re-derivation
-#     it forced. Mechanical, not feedback: does not count.
-# Value is 1: the review round, and neither author-initiated gate finding.
+#   3fce92c - answers PR #962 round 1, nine findings. **Counts.**
+#   b43fa3f - the rebase onto 52b8328 and the re-derivation it forced.
+#     Mechanical, not feedback: does not count.
+#   4fde387 - answers PR #962 round 2, four whole-file findings. **Counts.**
+#   the commit carrying this line - a /fix-pr pass over the answered review.
+#     Author-initiated: does not count.
+# Value is 2: rounds 1 and 2, and no author-initiated pass.
 # **Every SHA above was rewritten once already.** The five commits this block
 # first named were 05f9524, 162d132, d6d3f57, 58d425e and 005911e; rebasing onto
 # 52b8328 replaced all of them. A SHA enumeration is the most fragile form a
@@ -54,7 +57,14 @@ surprising_ripples:
 # now 5f04434 is exactly that, and it said no review round had run. The command
 # was named and never run against its own claim - the defect class this branch
 # ships a fix about, in the field the schema added to prevent it.
-review_rounds: 1
+# **And it went stale a third time, in the commit that answered round 2.** That
+# commit added a seventh entry to the branch and left this block saying "returns
+# six" with the value at 1 - the enumeration falsified by the edit sitting in the
+# same file. Caught by a /fix-pr pass, not by a reviewer. The block cannot be
+# right at rest: it names commits, and answering a review makes one. Re-run the
+# command every time this file is touched, which is the same trigger BK-351's
+# entry states for word counts and for the same reason.
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
