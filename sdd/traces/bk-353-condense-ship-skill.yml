@@ -1,0 +1,204 @@
+id: BK-353
+title: "/ship states one mechanism four times"
+trigger: >-
+  The user observed that /ship had grown long and asked for it to be condensed
+  without losing required details. Not a defect report: a request whose whole
+  difficulty is the constraint attached to it, since this same file's length was
+  deliberately defended one item earlier when an external guide proposed a
+  5,000-word budget for it.
+source_items:
+  - BK-353
+  - BK-351
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+# Anticipated because any BACKLOG edit moves it. The one ripple that mattered was
+# not anticipated by a table but by the trigger BK-351 had just written: this
+# change edits a file BK-351 states a word count for, so that figure had to move.
+surprising_ripples:
+  - sdd/BACKLOG-DONE.md
+# BK-351's head word count is falsified by this item's own edit - the fifth time
+# that sentence has needed re-deriving, and the first time the obligation was
+# noticed before the commit rather than after. Repinned to PR #962's head and
+# superseded here.
+# Name the commits the value was counted from, per the schema's review_rounds
+# clause. `git log --oneline origin/master..HEAD` returns two:
+#   d274a54 - this item's implementation, authored in one pass. Does not count.
+#   the commit carrying this line - answers PR #963's review, six findings.
+#     **Counts.**
+# Value is 1, derived from the commit list alone.
+# **"No PR is open on this branch" used to be half this justification, and PR
+# #963 falsified it** - it was already false the moment /pr ran, and the review
+# caught it. Dropped rather than re-derived: the commit enumeration carries the
+# value on its own, and a clause about branch state has to be re-checked at every
+# event that changes branch state, which is one more moving premise than the
+# field needs.
+# **This block said nine until PR #962 merged.** The branch was first cut on top
+# of #962's, so the command returned the eight inherited commits plus this one.
+# #962 squash-merged as 3a9ca13, so those eight are now one commit *in* master
+# rather than ahead of it, and the enumeration became wrong the moment someone
+# else pressed merge - no edit here, no rebase of mine, nothing this branch did.
+# Re-derived by re-running the named command after moving to the new base, which
+# is the same trigger BK-351's entry states and the second time on this branch
+# that a merge rather than an edit is what invalidated a derivation.
+review_rounds: 1
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-351 (declined progressive-disclosure prescription)"
+        read_type: gate
+        extract: >-
+          Read first because it is the record that decided this file's length once
+          already, and the answer there constrains the answer here. BK-351
+          declined a 5,000-word budget for /ship on the ground that its bulk is
+          unconditionally binding instruction and principle 8 forbids trading a
+          load-bearing reason for a length target. That does not forbid
+          condensing - it forbids one *kind* of condensing, and sets the test the
+          work has to pass: consolidation and tightening are legitimate,
+          deleting reasons is not.
+        outcome: ok
+      - file: sdd/traces/bk-348-whole-file-gate.yml
+        section: "verify / author-initiated finishing pass"
+        read_type: gate
+        extract: >-
+          The prior art on this exact question, and it is why the brief-requirement
+          block was left alone. That pass reordered requirement 3 so the payload
+          precedes the rationale and recorded "None deleted - each prevents a
+          regression a round caught". A second pass deleting what the first
+          deliberately kept would be re-deciding it without new evidence.
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Reviewer selection (lens menu link)"
+        read_type: gate
+        extract: >-
+          Checked what links *into* this file before restructuring it, since a
+          heading rename breaks an inbound anchor silently. `rg 'ship/SKILL.md#'`
+          returns exactly one hit - /orchestrate's `#lens-menu` - so that heading
+          text is fixed and everything else was free to move. An explicit
+          `<a id="lens-menu">` anchor was added above it so the link no longer
+          depends on the heading's wording.
+        outcome: ok
+  - id: measure
+    name: Measure the repetition rather than trim by feel
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Counted occurrences before editing, because "this feels long" does not
+          say what to cut. 6,916 words over 702 lines; `allowed-tools` at 3 sites,
+          `never the unprimed one` 5 times, `unprimed` 43 times, ADR-0037 cited 5
+          times. Reading those sites showed the permission argument - what the
+          frontmatter grants, what the spawn path loses, what covers the residue -
+          restated in **four** places: the panel-constraints bullet, the solo-pass
+          paragraph, the spawn-prompt bullet and the Reader lens. That is the
+          concentration, and it is the file's own sibling-sweep hazard turned
+          inward.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Reviewer permissions and the tree check (new); Running a round (new)"
+        read_type: verify
+        extract: >-
+          The permission argument gets one home and the other three sites cite it.
+          The tree check moves there too, since it is the same subject and it binds
+          every pass - panel, solo and appended - which was previously stated
+          inside a bullet about panels and had to be re-asserted for solo passes.
+          Splitting the old panel block into `Reviewer permissions` and a
+          round-running section separates what a reviewer may do from how a round
+          is run; the second is procedure and the first is contract, and they had
+          been interleaved. **The split's first heading was wrong**: `Running a
+          panel` housed the solo mechanism, the solo-round rule and the argument
+          order binding both paths, while rounds 1 and 2 are always solo - so the
+          heading told the reader who most needed it that it was not for them.
+          Master had this material unheaded, which cost nothing; adding a heading
+          narrowed a promise the contents do not keep. Renamed to cover both paths
+          after PR #963's review.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Stop rule; measuring member; whole-file member; Reader lens"
+        read_type: verify
+        extract: >-
+          The four "never the unprimed one" restatements collapse into one clause
+          under the unprimed paragraph covering every scoped member by name.
+          Each section had carried its own one-clause reason (a measuring brief
+          names what to run, a whole-file brief names the questions, a question
+          list is a brief); those reasons are the same reason, so the consolidated
+          form states it once. The Stop rule's four clause-explanations keep their
+          separate paragraphs - they are not restatements of each other, and the
+          vacuous-case carve-outs differ per clause.
+          **This step's confidence was misplaced and PR #963's review showed why.**
+          The same pass also deleted the three per-clause append instructions and
+          replaced them with a summary sentence, which is a different act from
+          collapsing restatements: the appends carried per-clause conditions the
+          summary did not, and the summary then described text that no longer
+          existed. Restored.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "(token check over load-bearing claims)"
+        read_type: verify
+        extract: >-
+          Checked distinctive tokens - rules, bounds, measured figures, command
+          spellings, evidence citations - present in the original and required to
+          survive. **The first run reported one loss and was wrong**: the phrase
+          sat in the new file split across a line wrap, and the check compared raw
+          substrings. Fixed by normalising whitespace before comparing, then re-run:
+          none missing, all five ADRs still cited.
+          **And then it reported a false pass, which is the worse direction.** The
+          list carried no token for the Stop rule's per-clause appends or the
+          Reader lens's containment bound, so deleting both returned clean and the
+          entry shipped a "nothing was removed" claim on that basis. PR #963's
+          review found both by reading the two versions whole. The list now carries
+          50 tokens including those four and is stated with its bound: **it answers
+          "were these things removed", never "was anything removed"**, and it is
+          ad-hoc and uncommitted, so a later reader cannot re-run it. Two earlier
+          runs used 47- and 46-token lists, which is why both numbers appear in
+          this branch's artifacts - a discrepancy the same review caught.
+          The general lesson is the one this delivery is least comfortable with: a
+          check I wrote to verify a condensation gave me confidence proportional to
+          its coverage rather than to the risk, and a human-equivalent whole-file
+          read outperformed it on the only question that mattered.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-351 (word-count paragraph)"
+        read_type: verify
+        extract: >-
+          The ripple this item's own subject guarantees: editing /ship falsifies
+          the figure BK-351 states for it. Repinned that sentence to "PR #962's
+          head", which makes it a measurement of a fixed state rather than a claim
+          about whatever branch reads it, and stated the new value here. **First
+          time in this sequence the obligation was met before the commit rather
+          than after** - five failures of that one sentence taught the trigger, and
+          the trigger worked.
+        outcome: ok
+  - id: review
+    name: Review (PR #963)
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Stop rule; Reader lens; Reviewer permissions opening; Running a round"
+        read_type: verify
+        extract: >-
+          Round 1, whole-file, six findings, all Consistency and all the same
+          class: a condensation keeping a claim about itself after the thing it
+          claimed stopped being true. Two were removals the token check had passed
+          - the per-clause appends and the Reader lens's containment bound - and
+          restoring them cost 181 words, taking the cut from -728 (-10.5%) to
+          -547 (-7.9%). Two were self-falsifying openings: the permissions block
+          asserting "everything below cites it" while the Reader lens still
+          restated, and `### Running a panel` housing the solo mechanism that
+          rounds 1 and 2 need. One was a figure stated three times and matched
+          twice (47/47/46). One was this trace justifying `review_rounds: 0` with
+          "no PR is open on this branch", falsified by the PR it shipped in.
+          **The reviewer stated its own bound and it was the right one**: it did
+          not re-run the word counts or the token check, so "nothing removed" was
+          verified only by its whole-file read - which is exactly the method that
+          caught what the instrument missed.
+        outcome: ok
