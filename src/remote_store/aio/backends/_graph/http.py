@@ -51,8 +51,11 @@ BACKEND_NAME = "graph"
 
 # The four scopes implement GR-031 as adjudicated against BE-021 by ADR-0038:
 # BE-021 § "An absent container reads as an absent path" wins on every operation
-# it decides (item scope), GR-031's drive-identity escalation keeps the ones it
-# does not (identity scope: write, and check_health per PING-011).
+# it decides (item scope), and GR-031's drive-identity escalation keeps the ones
+# it does not (identity scope). Four call sites are in identity scope — write
+# (both halves), check_health per PING-011, GraphUtils.resolve_drive_id's five
+# lookup legs, and the copy/move monitor poller. ADR-0038 § Decision carries the
+# full call-site table; keep it and this comment in step.
 GraphScope = Literal["item", "drive", "probe", "identity"]
 """What a failing URL addressed, which is what a ``404`` from it means.
 
@@ -162,8 +165,10 @@ def classify_graph_error(
         a path. It needs both halves of this scope — a missing configured
         ``base_path`` folder must still be ``NotFound`` — which is why it is not
         ``"drive"``.
-      - **drive-identity resolution** (``GraphUtils.resolve_drive_id``'s
-        lookups), which runs before any backend exists.
+      - **drive-identity resolution** (``GraphUtils.resolve_drive_id``'s five
+        lookup legs), which runs before any backend exists.
+      - the **copy/move monitor poller**, whose URL is opaque, pre-signed and
+        cross-host, addressing neither a drive nor a caller-supplied path.
     * ``"drive"`` — the bare ``/drives/{drive_id}`` resource. Any ``404`` is
       ``BackendUnavailable``: no path is being addressed, so there is no absence
       to report, only a drive that is deleted or misconfigured. **No call site

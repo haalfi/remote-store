@@ -190,11 +190,22 @@ async def poll_monitor(
                 # A 404 errs toward raising, not false success (a copy/move we
                 # cannot confirm must not silently report done); GR-026 records
                 # the rare-reap residual.
+                #
+                # Classified at scope="identity", which keeps this site's answer
+                # exactly what it was before the absent-container adjudication
+                # (ADR-0038). The monitor URL is opaque, pre-signed and
+                # cross-host: it addresses neither a drive nor a caller-supplied
+                # path, so BE-021 does not reach it and there is no absence for
+                # item scope to report. Flattening a drive-identity 404 here
+                # would hand a caller `NotFound` for an unconfirmable copy that
+                # may in fact have completed, which is the opposite of what the
+                # err-toward-raising rule above is for.
                 raise classify_graph_error(
                     response.status_code,
                     error_code(response_json(response)),
                     path=path,
                     backend=backend,
+                    scope="identity",
                 )
             else:
                 result = parser(response)

@@ -135,9 +135,14 @@ class GraphUtils:
 #
 # Count the legs, do not count the graph_send calls: _named_drive_id reaches the
 # classifier through iter_pages rather than directly, which is how it was missed
-# once already. tests/backends/graph/aio/test_utils.py enumerates the product of
-# every target shape and both 404 codes, so a sixth leg — or a fifth left at the
-# default — fails a named cell rather than shipping.
+# once already.
+#
+# tests/backends/graph/aio/test_utils.py holds both halves of that, because a
+# hand-written table can only catch the half it lists. A listed leg downgraded to
+# the item default fails its own cell in the (leg x 404 code) product; a *sixth*
+# leg added with no cell at all fails
+# test_every_dispatch_call_site_sends_at_identity_scope, which reads this
+# module's call sites instead of a list.
 async def _drive_id_from_me(client: httpx.AsyncClient, base_url: str, token_provider: TokenProvider) -> str:
     response = await graph_send(
         client, "GET", f"{base_url}/me/drive", token_provider=token_provider, path="me/drive", scope="identity"

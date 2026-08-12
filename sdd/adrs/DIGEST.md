@@ -1241,44 +1241,41 @@ contract and live in `.claude/skills/orchestrate/SKILL.md` and
 is silent about.** A `404` is classified by what its URL addresses and what the
 contract says about the operation, in three cases:
 
-- **Item scope** — the backend's path-addressed data-plane operations. A `404` is
-  `NotFound` whatever its `error.code`, which is what makes the tolerant deletes
-  tolerate an absent drive and the strict ones report it as absence.
-- **Identity scope** — `resourceNotFound` is `BackendUnavailable`, any other
-  `404` is `NotFound`. Three groups of caller, and the reason differs between
-  them, which is why this is stated as a rule and not as one test:
-  - `write`, both the small `PUT /content` and the `createUploadSession` halves.
-    It is the single path-addressed operation BE-021 § Reach explicitly declines
-    to decide, so Graph decides it.
-  - `check_health` (PING-011), which reports reachability rather than addressing
-    a path.
-  - `GraphUtils.resolve_drive_id`'s lookups (GR-057), which resolve a drive
-    before any backend exists.
-- **Drive scope** — the bare `/drives/{drive_id}` resource. Any `404` is
-  `BackendUnavailable`. No path is being addressed, so there is no absence for
-  BE-021 to describe.
+- **Item scope** — the path-addressed data plane. A `404` is `NotFound` whatever
+  its `error.code`, which is what makes the tolerant deletes tolerate an absent
+  drive and the strict ones report it as absence.
+- **Identity scope** — `resourceNotFound` stays `BackendUnavailable`; any other
+  `404` is `NotFound`. It holds `write` — the single roster operation BE-021
+  § Reach declines to decide — plus three callers BE-021's roster never reached:
+  `check_health`, drive-id resolution, and the copy/move monitor poller.
+- **Drive scope** — the bare `/drives/{drive_id}` resource: any `404` is
+  `BackendUnavailable`, since no path is addressed and so no absence is being
+  reported. **No call site passes it**, before this change or after.
+- **Probe scope** is unchanged, and keeps its own value even though it now
+  answers as item scope does: it pins BE-004 / BE-005 independently of the rest
+  of the table.
 
-**Membership in item scope is not "BE-021 names this operation".** A sibling that
-delegates to a named operation belongs where that operation belongs — `read_bytes`
-to `read`, `iter_children` to the listings — whether or not the clause spells it
-out. Stated the other way round, the rule would send exactly the two operations
-§ Context's eleven-operation measurement surfaced as unnamed into identity scope,
-reintroducing the escalation on a path BE-021 governs.
+GR-031 carries the per-call-site table and the reason each caller sits where it
+does; this record carries only why the split falls here.
 
-The probe scope is unchanged and keeps its own value even though it now answers
-exactly as item scope does: it pins BE-004 / BE-005 independently of the rest of
-the table, so a future renarrowing at item scope cannot reach the probes.
+**Membership in item scope is not "BE-021 names this operation".** A sibling
+belongs where the operation it delegates to belongs — `read_bytes` with `read`,
+`iter_children` with the listings. Stated the other way round, the rule would
+send exactly the two operations the eleven-operation measurement surfaced as
+unnamed into identity scope, reintroducing the escalation on a path BE-021
+governs.
 
-**Drive scope has no call site**, and did not have one before this change either
-— the fact is already registered against the change that introduced the probe
-scope. Every drive-addressed lookup either resolves an id, which is identity
-scope, or goes through `/drives/{id}/root`, which is path-shaped. It is retained
-as the table's statement of what a bare drive `404` means, and only the table's
-own tests reach it. So the escalation this ADR actually leaves GR-031 is the
-three identity-scope groups; the drive row is a definition, not a live half of
-the compromise.
+**The criterion ships with its extension, because arguing it did not converge.**
+Three successive review rounds each found a call site on the wrong side of this
+rule, by a different route: `resolve_drive_id`'s lookups, then a fifth leg
+reaching the classifier through `iter_pages` rather than `graph_send`, then the
+monitor poller. Each was right about the site in front of it; none was
+exhaustive. So the rule is published with the enumeration rather than alone, and
+`test_utils.py` holds the half a hand-written table cannot — it reads `utils.py`'s
+call sites instead of a list, so a sixth leg left at the default fails a named
+cell.
 
-`write` is the load-bearing half of the compromise. It is the operation a caller
+`write` is the load-bearing half of the compromise: it is the operation a caller
 runs first against a freshly configured store, so a misconfigured drive still
 surfaces as a configuration error rather than as "your file isn't there" — the
 failure GR-031 was written to prevent — while every operation the contract *does*

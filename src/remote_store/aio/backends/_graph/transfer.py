@@ -1,4 +1,19 @@
-"""Resilient range-download driver for the Graph read path.
+"""Graph bulk-transfer drivers: the resilient range download, and the chunked upload.
+
+Both halves live here because both talk to a **pre-signed, cross-host** URL that
+the ordinary ``graph_send`` path does not model — the ``downloadUrl`` for reads,
+the upload-session ``uploadUrl`` for writes — and both therefore send
+unauthenticated and carry their own resume logic.
+
+**The upload half** (``spool_content``, ``upload_session`` and its helpers)
+materialises a possibly-streaming body into a replayable spool, opens a session
+with ``POST createUploadSession``, and PUTs aligned chunks, resuming from the
+server's ``nextExpectedRanges`` rather than the client cursor. Its ``404``
+classification is split deliberately: session creation is drive-addressed and
+sends at ``scope="identity"``, while a mid-session chunk ``PUT`` is not and keeps
+the item default — see the comments at each site.
+
+**The download half** is described below.
 
 The pre-signed ``@microsoft.graph.downloadUrl`` is the only Graph surface that
 honours ``Range`` reliably (the ``/content`` endpoint ``302``-redirects to it),
@@ -26,8 +41,8 @@ header. This module drives reads against that URL:
   a ``416`` provoked by a malformed (inverted) range is a backend bug and
   surfaces as ``RemoteStoreError`` carrying the HTTP status.
 
-The driver is internal: ``SEEKABLE_READ`` stays withheld, and the request shape
-may change without a public-API deprecation.
+The download driver is internal: ``SEEKABLE_READ`` stays withheld, and the
+request shape may change without a public-API deprecation.
 """
 
 from __future__ import annotations

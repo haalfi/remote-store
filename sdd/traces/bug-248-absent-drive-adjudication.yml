@@ -41,6 +41,19 @@ surprising_ripples:
   # escalation, which is a different case — harmless until this change made the
   # two names mean different things.
   - tests/backends/graph/aio/test_write.py
+  # Eight docstring sites across four files still described the divergence this
+  # change removes, and they render into the public API reference and
+  # llms-full.txt. No ripple-check row names the Store/Backend ABC pair for an
+  # error-mapping change, and check_docstring_parity only holds the sync/async
+  # twins in lockstep with each other — both were stale, so it stayed green.
+  - src/remote_store/_backend.py
+  - src/remote_store/aio/_async_backend.py
+  - src/remote_store/_store.py
+  - src/remote_store/aio/_async_store.py
+  # The copy/move monitor poller: the third call site found on the wrong side of
+  # the mapping change, one round apart from the first two and by a different
+  # route again.
+  - src/remote_store/aio/backends/_graph/monitor.py
   # The mapping table's own unit tests asserted the losing clause directly; the
   # ripple-check "Error type" row points at backend error mapping and its tests,
   # but this file is a pure-function table test one level below that.
@@ -174,8 +187,12 @@ phases:
         extract: >-
           Two consecutive rounds refuting the same scope criterion is the trigger to
           stop arguing the condition and enumerate its space. Did that: the space is
-          (target shape x error code), ten cells, now a parametrised table. Verified
-          the fence by reverting the fix and watching the named cell fail.
+          (leg x error code) — not target shape x code, which is 4x2, since two shapes
+          share a leg — so ten cells, now a parametrised table. Verified the fence by
+          reverting the fix and watching the named cell fail. A third round then found
+          a third mis-scoped site (the monitor poller), which is what showed a
+          hand-written table can only catch the legs it lists: the durable half is a
+          test that reads utils.py's call sites, plus the ADR's call-site table.
   - id: verify
     name: Ripple-check
     steps:

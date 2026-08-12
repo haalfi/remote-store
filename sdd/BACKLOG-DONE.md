@@ -161,10 +161,12 @@ if evidence changes; these are retired.
   implementation wrong under its own. Adjudicated in
   [ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md): **BE-021 wins
   on every operation it decides; GR-031 keeps the ones it is silent about** —
-  `write`, the one roster operation § Reach declines, plus `check_health` and
-  drive-id resolution, which are off the roster entirely. A `404` is now
-  classified by an `identity` scope carrying those three, and item scope stops
-  honouring `resourceNotFound` altogether. The `drive` scope has no call site and
+  `write`, the one roster operation § Reach declines, plus `check_health`,
+  drive-id resolution and the copy/move monitor poller, which are off the roster
+  entirely. A `404` is now classified by an `identity` scope carrying those four,
+  and item scope stops honouring `resourceNotFound` altogether. The full
+  call-site table is in the ADR, because arguing the criterion did not converge:
+  three review rounds each found a different site on the wrong side of it. The `drive` scope has no call site and
   did not have one before the change either, so it is a definition of what a bare
   drive `404` means rather than a live part of the compromise.
   **Filed as two operations wide, measured at eleven.** The item, BE-021's
@@ -192,9 +194,16 @@ if evidence changes; these are retired.
   sweep shaped by "every `graph_send` in this module" could not see it, and six
   artifacts then asserted an answer one leg no longer gave. Two consecutive
   rounds refuting the same scope criterion is the signal to stop arguing it and
-  enumerate: the space is (target shape × error code), ten cells, and it is now a
-  parametrised table rather than two sampled cells. Verified by reverting the fix
-  and watching the named cell fail.
+  enumerate: the space is (**leg** × error code) — not target shape × code, which
+  is 4 × 2, since the site-URL and tuple shapes share a leg and each adds one —
+  so ten cells, now a parametrised table rather than two sampled cells. Verified
+  by reverting the fix and watching the named cell fail.
+  **A third round found a third site**, the copy/move monitor poller, and that is
+  what moved the remedy from a table to an enumeration: the leg table is
+  hand-written and could never have caught a call site it does not list. The ADR
+  now carries the full call-site-to-scope table, and a test reads `utils.py`'s
+  call sites rather than a list, so a sixth leg fails a named cell. Verified by
+  adding one and watching it fail.
   **The Dafny layer was considered and declined**, with the reasoning recorded in
   the ADR rather than passed over: `BackendContract.dfy` models the filesystem as
   `map<Path, Entry>` with no container that could be absent, carries

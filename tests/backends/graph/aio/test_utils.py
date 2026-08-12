@@ -7,12 +7,15 @@ GR-CORE PR; the SharePoint-site and Teams-channel shapes require app-only auth
 
 from __future__ import annotations
 
+import ast
+from pathlib import Path
 from typing import NamedTuple
 
 import httpx
 import pytest
 import respx
 
+import remote_store
 from remote_store._errors import BackendUnavailable, InvalidPath, NotFound
 from remote_store.aio.backends._graph.utils import GraphUtils
 
@@ -26,9 +29,14 @@ class _Leg(NamedTuple):
     """One 404-classifying call site inside ``resolve_drive_id``.
 
     ``ok_urls`` are the legs that must succeed for control to reach this one, so
-    each entry isolates exactly one lookup. There are five, and the count is the
-    point: a sixth added without a row here is the failure this table exists to
-    make loud.
+    each entry isolates exactly one lookup.
+
+    This list is hand-written, so on its own it can only catch a *listed* leg
+    that regresses — the case that shipped once already. It cannot see a leg
+    added without a row, which is the same blind spot in a different coat.
+    ``test_every_dispatch_call_site_sends_at_identity_scope`` closes that half by
+    reading the module rather than this list; the two together are what make the
+    count trustworthy.
     """
 
     name: str
@@ -142,6 +150,40 @@ class TestResolveDriveId:
         expected = BackendUnavailable if code == "resourceNotFound" else NotFound
         with pytest.raises(expected):
             await GraphUtils.aresolve_drive_id(leg.target, token_provider=lambda: "t")
+
+    @pytest.mark.spec("GR-057", "GR-031")
+    def test_every_dispatch_call_site_sends_at_identity_scope(self) -> None:
+        # The half _LEGS cannot cover: read the module's own call sites instead
+        # of a hand-written list, so a *sixth* leg added without a row fails here
+        # rather than shipping. That is exactly how the fifth leg got in — the
+        # sweep that fixed the other four was shaped by the call name, and
+        # _named_drive_id reaches the classifier through iter_pages.
+        #
+        # Both dispatch helpers count. Keying on the call name is the mistake
+        # this test exists to stop repeating, so it asserts over the union.
+        source = (Path(remote_store.__file__).parent / "aio/backends/_graph/utils.py").read_text(encoding="utf-8")
+        calls = [
+            node
+            for node in ast.walk(ast.parse(source))
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id in {"graph_send", "iter_pages"}
+        ]
+        assert len(calls) == len(_LEGS), (
+            f"utils.py dispatches {len(calls)} 404-classifying calls but _LEGS has "
+            f"{len(_LEGS)} rows — add the missing leg to _LEGS, or remove the stale row"
+        )
+        scopes = {
+            call.lineno: next(
+                (kw.value.value for kw in call.keywords if kw.arg == "scope" and isinstance(kw.value, ast.Constant)),
+                None,
+            )
+            for call in calls
+        }
+        assert set(scopes.values()) == {"identity"}, (
+            f'every drive-identity lookup must send at scope="identity"; the item default flattens '
+            f"a drive-identity 404 to NotFound. By utils.py line number: {scopes}"
+        )
 
     @respx.mock
     @pytest.mark.spec("GR-057")

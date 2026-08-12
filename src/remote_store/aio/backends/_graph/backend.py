@@ -11,7 +11,7 @@ backend-local ``monitor`` poller when Graph answers ``202 Accepted``).
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, TypeVar
 from urllib.parse import quote, unquote
 
 import httpx
@@ -33,6 +33,7 @@ from remote_store._retry import full_jitter_delay
 from remote_store.aio._async_backend import AsyncBackend
 from remote_store.aio.backends._graph.http import (
     BACKEND_NAME,
+    GraphScope,
     classify_graph_error,
     discriminate_write_conflict,
     graph_send,
@@ -432,11 +433,13 @@ class GraphBackend(AsyncBackend):
 
     # region: data-plane reads (GR-012, GR-013, GR-031, GR-049)
 
-    async def _get_item(self, path: str, *, scope: Literal["item", "probe", "identity"] = "item") -> dict[str, Any]:
+    async def _get_item(self, path: str, *, scope: GraphScope = "item") -> dict[str, Any]:
         """Fetch the Graph ``driveItem`` body for *path* (one metadata GET).
 
         The single item-by-path metadata round trip shared by the read, delete,
-        listing and type-probe operations. Every 404 surfaces as ``NotFound``,
+        ``get_folder_info`` and type-probe operations — not by the listings,
+        which address ``/children`` through ``iter_pages`` instead. Every 404
+        surfaces as ``NotFound``
         whatever Graph's ``error.code`` says: a drive is a container, and the
         backend contract binds an absent container to read as an absent path.
         That is what makes the tolerant deletes tolerate an absent drive and the
@@ -998,8 +1001,16 @@ class GraphBackend(AsyncBackend):
                 backend directly (``USER_METADATA`` is not declared).
             PermissionDenied: If the token is rejected or lacks access to the
                 item (401/403).
-            BackendUnavailable: On 5xx / throttling / transport failure, or a
-                Graph contract gap (missing ``uploadUrl`` / ``nextExpectedRanges``).
+            NotFound: If Graph answers the write with a ``404`` that names no
+                file ancestor and carries no drive-identity code.
+            BackendUnavailable: If the drive itself is gone or misconfigured —
+                Graph's drive-identity ``404`` still escalates here, on both the
+                small and upload-session paths, where every path-addressed
+                operation instead reports an absent drive as absence. ``write``
+                is therefore the operation a caller runs to tell a dead store
+                from a missing file. Also on 5xx / throttling / transport
+                failure, or a Graph contract gap (missing ``uploadUrl`` /
+                ``nextExpectedRanges``).
             ResourceLocked: If the item is locked mid-session. The session
                 stays valid server-side, but its credentialed URL is not
                 exposed in the exception.

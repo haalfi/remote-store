@@ -644,7 +644,9 @@ here is what makes the container case answerable from one place.
   any backend currently sits, and the only one where the error type actively
   misleads.
 
-`GraphBackend` was a fourth entry in this list and is no longer one.
+`GraphBackend` was the fifth bullet in this list — counting bullets, not backend
+classes, which is the frame `sdd/BACKLOG.md` § 1 uses when it calls Graph the
+sixth of six — and is no longer one; four bullets remain.
 [GR-031](044-graph-backend.md#gr-031-404-discrimination-item-vs-drive) mapped
 `404 resourceNotFound` to `BackendUnavailable` for every error-raising
 operation, deliberately, on the grounds that a deleted drive is a backend
@@ -656,7 +658,8 @@ across every operation it reached **eleven** of the ones named above, plus
 [ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md) adjudicated
 it in favour of this clause for every operation this clause decides. GR-031 keeps
 what it does not: `write`, the one roster operation § Reach declines; and, off
-the roster entirely, `check_health` and Graph's drive-id resolution.
+the roster entirely, `check_health`, Graph's drive-id resolution and its
+copy/move monitor poller.
 
 The rule exists because leaving it unstated let each backend answer from
 whatever its wire protocol happened to reveal. `HeadObject` answers a bodyless

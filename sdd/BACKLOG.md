@@ -199,9 +199,10 @@ store answers the same way on every backend.
 
 **Closes when:** the four adapters answer the contract against an absent
 container (BUG-246, BUG-249, BUG-247, BUG-245); no native exception escapes on
-either the absent or the **denied** path (BUG-249); and a newly registered
-backend cannot pass CI without meeting BE-004, BE-005 and BE-021 (BK-345). The
-spec contradiction is adjudicated — BUG-248, closed by
+either the absent or the **denied** path (BUG-249); one operation does not answer
+by payload size (BUG-253); and a newly registered backend cannot pass CI without
+meeting BE-004, BE-005 and BE-021 (BK-345). The spec contradiction is
+adjudicated — BUG-248, closed by
 [ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md).
 **Two cross-section dependencies**, per
 [§ How this file works](#how-this-file-works): BK-345 waits on **ID-244** in
@@ -348,6 +349,26 @@ is the whole promise.
   and is pinned by `tests/backends/sqlblob/test_absent_table.py`; only the error
   type is wrong.
 
+- [ ] **BUG-253 — `GraphBackend.write` answers a file-ancestor path differently by payload size**
+  spec: BE-008, GR-019 · effort: S · audience: user.api
+  `write("blocker.txt/child.bin", …)` raises `InvalidPath` when the body takes
+  the small `PUT /content` path and `NotFound` when it takes the upload session,
+  for the identical path against the identical store — the answer depends on
+  whether the payload crosses `_SMALL_FILE_MAX_SIZE` (4 MiB), which is not
+  something a caller reasons about.
+  Cause: `_write_small` runs `_raise_if_file_ancestor(path)` before classifying
+  its `404` (ID-209/ID-211), and the large path calls `upload_session(...)`
+  directly with no such walk, so `_create_upload_session`'s `404` goes straight
+  to the classifier. `write`'s own docstring promises `InvalidPath` "if the path
+  … descends through a file ancestor" without qualifying by size, so the large
+  path contradicts it.
+  Predates BUG-248 — that change aligned the two halves on the absent-drive axis
+  and left this one — and was found by its round-3 panel while checking both
+  write halves. The fix is presumably to hoist the ancestor walk to `write`, or
+  to run it on the session-creation `404` as the small path does; measure which
+  before choosing, since the walk costs a round trip on a path that has already
+  failed.
+
 - [ ] **BK-345 — BE-021's absent-container rule has no registry-driven gate, so a new backend is silently exempt**
   spec: BE-021 · effort: M · audience: infra.test
   The rule binds every backend that can delete and whose container can be
@@ -370,8 +391,10 @@ is the whole promise.
   **Depends on ID-244 for the mechanism.** The other dependency, BUG-248 for the
   exemption list, is discharged: `GraphBackend` meets the clause on every
   operation BE-021 decides, so it is a plain cell rather than an exemption, and
-  the two callers that keep Graph's drive-identity escalation (`write`,
-  `check_health`) are outside what the clause states — see
+  the two *backend operations* that keep Graph's drive-identity escalation
+  (`write`, `check_health`) are outside what the clause states — as are its two
+  non-operation callers, drive-id resolution and the copy/move monitor poller,
+  which a per-backend conformance cell does not reach at all. See
   [ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md).
   An absent container is not a state most conformance fixtures can reach: the S3
   and Azure lanes need a stub that 404s at container level (BUG-243 built those),

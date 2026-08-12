@@ -3,7 +3,8 @@
 respx stubs ``httpx.AsyncClient`` so the real ``GraphBackend`` /
 ``graph_send`` / item-mapping code runs against canned Graph responses
 (GR-012, GR-013, GR-031, GR-049). The range/expiry/fallback hardening of the
-stream (GR-015/017/055) lands with ``transfer.py`` in a later step.
+stream (GR-015/017/055) lives in ``transfer.py`` and is covered by
+``test_transfer.py``, not here.
 """
 
 from __future__ import annotations
