@@ -155,6 +155,200 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-352 — Reader failure is detected only after a document has already failed someone**
+  spec: — · effort: S · audience: contributor.process
+  The repo instruments reader failure thoroughly and every step of it is
+  downstream of the failure: a trace author tags `outcome: unclear` after a doc
+  did not deliver, `hatch run report-trace-outcomes` ranks the documents those
+  tags accuse, and **ID-238** fires that review at each release. Nothing tests a
+  document against a reader *before* it ships.
+  **The figures are of `origin/master`, and are stated that way because this item
+  cannot measure itself.** A corpus figure asserted inside a commit that adds to
+  the corpus is falsified by its own commit, and re-running at the head does not
+  pin it either — the next commit moves it again. `origin/master` is the state the
+  scope argument was actually made against, so that is what it cites. Measured by
+  running `scripts/report_trace_outcomes.py` in a `git worktree` on
+  `origin/master` (52b8328): **275 traces, 3,988 steps, 1,781 carrying an explicit
+  outcome (44.7%), 219 negative tags across 112 traces.** The same script at this
+  branch's head gives 277 · 4,019 · 1,812 (45.1%) and 221 across 114; the two new
+  traces are the whole of the difference.
+  **Re-derived after a rebase, not carried across it.** The first measurement was
+  against 16673b7 and gave 274 · 3,969 · 1,781 (44.9%); BUG-252 then landed with
+  a trace of its own, moving the corpus, the step count and the coverage
+  percentage while leaving the negative tags at 219. A baseline named by SHA is
+  falsified by every merge into that branch, so the figures were re-run rather
+  than adjusted — the ratio this item's scope rests on is unchanged, which is a
+  result of the re-run and not the reason for skipping it.
+  **Only 30 of those 219 are `unclear`; 189 are `misleading`, and the difference
+  decides the scope.** A reader test catches "I could not answer this from the
+  page", which is the schema's `unclear` — on-topic but vague or incomplete, the
+  reader compensating. It cannot catch `misleading`, where the page gave a
+  confident answer that was false; a reader with no context has nothing to check
+  that against, and the instruments for it already exist (the measuring member,
+  the whole-file gate). A first framing of this item cited the negative total and
+  would have claimed roughly seven times the reach the mechanism has. The largest
+  single concentration is `sdd/CLAUDE-REFERENCE.md`: 13 negative tags over 295
+  reads, 10 of them `unclear`, which is a third of the corpus's `unclear` in one
+  file.
+  **Every figure above was wrong in the first cut, and PR #962 caught it.** The
+  entry stated 275 · 3,981 · 1,793 · 220 · 31 and `CLAUDE-REFERENCE.md` at 11
+  `unclear` over 294 — the corpus as it stood mid-branch, after BK-351's trace
+  landed and before this item's own, so it described neither endpoint. The review
+  that found it reasoned from the report's documented glob rather than running it,
+  said so, and asked for a measuring pass before any rewrite. That pass established
+  the method the figures above still use — it is the rebase re-run that produced
+  their current values — and it refuted the review's own predicted head figures
+  (222 / 115 / 33, `CLAUDE-REFERENCE.md` 13 over 296), which inherited the
+  off-by-one they were correcting. Three readings of one derivation, two of them
+  careful, none reproducing until it was run.
+  **Shipped as two advisory instruments, no gate**, which keeps
+  [BK-330](#unreleased)'s report-not-a-gate posture rather than reopening it:
+  a **Reader lens** in `/ship`'s lens menu, which
+  [`/orchestrate`](../.claude/skills/orchestrate/SKILL.md) takes by the shared
+  link, and a **reader test** in the `documentation-expert` persona for any page
+  it creates or substantially rewrites: predict 5-10 questions from what the page
+  *promises*, run them, and treat an unanswerable question as a finding about the
+  page.
+  **The method has one home, and the first cut did not.** Both hosts stated it,
+  which is [`DRIFT-RULES.md`](DRIFT-RULES.md#one-driver)'s second-description
+  trigger — caught by this branch's own `/pr` qualitative-review gate rather than
+  by a reviewer. The persona block is now normative and says so; the lens states
+  only its scope and bound and cites the block for the steps. Leaving it would
+  have reproduced the `tmp/base` duplication **BK-351** had just recorded as the
+  one genuine defect in the three large skills, one item later.
+  **The lens is distinct from the Consumer lens beside it, on method rather than
+  subject.** Consumer judges docs from outside; Reader runs the questions and
+  reports what came back. That is the axis
+  [ADR-0035](adrs/0035-vary-method-not-model.md) established — reading versus
+  executing — applied to prose, and the reason it lands as a lens and not as a
+  rename. Two bounds are stated in the lens: a scoped member has read the change
+  under review, so it is weaker than a reader who has not; and it cannot
+  administer the test on anyone, only on itself. **No host in this repo guarantees
+  a spawned no-context reader** — the persona is where one would be attempted, and
+  its own block says to assume the fallback. An earlier cut of this entry said
+  "only the persona's test spawns a genuine no-context reader", which the block
+  contradicts outright; PR #962's round 2 caught the lens promising the same
+  escape hatch. If a guaranteed spawned reader is wanted it has to be built.
+  No ADR is amended — ADR-0036 puts the lens menu in the skills as operational
+  contract.
+  **Source:** Anthropic's `doc-coauthoring` skill, Stage 3 (Reader Testing),
+  supplied by the user. **The other two stages were declined.** Stage 1 (context
+  gathering by 5-10 prose questions) is interview mode in a weaker form — this
+  repo routes decisions through `AskUserQuestion` blocking dialogs precisely
+  because prose questions get scrolled past. Stage 2 (brainstorm 5-20 options per
+  section) has no knowledge of `AUTHORING.md` → `DOCUMENTATION.md` →
+  `CONTENT-RULES.md`, the five `sdd/templates/`, or `check_docs_framework.py`'s
+  G-01..G-07. Vendoring the skill whole was declined on over-triggering: its
+  description fires on "create a spec" and "RFC", which here are governed
+  artifacts with templates and a pipeline in `000-process.md`, so a hit would
+  route an author away from `rfc-template.md` into freeform drafting. That is the
+  same failure class **BK-351** had just added negative triggers to prevent.
+
+- [x] **BK-351 — The model-invocable skills' descriptions say what they do and never when to use them**
+  spec: — · effort: S · audience: contributor.process
+  A skill's `description` is the only part loaded before the body, so it is the
+  whole of what decides whether the skill fires on a request. **All ten
+  descriptions stated what the skill does and none stated when to use it**,
+  derived by dumping the frontmatter of every `.claude/skills/*/SKILL.md` and
+  reading the ten `description:` values.
+  For **seven** that is harmless by construction: `disable-model-invocation: true`
+  makes them slash-only, so no description is ever matched against a request.
+  **Three carry no such line** — `/pr`, `/fix-pr`, `/rvw-pr` — enumerated by
+  testing each frontmatter for the key rather than by reading the list, which is
+  the derivation that matters here: a first pass over the same dump asserted
+  **two** and missed `/pr`, because `/pr` sits among the slash-only workflow
+  skills by usage and among the model-invocable ones by frontmatter. The figure
+  that was wrong is the one nobody would have re-checked.
+  **The repo had already paid for this twice, in mechanisms that compensate for
+  it rather than fix it.** `CLAUDE.md` § GitHub operations instructs the reader
+  to prefer `/rvw-pr` over the built-in `/review` and the PR skills over ad-hoc
+  `gh`; and `.claude/hooks/warn-direct-pr.sh` fires on direct PR creation to say
+  the same thing — observed firing in this item's own session. Both exist because
+  the description gave the model nothing to discriminate on. An instruction in
+  `CLAUDE.md` and a `PreToolUse` hook are the two places a missing trigger
+  phrase surfaces once it has already gone wrong.
+  Fixed by rewriting the three descriptions to carry **what + when + trigger
+  phrases + a negative trigger** naming the sibling skill that owns the excluded
+  case. The seven slash-only descriptions are left alone: adding trigger phrases
+  to a description nothing matches is text that cannot be wrong in a way anything
+  would catch.
+  **Both compensating mechanisms are retained, and the descriptions do not
+  govern them.** The fix adds a third statement of a direction the two already
+  carry — `/rvw-pr`'s description now says to prefer it over the built-in
+  `/review`, and `/pr`'s says to prefer it over calling the API directly — which
+  is [`DRIFT-RULES.md`](DRIFT-RULES.md#one-driver)'s second-description trigger,
+  the same test this branch applied to BK-352's reader-test method and, until
+  PR #962's review, did not apply here. Applying it: **`CLAUDE.md` § GitHub
+  operations governs.** It is read cold at session start, where a description is
+  matched only once a request is already being routed, so it reaches the case a
+  description cannot. The hook is not a third description but an enforcement of
+  the same direction at a different layer, and a `PreToolUse` gate is worth more
+  than either sentence. Neither is redundant and no follow-up is owed; what was
+  owed was this disposition, and diagnosing a symptom without one is what the
+  review caught.
+  **Source:** *The Complete Guide to Building Skills for Claude* (Anthropic, 33pp),
+  supplied by the user. Its other applicable claim was **declined**, and the
+  reasoning is the durable half: it prescribes moving detail out of `SKILL.md`
+  into `references/` under a 5,000-word budget, and `/ship`, `/rvw-pr` and
+  `/orchestrate` exceed or approach it. All three were read whole against the
+  prescription.
+  **Those three files' bulk is unconditionally binding instruction**, and a
+  `references/` file is loaded at the model's discretion, so the move would
+  convert rules that must hold on every invocation into rules that might be read.
+  That is the inert-obligation failure those very files record shipping three
+  times (ADR-0035, and BK-348's rounds 6 and 7). Rationale is already externalised
+  the correct way, to ADRs 0020 and 0033–0037 by link. The budget also collides
+  with [principle 8](../CLAUDE.md#principles), which forbids trading a
+  load-bearing reason for a length target.
+  **The counts are of `origin/master`, and are stated that way because this
+  branch moved two of them.** Measured with `git show origin/master:<path>` and a
+  word count: `/ship` 6,380, `/rvw-pr` 3,479, `/orchestrate` 3,395. At this
+  branch's head the same measurement gives 6,916, 3,547 and 3,395 — this item's
+  own description edit grew `/rvw-pr`, and BK-352's Reader lens grew `/ship`. The
+  first cut quoted the base figures in the present tense, so a reader running
+  `wc -w` would have got three numbers, two of them different, from a sentence
+  that named its derivation and still could not be reproduced. Caught while
+  drafting the PR body, which is where
+  [principle 9](../CLAUDE.md#principles) binds `/pr`.
+  **The head figure for `/ship` then went stale twice more, and the second time
+  is the instructive one.** The paragraph was written at 6,667; answering PR #962's
+  round 1 grew the Reader lens by two paragraphs, and the rebase re-derivation
+  that followed re-ran the corpus figures and not this one, so a fix for a stale
+  derivation left a stale derivation two lines from where it explains the hazard.
+  Round 2 caught it structurally rather than by measuring — from the commit that
+  changed the file and a hand count calibrated against `/rvw-pr`'s unaffected
+  figure — and asked for a re-run rather than proposing a value.
+  **The re-run answered 6,818 and that was wrong too, for a fourth reason.** It
+  measured the file as it stood *before* the round-2 edit, and the same commit
+  then rewrote the Reader lens and took it to **6,916** — the value now. Measured
+  across the branch: 6,380 on base, 6,667 at 5f04434, 6,818 at 3fce92c, 6,916 at
+  4fde387. So the number written to satisfy a finding about a stale figure was
+  stale before its own commit closed, which no reviewer caught and a `/fix-pr`
+  pass found while counting something else.
+  **What generalises is the trigger, not the number.** Any commit touching a file
+  a figure measures obliges re-running that figure — **after the last edit in
+  that commit, not before the first** — and "I already re-derived this branch's
+  figures" is not the same claim as "I re-derived this one". Four failures of one
+  sentence is the argument for a mechanism; none exists, and this is a convention
+  with a stated failure mode rather than a guarantee.
+  **This paragraph is where it was inserted, and the insertion broke the
+  antecedent above it** — the following sentence began "Their bulk", whose
+  referent is the three skills named two paragraphs up, and a reader landing after
+  the insertion resolved it to `/pr` or to the counts. Found by PR #962's review.
+  It is ADR-0037's own named shape, an antecedent broken by a paragraph inserted
+  above it, arriving inside the entry that cites that record — and invisible in
+  the hunk that caused it, which is the argument for the whole-file gate restated
+  as an instance.
+  **One residue left open, deliberately untracked.** The `git worktree add tmp/base`
+  recipe is a self-declared duplicate across `/rvw-pr` and `/orchestrate` — three
+  commands and a `prune` fallback, with each copy naming the other and carrying a
+  manual "edit both when the commands change", enforced by nothing. It is the one
+  thing in the three files that a shared bundled file would hold correctly. It is
+  not filed: both copies argue their duplication is deliberate because the
+  *reason* differs per skill, and re-deciding that is a change to two skills'
+  stated reasoning, not a description fix. Re-open it under a new ID the first
+  time the two copies disagree.
+
 - [x] **BUG-252 — Azure cassettes matched on a `blockid` the SDK mints, so `[azure]`'s drift smoke went red on a block-id change**
   spec: REC-005 · effort: S · audience: infra.test · infra.ci
   The Monday Drift Guard run's `check-azure` leg failed its smoke —

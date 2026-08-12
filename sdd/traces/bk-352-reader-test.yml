@@ -1,0 +1,359 @@
+id: BK-352
+title: "Reader failure is detected only after a document has already failed someone"
+trigger: >-
+  The user surfaced Anthropic's doc-coauthoring skill and asked whether to try
+  it and include it here. Assessing it against the repo turned up one stage with
+  no local equivalent and two that duplicate or would fight existing machinery,
+  so the question became which part to take rather than whether to take it.
+source_items:
+  - BK-352
+  - BK-351
+co_shipped_items:
+  - BK-351
+# BK-351 appears in both fields and they are not redundant: `source_items` says
+# this trace was derived from it (its description work is what surfaced the
+# skill-assessment question), `co_shipped_items` says the same PR closed it. The
+# second is what stops an aggregator double-counting the reads these two traces
+# share - both cite sdd/traces/_schema.yml, sdd/BACKLOG-DONE.md and
+# sdd/CLAUDE-REFERENCE.md, and both tag the last `unclear`, which lands on the
+# very metric this item's scope argument is derived from. Missing until PR #962's
+# review; the field is established practice, not dormant.
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+# The lens menu reaching /orchestrate is anticipated by the menu's own shared
+# link, so it is expected rather than surprising - but it is the reason the
+# lens's bound had to be written to be true in two skills at once.
+surprising_ripples:
+  - .claude/agents/documentation-expert.md
+# No ripple-check row covers "a review lens is added", and none covers a persona
+# file gaining an obligation. The persona was reached by asking which artifact
+# could host a genuine no-context reader when the /ship lens structurally
+# cannot, not by any anticipatory authority. Same shape as BK-351's miss, one
+# artifact class over.
+# Name the commits the value was counted from, per the schema's review_rounds
+# clause. `git log --oneline origin/master..HEAD` returns eight, all named because
+# an enumeration shorter than the named command's output is not a derivation:
+#   66d3453 - BK-351's implementation. Co-shipped, not this item's work.
+#   3c05f5c - this item's implementation, which created this file. Does not count.
+#   6620383 - this item's DRIFT-RULES correction, found by the /pr qualitative
+#     gate. Author-initiated on my own work, so it does not count, on the reading
+#     bk-348's trace states for its own finishing commit. Named by SHA rather than
+#     as "the commit carrying this line", which was ambiguous between the commit
+#     that created this file and the one that rewrote it - that ambiguity is why
+#     the schema asks for SHAs.
+#   5f04434 - BK-351's word-count correction. Not this item's work.
+#   3fce92c - answers PR #962 round 1, nine findings. **Counts.**
+#   b43fa3f - the rebase onto 52b8328 and the re-derivation it forced.
+#     Mechanical, not feedback: does not count.
+#   4fde387 - answers PR #962 round 2, four whole-file findings. **Counts.**
+#   the commit carrying this line - a /fix-pr pass over the answered review.
+#     Author-initiated: does not count.
+# Value is 2: rounds 1 and 2, and neither author-initiated pass.
+# **Stale a third time in the commit that answered round 2**, which added a
+# seventh entry and left this block reading "returns six" at value 1. The sibling
+# trace's block carries the general lesson; both were caught by a /fix-pr pass
+# rather than by a reviewer. This block cannot be right at rest - it names
+# commits, and answering a review makes one.
+# **Every SHA above was rewritten once already** - the rebase onto 52b8328
+# replaced 05f9524, 162d132, d6d3f57, 58d425e and 005911e with the six above. The
+# sibling trace's block carries the general lesson; the local one is that naming
+# 6620383 by SHA to escape an ambiguity did not survive a rebase either. Re-run
+# the named command after any rebase rather than translating the old list.
+# **"No review round had run" was false when written**, and PR #962's review
+# caught it: 6620383's own message says the /pr gate found a real defect, and the
+# verify phase below records it. The claim that survives is narrower - a gate the
+# author ran on their own work is an author pass under bk-348's reading, so it
+# does not count toward this field. That is a reason, where the first version
+# asserted the event had not happened.
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/adrs/0036-reviewers-by-subject-and-method.md
+        section: "Decision (closing paragraph)"
+        read_type: gate
+        extract: >-
+          Decides whether adding a lens needs an ADR amendment: it does not. The
+          record states that the step sequences, the lens menu and the brief
+          requirements are operational contract living in the two skills. Read
+          before editing rather than after, because the alternative reading -
+          that the menu is ADR-governed - would have made a one-line lens
+          addition into an ADR supersession.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-330; ID-238"
+        read_type: gate
+        extract: >-
+          The two entries that establish the existing loop and its deliberate
+          shape. BK-330 shipped the outcome report as "a report, not a gate" per
+          DRIFT-RULES Rule 5; ID-238 added a release-anchored review rather than
+          a calendar. Together they are why this item ships advisory instruments:
+          a blocking reader gate would reopen a decision made twice on stated
+          reasoning, and nothing here is new evidence against it.
+        outcome: ok
+      - file: .claude/agents/documentation-expert.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          The persona's IDENTITY already asks the reader question - "can a
+          citizen developer figure this out from the docs alone?" - and every
+          mechanism under it answers by judgement. FOUNDATION, CONSTRAINTS and
+          DONE WHEN are placement, structure, longevity and completeness checks;
+          not one is an experiment. That gap is what the reader test fills, and
+          it is why the persona rather than a new skill is the right host.
+        outcome: ok
+  - id: measure
+    name: Measure the gap rather than assert it
+    steps:
+      - file: scripts/report_trace_outcomes.py
+        section: "(report output at this commit)"
+        read_type: verify
+        extract: >-
+          Ran `hatch run report-trace-outcomes` instead of quoting ID-238's
+          figures, which that item's own body requires of an inherited number.
+          **The run corrected the argument rather than confirming it.** The split
+          is 189 `misleading` to 30 `unclear`, and only `unclear` is the class a
+          reader test reaches - the schema defines it as on-topic but vague, the
+          reader compensating, where `misleading` is a confident false answer a
+          no-context reader cannot check. My framing to the user before this run
+          cited the negative total and would have claimed about seven times the
+          reach the mechanism has.
+          **The figures were then wrong twice more, for two different reasons**,
+          which is the part worth recording. First, the run happened mid-branch,
+          after BK-351's trace landed and before this file existed, so its 275 ·
+          3,981 · 1,793 · 220 · 31 described neither `origin/master` nor the head
+          while the entry called it "at this commit"; a corpus figure asserted
+          inside a commit that adds to the corpus cannot be pinned by re-running at
+          the head either. PR #962's review caught that, and the fix was to measure
+          `origin/master` in a worktree - 274 · 3,969 · 1,781 (44.9%) at 16673b7 -
+          and give the head figures beside it.
+          Second, **the baseline then moved under the pin**: rebasing onto 52b8328
+          brought BUG-252 and its trace, so the same command now gives 275 · 3,988 ·
+          1,781 (44.7%) on master and 277 · 4,019 · 1,812 (45.1%) at the head.
+          Re-run rather than adjusted. The negative tags held at 219 and the
+          `unclear` split at 30, so the ratio the item's scope rests on survived
+          both corrections - which is a finding of the re-runs, not a reason to
+          have skipped them.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "outcome (unclear vs misleading)"
+        read_type: gate
+        extract: >-
+          The definitions the split turns on, read to check the narrowing rather
+          than assume it. `unclear` is the doc-improvement signal and names
+          compensation by the reader; `misleading` is called the strongest
+          doc-failure signal in the schema and is a correctness failure. Confirms
+          that the instruments for the larger half already exist - the measuring
+          member and the whole-file gate - and that this item should not claim
+          them.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Lens menu (Consumer, Reader)"
+        read_type: verify
+        extract: >-
+          The lens is placed directly below Consumer because that is the lens it
+          would otherwise be confused with, and the distinction is method rather
+          than subject - Consumer judges docs from outside, Reader runs the
+          questions. Same axis as ADR-0035's reading-versus-executing, applied to
+          prose.
+          Sibling sweep of adding it: the menu is taken by /orchestrate through a
+          shared link, so a bound written in /ship's vocabulary would be false
+          there. The first draft said the member "has read the diff and the PR
+          body", which under /orchestrate is a PR that does not exist. Rewritten
+          to state the bound once and name what was read on each side. This is
+          the failure /orchestrate's own worktree block documents for a different
+          paragraph - a reader sent to a page whose stated reason is false in
+          their skill.
+        outcome: ok
+      - file: .claude/agents/documentation-expert.md
+        section: "READER TEST; DONE WHEN; OUTPUT"
+        read_type: verify
+        extract: >-
+          Hosts the genuine no-context reader the /ship lens structurally cannot:
+          a scoped member has read the change under review, a spawned reader has
+          not. Two clauses carry the honesty the instrument depends on - questions
+          come from what the page promises rather than from what it covers, since
+          questions derived from the text can only confirm it; and a
+          self-administered fallback must be labelled, because an author knows
+          what the page meant to say. Adapted from doc-coauthoring's own
+          with/without-subagent split rather than invented.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience (derived CHANGELOG rule)"
+        read_type: verify
+        extract: >-
+          Checked rather than assumed. Repo-internal agent tooling, no `user.`
+          audience, no new user-facing framework, so no CHANGELOG entry - the
+          same call BK-351 made one commit earlier and BK-348 before it.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Lens menu; Stop rule; Rules"
+        read_type: verify
+        extract: >-
+          Swept for cardinality claims about the menu before adding to it, since
+          an enumeration falsified by an addition is this repo's most-repeated
+          defect. `rg -i 'lens'` across the tree returns no count of the /ship
+          menu's entries; the "eight catalog lenses" hits belong to
+          audit-019 and the expectation-driven-review research, a different
+          catalog. The stop rule and Rules bind gates and methods, and an
+          advisory lens adds neither, so both are untouched and correct as they
+          stand.
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Intent & Scope; Rules 1 and 4"
+        read_type: gate
+        extract: >-
+          Reached from the `/pr` validation gates' qualitative-review step, which
+          routes any new or changed cross-artifact mechanism here. **It caught a
+          real defect in my own first cut.** The scope line fires on a change that
+          "adds a second description of something already described", and the lens
+          and the persona block both stated the reader-test method - so the two
+          could drift with no authority declared, which Rule 4 requires in writing
+          before the mechanism exists. Fixed by making the persona block normative
+          and saying so there, and reducing the lens to its scope and bound with a
+          citation for the steps. Worth recording that no reviewer found this: the
+          gate did, on a branch whose two items are both about instruments that
+          catch what reviewers miss. Declining it would have reproduced the
+          `tmp/base` duplication BK-351 flagged one item earlier.
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules 3 and 4"
+        read_type: verify
+        extract: >-
+          The other half of the qualitative gate. Rule 3 forbids exact counts in
+          narrative and **carves out** `sdd/` records, backlog items, commit
+          messages and `.claude/skills/`; each figure names its derivation per
+          principle 9, so the carve-out is satisfied rather than merely invoked.
+          Rule 4 is what the DRIFT-RULES finding above also answers, from the
+          documentation side.
+          **This step certified an invariant that a later commit then broke, and
+          the step is what recorded it as safe.** As written it said every figure
+          the branch adds lives inside the carve-out, and that the one file outside
+          it — `.claude/agents/documentation-expert.md` — carried an instruction
+          range rather than a measured figure. True when checked; falsified two
+          commits later by the Rule 7 bound this trace's own review phase records
+          adding, which put a measured corpus pair into exactly that file. Neither
+          the fix nor its trace step re-read the certification standing 40 lines
+          above. PR #962's round 2 caught it, and the disposition was to take the
+          figure back out of the persona and leave the qualitative magnitude with a
+          link, per Rule 3's own "qualitative categories and a link" - so the
+          invariant holds again, by removal rather than by carve-out. The
+          alternative, adding `.claude/agents/` to Rule 3's carve-out, is an edit to
+          `CONTENT-RULES.md` and was not made.
+          Tagged `ok`, deliberately: `CONTENT-RULES.md` said exactly what it says
+          and nothing here is its failure. The schema reserves `outcome` for the
+          document that failed a reader and sends the reader's own miss to this
+          field, so a `misleading` tag would blame Rule 3 for a certification that
+          went stale under me. A first cut of this correction tagged it
+          `misleading` anyway.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Pre-work index"
+        read_type: verify
+        extract: >-
+          Triggered rows: Backlog item touched (trace owed) and CHANGELOG entry
+          (assessed, not required). **No row covers adding a review lens or
+          amending a persona's obligations**, which is the second consecutive
+          item whose real ripple the table does not anticipate - BK-351's was a
+          skill's frontmatter. Two instances in two items is worth naming to
+          BK-346, which owns the table's measured blind spots, but not worth
+          filing from here: that item's open question is the shape of the fix,
+          and two more instances do not change it.
+        outcome: unclear
+  - id: review
+    name: Review (PR #962)
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Lens menu (Reader)"
+        read_type: verify
+        extract: >-
+          Round 1's sharpest finding, and it is this file's own inert-obligation
+          shape in the lens it had just added. The lens cites the persona block as
+          its normative method, and that block's step 2 spawns a fresh reader -
+          which a member here cannot do: a solo pass keeps `/rvw-pr`'s
+          `allowed-tools`, which grants no agent-spawning tool, and nesting from a
+          panel member is not established either. So the lens's stated reason for
+          existing ("runs the questions and reports what came back", the thing
+          separating it from Consumer) described something it could never do; the
+          fallback meant nothing broke, which is why a reading pass over the lens
+          alone would not have caught it. Fixed by briefing the member to
+          self-administer and label it, and by stating two bounds where the first
+          cut stated one - priming, and the sharper administration bound.
+        outcome: ok
+      - file: .claude/agents/documentation-expert.md
+        section: "READER TEST (Rule 7 bound); OUTPUT"
+        read_type: verify
+        extract: >-
+          Two findings on the file this PR declares the mechanism's normative
+          home. **DRIFT-RULES Rule 7 was unsatisfied there**: the bound that
+          decides the instrument's whole reach - it catches `unclear`, never
+          `misleading` - lived only in the backlog entry, which is a record rather
+          than the mechanism, and Rule 7 asks for it in the check itself. The
+          reviewer named `report_trace_outcomes.py`'s own "State the bound" section
+          as the standard the repo set for the sibling instrument in the same loop,
+          which is the right comparison. Added, at first with the measured pair
+          spelled out, plus two further bounds the first cut left implicit
+          (self-administration is the normal case, and questions bound the result).
+          **Round 2 then took the pair back out**: a corpus figure in a persona file
+          sits outside Rule 3's carve-out, names no derivation a reader of that file
+          can run, and pins to an `origin/master` that moves — this branch moved it
+          once already. What stays is the bound Rule 7 actually asks for, which is a
+          schema fact rather than a corpus fact, plus the qualitative magnitude and
+          a link to the entry that carries the pinned measurement.
+          Separately the OUTPUT
+          clause was unconditional against a conditional obligation, so a
+          review-mode invocation - which `/orchestrate` Steps 3 and 6 and
+          `CLAUDE.md` § Audits all produce - was told to report a test it correctly
+          never ran.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-352 (corpus figures)"
+        read_type: verify
+        extract: >-
+          The figures finding, and the reason to record it is that **three
+          readings of one derivation disagreed and only running it settled them**.
+          The entry said 275 traces "at this commit"; the reviewer reasoned from
+          the report's documented glob to 274 on master and 276 at the head, said
+          plainly that theirs was a reading pass, and asked for a measuring pass
+          before any rewrite. Running it in an `origin/master` worktree confirmed
+          their corpus counts and refuted their predicted head figures - **all
+          values in this step are against the pre-rebase base 16673b7, which is
+          what the round was measured on; the current ones are in the measure phase
+          above** - 221 negative across 114 and 32 `unclear`, not 222/115/33, and
+          `CLAUDE-REFERENCE.md` at 15 total with 12 `unclear` over 295 reads, not
+          13 over 296 - because those predictions were derived by adding to the
+          off-by-one they were correcting. An error inherited by the correction is
+          the same class as the error, which is the argument for the reviewer's own
+          instruction to measure first.
+        outcome: ok
+      - file: .claude/agents/documentation-expert.md
+        section: "WHAT THIS TEST DOES NOT CATCH; ship/SKILL.md Reader lens"
+        read_type: verify
+        extract: >-
+          Round 2, a whole-file pass, and both of its findings on this item are the
+          shape the round exists to catch - a claim true when written and falsified
+          by a later commit in a different file. The Rule 7 bound shipped with a
+          measured corpus pair in a persona file: outside CONTENT-RULES Rule 3's
+          carve-out, no derivation a reader of that file can run, and pinned to an
+          `origin/master` this branch had already moved once. Removed in favour of
+          the qualitative magnitude and a link, per Rule 3's own remedy; the bound
+          Rule 7 asks for is a schema fact and stays.
+          The second is the lens's escape hatch: it routed a reader wanting a
+          genuine no-context read to the persona, whose own block says to assume
+          the fallback, and `BACKLOG-DONE.md` carried the unhedged form outright.
+          The honest claim is smaller - **no host in this repo guarantees a spawned
+          no-context reader** - and it is what the normative home supports. Also
+          caught that the administration bound was written only in `/ship`'s
+          vocabulary while the priming bound beside it had been deliberately
+          translated for `/orchestrate`: half a sibling sweep, in the paragraph
+          added *by* a sibling-sweep finding one round earlier.
+        outcome: ok

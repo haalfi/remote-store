@@ -1,6 +1,6 @@
 ---
 name: rvw-pr
-description: Post inline review comments on a GitHub PR. Find real issues only.
+description: Review a GitHub PR and post inline comments on real defects only, covering correctness, spec compliance, test coverage and ripple gaps. Use when asked to review a PR, re-review after a fix pass, or supply a review round for /ship or /orchestrate, including an analyze-only panel member or a measuring pass. Prefer this over the built-in /review for any PR in this repo. Do not use to fix findings (that is /fix-pr) or to open a PR (that is /pr).
 context: fork
 argument-hint: "[PR number] [optional context]"
 allowed-tools: Read, Grep, Glob, Bash, mcp__MCP_DOCKER__pull_request_read, mcp__MCP_DOCKER__list_pull_requests, mcp__MCP_DOCKER__list_commits, mcp__MCP_DOCKER__get_file_contents, mcp__MCP_DOCKER__pull_request_review_write, mcp__MCP_DOCKER__add_comment_to_pending_review

@@ -1,0 +1,318 @@
+id: BK-351
+title: "The model-invocable skills' descriptions say what they do and never when to use them"
+trigger: >-
+  The user supplied Anthropic's "The Complete Guide to Building Skills for
+  Claude" (33pp) and asked whether the repo's ten skills could and should adopt
+  it. Not a defect report and not a backlog item: an open question whose answer
+  had to be derived from the ten skills rather than from the guide, since the
+  guide's audience is MCP vendors publishing skills for auto-triggering
+  distribution and this repo's are internal workflow automation invoked by
+  slash command.
+source_items:
+  - BK-351
+co_shipped_items:
+  - BK-352
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+# The only ripple the check anticipated. A description change reaches nothing
+# else: `rg` for both original description strings across the tree returned the
+# two SKILL.md lines and nothing more, so no doc, spec or check asserts them.
+surprising_ripples:
+  - .claude/skills/pr/SKILL.md
+# Not surprising as a file - surprising as a *member*. The work was scoped to
+# the two skills a first pass called model-invocable; /pr is the third and was
+# missed. Nothing in the ripple-check covers "a skill's frontmatter gains a
+# trigger phrase", and no row would have found it: the membership test is a key
+# in a frontmatter, not a citation anywhere.
+# Name the commits the value was counted from, per the schema's review_rounds
+# clause. `git log --oneline origin/master..HEAD` returns eight, and all eight are
+# named because the command's output is the checkable half - an enumeration
+# shorter than what the named command prints is not a derivation:
+#   66d3453 - this item's implementation, authored in one pass. Does not count.
+#   3c05f5c - BK-352's implementation. Co-shipped, not this item's work.
+#   6620383 - BK-352's DRIFT-RULES correction, found by the /pr qualitative gate.
+#     Author-initiated on my own work, so it does not count, on the reading
+#     bk-348's trace states for its own finishing commit.
+#   5f04434 - this item's word-count correction, found by the same gate while
+#     drafting the PR body. Same reading: does not count.
+#   3fce92c - answers PR #962 round 1, nine findings. **Counts.**
+#   b43fa3f - the rebase onto 52b8328 and the re-derivation it forced.
+#     Mechanical, not feedback: does not count.
+#   4fde387 - answers PR #962 round 2, four whole-file findings. **Counts.**
+#   the commit carrying this line - a /fix-pr pass over the answered review.
+#     Author-initiated: does not count.
+# Value is 2: rounds 1 and 2, and no author-initiated pass.
+# **Every SHA above was rewritten once already.** The five commits this block
+# first named were 05f9524, 162d132, d6d3f57, 58d425e and 005911e; rebasing onto
+# 52b8328 replaced all of them. A SHA enumeration is the most fragile form a
+# derivation can take - it is falsified by a rebase that changes no content at
+# all - and that is a cost of the schema's clause rather than an argument against
+# it, since the alternative is a bare count nothing can check. Re-run the named
+# command after any rebase; do not translate the old list.
+# **The first version of this block was wrong three ways**, all caught by PR
+# #962's review: it enumerated one commit where the named command printed four, it
+# asserted the word-count correction "produced no separate commit" when what is
+# now 5f04434 is exactly that, and it said no review round had run. The command
+# was named and never run against its own claim - the defect class this branch
+# ships a fix about, in the field the schema added to prevent it.
+# **And it went stale a third time, in the commit that answered round 2.** That
+# commit added a seventh entry to the branch and left this block saying "returns
+# six" with the value at 1 - the enumeration falsified by the edit sitting in the
+# same file. Caught by a /fix-pr pass, not by a reviewer. The block cannot be
+# right at rest: it names commits, and answering a review makes one. Re-run the
+# command every time this file is touched, which is the same trigger BK-351's
+# entry states for word counts and for the same reason.
+review_rounds: 2
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: .claude/skills/audit/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Read first because CLAUDE.md § Audits governs the shape of the answer,
+          not because this skill was invoked: the user's question is an audit
+          request in everything but name, so the report-only rule and the
+          "user decides next steps" rule bind before anything is edited. Set the
+          decision to report findings and route the disposition through
+          AskUserQuestion rather than to start editing skills.
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Principles 4 and 8; Interview mode; Backlog; Trace authoring"
+        read_type: gate
+        extract: >-
+          Principle 8 is the clause that decides the guide's central
+          prescription: detail is relocated to the layer whose change-rate and
+          correctness-locus fit it, and "brevity is a byproduct of correct
+          placement, never the target". That converts the guide's 5,000-word
+          budget from a rule to be adopted into a question to be asked, and the
+          question has a different answer than the budget does. Principle 4
+          (link, don't copy) is what makes the worktree duplicate a finding at
+          all.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works; ID prefixes; Completing work"
+        read_type: gate
+        extract: >-
+          Two things the work needed. The admission test - an item fitting no
+          section's promise is not filed - and the § Completing work rule that a
+          fully done item goes to BACKLOG-DONE.md in the same commit as the
+          change. Since this work ships in one commit, the item is entered
+          directly in BACKLOG-DONE under Unreleased and never appears in
+          BACKLOG.md, which also avoids editing section 6's `Closes when`
+          enumeration to add an item that closes in the same breath.
+        outcome: ok
+  - id: measure
+    name: Measure the skills against the guide
+    steps:
+      - file: .claude/skills/
+        section: "(all ten SKILL.md frontmatter)"
+        read_type: verify
+        extract: >-
+          Dumped every frontmatter with word and line counts rather than reading
+          the files first, because the guide's checkable claims are all frontmatter
+          properties. Compliant already: kebab-case folder names, exact SKILL.md
+          spelling, name matching folder, no README.md inside any skill folder,
+          no XML angle brackets. Non-compliant on one axis only: all ten
+          descriptions state what and none states when.
+        outcome: ok
+      - file: .claude/skills/
+        section: "disable-model-invocation across all ten"
+        read_type: verify
+        extract: >-
+          **Got this wrong first, and it changed the work.** Reading the same
+          dump I reported "8 of 10 disabled, exactly two model-invocable" and
+          scoped the fix to /fix-pr and /rvw-pr. Re-derived by testing each
+          frontmatter for the key instead of reading down the list: seven
+          disabled, three model-invocable, the third being /pr. It was missed
+          because /pr groups with the slash-only workflow skills by usage while
+          its frontmatter groups it with the PR skills, and I read the grouping
+          rather than the key. The correction is principle 9's whole point
+          arriving in the item that ships a description fix: the count was
+          checkable in one command and I had asserted it from a glance at output
+          I had already collected.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Read whole against the guide's progressive-disclosure prescription,
+          which the word count (6,380 via `wc -w`) puts over its 5,000 budget.
+          The prescription does not survive the read: every section is a rule
+          binding on every invocation, and the file's own repeated diagnosis is
+          the inert obligation - a duty shipped without the permission or the
+          reading that makes it executable. A `references/` file is loaded at the
+          model's discretion, so moving binding rules there manufactures exactly
+          that failure. Rationale is already externalised to ADRs 0033-0037 by
+          link, which is the same three-level structure the guide asks for with
+          the third level outside the skill folder.
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Reviewer selection (base-branch worktree)"
+        read_type: verify
+        extract: >-
+          Same verdict as /ship on the bulk. The one genuine finding is here and
+          in /rvw-pr: the `git worktree add tmp/base` recipe is duplicated
+          verbatim, each copy names the other, and both carry "edit both when the
+          commands change" with no mechanism behind it. Recorded in the item as
+          an open residue rather than filed - both copies argue the duplication
+          is deliberate because the stated *reason* differs per skill, so
+          collapsing them re-decides two skills' reasoning rather than fixing a
+          description.
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "header allowlist; Step 1; measuring block"
+        read_type: verify
+        extract: >-
+          The counterexample that settles the progressive-disclosure question in
+          the repo's favour: the measuring allowlist lives here and /orchestrate
+          binds its own reviewer to it *by link* rather than by copy. The
+          link-don't-copy pattern the guide's references/ would provide is
+          already in use where the content is genuinely shared, and declined
+          only where the reason differs. Nothing to move.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: .claude/skills/pr/SKILL.md
+        section: "frontmatter description"
+        read_type: gate
+        extract: >-
+          Read to write an accurate description, and it supplied the negative
+          trigger: the skill creates a PR and explicitly does not merge, approve
+          or update one. Paired with `.claude/hooks/warn-direct-pr.sh`, which
+          fired during this session's own first Bash attempt - the hook exists
+          because the description gave the model nothing to prefer this skill
+          on, which is the diagnosis restated as a mechanism.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "audience (derived CHANGELOG rule)"
+        read_type: verify
+        extract: >-
+          Checked rather than assumed whether a CHANGELOG entry is owed. The rule
+          fires on any `user.` audience, or on contributor.process introducing a
+          new user-facing framework. This is repo-internal agent tooling and
+          introduces no framework, so no entry - the same call BK-348 made and
+          recorded for the same class of change.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Pre-work index"
+        read_type: verify
+        extract: >-
+          Triggered rows: Backlog item touched (trace owed, schema followed) and
+          CHANGELOG entry (assessed, not required). **No row covers a change to a
+          skill's frontmatter**, which is why the missed third skill appears in
+          surprising_ripples: the anticipatory authority had nothing to say about
+          the membership test this work turns on. Adjacent to BK-346's class of
+          measured blind spot rather than a new one, and not filed here - one
+          instance is not a diagnosis.
+        outcome: unclear
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-351 (word counts)"
+        read_type: verify
+        extract: >-
+          Re-derived while drafting the PR body, and the figures had gone stale
+          inside the branch that wrote them. The entry quoted `/ship` 6,380 and
+          `/rvw-pr` 3,479 in the present tense; at the branch head the same
+          measurement gives 6,667 and 3,547, because this item's own description
+          edit grew one file and BK-352's Reader lens grew the other. A named
+          derivation that no longer reproduces is worse than a bare number, since
+          it invites the check and fails it. Fixed by pinning the counts to
+          `origin/master`, saying so, and giving both. The defect is the class
+          ADR-0037 exists for, arriving in the same PR - which is the argument for
+          re-running a derivation at the moment of writing rather than trusting
+          one taken earlier in the same session.
+        outcome: ok
+      - file: .claude/skills/
+        section: "grep for the two original description strings"
+        read_type: verify
+        extract: >-
+          Ran `rg` for both replaced description strings across the tree before
+          editing, to find anything asserting them. Two hits, both the SKILL.md
+          lines themselves. No doc, check, spec or test quotes a skill
+          description, so the sweep is closed rather than merely unattempted.
+        outcome: ok
+  - id: review
+    name: Review (PR #962)
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-351 (word-count paragraph; 'Their bulk')"
+        read_type: verify
+        extract: >-
+          **The word-count fix broke an antecedent, and the fix's own commit is
+          what broke it.** 5f04434 inserted the `origin/master` pinning paragraph
+          between "All three were read whole against the prescription" and "Their
+          bulk is unconditionally binding instruction", so the pronoun's referent
+          moved two paragraphs away and a reader resolved it to `/pr` or to the
+          counts. ADR-0037's named shape - an antecedent broken by a paragraph
+          inserted above it - inside the entry that cites ADR-0037, and invisible
+          in the hunk that caused it. Fixed by restoring the order and naming the
+          subject ("Those three files' bulk") rather than repairing the pronoun,
+          since a pronoun across a paragraph boundary breaks again on the next
+          insertion.
+        outcome: ok
+      - file: .claude/skills/rvw-pr/SKILL.md
+        section: "frontmatter description; BK-351 entry (compensating mechanisms)"
+        read_type: verify
+        extract: >-
+          The finding that the second-description test was applied to one half of
+          the branch. This item diagnoses `CLAUDE.md` § GitHub operations and
+          `warn-direct-pr.sh` as mechanisms compensating for the missing triggers,
+          then adds a third statement of the same direction in the new
+          descriptions - which is DRIFT-RULES' own scope trigger, the test
+          6620383 had applied to BK-352's reader-test method one commit earlier.
+          The reviewer explicitly did not ask for deletions, only for a
+          disposition, which is the right ask: all three are justified on
+          different grounds. Recorded in the entry - `CLAUDE.md` governs because it
+          is read cold at session start, where a description is matched only once
+          routing is already underway; the hook enforces rather than describes.
+          The gap was a diagnosis shipped without a decision.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "review_rounds; co_shipped_items"
+        read_type: verify
+        extract: >-
+          Two schema obligations both traces missed. `review_rounds` names a
+          command whose output the enumeration must match, and both enumerated
+          fewer commits than `git log --oneline origin/master..HEAD` prints - one
+          of five here, two of five in the sibling - while asserting facts the
+          omitted commits falsify. `co_shipped_items` was absent from both, though
+          the PR closes two items and the field exists precisely so an aggregator
+          does not double-count shared reads; both traces cite _schema.yml,
+          BACKLOG-DONE.md and CLAUDE-REFERENCE.md, and both tag the last
+          `unclear`, which inflates the metric BK-352 argues from. Established
+          practice rather than a dormant field - `rg co_shipped_items sdd/traces`
+          hits 20+ files, and neither author checked.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-351 (word-count paragraph, head figure)"
+        read_type: verify
+        extract: >-
+          Round 2, whole-file, and it caught the same paragraph failing the same
+          way a third time. The head figure for `/ship` was measured at 6,667 when
+          5f04434 wrote it; 3fce92c then grew the Reader lens by two paragraphs,
+          and b43fa3f re-derived the corpus figures after the rebase without
+          re-running this one - a fix for a stale derivation leaving a stale
+          derivation two lines from where it explains the hazard. Re-run on
+          request rather than adjusted from the reviewer's estimate: 6,818,
+          against their structural hand count of ~440 added words versus the
+          measured +438, and their calibration on `/rvw-pr`'s unaffected +68 which
+          matches exactly. `/orchestrate` unchanged at 3,395.
+          **And 6,818 was wrong too**, found by a later `/fix-pr` pass counting
+          something else. The re-run measured the file before that same commit
+          rewrote the Reader lens, which took it to **6,916**. Four values across
+          the branch, each correct at some commit and none at the one that wrote
+          it: 6,667 at 5f04434, 6,818 at 3fce92c, 6,916 at 4fde387.
+          The generalisable part is the trigger, now written into the entry: any
+          commit touching a file a figure measures obliges re-running **that**
+          figure **after the last edit in that commit**, and "I re-derived this
+          branch's figures" is a different claim from "I re-derived this one".
+          Measuring first and editing after is how the fourth one happened, inside
+          the fix for the third.
+        outcome: ok
