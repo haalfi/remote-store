@@ -162,17 +162,28 @@ if evidence changes; these are retired.
   path loses, what covers the residue — was stated at **four** sites, and
   `unprimed` appeared 43 times over 702 lines. Counts from `wc`-equivalent word
   and `rg` occurrence counts over the file at PR #962's head.
-  **Condensed to 6,188 words, −728 (−10.5%)**, by giving that argument one home
+  **Condensed to 6,369 words, −547 (−7.9%)**, by giving that argument one home
   (a new `Reviewer permissions and the tree check` section) with the other three
   sites citing it, folding the four "never the unprimed one" restatements into one
   clause covering every scoped member, and tightening prose throughout.
-  **Nothing was removed for length.** No rule, bound, vacuous-case clause,
-  evidence narrative or ADR citation was dropped: all five ADRs are still cited,
-  and a 47-token check over the load-bearing claims — whitespace-normalised,
-  because the first version of that check reported a false loss on a phrase split
-  across a line wrap — returns none missing. **The instrument's own bug is
-  recorded rather than smoothed over**, since a verification that can report a
-  wrong answer is the class this repo calls worse than none.
+  **The first cut claimed nothing was removed and that claim was false twice.**
+  PR #963's review, reading both versions whole rather than by hunk, found two
+  removals: the three per-clause append instructions in the Stop rule (each
+  carrying its own condition, the measuring one gated on the PR asserting
+  something about existing behaviour), and the Reader lens's bound that *what
+  belongs here is only what is true of this lens and not of that block*. Both are
+  restored, which is what moved the figure from −728 (−10.5%) to −547 (−7.9%).
+  **The instrument is why the claim survived**, and its bound is the durable
+  lesson: a token check covers the tokens in its list and nothing else, so it
+  cannot answer "was anything removed" — only "were these things removed". It now
+  carries 50 tokens including the four it missed, returns none lost, and is
+  **ad-hoc and uncommitted**, so the count records what was run rather than
+  something a later reader can reproduce. Two earlier runs used 47- and 46-token
+  lists, which is why those two numbers appear in this branch's history; the
+  discrepancy was itself a review finding. Its first version also reported a
+  **false loss** on a phrase split across a line wrap, fixed by normalising
+  whitespace. A verification that can report a wrong answer in either direction is
+  the class this repo calls worse than none, and this one did both.
   **The cut is below the 15-20% estimated before starting, and the estimate was
   the thing that was wrong.** The remaining bulk is not duplication: it is the
   brief-requirement rationale and the stop-rule clause explanations, which
@@ -182,8 +193,17 @@ if evidence changes; these are retired.
   [principle 8](../CLAUDE.md#principles) forbids and **BK-351** declined for this
   same file when the external guide proposed a 5,000-word budget. A smaller
   honest number beats a larger one with a qualifier quietly gone.
+  **Two structural findings from the same review, both self-falsifying openings.**
+  The new section opened "Everything below cites it rather than restating it"
+  while the Reader lens — the fourth of the four sites — still restated; it now
+  cites, so the opening is true. And `### Running a panel` had been given the
+  solo-pass mechanism, the solo-round rule and the argument order binding both
+  paths, while rounds 1 and 2 are always solo: the heading told the reader who
+  most needed the section that it was not for them. Renamed to cover both paths.
+  Both are the shape the whole-file gate exists to catch, in a file that ships
+  that gate.
   **Supersedes BK-351's head figure**, which is now pinned to PR #962's head and
-  says so; `/ship` at this branch's head is 6,188. That entry's own trigger — a
+  says so; `/ship` at this branch's head is 6,369. That entry's own trigger — a
   commit touching a file a figure measures obliges re-running that figure — is
   what caught the collision.
 

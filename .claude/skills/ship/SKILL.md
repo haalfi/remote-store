@@ -161,7 +161,11 @@ this reasoning is the failure the sibling-sweep rule exists to catch.
   the two apart. An appended pass is a reviewer whose silence ends the loop; it
   is the last place to skip this, not the first.
 
-### Running a panel
+### Running a round: panels and solo passes
+
+Rounds 1 and 2 are always solo, so a reader who has not yet reached a panel needs
+this section too — the solo mechanism, the solo-round posting rule and the
+argument order that binds both paths are all below.
 
 **Panels run in parallel against the same pushed state.** Each member is fresh
 and blind to the others: scoped members get briefs; the unprimed member's prompt
@@ -260,16 +264,21 @@ menu by link rather than copying it.
   a brief cites that block rather than paraphrasing it, because a paraphrase is a
   second description that drifts
   ([`DRIFT-RULES.md` Rules 1 and 4](../../../sdd/DRIFT-RULES.md#one-driver)).
+  **What belongs here is only what is true of this lens and not of that block** —
+  that bound governs what this section may *contain*, where the clause above
+  governs what a *brief* may do, and it is what stops a later editor growing this
+  lens back into a second copy of the block.
   **The verdict is the reader's failure, not the reviewer's opinion** — that is
   what separates this from Consumer above, which judges docs from outside. The
   defect it reaches is a page that is accurate, correctly placed and
   CONTENT-RULES-clean and still leaves a reader unable to act, which no lens
   judging correctness can see.
   **Assume the self-administered form and brief for it.** The block's step 2
-  spawns a fresh reader; assume no member can. `/rvw-pr`'s frontmatter grants no
-  agent-spawning tool at all, and nesting from a panel member — or from an
-  `/orchestrate` reviewer, a plain subagent with a full tool set — is not
-  established. So brief the member to self-administer and **label it as such**,
+  spawns a fresh reader; assume no member can — no reviewer here has an
+  agent-spawning tool ([Reviewer permissions](#reviewer-permissions)), and
+  nesting from a panel member, or from an `/orchestrate` reviewer that is a plain
+  subagent with a full tool set, is not established either. So brief the member
+  to self-administer and **label it as such**,
   which the block already requires; never to attempt the spawn and report what it
   could not do. A brief citing the spawn step is this file's inert-obligation
   failure in its own newest lens.
@@ -481,9 +490,11 @@ what was refuted and why. The PR record is where that survives.
 > against that final state, *and* every behavioural claim the PR makes has been
 > executed by a measuring pass.**
 
-The last four clauses close the loop's measured blind spots, and each names an
-append when the would-be closing round lacks that member. An appended pass counts
-toward the ceiling only if it finds something.
+The last four clauses close the loop's measured blind spots. **Three of them name
+a member and an append; the fix-pass clause names neither** — its remedy is a
+verification round (see the Ceiling bullet), and it can be satisfied vacuously
+with no successor at all. An appended pass counts toward the ceiling only if it
+finds something.
 
 **It cannot end on an unreviewed fix pass**: a fix pass is not trusted work — it
 is new code written under time pressure by someone already wrong once in this
@@ -491,7 +502,8 @@ file.
 
 **It cannot end on a state no unprimed reviewer has seen**: scoped rounds confirm
 what they are pointed at, and the defects a loop creates are created by its fixes,
-after round 1's unprimed pass has come and gone.
+after round 1's unprimed pass has come and gone. If the would-be closing round had
+no unprimed member, append one unprimed pass.
 
 **It cannot end on a file nobody read whole.** Every round before the close
 reviews a diff, and the defect surviving all of them is the one the diff does not
@@ -499,17 +511,20 @@ contain: on PR #956 a loop converged clean with green CI, and a single whole-fil
 pass then found defects in all eight files it had to touch, each a sibling of a
 fix made under an obligation to sweep exactly those
 ([ADR-0037 § Context](../../../sdd/adrs/0037-whole-file-gate-and-derived-figures.md#context)).
-This clause has **no vacuous case**: a diff that changes a file can falsify that
-file's surrounding text, so it always applies. A one-round delivery therefore
-closes on an appended pass, never on round 1 — **the floor under this skill is two
-passes.**
+If the closing round had no whole-file member, append one, on the same terms as
+the unprimed pass. This clause has **no vacuous case**: a diff that changes a file
+can falsify that file's surrounding text, so it always applies. A one-round
+delivery therefore closes on an appended pass, never on round 1 — **the floor
+under this skill is two passes.**
 
 **And it cannot end on a behavioural claim nobody ran.** The measuring member is a
 panel obligation and panels start at round 3, so without this clause a one- or
 two-round delivery ships with zero execution-based review while the Rules below
 assert a premise was executed. An obligation that only fires mid-loop proves
-nothing about what ships. A PR making no such claim satisfies it vacuously,
-exactly as a round that fixed nothing satisfies the fix-pass clause.
+nothing about what ships. If the closing round had no measuring pass **and the PR
+asserts anything about existing behaviour**, append one, on the same terms as the
+unprimed pass. A PR making no such claim satisfies it vacuously, exactly as a
+round that fixed nothing satisfies the fix-pass clause.
 
 A clean unprimed round 1 on a diff warranting no other lens still leaves the
 whole-file clause to discharge, plus the measuring clause when the diff asserts
