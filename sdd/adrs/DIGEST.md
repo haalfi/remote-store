@@ -1238,48 +1238,25 @@ contract and live in `.claude/skills/orchestrate/SKILL.md` and
 ### [ADR-0038](0038-absent-container-outranks-drive-identity.md): An Absent Container Reads as Absence, Except Where the Contract Is Silent
 
 **BE-021 wins on every operation it decides. GR-031 keeps the operations BE-021
-is silent about.** A `404` is classified by what its URL addresses and what the
-contract says about the operation, in three cases:
+is silent about.** Graph classifies a `404` by four scopes:
 
 - **Item scope** — the path-addressed data plane. A `404` is `NotFound` whatever
-  its `error.code`, which is what makes the tolerant deletes tolerate an absent
-  drive and the strict ones report it as absence.
+  its `error.code`.
 - **Identity scope** — `resourceNotFound` stays `BackendUnavailable`; any other
   `404` is `NotFound`. It holds `write` — the single roster operation BE-021
   § Reach declines to decide — plus three callers BE-021's roster never reached:
   `check_health`, drive-id resolution, and the copy/move monitor poller.
 - **Drive scope** — the bare `/drives/{drive_id}` resource: any `404` is
-  `BackendUnavailable`, since no path is addressed and so no absence is being
-  reported. **No call site passes it**, before this change or after.
-- **Probe scope** is unchanged, and keeps its own value even though it now
-  answers as item scope does: it pins BE-004 / BE-005 independently of the rest
-  of the table.
+  `BackendUnavailable`. No call site passes it.
+- **Probe scope** — unchanged: every `404` is suppressed to `False`.
 
-GR-031 carries the per-call-site table and the reason each caller sits where it
-does; this record carries only why the split falls here.
+**A sibling takes the scope of the operation it delegates to**, not the scope its
+own name would suggest — `read_bytes` with `read`, `iter_children` with the
+listings — whether or not BE-021 names it.
 
-**Membership in item scope is not "BE-021 names this operation".** A sibling
-belongs where the operation it delegates to belongs — `read_bytes` with `read`,
-`iter_children` with the listings. Stated the other way round, the rule would
-send exactly the two operations the eleven-operation measurement surfaced as
-unnamed into identity scope, reintroducing the escalation on a path BE-021
-governs.
-
-**The criterion ships with its extension, because arguing it did not converge.**
-Three successive review rounds each found a call site on the wrong side of this
-rule, by a different route: `resolve_drive_id`'s lookups, then a fifth leg
-reaching the classifier through `iter_pages` rather than `graph_send`, then the
-monitor poller. Each was right about the site in front of it; none was
-exhaustive. So the rule is published with the enumeration rather than alone, and
-`test_utils.py` holds the half a hand-written table cannot — it reads `utils.py`'s
-call sites instead of a list, so a sixth leg left at the default fails a named
-cell.
-
-`write` is the load-bearing half of the compromise: it is the operation a caller
-runs first against a freshly configured store, so a misconfigured drive still
-surfaces as a configuration error rather than as "your file isn't there" — the
-failure GR-031 was written to prevent — while every operation the contract *does*
-decide answers portably.
+**The rule is published with its enumeration, not alone.** GR-031 carries a
+call-site-to-scope table covering every site, and `tests/backends/graph/aio/test_utils.py`
+derives the resolver's row from that module's own call sites rather than a list.
 
 ## Superseded
 
