@@ -191,8 +191,9 @@ class TestTypeProbes:
     @pytest.mark.spec("GR-031")
     async def test_probes_suppress_resource_not_found(self) -> None:
         # A 404 resourceNotFound must not escape the probes as BackendUnavailable:
-        # any 404 reports missing (BE-004/BE-005). Error-raising operations keep
-        # the drive-identity escalation.
+        # any 404 reports missing (BE-004/BE-005). What the *other* operations do
+        # with a drive-identity 404 is BE-021 vs GR-031, adjudicated by ADR-0038
+        # and pinned whole in aio/test_absent_drive.py — not restated here.
         respx.get(_meta_url("gone")).mock(
             return_value=httpx.Response(404, json={"error": {"code": "resourceNotFound"}})
         )
@@ -200,18 +201,6 @@ class TestTypeProbes:
             assert await backend.exists("gone") is False
             assert await backend.is_file("gone") is False
             assert await backend.is_folder("gone") is False
-
-    @respx.mock
-    @pytest.mark.spec("GR-031")
-    async def test_get_file_info_keeps_resource_not_found_escalation(self) -> None:
-        # The probe suppression is probe-only: an error-raising metadata read
-        # still maps the drive-identity 404 to BackendUnavailable.
-        respx.get(_meta_url("gone.txt")).mock(
-            return_value=httpx.Response(404, json={"error": {"code": "resourceNotFound"}})
-        )
-        async with _make() as backend:
-            with pytest.raises(BackendUnavailable):
-                await backend.get_file_info("gone.txt")
 
 
 class TestRead:

@@ -2,7 +2,7 @@
 
 <!-- doc: repo-only -->
 
-Compiled from 37 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
+Compiled from 38 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
 
 ## Accepted
 
@@ -1234,6 +1234,37 @@ contract and live in `.claude/skills/orchestrate/SKILL.md` and
   answer is to state fewer figures.
 
 > amends ADR-0033, ADR-0034 (clause).
+
+### [ADR-0038](0038-absent-container-outranks-drive-identity.md): An Absent Container Reads as Absence, Except Where the Contract Is Silent
+
+**BE-021 wins on every operation it decides. GR-031 keeps the operations BE-021
+is silent about.** A `404` is classified by what its URL addresses and what the
+contract says about the operation, in three cases:
+
+- **Drive scope** — the bare `/drives/{drive_id}` resource. Any `404` is
+  `BackendUnavailable`. No path is being addressed, so there is no absence for
+  BE-021 to describe.
+- **Identity scope** — the operations BE-021 decides nothing about, where the
+  drive-identity code is still honoured: `resourceNotFound` is
+  `BackendUnavailable`, any other `404` is `NotFound`. Membership is a test, not
+  a list: *does BE-021 state an answer for this operation?* Two call sites pass
+  it today — `write` (both the small `PUT /content` and the
+  `createUploadSession` halves), which BE-021 § Reach names as the one operation
+  no clause of it decides; and `check_health` (PING-011), which addresses no
+  caller-supplied path and exists to report a drive it cannot reach.
+- **Item scope** — every other path-addressed operation. A `404` is `NotFound`
+  whatever its `error.code`, which is what makes the tolerant deletes tolerate an
+  absent drive and the strict ones report it as absence.
+
+The probe scope is unchanged and keeps its own value even though it now answers
+exactly as item scope does: it pins BE-004 / BE-005 independently of the rest of
+the table, so a future renarrowing at item scope cannot reach the probes.
+
+`write` is the load-bearing half of the compromise. It is the operation a caller
+runs first against a freshly configured store, so a misconfigured drive still
+surfaces as a configuration error rather than as "your file isn't there" — the
+failure GR-031 was written to prevent — while every operation the contract *does*
+decide answers portably.
 
 ## Superseded
 

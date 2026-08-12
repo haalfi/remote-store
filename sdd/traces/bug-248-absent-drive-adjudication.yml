@@ -1,0 +1,164 @@
+id: BUG-248
+title: "BE-021's absent-container rule and GR-031's drive-identity escalation contradict each other"
+trigger: >-
+  Two deliberate spec clauses gave opposite answers for the same call against an
+  absent Graph drive: BE-021 required an absent container to read as an absent
+  path on every backend with no carve-out, while GR-031 mapped Graph's
+  drive-identity 404 to BackendUnavailable for every error-raising operation.
+  Neither implementation was wrong under its own clause, so the contradiction had
+  to be adjudicated before any code could be written, and section 1 of the
+  backlog could not close until it was.
+source_items:
+  - BUG-248
+  - BUG-243
+audience:
+  - user.api
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/adrs/DIGEST.md
+surprising_ripples:
+  # PING-011 is not an operation BE-021 reaches, so no ripple-check row and no
+  # reading of either clause pointed at it — yet check_health depended on the
+  # item-scope escalation the adjudication removed, and needs both halves of the
+  # surviving rule (resourceNotFound escalates, a missing base_path stays
+  # NotFound). It surfaced as a failing pre-existing test after the mapping
+  # change, which is what turned a three-value scope into a four-value one.
+  - sdd/specs/026-health-check.md
+  - tests/backends/graph/aio/test_ping.py
+  # The mapping table's own unit tests asserted the losing clause directly; the
+  # ripple-check "Error type" row points at backend error mapping and its tests,
+  # but this file is a pure-function table test one level below that.
+  - tests/backends/graph/test_http_mapping.py
+  # BUG-243's CHANGELOG bullet named GraphBackend as a standing divergence. Both
+  # bullets sit unreleased in the same section, so leaving it would have shipped
+  # a release contradicting itself.
+  - CHANGELOG.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-248"
+        read_type: gate
+        extract: "The two clauses, the case for each, and that this is an adjudication rather than a code fix"
+        outcome: misleading
+        # The item's own table and its closing line — "Only the two tolerant
+        # deletes disagree" — state the conflict as two operations wide. Measured
+        # at eleven. The item was written from a reading of the two clauses, not
+        # from a run, and every downstream artifact inherited the figure.
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021"
+        read_type: gate
+        extract: >-
+          The absent-container rule, its no-carve-out scope, and § Reach — which
+          is where the eleven-operation width is actually stated, and is the
+          paragraph the two-operation framing contradicts
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-031"
+        read_type: gate
+        extract: "The three 404 scopes, the probe-suppression rationale, and the unresolved-conflict paragraph"
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-031 verification note"
+        read_type: reference
+        extract: >-
+          Live consumer OneDrive returns itemNotFound on both URL forms, so the
+          escalation is defensive and unobserved — which is what makes narrowing
+          it cheap on the tier anyone has measured
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: "Triggered rows: Spec section, Error type, Bug fix, Backlog item touched"
+  - id: reproduce
+    name: Measure the actual width
+    steps:
+      - file: tests/backends/graph/aio/test_absent_drive.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          What the existing pins cover — the two deletes and the three probes,
+          which is exactly the surface the two-operation framing describes.
+          Wrote an ad-hoc probe over all 17 operations x both error codes
+          instead of trusting it; that run is what refuted the framing and
+          changed the option set put to the user.
+      - file: src/remote_store/aio/backends/_graph/http.py
+        section: "classify_graph_error"
+        read_type: reference
+        extract: "The single 404 branch every operation routes through, so the fix is one condition"
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_get_item, delete, delete_folder, _write_small"
+        read_type: reference
+        extract: >-
+          The deletes' determinant GET already runs, so both halves of BE-021's
+          rule fall out at zero extra round trips — which is what makes the
+          clause's free-on-the-miss-path budget hold
+  - id: design
+    name: Adjudicate
+    steps:
+      - file: sdd/formal/README.md
+        section: "Three shapes of Dafny-section work: (C), (T), (O)"
+        read_type: gate
+        extract: >-
+          Whether extending BackendContract.dfy would pay. It would not: per-backend
+          divergence is explicitly outside the Dafny track, the model has no
+          container that could be absent, and BackendUnavailable carries no
+          postcondition. Declined and recorded in the ADR rather than passed over
+      - file: sdd/formal/BackendContract.dfy
+        section: "§1 Error model, §4 Filesystem model, Delete, DeleteFolder"
+        read_type: verify
+        extract: "Confirm the model has no container state and no BackendUnavailable postcondition"
+      - file: sdd/adrs/0030-azure-hns-explicit-declaration.md
+        section: "(full)"
+        read_type: reference
+        extract: "Structural analog for an ADR that narrows a runtime behaviour to an explicit declaration"
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: sdd/TESTING.md
+        section: "(full)"
+        read_type: gate
+        extract: "Assertion depth and spec tracing for the rewritten absent-drive suite"
+      - file: tests/backends/graph/aio/test_write.py
+        section: "TestUploadSession"
+        read_type: reference
+        extract: >-
+          How to force the large-file path (_SMALL_FILE_MAX_SIZE monkeypatch), so
+          createUploadSession gets its own cell rather than riding on the small write's
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/aio/backends/_graph/transfer.py
+        section: "_create_upload_session, _upload_chunks"
+        read_type: reference
+        extract: >-
+          The second write call site, and the chunk PUT — left at item scope
+          because its URL is pre-authorised, cross-host and addresses no drive
+      - file: sdd/specs/026-health-check.md
+        section: "PING-011"
+        read_type: gate
+        extract: >-
+          Reached only after its test failed. The spec pins scope="item" in a code
+          block and argues for it in prose, so both had to move; it is also what
+          proved the carve-out is not "write" but "operations BE-021 does not decide"
+        outcome: ok
+  - id: verify
+    name: Ripple-check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist"
+        read_type: verify
+        extract: "Error type, Spec section, Bug fix, Backlog item touched rows"
+      - file: sdd/BACKLOG.md
+        section: "1. Failures are predictable"
+        read_type: verify
+        extract: >-
+          Closes-when clause, the six-backend count (now five) and BK-345's
+          stated dependency on this item all assert BUG-248 is open
+      - file: sdd/BACKLOG-DONE.md
+        section: "BUG-243"
+        read_type: verify
+        extract: "Its four-divergences paragraph describes BUG-248 as unresolved and two operations wide"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: "BUG-243's bullet names GraphBackend as a standing divergence in the same unreleased section"

@@ -1078,19 +1078,34 @@ and by the resource scope of the failing URL:
   delete without `missing_ok`, move/copy source).
 - For the type probes `exists`, `is_file`, `is_folder`, **any** `404`
   — whatever its `error.code` — is suppressed and returns `False` per
-  BE-004 and BE-005 (probe scope). A drive-identity `404` therefore
-  cannot escape a probe as `BackendUnavailable`; a misconfigured or
-  deleted drive surfaces on the first error-raising operation instead
-  (as `BackendUnavailable` when Graph reports `resourceNotFound`, or
-  as `NotFound` when it reports `itemNotFound` — see the verification
-  note below).
-- For error-raising operations, a `404` at drive scope (the
-  `/drives/{drive_id}` resource itself) or carrying
-  `error.code == "resourceNotFound"` — Graph's drive-identity code,
-  honoured regardless of the failing URL's scope because every
-  item-by-path URL embeds the drive — maps to `BackendUnavailable`:
-  the configured drive is deleted or misconfigured, which is a
-  backend identity failure, not a per-item condition.
+  BE-004 and BE-005 (probe scope). This scope now answers exactly as the
+  item scope above does, and is kept distinct because it pins BE-004 /
+  BE-005 independently of the rest of this table: a future renarrowing
+  at item scope must not reach the probes.
+- A `404` at drive scope — the `/drives/{drive_id}` resource itself —
+  maps to `BackendUnavailable` whatever its `error.code`. No path is
+  being addressed, so there is no absence to report: the configured
+  drive is deleted or misconfigured, which is a backend identity
+  failure rather than a per-item condition.
+- For the operations [BE-021](003-backend-adapter-contract.md#be-021-error-mapping)
+  decides nothing about, `error.code == "resourceNotFound"` — Graph's
+  drive-identity code, honoured regardless of the failing URL's scope
+  because every item-by-path URL embeds the drive — likewise maps to
+  `BackendUnavailable` (identity scope); any other `404` code maps to
+  `NotFound`. Membership is a test rather than a list: *does BE-021
+  state an answer for this operation?* Two call sites pass it — `write`,
+  which BE-021 § Reach names as the one operation no clause of it
+  decides, on both its small `PUT /content` and its
+  `createUploadSession` halves; and `check_health`
+  ([PING-011](026-health-check.md#ping-011-graphbackend)), which
+  addresses no caller-supplied path and exists to report a drive it
+  cannot reach.
+- **Every other error-raising operation takes the item scope above**, so
+  a drive-identity `404` reaches a caller as `NotFound` — not as
+  `BackendUnavailable`. Graph's drive is a container, and BE-021 binds a
+  container's absence to read as the path's absence. This is the half
+  [ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md)
+  changed; see § "Adjudicated against BE-021" below.
 - The backend does **not** attempt to discriminate "404 masking
   403" (Graph occasionally returns `404 itemNotFound` where `403
   accessDenied` would be semantically correct on restricted
@@ -1104,20 +1119,28 @@ and by the resource scope of the failing URL:
   unreachable) to confirm the drive is reachable, then treat
   `NotFound` as authoritative for the item.
 
-**Conflict with BE-021, unresolved.** The third bullet's escalation
-contradicts
+**Adjudicated against BE-021** ([ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md),
+BUG-248). This clause used to honour `resourceNotFound` at *every* URL
+scope for *every* error-raising operation, which contradicted
 [BE-021](003-backend-adapter-contract.md#be-021-error-mapping)
-§ "An absent container reads as an absent path", which requires
-`delete(missing_ok=True)` and `delete_folder(missing_ok=True)` to return
-cleanly when the container is absent and binds every backend with no
-carve-out. A drive is a container, so against a drive-identity
-`resourceNotFound` this clause raises `BackendUnavailable` where that one
-requires a clean return. Both were written deliberately and neither
-implementation is wrong under its own; the disagreement is recorded in
-BE-021's divergence list and adjudicated as a whole rather than by
-assuming either clause wins. Whichever loses gets an amended
-cross-reference here as well as there — a resolution recorded on one side
-only is how the conflict went six review rounds without being noticed.
+§ "An absent container reads as an absent path": a drive is a container,
+so BE-021 requires an absent drive to read as an absent path, and it
+binds every backend with no carve-out. Both were written deliberately and
+neither implementation was wrong under its own.
+
+The conflict was recorded as reaching the two tolerant deletes. Measured
+over every operation against an absent drive, it reached **eleven** of
+the operations BE-021 names — both deletes under either `missing_ok`
+value, `read`, `get_file_info`, `get_folder_info`, the `move`/`copy`
+source, and both listings — plus `read_bytes` and `iter_children` as
+unnamed siblings. A carve-out that wide would not have narrowed BE-021 on
+this backend, it would have voided it here.
+
+So BE-021 wins on every operation it decides, and this clause keeps the
+ones it is silent about: the drive-scope URL and the identity scope
+above. `write` is the load-bearing half — it is the call a caller makes
+first against a freshly configured store, so a misconfigured drive still
+surfaces as a configuration error rather than as a missing file.
 
 **Verification note (live, consumer OneDrive, 2026-06):** a
 nonexistent drive id returned `404 itemNotFound` on **both** URL
@@ -1125,14 +1148,19 @@ forms — the item-by-path address and the bare `/drives/{drive_id}`
 resource; `resourceNotFound` was not observed. Two consequences.
 First, `error.code` is not a reliable scope signal in either
 direction, which is why the probe scope suppresses every `404`
-rather than trusting the code. Second, the `resourceNotFound` →
-`BackendUnavailable` escalation is defensive: it rests on Graph's
+rather than trusting the code. Second, the surviving `resourceNotFound`
+→ `BackendUnavailable` escalation is defensive: it rests on Graph's
 documented error contract and business/SharePoint-tier reports, not
 on verified consumer wire behaviour, and on a consumer drive a dead
 drive surfaces as `NotFound` from error-raising operations and
 `False` from probes. SharePoint-backed drives are outside the live
 tier's coverage (see the coverage-disclosure paragraph in
 § Integration-only).
+That unobserved-ness was weighed in the adjudication above and is
+what the residual `write` and `check_health` escalation costs: on the
+tier where the code has been seen, the escalation those two keep is the
+only place a caller can still tell a dead drive from a missing item, and
+on the tier where it has not, nothing about the answers changes.
 
 ### GR-032: 409 nameAlreadyExists
 

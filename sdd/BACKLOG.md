@@ -197,11 +197,12 @@ be edited to point elsewhere.
 **Promise:** a caller catches one exception type, and an absent or denied
 store answers the same way on every backend.
 
-**Closes when:** the spec contradiction is adjudicated (BUG-248); the four
-adapters answer the contract against an absent container (BUG-246, BUG-249,
-BUG-247, BUG-245); no native exception escapes on either the absent or the
-**denied** path (BUG-249); and a newly registered backend cannot pass CI without
-meeting BE-004, BE-005 and BE-021 (BK-345).
+**Closes when:** the four adapters answer the contract against an absent
+container (BUG-246, BUG-249, BUG-247, BUG-245); no native exception escapes on
+either the absent or the **denied** path (BUG-249); and a newly registered
+backend cannot pass CI without meeting BE-004, BE-005 and BE-021 (BK-345). The
+spec contradiction is adjudicated — BUG-248, closed by
+[ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md).
 **Two cross-section dependencies**, per
 [§ How this file works](#how-this-file-works): BK-345 waits on **ID-244** in
 section 2 for the seeding hook, and BUG-249's denied half waits on **ID-242** in
@@ -209,48 +210,16 @@ section 2, the only item whose subject is that path's coverage. Both are stated
 inside the items that carry them, as the rule requires; this section cannot
 close on its own items alone.
 
-**Six backend classes** disagree with the contract or with each other, counted
-from the items below: `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend`
-(BUG-246, which collapses the two Azure adapters into one row because they
-answer identically and take one fix), `SQLBlobBackend` (BUG-246 and BUG-245),
-`LocalBackend` (BUG-247) and `GraphBackend` (BUG-248). The group ships together
-or not at all: any one left behind leaves portable error handling impossible,
-which is the whole promise. BUG-248 comes first because it is a spec
-adjudication rather than a code fix, and BK-345's exemption list cannot be
-written until it lands.
-
-- [ ] **BUG-248 — BE-021's absent-container rule and GR-031's drive-identity escalation contradict each other**
-  spec: BE-021, GR-031 · effort: M · audience: user.api
-  Two clauses, both deliberate, giving opposite answers for the same call. BE-021
-  says `delete(missing_ok=True)` and `delete_folder(missing_ok=True)` MUST return
-  cleanly when the container is absent, binding **every** backend with no
-  carve-out. GR-031 says a `404 resourceNotFound` — Graph's drive-identity code,
-  honoured at any URL scope — maps to `BackendUnavailable` for every
-  error-raising operation, because a deleted drive is a backend identity failure
-  rather than a per-item condition. `GraphBackend`'s drive is a container, so the
-  two clauses meet, and GR-031 wins today:
-  | Graph `error.code` | `delete(missing_ok=True)` | `delete_folder(missing_ok=True)` | `exists` / `is_file` / `is_folder` |
-  | --- | --- | --- | --- |
-  | `itemNotFound` | tolerated | tolerated | `False` |
-  | `resourceNotFound` | raises `BackendUnavailable` | raises `BackendUnavailable` | `False` |
-  Measured on respx stubs and pinned in
-  `tests/backends/graph/aio/test_absent_drive.py`. The probe row is not a
-  divergence: GR-031's probe scope flattens every `404`, so BE-004/BE-005 hold.
-  Only the two tolerant deletes disagree.
-  Neither implementation is buggy — each matches its own spec — so this needs
-  adjudicating before anything is coded. The case for GR-031: a drive that has
-  been deleted or misconfigured is not the same event as an empty bucket, and
-  silently returning from a delete against a store the caller cannot reach hides a
-  configuration error behind a success. The case for BE-021: it binds every
-  backend precisely because the earlier per-backend answers disagreed, and a
-  container is a container.
-  Note the escalation is defensive rather than observed: GR-031's own verification
-  note records that live consumer OneDrive returned `404 itemNotFound` for a
-  nonexistent drive on both URL forms, so the divergent row may be unreachable on
-  that tier and reachable only on SharePoint-backed drives, which the live tier
-  does not cover. Weigh how much a rule is worth when nobody has seen it fire.
-  Whichever clause loses must say so explicitly — an amended cross-reference in
-  both specs, not silence in one.
+**Five backend classes** still disagree with the contract or with each other,
+counted from the items below: `S3Boto3Backend`, `AzureBackend` and
+`AsyncAzureBackend` (BUG-246, which collapses the two Azure adapters into one row
+because they answer identically and take one fix), `SQLBlobBackend` (BUG-246 and
+BUG-245) and `LocalBackend` (BUG-247). `GraphBackend` was a sixth and is done:
+BUG-248 adjudicated the spec contradiction behind it and brought the backend to
+the contract in the same change, which is why BK-345's exemption list — blocked
+on that adjudication — can now be written. The remaining group ships together or
+not at all: any one left behind leaves portable error handling impossible, which
+is the whole promise.
 
 - [ ] **BUG-246 — An absent container raises where the contract says `False`, `NotFound`, or an empty listing**
   spec: BE-004, BE-005, BE-021 · effort: M · audience: user.api
@@ -387,9 +356,10 @@ written until it lands.
   `tests/backends/conformance/` gained nothing, so a seventh such backend
   inherits no cell and passes CI without ever meeting the clause.
   This is not hypothetical. `GraphBackend` went unexamined through six review
-  rounds of the change that wrote the rule (BUG-243) and turned out to
-  contradict it, which is BUG-248 above. A registry-driven cell would have failed
-  on the first run.
+  rounds of the change that wrote the rule (BUG-243) and turned out to contradict
+  it — BUG-248, since closed. A registry-driven cell would have failed on the
+  first run, and would also have shown the contradiction's real width: BUG-248
+  was filed as reaching two operations and measured at eleven.
   The repo already has the shape for this: [`sdd/TESTING.md`](TESTING.md)
   Rule 13 § "Declaring an exemption" — a self-pruning exemption list where
   silence is not consent. The work is a conformance cell parametrised over the
@@ -397,7 +367,12 @@ written until it lands.
   names as out of scope (`MemoryBackend` and `AsyncMemoryBackend`, whose
   container is an in-process dict; `SQLQueryBackend` and `ReadOnlyHttpBackend`,
   which do not declare `DELETE`).
-  **Depends on ID-244 for the mechanism, and on BUG-248 for the exemption list.**
+  **Depends on ID-244 for the mechanism.** The other dependency, BUG-248 for the
+  exemption list, is discharged: `GraphBackend` meets the clause on every
+  operation BE-021 decides, so it is a plain cell rather than an exemption, and
+  the two callers that keep Graph's drive-identity escalation (`write`,
+  `check_health`) are outside what the clause states — see
+  [ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md).
   An absent container is not a state most conformance fixtures can reach: the S3
   and Azure lanes need a stub that 404s at container level (BUG-243 built those),
   SQLBlob needs a dropped table, Local needs its root deleted, and Graph needs a

@@ -17,7 +17,7 @@ from remote_store._errors import (
     RemoteStoreError,
     ResourceLocked,
 )
-from remote_store.aio.backends._graph.http import classify_graph_error, error_code, mask_headers
+from remote_store.aio.backends._graph.http import GraphScope, classify_graph_error, error_code, mask_headers
 
 
 class TestClassifyGraphError:
@@ -34,30 +34,20 @@ class TestClassifyGraphError:
     def test_403_access_denied(self) -> None:
         assert isinstance(classify_graph_error(403, "accessDenied"), PermissionDenied)
 
-    @pytest.mark.spec("GR-031")
-    def test_404_item_scope_is_not_found(self) -> None:
-        exc = classify_graph_error(404, "itemNotFound", path="missing", scope="item")
-        assert isinstance(exc, NotFound)
-
-    @pytest.mark.spec("GR-031")
-    def test_404_drive_scope_is_backend_unavailable(self) -> None:
-        exc = classify_graph_error(404, "itemNotFound", scope="drive")
-        assert isinstance(exc, BackendUnavailable)
-
-    @pytest.mark.spec("GR-031")
-    def test_404_resource_not_found_is_backend_unavailable(self) -> None:
-        # resourceNotFound at item scope still escalates to a drive-identity
-        # failure for error-raising operations (read/write/delete/move/copy).
-        exc = classify_graph_error(404, "resourceNotFound", scope="item")
-        assert isinstance(exc, BackendUnavailable)
-
-    @pytest.mark.spec("GR-031")
+    # The 404 space is two axes — four scopes by three error codes — so it is
+    # enumerated rather than sampled. ADR-0038 settled which cell answers what:
+    # only `identity` + `resourceNotFound` and the whole `drive` row escalate.
+    # A narrowing or widening of the rule then shows up as a named failing cell
+    # rather than as a gap between the cases somebody thought to write.
+    @pytest.mark.spec("BE-004", "BE-005", "BE-021", "GR-031")
     @pytest.mark.parametrize("code", ["itemNotFound", "resourceNotFound", None])
-    def test_404_probe_scope_is_not_found(self, code: str | None) -> None:
-        # Probe scope (exists/is_file/is_folder) treats ANY 404 as missing — the
-        # drive-identity escalation must not escape the probes (BE-004/BE-005).
-        exc = classify_graph_error(404, code, path="maybe", scope="probe")
-        assert isinstance(exc, NotFound)
+    @pytest.mark.parametrize("scope", ["item", "probe", "drive", "identity"])
+    def test_404_maps_by_scope_and_code(self, scope: GraphScope, code: str | None) -> None:
+        escalates = scope == "drive" or (scope == "identity" and code == "resourceNotFound")
+        expected: type[RemoteStoreError] = BackendUnavailable if escalates else NotFound
+        exc = classify_graph_error(404, code, path="subject", scope=scope)
+        assert isinstance(exc, expected), f"404 {code} at {scope} scope must map to {expected.__name__}"
+        assert exc.backend == "graph"
 
     @pytest.mark.spec("GR-032")
     def test_409_already_exists(self) -> None:

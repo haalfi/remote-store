@@ -394,7 +394,14 @@ async def _create_upload_session(
 
     A ``409`` at creation discriminates the conflict outcome; a missing
     ``uploadUrl`` is a Graph contract gap mapped to ``BackendUnavailable``.
+
+    Sent at ``scope="identity"``: this is the large-file half of the write path,
+    so a drive-identity ``404 resourceNotFound`` escalates here exactly as it does
+    on the small ``PUT /content`` write. Without the scope the two halves of one
+    operation would answer an absent drive differently.
     """
+    # The write-path escalation is the residue ADR-0038 left GR-031; see the
+    # classify_graph_error scope table for why write is in it and reads are not.
     behavior = "replace" if overwrite else "fail"
     response = await graph_send(
         client,
@@ -402,6 +409,7 @@ async def _create_upload_session(
         create_url,
         token_provider=token_provider,
         path=path,
+        scope="identity",
         retry=retry,
         return_on=frozenset({409}),
         json={"item": {"@microsoft.graph.conflictBehavior": behavior}},
@@ -472,6 +480,10 @@ async def _upload_chunks(
             # so the write's bounded replace-retry (_write_replacing) re-opens a fresh
             # session and wins. Under overwrite=False there is no create-or-replace
             # contract to honour, so a genuine mid-session disappearance stays NotFound.
+            # Classified at the default item scope, not scope="identity": the session
+            # URL is pre-authorised, lives on a different host and addresses no drive, so a
+            # `resourceNotFound` from it is not Graph's drive-identity signal and the
+            # ADR-0038 write carve-out does not reach it.
             if overwrite:
                 raise AlreadyExists(
                     f"Upload target replaced concurrently mid-session (404): {path}", path=path, backend=backend

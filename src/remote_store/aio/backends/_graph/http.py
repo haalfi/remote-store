@@ -49,6 +49,20 @@ if TYPE_CHECKING:
 BACKEND_NAME = "graph"
 """The backend ``name``; set on every mapped error."""
 
+# The four scopes implement GR-031 as adjudicated against BE-021 by ADR-0038:
+# BE-021 § "An absent container reads as an absent path" wins on every operation
+# it decides (item scope), GR-031's drive-identity escalation keeps the ones it
+# does not (identity scope: write, and check_health per PING-011).
+GraphScope = Literal["item", "drive", "probe", "identity"]
+"""What a failing URL addressed, which is what a ``404`` from it means.
+
+``"item"`` is any path-addressed operation the backend contract decides;
+``"drive"`` the bare ``/drives/{drive_id}`` resource; ``"probe"`` the type
+probes; ``"identity"`` the operations the contract states no answer for, where
+Graph's drive-identity code is still honoured. See ``classify_graph_error`` for
+what each answers and which operations sit in the last one.
+"""
+
 _REDACTED = "***"
 _SENSITIVE_HEADERS = frozenset({"authorization"})
 
@@ -120,18 +134,40 @@ def classify_graph_error(
     *,
     path: str = "",
     backend: str = BACKEND_NAME,
-    scope: Literal["item", "drive", "probe"] = "item",
+    scope: GraphScope = "item",
 ) -> RemoteStoreError:
     """Map an HTTP status plus Graph ``error.code`` to a ``remote_store`` error.
 
-    The single mapping table for the backend. ``scope`` disambiguates the
-    ``404`` case: an item/path-scoped ``itemNotFound`` is a per-item
-    ``NotFound``, while a drive-scoped ``404`` (or ``resourceNotFound``,
-    Graph's drive-identity code, at any URL scope) is a backend-identity
-    failure mapped to ``BackendUnavailable``. ``"probe"`` is the type-probe
-    scope (``exists`` / ``is_file`` / ``is_folder``): every ``404`` maps to
-    ``NotFound`` regardless of ``code``, so the drive-identity escalation
-    cannot escape a probe that suppresses ``NotFound`` to ``False``.
+    The single mapping table for the backend. ``scope`` disambiguates the ``404``
+    case, which is the only status whose meaning depends on what the failing URL
+    addressed:
+
+    * ``"drive"`` — the bare ``/drives/{drive_id}`` resource. Any ``404`` is
+      ``BackendUnavailable``: no path is being addressed, so there is no absence
+      to report, only a drive that is deleted or misconfigured.
+    * ``"identity"`` — the operations the backend contract states no answer for,
+      where Graph's drive-identity code is still honoured. A
+      ``resourceNotFound`` is ``BackendUnavailable``; any other ``404`` code is
+      ``NotFound``. Two call sites qualify: the **write** path (both the small
+      ``PUT /content`` and ``createUploadSession`` halves), so a write against a
+      drive that is not there reads as a configuration error rather than as a
+      missing file; and **``check_health``**, which addresses no caller-supplied
+      path and exists to report a drive it cannot reach. The health probe needs
+      both halves of this scope — a missing configured ``base_path`` folder must
+      still be ``NotFound`` — which is why it is not ``"drive"``.
+    * ``"item"`` — every other path-addressed operation. A ``404`` is
+      ``NotFound`` whatever its ``code``. Graph's drive is a container, and the
+      backend contract binds a container's absence to read as the path's
+      absence, so a caller's absent-store handling does not depend on which
+      backend it holds.
+    * ``"probe"`` — the type probes (``exists`` / ``is_file`` / ``is_folder``).
+      Every ``404`` is ``NotFound``, which the probes suppress to ``False``.
+
+    ``"probe"`` currently answers exactly as ``"item"`` does. It is kept as a
+    distinct value rather than folded in because it pins a different obligation:
+    the probes may never raise, *whatever* the rest of this table does, so a
+    future narrowing that reintroduced an escalation at item scope must not
+    reach them.
 
     Never inspects the error *message* — only ``status`` and ``code``.
     """
@@ -141,8 +177,8 @@ def classify_graph_error(
         return PermissionDenied(f"Permission denied: {path}", path=path, backend=backend)
     if status == 403:  # GR-030 accessDenied
         return PermissionDenied(f"Permission denied: {path}", path=path, backend=backend)
-    if status == 404:  # GR-031 item-vs-drive discrimination
-        if scope != "probe" and (scope == "drive" or code == "resourceNotFound"):
+    if status == 404:  # GR-031 item-vs-drive discrimination (ADR-0038)
+        if scope == "drive" or (scope == "identity" and code == "resourceNotFound"):
             return BackendUnavailable(
                 f"Drive unavailable (404 {code or 'notFound'}): {path}", path=path, backend=backend
             )
@@ -353,7 +389,7 @@ async def graph_send(
     *,
     token_provider: TokenProvider,
     path: str = "",
-    scope: Literal["item", "drive", "probe"] = "item",
+    scope: GraphScope = "item",
     retry: RetryPolicy | None = None,
     return_on: frozenset[int] = frozenset(),
     authenticated: bool = True,

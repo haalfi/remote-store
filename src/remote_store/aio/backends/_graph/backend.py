@@ -432,16 +432,22 @@ class GraphBackend(AsyncBackend):
 
     # region: data-plane reads (GR-012, GR-013, GR-031, GR-049)
 
-    async def _get_item(self, path: str, *, scope: Literal["item", "probe"] = "item") -> dict[str, Any]:
+    async def _get_item(self, path: str, *, scope: Literal["item", "probe", "identity"] = "item") -> dict[str, Any]:
         """Fetch the Graph ``driveItem`` body for *path* (one metadata GET).
 
-        The single item-by-path metadata round trip shared by the read and
-        type-probe operations. A missing item surfaces as ``NotFound`` (404
-        ``itemNotFound`` at item scope, mapped by ``graph_send``); drive-scope,
-        transport, and other failures map through the same primitive. The type
-        probes pass ``scope="probe"`` so **every** 404 — including a
-        drive-identity ``resourceNotFound`` — maps to ``NotFound`` and is
-        suppressed to ``False`` instead of escaping as ``BackendUnavailable``.
+        The single item-by-path metadata round trip shared by the read, delete,
+        listing and type-probe operations. Every 404 surfaces as ``NotFound``,
+        whatever Graph's ``error.code`` says: a drive is a container, and the
+        backend contract binds an absent container to read as an absent path.
+        That is what makes the tolerant deletes tolerate an absent drive and the
+        strict ones report it as absence, at no extra round trip. Transport and
+        other failures map through the same primitive.
+
+        The type probes still pass ``scope="probe"``, which pins the same answer
+        against a future change to the mapping table rather than adding one here.
+        ``check_health`` passes ``scope="identity"``, the scope for operations the
+        contract states no answer for — see ``classify_graph_error`` for the
+        whole table.
         """
         response = await graph_send(
             self._client,
@@ -729,9 +735,12 @@ class GraphBackend(AsyncBackend):
         One item-metadata ``GET`` on the effective root, reusing ``_get_item("")``:
         ``GET /drives/{id}/root`` when no ``base_path`` is configured, or the
         ``base_path`` folder item when one is pinned (mirroring SFTP's
-        ``stat(base_path)``). The probe runs at the default item scope, not the
-        type-probe scope, so a drive-identity ``resourceNotFound`` escalates to
-        ``BackendUnavailable`` instead of being flattened to ``NotFound``.
+        ``stat(base_path)``). The probe runs at ``scope="identity"``, so a
+        drive-identity ``resourceNotFound`` escalates to ``BackendUnavailable``
+        while a missing ``base_path`` folder still reports ``NotFound``. Neither
+        of the other two scopes gives both halves: ``"item"`` would report an
+        unreachable drive as a missing path, and ``"drive"`` would report a
+        missing ``base_path`` as an unreachable drive.
 
         Raises:
             PermissionDenied: If the token is rejected or lacks access (401/403).
@@ -739,9 +748,9 @@ class GraphBackend(AsyncBackend):
             BackendUnavailable: If the drive is unreachable / missing, or on
                 throttling, 5xx, or transport failure. Also if the backend is closed.
         """
-        # PING-011: cheapest read-only reachability probe; error mapping is
-        # inherited from _get_item -> graph_send -> classify_graph_error (scope=item).
-        await self._get_item("")
+        # PING-011: cheapest read-only reachability probe; error mapping is inherited
+        # from _get_item -> graph_send -> classify_graph_error (scope=identity).
+        await self._get_item("", scope="identity")
 
     # endregion
 
@@ -1120,13 +1129,14 @@ class GraphBackend(AsyncBackend):
             # Graph auto-creates missing intermediate folders, so a write 404 is
             # almost always a regular file blocking an ancestor segment — name it as
             # InvalidPath (ID-209). If the walk finds no file ancestor, route the 404
-            # back through the standard classifier so a drive-scope resourceNotFound
-            # keeps its BackendUnavailable mapping (GR-031) instead of flattening to
-            # NotFound.
+            # back through the standard classifier at identity scope, where a
+            # drive-identity resourceNotFound still escalates to BackendUnavailable:
+            # write is the operation BE-021 § Reach leaves undecided, so GR-031 keeps
+            # it (ADR-0038). Every other code flattens to NotFound as elsewhere.
             await self._raise_if_file_ancestor(path)
             body = response_json(response)
             code = (body.get("error") or {}).get("code") if isinstance(body, dict) else None
-            raise classify_graph_error(status, code, path=path, backend=self.name)
+            raise classify_graph_error(status, code, path=path, backend=self.name, scope="identity")
         if status == 409:
             raise discriminate_write_conflict(response_json(response), path, backend=self.name)
         return item_to_write_result(response.json(), path, len(data), metadata)
