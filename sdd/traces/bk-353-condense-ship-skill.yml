@@ -1,0 +1,151 @@
+id: BK-353
+title: "/ship states one mechanism four times"
+trigger: >-
+  The user observed that /ship had grown long and asked for it to be condensed
+  without losing required details. Not a defect report: a request whose whole
+  difficulty is the constraint attached to it, since this same file's length was
+  deliberately defended one item earlier when an external guide proposed a
+  5,000-word budget for it.
+source_items:
+  - BK-353
+  - BK-351
+audience:
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+# Anticipated because any BACKLOG edit moves it. The one ripple that mattered was
+# not anticipated by a table but by the trigger BK-351 had just written: this
+# change edits a file BK-351 states a word count for, so that figure had to move.
+surprising_ripples:
+  - sdd/BACKLOG-DONE.md
+# BK-351's head word count is falsified by this item's own edit - the fifth time
+# that sentence has needed re-deriving, and the first time the obligation was
+# noticed before the commit rather than after. Repinned to PR #962's head and
+# superseded here.
+# Name the commits the value was counted from, per the schema's review_rounds
+# clause. `git log --oneline origin/master..HEAD` returns one:
+#   the commit carrying this line - this item's implementation, authored in one
+#     pass. Does not count.
+# Value is 0: no PR is open on this branch and no review round has run.
+# **This block said nine until PR #962 merged.** The branch was first cut on top
+# of #962's, so the command returned the eight inherited commits plus this one.
+# #962 squash-merged as 3a9ca13, so those eight are now one commit *in* master
+# rather than ahead of it, and the enumeration became wrong the moment someone
+# else pressed merge - no edit here, no rebase of mine, nothing this branch did.
+# Re-derived by re-running the named command after moving to the new base, which
+# is the same trigger BK-351's entry states and the second time on this branch
+# that a merge rather than an edit is what invalidated a derivation.
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-351 (declined progressive-disclosure prescription)"
+        read_type: gate
+        extract: >-
+          Read first because it is the record that decided this file's length once
+          already, and the answer there constrains the answer here. BK-351
+          declined a 5,000-word budget for /ship on the ground that its bulk is
+          unconditionally binding instruction and principle 8 forbids trading a
+          load-bearing reason for a length target. That does not forbid
+          condensing - it forbids one *kind* of condensing, and sets the test the
+          work has to pass: consolidation and tightening are legitimate,
+          deleting reasons is not.
+        outcome: ok
+      - file: sdd/traces/bk-348-whole-file-gate.yml
+        section: "verify / author-initiated finishing pass"
+        read_type: gate
+        extract: >-
+          The prior art on this exact question, and it is why the brief-requirement
+          block was left alone. That pass reordered requirement 3 so the payload
+          precedes the rationale and recorded "None deleted - each prevents a
+          regression a round caught". A second pass deleting what the first
+          deliberately kept would be re-deciding it without new evidence.
+        outcome: ok
+      - file: .claude/skills/orchestrate/SKILL.md
+        section: "Reviewer selection (lens menu link)"
+        read_type: gate
+        extract: >-
+          Checked what links *into* this file before restructuring it, since a
+          heading rename breaks an inbound anchor silently. `rg 'ship/SKILL.md#'`
+          returns exactly one hit - /orchestrate's `#lens-menu` - so that heading
+          text is fixed and everything else was free to move. An explicit
+          `<a id="lens-menu">` anchor was added above it so the link no longer
+          depends on the heading's wording.
+        outcome: ok
+  - id: measure
+    name: Measure the repetition rather than trim by feel
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Counted occurrences before editing, because "this feels long" does not
+          say what to cut. 6,916 words over 702 lines; `allowed-tools` at 3 sites,
+          `never the unprimed one` 5 times, `unprimed` 43 times, ADR-0037 cited 5
+          times. Reading those sites showed the permission argument - what the
+          frontmatter grants, what the spawn path loses, what covers the residue -
+          restated in **four** places: the panel-constraints bullet, the solo-pass
+          paragraph, the spawn-prompt bullet and the Reader lens. That is the
+          concentration, and it is the file's own sibling-sweep hazard turned
+          inward.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Reviewer permissions and the tree check (new); Running a panel (new)"
+        read_type: verify
+        extract: >-
+          The permission argument gets one home and the other three sites cite it.
+          The tree check moves there too, since it is the same subject and it binds
+          every pass - panel, solo and appended - which was previously stated
+          inside a bullet about panels and had to be re-asserted for solo passes.
+          Splitting the old panel block into `Reviewer permissions` and `Running a
+          panel` separates what a reviewer may do from how a round is run; the
+          second is procedure and the first is contract, and they had been
+          interleaved.
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Stop rule; measuring member; whole-file member; Reader lens"
+        read_type: verify
+        extract: >-
+          The four "never the unprimed one" restatements collapse into one clause
+          under the unprimed paragraph covering every scoped member by name.
+          Each section had carried its own one-clause reason (a measuring brief
+          names what to run, a whole-file brief names the questions, a question
+          list is a brief); those reasons are the same reason, so the consolidated
+          form states it once. The Stop rule's four clause-explanations keep their
+          separate paragraphs - they are not restatements of each other, and the
+          vacuous-case carve-outs differ per clause.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "(token check over load-bearing claims)"
+        read_type: verify
+        extract: >-
+          Checked 47 distinctive tokens - rules, bounds, measured figures, command
+          spellings, evidence citations - present in the original and required to
+          survive. **The first run reported one loss and was wrong**: the phrase
+          sat in the new file split across a line wrap, and the check compared raw
+          substrings. Fixed by normalising whitespace before comparing, then re-run:
+          none missing, all five ADRs still cited. Recorded because an instrument
+          that reports a false loss would, on a different day, report a false pass -
+          the fail-silently class this skill's own Rules call worse than none, met
+          while verifying that skill.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-351 (word-count paragraph)"
+        read_type: verify
+        extract: >-
+          The ripple this item's own subject guarantees: editing /ship falsifies
+          the figure BK-351 states for it. Repinned that sentence to "PR #962's
+          head", which makes it a measurement of a fixed state rather than a claim
+          about whatever branch reads it, and stated the new value here. **First
+          time in this sequence the obligation was met before the commit rather
+          than after** - five failures of that one sentence taught the trigger, and
+          the trigger worked.
+        outcome: ok

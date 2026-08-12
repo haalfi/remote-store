@@ -155,6 +155,38 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-353 — `/ship` states one mechanism four times**
+  spec: — · effort: S · audience: contributor.process
+  The file had grown to **6,916 words** and the growth was not evenly spread: the
+  permission argument — what `/rvw-pr`'s `allowed-tools` grants, what the spawn
+  path loses, what covers the residue — was stated at **four** sites, and
+  `unprimed` appeared 43 times over 702 lines. Counts from `wc`-equivalent word
+  and `rg` occurrence counts over the file at PR #962's head.
+  **Condensed to 6,188 words, −728 (−10.5%)**, by giving that argument one home
+  (a new `Reviewer permissions and the tree check` section) with the other three
+  sites citing it, folding the four "never the unprimed one" restatements into one
+  clause covering every scoped member, and tightening prose throughout.
+  **Nothing was removed for length.** No rule, bound, vacuous-case clause,
+  evidence narrative or ADR citation was dropped: all five ADRs are still cited,
+  and a 47-token check over the load-bearing claims — whitespace-normalised,
+  because the first version of that check reported a false loss on a phrase split
+  across a line wrap — returns none missing. **The instrument's own bug is
+  recorded rather than smoothed over**, since a verification that can report a
+  wrong answer is the class this repo calls worse than none.
+  **The cut is below the 15-20% estimated before starting, and the estimate was
+  the thing that was wrong.** The remaining bulk is not duplication: it is the
+  brief-requirement rationale and the stop-rule clause explanations, which
+  [BK-348](#unreleased)'s finishing pass had already examined and kept on the
+  ground that each prevents a regression a round caught. Cutting further means
+  deleting reasons, which
+  [principle 8](../CLAUDE.md#principles) forbids and **BK-351** declined for this
+  same file when the external guide proposed a 5,000-word budget. A smaller
+  honest number beats a larger one with a qualifier quietly gone.
+  **Supersedes BK-351's head figure**, which is now pinned to PR #962's head and
+  says so; `/ship` at this branch's head is 6,188. That entry's own trigger — a
+  commit touching a file a figure measures obliges re-running that figure — is
+  what caught the collision.
+
 - [x] **BK-352 — Reader failure is detected only after a document has already failed someone**
   spec: — · effort: S · audience: contributor.process
   The repo instruments reader failure thoroughly and every step of it is
@@ -302,8 +334,8 @@ if evidence changes; these are retired.
   load-bearing reason for a length target.
   **The counts are of `origin/master`, and are stated that way because this
   branch moved two of them.** Measured with `git show origin/master:<path>` and a
-  word count: `/ship` 6,380, `/rvw-pr` 3,479, `/orchestrate` 3,395. At this
-  branch's head the same measurement gives 6,916, 3,547 and 3,395 — this item's
+  word count: `/ship` 6,380, `/rvw-pr` 3,479, `/orchestrate` 3,395. At **PR
+  #962's** head the same measurement gives 6,916, 3,547 and 3,395 — this item's
   own description edit grew `/rvw-pr`, and BK-352's Reader lens grew `/ship`. The
   first cut quoted the base figures in the present tense, so a reader running
   `wc -w` would have got three numbers, two of them different, from a sentence
