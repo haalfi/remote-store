@@ -276,10 +276,14 @@ class TestLiveWriteErrorFidelity:
 
     @respx.mock
     @pytest.mark.spec("GR-031")
-    async def test_drive_scope_404_keeps_backend_unavailable_mapping(self) -> None:
-        # A write 404 with no file ancestor routes back through classify_graph_error:
-        # a drive-scope resourceNotFound keeps its BackendUnavailable mapping (GR-031)
-        # rather than flattening to NotFound (PR #769 review).
+    async def test_drive_identity_404_keeps_backend_unavailable_mapping(self) -> None:
+        # A write 404 with no file ancestor routes back through classify_graph_error
+        # at identity scope: a drive-identity resourceNotFound keeps its
+        # BackendUnavailable mapping (GR-031) rather than flattening to NotFound.
+        # "drive scope" is a different thing — a 404 on the bare /drives/{id} URL,
+        # which no call site addresses; this is the code-keyed escalation ADR-0038
+        # left write, and it is what stops a misconfigured drive reading as a
+        # missing file.
         respx.put(_CONTENT_RE).mock(return_value=httpx.Response(404, json={"error": {"code": "resourceNotFound"}}))
         async with _make() as backend:
             with pytest.raises(BackendUnavailable):

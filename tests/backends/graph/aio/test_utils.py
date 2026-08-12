@@ -7,14 +7,50 @@ GR-CORE PR; the SharePoint-site and Teams-channel shapes require app-only auth
 
 from __future__ import annotations
 
+from typing import NamedTuple
+
 import httpx
 import pytest
 import respx
 
-from remote_store._errors import BackendUnavailable, InvalidPath, NotFound, RemoteStoreError
+from remote_store._errors import BackendUnavailable, InvalidPath, NotFound
 from remote_store.aio.backends._graph.utils import GraphUtils
 
 _BASE = "https://graph.microsoft.com/v1.0"
+
+_SITE = "https://contoso.sharepoint.com/sites/marketing"
+_SITE_URL = f"{_BASE}/sites/contoso.sharepoint.com:/sites/marketing"
+
+
+class _Leg(NamedTuple):
+    """One 404-classifying call site inside ``resolve_drive_id``.
+
+    ``ok_urls`` are the legs that must succeed for control to reach this one, so
+    each entry isolates exactly one lookup. There are five, and the count is the
+    point: a sixth added without a row here is the failure this table exists to
+    make loud.
+    """
+
+    name: str
+    target: object
+    failing_url: str
+    ok_urls: tuple[str, ...] = ()
+    ok_body: dict[str, object] = {"id": "site-1"}  # noqa: RUF012 — immutable in practice; NamedTuple default
+
+
+_LEGS = [
+    _Leg("drive_id_from_me", "me", f"{_BASE}/me/drive"),
+    _Leg("site_id_from_url", _SITE, _SITE_URL),
+    _Leg("default_drive_id", _SITE, f"{_BASE}/sites/site-1/drive", ok_urls=(_SITE_URL,)),
+    # Reaches the classifier through iter_pages, not graph_send — the leg a
+    # graph_send-shaped sweep misses.
+    _Leg("named_drive_id", (_SITE, "Reports"), f"{_BASE}/sites/site-1/drives", ok_urls=(_SITE_URL,)),
+    _Leg(
+        "drive_id_from_channel",
+        {"team_id": "team-1", "channel_id": "chan-1"},
+        f"{_BASE}/teams/team-1/channels/chan-1/filesFolder",
+    ),
+]
 
 
 class TestResolveDriveId:
@@ -86,32 +122,26 @@ class TestResolveDriveId:
 
     @respx.mock
     @pytest.mark.spec("GR-057", "GR-031")
-    @pytest.mark.parametrize(
-        ("code", "expected"),
-        [("resourceNotFound", BackendUnavailable), ("itemNotFound", NotFound)],
-    )
-    async def test_404_discriminates_by_error_code(self, code: str, expected: type[RemoteStoreError]) -> None:
-        # These lookups resolve a drive; they address no caller-supplied store
-        # path, so the absent-container rule that flattens a data-plane 404 to
-        # NotFound does not reach them and the drive-identity code still
-        # escalates. Unpinned, the flattening silently swallowed this: the two
-        # answers differ only by error.code, and every success-path cell above
-        # passes either way.
-        respx.get(f"{_BASE}/me/drive").mock(return_value=httpx.Response(404, json={"error": {"code": code}}))
+    @pytest.mark.parametrize("code", ["resourceNotFound", "itemNotFound"])
+    @pytest.mark.parametrize("leg", _LEGS, ids=[leg.name for leg in _LEGS])
+    async def test_404_discriminates_by_error_code_on_every_leg(self, leg: _Leg, code: str) -> None:
+        # Drive resolution addresses no caller-supplied store path, so the
+        # absent-container rule that flattens a data-plane 404 to NotFound does
+        # not reach it and the drive-identity code still escalates.
+        #
+        # Enumerated over every leg rather than sampled, because sampling missed
+        # one: _named_drive_id reaches the classifier through iter_pages instead
+        # of calling graph_send itself, so a fix applied to "every graph_send in
+        # this module" left it behind, and the two answers differ only by
+        # error.code — every success-path cell above passes either way. The
+        # product of (leg x code) is small and exactly enumerable, so it is
+        # enumerated.
+        for url in leg.ok_urls:
+            respx.get(url).mock(return_value=httpx.Response(200, json=leg.ok_body))
+        respx.get(leg.failing_url).mock(return_value=httpx.Response(404, json={"error": {"code": code}}))
+        expected = BackendUnavailable if code == "resourceNotFound" else NotFound
         with pytest.raises(expected):
-            await GraphUtils.aresolve_drive_id("me", token_provider=lambda: "t")
-
-    @respx.mock
-    @pytest.mark.spec("GR-057", "GR-031")
-    async def test_site_lookup_404_escalates_resource_not_found(self) -> None:
-        # The site leg is a separate call site from /me/drive and would regress
-        # on its own.
-        site = "https://contoso.sharepoint.com/sites/marketing"
-        respx.get(f"{_BASE}/sites/contoso.sharepoint.com:/sites/marketing").mock(
-            return_value=httpx.Response(404, json={"error": {"code": "resourceNotFound"}})
-        )
-        with pytest.raises(BackendUnavailable):
-            await GraphUtils.aresolve_drive_id(site, token_provider=lambda: "t")
+            await GraphUtils.aresolve_drive_id(leg.target, token_provider=lambda: "t")
 
     @respx.mock
     @pytest.mark.spec("GR-057")

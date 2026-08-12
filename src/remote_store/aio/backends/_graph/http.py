@@ -507,6 +507,7 @@ async def iter_pages(
     *,
     token_provider: TokenProvider,
     path: str = "",
+    scope: GraphScope = "item",
     retry: RetryPolicy | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
     """Yield each page body of a Graph collection, following ``@odata.nextLink``.
@@ -520,12 +521,18 @@ async def iter_pages(
     cross-host link would leak the token to an unrelated host.
 
     Each page fetch is retried per *retry* (threaded straight into
-    ``graph_send``); ``None`` keeps the single-attempt default.
+    ``graph_send``); ``None`` keeps the single-attempt default. *scope* is
+    threaded the same way, so a paged collection classifies its ``404`` on the
+    same terms as a single-shot fetch of the same resource — a listing that
+    resolves a drive is drive-identity work even though it arrives a page at a
+    time, and without the parameter it would silently take the item default.
     """
     trusted = urlsplit(url)
     next_url: str | None = url
     while next_url:
-        response = await graph_send(client, "GET", next_url, token_provider=token_provider, path=path, retry=retry)
+        response = await graph_send(
+            client, "GET", next_url, token_provider=token_provider, path=path, scope=scope, retry=retry
+        )
         body = response.json()
         yield body
         link = body.get("@odata.nextLink") if isinstance(body, dict) else None

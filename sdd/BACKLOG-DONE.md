@@ -160,11 +160,13 @@ if evidence changes; these are retired.
   Two deliberate clauses giving opposite answers for the same call, neither
   implementation wrong under its own. Adjudicated in
   [ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md): **BE-021 wins
-  on every operation it decides; GR-031 keeps the ones it is silent about** — the
-  bare `/drives/{id}` URL, `write`, and `check_health`. A `404` is now classified
-  by an `identity` scope whose membership is a test rather than a list (*does
-  BE-021 state an answer for this operation?*), and item scope stops honouring
-  `resourceNotFound` altogether.
+  on every operation it decides; GR-031 keeps the ones it is silent about** —
+  `write`, the one roster operation § Reach declines, plus `check_health` and
+  drive-id resolution, which are off the roster entirely. A `404` is now
+  classified by an `identity` scope carrying those three, and item scope stops
+  honouring `resourceNotFound` altogether. The `drive` scope has no call site and
+  did not have one before the change either, so it is a definition of what a bare
+  drive `404` means rather than a live part of the compromise.
   **Filed as two operations wide, measured at eleven.** The item, BE-021's
   divergence bullet, GR-031's conflict paragraph and the pinning test all said
   only the two tolerant deletes disagreed. Running all 17 operations against a
@@ -177,9 +179,22 @@ if evidence changes; these are retired.
   framing; one command refuted it.
   **`check_health` was not in the item and nearly broke.** PING-011 relied on the
   item-scope escalation to report an unreachable drive, and needs both halves of
-  the rule — a missing `base_path` must stay `NotFound` — so neither of the other
+  the rule — a missing `base_path` must stay `NotFound` — so none of the other
   scopes serves it. It surfaced as a failing pre-existing test, not as analysis,
   which is the argument for running the suite before believing a subject list.
+  **`GraphUtils.resolve_drive_id` was the same miss twice, and the second time
+  the count was the culprit.** Its lookups take the classifier's item default, so
+  flattening item scope silently changed a public drive-identity helper BE-021
+  never governed — caught by review, not by a test, because its suite is all
+  success paths and the two answers differ only by `error.code`. The fix moved
+  "the four lookups"; there are **five**. `_named_drive_id` reaches the
+  classifier through `iter_pages`, which had no `scope` parameter at all, so a
+  sweep shaped by "every `graph_send` in this module" could not see it, and six
+  artifacts then asserted an answer one leg no longer gave. Two consecutive
+  rounds refuting the same scope criterion is the signal to stop arguing it and
+  enumerate: the space is (target shape × error code), ten cells, and it is now a
+  parametrised table rather than two sampled cells. Verified by reverting the fix
+  and watching the named cell fail.
   **The Dafny layer was considered and declined**, with the reasoning recorded in
   the ADR rather than passed over: `BackendContract.dfy` models the filesystem as
   `map<Path, Entry>` with no container that could be absent, carries

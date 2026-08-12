@@ -1262,8 +1262,8 @@ contract says about the operation, in three cases:
 delegates to a named operation belongs where that operation belongs — `read_bytes`
 to `read`, `iter_children` to the listings — whether or not the clause spells it
 out. Stated the other way round, the rule would send exactly the two operations
-the measurement below surfaced as unnamed into identity scope, reintroducing the
-escalation on a path BE-021 governs.
+§ Context's eleven-operation measurement surfaced as unnamed into identity scope,
+reintroducing the escalation on a path BE-021 governs.
 
 The probe scope is unchanged and keeps its own value even though it now answers
 exactly as item scope does: it pins BE-004 / BE-005 independently of the rest of

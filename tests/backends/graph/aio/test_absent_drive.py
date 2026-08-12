@@ -8,7 +8,10 @@ can answer with — a drive-identity ``resourceNotFound`` mapped to
 
 `ADR-0038 <../../../../sdd/adrs/0038-absent-container-outranks-drive-identity.md>`_
 adjudicated the collision: **BE-021 wins on every operation it decides; GR-031
-keeps ``write`` and the drive-scope URL.** What each answers now, on both codes:
+keeps ``write``, and — off BE-021's roster entirely — ``check_health`` and
+drive-id resolution.** This file's subject is the roster, so ``write`` is the
+only one of the three it covers; the other two are pinned in ``test_ping.py`` and
+``test_utils.py``. What the roster answers now, on both codes:
 
 | Operation                                            | Answer                |
 | ---------------------------------------------------- | --------------------- |
@@ -21,8 +24,8 @@ keeps ``write`` and the drive-scope URL.** What each answers now, on both codes:
 | ``write``                                            | see below             |
 
 ``write`` is the exception, and it is not a divergence: BE-021 § Reach states in
-so many words that ``write`` is the one operation no clause of it decides, so
-GR-031 keeps it. A drive-identity ``resourceNotFound`` on a write raises
+so many words that ``write`` is the one roster operation no clause of it decides,
+so GR-031 keeps it. A drive-identity ``resourceNotFound`` on a write raises
 ``BackendUnavailable``, which is what still surfaces a misconfigured drive as a
 configuration error rather than as "your file isn't there". An ``itemNotFound``
 write keeps ``NotFound``, unchanged.

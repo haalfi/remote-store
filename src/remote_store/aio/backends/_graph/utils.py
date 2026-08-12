@@ -128,10 +128,16 @@ class GraphUtils:
 
 # Drive-identity resolution runs before any backend exists and addresses no
 # caller-supplied store path, so the absent-container contract does not reach it
-# (ADR-0038) and Graph's own drive-identity rule governs: every lookup below
-# sends at scope="identity", keeping a `404 resourceNotFound` mapped to
-# BackendUnavailable. Left at the item default these would have silently started
-# reporting an unresolvable drive as NotFound.
+# (ADR-0038) and Graph's own drive-identity rule governs: all *five* lookups
+# below send at scope="identity", keeping a `404 resourceNotFound` mapped to
+# BackendUnavailable. Left at the item default they silently start reporting an
+# unresolvable drive as NotFound.
+#
+# Count the legs, do not count the graph_send calls: _named_drive_id reaches the
+# classifier through iter_pages rather than directly, which is how it was missed
+# once already. tests/backends/graph/aio/test_utils.py enumerates the product of
+# every target shape and both 404 codes, so a sixth leg — or a fifth left at the
+# default — fails a named cell rather than shipping.
 async def _drive_id_from_me(client: httpx.AsyncClient, base_url: str, token_provider: TokenProvider) -> str:
     response = await graph_send(
         client, "GET", f"{base_url}/me/drive", token_provider=token_provider, path="me/drive", scope="identity"
@@ -170,7 +176,7 @@ async def _named_drive_id(
     client: httpx.AsyncClient, base_url: str, site_id: str, library_name: str, token_provider: TokenProvider
 ) -> str:
     url = f"{base_url}/sites/{site_id}/drives"
-    async for page in iter_pages(client, url, token_provider=token_provider, path=site_id):
+    async for page in iter_pages(client, url, token_provider=token_provider, path=site_id, scope="identity"):
         for drive in page.get("value", []):
             if drive.get("name") == library_name:
                 return str(drive["id"])
