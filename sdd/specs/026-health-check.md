@@ -116,17 +116,17 @@ item when one is pinned — reusing the backend's existing `_get_item("")` primi
 async def check_health(self) -> None:
     await self._get_item("", scope="identity")
 ```
-The probe **must** use the identity scope, and neither of the other two will do:
+The probe **must** use the identity scope, and none of the other three will do:
 a `resourceNotFound` (a missing/misconfigured drive) must map to
 `BackendUnavailable` while a missing `base_path` folder must map to `NotFound`
 (mirroring SFTP's `stat(base_path)`, PING-006), and only that scope gives both
 halves. The `"probe"` and `"item"` scopes flatten every `404` to `NotFound` (see
 [GR-031](044-graph-backend.md#gr-031-404-discrimination-item-vs-drive)) and would
 swallow the drive-unreachable signal; the `"drive"` scope escalates every `404`
-and would report a missing `base_path` as an unreachable drive. `check_health` is
-in that scope because BE-021 decides nothing about it — it addresses no
-caller-supplied path — which is the membership test
-[ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md) states.
+and would report a missing `base_path` as an unreachable drive. `check_health`
+sits in the identity scope because it reports reachability rather than addressing
+a caller-supplied path, so BE-021's roster does not reach it — see
+[ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md).
 
 ---
 

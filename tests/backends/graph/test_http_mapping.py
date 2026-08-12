@@ -35,16 +35,39 @@ class TestClassifyGraphError:
         assert isinstance(classify_graph_error(403, "accessDenied"), PermissionDenied)
 
     # The 404 space is two axes — four scopes by three error codes — so it is
-    # enumerated rather than sampled. ADR-0038 settled which cell answers what:
-    # only `identity` + `resourceNotFound` and the whole `drive` row escalate.
-    # A narrowing or widening of the rule then shows up as a named failing cell
-    # rather than as a gap between the cases somebody thought to write.
+    # enumerated rather than sampled, and each cell's expected value is written
+    # out as data. Re-deriving it from the same predicate the implementation
+    # uses would assert only that the classifier agrees with a copy of itself,
+    # and a misreading shared by both copies is exactly what an adjudication
+    # test exists to catch. Transcribed from ADR-0038 § Decision, one row per
+    # scope in the order that file states them.
     @pytest.mark.spec("BE-004", "BE-005", "BE-021", "GR-031")
-    @pytest.mark.parametrize("code", ["itemNotFound", "resourceNotFound", None])
-    @pytest.mark.parametrize("scope", ["item", "probe", "drive", "identity"])
-    def test_404_maps_by_scope_and_code(self, scope: GraphScope, code: str | None) -> None:
-        escalates = scope == "drive" or (scope == "identity" and code == "resourceNotFound")
-        expected: type[RemoteStoreError] = BackendUnavailable if escalates else NotFound
+    @pytest.mark.parametrize(
+        ("scope", "code", "expected"),
+        [
+            # item — the path-addressed data plane: absence, whatever the code.
+            ("item", "itemNotFound", NotFound),
+            ("item", "resourceNotFound", NotFound),
+            ("item", None, NotFound),
+            # probe — never raises past the caller; same answer, own obligation.
+            ("probe", "itemNotFound", NotFound),
+            ("probe", "resourceNotFound", NotFound),
+            ("probe", None, NotFound),
+            # identity — write, check_health, drive-id resolution: the
+            # drive-identity code escalates and nothing else does.
+            ("identity", "itemNotFound", NotFound),
+            ("identity", "resourceNotFound", BackendUnavailable),
+            ("identity", None, NotFound),
+            # drive — the bare /drives/{id} resource: no path, so no absence.
+            ("drive", "itemNotFound", BackendUnavailable),
+            ("drive", "resourceNotFound", BackendUnavailable),
+            ("drive", None, BackendUnavailable),
+        ],
+        ids=lambda v: v.__name__ if isinstance(v, type) else str(v),
+    )
+    def test_404_maps_by_scope_and_code(
+        self, scope: GraphScope, code: str | None, expected: type[RemoteStoreError]
+    ) -> None:
         exc = classify_graph_error(404, code, path="subject", scope=scope)
         assert isinstance(exc, expected), f"404 {code} at {scope} scope must map to {expected.__name__}"
         assert exc.backend == "graph"

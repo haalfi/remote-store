@@ -654,9 +654,10 @@ class GraphBackend(AsyncBackend):
         """Return ``True`` if a file or folder exists at *path*.
 
         Any 404 — including a drive-identity ``resourceNotFound`` — is
-        suppressed to ``False``; never raises ``NotFound``. A misconfigured
-        or deleted drive therefore probes as missing rather than raising;
-        it surfaces on the first error-raising operation.
+        suppressed to ``False``; never raises ``NotFound``. A misconfigured or
+        deleted drive therefore probes as missing rather than raising, and so do
+        the path-addressed operations, which report it as absence. It surfaces as
+        ``BackendUnavailable`` from ``write`` or from ``check_health``.
 
         Raises:
             PermissionDenied: If the token is rejected or lacks access to the
@@ -673,7 +674,8 @@ class GraphBackend(AsyncBackend):
         """Return ``True`` if *path* exists and carries the ``file`` facet.
 
         A missing item returns ``False`` (any 404 is suppressed, including a
-        drive-identity ``resourceNotFound``).
+        drive-identity ``resourceNotFound``); see ``exists`` for where a dead
+        drive does surface.
 
         Raises:
             PermissionDenied: If the token is rejected or lacks access to the
@@ -690,8 +692,9 @@ class GraphBackend(AsyncBackend):
         """Return ``True`` if *path* exists and carries the ``folder`` facet.
 
         A missing item returns ``False`` (any 404 is suppressed, including a
-        drive-identity ``resourceNotFound``). The drive root (``""``) carries
-        the ``folder`` facet and reports ``True``.
+        drive-identity ``resourceNotFound``); see ``exists`` for where a dead
+        drive does surface. The drive root (``""``) carries the ``folder`` facet
+        and reports ``True``.
 
         Raises:
             PermissionDenied: If the token is rejected or lacks access to the
@@ -737,10 +740,10 @@ class GraphBackend(AsyncBackend):
         ``base_path`` folder item when one is pinned (mirroring SFTP's
         ``stat(base_path)``). The probe runs at ``scope="identity"``, so a
         drive-identity ``resourceNotFound`` escalates to ``BackendUnavailable``
-        while a missing ``base_path`` folder still reports ``NotFound``. Neither
-        of the other two scopes gives both halves: ``"item"`` would report an
-        unreachable drive as a missing path, and ``"drive"`` would report a
-        missing ``base_path`` as an unreachable drive.
+        while a missing ``base_path`` folder still reports ``NotFound``. None of
+        the other three scopes gives both halves: ``"item"`` and ``"probe"``
+        would report an unreachable drive as a missing path, and ``"drive"``
+        would report a missing ``base_path`` as an unreachable drive.
 
         Raises:
             PermissionDenied: If the token is rejected or lacks access (401/403).

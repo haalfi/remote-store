@@ -11,7 +11,7 @@ import httpx
 import pytest
 import respx
 
-from remote_store._errors import InvalidPath
+from remote_store._errors import BackendUnavailable, InvalidPath, NotFound, RemoteStoreError
 from remote_store.aio.backends._graph.utils import GraphUtils
 
 _BASE = "https://graph.microsoft.com/v1.0"
@@ -83,6 +83,35 @@ class TestResolveDriveId:
     async def test_http_url_without_host_is_invalid_path(self) -> None:
         with pytest.raises(InvalidPath, match="SharePoint site URL"):
             await GraphUtils.aresolve_drive_id("https://", token_provider=lambda: "t")
+
+    @respx.mock
+    @pytest.mark.spec("GR-057", "GR-031")
+    @pytest.mark.parametrize(
+        ("code", "expected"),
+        [("resourceNotFound", BackendUnavailable), ("itemNotFound", NotFound)],
+    )
+    async def test_404_discriminates_by_error_code(self, code: str, expected: type[RemoteStoreError]) -> None:
+        # These lookups resolve a drive; they address no caller-supplied store
+        # path, so the absent-container rule that flattens a data-plane 404 to
+        # NotFound does not reach them and the drive-identity code still
+        # escalates. Unpinned, the flattening silently swallowed this: the two
+        # answers differ only by error.code, and every success-path cell above
+        # passes either way.
+        respx.get(f"{_BASE}/me/drive").mock(return_value=httpx.Response(404, json={"error": {"code": code}}))
+        with pytest.raises(expected):
+            await GraphUtils.aresolve_drive_id("me", token_provider=lambda: "t")
+
+    @respx.mock
+    @pytest.mark.spec("GR-057", "GR-031")
+    async def test_site_lookup_404_escalates_resource_not_found(self) -> None:
+        # The site leg is a separate call site from /me/drive and would regress
+        # on its own.
+        site = "https://contoso.sharepoint.com/sites/marketing"
+        respx.get(f"{_BASE}/sites/contoso.sharepoint.com:/sites/marketing").mock(
+            return_value=httpx.Response(404, json={"error": {"code": "resourceNotFound"}})
+        )
+        with pytest.raises(BackendUnavailable):
+            await GraphUtils.aresolve_drive_id(site, token_provider=lambda: "t")
 
     @respx.mock
     @pytest.mark.spec("GR-057")

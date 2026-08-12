@@ -592,13 +592,16 @@ container before this clause, and keeps it: `get_folder_info`, `read`,
 `NotFound` row; `list_files` and `list_folders` return an empty listing, since an
 absent container holds nothing; `exists()`, `is_file()` and `is_folder()` MUST
 answer `False`, which BE-004 / BE-005 and this section's own rule already forbid
-them from breaching. `write` is the one operation no clause of *this spec*
-decides, and this one does not decide it either — which leaves it the one place a
-backend spec may decide it, as
+them from breaching. `write` is the one operation *on the roster* that no clause
+of this spec decides, and this one does not decide it either — which leaves it
+the one roster operation a backend spec may decide, as
 [GR-031](044-graph-backend.md#gr-031-404-discrimination-item-vs-drive) does for
 `GraphBackend` ([ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md)).
 That is a gap being filled, not a divergence: a backend answering `write` its own
-way contradicts nothing here. All of these obligations are pre-existing — this
+way contradicts nothing here. Anything *off* the roster — a health probe, a
+credential or container-identity lookup — is not an operation this section
+reaches at all, so it needs no such permission and is not counted against this
+one. All of these obligations are pre-existing — this
 clause neither creates nor relaxes them, and that is why those operations are
 absent from the roster above rather than exempt from it.
 
@@ -652,8 +655,8 @@ across every operation it reached **eleven** of the ones named above, plus
 `read_bytes` and `iter_children`.
 [ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md) adjudicated
 it in favour of this clause for every operation this clause decides. GR-031 keeps
-the two it does not: `write` (see § Reach) and `check_health`, plus any `404` on
-the bare `/drives/{drive_id}` URL, which addresses no path at all.
+what it does not: `write`, the one roster operation § Reach declines; and, off
+the roster entirely, `check_health` and Graph's drive-id resolution.
 
 The rule exists because leaving it unstated let each backend answer from
 whatever its wire protocol happened to reveal. `HeadObject` answers a bodyless

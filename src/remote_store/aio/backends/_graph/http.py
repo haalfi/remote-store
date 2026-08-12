@@ -56,11 +56,11 @@ BACKEND_NAME = "graph"
 GraphScope = Literal["item", "drive", "probe", "identity"]
 """What a failing URL addressed, which is what a ``404`` from it means.
 
-``"item"`` is any path-addressed operation the backend contract decides;
-``"drive"`` the bare ``/drives/{drive_id}`` resource; ``"probe"`` the type
-probes; ``"identity"`` the operations the contract states no answer for, where
-Graph's drive-identity code is still honoured. See ``classify_graph_error`` for
-what each answers and which operations sit in the last one.
+``"item"`` is the path-addressed data plane; ``"probe"`` the type probes;
+``"identity"`` the callers the absent-container contract does not reach, where
+Graph's drive-identity code is still honoured; ``"drive"`` the bare
+``/drives/{drive_id}`` resource, which no call site currently addresses. See
+``classify_graph_error`` for what each answers and who is in it.
 """
 
 _REDACTED = "***"
@@ -142,26 +142,40 @@ def classify_graph_error(
     case, which is the only status whose meaning depends on what the failing URL
     addressed:
 
-    * ``"drive"`` — the bare ``/drives/{drive_id}`` resource. Any ``404`` is
-      ``BackendUnavailable``: no path is being addressed, so there is no absence
-      to report, only a drive that is deleted or misconfigured.
-    * ``"identity"`` — the operations the backend contract states no answer for,
-      where Graph's drive-identity code is still honoured. A
-      ``resourceNotFound`` is ``BackendUnavailable``; any other ``404`` code is
-      ``NotFound``. Two call sites qualify: the **write** path (both the small
-      ``PUT /content`` and ``createUploadSession`` halves), so a write against a
-      drive that is not there reads as a configuration error rather than as a
-      missing file; and **``check_health``**, which addresses no caller-supplied
-      path and exists to report a drive it cannot reach. The health probe needs
-      both halves of this scope — a missing configured ``base_path`` folder must
-      still be ``NotFound`` — which is why it is not ``"drive"``.
-    * ``"item"`` — every other path-addressed operation. A ``404`` is
-      ``NotFound`` whatever its ``code``. Graph's drive is a container, and the
-      backend contract binds a container's absence to read as the path's
+    * ``"item"`` — the backend's path-addressed data-plane operations. A ``404``
+      is ``NotFound`` whatever its ``code``. Graph's drive is a container, and
+      the backend contract binds a container's absence to read as the path's
       absence, so a caller's absent-store handling does not depend on which
       backend it holds.
     * ``"probe"`` — the type probes (``exists`` / ``is_file`` / ``is_folder``).
       Every ``404`` is ``NotFound``, which the probes suppress to ``False``.
+    * ``"identity"`` — a ``resourceNotFound`` is ``BackendUnavailable``; any
+      other ``404`` code is ``NotFound``. Three groups of call site, and the
+      reason differs between them, which is why this is not one test:
+
+      - **``write``**, both the small ``PUT /content`` and the
+        ``createUploadSession`` halves. It is the single path-addressed
+        operation the backend contract declines to decide, so Graph decides it:
+        a write against a drive that is not there reads as a configuration
+        error rather than as a missing file.
+      - **``check_health``**, which reports reachability rather than addressing
+        a path. It needs both halves of this scope — a missing configured
+        ``base_path`` folder must still be ``NotFound`` — which is why it is not
+        ``"drive"``.
+      - **drive-identity resolution** (``GraphUtils.resolve_drive_id``'s
+        lookups), which runs before any backend exists.
+    * ``"drive"`` — the bare ``/drives/{drive_id}`` resource. Any ``404`` is
+      ``BackendUnavailable``: no path is being addressed, so there is no absence
+      to report, only a drive that is deleted or misconfigured. **No call site
+      passes it**; every drive-addressed lookup either resolves an id (identity
+      scope, above) or goes through ``/drives/{id}/root``, which is path-shaped.
+      It is retained as the mapping's statement of what a bare drive ``404``
+      means, and only the table's own tests reach it.
+
+    Membership in ``"item"`` is not "the contract names this operation": a
+    sibling that delegates to a named one — ``read_bytes`` to ``read``,
+    ``iter_children`` to the listings — belongs wherever the operation it
+    delegates to belongs, whether or not the contract spells it out.
 
     ``"probe"`` currently answers exactly as ``"item"`` does. It is kept as a
     distinct value rather than folded in because it pins a different obligation:

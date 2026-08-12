@@ -94,9 +94,13 @@ class GraphUtils:
                 site URL has no host, or the named library does not exist.
             NotFound: If a site/team/channel id resolves but returns ``404``.
             PermissionDenied: If Graph returns ``403`` for the lookup.
-            BackendUnavailable: For a transport error, a retryable ``5xx`` /
-                ``429`` / ``507``, or a malformed ``@odata.nextLink`` while
-                paging a site's document libraries.
+            BackendUnavailable: If Graph reports the target as a drive-identity
+                failure (``404 resourceNotFound``) — these lookups resolve a
+                drive rather than address a path, so a resource that is not
+                there is a configuration error, not an absence. Also for a
+                transport error, a retryable ``5xx`` / ``429`` / ``507``, or a
+                malformed ``@odata.nextLink`` while paging a site's document
+                libraries.
         """
         client = http_client if http_client is not None else httpx.AsyncClient()
         owns_client = http_client is None
@@ -122,8 +126,16 @@ class GraphUtils:
                 await client.aclose()
 
 
+# Drive-identity resolution runs before any backend exists and addresses no
+# caller-supplied store path, so the absent-container contract does not reach it
+# (ADR-0038) and Graph's own drive-identity rule governs: every lookup below
+# sends at scope="identity", keeping a `404 resourceNotFound` mapped to
+# BackendUnavailable. Left at the item default these would have silently started
+# reporting an unresolvable drive as NotFound.
 async def _drive_id_from_me(client: httpx.AsyncClient, base_url: str, token_provider: TokenProvider) -> str:
-    response = await graph_send(client, "GET", f"{base_url}/me/drive", token_provider=token_provider, path="me/drive")
+    response = await graph_send(
+        client, "GET", f"{base_url}/me/drive", token_provider=token_provider, path="me/drive", scope="identity"
+    )
     return str(response.json()["id"])
 
 
@@ -136,7 +148,7 @@ async def _site_id_from_url(
     server_relative = parsed.path or "/"
     # Graph addresses a site by hostname + server-relative path: /sites/{host}:{path}
     url = f"{base_url}/sites/{parsed.netloc}:{server_relative}"
-    response = await graph_send(client, "GET", url, token_provider=token_provider, path=site_url)
+    response = await graph_send(client, "GET", url, token_provider=token_provider, path=site_url, scope="identity")
     return str(response.json()["id"])
 
 
@@ -144,7 +156,12 @@ async def _default_drive_id(
     client: httpx.AsyncClient, base_url: str, site_id: str, token_provider: TokenProvider
 ) -> str:
     response = await graph_send(
-        client, "GET", f"{base_url}/sites/{site_id}/drive", token_provider=token_provider, path=site_id
+        client,
+        "GET",
+        f"{base_url}/sites/{site_id}/drive",
+        token_provider=token_provider,
+        path=site_id,
+        scope="identity",
     )
     return str(response.json()["id"])
 
@@ -164,5 +181,7 @@ async def _drive_id_from_channel(
     client: httpx.AsyncClient, base_url: str, team_id: str, channel_id: str, token_provider: TokenProvider
 ) -> str:
     url = f"{base_url}/teams/{team_id}/channels/{channel_id}/filesFolder"
-    response = await graph_send(client, "GET", url, token_provider=token_provider, path=f"{team_id}/{channel_id}")
+    response = await graph_send(
+        client, "GET", url, token_provider=token_provider, path=f"{team_id}/{channel_id}", scope="identity"
+    )
     return str(response.json()["parentReference"]["driveId"])

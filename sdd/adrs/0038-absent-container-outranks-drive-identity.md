@@ -69,24 +69,42 @@ denied store answers the same way on every backend".
 is silent about.** A `404` is classified by what its URL addresses and what the
 contract says about the operation, in three cases:
 
+- **Item scope** — the backend's path-addressed data-plane operations. A `404` is
+  `NotFound` whatever its `error.code`, which is what makes the tolerant deletes
+  tolerate an absent drive and the strict ones report it as absence.
+- **Identity scope** — `resourceNotFound` is `BackendUnavailable`, any other
+  `404` is `NotFound`. Three groups of caller, and the reason differs between
+  them, which is why this is stated as a rule and not as one test:
+  - `write`, both the small `PUT /content` and the `createUploadSession` halves.
+    It is the single path-addressed operation BE-021 § Reach explicitly declines
+    to decide, so Graph decides it.
+  - `check_health` (PING-011), which reports reachability rather than addressing
+    a path.
+  - `GraphUtils.resolve_drive_id`'s lookups (GR-057), which resolve a drive
+    before any backend exists.
 - **Drive scope** — the bare `/drives/{drive_id}` resource. Any `404` is
   `BackendUnavailable`. No path is being addressed, so there is no absence for
   BE-021 to describe.
-- **Identity scope** — the operations BE-021 decides nothing about, where the
-  drive-identity code is still honoured: `resourceNotFound` is
-  `BackendUnavailable`, any other `404` is `NotFound`. Membership is a test, not
-  a list: *does BE-021 state an answer for this operation?* Two call sites pass
-  it today — `write` (both the small `PUT /content` and the
-  `createUploadSession` halves), which BE-021 § Reach names as the one operation
-  no clause of it decides; and `check_health` (PING-011), which addresses no
-  caller-supplied path and exists to report a drive it cannot reach.
-- **Item scope** — every other path-addressed operation. A `404` is `NotFound`
-  whatever its `error.code`, which is what makes the tolerant deletes tolerate an
-  absent drive and the strict ones report it as absence.
+
+**Membership in item scope is not "BE-021 names this operation".** A sibling that
+delegates to a named operation belongs where that operation belongs — `read_bytes`
+to `read`, `iter_children` to the listings — whether or not the clause spells it
+out. Stated the other way round, the rule would send exactly the two operations
+the measurement below surfaced as unnamed into identity scope, reintroducing the
+escalation on a path BE-021 governs.
 
 The probe scope is unchanged and keeps its own value even though it now answers
 exactly as item scope does: it pins BE-004 / BE-005 independently of the rest of
 the table, so a future renarrowing at item scope cannot reach the probes.
+
+**Drive scope has no call site**, and did not have one before this change either
+— the fact is already registered against the change that introduced the probe
+scope. Every drive-addressed lookup either resolves an id, which is identity
+scope, or goes through `/drives/{id}/root`, which is path-shaped. It is retained
+as the table's statement of what a bare drive `404` means, and only the table's
+own tests reach it. So the escalation this ADR actually leaves GR-031 is the
+three identity-scope groups; the drive row is a definition, not a live half of
+the compromise.
 
 `write` is the load-bearing half of the compromise. It is the operation a caller
 runs first against a freshly configured store, so a misconfigured drive still
@@ -104,7 +122,11 @@ halves of BE-021's rule — clean return under `missing_ok=True`, `NotFound` und
 **What was traded away.** On a SharePoint-backed drive — outside the live tier's
 coverage, and the tier where `resourceNotFound` may actually fire — a
 misconfigured drive now reads as `NotFound` from a read and `False` from a probe
-rather than as `BackendUnavailable`. Three things bound that cost: a `write`
+rather than as `BackendUnavailable`. Drive resolution is unaffected, because
+`resolve_drive_id` moved to identity scope in the same change rather than
+inheriting the flattening: a store whose drive cannot be resolved at all still
+fails as a configuration error, before any operation runs. Three things bound the
+remaining cost: a `write`
 still escalates, `check_health` still escalates, and GR-031 already documents the
 caller-side recipe (`exists("")` on the drive root, which answers `False` when the
 drive itself is unreachable). It is the same answer every other backend gives for

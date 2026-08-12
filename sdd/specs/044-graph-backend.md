@@ -1086,24 +1086,38 @@ and by the resource scope of the failing URL:
   maps to `BackendUnavailable` whatever its `error.code`. No path is
   being addressed, so there is no absence to report: the configured
   drive is deleted or misconfigured, which is a backend identity
-  failure rather than a per-item condition.
-- For the operations [BE-021](003-backend-adapter-contract.md#be-021-error-mapping)
-  decides nothing about, `error.code == "resourceNotFound"` — Graph's
+  failure rather than a per-item condition. **No call site passes this
+  scope**, and none did before the adjudication either: every
+  drive-addressed lookup either resolves an id (identity scope, below)
+  or goes through `/drives/{id}/root`, which is path-shaped. The row
+  stands as this table's statement of what a bare drive `404` means,
+  reached only by the mapping table's own tests.
+- At identity scope, `error.code == "resourceNotFound"` — Graph's
   drive-identity code, honoured regardless of the failing URL's scope
-  because every item-by-path URL embeds the drive — likewise maps to
-  `BackendUnavailable` (identity scope); any other `404` code maps to
-  `NotFound`. Membership is a test rather than a list: *does BE-021
-  state an answer for this operation?* Two call sites pass it — `write`,
-  which BE-021 § Reach names as the one operation no clause of it
-  decides, on both its small `PUT /content` and its
-  `createUploadSession` halves; and `check_health`
-  ([PING-011](026-health-check.md#ping-011-graphbackend)), which
-  addresses no caller-supplied path and exists to report a drive it
-  cannot reach.
+  because every item-by-path URL embeds the drive — maps to
+  `BackendUnavailable`; any other `404` code maps to `NotFound`. Three
+  groups of caller sit here, for reasons that differ, which is why this
+  is a rule and not a single test:
+  - `write`, on both its small `PUT /content` and its
+    `createUploadSession` halves. It is the one operation on
+    [BE-021](003-backend-adapter-contract.md#be-021-error-mapping)'s
+    roster that § Reach explicitly declines to decide, so this spec
+    decides it.
+  - `check_health`
+    ([PING-011](026-health-check.md#ping-011-graphbackend)), which
+    reports reachability rather than addressing a caller-supplied path.
+  - Drive-identity resolution — `GraphUtils.resolve_drive_id`'s lookups
+    (GR-057) — which runs before any backend exists.
+
+  The last two are off BE-021's roster entirely rather than declined by
+  it, so nothing there is being overridden.
 - **Every other error-raising operation takes the item scope above**, so
   a drive-identity `404` reaches a caller as `NotFound` — not as
   `BackendUnavailable`. Graph's drive is a container, and BE-021 binds a
-  container's absence to read as the path's absence. This is the half
+  container's absence to read as the path's absence. A sibling that
+  delegates to a named operation goes where that operation goes —
+  `read_bytes` with `read`, `iter_children` with the listings — whether
+  or not BE-021 spells it out. This is the half
   [ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md)
   changed; see § "Adjudicated against BE-021" below.
 - The backend does **not** attempt to discriminate "404 masking
@@ -1137,10 +1151,12 @@ unnamed siblings. A carve-out that wide would not have narrowed BE-021 on
 this backend, it would have voided it here.
 
 So BE-021 wins on every operation it decides, and this clause keeps the
-ones it is silent about: the drive-scope URL and the identity scope
-above. `write` is the load-bearing half — it is the call a caller makes
-first against a freshly configured store, so a misconfigured drive still
-surfaces as a configuration error rather than as a missing file.
+three identity-scope groups above. `write` is the load-bearing one — it
+is the call a caller makes first against a freshly configured store, so a
+misconfigured drive still surfaces as a configuration error rather than
+as a missing file. Drive-identity resolution kept its answer unchanged in
+the same change rather than inheriting the flattening: a drive that
+cannot be resolved at all still fails before any operation runs.
 
 **Verification note (live, consumer OneDrive, 2026-06):** a
 nonexistent drive id returned `404 itemNotFound` on **both** URL
@@ -1156,11 +1172,11 @@ drive surfaces as `NotFound` from error-raising operations and
 `False` from probes. SharePoint-backed drives are outside the live
 tier's coverage (see the coverage-disclosure paragraph in
 § Integration-only).
-That unobserved-ness was weighed in the adjudication above and is
-what the residual `write` and `check_health` escalation costs: on the
-tier where the code has been seen, the escalation those two keep is the
-only place a caller can still tell a dead drive from a missing item, and
-on the tier where it has not, nothing about the answers changes.
+That unobserved-ness was weighed in the adjudication above and is what
+the residual identity-scope escalation costs: on the tier where the code
+has been seen, those three groups are the only place a caller can still
+tell a dead drive from a missing item, and on the tier where it has not,
+nothing about the answers changes.
 
 ### GR-032: 409 nameAlreadyExists
 

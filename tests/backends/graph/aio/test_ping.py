@@ -9,10 +9,13 @@ Graph-specific:
 - The probe is one item-metadata ``GET`` on the effective root, reusing
   ``_get_item("")`` — ``GET /drives/{id}/root`` with no ``base_path``, or the
   ``base_path`` folder item when one is pinned.
-- It runs at the default item scope, not the type-probe scope: a drive-identity
-  ``resourceNotFound`` maps to ``BackendUnavailable`` (an unreachable / missing
-  drive), while a ``base_path`` folder ``itemNotFound`` maps to ``NotFound``
-  (PING-011, GR-031). A ``401`` / ``403`` maps to ``PermissionDenied`` (PING-009).
+- It runs at ``scope="identity"``, and needs both halves of that scope: a
+  drive-identity ``resourceNotFound`` maps to ``BackendUnavailable`` (an
+  unreachable / missing drive), while a ``base_path`` folder ``itemNotFound``
+  maps to ``NotFound`` (PING-011, GR-031). No other scope gives both — ``item``
+  and ``probe`` flatten every ``404`` to ``NotFound`` since ADR-0038 settled the
+  absent-container question, and ``drive`` escalates every ``404``. A ``401`` /
+  ``403`` maps to ``PermissionDenied`` (PING-009).
 """
 
 from __future__ import annotations
