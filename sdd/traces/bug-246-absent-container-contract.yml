@@ -17,6 +17,7 @@ co_shipped_items:
   - BUG-249
 discovery_followups:
   - BUG-254
+  - BUG-255
 audience:
   - user.api
 expected_ripples:
@@ -139,6 +140,35 @@ phases:
           Two cells pinned the old listing behaviour and had to flip. The
           passthrough cell moved to PermissionDenied so the property it exists
           for stays pinned for everything the new catch does not swallow.
+        outcome: ok
+
+  - id: fix_2
+    name: Fix (round 2)
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029"
+        read_type: gate
+        extract: >-
+          The round-2 measuring pass showed get_folder_info("") raising NotFound
+          against a dropped table. BE-029's root row decides that — the root is a
+          folder that always exists and get_folder_info on it never raises
+          NotFound — so the fix keys the tolerance on is_root.
+          Retrospect: this clause was not read during implement, and BUG-254 was
+          filed in round 1 claiming no clause decided the root case. That was
+          read off BE-021 § Reach, which decides operations and says nothing
+          about the root. § Reach is where a reader looking for per-operation
+          answers lands, and it does not point at BE-029.
+        outcome: misleading
+      - file: src/remote_store/_errors.py
+        section: "BackendUnavailable"
+        read_type: reference
+        extract: >-
+          Round 1's own fix put false advice here: check_health() was offered as
+          the way to tell a gone store from an empty one, and it returns cleanly
+          against an absent container on S3PyArrowBackend and SQLBlobBackend.
+          Measured across all five backends before rewriting; write() is the one
+          operation that reports an absent container everywhere, which follows
+          from it being the operation the contract declines to decide.
         outcome: ok
 
   - id: verify

@@ -133,9 +133,14 @@ class BackendUnavailable(RemoteStoreError):
     container that does not exist holds no path either, so the operation
     answers for a missing path instead — ``False`` from ``exists``,
     ``is_file`` and ``is_folder``, ``NotFound`` from the file-shaped
-    operations, and an empty listing from the listings. Reach for
-    ``check_health()`` to tell a store that is gone from one that is
-    merely empty.
+    operations, and an empty listing from the listings.
+
+    To tell a store that is *gone* from one that is merely *empty*,
+    attempt a ``write()``: it is the one operation no clause of the
+    backend contract decides, so every backend still reports an absent
+    container from it. ``check_health()`` does not answer this
+    reliably — on some backends it probes the service rather than the
+    container and succeeds against a container that is not there.
     """
 
 

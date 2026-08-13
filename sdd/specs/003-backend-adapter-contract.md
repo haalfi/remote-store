@@ -632,8 +632,8 @@ needs in order to trust the list's remaining entry:
 - `S3Boto3Backend`'s `list_files`, `list_folders` and `iter_children` raised a
   raw `botocore.exceptions.ClientError`, breaching the never-leak invariant at
   the top of this section rather than the mapping row: they were the only methods
-  on that class whose wire call was not wrapped in its error mapper, at fourteen
-  wrapped sites. All three now return an empty listing, as the two s3fs-backed
+  on that class whose wire call was not wrapped in its error mapper, against
+  fifteen methods that do wrap. All three now return an empty listing, as the two s3fs-backed
   lanes already did against the identical response (BUG-249).
 - On `SQLBlobBackend`, **every operation except the two deletes** answered an
   absent table with `BackendUnavailable` (or the base error, by dialect), because

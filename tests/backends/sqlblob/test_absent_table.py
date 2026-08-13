@@ -430,6 +430,39 @@ class TestEveryOperationReadsTheAbsentTableAsAnAbsentPath:
         _drop_table(backend)
         assert call(backend) == [], f"{op_name} must yield nothing against an absent table"
 
+    @pytest.mark.spec("BE-029", "BE-021")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_the_root_aggregates_to_empty_rather_than_raising(self, backend: SQLBlobBackend, root: str) -> None:
+        """BE-029's root row outranks the canonical ``NotFound`` row, absent table included.
+
+        The root is "a folder that always exists" and ``get_folder_info`` on it
+        "aggregates the whole store (never ``NotFound``)" — stated without a
+        carve-out for the container being gone. So a store whose table has been
+        dropped aggregates to an empty one, which is also what an *empty* table
+        answers, and the two agree rather than splitting at the root.
+
+        Both spellings, because BE-029 binds them as the same path and a
+        root test keyed on ``""`` alone would miss a backend that only
+        short-circuits the one spelling.
+        """
+        _drop_table(backend)
+        info = backend.get_folder_info(root)
+        assert info.file_count == 0
+        assert info.total_size == 0
+        assert info.modified_at is None
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_the_root_answers_the_same_on_an_empty_table(self, backend: SQLBlobBackend, root: str) -> None:
+        """The control: an absent table must not be distinguishable from an empty one here.
+
+        Without this cell the one above pins only that the root does not raise,
+        and a backend that answered the root with some *other* empty-ish value
+        would satisfy it while still splitting the two stores.
+        """
+        backend.delete("folder/object.txt")
+        assert backend.get_folder_info(root).file_count == 0
+
     @pytest.mark.spec("BE-021")
     def test_write_still_reports_a_backend_failure(self, backend: SQLBlobBackend) -> None:
         """The one operation deliberately left alone, so the omission is visible.

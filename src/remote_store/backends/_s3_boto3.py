@@ -898,7 +898,8 @@ class S3Boto3Backend(Backend):
           this class whose wire call was not wrapped, at fourteen wrapped sites,
           so a ``botocore.exceptions.ClientError`` reached the caller untouched
           and an ``except RemoteStoreError`` clause caught every backend but this
-          one.
+          one. Every other method that reaches the wire wraps it, at fifteen
+          sites.
         * **An absent container holds nothing**, so the listing is empty rather
           than an error — the answer the two s3fs-backed lanes already gave
           against the identical wire response.

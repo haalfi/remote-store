@@ -755,12 +755,21 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         helper carries all three answers on one axis:
 
         * ``raises=False`` — the block is abandoned and control resumes *after*
-          the ``with``. A probe falls through to its trailing ``return False``, a
-          listing generator ends and yields nothing, and a tolerant delete
-          returns cleanly. What separates them is only what follows the block.
+          the ``with``. Each caller seeds its answer before the block and returns
+          it afterwards, so what the abandonment produces is the seed: ``False``
+          for a probe, an empty ``rows`` for a listing, an empty ``FolderInfo``
+          for ``get_folder_info`` at the root. A tolerant delete seeds nothing
+          and simply returns. What separates them is only what surrounds the
+          block.
         * ``raises=True`` — ``NotFound``, for the file-shaped operations
-          (``read``, ``read_bytes``, ``get_file_info``, ``get_folder_info``, the
-          ``move``/``copy`` source) and for a delete without ``missing_ok``.
+          (``read``, ``read_bytes``, ``get_file_info``, the ``move``/``copy``
+          source), for ``get_folder_info`` below the root, and for a delete
+          without ``missing_ok``.
+
+        ``get_folder_info`` is on both axes because the root outranks the
+        canonical row there: the store root is a folder that always exists, so it
+        aggregates an absent container to an empty store instead of reporting
+        itself missing.
 
         Without this, a dropped table surfaced as whatever ``_map_errors`` made
         of the driver's complaint (``BackendUnavailable`` from
@@ -1035,18 +1044,30 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         aggregate ``SELECT`` (``COUNT``/``SUM``/``MAX``) over keys under the
         prefix — no per-file round-trips.
 
+        **The root never raises**, absent table included: the store root is a
+        folder that always exists, so a store whose container is gone aggregates
+        to an empty one rather than reporting itself missing. That is the same
+        answer an empty table gives, and it is why the tolerance below is keyed
+        on the root rather than applied to every path.
+
         Raises:
             NotFound: If no key exists under *path*, including when the backing
-                table is absent.
+                table is absent. Not raised for the store root.
             InvalidPath: If *path* is absolute or malformed.
             BackendUnavailable: If the database is unreachable.
         """
         self._validate_path(path, allow_empty=True)
         prefix = "" if is_root(path) else path + "/"
+        info = FolderInfo(
+            path=RemotePath.from_backend_path(path),
+            file_count=0,
+            total_size=0,
+            modified_at=None,
+        )
 
         with (
             self._map_errors(path),
-            self._absent_table_is_absent_path(path, raises=True, what="Folder"),
+            self._absent_table_is_absent_path(path, raises=not is_root(path), what="Folder"),
             self._engine.connect() as conn,
         ):
             t = self._table
@@ -1082,12 +1103,15 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             if max_modified is not None:
                 modified_at = datetime.fromtimestamp(max_modified, tz=timezone.utc)
 
-            return FolderInfo(
+            info = FolderInfo(
                 path=RemotePath.from_backend_path(path),
                 file_count=file_count,
                 total_size=total_size,
                 modified_at=modified_at,
             )
+        # ``info`` keeps its seeded empty value when the table is gone and the
+        # block above is abandoned, which only happens for the root.
+        return info
 
     # endregion
 

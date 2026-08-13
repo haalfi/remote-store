@@ -2611,12 +2611,32 @@ class TestAsyncAzureErrorPropagation:
                 pass
 
     @pytest.mark.spec("ASYNC-024", "BE-021")
-    async def test_list_files_not_found_is_the_one_swallowed_error(self) -> None:
-        """The carve-out, stated as its own cell rather than left implicit."""
+    @pytest.mark.parametrize(
+        ("op_name", "call"),
+        [
+            ("list_files", lambda b: b.list_files("data")),
+            ("list_folders", lambda b: b.list_folders("data")),
+            ("iter_children", lambda b: b.iter_children("data")),
+        ],
+        ids=["list_files", "list_folders", "iter_children"],
+    )
+    async def test_not_found_is_the_one_swallowed_error(
+        self,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        """The carve-out, stated as its own cell rather than left implicit.
+
+        Parametrised over all three because each listing carries its own copy of
+        the branch: a `NotFound` already mapped to a ``remote_store`` type takes
+        a different path through the tail than the SDK's ``ResourceNotFoundError``
+        does, and the stub-driven suites only ever produce the latter. Covering
+        one listing left the other two branches unexecuted.
+        """
         backend, cc, bc = _setup_non_hns_backend()
         cc.walk_blobs.side_effect = NotFound("custom not found", path="x", backend="async-azure")
 
-        assert [item async for item in backend.list_files("data")] == []
+        assert [item async for item in call(backend)] == [], op_name
 
     @pytest.mark.spec("ASYNC-024")
     async def test_list_folders_remote_store_error_passthrough(self) -> None:

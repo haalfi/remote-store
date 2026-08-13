@@ -199,8 +199,9 @@ be edited to point elsewhere.
 store answers the same way on every backend.
 
 **Closes when:** the last adapter answers the contract against an absent
-container (BUG-247); the *root* of an absent container answers one way rather
-than three (BUG-254); a constructor does not leak its driver's exception
+container (BUG-247); the root of an absent container meets BE-029 on every
+backend (BUG-254); a listing does not truncate silently when its container is
+deleted mid-scan (BUG-255); a constructor does not leak its driver's exception
 (BUG-245); one operation does not answer by payload size (BUG-253); and a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
 (BK-345). The spec contradiction is adjudicated — BUG-248, closed by
@@ -220,9 +221,9 @@ this section tracks bullet for bullet and which holds one bullet. Three further
 disagreements sit in this section and none of them is with that clause, which is
 why they are not in the count: BUG-253 is between two halves of one Graph
 operation; BUG-245 is a constructor leak, which BE-021 scopes to operations and
-so does not reach; and BUG-254 is between the backends themselves at the root of
-an absent container, where the clause decides nothing and each lane answers from
-its own short-circuit.
+so does not reach; BUG-254 is with BE-029's root row rather than
+this one; and BUG-255 is with neither, being about a container that vanishes
+part-way through a listing rather than one that was absent when it began.
 Four classes have left the list. `GraphBackend` went first — BUG-248 adjudicated
 the spec contradiction behind it and brought the backend to the contract in the
 same change, which is why BK-345's exemption list, blocked on that adjudication,
@@ -232,34 +233,66 @@ clause misreports rather than merely mistypes: on Local an absent store is
 reported as a *malformed path*, and until that goes, portable error handling is
 still impossible on the most-used backend, which is the whole promise.
 
-- [ ] **BUG-254 — The *root* of an absent container answers three different ways across the lanes**
+- [ ] **BUG-254 — Four backends breach BE-029's root row against an absent container**
   spec: BE-004, BE-021, BE-029 · effort: S · audience: user.api
-  BE-029 makes the root a folder whether or not it has children; BE-021 § Reach
-  gives `get_folder_info` the canonical `NotFound` row and forbids the probes from
-  raising. The two clauses meet only at the root of a container that is not there,
-  and nothing decides which wins — so each lane answers from whatever its own
-  short-circuit happens to do. Measured against the same absent-container stubs
-  BUG-243 added and a dropped SQLite table:
+  BE-029 already decides this and is not qualified by whether the container
+  exists: the root is "a folder that always exists", `exists(root)` is `True`, and
+  `get_folder_info(root)` "aggregates the whole store (never `NotFound`)".
+  Measured against the absent-container stubs BUG-243 added and a dropped SQLite
+  table — every cell below that is not `—` breaches that row:
   | Backend | `get_folder_info("")` | `exists("")` |
   | --- | --- | --- |
-  | S3, S3-PyArrow | `FolderInfo(file_count=0)` | `False` |
-  | S3-Boto3, Azure (sync and async) | raises `NotFound` | `True` |
-  | SQLBlob | raises `NotFound` | `True` |
-  Two disagreements, not one: the lanes split on `get_folder_info`, and they split
-  again on `exists`, where the s3fs lanes go to the wire while every other backend
-  short-circuits on `is_root` before touching it. A caller cannot ask "is my store
-  there?" portably today — `exists("")` answers `True` on three backends whose
-  container is gone.
-  **Pre-existing and untouched by BUG-246**, which is what makes it a separate
-  item rather than a residue: that change altered neither the root short-circuits
-  nor `get_folder_info`, and the s3fs lanes it did not touch at all. Verified with
-  `git diff origin/master...HEAD` over `_s3.py`, `_s3_pyarrow.py` and
-  `_s3_boto3.py`'s `get_folder_info`.
-  Decide the clause before touching code: either the root of an absent container
-  is absent (the probes answer `False`, `get_folder_info` raises) or the root is a
-  folder by definition (the probes answer `True`, `get_folder_info` returns an
-  empty `FolderInfo`). Both are defensible and the spec should say which, in
-  BE-021 § Reach, since that is where the roster's per-operation answers live.
+  | S3, S3-PyArrow | `FolderInfo(file_count=0)` | **`False`** |
+  | S3-Boto3, Azure (sync and async) | **raises `NotFound`** | `True` |
+  | SQLBlob | — (fixed by BUG-246) | `True` |
+  Two breaches, in opposite directions, which is why one fix will not cover both:
+  the s3fs lanes go to the wire for `exists("")` and report a missing bucket as
+  "the root is not there", while S3-Boto3 and Azure short-circuit `exists` but let
+  `get_folder_info` reach a listing whose 404 they do not tolerate at the root.
+  A caller cannot ask "is my store there?" portably: `exists("")` answers `True`
+  on three backends whose container is gone and `False` on two.
+  **Pre-existing.** BUG-246 changed neither the root short-circuits nor
+  `get_folder_info`'s root handling on any backend but SQLBlob, and did not touch
+  the s3fs lanes at all (`git diff origin/master...HEAD` over `_s3.py`,
+  `_s3_pyarrow.py`, and `_s3_boto3.py`'s `get_folder_info`). SQLBlob's cell is `—`
+  because that change did briefly introduce the `NotFound` breach there and then
+  fixed it in the same PR, with `tests/backends/sqlblob/test_absent_table.py`
+  pinning both spellings of the root.
+  No spec decision is needed first — BE-029 states the answer. What the fix owes
+  is the *reason* each backend misses it, since the two directions have different
+  causes, plus a conformance cell so a sixth backend cannot inherit either.
+  **Filed on a wrong premise and corrected in the same PR:** the first version of
+  this item said nothing decided the question and asked for a spec decision. That
+  was read off BE-021 § Reach alone, which decides operations and is silent about
+  the root; BE-029's table decides it and was not consulted. Recorded because the
+  same miss is available to the next reader of § Reach.
+
+- [ ] **BUG-255 — A container deleted mid-listing truncates the listing silently on every S3 lane**
+  spec: BE-021 · effort: M · audience: user.api
+  `ListObjectsV2` answers an absent prefix with `200 KeyCount=0`, so the only 404
+  a listing can raise is the container's — which is why reading that 404 as "the
+  container is absent, so it holds nothing" is safe on the *first* page. It is not
+  safe on the second: by then the listing has already yielded items, so the
+  container demonstrably existed, and a 404 means it was deleted underneath the
+  scan. Measured with a stub serving a valid first page carrying a
+  `NextContinuationToken` and `NoSuchBucket` on the second:
+  | Backend | `list_files("", recursive=True)` |
+  | --- | --- |
+  | S3, S3-PyArrow | yields 0 items, then returns cleanly |
+  | S3-Boto3 | yields 1 item, then returns cleanly |
+  All three report a *complete* listing that is not complete. The caller most hurt
+  is the one doing list-then-delete or list-then-sync: it sees a short list, treats
+  the absent entries as absent, and deletes or fails to copy data that was there.
+  **Pre-existing on the two s3fs lanes**, which is what makes this an item rather
+  than a BUG-249 residue: they truncated this way before that change and still do.
+  BUG-249 moved S3-Boto3 from leaking a raw `ClientError` mid-scan onto the same
+  truncation, so the lanes now agree — the wrong way round, and agreeing was the
+  point of that change. Azure paginates too and wants the same measurement;
+  SQLBlob does not (one `SELECT`, no pages).
+  The shape of a fix is a first-page bound: tolerate the container 404 only while
+  nothing has been yielded, and let a later one propagate. That needs deciding for
+  the *whole* family at once, and a cell per lane, because a fix on one lane
+  re-opens the divergence the co-shipped items just closed.
 
 - [ ] **BUG-247 — `LocalBackend` reports a deleted root as "Path escapes root directory"**
   spec: BE-004, BE-012, BE-013, BE-021 · effort: S · audience: user.api
