@@ -306,7 +306,7 @@ still impossible on the most-used backend, which is the whole promise.
   than in BE-021's list. Discovered while measuring BUG-246's migration advice,
   which is why that advice sends callers to `write()` instead.
 
-- [ ] **BUG-255 — A container deleted mid-listing truncates the listing silently on every S3 lane and both Azure adapters**
+- [ ] **BUG-255 — A container deleted mid-listing truncates the listing silently on the two s3fs lanes**
   spec: BE-021 · effort: M · audience: user.api
   `ListObjectsV2` answers an absent prefix with `200 KeyCount=0`, so the only 404
   a listing can raise is the container's — which is why reading that 404 as "the
@@ -318,25 +318,32 @@ still impossible on the most-used backend, which is the whole promise.
   | Backend | `list_files("", recursive=True)` |
   | --- | --- |
   | S3, S3-PyArrow | yields 0 items, then returns cleanly |
-  | S3-Boto3 | yields 1 item, then returns cleanly |
-  | Azure, Async Azure | yields 1 item, then returns cleanly |
+  | S3-Boto3, Azure, Async Azure | raises `NotFound` after yielding — fixed by BUG-246 |
   All three report a *complete* listing that is not complete. The caller most hurt
   is the one doing list-then-delete or list-then-sync: it sees a short list, treats
   the absent entries as absent, and deletes or fails to copy data that was there.
   **Pre-existing on the two s3fs lanes**, which is what makes this an item rather
   than a BUG-249 residue: they truncated this way before that change and still do.
-  BUG-249 moved S3-Boto3 from leaking a raw `ClientError` mid-scan onto the same
-  truncation, so the lanes now agree — the wrong way round, and agreeing was the
-  point of that change. **The Azure rows are pre-existing too**, and that was
-  measured rather than assumed: a two-page stub serving a `NextMarker` then
-  `ContainerNotFound` truncates identically at `8cb27ce` and at BUG-246's head,
-  two list requests served in both. A review round asserted BUG-246 introduced it
-  there, reading the code; running it refuted that. SQLBlob is not affected (one
-  `SELECT`, no pages).
-  The shape of a fix is a first-page bound: tolerate the container 404 only while
-  nothing has been yielded, and let a later one propagate. That needs deciding for
-  the *whole* family at once, and a cell per lane, because a fix on one lane
-  re-opens the divergence the co-shipped items just closed.
+  **Only the two s3fs lanes are left.** BUG-246 and BUG-249 briefly put
+  `S3Boto3Backend` and both Azure adapters onto this truncation — the boto3 lane
+  by replacing a leaked `ClientError` with a swallowed 404, the Azure adapters by
+  adding a swallow where the flat lane previously raised — and then bounded the
+  tolerance to the first page on all three, so they now raise once a listing has
+  yielded. SQLBlob is not affected (one `SELECT`, no pages).
+  **A correction worth keeping**, because it cost a round: that PR first recorded
+  the Azure rows as pre-existing, on the strength of a base-versus-head
+  measurement that was broken — the base run set `PYTHONPATH` to a worktree root,
+  and this package lives under `src/`, so the import silently fell back to the
+  editable install and measured *head* twice. Re-run with `PYTHONPATH` pointing
+  at `<worktree>/src` and the module's `__file__` printed, the base revision
+  raises. The lesson is the repo's own: a verification that can fail silently is
+  worse than none.
+  The fix shape is settled and already implemented on the other three lanes: a
+  first-page bound — tolerate the container 404 only while nothing has been
+  yielded, and let a later one propagate. `_flat_ns._ListingCursor` is the shared
+  piece; `S3Boto3Backend._listing_errors` is the worked example. What remains is
+  applying it to `_S3Base`'s s3fs-backed listings and pinning it per lane, which
+  closes the divergence rather than opening one.
 
 - [ ] **BUG-247 — `LocalBackend` reports a deleted root as "Path escapes root directory"**
   spec: BE-004, BE-012, BE-013, BE-021 · effort: S · audience: user.api

@@ -502,6 +502,92 @@ class TestEveryLaneAnswersAnAbsentBucketTheSameWay:
         with _backend_at(dotted, endpoint) as backend:
             assert _BOTO3_LISTINGS[op_name](backend) == []
 
+
+_TRUNCATED_PAGE_ONE = (
+    b'<?xml version="1.0" encoding="UTF-8"?>'
+    b'<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
+    b"<Name>" + _BUCKET.encode() + b"</Name><Prefix></Prefix>"
+    b"<KeyCount>1</KeyCount><MaxKeys>1000</MaxKeys><IsTruncated>true</IsTruncated>"
+    b"<NextContinuationToken>tok</NextContinuationToken>"
+    b"<Contents><Key>folder/object.txt</Key><Size>3</Size>"
+    b"<LastModified>2026-01-01T00:00:00.000Z</LastModified>"
+    b"<ETag>&quot;abc&quot;</ETag></Contents>"
+    b"</ListBucketResult>"
+)
+
+
+def _serve_bucket_vanishing_on_page_two(httpserver: HTTPServer) -> str:
+    """One good page carrying a continuation token, then ``NoSuchBucket``."""
+    from werkzeug.wrappers import Response
+
+    state = {"gets": 0}
+
+    def handler(request: Any) -> Any:
+        if request.method == "HEAD":
+            return Response(b"", status=404, content_type="application/xml")
+        state["gets"] += 1
+        if state["gets"] == 1:
+            return Response(_TRUNCATED_PAGE_ONE, status=200, content_type="application/xml")
+        return Response(_NO_SUCH_BUCKET_XML, status=404, content_type="application/xml")
+
+    httpserver.expect_request(re.compile("^/.*$")).respond_with_handler(handler)
+    return httpserver.url_for("/").rstrip("/")
+
+
+class TestTheAbsentBucketToleranceIsBoundedToTheFirstPage:
+    """ "An absent container holds nothing" is only sound while nothing was handed over.
+
+    The tolerance these listings gained reads the bucket's 404 as "the container
+    is not there, so it holds nothing". That argument is sound on the first page
+    and unsound after it: once the listing has yielded, the bucket demonstrably
+    existed, so a 404 on a later page means it was deleted underneath the scan.
+    Swallowing *that* hands the caller a short listing that looks complete, and
+    the caller most hurt is the one diffing a listing against local state and
+    deleting the difference.
+
+    Both halves are asserted because a fix for either alone is wrong: unbounded,
+    a mid-scan deletion is silent; bounded too tightly, an absent bucket raises
+    where the contract wants an empty listing.
+    """
+
+    @pytest.mark.spec("BE-021")
+    def test_absent_from_the_start_still_yields_nothing(self, httpserver: HTTPServer) -> None:
+        """The first-page half: unchanged by the bound."""
+        endpoint = _serve_missing_bucket_stub(httpserver)
+        with _backend_at(_S3B3, endpoint) as backend:
+            assert list(backend.list_files("", recursive=True)) == []
+
+    @pytest.mark.spec("BE-021")
+    def test_a_bucket_deleted_mid_scan_raises_rather_than_truncating(self, httpserver: HTTPServer) -> None:
+        """The second half, and the one that costs data if it regresses.
+
+        The listing must have produced something first, or the cell would pass
+        under an unbounded tolerance too — so the stub serves a real key on page
+        one before the bucket disappears.
+        """
+        endpoint = _serve_bucket_vanishing_on_page_two(httpserver)
+        with _backend_at(_S3B3, endpoint) as backend:
+            seen: list[Any] = []
+            with pytest.raises(NotFound):
+                # ``extend`` appends as it consumes, so the partial listing
+                # survives the raise and the assertion below can check it.
+                seen.extend(backend.list_files("", recursive=True))
+            assert seen, "the stub must yield before the bucket vanishes, or this cell proves nothing"
+
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.parametrize("dotted", [_S3, _S3PA], ids=["s3", "s3-pyarrow"])
+    def test_the_s3fs_lanes_still_truncate(self, httpserver: HTTPServer, dotted: str) -> None:
+        """A stated bound, not an endorsement.
+
+        The two s3fs lanes truncated this way before this change and still do;
+        bringing them in line is a decision for the whole family and is tracked
+        separately. Pinned so the divergence is visible here rather than
+        discovered again.
+        """
+        endpoint = _serve_bucket_vanishing_on_page_two(httpserver)
+        with _backend_at(dotted, endpoint) as backend:
+            assert list(backend.list_files("", recursive=True)) == []
+
     @pytest.mark.spec("BE-021")
     @pytest.mark.parametrize("op_name", sorted(_BOTO3_LISTINGS))
     def test_no_native_error_escapes_a_broken_listing(self, httpserver: HTTPServer, op_name: str) -> None:

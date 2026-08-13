@@ -97,6 +97,46 @@ def serve_denied(httpserver: HTTPServer) -> str:
     )
 
 
+_ONE_BLOB_THEN_MORE = (
+    b'<?xml version="1.0" encoding="utf-8"?>'
+    b'<EnumerationResults ServiceEndpoint="http://127.0.0.1/" ContainerName="' + CONTAINER.encode() + b'">'
+    b"<Blobs><Blob><Name>folder/object.txt</Name><Properties>"
+    b"<Last-Modified>Mon, 01 Jan 2026 00:00:00 GMT</Last-Modified>"
+    b"<Content-Length>3</Content-Length><Etag>abc</Etag>"
+    b"<BlobType>BlockBlob</BlobType></Properties></Blob></Blobs>"
+    b"<NextMarker>M2</NextMarker></EnumerationResults>"
+)
+
+
+def serve_container_vanishing_mid_listing(httpserver: HTTPServer) -> str:
+    """One good page carrying a ``NextMarker``, then ``ContainerNotFound``.
+
+    The shape that separates "the container was never there" from "the container
+    went away underneath the scan". The first page must carry a real blob: a stub
+    that 404s immediately would pass under an unbounded tolerance too, and prove
+    nothing about the bound.
+    """
+    from werkzeug.wrappers import Response
+
+    state = {"lists": 0}
+
+    def handler(request: Any) -> Any:
+        if request.method == "HEAD":
+            return Response(b"", status=404, content_type="application/xml")
+        state["lists"] += 1
+        if state["lists"] == 1:
+            return Response(_ONE_BLOB_THEN_MORE, status=200, content_type="application/xml")
+        return Response(
+            _CONTAINER_NOT_FOUND_XML,
+            status=404,
+            content_type="application/xml",
+            headers={"x-ms-error-code": "ContainerNotFound"},
+        )
+
+    httpserver.expect_request(re.compile("^/.*$")).respond_with_handler(handler)
+    return httpserver.url_for("/").rstrip("/")
+
+
 def connection_string(endpoint: str) -> str:
     """A Blob connection string pointing at a local stub endpoint."""
     return (

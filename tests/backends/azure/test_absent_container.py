@@ -52,6 +52,7 @@ from tests.backends.azure._helpers import (  # noqa: E402
     KEY,
     connection_string,
     serve_absent_container,
+    serve_container_vanishing_mid_listing,
     serve_denied,
 )
 
@@ -219,3 +220,35 @@ class TestDeniedListingIsNotAnAbsentContainer:
         with pytest.raises(PermissionDenied) as exc_info:
             call(denied_backend)
         assert exc_info.value.backend == "azure", op_name
+
+
+class TestTheToleranceIsBoundedToTheFirstPage:
+    """ "An absent container holds nothing" is only sound while nothing was handed over.
+
+    Once a listing has yielded, the container demonstrably existed, so a
+    ``ContainerNotFound`` on a later page means it was deleted underneath the
+    scan. Swallowing that returns a short listing that looks complete, and the
+    caller most hurt is the one diffing a listing against local state and
+    deleting the difference.
+
+    Both halves are pinned because a fix for either alone is wrong: unbounded, a
+    mid-scan deletion is silent; bounded too tightly, an absent container raises
+    where the contract wants an empty listing.
+    """
+
+    @pytest.mark.spec("BE-021", "AZ-026")
+    def test_absent_from_the_start_still_yields_nothing(self, backend: Any) -> None:
+        assert list(backend.list_files("", recursive=True)) == []
+
+    @pytest.mark.spec("BE-021", "AZ-026")
+    def test_a_container_deleted_mid_listing_raises(self, httpserver: HTTPServer) -> None:
+        instance = _backend_at(serve_container_vanishing_mid_listing(httpserver))
+        try:
+            seen: list[Any] = []
+            with pytest.raises(NotFound):
+                # ``extend`` appends as it consumes, so the partial listing
+                # survives the raise and the assertion below can check it.
+                seen.extend(instance.list_files("", recursive=True))
+            assert seen, "the stub must yield before the container vanishes, or this cell proves nothing"
+        finally:
+            instance.close()

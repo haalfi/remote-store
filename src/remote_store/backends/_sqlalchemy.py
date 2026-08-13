@@ -1058,12 +1058,10 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         """
         self._validate_path(path, allow_empty=True)
         prefix = "" if is_root(path) else path + "/"
-        info = FolderInfo(
-            path=RemotePath.from_backend_path(path),
-            file_count=0,
-            total_size=0,
-            modified_at=None,
-        )
+        # Left as ``None`` when the block below is abandoned, which happens only
+        # for the root of an absent table. Seeding an empty ``FolderInfo`` here
+        # instead would build one on every successful call and discard it.
+        info: FolderInfo | None = None
 
         with (
             self._map_errors(path),
@@ -1109,8 +1107,15 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
                 total_size=total_size,
                 modified_at=modified_at,
             )
-        # ``info`` keeps its seeded empty value when the table is gone and the
-        # block above is abandoned, which only happens for the root.
+        if info is None:
+            # The block was abandoned: the table is gone and this is the root,
+            # which BE-029 says aggregates to an empty store rather than raising.
+            return FolderInfo(
+                path=RemotePath.from_backend_path(path),
+                file_count=0,
+                total_size=0,
+                modified_at=None,
+            )
         return info
 
     # endregion

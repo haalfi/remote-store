@@ -981,6 +981,7 @@ class AsyncAzureBackend(AsyncBackend):
         Returns:
             An async iterator of ``FileInfo`` objects.
         """
+        yielded = False
         try:
             ap = _azure_path_fn(path)
             prefix = (ap.rstrip("/") + "/") if ap else ""
@@ -1012,15 +1013,20 @@ class AsyncAzureBackend(AsyncBackend):
                         depth = rel.count("/")
                         if depth > max_depth:
                             continue
+                    yielded = True
                     yield props_to_fileinfo(blob, blob.name)
             else:
                 async for item in self._cc.walk_blobs(name_starts_with=prefix):
                     if not getattr(item, "prefix", None):
+                        yielded = True
                         yield props_to_fileinfo(item, item.name)
         except NotFound:
             # An absent container holds nothing, so the listing is empty rather
-            # than an error -- the same answer an absent prefix already gives,
-            # and the one the HNS branch above reaches by its own early return.
+            # than an error -- but only while nothing has been yielded. Past that
+            # the container demonstrably existed, so the 404 means it was deleted
+            # mid-scan and must not read as a complete listing.
+            if yielded:
+                raise
             return
         except RemoteStoreError:
             raise
@@ -1030,6 +1036,8 @@ class AsyncAzureBackend(AsyncBackend):
                 # walk_blobs/list_blobs report an absent *prefix* as an empty
                 # page, so the only 404 they raise is the container's. A denial
                 # maps to PermissionDenied and still propagates below.
+                if yielded:
+                    raise mapped from None
                 return
             raise mapped from None
 
@@ -1044,6 +1052,7 @@ class AsyncAzureBackend(AsyncBackend):
         Returns:
             An async iterator of ``FolderEntry`` objects.
         """
+        yielded = False
         try:
             ap = _azure_path_fn(path)
             prefix = (ap.rstrip("/") + "/") if ap else ""
@@ -1069,11 +1078,15 @@ class AsyncAzureBackend(AsyncBackend):
                     if getattr(item, "prefix", None):
                         rel = self.to_key(item.prefix.rstrip("/"))
                         folder_name = rel.rsplit("/", 1)[-1]
+                        yielded = True
                         yield FolderEntry(path=RemotePath(rel), name=folder_name)
         except NotFound:
             # An absent container holds nothing, so the listing is empty rather
-            # than an error -- the same answer an absent prefix already gives,
-            # and the one the HNS branch above reaches by its own early return.
+            # than an error -- but only while nothing has been yielded. Past that
+            # the container demonstrably existed, so the 404 means it was deleted
+            # mid-scan and must not read as a complete listing.
+            if yielded:
+                raise
             return
         except RemoteStoreError:
             raise
@@ -1083,6 +1096,8 @@ class AsyncAzureBackend(AsyncBackend):
                 # walk_blobs/list_blobs report an absent *prefix* as an empty
                 # page, so the only 404 they raise is the container's. A denial
                 # maps to PermissionDenied and still propagates below.
+                if yielded:
+                    raise mapped from None
                 return
             raise mapped from None
 
@@ -1097,6 +1112,7 @@ class AsyncAzureBackend(AsyncBackend):
         Returns:
             An async iterator of ``FileInfo`` (files) and ``FolderEntry`` (folders).
         """
+        yielded = False
         try:
             ap = _azure_path_fn(path)
             prefix = (ap.rstrip("/") + "/") if ap else ""
@@ -1118,6 +1134,7 @@ class AsyncAzureBackend(AsyncBackend):
                     raise mapped from None
             else:
                 async for item in self._cc.walk_blobs(name_starts_with=prefix):
+                    yielded = True
                     if getattr(item, "prefix", None):
                         rel = self.to_key(item.prefix.rstrip("/"))
                         folder_name = rel.rsplit("/", 1)[-1]
@@ -1126,8 +1143,11 @@ class AsyncAzureBackend(AsyncBackend):
                         yield props_to_fileinfo(item, item.name)
         except NotFound:
             # An absent container holds nothing, so the listing is empty rather
-            # than an error -- the same answer an absent prefix already gives,
-            # and the one the HNS branch above reaches by its own early return.
+            # than an error -- but only while nothing has been yielded. Past that
+            # the container demonstrably existed, so the 404 means it was deleted
+            # mid-scan and must not read as a complete listing.
+            if yielded:
+                raise
             return
         except RemoteStoreError:
             raise
@@ -1137,6 +1157,8 @@ class AsyncAzureBackend(AsyncBackend):
                 # walk_blobs/list_blobs report an absent *prefix* as an empty
                 # page, so the only 404 they raise is the container's. A denial
                 # maps to PermissionDenied and still propagates below.
+                if yielded:
+                    raise mapped from None
                 return
             raise mapped from None
 

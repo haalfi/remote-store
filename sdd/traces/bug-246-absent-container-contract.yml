@@ -231,13 +231,18 @@ phases:
           Round 4's adjudication converged on twelve of fourteen findings, eleven
           of which were hand-maintained figures or scope sentences computed in
           four incompatible frames — bullets, classes, operations, call sites.
-          Two disputes went to measurement rather than argument, and each
-          overturned one side: a claimed over-broad docstring in _s3_boto3 turned
-          out correct at exactly three call sites, and a claim that this change
-          introduced silent mid-scan truncation on Azure was refuted by running a
-          two-page stub at the base revision and at head — identical, two list
-          requests served in both. Filed as ID-245's fourth bullet, because the
-          figure count is what generates the defects.
+          Two disputes went to measurement. The first overturned a finding: a
+          claimed over-broad docstring in _s3_boto3 is correct at exactly three
+          call sites. The second I got wrong, and only the closing gate caught
+          it — I "refuted" the claim that this change introduced silent mid-scan
+          truncation on Azure with a base-versus-head run whose base half set
+          PYTHONPATH to a worktree *root*; this package lives under src/, so the
+          import fell back to the editable install and measured head twice. Rerun
+          with PYTHONPATH at <worktree>/src and the module __file__ printed, the
+          base raises where head truncated. The claim was right; the refutation
+          was an instrument failure, and it reached the backlog, this trace and
+          the PR record before the gate found it. Filed as ID-245's fourth
+          bullet, because the figure count is what generates the defects.
         outcome: ok
       - file: src/remote_store/_errors.py
         section: "BackendUnavailable"

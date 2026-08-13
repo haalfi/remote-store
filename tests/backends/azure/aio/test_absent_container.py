@@ -26,6 +26,7 @@ from tests.backends.azure._helpers import (  # noqa: E402
     KEY,
     connection_string,
     serve_absent_container,
+    serve_container_vanishing_mid_listing,
     serve_denied,
 )
 
@@ -177,3 +178,27 @@ class TestDeniedListingIsNotAnAbsentContainer:
         with pytest.raises(PermissionDenied) as exc_info:
             await call(denied_backend)
         assert exc_info.value.backend == "async-azure", op_name
+
+
+class TestTheToleranceIsBoundedToTheFirstPage:
+    """Async half of the first-page bound; this adapter carries its own listing bodies."""
+
+    @pytest.mark.spec("BE-021", "AZ-026")
+    async def test_absent_from_the_start_still_yields_nothing(self, backend: Any) -> None:
+        assert [i async for i in backend.list_files("", recursive=True)] == []
+
+    @pytest.mark.spec("BE-021", "AZ-026")
+    async def test_a_container_deleted_mid_listing_raises(self, httpserver: HTTPServer) -> None:
+        instance = _backend_at(serve_container_vanishing_mid_listing(httpserver))
+        try:
+            seen: list[Any] = []
+
+            async def _drain() -> None:
+                async for info in instance.list_files("", recursive=True):
+                    seen.append(info)
+
+            with pytest.raises(NotFound):
+                await _drain()
+            assert seen, "the stub must yield before the container vanishes, or this cell proves nothing"
+        finally:
+            await instance.aclose()

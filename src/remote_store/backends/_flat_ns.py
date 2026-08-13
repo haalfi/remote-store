@@ -148,6 +148,27 @@ async def _acheck_no_file_ancestor(
             )
 
 
+class _ListingCursor:
+    """Tracks whether a listing has yielded yet, so tolerance can be bounded to the first page.
+
+    "An absent container holds nothing" is sound only while the listing has
+    produced nothing. Once it has yielded, the container demonstrably existed, so
+    a container 404 arriving on a later page means it was **deleted underneath
+    the scan** — and swallowing that hands the caller a short listing that looks
+    complete. The caller most hurt is the one diffing a listing against local
+    state and deleting the difference.
+
+    A mutable cursor rather than a return value because the tolerance lives in a
+    context manager wrapping the generator body, and a context manager cannot see
+    what the body yielded.
+    """
+
+    __slots__ = ("yielded",)
+
+    def __init__(self) -> None:
+        self.yielded = False
+
+
 def _folder_not_file(path: str, backend: str) -> InvalidPath:
     """Build the "wrong type: folder where a file was expected" error.
 

@@ -40,7 +40,7 @@ from remote_store.backends._azure_common import (
 from remote_store.backends._azure_common import (
     azure_path as _azure_path_fn,
 )
-from remote_store.backends._flat_ns import _check_no_file_ancestor
+from remote_store.backends._flat_ns import _check_no_file_ancestor, _ListingCursor
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -377,7 +377,7 @@ class AzureBackend(Backend):
         )
 
     @contextlib.contextmanager
-    def _listing_errors(self, path: str) -> Iterator[None]:
+    def _listing_errors(self, path: str) -> Iterator[_ListingCursor]:
         """``_errors`` for a listing, with an absent container ending the iteration.
 
         An absent container holds nothing, so a listing over it comes back empty
@@ -392,19 +392,26 @@ class AzureBackend(Backend):
         ``NotFound``, so a guard placed within would never see the error it
         exists to catch.
 
-        Narrow by construction. ``list_blobs`` / ``walk_blobs`` report an absent
-        prefix as an empty page rather than an error, so the only 404 they raise
-        is the container's; a denial maps to ``PermissionDenied`` and passes
-        straight through, which is what stops "you may not look" being reported
-        as "there is nothing there".
+        Narrow in two directions. By *shape*: ``list_blobs`` / ``walk_blobs``
+        report an absent prefix as an empty page rather than an error, so the
+        only 404 they raise is the container's; a denial maps to
+        ``PermissionDenied`` and passes straight through, which is what stops
+        "you may not look" being reported as "there is nothing there". By
+        *position*: the caller sets ``cursor.yielded`` once it has produced
+        anything, after which a container 404 propagates. Past the first item the
+        container demonstrably existed, so the 404 means it was deleted mid-scan
+        — which must not reach the caller as a complete listing.
 
         **Must be entered inside the generator body.** Wrapped around the call
         that returns the generator it would not run until the first ``next()``.
         """
+        cursor = _ListingCursor()
         try:
             with self._errors(path):
-                yield
+                yield cursor
         except NotFound:
+            if cursor.yielded:
+                raise
             return
 
     def _flat_is_blob(self, path: str) -> bool:
@@ -1155,7 +1162,7 @@ class AzureBackend(Backend):
             BackendUnavailable: On throttling (429), 5xx, or transport failure,
                 surfaced during iteration.
         """
-        with self._listing_errors(path):
+        with self._listing_errors(path) as cursor:
             azure_path = self._azure_path(path)
             prefix = (azure_path.rstrip("/") + "/") if azure_path else ""
 
@@ -1187,11 +1194,13 @@ class AzureBackend(Backend):
                         depth = rel.count("/")
                         if depth > max_depth:
                             continue
+                    cursor.yielded = True
                     yield self._props_to_fileinfo(blob, blob.name)
             else:
                 blobs = self._cc.walk_blobs(name_starts_with=prefix)
                 for item in blobs:
                     if not getattr(item, "prefix", None):
+                        cursor.yielded = True
                         yield self._props_to_fileinfo(item, item.name)
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
@@ -1207,7 +1216,7 @@ class AzureBackend(Backend):
             BackendUnavailable: On throttling (429), 5xx, or transport failure,
                 surfaced during iteration.
         """
-        with self._listing_errors(path):
+        with self._listing_errors(path) as cursor:
             azure_path = self._azure_path(path)
             prefix = (azure_path.rstrip("/") + "/") if azure_path else ""
 
@@ -1233,6 +1242,7 @@ class AzureBackend(Backend):
                     if getattr(item, "prefix", None):
                         rel = self.to_key(item.prefix.rstrip("/"))
                         folder_name = rel.rsplit("/", 1)[-1]
+                        cursor.yielded = True
                         yield FolderEntry(path=RemotePath(rel), name=folder_name)
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
@@ -1249,7 +1259,7 @@ class AzureBackend(Backend):
             BackendUnavailable: On throttling (429), 5xx, or transport failure,
                 surfaced during iteration.
         """
-        with self._listing_errors(path):
+        with self._listing_errors(path) as cursor:
             azure_path = self._azure_path(path)
             prefix = (azure_path.rstrip("/") + "/") if azure_path else ""
 
@@ -1271,6 +1281,7 @@ class AzureBackend(Backend):
             else:
                 blobs = self._cc.walk_blobs(name_starts_with=prefix)
                 for item in blobs:
+                    cursor.yielded = True
                     if getattr(item, "prefix", None):
                         rel = self.to_key(item.prefix.rstrip("/"))
                         folder_name = rel.rsplit("/", 1)[-1]

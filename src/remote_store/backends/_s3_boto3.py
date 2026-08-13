@@ -64,6 +64,7 @@ from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInf
 from remote_store._path import RemotePath, is_root
 from remote_store._stream import _ErrorMappingStream, _safe_wrap
 from remote_store.backends._fileinfo import _clean_etag, _name_from_path, _normalize_modified
+from remote_store.backends._flat_ns import _ListingCursor
 from remote_store.backends._s3_base import (
     _S3_CA_ENV_VARS,
     _normalize_endpoint_url,
@@ -684,7 +685,7 @@ class S3Boto3Backend(Backend):
         # max_depth=None == unlimited. Mirrors _S3Base.list_files structure.
         depth_limit = 0 if not recursive else max_depth
         queue: deque[tuple[str, int]] = deque([(prefix, 0)])
-        with self._listing_errors(path):
+        with self._listing_errors(path) as cursor:
             while queue:
                 current, depth = queue.popleft()
                 for page in self._paginate(current, delimiter="/"):
@@ -692,6 +693,7 @@ class S3Boto3Backend(Backend):
                         key = obj["Key"]
                         if key.endswith("/") or key == current:
                             continue
+                        cursor.yielded = True
                         yield self._obj_to_fileinfo(obj)
                     if depth_limit is None or depth < depth_limit:
                         for cp in page.get("CommonPrefixes", []):
@@ -709,10 +711,11 @@ class S3Boto3Backend(Backend):
                 ``close()``.
         """
         prefix = self._prefix_of(path)
-        with self._listing_errors(path):
+        with self._listing_errors(path) as cursor:
             for page in self._paginate(prefix, delimiter="/"):
                 for cp in page.get("CommonPrefixes", []):
                     rel = cp["Prefix"].rstrip("/")
+                    cursor.yielded = True
                     yield FolderEntry(path=RemotePath(rel), name=rel.rsplit("/", 1)[-1])
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
@@ -729,15 +732,17 @@ class S3Boto3Backend(Backend):
                 ``close()``.
         """
         prefix = self._prefix_of(path)
-        with self._listing_errors(path):
+        with self._listing_errors(path) as cursor:
             for page in self._paginate(prefix, delimiter="/"):
                 for obj in page.get("Contents", []):
                     key = obj["Key"]
                     if key.endswith("/") or key == prefix:
                         continue
+                    cursor.yielded = True
                     yield self._obj_to_fileinfo(obj)
                 for cp in page.get("CommonPrefixes", []):
                     rel = cp["Prefix"].rstrip("/")
+                    cursor.yielded = True
                     yield FolderEntry(path=RemotePath(rel), name=rel.rsplit("/", 1)[-1])
 
     def glob(self, pattern: str) -> Iterator[FileInfo]:
@@ -889,7 +894,7 @@ class S3Boto3Backend(Backend):
             raise self._classify_error(exc, path) from None
 
     @contextmanager
-    def _listing_errors(self, path: str = "") -> Iterator[None]:
+    def _listing_errors(self, path: str = "") -> Iterator[_ListingCursor]:
         """``_boto_errors`` for a listing, with an absent bucket ending the iteration.
 
         Two obligations at one call site, both from the backend error contract:
@@ -903,22 +908,32 @@ class S3Boto3Backend(Backend):
           than an error — the answer the two s3fs-backed lanes already gave
           against the identical wire response.
 
-        The absent-bucket branch is narrow by construction: ``ListObjectsV2``
-        answers an absent *prefix* with ``200 KeyCount=0``, so the only 404 it
-        can raise is the container's. Everything else propagates through
-        ``_boto_errors``, which is what keeps a denial a ``PermissionDenied``
-        rather than an invented empty listing.
+        The absent-bucket branch is narrow in two directions. By *shape*:
+        ``ListObjectsV2`` answers an absent *prefix* with ``200 KeyCount=0``, so
+        the only 404 it can raise is the container's, and everything else
+        propagates through ``_boto_errors`` — which is what keeps a denial a
+        ``PermissionDenied`` rather than an invented empty listing. And by
+        *position*: the caller sets ``cursor.yielded`` once it has produced
+        anything, after which a container 404 propagates instead. "An absent
+        container holds nothing" is only sound while nothing has been handed
+        over; past that the container demonstrably existed and the 404 means it
+        was deleted mid-scan, which a caller must not receive as a complete
+        listing.
 
         **Must be entered inside the generator body.** Wrapped around the call
         that *returns* the generator it would not run until the first ``next()``,
         which is exactly the shape that let this leak in the first place.
         """
+        cursor = _ListingCursor()
         try:
             with self._boto_errors(path):
-                yield
+                yield cursor
         except NotFound:
             # Contract: 003-backend-adapter-contract BE-021, "An absent container
-            # reads as an absent path" — a listing's share of it.
+            # reads as an absent path" — a listing's share of it, bounded to the
+            # first page.
+            if cursor.yielded:
+                raise
             return
 
     @contextmanager
