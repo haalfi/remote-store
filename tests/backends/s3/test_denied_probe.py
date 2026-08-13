@@ -76,6 +76,27 @@ All four cells are asserted so neither half drifts: making the HEAD probe strict
 about bucket 404s breaks the tolerant ``delete``, dropping ``delete_folder``'s
 catch breaks the tolerant ``delete_folder``, and swallowing the 404 past
 ``missing_ok`` breaks the two strict cells.
+
+The rest of the roster (``TestEveryLaneAnswersAnAbsentBucketTheSameWay``)
+-------------------------------------------------------------------------
+
+The section above covers the two deletes, which reached the clause first. The
+probes and the listings owe an absent bucket an answer too — ``False`` and an
+empty listing — and ``S3Boto3Backend`` gave neither: ``exists`` and ``is_folder``
+raised ``NotFound`` once the tolerant HEAD came back empty, and the three
+listings let a raw ``botocore.exceptions.ClientError`` escape, being the only
+methods on the class whose wire call was not wrapped in its error mapper.
+
+That class is parametrized over all three lanes for the reason the paragraph
+above gives about the boto3 lane, with the roles reversed: here the s3fs lanes
+are the positive control, since they already answered correctly against the
+identical wire response. A divergence one lane shows and two do not is a
+backend-local omission rather than a contract question, and parametrizing is what
+makes that visible in the cell rather than argued in a comment.
+
+``TestProbeDenialIsPermissionDenied`` gains the probes for the same reason it
+holds the deletes: those probes now read the bucket's own 404 as an answer, and
+one narrowing away is reading *every* error as one — including a denial.
 """
 
 from __future__ import annotations
