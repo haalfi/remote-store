@@ -193,13 +193,15 @@ async def poll_monitor(
                 #
                 # Classified at scope="identity", which keeps this site's answer
                 # exactly what it was before the absent-container adjudication
-                # (ADR-0038). The monitor URL is opaque, pre-signed and
-                # cross-host: it addresses neither a drive nor a caller-supplied
-                # path, so BE-021 does not reach it and there is no absence for
-                # item scope to report. Flattening a drive-identity 404 here
-                # would hand a caller `NotFound` for an unconfirmable copy that
-                # may in fact have completed, which is the opposite of what the
-                # err-toward-raising rule above is for.
+                # (ADR-0038). The deciding question is what the 404 is *about*:
+                # here it is about the operation record, which is not an item, so
+                # there is no absence for item scope to report and BE-021 does
+                # not reach it. Flattening a drive-identity 404 here would hand a
+                # caller `NotFound` for an unconfirmable copy that may in fact
+                # have completed, which is the opposite of what the
+                # err-toward-raising rule above is for. Being pre-signed and
+                # cross-host is not the reason — the upload chunk PUT is both and
+                # takes item scope, because its 404 *is* about an item.
                 raise classify_graph_error(
                     response.status_code,
                     error_code(response_json(response)),

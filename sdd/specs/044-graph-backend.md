@@ -1133,23 +1133,39 @@ and by the resource scope of the failing URL:
 **Which call site takes which scope**, stated rather than left to be
 re-derived. Three review rounds of the adjudication each found a site on
 the wrong side of the rule, by a different route each time, so the rule
-ships with its extension:
+ships with its extension. **The deciding question is what a `404` from
+the site would be *about*** — an item's existence, or something that is
+not an item — not what the URL looks like: the upload chunk `PUT` and the
+monitor poller are both pre-signed and cross-host and land on opposite
+sides.
 
 | Call site | Scope |
 | --- | --- |
-| `_get_item` — read, both deletes, `get_file_info`, `get_folder_info`, `move`/`copy` source | item |
+| `_get_item` — the metadata `GET` for read, both deletes, `get_file_info`, `get_folder_info`, `move`/`copy` source | item |
+| the mutating requests those operations then issue — `delete`/`delete_folder`'s `DELETE`, `copy`'s `POST`, `move`'s `PATCH` | item |
 | `_iter_child_items` → `iter_pages` (the listings), `_folder_is_nonempty` | item |
-| mid-session chunk `PUT` (`_upload_chunks`) | item — its `404` is a concurrent-replace signal, not a drive verdict |
+| mid-session chunk `PUT` (`_upload_chunks`) | item — its `404` is about the target item, a concurrent replace |
+| `abort_upload_session`'s `DELETE` | item — errors are swallowed; the scope is never observed |
 | `exists` / `is_file` / `is_folder` | probe |
 | `_write_small`, `_create_upload_session` | identity |
 | `check_health` | identity |
 | `resolve_drive_id`'s five legs (4 `graph_send` + 1 `iter_pages`) | identity |
-| the copy/move monitor poller | identity |
+| the copy/move monitor poller's **poll-request** `4xx` | identity — its `404` is about the operation record, leaving the copy unconfirmable |
+| the monitor's **failed-body** channel, via `classify_graph_error_code` | item, and it takes no `scope` — see below |
 | — | drive — **no call site** |
+
+`classify_graph_error_code` maps a status-less `error.code` from a failed
+async operation through the same table, and has no `scope` parameter. It
+reaches the `404` row only for `itemNotFound`, which answers `NotFound` at
+every scope, so the omission is currently unobservable —
+`resourceNotFound` is not in its reverse map and falls through to
+`BackendUnavailable` before the table is consulted. That is a bound, not a
+design: adding `resourceNotFound` to that map without giving the helper a
+scope would silently put a drive-identity failure on the item row.
 
 `tests/backends/graph/aio/test_utils.py` enforces the resolver row by
 reading that module's call sites rather than a list, so a sixth leg left
-at the default fails a named cell.
+at the default fails a named cell. The other rows are review-enforced.
 - **Every other error-raising operation takes the item scope above**, so
   a drive-identity `404` reaches a caller as `NotFound` — not as
   `BackendUnavailable`. Graph's drive is a container, and BE-021 binds a
@@ -1219,7 +1235,7 @@ tier's coverage (see the coverage-disclosure paragraph in
 § Integration-only).
 That unobserved-ness was weighed in the adjudication above and is what
 the residual identity-scope escalation costs: on the tier where the code
-has been seen, those three groups are the only place a caller can still
+has been seen, those four groups are the only place a caller can still
 tell a dead drive from a missing item, and on the tier where it has not,
 nothing about the answers changes.
 

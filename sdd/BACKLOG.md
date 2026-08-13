@@ -211,11 +211,14 @@ section 2, the only item whose subject is that path's coverage. Both are stated
 inside the items that carry them, as the rule requires; this section cannot
 close on its own items alone.
 
-**Five backend classes** still disagree with the contract or with each other,
-counted from the items below: `S3Boto3Backend`, `AzureBackend` and
+**Five backend classes** still disagree with **the absent-container clause**,
+counted from the items below — BUG-253 is a sixth disagreement in this section
+but a different one, between two halves of one Graph operation rather than with
+that clause: `S3Boto3Backend`, `AzureBackend` and
 `AsyncAzureBackend` (BUG-246, which collapses the two Azure adapters into one row
 because they answer identically and take one fix), `SQLBlobBackend` (BUG-246 and
-BUG-245) and `LocalBackend` (BUG-247). `GraphBackend` was a sixth and is done:
+BUG-245) and `LocalBackend` (BUG-247). `GraphBackend` was a sixth and is done
+**for that clause** — it still carries BUG-253:
 BUG-248 adjudicated the spec contradiction behind it and brought the backend to
 the contract in the same change, which is why BK-345's exemption list — blocked
 on that adjudication — can now be written. The remaining group ships together or

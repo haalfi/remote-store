@@ -495,10 +495,14 @@ async def _upload_chunks(
             # so the write's bounded replace-retry (_write_replacing) re-opens a fresh
             # session and wins. Under overwrite=False there is no create-or-replace
             # contract to honour, so a genuine mid-session disappearance stays NotFound.
-            # Classified at the default item scope, not scope="identity": the session
-            # URL is pre-authorised, lives on a different host and addresses no drive, so a
-            # `resourceNotFound` from it is not Graph's drive-identity signal and the
-            # ADR-0038 write carve-out does not reach it.
+            # Classified at the default item scope, not scope="identity". The
+            # deciding question is what the 404 is *about*, not what the URL is:
+            # here it is about the target item — it disappeared or was replaced —
+            # which is a per-item condition and so exactly what item scope reports.
+            # Being pre-signed and cross-host is not the reason and cannot be: the
+            # monitor poller is pre-signed and cross-host too and takes identity
+            # scope, because its 404 is about the *operation record*, which is not
+            # an item at all and whose absence leaves the copy unconfirmable.
             if overwrite:
                 raise AlreadyExists(
                     f"Upload target replaced concurrently mid-session (404): {path}", path=path, backend=backend

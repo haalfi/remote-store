@@ -39,8 +39,9 @@ class TestClassifyGraphError:
     # out as data. Re-deriving it from the same predicate the implementation
     # uses would assert only that the classifier agrees with a copy of itself,
     # and a misreading shared by both copies is exactly what an adjudication
-    # test exists to catch. Transcribed from ADR-0038 § Decision, one row per
-    # scope in the order that file states them.
+    # test exists to catch. Values transcribed from ADR-0038 § Decision; the row
+    # order is the classifier's own, so do not read it as a claim about that
+    # file's ordering.
     @pytest.mark.spec("BE-004", "BE-005", "BE-021", "GR-031")
     @pytest.mark.parametrize(
         ("scope", "code", "expected"),
@@ -53,8 +54,8 @@ class TestClassifyGraphError:
             ("probe", "itemNotFound", NotFound),
             ("probe", "resourceNotFound", NotFound),
             ("probe", None, NotFound),
-            # identity — write, check_health, drive-id resolution: the
-            # drive-identity code escalates and nothing else does.
+            # identity — write, check_health, drive-id resolution, the monitor
+            # poller: the drive-identity code escalates and nothing else does.
             ("identity", "itemNotFound", NotFound),
             ("identity", "resourceNotFound", BackendUnavailable),
             ("identity", None, NotFound),

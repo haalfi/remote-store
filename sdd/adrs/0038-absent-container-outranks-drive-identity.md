@@ -80,7 +80,8 @@ is silent about.** Graph classifies a `404` by four scopes:
   `check_health`, drive-id resolution, and the copy/move monitor poller.
 - **Drive scope** — the bare `/drives/{drive_id}` resource: any `404` is
   `BackendUnavailable`. No call site passes it.
-- **Probe scope** — unchanged: every `404` is suppressed to `False`.
+- **Probe scope** — unchanged: every `404` is `NotFound`, which the three probe
+  methods then suppress to `False`.
 
 **A sibling takes the scope of the operation it delegates to**, not the scope its
 own name would suggest — `read_bytes` with `read`, `iter_children` with the
@@ -114,8 +115,9 @@ why the resolver's row is derived from the source instead — verified by adding
 sixth leg and watching a named cell fail.
 
 **Drive scope is a definition, not a live half of the compromise.** It had no
-call site before this change either — the fact is already registered against the
-change that introduced the probe scope — because every drive-addressed lookup
+call site before this change either — `sdd/BACKLOG-DONE.md`'s BK-266 entry, which
+introduced the probe scope, states it in so many words — because every
+drive-addressed lookup
 either resolves an id, which is identity scope, or goes through
 `/drives/{id}/root`, which is path-shaped. It stands as the table's statement of
 what a bare drive `404` means, reached only by the table's own tests. So what
@@ -137,14 +139,19 @@ rather than as `BackendUnavailable`. Drive resolution is unaffected, because
 inheriting the flattening: a store whose drive cannot be resolved at all still
 fails as a configuration error, before any operation runs.
 
-Two things bound the remaining cost, and a third recipe needs a qualifier. A
-`write` still escalates, and `check_health` still escalates — both unconditionally.
-GR-031 also documents a drive-root probe, `exists("")`, and that one is sound
-**only when no `base_path` is configured**: `native_path("")` prepends it, so on a
-scoped store the probe addresses the `base_path` folder and `False` then means
-"drive gone or `base_path` missing". That is the very ambiguity PING-011 was
-amended in this change to keep out of `check_health`, so the recipe list is
-`write` and `check_health` first, `exists("")` only on an unscoped store.
+**What is left to tell a dead drive from a missing item, and what each costs.**
+`write` and `check_health` still escalate, but only on `resourceNotFound` — so on
+consumer OneDrive, where the § Verification note records `itemNotFound` for a
+nonexistent drive on both URL forms, neither distinguishes anything and there is
+nothing to distinguish, because nothing escalated there before this change
+either. `write` carries a second bound: its mid-session chunk `PUT` is at item
+scope by design, so a drive that disappears *mid-upload* answers `NotFound`.
+GR-031's third recipe, the drive-root probe `exists("")`, is sound **only when no
+`base_path` is configured**: `native_path("")` prepends it, so on a scoped store
+the probe addresses the `base_path` folder and `False` then means "drive gone or
+`base_path` missing" — the very ambiguity PING-011 was amended in this change to
+keep out of `check_health`. So the order is `check_health` first, `write` second,
+`exists("")` only on an unscoped store.
 
 Otherwise it is the same answer every other backend gives for an absent
 container, which is the point.

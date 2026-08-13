@@ -52,10 +52,11 @@ BACKEND_NAME = "graph"
 # The four scopes implement GR-031 as adjudicated against BE-021 by ADR-0038:
 # BE-021 § "An absent container reads as an absent path" wins on every operation
 # it decides (item scope), and GR-031's drive-identity escalation keeps the ones
-# it does not (identity scope). Four call sites are in identity scope — write
-# (both halves), check_health per PING-011, GraphUtils.resolve_drive_id's five
-# lookup legs, and the copy/move monitor poller. ADR-0038 § Decision carries the
-# full call-site table; keep it and this comment in step.
+# it does not (identity scope). Four *groups* of caller are in identity scope,
+# nine call sites between them: write (2), check_health (1),
+# GraphUtils.resolve_drive_id's five legs, and the copy/move monitor poller (1).
+# GR-031 carries the call-site table — every site and the scope it takes — and is
+# the copy to keep this comment in step with.
 GraphScope = Literal["item", "drive", "probe", "identity"]
 """What a failing URL addressed, which is what a ``404`` from it means.
 
@@ -153,7 +154,7 @@ def classify_graph_error(
     * ``"probe"`` — the type probes (``exists`` / ``is_file`` / ``is_folder``).
       Every ``404`` is ``NotFound``, which the probes suppress to ``False``.
     * ``"identity"`` — a ``resourceNotFound`` is ``BackendUnavailable``; any
-      other ``404`` code is ``NotFound``. Three groups of call site, and the
+      other ``404`` code is ``NotFound``. Four groups of call site, and the
       reason differs between them, which is why this is not one test:
 
       - **``write``**, both the small ``PUT /content`` and the

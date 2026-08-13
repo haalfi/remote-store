@@ -8,10 +8,11 @@ can answer with — a drive-identity ``resourceNotFound`` mapped to
 
 `ADR-0038 <../../../../sdd/adrs/0038-absent-container-outranks-drive-identity.md>`_
 adjudicated the collision: **BE-021 wins on every operation it decides; GR-031
-keeps ``write``, and — off BE-021's roster entirely — ``check_health`` and
-drive-id resolution.** This file's subject is the roster, so ``write`` is the
-only one of the three it covers; the other two are pinned in ``test_ping.py`` and
-``test_utils.py``. What the roster answers now, on both codes:
+keeps ``write``, and — off BE-021's roster entirely — ``check_health``,
+drive-id resolution and the copy/move monitor poller.** This file's subject is
+the roster, so ``write`` is the only one of the four it covers; the other three
+are pinned in ``test_ping.py``, ``test_utils.py`` and ``test_monitor.py``. What
+the roster answers now, on both codes:
 
 | Operation                                            | Answer                |
 | ---------------------------------------------------- | --------------------- |

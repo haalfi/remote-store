@@ -437,8 +437,9 @@ class GraphBackend(AsyncBackend):
         """Fetch the Graph ``driveItem`` body for *path* (one metadata GET).
 
         The single item-by-path metadata round trip shared by the read, delete,
-        ``get_folder_info`` and type-probe operations — not by the listings,
-        which address ``/children`` through ``iter_pages`` instead. Every 404
+        ``get_file_info``, ``get_folder_info``, ``move``/``copy``-source and
+        type-probe operations — not by the listings, which address ``/children``
+        through ``iter_pages`` instead. At the default item scope every 404
         surfaces as ``NotFound``
         whatever Graph's ``error.code`` says: a drive is a container, and the
         backend contract binds an absent container to read as an absent path.
@@ -1001,8 +1002,12 @@ class GraphBackend(AsyncBackend):
                 backend directly (``USER_METADATA`` is not declared).
             PermissionDenied: If the token is rejected or lacks access to the
                 item (401/403).
-            NotFound: If Graph answers the write with a ``404`` that names no
-                file ancestor and carries no drive-identity code.
+            NotFound: If Graph answers the write with a ``404`` carrying no
+                drive-identity code. On the small ``PUT /content`` path a file
+                ancestor is ruled out first and raises ``InvalidPath`` instead;
+                the upload-session path runs no such walk, so a large write
+                under a file ancestor reaches this row — a known divergence
+                between the two halves, tracked separately.
             BackendUnavailable: If the drive itself is gone or misconfigured —
                 Graph's drive-identity ``404`` still escalates here, on both the
                 small and upload-session paths, where every path-addressed

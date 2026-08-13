@@ -1,8 +1,17 @@
-"""GraphUtils.resolve_drive_id — the three GR-057 target shapes (respx).
+"""GraphUtils.resolve_drive_id — target shapes (GR-057) and 404 scope (GR-031).
 
-The ``"me"`` shape is additionally reality-checked against live Graph in the
-GR-CORE PR; the SharePoint-site and Teams-channel shapes require app-only auth
+Two subjects. The **shape** cells cover the three accepted target forms; the
+``"me"`` one is additionally reality-checked against live Graph in the GR-CORE
+PR, while the SharePoint-site and Teams-channel shapes require app-only auth
 (unavailable on the consumer test tenant) and are respx/unit-only here.
+
+The **scope** cells cover what a ``404`` means on each of the five lookup legs
+those shapes reach, on both Graph error codes — resolution addresses no
+caller-supplied store path, so a drive-identity ``404`` stays
+``BackendUnavailable`` rather than flattening to an absence. That is enumerated
+twice over, deliberately: a ``(leg × code)`` table for the legs that exist, and
+``test_every_dispatch_call_site_sends_at_identity_scope``, which parses
+``utils.py`` so a *new* leg left at the default fails here rather than shipping.
 """
 
 from __future__ import annotations

@@ -305,6 +305,26 @@ class TestOverwriteReplaceRetry:
         assert sessions["n"] == 1  # no re-attempt
 
     @respx.mock
+    @pytest.mark.spec("GR-018", "GR-031")
+    async def test_mid_session_404_reports_absence_on_either_error_code(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        # The chunk PUT keeps the item default rather than the write path's
+        # identity scope, so a drive-identity `resourceNotFound` answers NotFound
+        # here where it answers BackendUnavailable at session creation. That is
+        # deliberate — this 404 is about the target *item* being swapped, a
+        # per-item condition — but it changed with the absent-container
+        # adjudication and the sibling cell above cannot see it: itemNotFound
+        # answered NotFound before and after. Pinning both codes is what makes
+        # the item-scope choice visible rather than incidental.
+        monkeypatch.setattr(graph_backend, "_SMALL_FILE_MAX_SIZE", 4)
+        respx.post(_SESSION_RE).mock(return_value=httpx.Response(200, json={"uploadUrl": _UPLOAD_URL}))
+        respx.put(_UPLOAD_URL).mock(return_value=httpx.Response(404, json={"error": {"code": "resourceNotFound"}}))
+        respx.delete(_UPLOAD_URL).mock(return_value=httpx.Response(204))
+        async with _make() as backend:
+            backend._upload_chunk_size = 320 * 1024
+            with pytest.raises(NotFound, match="race.bin"):
+                await backend.write("race.bin", b"abcdef", overwrite=False)
+
+    @respx.mock
     async def test_overwrite_persistent_mid_session_404_exhausts_to_already_exists(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:

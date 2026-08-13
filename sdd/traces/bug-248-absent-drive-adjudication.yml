@@ -14,8 +14,17 @@ source_items:
 audience:
   - user.api
   - contributor.process
+discovery_followups:
+  # Born in round 3, while a panel member was checking both write halves against
+  # the absent-drive axis and noticed they diverge on the file-ancestor one.
+  - BUG-253
 expected_ripples:
   - sdd/adrs/DIGEST.md
+  # Regenerated from the changed Store/Backend docstrings, per the ripple-check's
+  # public-method-signature row — the schema names exactly this pair as its
+  # example of the field.
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
 surprising_ripples:
   # PING-011 is not an operation BE-021 reaches, so no ripple-check row and no
   # reading of either clause pointed at it — yet check_health depended on the

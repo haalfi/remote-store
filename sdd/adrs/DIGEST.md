@@ -1248,7 +1248,8 @@ is silent about.** Graph classifies a `404` by four scopes:
   `check_health`, drive-id resolution, and the copy/move monitor poller.
 - **Drive scope** — the bare `/drives/{drive_id}` resource: any `404` is
   `BackendUnavailable`. No call site passes it.
-- **Probe scope** — unchanged: every `404` is suppressed to `False`.
+- **Probe scope** — unchanged: every `404` is `NotFound`, which the three probe
+  methods then suppress to `False`.
 
 **A sibling takes the scope of the operation it delegates to**, not the scope its
 own name would suggest — `read_bytes` with `read`, `iter_children` with the
