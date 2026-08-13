@@ -37,12 +37,15 @@ surprising_ripples:
   - sdd/specs/026-health-check.md
 
 # Counted from `git log --oneline origin/master..HEAD`. b492cc0 is the
-# implementation and does not count. Six commits exist because review found
-# something: 7928f47 (round 1's Azure listings and five prose findings), 3f5102c
-# (round 1's code-scanning alert), 35b7281 (round 1's residual docstring map),
-# f164c97 (round 2), b5b0646 (round 3), and the commit carrying this trace edit
-# (round 4). Value is 6.
-review_rounds: 6
+# implementation and does not count. Eight commits exist because review found
+# something, counted by naming them: 7928f47 (round 1's Azure listings and five
+# prose findings), 3f5102c (round 1's code-scanning alert), 35b7281 (round 1's
+# residual docstring map), f164c97 (round 2), b5b0646 (round 3), b5af269
+# (round 4), fb5ff36 (the closing measuring gate's mid-scan truncation finding
+# and the false correction it retracted), and the commit carrying this trace
+# edit (the closing figure audit). Four numbered review rounds, eight commits:
+# round 1 took three, and round 4's gates took two after it. Value is 8.
+review_rounds: 8
 
 phases:
   - id: orient
@@ -194,10 +197,13 @@ phases:
           Round 3's panel found the precedence this change relies on — BE-029's
           root row outranking § Reach's NotFound row — stated only in a code
           docstring and a backlog item, while § Reach itself still read as
-          deciding the root. § Reach now says BE-029 governs there, and says
-          that its roster is eleven operations rather than silently including
-          read_bytes, iter_children and glob. Both are the trap BUG-254 was
-          filed into, left standing by the round-2 fix that named it.
+          deciding the root. § Reach now says BE-029 governs there, and names
+          its roster rather than silently including read_bytes, iter_children
+          and glob. Both are the trap BUG-254 was filed into, left standing by
+          the round-2 fix that named it. The roster figure this round wrote was
+          itself wrong — eleven, leaving the tolerant deletes out — and round 4
+          corrected it to twelve. A fix that adds a figure adds a defect, which
+          is the pattern ID-245's fourth bullet was filed for.
         outcome: unclear
       - file: sdd/specs/026-health-check.md
         section: "PING-001"
@@ -262,7 +268,36 @@ phases:
       - file: sdd/CLAUDE-REFERENCE.md
         section: "Ripple-check / Detailed checklist"
         read_type: verify
-        extract: "Error type, Backend, Spec section and Public method signature rows"
+        extract: >-
+          Error type, Backend, Spec section and Public method signature rows.
+          The Error-type row's guide targets needed no edit and that is the
+          finding: docs-src/guides/custom-backend-guide.md already stated both
+          invariants this change implements — Step 5's "exists() never raises
+          NotFound" and Step 9's "non-existent paths yield nothing (no
+          exception)" — while three shipped backends broke them. The guide was
+          the one artifact that never drifted; the code moved to meet it.
+          docs-src/guides/troubleshooting.md says nothing about an absent
+          container, and sdd/specs/005-error-model.md ERR-007 states
+          BackendUnavailable's invariant without naming the case.
+      - file: sdd/BACKLOG.md
+        section: "BUG-254, BUG-255, BUG-256, ID-245"
+        read_type: verify
+        extract: >-
+          The closing audit re-derived every figure in the items this PR filed,
+          and three were wrong after round 4 had passed the same set: BUG-256's
+          title said "two backends" over a body table naming three; the
+          root-breach cell count read "six" in both BUG-254 and BE-021's pointer
+          paragraph, where expanding the grouped rows over their classes gives
+          seven (two operations on two classes, plus one on three); and BUG-255
+          said "all three" of a truncating set the same item had just reduced to
+          two. BUG-254 also still claimed SQLBlob's cell was an em dash, which
+          the table above it contradicted — re-measured on this branch against a
+          dropped table (tmp/measure_254_sqlblob.py, module __file__ printed and
+          checked to be the worktree's src/): compliant on all three columns,
+          for "" and "." alike. Every one is the ID-245 fourth-bullet class, and
+          all three are in prose this PR wrote, which is the evidence for its
+          "each fix pass adds figures and produces a fresh defect" claim.
+        outcome: ok
       - file: sdd/specs/040-sql-blob-backend.md
         section: "SQL-BLOB-050"
         read_type: verify

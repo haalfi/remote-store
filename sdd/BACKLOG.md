@@ -251,8 +251,11 @@ still impossible on the most-used backend, which is the whole promise.
   | S3, S3-PyArrow | `FolderInfo(file_count=0)` | **`False`** | **`False`** |
   | S3-Boto3, Azure (sync and async) | **raises `NotFound`** | `True` | `True` |
   | SQLBlob | `FolderInfo(file_count=0)` | `True` | `True` |
-  SQLBlob's row is what compliance looks like; BUG-246 brought it there. **Six
-  cells breach**, across three columns and five classes.
+  SQLBlob's row is what compliance looks like; BUG-246 brought it there.
+  **Seven class-cells breach**, across three columns and five classes — counted
+  by expanding each grouped row over its classes: the first row's two bold
+  columns across two classes is four, the second row's one bold column across
+  three classes is three.
   Five classes because the two Azure adapters carry their own copies and each
   needs its own fix, which is the frame BUG-246 and the CHANGELOG both use.
   The breaches run in two opposite directions, which is why one fix will not cover both:
@@ -264,10 +267,14 @@ still impossible on the most-used backend, which is the whole promise.
   **Pre-existing.** BUG-246 changed neither the root short-circuits nor
   `get_folder_info`'s root handling on any backend but SQLBlob, and did not touch
   the s3fs lanes at all (`git diff origin/master...HEAD` over `_s3.py`,
-  `_s3_pyarrow.py`, and `_s3_boto3.py`'s `get_folder_info`). SQLBlob's cell is `—`
-  because that change did briefly introduce the `NotFound` breach there and then
-  fixed it in the same PR, with `tests/backends/sqlblob/test_absent_table.py`
-  pinning both spellings of the root.
+  `_s3_pyarrow.py`, and `_s3_boto3.py`'s `get_folder_info`). SQLBlob's row is the
+  one exception, and it is compliant rather than breaching: that change did
+  briefly introduce the `NotFound` breach there and then fixed it in the same PR,
+  with `tests/backends/sqlblob/test_absent_table.py` pinning both spellings of
+  the root. Re-measured on this branch against a dropped table
+  (`tmp/measure_254_sqlblob.py`): `get_folder_info` returns
+  `FolderInfo(file_count=0, total_size=0, modified_at=None)` and both probes
+  answer `True`, for `""` and `"."` alike.
   No spec decision is needed first — BE-029 states the answer. What the fix owes
   is the *reason* each backend misses it, since the two directions have different
   causes, plus a conformance cell so a sixth backend cannot inherit either.
@@ -277,7 +284,7 @@ still impossible on the most-used backend, which is the whole promise.
   the root; BE-029's table decides it and was not consulted. Recorded because the
   same miss is available to the next reader of § Reach.
 
-- [ ] **BUG-256 — `ping()` reports a healthy store on two backends whose container is gone**
+- [ ] **BUG-256 — `ping()` reports a healthy store on three backends whose container is gone**
   spec: PING-001 · effort: S · audience: user.api
   PING-001's postconditions give `ping()` a `NotFound` for a "missing
   bucket/container/path". Measured against an absent container:
@@ -319,7 +326,8 @@ still impossible on the most-used backend, which is the whole promise.
   | --- | --- |
   | S3, S3-PyArrow | yields 0 items, then returns cleanly |
   | S3-Boto3, Azure, Async Azure | raises `NotFound` after yielding — fixed by BUG-246 |
-  All three report a *complete* listing that is not complete. The caller most hurt
+  The two s3fs lanes report a *complete* listing that is not complete — the other
+  three rows are the control, and are what the fix looks like. The caller most hurt
   is the one doing list-then-delete or list-then-sync: it sees a short list, treats
   the absent entries as absent, and deletes or fails to copy data that was there.
   **Pre-existing on the two s3fs lanes**, which is what makes this an item rather
@@ -1383,11 +1391,16 @@ the commit that writes it lands, so cite the generator instead.
     and BUG-254 — in **four incompatible frames**: bullets, backend classes,
     operations, and helper call sites. Nothing derives any of them, and each
     frame is explained in prose that is itself a claim that can go stale.
-    Measured cost: BUG-246 took four review rounds, and **11 of its round-4
-    findings were figures or scope sentences in this set**, including one fixed
-    by appending the right number beside the wrong one and one corrected in the
-    same commit that falsified it by adding an item to the section being counted.
-    Each fix pass added figures and produced a fresh defect. Fix shape: one
+    Measured cost: BUG-246 ran four numbered review rounds plus the closing
+    gates, and **11 of its round-4 findings were figures or scope sentences in
+    this set**, including one fixed by appending the right number beside the
+    wrong one and one corrected in the same commit that falsified it by adding an
+    item to the section being counted. Each fix pass added figures and produced a
+    fresh defect, and the closing audit found three more after round 4 had
+    declared the set clean: a `ping()` divergence titled "two backends" over a
+    table naming three, a root-breach cell count stated as six in two artifacts
+    where expanding the grouped rows gives seven, and a truncation item saying
+    "all three" of a set the same item had just reduced to two. Fix shape: one
     authoritative divergence table that the other artifacts link to rather than
     re-count against, and delete the meta-prose explaining which frame each
     sentence uses — that prose was two of the eleven findings on its own.

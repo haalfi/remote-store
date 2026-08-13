@@ -625,8 +625,9 @@ it.** § Known divergences holds one bullet, `LocalBackend`, whose breach is
 whole-backend rather than root-specific. The root breaches are measured and
 tracked as **BUG-254**: `exists("")` and `is_folder("")` answer `False` on
 `S3Backend` and `S3PyArrowBackend`, and `get_folder_info("")` raises `NotFound`
-on `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend` — five classes, six
-cells, in two opposite directions. `SQLBlobBackend` is the one that complies.
+on `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend` — five classes,
+seven class-cells (two operations on two classes, plus one on three), in two
+opposite directions. `SQLBlobBackend` is the one that complies.
 They are absent from the list below because that list is organised by the
 absent-container *clause* and these are breaches of BE-029's root row; the
 pointer is here so a reader does not read the one-bullet list as meaning the root
