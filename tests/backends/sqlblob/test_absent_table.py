@@ -33,12 +33,19 @@ cells green:
   because the reasoning was argued rather than enumerated; the table answers
   the question by exhaustion, and every reachable cell answers the same way.
 
-``TestADiscardedInMemoryStoreReadsAsEmpty`` documents the one residue: dispose an
-in-memory engine and the deletes tolerate while ``read`` raises, because only the
-deletes carry the reclassification. That asymmetry is BUG-246. A guard against it
-shipped briefly and was withdrawn — "was the store discarded" is not decidable
-from configuration, and every version of the check made behaviour depend on how
-the caller spelled the URL.
+``TestADiscardedInMemoryStoreReadsAsEmpty`` documents what used to be the one
+residue: dispose an in-memory engine and the deletes tolerated while ``read``
+raised, because only the deletes carried the reclassification. BUG-246 closed
+that asymmetry by extending the reclassification to every operation BE-021
+decides, so a discarded store now reads as an *empty* store throughout — which is
+what the withdrawn guard was trying to buy. The guard is still worth its
+paragraph there: "was the store discarded" is not decidable from configuration,
+and every version of the check made behaviour depend on how the caller spelled
+the URL.
+
+``TestEveryOperationReadsTheAbsentTableAsAnAbsentPath`` is the per-operation half
+of that, split by the answer BE-021 § Reach owes each group, with ``write``
+pinned as the one operation no clause decides.
 
 ``TestContainerExistsByConstruction`` records the constructor's two paths. Worth
 pinning because it shapes what a caller can encounter, but note what it does
@@ -65,6 +72,7 @@ construction, but only the SQLite half is executed.
 
 from __future__ import annotations
 
+import contextlib
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
@@ -246,18 +254,18 @@ class TestTheCatchStaysNarrow:
 
 @pytest.mark.spec("BE-012", "BE-013", "BE-020", "BE-021")
 class TestADiscardedInMemoryStoreReadsAsEmpty:
-    """Disposing an in-memory engine leaves an empty store, and the deletes say so.
+    """Disposing an in-memory engine leaves an empty store, and every operation says so.
 
     Recorded because it is the one place the rule produces an answer that reads
     oddly, and because a guard against it shipped briefly and was withdrawn.
 
-    Disposing an in-memory SQLite engine destroys the data, so the next
-    statement opens a *different, empty* database. The deletes then tolerate —
-    correctly, by the rule — while ``read`` raises ``BackendUnavailable``,
-    because only the deletes carry the reclassification. That asymmetry is
-    BUG-246, not a defect in this clause: once ``read`` and ``exists`` answer
-    for an absent table the way the contract requires, every operation agrees
-    that a discarded store is an empty one.
+    Disposing an in-memory SQLite engine destroys the data, so the next statement
+    opens a *different, empty* database. Every operation the contract decides now
+    agrees about that — the deletes tolerate, the probes answer ``False``, the
+    listings come back empty and the reads raise ``NotFound``. Only the deletes
+    did until BUG-246, and the asymmetry that left was never a defect in this
+    clause: it was the reclassification reaching two operations instead of
+    thirteen.
 
     The withdrawn guard is worth a sentence, since three review rounds went into
     it. "Was the store discarded" is not decidable from configuration: keyed on
@@ -312,17 +320,212 @@ class TestADiscardedInMemoryStoreReadsAsEmpty:
         finally:
             engine.dispose()
 
-    def test_the_read_asymmetry_is_bug_246_not_this_clause(self) -> None:
-        """Pins the residue, so closing BUG-246 is visible here rather than silent."""
+    def test_every_operation_now_agrees_the_store_is_empty(self) -> None:
+        """The residue this class documented is gone: the deletes no longer answer alone.
+
+        This cell used to pin the asymmetry — a tolerant delete returning while
+        ``read_bytes`` raised ``BackendUnavailable`` — as the visible marker for
+        BUG-246. Closing that item is what turns it into its converse, so the
+        assertions flip rather than the cell being deleted: a discarded in-memory
+        store now reads as an *empty* store from every operation, which is the
+        outcome the withdrawn guard was trying to buy and could not.
+        """
         instance = SQLBlobBackend("sqlite:///:memory:")
         try:
             instance.write("folder/object.txt", b"payload")
             instance.close()
             assert instance.delete("folder/object.txt", missing_ok=True) is None
-            with pytest.raises(BackendUnavailable):
+            assert instance.exists("folder/object.txt") is False
+            assert list(instance.list_files("folder")) == []
+            with pytest.raises(NotFound):
                 instance.read_bytes("folder/object.txt")
         finally:
             instance.close()
+
+
+_PROBE_OPS = [
+    ("exists", lambda b: b.exists("folder/object.txt")),
+    ("exists-folder", lambda b: b.exists("folder")),
+    ("is_file", lambda b: b.is_file("folder/object.txt")),
+    ("is_folder", lambda b: b.is_folder("folder")),
+]
+
+_NOT_FOUND_OPS = [
+    ("read", lambda b: b.read("folder/object.txt")),
+    ("read_bytes", lambda b: b.read_bytes("folder/object.txt")),
+    ("get_file_info", lambda b: b.get_file_info("folder/object.txt")),
+    ("get_folder_info", lambda b: b.get_folder_info("folder")),
+    ("move", lambda b: b.move("folder/object.txt", "folder/moved.txt")),
+    ("copy", lambda b: b.copy("folder/object.txt", "folder/copied.txt")),
+    ("move-onto-itself", lambda b: b.move("folder/object.txt", "folder/object.txt")),
+    ("copy-onto-itself", lambda b: b.copy("folder/object.txt", "folder/object.txt")),
+]
+
+_LISTING_OPS = [
+    ("list_files", lambda b: list(b.list_files("folder"))),
+    ("list_files-recursive", lambda b: list(b.list_files("", recursive=True))),
+    ("list_folders", lambda b: list(b.list_folders("folder"))),
+    ("iter_children", lambda b: list(b.iter_children("folder"))),
+    ("glob", lambda b: list(b.glob("**/*.txt"))),
+]
+
+
+@pytest.mark.spec("BE-004", "BE-005", "BE-021", "SQL-BLOB-050")
+class TestEveryOperationReadsTheAbsentTableAsAnAbsentPath:
+    """BE-021 § Reach, operation by operation, against a dropped table.
+
+    The two deletes were brought to the clause by BUG-243 and are covered by
+    ``TestAbsentTableReadsAsAbsentPath`` above. This class covers the rest, and
+    the split by *answer* is the clause's own: probes answer ``False`` (BE-004,
+    BE-005), the file-shaped operations take the canonical ``NotFound`` row, and
+    the listings come back empty because an absent container holds nothing.
+
+    Measured before the fix, all of these raised ``BackendUnavailable`` — the
+    widest divergence BE-021's § Known divergences recorded, and the reason a
+    caller could not tell a store that is *gone* from one that is *broken*.
+    """
+
+    @pytest.mark.parametrize(("op_name", "call"), _PROBE_OPS, ids=[n for n, _ in _PROBE_OPS])
+    def test_probe_answers_false(
+        self,
+        backend: SQLBlobBackend,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        """BE-004 and BE-005 forbid these from raising at all, on any backend."""
+        _drop_table(backend)
+        assert call(backend) is False, f"{op_name} must answer False against an absent table"
+
+    @pytest.mark.parametrize(("op_name", "call"), _NOT_FOUND_OPS, ids=[n for n, _ in _NOT_FOUND_OPS])
+    def test_file_shaped_operation_raises_not_found(
+        self,
+        backend: SQLBlobBackend,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        """The canonical table's "operation on a non-existent path" row.
+
+        ``move``/``copy`` appear twice because the same-source-and-destination
+        branch is a separate code path with its own source check, and a fix
+        applied to one body leaves the other raising.
+        """
+        _drop_table(backend)
+        with pytest.raises(NotFound) as exc_info:
+            call(backend)
+        assert exc_info.value.backend == "sql-blob", op_name
+
+    @pytest.mark.parametrize(("op_name", "call"), _LISTING_OPS, ids=[n for n, _ in _LISTING_OPS])
+    def test_listing_comes_back_empty(
+        self,
+        backend: SQLBlobBackend,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        """An absent container holds nothing, so the listing is empty rather than an error.
+
+        These are generators, so the suppression has to sit inside the generator
+        body: a context manager wrapped around the call that *returns* the
+        generator is not entered until the first ``next()``.
+        """
+        _drop_table(backend)
+        assert call(backend) == [], f"{op_name} must yield nothing against an absent table"
+
+    @pytest.mark.spec("BE-021")
+    def test_write_still_reports_a_backend_failure(self, backend: SQLBlobBackend) -> None:
+        """The one operation deliberately left alone, so the omission is visible.
+
+        BE-021 § Reach declines ``write``: no clause of the contract decides what
+        a write owes against an absent container, which leaves a backend free to
+        answer its own way. Treating a vanished table as a configuration failure
+        rather than a missing file is that answer here, and this cell is what
+        stops a later sweep "finishing the job" without a spec change.
+        """
+        _drop_table(backend)
+        with pytest.raises(BackendUnavailable):
+            backend.write("folder/object.txt", b"payload", overwrite=True)
+
+
+@pytest.mark.spec("BE-021", "SQL-BLOB-050")
+class TestTheWiderCatchStaysNarrow:
+    """The narrowness branch, re-asserted on the operations this change reached.
+
+    ``TestTheCatchStaysNarrow`` above covers the two deletes. The reclassification
+    now sits at eleven more call sites, and a widened catch at any one of them
+    reports a *broken* database as a missing path — silently, since every cell in
+    the class above would stay green.
+    """
+
+    @pytest.mark.parametrize(
+        ("op_name", "call"),
+        [*_PROBE_OPS, *_NOT_FOUND_OPS, *_LISTING_OPS],
+        ids=[n for n, _ in (*_PROBE_OPS, *_NOT_FOUND_OPS, *_LISTING_OPS)],
+    )
+    def test_driver_error_with_the_table_present_still_maps(
+        self,
+        backend: SQLBlobBackend,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        """A real statement failure against a real table, produced rather than mocked."""
+        _replace_table_with_incompatible_schema(backend)
+        with pytest.raises(BackendUnavailable) as exc_info:
+            call(backend)
+        assert exc_info.value.backend == "sql-blob", op_name
+
+
+@pytest.mark.spec("BE-021")
+class TestTheProbeStaysOffTheHotPathEverywhereElseToo:
+    """The no-extra-round-trip budget, on the newly reclassified operations.
+
+    The clause forbids spending a round trip to tell an absent container from an
+    absent path, and the tolerance cells pass just as happily with the inspector
+    running on every miss. Only a call count keeps the budget honest, and it has
+    to be asserted per call site: the reclassification is applied eleven times
+    over, and one of them placed outside ``_map_errors`` would inspect on every
+    ordinary miss while every other cell in this module stayed green.
+    """
+
+    @pytest.mark.parametrize(
+        ("op_name", "call"),
+        [
+            ("exists", lambda b: b.exists("folder/absent.txt")),
+            ("is_file", lambda b: b.is_file("folder/absent.txt")),
+            ("is_folder", lambda b: b.is_folder("absent")),
+            ("read_bytes", lambda b: b.read_bytes("folder/absent.txt")),
+            ("get_file_info", lambda b: b.get_file_info("folder/absent.txt")),
+            ("get_folder_info", lambda b: b.get_folder_info("absent")),
+            ("list_files", lambda b: list(b.list_files("absent"))),
+            ("iter_children", lambda b: list(b.iter_children("absent"))),
+        ],
+        ids=[
+            "exists",
+            "is_file",
+            "is_folder",
+            "read_bytes",
+            "get_file_info",
+            "get_folder_info",
+            "list_files",
+            "iter_children",
+        ],
+    )
+    def test_ordinary_miss_never_inspects_the_table(
+        self,
+        backend: SQLBlobBackend,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        """A miss on a live table raises from a query that *succeeded*, so the branch is never entered."""
+        with (
+            patch.object(
+                SQLBlobBackend,
+                "_table_is_absent",
+                autospec=True,
+                side_effect=AssertionError(f"{op_name}: inspected the table on an ordinary miss"),
+            ) as probe,
+            contextlib.suppress(NotFound),
+        ):
+            call(backend)
+        assert probe.call_count == 0, op_name
 
 
 class TestTheReclassificationOverItsWholeConditionSpace:

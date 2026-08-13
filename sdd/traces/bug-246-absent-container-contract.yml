@@ -1,0 +1,114 @@
+id: BUG-246
+title: "An absent container answers the contract on the four backends that raised"
+trigger: >-
+  BE-004, BE-005 and BE-021 decide what an absent container owes — False from the
+  probes, NotFound from the file-shaped operations, an empty listing from the
+  listings — and BE-021 § Known divergences recorded four backends answering
+  otherwise. S3Boto3Backend, AzureBackend and AsyncAzureBackend raised NotFound
+  from exists and is_folder; SQLBlobBackend raised BackendUnavailable from every
+  operation except the two deletes; and three S3Boto3Backend listings let a raw
+  botocore.ClientError escape (BUG-249), which is the never-leak invariant rather
+  than the mapping row.
+source_items:
+  - BUG-246
+  - BUG-249
+  - BUG-243
+co_shipped_items:
+  - BUG-249
+audience:
+  - user.api
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/specs/003-backend-adapter-contract.md
+  - sdd/specs/040-sql-blob-backend.md
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BUG-246, BUG-249, § Item authority"
+        read_type: gate
+        extract: >-
+          Take the diagnosis and treat the prescription as advisory. Retrospect:
+          this was the right call — the item's SQLBlob table listed eleven
+          operations and a run found fourteen raising, omitting iter_children and
+          glob. The fix shape it proposed ("one shape at three call sites") was
+          also stale; the applied shape is one context manager at eleven sites.
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-004, BE-005, BE-021"
+        read_type: gate
+        extract: >-
+          BE-021 § Reach is the operation-by-operation answer, and § Known
+          divergences is the list this change shrinks. The fail-open/fail-closed
+          paragraph is what forbids widening the catch past the container's 404.
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Pre-work index"
+        read_type: gate
+        extract: "Triggered rows: Error type, Backend, Spec section, Public method signature"
+
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: tests/backends/sqlblob/test_absent_table.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          The absent-table fixture and _drop_table, plus the residue cell that
+          pinned BUG-246 so closing it would be visible rather than silent. It
+          was: the cell's assertions flipped rather than the cell being deleted.
+      - file: tests/backends/s3/test_denied_probe.py
+        section: "_serve_missing_bucket_stub, TestS3Boto3ListingsLeakTheirNativeError"
+        read_type: reference
+        extract: >-
+          The absent-bucket and 403 wire stubs, and the two-sided pin that
+          asserted the leak *is* a ClientError and is *not* a RemoteStoreError.
+      - file: tests/backends/azure/_helpers.py
+        section: "serve_absent_container, serve_denied"
+        read_type: reference
+        extract: "Stage-1 Blob stubs shared by the sync and async suites (TEST-003)"
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "_children_or_absent_container"
+        read_type: reference
+        extract: >-
+          The shared absent-container probe already existed for the deletes, so
+          the S3 and Azure halves are a call-site swap rather than new machinery.
+          Its docstring described itself as a tolerant delete's helper and needed
+          rewriting once the probes became callers.
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "_absent_table_is_absent_path, _table_is_absent"
+        read_type: reference
+        extract: >-
+          Generalise the helper's axis from missing_ok to raises, and keep it
+          inside _map_errors so the driver exception type survives — that
+          placement is the whole no-extra-round-trip budget. _table_is_absent's
+          docstring argued at length that read and exists answer inconsistently
+          and cited this item as the fix, so it became false with the change.
+      - file: src/remote_store/backends/_s3_boto3.py
+        section: "exists, is_folder, list_files, list_folders, iter_children"
+        read_type: reference
+        extract: >-
+          _children_or_absent_bucket already existed for delete_folder. The
+          listings needed the mapper *inside* the generator body, as BUG-249
+          warned — outside, it would not be entered until the first next().
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Detailed checklist"
+        read_type: verify
+        extract: "Error type, Backend, Spec section and Public method signature rows"
+      - file: sdd/specs/040-sql-blob-backend.md
+        section: "SQL-BLOB-050"
+        read_type: verify
+        extract: >-
+          Its absent-table paragraph said every operation but the deletes maps
+          through the exception table; after the change only write does.

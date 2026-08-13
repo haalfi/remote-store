@@ -108,6 +108,35 @@ class TestAbsentContainerReadsAsAbsentPath:
         assert exc_info.value.backend == "azure"
 
 
+_PROBES = [
+    ("exists-file", lambda b: b.exists(KEY)),
+    ("exists-folder", lambda b: b.exists(FOLDER)),
+    ("is_file", lambda b: b.is_file(KEY)),
+    ("is_folder", lambda b: b.is_folder(FOLDER)),
+]
+
+
+class TestTheProbesAnswerFalse:
+    """BE-004 and BE-005 forbid these from raising, and an absent container is no exception.
+
+    ``exists`` and ``is_folder`` reached the strict prefix listing once the
+    tolerant blob HEAD came back empty, so a ``ContainerNotFound`` escaped as
+    ``NotFound`` from two methods the contract says never raise it. ``is_file``
+    is HEAD-only and already answered ``False``; it is parametrised in anyway, as
+    the control that says what the other two owe.
+    """
+
+    @pytest.mark.spec("BE-004", "BE-005", "BE-021", "AZ-026")
+    @pytest.mark.parametrize(("op_name", "call"), _PROBES, ids=[n for n, _ in _PROBES])
+    def test_absent_container_answers_false(
+        self,
+        backend: Any,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        assert call(backend) is False, f"{op_name} must answer False against an absent container"
+
+
 class TestDeniedListingIsNotAnAbsentContainer:
     """The determinant's catch stays narrow: a 403 is not an answer about the folder.
 
@@ -117,6 +146,10 @@ class TestDeniedListingIsNotAnAbsentContainer:
     caller merely cannot see. It goes through ``delete_folder``, whose
     determinant is the listing this rule touched, in its tolerant form: that is
     the one that would swallow the denial.
+
+    The probe cells carry the same guard for the same reason: those probes now
+    read the container's own 404 as an answer, and one narrowing away is reading
+    every error as one.
     """
 
     @pytest.mark.spec("BE-013", "BE-021", "AZ-025", "AZ-026")
@@ -124,3 +157,16 @@ class TestDeniedListingIsNotAnAbsentContainer:
         with pytest.raises(PermissionDenied) as exc_info:
             denied_backend.delete_folder(FOLDER, recursive=True, missing_ok=True)
         assert exc_info.value.backend == "azure"
+
+    @pytest.mark.spec("BE-004", "BE-005", "BE-021", "AZ-026")
+    @pytest.mark.parametrize(("op_name", "call"), _PROBES, ids=[n for n, _ in _PROBES])
+    def test_denied_probe_raises_permission_denied(
+        self,
+        denied_backend: Any,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        """ "You may not look" must not be reported as "there is nothing there"."""
+        with pytest.raises(PermissionDenied) as exc_info:
+            call(denied_backend)
+        assert exc_info.value.backend == "azure", op_name

@@ -84,6 +84,33 @@ class TestAbsentContainerReadsAsAbsentPath:
         assert exc_info.value.backend == "async-azure"
 
 
+_PROBES = [
+    ("exists-file", lambda b: b.exists(KEY)),
+    ("exists-folder", lambda b: b.exists(FOLDER)),
+    ("is_file", lambda b: b.is_file(KEY)),
+    ("is_folder", lambda b: b.is_folder(FOLDER)),
+]
+
+
+class TestTheProbesAnswerFalse:
+    """BE-004 / BE-005, async half.
+
+    Same reasoning as the sync sibling, and the same reason for a separate file:
+    ``AsyncAzureBackend`` carries its own copy of each probe body, so a sync-only
+    suite proves nothing about this one.
+    """
+
+    @pytest.mark.spec("BE-004", "BE-005", "BE-021", "AZ-026")
+    @pytest.mark.parametrize(("op_name", "call"), _PROBES, ids=[n for n, _ in _PROBES])
+    async def test_absent_container_answers_false(
+        self,
+        backend: Any,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        assert await call(backend) is False, f"{op_name} must answer False against an absent container"
+
+
 class TestDeniedListingIsNotAnAbsentContainer:
     """The determinant's catch stays narrow: a 403 is not an answer about the folder.
 
@@ -97,3 +124,16 @@ class TestDeniedListingIsNotAnAbsentContainer:
         with pytest.raises(PermissionDenied) as exc_info:
             await denied_backend.delete_folder(FOLDER, recursive=True, missing_ok=True)
         assert exc_info.value.backend == "async-azure"
+
+    @pytest.mark.spec("BE-004", "BE-005", "BE-021", "AZ-026")
+    @pytest.mark.parametrize(("op_name", "call"), _PROBES, ids=[n for n, _ in _PROBES])
+    async def test_denied_probe_raises_permission_denied(
+        self,
+        denied_backend: Any,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        """ "You may not look" must not be reported as "there is nothing there"."""
+        with pytest.raises(PermissionDenied) as exc_info:
+            await call(denied_backend)
+        assert exc_info.value.backend == "async-azure", op_name

@@ -314,7 +314,12 @@ class S3Boto3Backend(Backend):
     def exists(self, path: str) -> bool:
         """Return ``True`` if an object or prefix exists at *path*; never ``NotFound``.
 
-        One HEAD, falling back to a one-key prefix listing. The root always exists.
+        One HEAD, falling back to a one-key prefix listing. The root always
+        exists. An absent bucket answers ``False``: a bucket that does not exist
+        holds no path either, and this probe never raises for a missing path. A
+        *denied* bucket still raises — the listing is the determinant here, so it
+        fails closed rather than reporting "nothing there" for something you may
+        not see.
 
         Raises:
             PermissionDenied: If the credentials are rejected or lack access (403).
@@ -326,7 +331,7 @@ class S3Boto3Backend(Backend):
                 return True
             if self._head_or_none(path) is not None:
                 return True
-            return self._prefix_has_children(path)
+            return self._children_or_absent_bucket(path)
 
     def is_file(self, path: str) -> bool:
         """Return ``True`` if *path* is an existing object (one HEAD).
@@ -347,7 +352,8 @@ class S3Boto3Backend(Backend):
         """Return ``True`` if *path* is an existing virtual folder (a common prefix).
 
         A same-named object shadows the prefix (flat namespace), so a file returns
-        ``False``. The root is always a folder.
+        ``False``. The root is always a folder. An absent bucket answers
+        ``False``, on the same terms as ``exists``.
 
         Raises:
             PermissionDenied: If the credentials are rejected or lack access (403).
@@ -358,7 +364,7 @@ class S3Boto3Backend(Backend):
                 return True
             if self._head_or_none(path) is not None:
                 return False  # a file shadows a same-named prefix (flat-NS)
-            return self._prefix_has_children(path)
+            return self._children_or_absent_bucket(path)
 
     # endregion
 
@@ -664,55 +670,72 @@ class S3Boto3Backend(Backend):
 
         Lazily pages a delimiter-scoped ``ListObjectsV2`` breadth-first
         (non-recursive is depth 0; ``recursive`` with ``max_depth`` bounds the
-        descent). A missing prefix yields nothing. Listings are strongly
-        consistent — a just-written object appears in a later listing.
+        descent). A missing prefix yields nothing, and so does an absent bucket.
+        Listings are strongly consistent — a just-written object appears in a
+        later listing.
+
+        Raises:
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure.
         """
         prefix = self._prefix_of(path)
         # Unified delimiter BFS: non-recursive == depth limit 0; recursive with
         # max_depth=None == unlimited. Mirrors _S3Base.list_files structure.
         depth_limit = 0 if not recursive else max_depth
         queue: deque[tuple[str, int]] = deque([(prefix, 0)])
-        while queue:
-            current, depth = queue.popleft()
-            for page in self._paginate(current, delimiter="/"):
-                for obj in page.get("Contents", []):
-                    key = obj["Key"]
-                    if key.endswith("/") or key == current:
-                        continue
-                    yield self._obj_to_fileinfo(obj)
-                if depth_limit is None or depth < depth_limit:
-                    for cp in page.get("CommonPrefixes", []):
-                        queue.append((cp["Prefix"], depth + 1))
+        with self._listing_errors(path):
+            while queue:
+                current, depth = queue.popleft()
+                for page in self._paginate(current, delimiter="/"):
+                    for obj in page.get("Contents", []):
+                        key = obj["Key"]
+                        if key.endswith("/") or key == current:
+                            continue
+                        yield self._obj_to_fileinfo(obj)
+                    if depth_limit is None or depth < depth_limit:
+                        for cp in page.get("CommonPrefixes", []):
+                            queue.append((cp["Prefix"], depth + 1))
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
         """Yield immediate subfolders of *path* as ``FolderEntry`` records.
 
         One delimiter-scoped ``ListObjectsV2`` returning common prefixes; a
-        missing prefix yields nothing.
+        missing prefix yields nothing, and so does an absent bucket.
+
+        Raises:
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure.
         """
         prefix = self._prefix_of(path)
-        for page in self._paginate(prefix, delimiter="/"):
-            for cp in page.get("CommonPrefixes", []):
-                rel = cp["Prefix"].rstrip("/")
-                yield FolderEntry(path=RemotePath(rel), name=rel.rsplit("/", 1)[-1])
+        with self._listing_errors(path):
+            for page in self._paginate(prefix, delimiter="/"):
+                for cp in page.get("CommonPrefixes", []):
+                    rel = cp["Prefix"].rstrip("/")
+                    yield FolderEntry(path=RemotePath(rel), name=rel.rsplit("/", 1)[-1])
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         """Yield the immediate files and folders under *path* in one paged listing.
 
         Overrides the base two-pass default with a single delimiter-scoped
         ``ListObjectsV2``, yielding ``FileInfo`` for objects and ``FolderEntry``
-        for common prefixes. A missing prefix yields nothing.
+        for common prefixes. A missing prefix yields nothing, and so does an
+        absent bucket.
+
+        Raises:
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure.
         """
         prefix = self._prefix_of(path)
-        for page in self._paginate(prefix, delimiter="/"):
-            for obj in page.get("Contents", []):
-                key = obj["Key"]
-                if key.endswith("/") or key == prefix:
-                    continue
-                yield self._obj_to_fileinfo(obj)
-            for cp in page.get("CommonPrefixes", []):
-                rel = cp["Prefix"].rstrip("/")
-                yield FolderEntry(path=RemotePath(rel), name=rel.rsplit("/", 1)[-1])
+        with self._listing_errors(path):
+            for page in self._paginate(prefix, delimiter="/"):
+                for obj in page.get("Contents", []):
+                    key = obj["Key"]
+                    if key.endswith("/") or key == prefix:
+                        continue
+                    yield self._obj_to_fileinfo(obj)
+                for cp in page.get("CommonPrefixes", []):
+                    rel = cp["Prefix"].rstrip("/")
+                    yield FolderEntry(path=RemotePath(rel), name=rel.rsplit("/", 1)[-1])
 
     def glob(self, pattern: str) -> Iterator[FileInfo]:
         """Yield files whose key matches the glob *pattern*.
@@ -855,6 +878,39 @@ class S3Boto3Backend(Backend):
             raise
         except Exception as exc:  # noqa: BLE001
             raise self._classify_error(exc, path) from None
+
+    @contextmanager
+    def _listing_errors(self, path: str = "") -> Iterator[None]:
+        """``_boto_errors`` for a listing, with an absent bucket ending the iteration.
+
+        Two obligations at one call site, both from the backend error contract:
+
+        * **Nothing native leaks.** These three listings were the only methods on
+          this class whose wire call was not wrapped, at fourteen wrapped sites,
+          so a ``botocore.exceptions.ClientError`` reached the caller untouched
+          and an ``except RemoteStoreError`` clause caught every backend but this
+          one.
+        * **An absent container holds nothing**, so the listing is empty rather
+          than an error — the answer the two s3fs-backed lanes already gave
+          against the identical wire response.
+
+        The absent-bucket branch is narrow by construction: ``ListObjectsV2``
+        answers an absent *prefix* with ``200 KeyCount=0``, so the only 404 it
+        can raise is the container's. Everything else propagates through
+        ``_boto_errors``, which is what keeps a denial a ``PermissionDenied``
+        rather than an invented empty listing.
+
+        **Must be entered inside the generator body.** Wrapped around the call
+        that *returns* the generator it would not run until the first ``next()``,
+        which is exactly the shape that let this leak in the first place.
+        """
+        try:
+            with self._boto_errors(path):
+                yield
+        except NotFound:
+            # Contract: 003-backend-adapter-contract BE-021, "An absent container
+            # reads as an absent path" — a listing's share of it.
+            return
 
     @contextmanager
     def _file_op_errors(self, path: str) -> Iterator[None]:

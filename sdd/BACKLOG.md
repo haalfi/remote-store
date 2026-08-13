@@ -45,7 +45,8 @@ depending section's `Closes when`**, because nothing about position will show it
 **Granularity.** Two tests fold work into one item: its fix surface
 *coincides* with the host's, **or** one pending decision resolves both. Surfaces
 that merely *overlap* stay separate, with each side naming the other and the
-co-ship recorded in the trace — BUG-249 and BUG-246 are that case. The decision
+co-ship recorded in the trace — BUG-249 and BUG-246, both now in
+[BACKLOG-DONE.md](BACKLOG-DONE.md), are that case. The decision
 test is why ID-218 sits inside ID-217 and ID-123 inside ID-121: those pairs touch
 disjoint paths and would be misfiled on the surface test alone.
 A sub-bullet is not itself tracked and does not get an ID **for the work it
@@ -197,116 +198,35 @@ be edited to point elsewhere.
 **Promise:** a caller catches one exception type, and an absent or denied
 store answers the same way on every backend.
 
-**Closes when:** the four adapters answer the contract against an absent
-container (BUG-246, BUG-249, BUG-247, BUG-245); no native exception escapes on
-either the absent or the **denied** path (BUG-249); one operation does not answer
-by payload size (BUG-253); and a newly registered backend cannot pass CI without
-meeting BE-004, BE-005 and BE-021 (BK-345). The spec contradiction is
-adjudicated — BUG-248, closed by
-[ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md).
-**Two cross-section dependencies**, per
+**Closes when:** the last adapter answers the contract against an absent
+container (BUG-247); a constructor does not leak its driver's exception
+(BUG-245); one operation does not answer by payload size (BUG-253); and a newly
+registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
+(BK-345). The spec contradiction is adjudicated — BUG-248, closed by
+[ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md) — and the
+never-leak invariant holds on the S3 listing path, closed by BUG-249 with
+BUG-246. **One cross-section dependency remains**, per
 [§ How this file works](#how-this-file-works): BK-345 waits on **ID-244** in
-section 2 for the seeding hook, and BUG-249's denied half waits on **ID-242** in
-section 2, the only item whose subject is that path's coverage. Both are stated
-inside the items that carry them, as the rule requires; this section cannot
-close on its own items alone.
+section 2 for the seeding hook, stated inside the item that carries it, so this
+section cannot close on its own items alone. BUG-249's denied half carried a
+second such dependency on **ID-242**; it shipped with the denied path asserted by
+the hand-written 403 probe that item names and by nothing in conformance, which
+is why ID-242 is still open and still worth doing.
 
-**Five backend classes** still disagree with **the absent-container clause**,
-counted from the items below — BUG-253 is a sixth disagreement in this section
-but a different one, between two halves of one Graph operation rather than with
-that clause: `S3Boto3Backend`, `AzureBackend` and
-`AsyncAzureBackend` (BUG-246, which collapses the two Azure adapters into one row
-because they answer identically and take one fix), `SQLBlobBackend` (BUG-246 and
-BUG-245) and `LocalBackend` (BUG-247). `GraphBackend` was a sixth and is done
-**for that clause** — it still carries BUG-253:
-BUG-248 adjudicated the spec contradiction behind it and brought the backend to
-the contract in the same change, which is why BK-345's exemption list — blocked
-on that adjudication — can now be written. The remaining group ships together or
-not at all: any one left behind leaves portable error handling impossible, which
-is the whole promise.
-
-- [ ] **BUG-246 — An absent container raises where the contract says `False`, `NotFound`, or an empty listing**
-  spec: BE-004, BE-005, BE-021 · effort: M · audience: user.api
-  BE-004 and BE-005 say these never raise, and BE-021 repeats it: the three
-  return `False` on any traversal error rather than raising. Against a container
-  that does not exist, four backends raise instead. Measured on the
-  `pytest-httpserver` stubs BUG-243 added (real `NoSuchBucket` /
-  `ContainerNotFound` 404s, Stage 1, no Docker) and on a dropped SQLite table:
-  | Backend | `exists(file)` | `is_file(file)` | `is_folder(folder)` |
-  | --- | --- | --- | --- |
-  | S3, S3-PyArrow | `False` | `False` | `False` |
-  | S3-Boto3 | raises `NotFound` | `False` | raises `NotFound` |
-  | Azure non-HNS (sync and async) | raises `NotFound` | `False` | raises `NotFound` |
-  | SQLBlob | raises `BackendUnavailable` | raises `BackendUnavailable` | raises `BackendUnavailable` |
-  `AzureBackend` and `AsyncAzureBackend` share a row because they answer
-  identically and need the same fix.
-  Two different root causes, so budget for two fixes. On S3-Boto3 and Azure the
-  `is_file` column shows it is local: the HEAD-backed probe already absorbs the
-  404 and only the prefix-listing-backed ones do not. On SQLBlob all three run
-  their `SELECT` inside a bare `_map_errors`, so the driver's complaint maps
-  straight through — the same gap BUG-243 closed for the two deletes only, and
-  the fix shape is the one it used (`_absent_table_is_absent_path`, minus the
-  `missing_ok` branch, answering `False` instead).
-  `AzureBackend.exists`'s own docstring already says it never raises, so the
-  code contradicts its documentation.
-  **On SQLBlob the three probes are a third of it.** BE-021's divergence list
-  says "every operation except the two deletes", and that is measured, not
-  inferred — against a dropped SQLite table every one of these raises
-  `BackendUnavailable`:
-  | Operation | Canonical row (BE-021) | Measured |
-  | --- | --- | --- |
-  | `read`, `read_bytes`, `get_file_info`, `get_folder_info` | `NotFound` | `BackendUnavailable` |
-  | `move` / `copy` source | `NotFound` | `BackendUnavailable` |
-  | `list_files`, `list_folders` | empty listing | `BackendUnavailable` |
-  | `exists`, `is_file`, `is_folder` | `False` | `BackendUnavailable` |
-  | `write` | — | `BackendUnavailable` |
-  Only `write` is arguably right: no clause says what a write owes against an
-  absent container, so leaving it as a backend-identity failure is defensible
-  and this item does not propose changing it. The other eleven owe a different
-  answer, and the fix is one shape applied at three call sites, not eleven —
-  they all run their statement inside a bare `_map_errors`.
-  **The same split reaches a disposed in-memory engine.** Disposing one destroys
-  the database rather than releasing a connection, so the table is genuinely
-  absent and the two deletes return while everything else raises. Fixing the
-  rows above fixes this with them; there is nothing separate to decide.
-  Pre-existing — BUG-243 neither introduced nor touched it, having decided only
-  what `missing_ok` owes on the two deletes.
-
-- [ ] **BUG-249 — Three `S3Boto3Backend` listings leak a raw `botocore.ClientError`**
-  spec: BE-021 · effort: S · audience: user.api
-  BE-021's first invariant: "Backend-native exceptions never leak. All
-  exceptions are mapped to `remote_store` error types." `list_files`,
-  `list_folders` and `iter_children` are the only methods on the class that call
-  the wire without `_boto_errors` around it — every other method wraps, at
-  fourteen sites. So the paginator's exception reaches the caller untouched.
-  Measured against the missing-bucket stub, and against a 403 stub to show the
-  cause is local rather than contractual:
-  | Backend | `list_files` on an absent bucket | on a denied bucket |
-  | --- | --- | --- |
-  | S3, S3-PyArrow | empty listing | `PermissionDenied` |
-  | S3-Boto3 | raises `botocore.exceptions.ClientError` | raises `botocore` `AccessDenied` |
-  Two backends answer correctly against the identical wire response, so this is
-  an omission in one adapter, not an unstated contract question. The escaping
-  type is the worst part: a caller catching `except RemoteStoreError` catches
-  every backend but this one, and `ClientError` comes from a library they may
-  never have imported.
-  Pinned by `tests/backends/s3/test_denied_probe.py::TestS3Boto3ListingsLeakTheirNativeError`,
-  which asserts both that the error *is* a `ClientError` and that it is *not* a
-  `RemoteStoreError` — so the fix breaks the cell rather than making it vacuous.
-  The fix is one `with self._boto_errors(path):` per method, but note all three
-  are generators: the wrapper must be inside the generator body, not around the
-  call that returns it, or it will not be entered until the first `next()`.
-  **Co-ship with BUG-246's S3-Boto3 row** — same adapter, same idiom, and
-  BUG-246's diagnosis puts its S3-Boto3 failures on the prefix-listing paths
-  this item wraps. Separate items rather than one, because the surfaces
-  *overlap* rather than coincide: BUG-246 spans four backends and this is one
-  adapter, which is the distinction
-  [§ Granularity](#how-this-file-works) draws. Record the co-ship in the trace.
-  **Cross-section dependency:** the denied-bucket column above is measured on a
-  stub, and the only item that puts it behind a fixture the suite runs is
-  **ID-242** in section 2 — four `moto doesn't raise PermissionError` pragmas
-  that are coverage holes. Closing this item without ID-242 leaves the denied
-  path asserted by one hand-written probe and by nothing in conformance.
+**One backend class** now disagrees with **the absent-container clause** —
+`LocalBackend` (BUG-247), counted from BE-021's § Known divergences list, which
+this section tracks bullet for bullet and which holds one bullet. BUG-253 is a
+second disagreement in this section but a different one, between two halves of
+one Graph operation rather than with that clause, and BUG-245 is a third: a
+constructor leak, which BE-021 scopes to operations and so does not reach.
+Four classes have left the list. `GraphBackend` went first — BUG-248 adjudicated
+the spec contradiction behind it and brought the backend to the contract in the
+same change, which is why BK-345's exemption list, blocked on that adjudication,
+can now be written. `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` and
+`SQLBlobBackend` followed with BUG-246 and BUG-249. What is left is the one the
+clause misreports rather than merely mistypes: on Local an absent store is
+reported as a *malformed path*, and until that goes, portable error handling is
+still impossible on the most-used backend, which is the whole promise.
 
 - [ ] **BUG-247 — `LocalBackend` reports a deleted root as "Path escapes root directory"**
   spec: BE-004, BE-012, BE-013, BE-021 · effort: S · audience: user.api
@@ -436,10 +356,13 @@ structure exists to remove.
 
 A corrected clause nobody tests is the same defect one layer up, which is why
 the wrong-answer defects and the coverage holes are one promise. The wrong-answer
-defects come first because a user can hit them today. **Two items here are
-depended on from section 1**: BK-345 waits on ID-244's per-fixture seeding
-decision, and BUG-249's denied path waits on ID-242's coverage, so section 1
-cannot close before both land even though they sit here.
+defects come first because a user can hit them today. **One item here is depended
+on from section 1**: BK-345 waits on ID-244's per-fixture seeding decision, so
+section 1 cannot close before it lands even though it sits here. ID-242 was a
+second such dependency, from BUG-249's denied path; that item shipped without it,
+leaving the denied listing asserted by one hand-written 403 probe and by nothing
+in conformance — the exact hole ID-242 exists to fill, now with a shipped clause
+resting on it rather than a pending one.
 
 - [ ] **BUG-251 — A shared `cache_backend=` serves one store's bytes for another's**
   spec: RES-100 · effort: S/M · audience: user.api

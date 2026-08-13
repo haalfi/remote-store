@@ -155,6 +155,47 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-246 — An absent container raises where the contract says `False`, `NotFound`, or an empty listing**
+  spec: BE-004, BE-005, BE-021 · effort: M · audience: user.api
+  Four backends raised against a container that does not exist, where BE-004 and
+  BE-005 say the probes never raise and BE-021 § Reach decides the rest. Fixed on
+  all four, co-shipped with BUG-249 per [§ Granularity](BACKLOG.md#how-this-file-works).
+  Two root causes, as the item predicted, and the existing machinery covered both:
+  on `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend` the tolerant HEAD
+  already absorbed the 404 and only the prefix-listing-backed probes did not, so
+  `exists` and `is_folder` moved onto the same absent-container determinant
+  `delete_folder` already used (`_children_or_absent_bucket` /
+  `_flat_children_or_absent_container`, both over `_flat_ns`). On `SQLBlobBackend`
+  the reclassification BUG-243 built for the two deletes was generalised from a
+  `missing_ok` axis to a `raises` one and applied at the remaining call sites.
+  **Filed as eleven operations wide on SQLBlob, measured at fourteen.** The item's
+  table omitted `iter_children` and `glob`. Run against a dropped SQLite table
+  before the fix, fourteen operations raised `BackendUnavailable`; thirteen owed a
+  different answer and now give it, and `write` keeps the escalation because
+  BE-021 § Reach declines to decide it. That is the second time in this section an
+  item's own operation count was low against a run — BUG-248 was filed at two and
+  measured at eleven — and both were found by executing the list rather than
+  reading it.
+  Closes three of BE-021's five § Known divergences bullets; `LocalBackend`
+  (BUG-247) is the one that remains.
+
+- [x] **BUG-249 — Three `S3Boto3Backend` listings leak a raw `botocore.ClientError`**
+  spec: BE-021 · effort: S · audience: user.api
+  `list_files`, `list_folders` and `iter_children` were the only methods on the
+  class calling the wire without `_boto_errors` around it, at fourteen wrapped
+  sites, so the paginator's exception reached the caller untouched and an
+  `except RemoteStoreError` clause caught every backend but this one. All three
+  now enter a `_listing_errors` context **inside the generator body** — the item's
+  warning was right, and a wrapper around the call that returns the generator
+  would not have run until the first `next()`. `glob` reaches the wire only
+  through `list_files` and inherited the fix. The same context also reads the
+  bucket's own 404 as an empty listing, which is BE-021 § Reach's answer for a
+  listing against an absent container and what the two s3fs lanes already did.
+  **Shipped without ID-242**, which the item named as a cross-section dependency:
+  the denied path is still asserted by the hand-written 403 probe in
+  `tests/backends/s3/test_denied_probe.py` and by nothing in conformance. Stated
+  rather than quietly dropped — ID-242 now has a shipped clause resting on it.
+
 - [x] **BUG-248 — BE-021's absent-container rule and GR-031's drive-identity escalation contradict each other**
   spec: BE-021, GR-031, PING-011 · effort: M · audience: user.api
   Two deliberate clauses giving opposite answers for the same call, neither

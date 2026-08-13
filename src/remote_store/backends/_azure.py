@@ -342,7 +342,11 @@ class AzureBackend(Backend):
             return False
 
     def _flat_children_or_absent_container(self, path: str) -> bool:
-        """Non-HNS ``delete_folder`` determinant: strict, except for an absent container.
+        """Non-HNS folder-existence determinant: strict, except for an absent container.
+
+        Shared by ``delete_folder``, ``exists`` and ``is_folder`` — every non-HNS
+        caller whose answer *is* this listing rather than a reclassification of
+        one.
 
         Distinct from ``_flat_has_children`` above, and the difference is
         load-bearing. That one is fail-open because it runs *after* an operation
@@ -351,11 +355,11 @@ class AzureBackend(Backend):
         folder the caller simply cannot see.
 
         The one error it does read as an answer is the container's own 404: an
-        absent container is an absent path, so the caller proceeds to its
-        ``missing_ok`` branch exactly as for an empty prefix. Safe to narrow
-        to ``ResourceNotFoundError`` because an absent *prefix* is never an
-        error here — it is an empty listing — so the only 404 this call can
-        raise is the container's.
+        absent container is an absent path, so ``delete_folder`` proceeds to its
+        ``missing_ok`` branch and the two probes answer ``False``, exactly as for
+        an empty prefix. Safe to narrow to ``ResourceNotFoundError`` because an
+        absent *prefix* is never an error here — it is an empty listing — so the
+        only 404 this call can raise is the container's.
         """
         from azure.core.exceptions import ResourceNotFoundError
 
@@ -509,7 +513,11 @@ class AzureBackend(Backend):
 
         Probes the blob first (one HEAD); if absent, probes for a folder (an HNS
         directory, or any blob under the ``path/`` prefix on flat accounts). The
-        root always exists.
+        root always exists. An absent *container* answers ``False`` — a container
+        that does not exist holds no path either, and this probe never raises for
+        a missing path. A *denied* container still raises: the prefix listing is
+        the determinant here, so it fails closed rather than reporting "nothing
+        there" for something you may not see.
 
         Raises:
             PermissionDenied: If credentials are rejected or lack access (401/403).
@@ -534,9 +542,7 @@ class AzureBackend(Backend):
                 except Exception:  # noqa: BLE001
                     return False
             else:
-                prefix = azure_path.rstrip("/") + "/"
-                blobs = self._cc.list_blobs(name_starts_with=prefix, results_per_page=1)
-                return any(True for _ in blobs)
+                return self._flat_children_or_absent_container(path)
 
     def is_file(self, path: str) -> bool:
         """Return ``True`` if *path* is an existing blob (not an HNS directory marker).
@@ -571,7 +577,8 @@ class AzureBackend(Backend):
         """Return ``True`` if *path* is an existing folder (HNS directory or non-HNS prefix).
 
         The root is always a folder. Costs one directory HEAD (HNS) or a
-        one-item prefix listing (flat).
+        one-item prefix listing (flat). An absent container answers ``False``, on
+        the same terms as ``exists``.
 
         Raises:
             PermissionDenied: If credentials are rejected or lack access (401/403).
@@ -592,9 +599,7 @@ class AzureBackend(Backend):
                 except Exception:  # noqa: BLE001
                     return False
             else:
-                prefix = azure_path.rstrip("/") + "/"
-                blobs = self._cc.list_blobs(name_starts_with=prefix, results_per_page=1)
-                return any(True for _ in blobs)
+                return self._flat_children_or_absent_container(path)
 
     def read(self, path: str) -> BinaryIO:
         """Open *path* for reading and return a streaming handle.

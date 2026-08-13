@@ -613,29 +613,6 @@ operations keep obligations this clause did not write, and a divergence from one
 of *those* is no less real for having been written down elsewhere. Listing them
 here is what makes the container case answerable from one place.
 
-- `exists()` and `is_folder()` *raise* `NotFound` against an absent container on
-  `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend`, where the strict
-  prefix probe is reached after the tolerant HEAD comes back empty.
-  `S3Backend` and `S3PyArrowBackend` answer `False`.
-- `S3Boto3Backend`'s `list_files`, `list_folders` and `iter_children` raise a
-  raw `botocore.exceptions.ClientError` against an absent container, breaching
-  the never-leak invariant at the top of this section rather than the mapping
-  row. They are the only methods on that class whose wire call is not wrapped in
-  its error mapper; the two s3fs-backed lanes answer the identical response with
-  an empty listing.
-- On `SQLBlobBackend`, **every operation except the two deletes** answers an
-  absent table with `BackendUnavailable` (or the base error, by dialect) rather
-  than `NotFound`, because they map the driver's complaint without asking
-  whether the table is still there. That includes `exists()`, `is_file()` and
-  `is_folder()`, so this backend breaches the never-raise rule above as well as
-  the mapping row — the widest divergence in this list by operation count,
-  measured rather than inferred. The same split shows on a disposed in-memory
-  engine, where disposal destroys the database rather than releasing a
-  connection to it: the deletes return and everything else raises, so a caller
-  watching one call sees a store that is gone and a caller watching the next
-  sees a backend that is broken. That is one divergence with two ways in, not
-  two, and the reclassification deliberately does not try to tell them apart —
-  see [SQL-BLOB-050](040-sql-blob-backend.md#sql-blob-050-exception-translation).
 - `LocalBackend` answers **every** operation with
   `InvalidPath("Path escapes root directory")` once its root directory is
   deleted, including both tolerant deletes. The containment check walks up to
@@ -644,9 +621,42 @@ here is what makes the container case answerable from one place.
   any backend currently sits, and the only one where the error type actively
   misleads.
 
-`GraphBackend` was the fifth bullet in this list — counting bullets, not backend
-classes, which is the frame `sdd/BACKLOG.md` § 1 uses when it calls Graph the
-sixth of six — and is no longer one; four bullets remain.
+Three bullets have left this list and are recorded rather than deleted, because
+each was a *measured* divergence and the measurement is what a later reader
+needs in order to trust the list's remaining entry:
+
+- `exists()` and `is_folder()` raised `NotFound` against an absent container on
+  `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend`, where the strict
+  prefix probe was reached after the tolerant HEAD came back empty. All three now
+  answer `False`, as `S3Backend` and `S3PyArrowBackend` already did (BUG-246).
+- `S3Boto3Backend`'s `list_files`, `list_folders` and `iter_children` raised a
+  raw `botocore.exceptions.ClientError`, breaching the never-leak invariant at
+  the top of this section rather than the mapping row: they were the only methods
+  on that class whose wire call was not wrapped in its error mapper, at fourteen
+  wrapped sites. All three now return an empty listing, as the two s3fs-backed
+  lanes already did against the identical response (BUG-249).
+- On `SQLBlobBackend`, **every operation except the two deletes** answered an
+  absent table with `BackendUnavailable` (or the base error, by dialect), because
+  they mapped the driver's complaint without asking whether the table was still
+  there. It was the widest divergence this list ever held by operation count —
+  fourteen operations, measured against a dropped SQLite table, of which thirteen
+  owed a different answer. Each of the thirteen now takes its § Reach row:
+  `exists`, `is_file` and `is_folder` answer `False`; `read`, `read_bytes`,
+  `get_file_info`, `get_folder_info` and the `move`/`copy` source raise
+  `NotFound`; `list_files`, `list_folders`, `iter_children` and `glob` come back
+  empty. The same split showed on a disposed in-memory engine, where disposal
+  destroys the database rather than releasing a connection to it — one divergence
+  with two ways in, closed by the same change, and the reclassification
+  deliberately does not try to tell them apart; see
+  [SQL-BLOB-050](040-sql-blob-backend.md#sql-blob-050-exception-translation).
+  **`write` keeps `BackendUnavailable`** and is not a residue: it is the one
+  roster operation § Reach declines to decide, so a backend answering it its own
+  way contradicts nothing here (BUG-246).
+
+`GraphBackend` was a bullet too, adjudicated by
+[ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md). Counting
+bullets rather than backend classes — the frame `sdd/BACKLOG.md` § 1 uses — this
+list held five and now holds one.
 [GR-031](044-graph-backend.md#gr-031-404-discrimination-item-vs-drive) mapped
 `404 resourceNotFound` to `BackendUnavailable` for every error-raising
 operation, deliberately, on the grounds that a deleted drive is a backend
@@ -693,8 +703,9 @@ where the reported symptom came from. It does not hold for `SQLBlobBackend`,
 which is flat-namespace by this spec's own classification and whose `delete` was
 measured raising `BackendUnavailable` against a dropped table before this
 change, exactly as its sibling did. The rule therefore changes `delete` on one
-backend rather than ratifying it everywhere. Both divergences are listed above;
-the premise survived six review rounds because "the S3 family" and "the
+backend rather than ratifying it everywhere. Both are recorded above — Local as
+this list's one remaining bullet, SQLBlob among the three that have left it; the
+premise survived six review rounds because "the S3 family" and "the
 flat-namespace backends" were used interchangeably by a clause whose whole
 purpose is to bind the second set.
 
