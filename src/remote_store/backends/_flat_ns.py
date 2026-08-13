@@ -239,15 +239,18 @@ def _children_or_absent_container(
 ) -> bool:
     """Run the folder-existence probe, reading an absent container as "no children".
 
-    Every caller of the folder-existence probe treats an absent *container* — the
-    bucket, the Azure container — exactly as it treats an absent path, because a
-    container that does not exist holds no path either. The tolerant deletes were
-    the first callers and are why the wire-shape argument below is put in their
-    terms; ``exists`` and ``is_folder`` reach the same helper for the same
-    reason, and answer ``False`` where their caller would otherwise have seen a
-    404 escape from a probe that must never raise for a missing path. Deciding
-    this at the contract is what stops the wire shape from deciding it per
-    backend:
+    Callers that route through *this helper* treat an absent *container* — the
+    bucket, the Azure container — exactly as they treat an absent path, because a
+    container that does not exist holds no path either. That is not every folder
+    probe in the codebase and must not be read as one: ``get_folder_info`` keeps
+    the strict probe on the S3 lanes, deliberately, because it has no
+    ``missing_ok`` and an absent bucket is a plain ``NotFound`` for it either way.
+    The tolerant deletes were the first callers and are why the wire-shape
+    argument below is put in their terms; ``exists`` and ``is_folder`` reach this
+    helper for the same reason, and answer ``False`` where they would otherwise
+    have seen a 404 escape from a probe that must never raise for a missing path.
+    Deciding this at the contract is what stops the wire shape from deciding it
+    per backend:
 
     * ``HeadObject`` answers a bodyless 404, so the file-shaped probe cannot
       distinguish a missing bucket from a missing key even in principle, and

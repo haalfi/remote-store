@@ -618,10 +618,27 @@ backend answers as it would for an empty one.
 
 Stated here because this is where a reader looking for per-operation answers
 lands, and following it alone yields the wrong answer for one path in every
-operation it names. The divergences this rule exposes are in the list below.
+operation it names.
 
-**The roster is eleven operations and its siblings are not silently included.**
-`read_bytes`, `read_seekable`, `iter_children` and `glob` are not named above.
+**Most backends do not meet the root row yet, and the list below does not record
+it.** § Known divergences holds one bullet, `LocalBackend`, whose breach is
+whole-backend rather than root-specific. The root breaches are measured and
+tracked as **BUG-254**: `exists("")` and `is_folder("")` answer `False` on
+`S3Backend` and `S3PyArrowBackend`, and `get_folder_info("")` raises `NotFound`
+on `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend` — five classes, six
+cells, in two opposite directions. `SQLBlobBackend` is the one that complies.
+They are absent from the list below because that list is organised by the
+absent-container *clause* and these are breaches of BE-029's root row; the
+pointer is here so a reader does not read the one-bullet list as meaning the root
+is settled.
+
+**§ Reach's roster is twelve operations, and its siblings are not silently
+included.** The twelve are the two tolerant deletes plus the ten this paragraph
+names, counting the `move`/`copy` source as one. (The Graph paragraph below says
+GR-031 reached "eleven of the ones named above" and kept `write`; eleven plus
+`write` is the same twelve.)
+
+`read_bytes`, `read_seekable`, `iter_children` and `glob` are not among them.
 Each is a thin variant of one that is — `read`, `list_files`, `list_folders` —
 and a backend that answers a named operation one way and its variant another has
 a defect rather than a permission. But that is a *reading*, and it is the reading
@@ -629,6 +646,13 @@ this section elsewhere makes explicit when it counts Graph's divergence as
 "eleven of the ones named above, plus `read_bytes` and `iter_children`". A
 backend spec relying on the reading should say so, as
 [SQL-BLOB-050](040-sql-blob-backend.md#sql-blob-050-exception-translation) does.
+
+**"Roster" is used twice in this section and the two sets differ.** The
+type-mismatch rows above have their own roster — the one their scope paragraph
+calls "the single roster for both halves", which *does* name `read_bytes` and
+`read_seekable`, and which the "`read_seekable` is in the list" paragraph is
+about. This paragraph is about § Reach's roster only. Neither is wrong; a reader
+meeting the word in one place and the membership claim from the other is.
 
 **Known divergences, stated rather than implied.** These are what ships today,
 recorded so a reader does not mistake an obligation for a description, and
@@ -670,10 +694,10 @@ needs in order to trust the list's remaining entry:
   `False`; `read`, `read_bytes`, `get_file_info`, the `move`/`copy` source and
   `get_folder_info` **below the root** raise `NotFound`, while the root
   aggregates to an empty store under BE-029; `list_files`, `list_folders`,
-  `iter_children` and `glob` come back empty. Four of those thirteen —
-  `read_bytes`, `iter_children`, `glob` and `read_seekable` where it is
-  overridden — are siblings § Reach does not name, per the roster paragraph
-  above. The same split showed on a disposed in-memory engine, where disposal
+  `iter_children` and `glob` come back empty. Three of those thirteen —
+  `read_bytes`, `iter_children` and `glob` — are siblings § Reach does not name,
+  per the roster paragraph above. `read_seekable` is not among them: this backend
+  does not override it, so it is not a distinct operation here. The same split showed on a disposed in-memory engine, where disposal
   destroys the database rather than releasing a connection to it — one divergence
   with two ways in, closed by the same change, and the reclassification
   deliberately does not try to tell them apart; see
@@ -684,8 +708,9 @@ needs in order to trust the list's remaining entry:
 
 `GraphBackend` was a bullet too, adjudicated by
 [ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md). Counting
-bullets rather than backend classes — the frame `sdd/BACKLOG.md` § 1 uses — this
-list held five and now holds one.
+bullets rather than backend classes — one of the two frames `sdd/BACKLOG.md` § 1
+uses, and the one it counts this list in — this list held five and now holds
+one.
 [GR-031](044-graph-backend.md#gr-031-404-discrimination-item-vs-drive) mapped
 `404 resourceNotFound` to `BackendUnavailable` for every error-raising
 operation, deliberately, on the grounds that a deleted drive is a backend
@@ -731,7 +756,9 @@ Azure family, whose bodyless `HeadObject` 404 cannot name the bucket, and it is
 where the reported symptom came from. It does not hold for `SQLBlobBackend`,
 which is flat-namespace by this spec's own classification and whose `delete` was
 measured raising `BackendUnavailable` against a dropped table before this
-change, exactly as its sibling did. The rule therefore changes `delete` on one
+change, exactly as its sibling did — that is the state *before BUG-243*, which
+is the change this paragraph is about, and not the state the departed bullet
+above describes, which is after it. The rule therefore changes `delete` on one
 backend rather than ratifying it everywhere. Both are recorded above — Local as
 this list's one remaining bullet, SQLBlob among the three that have left it; the
 premise survived six review rounds because "the S3 family" and "the

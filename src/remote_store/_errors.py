@@ -129,25 +129,29 @@ class BackendUnavailable(RemoteStoreError):
     storage service is unreachable (e.g., network error, invalid
     endpoint, bad credentials).
 
-    Not raised because the bucket, container or table is *absent*: a
-    container that does not exist holds no path either, so the operation
-    answers for a missing path instead — ``False`` from ``exists``,
-    ``is_file`` and ``is_folder``, ``NotFound`` from the file-shaped
-    operations, and an empty listing from the listings.
+    **Mostly not raised because the bucket, container or table is
+    absent.** A container that does not exist holds no path either, so
+    the operations the backend contract decides answer for a missing path
+    instead — ``False`` from ``exists``, ``is_file`` and ``is_folder``,
+    ``NotFound`` from the file-shaped operations, and an empty listing
+    from the listings. ``write`` is the exception: no clause decides what
+    it owes an absent container, so a backend may still report one this
+    way, and ``SQLBlobBackend`` does for a dropped table.
 
-    To tell a store that is *gone* from one that is merely *empty*,
-    attempt a ``write()`` and catch ``RemoteStoreError``. ``write`` is
-    the operation the backend contract leaves each backend to answer its
-    own way, so it still fails against an absent container — but for that
-    same reason the *type* differs, and this class is only one of the
-    answers you may get. Catch the base class, not this one.
+    **There is no portable way to ask "is my store there?"**, and the
+    obvious candidates are worse than they look. ``check_health()`` probes
+    the service rather than the container on some backends and returns
+    cleanly against a container that is not there. A trial ``write()``
+    distinguishes the two cases on backends that permit writes at all, but
+    it is a poor general recipe: it leaves an object behind, it raises
+    ``CapabilityNotSupported`` on read-only backends whatever the
+    container's state, it raises ``AlreadyExists`` on the second call
+    unless you pass ``overwrite=True``, and a denied write raises
+    ``PermissionDenied`` — so catching ``RemoteStoreError`` around it
+    reports "gone" for a store that is present and merely unwritable.
 
-    Two caveats worth knowing before relying on it. ``check_health()``
-    does not answer the question at all on some backends, where it probes
-    the service rather than the container and succeeds against a container
-    that is not there. And a ``LocalBackend`` whose root directory has been
-    deleted reports a malformed path instead of an absent one, so the
-    write fails but says something misleading about why.
+    If you need the distinction, prefer one that fits your backend and
+    test it against a container you have really deleted.
     """
 
 

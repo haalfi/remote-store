@@ -19,6 +19,7 @@ discovery_followups:
   - BUG-254
   - BUG-255
   - BUG-256
+  - ID-245
 audience:
   - user.api
   - user.api_docs
@@ -33,14 +34,15 @@ expected_ripples:
 surprising_ripples:
   - src/remote_store/_errors.py
   - tests/backends/azure/aio/test_config.py
+  - sdd/specs/026-health-check.md
 
 # Counted from `git log --oneline origin/master..HEAD`. b492cc0 is the
-# implementation and does not count. Five commits exist because review found
+# implementation and does not count. Six commits exist because review found
 # something: 7928f47 (round 1's Azure listings and five prose findings), 3f5102c
 # (round 1's code-scanning alert), 35b7281 (round 1's residual docstring map),
-# f164c97 (round 2), and the commit carrying this trace edit (round 3). Value is
-# 5.
-review_rounds: 5
+# f164c97 (round 2), b5b0646 (round 3), and the commit carrying this trace edit
+# (round 4). Value is 6.
+review_rounds: 6
 
 phases:
   - id: orient
@@ -217,6 +219,36 @@ phases:
           which would report a damaged store as an empty one. Both now fail.
           The lesson is that a cell asserting only spelling-independent fields
           cannot justify a two-spelling parametrisation.
+        outcome: ok
+
+  - id: fix_4
+    name: Fix (round 4)
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 § Reach, § Known divergences"
+        read_type: gate
+        extract: >-
+          Round 4's adjudication converged on twelve of fourteen findings, eleven
+          of which were hand-maintained figures or scope sentences computed in
+          four incompatible frames — bullets, classes, operations, call sites.
+          Two disputes went to measurement rather than argument, and each
+          overturned one side: a claimed over-broad docstring in _s3_boto3 turned
+          out correct at exactly three call sites, and a claim that this change
+          introduced silent mid-scan truncation on Azure was refuted by running a
+          two-page stub at the base revision and at head — identical, two list
+          requests served in both. Filed as ID-245's fourth bullet, because the
+          figure count is what generates the defects.
+        outcome: ok
+      - file: src/remote_store/_errors.py
+        section: "BackendUnavailable"
+        read_type: verify
+        extract: >-
+          The round-2 advice was wrong once and the round-3 rewrite was wrong
+          again: catching RemoteStoreError around a trial write() reports "gone"
+          for PermissionDenied on a present store, CapabilityNotSupported on any
+          read-only backend, and AlreadyExists on the second call, since
+          overwrite defaults to False. The docstring now says there is no
+          portable probe rather than naming one.
         outcome: ok
 
   - id: verify

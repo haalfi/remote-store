@@ -218,13 +218,16 @@ is why ID-242 is still open and still worth doing.
 
 **One backend class** now disagrees with **the absent-container clause** —
 `LocalBackend` (BUG-247), counted from BE-021's § Known divergences list, which
-this section tracks bullet for bullet and which holds one bullet. **Four** further
-disagreements sit in this section and none of them is with that clause, which is
-why they are not in the count: BUG-253 is between two halves of one Graph
-operation; BUG-245 is a constructor leak, which BE-021 scopes to operations and
-so does not reach; BUG-254 is with BE-029's root row rather than this one; and
-BUG-255 is with neither, being about a container that vanishes part-way through a
-listing rather than one that was absent when it began.
+this section tracks bullet for bullet and which holds one bullet. **Five** further
+disagreements sit in this section and none of them is with the absent-container
+clause, which is why they are not in that count: BUG-253 is between two halves of
+one Graph operation; BUG-245 is a constructor leak, which BE-021 scopes to
+operations and so does not reach; BUG-254 is with **BE-029's root row**, which
+BE-021 § Reach now defers to rather than deciding, so the breach is of the row
+§ Reach points at and not of the clause this count is about; BUG-255 is about a
+container that vanishes part-way through a listing rather than one that was
+absent when it began; and BUG-256 is about a health probe, which is off the
+roster BE-021 governs.
 **Five classes** have left the list — counted as classes, which is the frame this
 paragraph opens in and not the bullet frame the sentence above it uses. `GraphBackend` went first — BUG-248 adjudicated
 the spec contradiction behind it and brought the backend to the contract in the
@@ -247,10 +250,12 @@ still impossible on the most-used backend, which is the whole promise.
   | --- | --- | --- | --- |
   | S3, S3-PyArrow | `FolderInfo(file_count=0)` | **`False`** | **`False`** |
   | S3-Boto3, Azure (sync and async) | **raises `NotFound`** | `True` | `True` |
-  | SQLBlob | — (fixed by BUG-246) | `True` | `True` |
+  | SQLBlob | `FolderInfo(file_count=0)` | `True` | `True` |
+  SQLBlob's row is what compliance looks like; BUG-246 brought it there. **Six
+  cells breach**, across three columns and five classes.
   Five classes because the two Azure adapters carry their own copies and each
   needs its own fix, which is the frame BUG-246 and the CHANGELOG both use.
-  Two breaches, in opposite directions, which is why one fix will not cover both:
+  The breaches run in two opposite directions, which is why one fix will not cover both:
   the s3fs lanes go to the wire for `exists("")` and report a missing bucket as
   "the root is not there", while S3-Boto3 and Azure short-circuit `exists` but let
   `get_folder_info` reach a listing whose 404 they do not tolerate at the root.
@@ -278,12 +283,20 @@ still impossible on the most-used backend, which is the whole promise.
   bucket/container/path". Measured against an absent container:
   | Backend | `check_health()` |
   | --- | --- |
-  | S3, S3-Boto3, Azure (sync and async) | raises `NotFound` |
-  | S3-PyArrow, SQLBlob | returns cleanly |
-  `SQLBlobBackend.check_health` is a bare `SELECT 1`: it verifies connectivity and
-  never looks at the table, so a dropped table and a discarded in-memory store
-  both read as healthy. The `S3PyArrowBackend` probe misses it for the same
-  reason one layer out.
+  | S3, S3-Boto3, Azure (sync and async), Local | raises `NotFound` |
+  | S3-PyArrow, SQLBlob, **SQLQuery** | returns cleanly |
+  | ReadOnlyHttp | raises `BackendUnavailable` — wrong type, not a missing raise |
+  Both SQL backends inherit the same bare `SELECT 1` on
+  `_SQLAlchemyBaseBackend`: it verifies connectivity and never looks at the table
+  or the queried relation, so a dropped table and a discarded in-memory store both
+  read as healthy. `SQLQueryBackend` overrides nothing, which is why naming only
+  `SQLBlobBackend` understates it. The `S3PyArrowBackend` probe misses it for the
+  same reason one layer out. `ReadOnlyHttpBackend` is a fourth case of a different
+  kind and is listed so a fix does not stop at the three.
+  **Five documentation surfaces promise the behaviour** and are part of this item
+  rather than of BUG-246, which measured the divergence but did not create it:
+  `Backend.check_health` and `AsyncBackend.check_health` docstrings,
+  `Store.ping()`, `AsyncStore.ping()`, and `docs-src/guides/health-check.md`.
   The caller this hurts is the one doing the obvious thing — using `ping()` at
   startup to check the store is really there — and getting "yes" for a store that
   is not. It is also the operation an absent-container caller is *sent* to by the
@@ -293,7 +306,7 @@ still impossible on the most-used backend, which is the whole promise.
   than in BE-021's list. Discovered while measuring BUG-246's migration advice,
   which is why that advice sends callers to `write()` instead.
 
-- [ ] **BUG-255 — A container deleted mid-listing truncates the listing silently on every S3 lane**
+- [ ] **BUG-255 — A container deleted mid-listing truncates the listing silently on every S3 lane and both Azure adapters**
   spec: BE-021 · effort: M · audience: user.api
   `ListObjectsV2` answers an absent prefix with `200 KeyCount=0`, so the only 404
   a listing can raise is the container's — which is why reading that 404 as "the
@@ -306,6 +319,7 @@ still impossible on the most-used backend, which is the whole promise.
   | --- | --- |
   | S3, S3-PyArrow | yields 0 items, then returns cleanly |
   | S3-Boto3 | yields 1 item, then returns cleanly |
+  | Azure, Async Azure | yields 1 item, then returns cleanly |
   All three report a *complete* listing that is not complete. The caller most hurt
   is the one doing list-then-delete or list-then-sync: it sees a short list, treats
   the absent entries as absent, and deletes or fails to copy data that was there.
@@ -313,8 +327,12 @@ still impossible on the most-used backend, which is the whole promise.
   than a BUG-249 residue: they truncated this way before that change and still do.
   BUG-249 moved S3-Boto3 from leaking a raw `ClientError` mid-scan onto the same
   truncation, so the lanes now agree — the wrong way round, and agreeing was the
-  point of that change. Azure paginates too and wants the same measurement;
-  SQLBlob does not (one `SELECT`, no pages).
+  point of that change. **The Azure rows are pre-existing too**, and that was
+  measured rather than assumed: a two-page stub serving a `NextMarker` then
+  `ContainerNotFound` truncates identically at `8cb27ce` and at BUG-246's head,
+  two list requests served in both. A review round asserted BUG-246 introduced it
+  there, reading the code; running it refuted that. SQLBlob is not affected (one
+  `SELECT`, no pages).
   The shape of a fix is a first-page bound: tolerate the container 404 only while
   nothing has been yielded, and let a later one propagate. That needs deciding for
   the *whole* family at once, and a cell per lane, because a fix on one lane
@@ -1352,10 +1370,27 @@ the commit that writes it lands, so cite the generator instead.
     em dashes in TLA+), so the deliverable needs an explicit "rule check, no
     pair" classification; and the `scripts/check_*.py` glob under-reaches —
     `scripts/docs/check_links.py` is a genuine cross-artifact gate outside it.
-  **The shared open question:** both complications push toward either a docstring
-  convention or a curated mapping, and a curated mapping is precisely the
-  parallel-artifact-that-drifts problem these exist to close. That decision is
-  unmade and it is one decision, not three.
+  - **BE-021's divergence counts, and the artifacts that re-count against them.**
+    The absent-container divergence set is stated as a bullet list in BE-021, as
+    a class count in `sdd/BACKLOG.md` § 1, and again in the CHANGELOG, spec 040
+    and BUG-254 — in **four incompatible frames**: bullets, backend classes,
+    operations, and helper call sites. Nothing derives any of them, and each
+    frame is explained in prose that is itself a claim that can go stale.
+    Measured cost: BUG-246 took four review rounds, and **11 of its round-4
+    findings were figures or scope sentences in this set**, including one fixed
+    by appending the right number beside the wrong one and one corrected in the
+    same commit that falsified it by adding an item to the section being counted.
+    Each fix pass added figures and produced a fresh defect. Fix shape: one
+    authoritative divergence table that the other artifacts link to rather than
+    re-count against, and delete the meta-prose explaining which frame each
+    sentence uses — that prose was two of the eleven findings on its own.
+    **Position: independent of the other three**, and the only one of the four
+    with a measured defect rate behind it.
+  **The shared open question:** the first three complications push toward either
+  a docstring convention or a curated mapping, and a curated mapping is precisely
+  the parallel-artifact-that-drifts problem these exist to close. That decision is
+  unmade and it is one decision, not three. The fourth bullet does not share it:
+  its answer is to have one table rather than a better-maintained several.
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   spec: — · effort: S · audience: library.maintainer

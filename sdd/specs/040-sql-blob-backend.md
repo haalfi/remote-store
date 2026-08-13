@@ -301,7 +301,7 @@ operation then answers: `delete` / `delete_folder` return cleanly under
 `is_folder` answer `False`; `read`, `read_bytes`, `get_file_info`,
 `get_folder_info` (below the root — see the root paragraph further down) and the
 `move`/`copy` source raise `NotFound`; `list_files`, `list_folders`,
-`iter_children` and `glob` come back empty. § Reach itself names eleven
+`iter_children` and `glob` come back empty. § Reach itself names twelve
 operations and not `read_bytes`, `iter_children` or `glob`; those three take the
 answer their named sibling takes, which is a reading this backend applies rather
 than a row it is handed.
@@ -330,7 +330,7 @@ which is why the tolerance below the root and the tolerance at it differ. Every
 other path answers `NotFound` as § Reach requires.
 
 Other backends do not all meet BE-029's root row against an absent container;
-that divergence is tracked in the backlog and is not this backend's.
+that divergence is **BUG-254** and is not this backend's.
 
 ---
 

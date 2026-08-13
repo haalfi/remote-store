@@ -1143,6 +1143,9 @@ class AsyncAzureBackend(AsyncBackend):
     async def glob(self, pattern: str) -> AsyncIterator[FileInfo]:
         """Match files against a glob pattern.
 
+        Reaches the wire only through ``list_files``, so an absent container
+        yields nothing here too.
+
         Args:
             pattern: Glob pattern (e.g., ``"data/*.csv"``, ``"**/*.txt"``).
 

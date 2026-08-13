@@ -462,17 +462,23 @@ class TestEveryOperationReadsTheAbsentTableAsAnAbsentPath:
     def test_the_root_answers_the_same_on_an_empty_table(self, backend: SQLBlobBackend, root: str) -> None:
         """The control: an absent table is indistinguishable from an empty one at the root.
 
-        This compares the two answers field for field rather than re-asserting
-        "empty" against a second store. Asserting a count here would restate the
-        cell above and could not catch the thing this control exists for — a
-        seeded value that is empty-ish but not *equal* to what an empty store
-        returns.
+        Compared **field by field, explicitly**. ``FolderInfo.__eq__`` is
+        path-only, so ``absent == empty`` would be a tautology here — both sides
+        are ``get_folder_info(root)`` for the same root — and would assert
+        nothing about the counts this cell exists to compare. An earlier version
+        of this cell did exactly that and was weaker than the plain count
+        assertion it replaced.
         """
         backend.delete("folder/object.txt")
         empty = backend.get_folder_info(root)
         _drop_table(backend)
         absent = backend.get_folder_info(root)
-        assert absent == empty, "an absent table must answer the root exactly as an empty one does"
+        assert (absent.path, absent.file_count, absent.total_size, absent.modified_at) == (
+            empty.path,
+            empty.file_count,
+            empty.total_size,
+            empty.modified_at,
+        ), "an absent table must answer the root exactly as an empty one does"
 
     @pytest.mark.spec("BE-021")
     def test_write_still_reports_a_backend_failure(self, backend: SQLBlobBackend) -> None:
