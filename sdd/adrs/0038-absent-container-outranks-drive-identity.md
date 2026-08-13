@@ -114,6 +114,21 @@ exhaustive. A hand-written table cannot catch a site it does not list, which is
 why the resolver's row is derived from the source instead — verified by adding a
 sixth leg and watching a named cell fail.
 
+**The replay tier cannot cover any of this, and that is not an oversight.**
+Cassettes are recorded from live Graph, and the § Verification note is the reason
+none exists: consumer OneDrive answers a nonexistent drive with `itemNotFound`,
+so `resourceNotFound` has never been recorded. Measured across the whole cassette
+tree — `rg -l resourceNotFound tests/backends/cassettes/` returns **0 files**,
+against 53 Graph cassettes carrying a `404` and 47 carrying `itemNotFound`. Two
+consequences. Every `404` in every cassette answers identically before and after
+this change, so the replay tier is provably unaffected and needed no
+re-recording; and the behaviour this ADR decides is covered by respx stubs at
+Stage 1 and by nothing else. Synthesising a `resourceNotFound` cassette would
+fabricate a response the recorded tier has never produced, which is worse
+evidence than a stub that is honestly a stub. **BK-345 inherits this**: when the
+absent-container rule becomes a registry-driven conformance cell, Graph's lane
+has to be a stub route, not a recording.
+
 **Drive scope is a definition, not a live half of the compromise.** It had no
 call site before this change either — `sdd/BACKLOG-DONE.md`'s BK-266 entry, which
 introduced the probe scope, states it in so many words — because every

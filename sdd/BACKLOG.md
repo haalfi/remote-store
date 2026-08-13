@@ -404,6 +404,13 @@ is the whole promise.
   SQLBlob needs a dropped table, Local needs its root deleted, and Graph needs a
   respx route. That is the same per-fixture arrangement hook ID-244 has to decide
   where to bind, so this item consumes that decision rather than making its own.
+  **Graph's lane cannot be a cassette**, and not by preference: cassettes are
+  recorded from live Graph, which answers a nonexistent drive with
+  `itemNotFound` (GR-031's verification note), so the drive-identity code has
+  never been recorded — `rg -l resourceNotFound tests/backends/cassettes/`
+  returns 0 files against 53 Graph cassettes carrying a `404`. The `graph_replay`
+  fixture therefore cannot reach the absent-container state at all, and a
+  hand-written cassette would fabricate a response the tier has never produced.
   This is the item that makes the section's promise stay true for backend seven,
   which is why it sits here and not with the coverage work.
 

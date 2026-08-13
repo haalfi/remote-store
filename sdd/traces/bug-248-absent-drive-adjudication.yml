@@ -223,3 +223,16 @@ phases:
         section: "[Unreleased]"
         read_type: verify
         extract: "BUG-243's bullet names GraphBackend as a standing divergence in the same unreleased section"
+      - file: tests/backends/cassettes/graph/
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Asked late, and should have been asked in the coverage phase: does the
+          replay tier cover any of this, and does any cassette need re-recording?
+          Neither. `rg -l resourceNotFound tests/backends/cassettes/` returns 0
+          files against 53 graph cassettes carrying a 404 and 47 carrying
+          itemNotFound, so every recorded 404 answers identically before and
+          after. Cassettes come from live Graph, which has never produced the
+          drive-identity code (GR-031's verification note), so the tier cannot
+          reach this behaviour at all — the whole adjudication is respx-only at
+          Stage 1, and BK-345's Graph lane inherits the constraint.
