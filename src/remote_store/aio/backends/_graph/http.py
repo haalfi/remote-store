@@ -1,6 +1,6 @@
-"""HTTP request primitive, Microsoft Graph error mapping, and credential masking.
+"""HTTP request primitive, Graph error mapping, pagination, and credential masking.
 
-Centralises the three concerns the rest of the Graph sub-package shares: a
+Centralises the four concerns the rest of the Graph sub-package shares: a
 single ``graph_send`` request helper that attaches the bearer token and maps
 non-2xx responses to ``remote_store`` errors, the status-plus-``error.code``
 mapping table, pagination over ``@odata.nextLink``, and ``Authorization``-header
@@ -48,6 +48,25 @@ if TYPE_CHECKING:
 
 BACKEND_NAME = "graph"
 """The backend ``name``; set on every mapped error."""
+
+# The four scopes implement GR-031 as adjudicated against BE-021 by ADR-0038:
+# BE-021 § "An absent container reads as an absent path" wins on every operation
+# it decides (item scope), and GR-031's drive-identity escalation keeps the ones
+# it does not (identity scope). Four *groups* of caller are in identity scope,
+# nine call sites between them: write (2), check_health (1),
+# GraphUtils.resolve_drive_id's five legs, and the copy/move monitor poller (1).
+# GR-031 carries the call-site table — every site and the scope it takes — and is
+# the copy to keep this comment in step with.
+GraphScope = Literal["item", "drive", "probe", "identity"]
+"""What a failing URL addressed, which is what a ``404`` from it means.
+
+``"item"`` is the path-addressed data plane; ``"probe"`` the type probes;
+``"identity"`` the callers the absent-container contract does not *decide* —
+``write``, which it declines, and three it never reaches — where Graph's
+drive-identity code is still honoured; ``"drive"`` the bare
+``/drives/{drive_id}`` resource, which no call site currently addresses. See
+``classify_graph_error`` for what each answers and who is in it.
+"""
 
 _REDACTED = "***"
 _SENSITIVE_HEADERS = frozenset({"authorization"})
@@ -120,18 +139,57 @@ def classify_graph_error(
     *,
     path: str = "",
     backend: str = BACKEND_NAME,
-    scope: Literal["item", "drive", "probe"] = "item",
+    scope: GraphScope = "item",
 ) -> RemoteStoreError:
     """Map an HTTP status plus Graph ``error.code`` to a ``remote_store`` error.
 
-    The single mapping table for the backend. ``scope`` disambiguates the
-    ``404`` case: an item/path-scoped ``itemNotFound`` is a per-item
-    ``NotFound``, while a drive-scoped ``404`` (or ``resourceNotFound``,
-    Graph's drive-identity code, at any URL scope) is a backend-identity
-    failure mapped to ``BackendUnavailable``. ``"probe"`` is the type-probe
-    scope (``exists`` / ``is_file`` / ``is_folder``): every ``404`` maps to
-    ``NotFound`` regardless of ``code``, so the drive-identity escalation
-    cannot escape a probe that suppresses ``NotFound`` to ``False``.
+    The single mapping table for the backend. ``scope`` disambiguates the ``404``
+    case, which is the only status whose meaning depends on what the failing URL
+    addressed:
+
+    * ``"item"`` — the backend's path-addressed data-plane operations. A ``404``
+      is ``NotFound`` whatever its ``code``. Graph's drive is a container, and
+      the backend contract binds a container's absence to read as the path's
+      absence, so a caller's absent-store handling does not depend on which
+      backend it holds.
+    * ``"probe"`` — the type probes (``exists`` / ``is_file`` / ``is_folder``).
+      Every ``404`` is ``NotFound``, which the probes suppress to ``False``.
+    * ``"identity"`` — a ``resourceNotFound`` is ``BackendUnavailable``; any
+      other ``404`` code is ``NotFound``. Four groups of call site, and the
+      reason differs between them, which is why this is not one test:
+
+      - **``write``**, both the small ``PUT /content`` and the
+        ``createUploadSession`` halves. It is the single path-addressed
+        operation the backend contract declines to decide, so Graph decides it:
+        a write against a drive that is not there reads as a configuration
+        error rather than as a missing file.
+      - **``check_health``**, which reports reachability rather than addressing
+        a path. It needs both halves of this scope — a missing configured
+        ``base_path`` folder must still be ``NotFound`` — which is why it is not
+        ``"drive"``.
+      - **drive-identity resolution** (``GraphUtils.resolve_drive_id``'s five
+        lookup legs), which runs before any backend exists.
+      - the **copy/move monitor poller**, whose ``404`` is about the operation
+        record rather than an item, so the contract states no answer for it and
+        the pre-adjudication one is kept.
+    * ``"drive"`` — the bare ``/drives/{drive_id}`` resource. Any ``404`` is
+      ``BackendUnavailable``: no path is being addressed, so there is no absence
+      to report, only a drive that is deleted or misconfigured. **No call site
+      passes it**; every drive-addressed lookup either resolves an id (identity
+      scope, above) or goes through ``/drives/{id}/root``, which is path-shaped.
+      It is retained as the mapping's statement of what a bare drive ``404``
+      means, and only the table's own tests reach it.
+
+    Membership in ``"item"`` is not "the contract names this operation": a
+    sibling that delegates to a named one — ``read_bytes`` to ``read``,
+    ``iter_children`` to the listings — belongs wherever the operation it
+    delegates to belongs, whether or not the contract spells it out.
+
+    ``"probe"`` currently answers exactly as ``"item"`` does. It is kept as a
+    distinct value rather than folded in because it pins a different obligation:
+    the probes may never raise, *whatever* the rest of this table does, so a
+    future narrowing that reintroduced an escalation at item scope must not
+    reach them.
 
     Never inspects the error *message* — only ``status`` and ``code``.
     """
@@ -141,8 +199,8 @@ def classify_graph_error(
         return PermissionDenied(f"Permission denied: {path}", path=path, backend=backend)
     if status == 403:  # GR-030 accessDenied
         return PermissionDenied(f"Permission denied: {path}", path=path, backend=backend)
-    if status == 404:  # GR-031 item-vs-drive discrimination
-        if scope != "probe" and (scope == "drive" or code == "resourceNotFound"):
+    if status == 404:  # GR-031 item-vs-drive discrimination (ADR-0038)
+        if scope == "drive" or (scope == "identity" and code == "resourceNotFound"):
             return BackendUnavailable(
                 f"Drive unavailable (404 {code or 'notFound'}): {path}", path=path, backend=backend
             )
@@ -353,7 +411,7 @@ async def graph_send(
     *,
     token_provider: TokenProvider,
     path: str = "",
-    scope: Literal["item", "drive", "probe"] = "item",
+    scope: GraphScope = "item",
     retry: RetryPolicy | None = None,
     return_on: frozenset[int] = frozenset(),
     authenticated: bool = True,
@@ -457,6 +515,7 @@ async def iter_pages(
     *,
     token_provider: TokenProvider,
     path: str = "",
+    scope: GraphScope = "item",
     retry: RetryPolicy | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
     """Yield each page body of a Graph collection, following ``@odata.nextLink``.
@@ -470,12 +529,18 @@ async def iter_pages(
     cross-host link would leak the token to an unrelated host.
 
     Each page fetch is retried per *retry* (threaded straight into
-    ``graph_send``); ``None`` keeps the single-attempt default.
+    ``graph_send``); ``None`` keeps the single-attempt default. *scope* is
+    threaded the same way, so a paged collection classifies its ``404`` on the
+    same terms as a single-shot fetch of the same resource — a listing that
+    resolves a drive is drive-identity work even though it arrives a page at a
+    time, and without the parameter it would silently take the item default.
     """
     trusted = urlsplit(url)
     next_url: str | None = url
     while next_url:
-        response = await graph_send(client, "GET", next_url, token_provider=token_provider, path=path, retry=retry)
+        response = await graph_send(
+            client, "GET", next_url, token_provider=token_provider, path=path, scope=scope, retry=retry
+        )
         body = response.json()
         yield body
         link = body.get("@odata.nextLink") if isinstance(body, dict) else None

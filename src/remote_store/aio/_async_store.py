@@ -306,9 +306,9 @@ class AsyncStore:
 
         A store whose backing container is gone — a deleted bucket, container or
         table — holds no file either, so *missing_ok* tolerates that too on the
-        S3, Azure and SQL backends. Two do not yet: a local store whose root
-        directory was deleted raises ``InvalidPath``, and a Graph store whose
-        drive is gone may raise ``BackendUnavailable``.
+        S3, Azure and SQL backends, and on Graph when its drive is gone. One does
+        not yet: a local store whose root directory was deleted raises
+        ``InvalidPath``.
 
         Args:
             path: Store-relative file path.
@@ -334,9 +334,9 @@ class AsyncStore:
 
         A store whose backing container is gone — a deleted bucket, container or
         table — holds no folder either, so *missing_ok* tolerates that too on the
-        S3, Azure and SQL backends. Two do not yet: a local store whose root
-        directory was deleted raises ``InvalidPath``, and a Graph store whose
-        drive is gone may raise ``BackendUnavailable``.
+        S3, Azure and SQL backends, and on Graph when its drive is gone. One does
+        not yet: a local store whose root directory was deleted raises
+        ``InvalidPath``.
 
         Args:
             path: Store-relative folder path.  Must not be ``""``

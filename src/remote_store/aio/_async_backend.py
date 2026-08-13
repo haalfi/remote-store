@@ -196,8 +196,7 @@ class AsyncBackend(abc.ABC):
         An absent container — a missing bucket, container or table — counts as
         an absent file, so *missing_ok* tolerates it on the same terms. This is
         required of implementations rather than guaranteed by them: the local
-        backend raises ``InvalidPath`` when its root directory is gone, and the
-        Graph backend may raise ``BackendUnavailable`` when its drive is.
+        backend still raises ``InvalidPath`` when its root directory is gone.
 
         Args:
             path: Backend-relative key.
@@ -216,8 +215,7 @@ class AsyncBackend(abc.ABC):
         An absent container — a missing bucket, container or table — counts as
         an absent folder, so *missing_ok* tolerates it on the same terms. This is
         required of implementations rather than guaranteed by them: the local
-        backend raises ``InvalidPath`` when its root directory is gone, and the
-        Graph backend may raise ``BackendUnavailable`` when its drive is.
+        backend still raises ``InvalidPath`` when its root directory is gone.
 
         Args:
             path: Backend-relative key.

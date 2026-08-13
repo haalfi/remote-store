@@ -1,4 +1,22 @@
-"""Resilient range-download driver for the Graph read path.
+"""Graph bulk-transfer drivers: the resilient range download, and the chunked upload.
+
+Both halves live here because each ends up streaming against a **pre-signed,
+cross-host** URL the ordinary ``graph_send`` path does not model — the
+``downloadUrl`` for reads, the upload-session ``uploadUrl`` for chunk writes.
+Those transfers send unauthenticated and carry their own resume logic.
+
+**The upload half** (``spool_content``, ``upload_session`` and its helpers)
+materialises a possibly-streaming body into a replayable spool, opens a session
+with an authenticated ``POST …/createUploadSession``, and PUTs aligned chunks to
+the pre-signed session URL, resuming from the server's ``nextExpectedRanges``
+rather than the client cursor. Its ``404`` classification is split deliberately,
+and by what each ``404`` is *about* rather than by URL shape: session creation is
+the large-file half of ``write``, the one roster operation the backend contract
+declines to decide, so it escalates a drive-identity ``404``; a mid-session chunk
+``PUT`` reports on the target item being swapped, which is a per-item condition,
+so it keeps the item default. See the comments at each site.
+
+**The download half** is described below.
 
 The pre-signed ``@microsoft.graph.downloadUrl`` is the only Graph surface that
 honours ``Range`` reliably (the ``/content`` endpoint ``302``-redirects to it),
@@ -26,8 +44,8 @@ header. This module drives reads against that URL:
   a ``416`` provoked by a malformed (inverted) range is a backend bug and
   surfaces as ``RemoteStoreError`` carrying the HTTP status.
 
-The driver is internal: ``SEEKABLE_READ`` stays withheld, and the request shape
-may change without a public-API deprecation.
+The download driver is internal: ``SEEKABLE_READ`` stays withheld, and the
+request shape may change without a public-API deprecation.
 """
 
 from __future__ import annotations
@@ -394,7 +412,14 @@ async def _create_upload_session(
 
     A ``409`` at creation discriminates the conflict outcome; a missing
     ``uploadUrl`` is a Graph contract gap mapped to ``BackendUnavailable``.
+
+    Sent at ``scope="identity"``: this is the large-file half of the write path,
+    so a drive-identity ``404 resourceNotFound`` escalates here exactly as it does
+    on the small ``PUT /content`` write. Without the scope the two halves of one
+    operation would answer an absent drive differently.
     """
+    # The write-path escalation is the residue ADR-0038 left GR-031; see the
+    # classify_graph_error scope table for why write is in it and reads are not.
     behavior = "replace" if overwrite else "fail"
     response = await graph_send(
         client,
@@ -402,6 +427,7 @@ async def _create_upload_session(
         create_url,
         token_provider=token_provider,
         path=path,
+        scope="identity",
         retry=retry,
         return_on=frozenset({409}),
         json={"item": {"@microsoft.graph.conflictBehavior": behavior}},
@@ -472,6 +498,14 @@ async def _upload_chunks(
             # so the write's bounded replace-retry (_write_replacing) re-opens a fresh
             # session and wins. Under overwrite=False there is no create-or-replace
             # contract to honour, so a genuine mid-session disappearance stays NotFound.
+            # Classified at the default item scope, not scope="identity". The
+            # deciding question is what the 404 is *about*, not what the URL is:
+            # here it is about the target item — it disappeared or was replaced —
+            # which is a per-item condition and so exactly what item scope reports.
+            # Being pre-signed and cross-host is not the reason and cannot be: the
+            # monitor poller is pre-signed and cross-host too and takes identity
+            # scope, because its 404 is about the *operation record*, which is not
+            # an item at all and whose absence leaves the copy unconfirmable.
             if overwrite:
                 raise AlreadyExists(
                     f"Upload target replaced concurrently mid-session (404): {path}", path=path, backend=backend

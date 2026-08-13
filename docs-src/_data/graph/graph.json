@@ -2261,7 +2261,7 @@
       "file": "src/remote_store/aio/backends/_graph/backend.py",
       "id": "cls:remote_store.aio.backends._graph.backend.GraphBackend",
       "kind": "class",
-      "line": 172,
+      "line": 173,
       "role": "backend",
       "runtime": "async",
       "spec": "sdd/specs/044-graph-backend.md",
@@ -2392,7 +2392,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 399,
+      "line": 397,
       "summary": "copy"
     },
     {
@@ -2410,7 +2410,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 296,
+      "line": 295,
       "summary": "delete_folder"
     },
     {
@@ -2419,7 +2419,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 351,
+      "line": 349,
       "summary": "get_file_info"
     },
     {
@@ -2428,7 +2428,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 366,
+      "line": 364,
       "summary": "get_folder_info"
     },
     {
@@ -2437,7 +2437,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 434,
+      "line": 432,
       "summary": "glob"
     },
     {
@@ -2446,7 +2446,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 417,
+      "line": 415,
       "summary": "iter_children"
     },
     {
@@ -2455,7 +2455,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 317,
+      "line": 315,
       "summary": "list_files"
     },
     {
@@ -2464,7 +2464,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 340,
+      "line": 338,
       "summary": "list_folders"
     },
     {
@@ -2473,7 +2473,7 @@
       "is_abstract": true,
       "is_async": false,
       "kind": "method",
-      "line": 381,
+      "line": 379,
       "summary": "move"
     },
     {
@@ -2817,7 +2817,7 @@
       "is_abstract": true,
       "is_async": true,
       "kind": "method",
-      "line": 322,
+      "line": 320,
       "summary": "copy"
     },
     {
@@ -2835,7 +2835,7 @@
       "is_abstract": true,
       "is_async": true,
       "kind": "method",
-      "line": 212,
+      "line": 211,
       "summary": "delete_folder"
     },
     {
@@ -2844,7 +2844,7 @@
       "is_abstract": true,
       "is_async": true,
       "kind": "method",
-      "line": 272,
+      "line": 270,
       "summary": "get_file_info"
     },
     {
@@ -2853,7 +2853,7 @@
       "is_abstract": true,
       "is_async": true,
       "kind": "method",
-      "line": 287,
+      "line": 285,
       "summary": "get_folder_info"
     },
     {
@@ -2862,7 +2862,7 @@
       "is_abstract": false,
       "is_async": true,
       "kind": "method",
-      "line": 362,
+      "line": 360,
       "summary": "glob"
     },
     {
@@ -2871,7 +2871,7 @@
       "is_abstract": false,
       "is_async": true,
       "kind": "method",
-      "line": 384,
+      "line": 382,
       "summary": "iter_children"
     },
     {
@@ -2880,7 +2880,7 @@
       "is_abstract": true,
       "is_async": true,
       "kind": "method",
-      "line": 234,
+      "line": 232,
       "summary": "list_files"
     },
     {
@@ -2889,7 +2889,7 @@
       "is_abstract": true,
       "is_async": true,
       "kind": "method",
-      "line": 259,
+      "line": 257,
       "summary": "list_folders"
     },
     {
@@ -2898,7 +2898,7 @@
       "is_abstract": true,
       "is_async": true,
       "kind": "method",
-      "line": 302,
+      "line": 300,
       "summary": "move"
     },
     {

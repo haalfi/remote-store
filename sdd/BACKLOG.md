@@ -197,11 +197,13 @@ be edited to point elsewhere.
 **Promise:** a caller catches one exception type, and an absent or denied
 store answers the same way on every backend.
 
-**Closes when:** the spec contradiction is adjudicated (BUG-248); the four
-adapters answer the contract against an absent container (BUG-246, BUG-249,
-BUG-247, BUG-245); no native exception escapes on either the absent or the
-**denied** path (BUG-249); and a newly registered backend cannot pass CI without
-meeting BE-004, BE-005 and BE-021 (BK-345).
+**Closes when:** the four adapters answer the contract against an absent
+container (BUG-246, BUG-249, BUG-247, BUG-245); no native exception escapes on
+either the absent or the **denied** path (BUG-249); one operation does not answer
+by payload size (BUG-253); and a newly registered backend cannot pass CI without
+meeting BE-004, BE-005 and BE-021 (BK-345). The spec contradiction is
+adjudicated — BUG-248, closed by
+[ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md).
 **Two cross-section dependencies**, per
 [§ How this file works](#how-this-file-works): BK-345 waits on **ID-244** in
 section 2 for the seeding hook, and BUG-249's denied half waits on **ID-242** in
@@ -209,48 +211,19 @@ section 2, the only item whose subject is that path's coverage. Both are stated
 inside the items that carry them, as the rule requires; this section cannot
 close on its own items alone.
 
-**Six backend classes** disagree with the contract or with each other, counted
-from the items below: `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend`
-(BUG-246, which collapses the two Azure adapters into one row because they
-answer identically and take one fix), `SQLBlobBackend` (BUG-246 and BUG-245),
-`LocalBackend` (BUG-247) and `GraphBackend` (BUG-248). The group ships together
-or not at all: any one left behind leaves portable error handling impossible,
-which is the whole promise. BUG-248 comes first because it is a spec
-adjudication rather than a code fix, and BK-345's exemption list cannot be
-written until it lands.
-
-- [ ] **BUG-248 — BE-021's absent-container rule and GR-031's drive-identity escalation contradict each other**
-  spec: BE-021, GR-031 · effort: M · audience: user.api
-  Two clauses, both deliberate, giving opposite answers for the same call. BE-021
-  says `delete(missing_ok=True)` and `delete_folder(missing_ok=True)` MUST return
-  cleanly when the container is absent, binding **every** backend with no
-  carve-out. GR-031 says a `404 resourceNotFound` — Graph's drive-identity code,
-  honoured at any URL scope — maps to `BackendUnavailable` for every
-  error-raising operation, because a deleted drive is a backend identity failure
-  rather than a per-item condition. `GraphBackend`'s drive is a container, so the
-  two clauses meet, and GR-031 wins today:
-  | Graph `error.code` | `delete(missing_ok=True)` | `delete_folder(missing_ok=True)` | `exists` / `is_file` / `is_folder` |
-  | --- | --- | --- | --- |
-  | `itemNotFound` | tolerated | tolerated | `False` |
-  | `resourceNotFound` | raises `BackendUnavailable` | raises `BackendUnavailable` | `False` |
-  Measured on respx stubs and pinned in
-  `tests/backends/graph/aio/test_absent_drive.py`. The probe row is not a
-  divergence: GR-031's probe scope flattens every `404`, so BE-004/BE-005 hold.
-  Only the two tolerant deletes disagree.
-  Neither implementation is buggy — each matches its own spec — so this needs
-  adjudicating before anything is coded. The case for GR-031: a drive that has
-  been deleted or misconfigured is not the same event as an empty bucket, and
-  silently returning from a delete against a store the caller cannot reach hides a
-  configuration error behind a success. The case for BE-021: it binds every
-  backend precisely because the earlier per-backend answers disagreed, and a
-  container is a container.
-  Note the escalation is defensive rather than observed: GR-031's own verification
-  note records that live consumer OneDrive returned `404 itemNotFound` for a
-  nonexistent drive on both URL forms, so the divergent row may be unreachable on
-  that tier and reachable only on SharePoint-backed drives, which the live tier
-  does not cover. Weigh how much a rule is worth when nobody has seen it fire.
-  Whichever clause loses must say so explicitly — an amended cross-reference in
-  both specs, not silence in one.
+**Five backend classes** still disagree with **the absent-container clause**,
+counted from the items below — BUG-253 is a sixth disagreement in this section
+but a different one, between two halves of one Graph operation rather than with
+that clause: `S3Boto3Backend`, `AzureBackend` and
+`AsyncAzureBackend` (BUG-246, which collapses the two Azure adapters into one row
+because they answer identically and take one fix), `SQLBlobBackend` (BUG-246 and
+BUG-245) and `LocalBackend` (BUG-247). `GraphBackend` was a sixth and is done
+**for that clause** — it still carries BUG-253:
+BUG-248 adjudicated the spec contradiction behind it and brought the backend to
+the contract in the same change, which is why BK-345's exemption list — blocked
+on that adjudication — can now be written. The remaining group ships together or
+not at all: any one left behind leaves portable error handling impossible, which
+is the whole promise.
 
 - [ ] **BUG-246 — An absent container raises where the contract says `False`, `NotFound`, or an empty listing**
   spec: BE-004, BE-005, BE-021 · effort: M · audience: user.api
@@ -379,6 +352,26 @@ written until it lands.
   and is pinned by `tests/backends/sqlblob/test_absent_table.py`; only the error
   type is wrong.
 
+- [ ] **BUG-253 — `GraphBackend.write` answers a file-ancestor path differently by payload size**
+  spec: BE-008, GR-019 · effort: S · audience: user.api
+  `write("blocker.txt/child.bin", …)` raises `InvalidPath` when the body takes
+  the small `PUT /content` path and `NotFound` when it takes the upload session,
+  for the identical path against the identical store — the answer depends on
+  whether the payload crosses `_SMALL_FILE_MAX_SIZE` (4 MiB), which is not
+  something a caller reasons about.
+  Cause: `_write_small` runs `_raise_if_file_ancestor(path)` before classifying
+  its `404` (ID-209/ID-211), and the large path calls `upload_session(...)`
+  directly with no such walk, so `_create_upload_session`'s `404` goes straight
+  to the classifier. `write`'s own docstring promises `InvalidPath` "if the path
+  … descends through a file ancestor" without qualifying by size, so the large
+  path contradicts it.
+  Predates BUG-248 — that change aligned the two halves on the absent-drive axis
+  and left this one — and was found by its round-3 panel while checking both
+  write halves. The fix is presumably to hoist the ancestor walk to `write`, or
+  to run it on the session-creation `404` as the small path does; measure which
+  before choosing, since the walk costs a round trip on a path that has already
+  failed.
+
 - [ ] **BK-345 — BE-021's absent-container rule has no registry-driven gate, so a new backend is silently exempt**
   spec: BE-021 · effort: M · audience: infra.test
   The rule binds every backend that can delete and whose container can be
@@ -387,9 +380,10 @@ written until it lands.
   `tests/backends/conformance/` gained nothing, so a seventh such backend
   inherits no cell and passes CI without ever meeting the clause.
   This is not hypothetical. `GraphBackend` went unexamined through six review
-  rounds of the change that wrote the rule (BUG-243) and turned out to
-  contradict it, which is BUG-248 above. A registry-driven cell would have failed
-  on the first run.
+  rounds of the change that wrote the rule (BUG-243) and turned out to contradict
+  it — BUG-248, since closed. A registry-driven cell would have failed on the
+  first run, and would also have shown the contradiction's real width: BUG-248
+  was filed as reaching two operations and measured at eleven.
   The repo already has the shape for this: [`sdd/TESTING.md`](TESTING.md)
   Rule 13 § "Declaring an exemption" — a self-pruning exemption list where
   silence is not consent. The work is a conformance cell parametrised over the
@@ -397,12 +391,26 @@ written until it lands.
   names as out of scope (`MemoryBackend` and `AsyncMemoryBackend`, whose
   container is an in-process dict; `SQLQueryBackend` and `ReadOnlyHttpBackend`,
   which do not declare `DELETE`).
-  **Depends on ID-244 for the mechanism, and on BUG-248 for the exemption list.**
+  **Depends on ID-244 for the mechanism.** The other dependency, BUG-248 for the
+  exemption list, is discharged: `GraphBackend` meets the clause on every
+  operation BE-021 decides, so it is a plain cell rather than an exemption, and
+  the two *backend operations* that keep Graph's drive-identity escalation
+  (`write`, `check_health`) are outside what the clause states — as are its two
+  non-operation callers, drive-id resolution and the copy/move monitor poller,
+  which a per-backend conformance cell does not reach at all. See
+  [ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md).
   An absent container is not a state most conformance fixtures can reach: the S3
   and Azure lanes need a stub that 404s at container level (BUG-243 built those),
   SQLBlob needs a dropped table, Local needs its root deleted, and Graph needs a
   respx route. That is the same per-fixture arrangement hook ID-244 has to decide
   where to bind, so this item consumes that decision rather than making its own.
+  **Graph's lane cannot be a cassette**, and not by preference: cassettes are
+  recorded from live Graph, which answers a nonexistent drive with
+  `itemNotFound` (GR-031's verification note), so the drive-identity code has
+  never been recorded — `rg -l resourceNotFound tests/backends/cassettes/`
+  returns 0 files against 53 Graph cassettes carrying a `404`. The `graph_replay`
+  fixture therefore cannot reach the absent-container state at all, and a
+  hand-written cassette would fabricate a response the tier has never produced.
   This is the item that makes the section's promise stay true for backend seven,
   which is why it sits here and not with the coverage work.
 

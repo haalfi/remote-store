@@ -17,7 +17,7 @@ from remote_store._errors import (
     RemoteStoreError,
     ResourceLocked,
 )
-from remote_store.aio.backends._graph.http import classify_graph_error, error_code, mask_headers
+from remote_store.aio.backends._graph.http import GraphScope, classify_graph_error, error_code, mask_headers
 
 
 class TestClassifyGraphError:
@@ -34,30 +34,44 @@ class TestClassifyGraphError:
     def test_403_access_denied(self) -> None:
         assert isinstance(classify_graph_error(403, "accessDenied"), PermissionDenied)
 
-    @pytest.mark.spec("GR-031")
-    def test_404_item_scope_is_not_found(self) -> None:
-        exc = classify_graph_error(404, "itemNotFound", path="missing", scope="item")
-        assert isinstance(exc, NotFound)
-
-    @pytest.mark.spec("GR-031")
-    def test_404_drive_scope_is_backend_unavailable(self) -> None:
-        exc = classify_graph_error(404, "itemNotFound", scope="drive")
-        assert isinstance(exc, BackendUnavailable)
-
-    @pytest.mark.spec("GR-031")
-    def test_404_resource_not_found_is_backend_unavailable(self) -> None:
-        # resourceNotFound at item scope still escalates to a drive-identity
-        # failure for error-raising operations (read/write/delete/move/copy).
-        exc = classify_graph_error(404, "resourceNotFound", scope="item")
-        assert isinstance(exc, BackendUnavailable)
-
-    @pytest.mark.spec("GR-031")
-    @pytest.mark.parametrize("code", ["itemNotFound", "resourceNotFound", None])
-    def test_404_probe_scope_is_not_found(self, code: str | None) -> None:
-        # Probe scope (exists/is_file/is_folder) treats ANY 404 as missing — the
-        # drive-identity escalation must not escape the probes (BE-004/BE-005).
-        exc = classify_graph_error(404, code, path="maybe", scope="probe")
-        assert isinstance(exc, NotFound)
+    # The 404 space is two axes — four scopes by three error codes — so it is
+    # enumerated rather than sampled, and each cell's expected value is written
+    # out as data. Re-deriving it from the same predicate the implementation
+    # uses would assert only that the classifier agrees with a copy of itself,
+    # and a misreading shared by both copies is exactly what an adjudication
+    # test exists to catch. Values transcribed from ADR-0038 § Decision; the row
+    # order is the classifier's own, so do not read it as a claim about that
+    # file's ordering.
+    @pytest.mark.spec("BE-004", "BE-005", "BE-021", "GR-031")
+    @pytest.mark.parametrize(
+        ("scope", "code", "expected"),
+        [
+            # item — the path-addressed data plane: absence, whatever the code.
+            ("item", "itemNotFound", NotFound),
+            ("item", "resourceNotFound", NotFound),
+            ("item", None, NotFound),
+            # probe — never raises past the caller; same answer, own obligation.
+            ("probe", "itemNotFound", NotFound),
+            ("probe", "resourceNotFound", NotFound),
+            ("probe", None, NotFound),
+            # identity — write, check_health, drive-id resolution, the monitor
+            # poller: the drive-identity code escalates and nothing else does.
+            ("identity", "itemNotFound", NotFound),
+            ("identity", "resourceNotFound", BackendUnavailable),
+            ("identity", None, NotFound),
+            # drive — the bare /drives/{id} resource: no path, so no absence.
+            ("drive", "itemNotFound", BackendUnavailable),
+            ("drive", "resourceNotFound", BackendUnavailable),
+            ("drive", None, BackendUnavailable),
+        ],
+        ids=lambda v: v.__name__ if isinstance(v, type) else str(v),
+    )
+    def test_404_maps_by_scope_and_code(
+        self, scope: GraphScope, code: str | None, expected: type[RemoteStoreError]
+    ) -> None:
+        exc = classify_graph_error(404, code, path="subject", scope=scope)
+        assert isinstance(exc, expected), f"404 {code} at {scope} scope must map to {expected.__name__}"
+        assert exc.backend == "graph"
 
     @pytest.mark.spec("GR-032")
     def test_409_already_exists(self) -> None:

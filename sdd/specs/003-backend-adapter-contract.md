@@ -592,8 +592,16 @@ container before this clause, and keeps it: `get_folder_info`, `read`,
 `NotFound` row; `list_files` and `list_folders` return an empty listing, since an
 absent container holds nothing; `exists()`, `is_file()` and `is_folder()` MUST
 answer `False`, which BE-004 / BE-005 and this section's own rule already forbid
-them from breaching. `write` is the one operation no clause decides, and this one
-does not decide it either. All of these obligations are pre-existing — this
+them from breaching. `write` is the one operation *on the roster* that no clause
+of this spec decides, and this one does not decide it either — which leaves it
+the one roster operation a backend spec may decide, as
+[GR-031](044-graph-backend.md#gr-031-404-discrimination-item-vs-drive) does for
+`GraphBackend` ([ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md)).
+That is a gap being filled, not a divergence: a backend answering `write` its own
+way contradicts nothing here. Anything *off* the roster — a health probe, a
+credential or container-identity lookup — is not an operation this section
+reaches at all, so it needs no such permission and is not counted against this
+one. All of these obligations are pre-existing — this
 clause neither creates nor relaxes them, and that is why those operations are
 absent from the roster above rather than exempt from it.
 
@@ -635,16 +643,23 @@ here is what makes the container case answerable from one place.
   so absence is misreported as an escape. This is the furthest from the clause
   any backend currently sits, and the only one where the error type actively
   misleads.
-- On `GraphBackend` and its sync adapter, an absent drive raises
-  `BackendUnavailable` from both tolerant deletes when Graph answers
-  `404 resourceNotFound`, and is tolerated when it answers `404 itemNotFound`.
-  Unlike the three above this is not an oversight: it is what
-  [GR-031](044-graph-backend.md#gr-031-404-discrimination-item-vs-drive)
-  deliberately specifies, on the grounds that a deleted drive is a backend
-  identity failure rather than a per-item condition. Two clauses of this
-  repository's own specs therefore give opposite answers for the same call, and
-  the conflict is adjudicated as a whole rather than resolved by assuming this
-  clause wins — the divergence stands until it is.
+
+`GraphBackend` was the fifth bullet in this list — counting bullets, not backend
+classes, which is the frame `sdd/BACKLOG.md` § 1 uses when it calls Graph the
+sixth of six — and is no longer one; four bullets remain.
+[GR-031](044-graph-backend.md#gr-031-404-discrimination-item-vs-drive) mapped
+`404 resourceNotFound` to `BackendUnavailable` for every error-raising
+operation, deliberately, on the grounds that a deleted drive is a backend
+identity failure rather than a per-item condition — and a drive is a container,
+so two clauses of this repository's own specs gave opposite answers for the same
+call. The divergence was recorded as reaching the two tolerant deletes; measured
+across every operation it reached **eleven** of the ones named above, plus
+`read_bytes` and `iter_children`.
+[ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md) adjudicated
+it in favour of this clause for every operation this clause decides. GR-031 keeps
+what it does not: `write`, the one roster operation § Reach declines; and, off
+the roster entirely, `check_health`, Graph's drive-id resolution and its
+copy/move monitor poller.
 
 The rule exists because leaving it unstated let each backend answer from
 whatever its wire protocol happened to reveal. `HeadObject` answers a bodyless

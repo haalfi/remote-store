@@ -155,6 +155,67 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-248 — BE-021's absent-container rule and GR-031's drive-identity escalation contradict each other**
+  spec: BE-021, GR-031, PING-011 · effort: M · audience: user.api
+  Two deliberate clauses giving opposite answers for the same call, neither
+  implementation wrong under its own. Adjudicated in
+  [ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md): **BE-021 wins
+  on every operation it decides; GR-031 keeps the ones it is silent about** —
+  `write`, the one roster operation § Reach declines, plus `check_health`,
+  drive-id resolution and the copy/move monitor poller, which are off the roster
+  entirely. A `404` is now classified by an `identity` scope carrying those four,
+  and item scope stops honouring `resourceNotFound` altogether. The full
+  call-site table is in GR-031, because arguing the criterion did not converge:
+  three review rounds each found a different site on the wrong side of it. The `drive` scope has no call site and
+  did not have one before the change either, so it is a definition of what a bare
+  drive `404` means rather than a live part of the compromise.
+  **Filed as two operations wide, measured at eleven.** The item, BE-021's
+  divergence bullet, GR-031's conflict paragraph and the pinning test all said
+  only the two tolerant deletes disagreed. Running all 17 operations against a
+  respx catch-all `404` on every `/drives/*` URL, on both error codes, showed
+  every error-raising operation answering `BackendUnavailable` under
+  `resourceNotFound` — eleven of them named verbatim by BE-021, plus `read_bytes`
+  and `iter_children`. That changed the answer, not just the paperwork: a
+  carve-out eleven operations wide would have voided BE-021 on this backend rather
+  than narrowing it. Four rounds of prose had agreed on the two-operation
+  framing; one command refuted it.
+  **`check_health` was not in the item and nearly broke.** PING-011 relied on the
+  item-scope escalation to report an unreachable drive, and needs both halves of
+  the rule — a missing `base_path` must stay `NotFound` — so none of the other
+  scopes serves it. It surfaced as a failing pre-existing test, not as analysis,
+  which is the argument for running the suite before believing a subject list.
+  **`GraphUtils.resolve_drive_id` was the same miss twice, and the second time
+  the count was the culprit.** Its lookups take the classifier's item default, so
+  flattening item scope silently changed a public drive-identity helper BE-021
+  never governed — caught by review, not by a test, because its suite is all
+  success paths and the two answers differ only by `error.code`. The fix moved
+  "the four lookups"; there are **five**. `_named_drive_id` reaches the
+  classifier through `iter_pages`, which had no `scope` parameter at all, so a
+  sweep shaped by "every `graph_send` in this module" could not see it, and six
+  artifacts then asserted an answer one leg no longer gave. Two consecutive
+  rounds refuting the same scope criterion is the signal to stop arguing it and
+  enumerate: the space is (**leg** × error code) — not target shape × code, which
+  is 4 × 2, since the site-URL and tuple shapes share a leg and each adds one —
+  so ten cells, now a parametrised table rather than two sampled cells. Verified
+  by reverting the fix and watching the named cell fail.
+  **A third round found a third site**, the copy/move monitor poller, and that is
+  what moved the remedy from a table to an enumeration: the leg table is
+  hand-written and could never have caught a call site it does not list. GR-031
+  now carries the full call-site-to-scope table — it owns the mapping, so the
+  table sits with the rule rather than with the record of the decision — and a
+  test reads `utils.py`'s call sites rather than a list, so a sixth leg fails a
+  named cell. Verified by adding one and watching it fail; the table's rows were
+  verified by instrumenting the classifier to record the scope each site passes
+  at runtime.
+  **The Dafny layer was considered and declined**, with the reasoning recorded in
+  the ADR rather than passed over: `BackendContract.dfy` models the filesystem as
+  `map<Path, Entry>` with no container that could be absent, carries
+  `BackendUnavailable` in no postcondition, and models the abstract trait — while
+  this collision is an abstract clause against a backend-specific one, which
+  `sdd/formal/README.md` already places outside the Dafny track.
+  **Unblocks BK-345**, whose exemption list waited on this: `GraphBackend` now
+  meets the clause and needs a plain conformance cell rather than an exemption.
+
 - [x] **BK-353 — `/ship` states one mechanism four times**
   spec: — · effort: S · audience: contributor.process
   The file had grown to **6,916 words** and the growth was not evenly spread: the
@@ -761,11 +822,13 @@ if evidence changes; these are retired.
   root as a path escape), BUG-248 (the new clause and GR-031 give opposite
   answers for an absent Graph drive). BUG-247 refuted a premise this item's own
   spec rationale had asserted, and only a test caught it — two code readings had
-  agreed it was true. BUG-248 is the only one where nothing is broken: two
-  deliberate clauses simply disagree, and neither implementation is wrong under
-  its own. The three that are divergences *from this clause* — BUG-246, BUG-247,
-  BUG-248 — are in BE-021's divergence list, so the clause reads as an obligation
-  with named exceptions rather than as a description. BUG-245 is not: an
+  agreed it was true. BUG-248 was recorded as the one where nothing is broken —
+  two deliberate clauses simply disagreeing, neither implementation wrong under
+  its own — and that framing was itself half wrong: the disagreement was filed at
+  two operations and measured at eleven, which is what settled it. The three that
+  are divergences *from this clause* — BUG-246, BUG-247,
+  BUG-248 — went into BE-021's divergence list, so the clause reads as an
+  obligation with named exceptions rather than as a description. BUG-245 is not: an
   unmapped constructor exception is a gap in BE-021's "backend-native exceptions
   never leak" rule, which is scoped to operations, and belongs to that rule
   rather than to this clause.

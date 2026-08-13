@@ -2,7 +2,7 @@
 
 <!-- doc: repo-only -->
 
-Compiled from 37 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
+Compiled from 38 ADR(s) by `scripts/gen_adr_digest.py`. Do not edit by hand; run `hatch run gen-adr-digest`.
 
 ## Accepted
 
@@ -1234,6 +1234,30 @@ contract and live in `.claude/skills/orchestrate/SKILL.md` and
   answer is to state fewer figures.
 
 > amends ADR-0033, ADR-0034 (clause).
+
+### [ADR-0038](0038-absent-container-outranks-drive-identity.md): An Absent Container Reads as Absence, Except Where the Contract Is Silent
+
+**BE-021 wins on every operation it decides. GR-031 keeps the operations BE-021
+is silent about.** Graph classifies a `404` by four scopes:
+
+- **Item scope** — the path-addressed data plane. A `404` is `NotFound` whatever
+  its `error.code`.
+- **Identity scope** — `resourceNotFound` stays `BackendUnavailable`; any other
+  `404` is `NotFound`. It holds `write` — the single roster operation BE-021
+  § Reach declines to decide — plus three callers BE-021's roster never reached:
+  `check_health`, drive-id resolution, and the copy/move monitor poller.
+- **Drive scope** — the bare `/drives/{drive_id}` resource: any `404` is
+  `BackendUnavailable`. No call site passes it.
+- **Probe scope** — unchanged: every `404` is `NotFound`, which the three probe
+  methods then suppress to `False`.
+
+**A sibling takes the scope of the operation it delegates to**, not the scope its
+own name would suggest — `read_bytes` with `read`, `iter_children` with the
+listings — whether or not BE-021 names it.
+
+**The rule is published with its enumeration, not alone.** GR-031 carries a
+call-site-to-scope table, and `tests/backends/graph/aio/test_utils.py`
+derives the resolver's row from that module's own call sites rather than a list.
 
 ## Superseded
 
