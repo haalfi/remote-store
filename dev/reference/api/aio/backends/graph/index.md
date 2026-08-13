@@ -189,9 +189,9 @@ Returns:
 Raises:
 
 - `InvalidPath` – If target matches no accepted shape, the SharePoint site URL has no host, or the named library does not exist.
-- `NotFound` – If a site/team/channel id resolves but returns 404.
+- `NotFound` – If a site/team/channel id resolves but returns a 404 carrying any code other than resourceNotFound.
 - `PermissionDenied` – If Graph returns 403 for the lookup.
-- `BackendUnavailable` – For a transport error, a retryable 5xx / 429 / 507, or a malformed @odata.nextLink while paging a site's document libraries.
+- `BackendUnavailable` – If Graph reports the target as a drive-identity failure (404 resourceNotFound) — these lookups resolve a drive rather than address a path, so a resource that is not there is a configuration error, not an absence. Also for a transport error, a retryable 5xx / 429 / 507, or a malformed @odata.nextLink while paging a site's document libraries.
 
 ## See also
 

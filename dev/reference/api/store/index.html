@@ -6963,6 +6963,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../explanation/design/adrs/0038-absent-container-outranks-drive-identity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0038: An Absent Container Reads as Absence, Except Where the Contract Is Silent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -12515,9 +12543,9 @@ declare this capability.</p>
         <p>Delete a single file.</p>
 <p>A store whose backing container is gone — a deleted bucket, container or
 table — holds no file either, so <em>missing_ok</em> tolerates that too on the
-S3, Azure and SQL backends. Two do not yet: a local store whose root
-directory was deleted raises <code>InvalidPath</code>, and a Graph store whose
-drive is gone may raise <code>BackendUnavailable</code>.</p>
+S3, Azure and SQL backends, and on Graph when its drive is gone. One does
+not yet: a local store whose root directory was deleted raises
+<code>InvalidPath</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -12590,9 +12618,9 @@ does not exist.</p>
         <p>Delete a folder.</p>
 <p>A store whose backing container is gone — a deleted bucket, container or
 table — holds no folder either, so <em>missing_ok</em> tolerates that too on the
-S3, Azure and SQL backends. Two do not yet: a local store whose root
-directory was deleted raises <code>InvalidPath</code>, and a Graph store whose
-drive is gone may raise <code>BackendUnavailable</code>.</p>
+S3, Azure and SQL backends, and on Graph when its drive is gone. One does
+not yet: a local store whose root directory was deleted raises
+<code>InvalidPath</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

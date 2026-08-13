@@ -6400,6 +6400,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0038-absent-container-outranks-drive-identity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0038: An Absent Container Reads as Absence, Except Where the Contract Is Silent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11042,13 +11070,19 @@ the call on the s3fs event loop.</p>
 /drives/{id}/root</code> when no <code>base_path</code> is configured, or the <code>base_path</code> folder
 item when one is pinned — reusing the backend's existing <code>_get_item("")</code> primitive.
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">check_health</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_item</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>  <span class="c1"># scope=&quot;item&quot;</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_item</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s2">&quot;identity&quot;</span><span class="p">)</span>
 </code></pre></div>
-The probe <strong>must</strong> use the default item scope, not the type-probe scope: an
-item-scoped <code>resourceNotFound</code> (a missing/misconfigured drive) maps to
-<code>BackendUnavailable</code>, while a missing <code>base_path</code> folder maps to <code>NotFound</code>
-(mirroring SFTP's <code>stat(base_path)</code>, PING-006). The <code>"probe"</code> scope would flatten
-every <code>404</code> to <code>NotFound</code> (see GR-031) and swallow the drive-unreachable signal.</p>
+The probe <strong>must</strong> use the identity scope, and none of the other three will do:
+a <code>resourceNotFound</code> (a missing/misconfigured drive) must map to
+<code>BackendUnavailable</code> while a missing <code>base_path</code> folder must map to <code>NotFound</code>
+(mirroring SFTP's <code>stat(base_path)</code>, PING-006), and only that scope gives both
+halves. The <code>"probe"</code> and <code>"item"</code> scopes flatten every <code>404</code> to <code>NotFound</code> (see
+<a href="../044-graph-backend/#gr-031-404-discrimination-item-vs-drive">GR-031</a>) and would
+swallow the drive-unreachable signal; the <code>"drive"</code> scope escalates every <code>404</code>
+and would report a missing <code>base_path</code> as an unreachable drive. <code>check_health</code>
+sits in the identity scope because it reports reachability rather than addressing
+a caller-supplied path, so BE-021's roster does not reach it — see
+<a href="../../adrs/0038-absent-container-outranks-drive-identity/">ADR-0038</a>.</p>
 <hr />
 <h2 id="error-mapping">Error Mapping<a class="headerlink" href="#error-mapping" title="Permanent link">&para;</a></h2>
 <h3 id="ping-009-error-classification">PING-009: Error Classification<a class="headerlink" href="#ping-009-error-classification" title="Permanent link">&para;</a></h3>

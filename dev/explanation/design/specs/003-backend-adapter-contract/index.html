@@ -6400,6 +6400,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0038-absent-container-outranks-drive-identity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0038: An Absent Container Reads as Absence, Except Where the Contract Is Silent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -12028,8 +12056,16 @@ container before this clause, and keeps it: <code>get_folder_info</code>, <code>
 <code>NotFound</code> row; <code>list_files</code> and <code>list_folders</code> return an empty listing, since an
 absent container holds nothing; <code>exists()</code>, <code>is_file()</code> and <code>is_folder()</code> MUST
 answer <code>False</code>, which BE-004 / BE-005 and this section's own rule already forbid
-them from breaching. <code>write</code> is the one operation no clause decides, and this one
-does not decide it either. All of these obligations are pre-existing — this
+them from breaching. <code>write</code> is the one operation <em>on the roster</em> that no clause
+of this spec decides, and this one does not decide it either — which leaves it
+the one roster operation a backend spec may decide, as
+<a href="../044-graph-backend/#gr-031-404-discrimination-item-vs-drive">GR-031</a> does for
+<code>GraphBackend</code> (<a href="../../adrs/0038-absent-container-outranks-drive-identity/">ADR-0038</a>).
+That is a gap being filled, not a divergence: a backend answering <code>write</code> its own
+way contradicts nothing here. Anything <em>off</em> the roster — a health probe, a
+credential or container-identity lookup — is not an operation this section
+reaches at all, so it needs no such permission and is not counted against this
+one. All of these obligations are pre-existing — this
 clause neither creates nor relaxes them, and that is why those operations are
 absent from the roster above rather than exempt from it.</p>
 <p><strong>Known divergences, stated rather than implied.</strong> These are what ships today,
@@ -12070,17 +12106,23 @@ here is what makes the container case answerable from one place.</p>
   so absence is misreported as an escape. This is the furthest from the clause
   any backend currently sits, and the only one where the error type actively
   misleads.</li>
-<li>On <code>GraphBackend</code> and its sync adapter, an absent drive raises
-  <code>BackendUnavailable</code> from both tolerant deletes when Graph answers
-  <code>404 resourceNotFound</code>, and is tolerated when it answers <code>404 itemNotFound</code>.
-  Unlike the three above this is not an oversight: it is what
-  <a href="../044-graph-backend/#gr-031-404-discrimination-item-vs-drive">GR-031</a>
-  deliberately specifies, on the grounds that a deleted drive is a backend
-  identity failure rather than a per-item condition. Two clauses of this
-  repository's own specs therefore give opposite answers for the same call, and
-  the conflict is adjudicated as a whole rather than resolved by assuming this
-  clause wins — the divergence stands until it is.</li>
 </ul>
+<p><code>GraphBackend</code> was the fifth bullet in this list — counting bullets, not backend
+classes, which is the frame <code>sdd/BACKLOG.md</code> § 1 uses when it calls Graph the
+sixth of six — and is no longer one; four bullets remain.
+<a href="../044-graph-backend/#gr-031-404-discrimination-item-vs-drive">GR-031</a> mapped
+<code>404 resourceNotFound</code> to <code>BackendUnavailable</code> for every error-raising
+operation, deliberately, on the grounds that a deleted drive is a backend
+identity failure rather than a per-item condition — and a drive is a container,
+so two clauses of this repository's own specs gave opposite answers for the same
+call. The divergence was recorded as reaching the two tolerant deletes; measured
+across every operation it reached <strong>eleven</strong> of the ones named above, plus
+<code>read_bytes</code> and <code>iter_children</code>.
+<a href="../../adrs/0038-absent-container-outranks-drive-identity/">ADR-0038</a> adjudicated
+it in favour of this clause for every operation this clause decides. GR-031 keeps
+what it does not: <code>write</code>, the one roster operation § Reach declines; and, off
+the roster entirely, <code>check_health</code>, Graph's drive-id resolution and its
+copy/move monitor poller.</p>
 <p>The rule exists because leaving it unstated let each backend answer from
 whatever its wire protocol happened to reveal. <code>HeadObject</code> answers a bodyless
 404, so a missing bucket is indistinguishable from a missing key and <code>delete</code>

@@ -6595,6 +6595,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../../explanation/design/adrs/0038-absent-container-outranks-drive-identity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0038: An Absent Container Reads as Absence, Except Where the Contract Is Silent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11493,7 +11521,8 @@ site URL has no host, or the named library does not exist.</p>
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
-            <p>If a site/team/channel id resolves but returns <code>404</code>.</p>
+            <p>If a site/team/channel id resolves but returns a <code>404</code>
+carrying any code other than <code>resourceNotFound</code>.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -11507,9 +11536,13 @@ site URL has no host, or the named library does not exist.</p>
               <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../../errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
             –
           <div class="doc-md-description">
-            <p>For a transport error, a retryable <code>5xx</code> /
-<code>429</code> / <code>507</code>, or a malformed <code>@odata.nextLink</code> while
-paging a site's document libraries.</p>
+            <p>If Graph reports the target as a drive-identity
+failure (<code>404 resourceNotFound</code>) — these lookups resolve a
+drive rather than address a path, so a resource that is not
+there is a configuration error, not an absence. Also for a
+transport error, a retryable <code>5xx</code> / <code>429</code> / <code>507</code>, or a
+malformed <code>@odata.nextLink</code> while paging a site's document
+libraries.</p>
           </div>
         </li>
     </ul>

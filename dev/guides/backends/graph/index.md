@@ -371,7 +371,7 @@ exists(path: str) -> bool
 
 Return `True` if a file or folder exists at *path*.
 
-Any 404 — including a drive-identity `resourceNotFound` — is suppressed to `False`; never raises `NotFound`. A misconfigured or deleted drive therefore probes as missing rather than raising; it surfaces on the first error-raising operation.
+Any 404 — including a drive-identity `resourceNotFound` — is suppressed to `False`; never raises `NotFound`. A misconfigured or deleted drive therefore probes as missing rather than raising, and so do the path-addressed operations, which report it as absence. `write` and `check_health` are the two that still escalate — but only when Graph names the drive, with `error.code == "resourceNotFound"`. On a tier that answers `itemNotFound` for a dead drive, as consumer OneDrive does, no operation tells one apart from a missing file.
 
 Raises:
 
@@ -386,7 +386,7 @@ is_file(path: str) -> bool
 
 Return `True` if *path* exists and carries the `file` facet.
 
-A missing item returns `False` (any 404 is suppressed, including a drive-identity `resourceNotFound`).
+A missing item returns `False` (any 404 is suppressed, including a drive-identity `resourceNotFound`); see `exists` for where a dead drive does surface.
 
 Raises:
 
@@ -401,7 +401,7 @@ is_folder(path: str) -> bool
 
 Return `True` if *path* exists and carries the `folder` facet.
 
-A missing item returns `False` (any 404 is suppressed, including a drive-identity `resourceNotFound`). The drive root (`""`) carries the `folder` facet and reports `True`.
+A missing item returns `False` (any 404 is suppressed, including a drive-identity `resourceNotFound`); see `exists` for where a dead drive does surface. The drive root (`""`) carries the `folder` facet and reports `True`.
 
 Raises:
 
@@ -433,7 +433,7 @@ check_health() -> None
 
 Verify the drive is reachable and credentials are valid.
 
-One item-metadata `GET` on the effective root, reusing `_get_item("")`: `GET /drives/{id}/root` when no `base_path` is configured, or the `base_path` folder item when one is pinned (mirroring SFTP's `stat(base_path)`). The probe runs at the default item scope, not the type-probe scope, so a drive-identity `resourceNotFound` escalates to `BackendUnavailable` instead of being flattened to `NotFound`.
+One item-metadata `GET` on the effective root, reusing `_get_item("")`: `GET /drives/{id}/root` when no `base_path` is configured, or the `base_path` folder item when one is pinned (mirroring SFTP's `stat(base_path)`). The probe runs at `scope="identity"`, so a drive-identity `resourceNotFound` escalates to `BackendUnavailable` while a missing `base_path` folder still reports `NotFound`. None of the other three scopes gives both halves: `"item"` and `"probe"` would report an unreachable drive as a missing path, and `"drive"` would report a missing `base_path` as an unreachable drive.
 
 Raises:
 
@@ -534,7 +534,8 @@ Raises:
 - `InvalidPath` – If the path names the drive root, an existing folder, or descends through a file ancestor.
 - `CapabilityNotSupported` – If a non-empty metadata= reaches the backend directly (USER_METADATA is not declared).
 - `PermissionDenied` – If the token is rejected or lacks access to the item (401/403).
-- `BackendUnavailable` – On 5xx / throttling / transport failure, or a Graph contract gap (missing uploadUrl / nextExpectedRanges).
+- `NotFound` – If Graph answers the write with a 404 this operation does not escalate — any code on the mid-session chunk PUT, or a non-drive-identity code elsewhere. On the small PUT /content path a file ancestor is ruled out first and raises InvalidPath instead; the upload-session path runs no such walk, so a large write under a file ancestor reaches this row — a known divergence between the two halves, tracked separately.
+- `BackendUnavailable` – If the drive itself is gone or misconfigured and Graph names it (404 resourceNotFound) — this operation still escalates that where every path-addressed one instead reports an absent drive as absence, which is what makes write the call that tells a dead store from a missing file. Two bounds: the escalation is on the small PUT /content and the createUploadSession request only, not on a mid-session chunk PUT, so a drive that dies mid-upload answers NotFound; and it needs that specific code, which some tiers never emit. Also on 5xx / throttling / transport failure, or a Graph contract gap (missing uploadUrl / nextExpectedRanges).
 - `ResourceLocked` – If the item is locked mid-session. The session stays valid server-side, but its credentialed URL is not exposed in the exception.
 
 ### write_atomic

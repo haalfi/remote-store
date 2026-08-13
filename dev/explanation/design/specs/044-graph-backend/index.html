@@ -6400,6 +6400,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adrs/0038-absent-container-outranks-drive-identity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    0038: An Absent Container Reads as Absence, Except Where the Contract Is Silent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -12566,8 +12594,16 @@ for callers already in an async context.</p>
 <ul>
 <li><code>InvalidPath</code> when <code>target</code> does not match any accepted shape or
   when the SharePoint <code>library_name</code> does not exist on the site.</li>
-<li><code>NotFound</code> when the site/team/channel id resolves but returns 404
-  (deleted or inaccessible).</li>
+<li><code>NotFound</code> when the site/team/channel id resolves but returns a 404
+  carrying any code other than <code>resourceNotFound</code> (deleted or
+  inaccessible).</li>
+<li><code>BackendUnavailable</code> when Graph answers a lookup with
+  <code>404 resourceNotFound</code>. Every leg here resolves a drive rather than
+  addressing a caller-supplied path, so all five send at the identity
+  scope <a href="#gr-031-404-discrimination-item-vs-drive">GR-031</a> defines and a
+  drive that is not there stays a configuration error rather than
+  flattening to an absence — see
+  <a href="../../adrs/0038-absent-container-outranks-drive-identity/">ADR-0038</a>.</li>
 <li><code>PermissionDenied</code> when Graph returns 403 for the lookup.</li>
 <li>Other Graph-mapped errors per GR-028..GR-034, GR-045, GR-054.</li>
 </ul>
@@ -13262,26 +13298,60 @@ change the outcome.</p>
 <h3 id="gr-031-404-discrimination-item-vs-drive">GR-031: 404 Discrimination (item vs drive)<a class="headerlink" href="#gr-031-404-discrimination-item-vs-drive" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>404</code> responses are disambiguated by Graph <code>error.code</code>
 and by the resource scope of the failing URL:
-- <code>404</code> with <code>error.code == "itemNotFound"</code> at an item or path scope
-  (e.g. <code>/drives/{drive_id}/root:{path}:</code>) maps to <code>NotFound</code> for
-  operations where missing-path is an error (read, get_file_info,
-  delete without <code>missing_ok</code>, move/copy source).
+- At item scope — a path-addressed URL such as
+  <code>/drives/{drive_id}/root:{path}:</code> — a <code>404</code> maps to <code>NotFound</code>
+  <strong>whatever its <code>error.code</code></strong>, for operations where a missing path is
+  an error (read, get_file_info, delete without <code>missing_ok</code>, move/copy
+  source). The code is not consulted here: a drive is a container, and
+  BE-021 binds a container's absence to read as the path's absence, so
+  <code>itemNotFound</code>, <code>resourceNotFound</code> and a bodyless <code>404</code> all answer
+  alike. <strong>This is the half
+  <a href="../../adrs/0038-absent-container-outranks-drive-identity/">ADR-0038</a>
+  changed</strong> — see § "Adjudicated against BE-021" below. A sibling that
+  delegates to a named operation goes where that operation goes —
+  <code>read_bytes</code> with <code>read</code>, <code>iter_children</code> with the listings — whether
+  or not BE-021 spells it out.
 - For the type probes <code>exists</code>, <code>is_file</code>, <code>is_folder</code>, <strong>any</strong> <code>404</code>
   — whatever its <code>error.code</code> — is suppressed and returns <code>False</code> per
-  BE-004 and BE-005 (probe scope). A drive-identity <code>404</code> therefore
-  cannot escape a probe as <code>BackendUnavailable</code>; a misconfigured or
-  deleted drive surfaces on the first error-raising operation instead
-  (as <code>BackendUnavailable</code> when Graph reports <code>resourceNotFound</code>, or
-  as <code>NotFound</code> when it reports <code>itemNotFound</code> — see the verification
-  note below).
-- For error-raising operations, a <code>404</code> at drive scope (the
-  <code>/drives/{drive_id}</code> resource itself) or carrying
-  <code>error.code == "resourceNotFound"</code> — Graph's drive-identity code,
-  honoured regardless of the failing URL's scope because every
-  item-by-path URL embeds the drive — maps to <code>BackendUnavailable</code>:
-  the configured drive is deleted or misconfigured, which is a
-  backend identity failure, not a per-item condition.
-- The backend does <strong>not</strong> attempt to discriminate "404 masking
+  BE-004 and BE-005 (probe scope). This scope now answers exactly as the
+  item scope above does, and is kept distinct because it pins BE-004 /
+  BE-005 independently of the rest of this table: a future renarrowing
+  at item scope must not reach the probes.
+- A <code>404</code> at drive scope — the <code>/drives/{drive_id}</code> resource itself —
+  maps to <code>BackendUnavailable</code> whatever its <code>error.code</code>. No path is
+  being addressed, so there is no absence to report: the configured
+  drive is deleted or misconfigured, which is a backend identity
+  failure rather than a per-item condition. <strong>No call site passes this
+  scope</strong>, and none did before the adjudication either: every
+  drive-addressed lookup either resolves an id (identity scope, below)
+  or goes through <code>/drives/{id}/root</code>, which is path-shaped. The row
+  stands as this table's statement of what a bare drive <code>404</code> means,
+  reached only by the mapping table's own tests.
+- At identity scope, <code>error.code == "resourceNotFound"</code> — Graph's
+  drive-identity code — maps to <code>BackendUnavailable</code>; any other <code>404</code>
+  code maps to <code>NotFound</code>. The code is honoured <strong>only here</strong>: it used to
+  be honoured at any URL scope, on the grounds that every item-by-path
+  URL embeds the drive, and that is the clause
+  <a href="../../adrs/0038-absent-container-outranks-drive-identity/">ADR-0038</a>
+  withdrew. Four groups of caller sit in this scope, for reasons that
+  differ, which is why this is a rule and not a single test:
+  - <code>write</code>, on both its small <code>PUT /content</code> and its
+    <code>createUploadSession</code> halves. It is the one operation on
+    <a href="../003-backend-adapter-contract/#be-021-error-mapping">BE-021</a>'s
+    roster that § Reach explicitly declines to decide, so this spec
+    decides it.
+  - <code>check_health</code>
+    (<a href="../026-health-check/#ping-011-graphbackend">PING-011</a>), which
+    reports reachability rather than addressing a caller-supplied path.
+  - Drive-identity resolution — <code>GraphUtils.resolve_drive_id</code>'s five
+    lookup legs (GR-057) — which runs before any backend exists.
+  - The copy/move monitor poller (GR-026), whose <code>404</code> is about the
+    operation record rather than an item, so this spec states no answer
+    for it and it keeps the one it had before the adjudication.</p>
+<p>The last three are off BE-021's roster entirely rather than declined by
+  it, so nothing there is being overridden.</p>
+<ul>
+<li>The backend does <strong>not</strong> attempt to discriminate "404 masking
   403" (Graph occasionally returns <code>404 itemNotFound</code> where <code>403
   accessDenied</code> would be semantically correct on restricted
   resources). All <code>404 itemNotFound</code> at item scope map to
@@ -13289,38 +13359,141 @@ and by the resource scope of the failing URL:
   signal to tell a real not-found from a hidden permission denial,
   and guessing would require the backend to track what the caller
   "should" be able to enumerate — which it cannot. Callers that
-  need to distinguish run a drive-root probe (<code>exists("")</code>; the
-  drive root always exists, so <code>False</code> means the drive itself is
-  unreachable) to confirm the drive is reachable, then treat
-  <code>NotFound</code> as authoritative for the item.</p>
-<p><strong>Conflict with BE-021, unresolved.</strong> The third bullet's escalation
-contradicts
+  need to distinguish confirm the drive is reachable first, then
+  treat <code>NotFound</code> as authoritative for the item. <code>check_health()</code>
+  is the reachability probe that holds in every configuration.
+  <strong><code>exists("")</code> is not</strong>, and the difference is <code>base_path</code>:
+  <code>native_path("")</code> prepends it, so on a store constructed with one
+  the probe addresses the <code>base_path</code> folder rather than the drive
+  root, and <code>False</code> then means "drive gone <strong>or</strong> <code>base_path</code>
+  missing". Only with no <code>base_path</code> does <code>exists("")</code> address
+  <code>/drives/{id}/root</code> and mean what this bullet used to claim
+  unconditionally.</li>
+</ul>
+<p><strong>Which call site takes which scope</strong>, stated rather than left to be
+re-derived. Three review rounds of the adjudication each found a site on
+the wrong side of the rule, by a different route each time, so the rule
+ships with its extension. <strong>The deciding question is what a <code>404</code> from
+the site would be <em>about</em></strong> — an item's existence, or something that is
+not an item — not what the URL looks like: the upload chunk <code>PUT</code> and the
+monitor poller are both pre-signed and cross-host and land on opposite
+sides.</p>
+<table>
+<thead>
+<tr>
+<th>Call site</th>
+<th>Scope</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>_get_item</code> — the metadata <code>GET</code> for read, both deletes, <code>get_file_info</code>, <code>get_folder_info</code>, <code>move</code>/<code>copy</code> source</td>
+<td>item</td>
+</tr>
+<tr>
+<td>the mutating requests those operations then issue — <code>delete</code>/<code>delete_folder</code>'s <code>DELETE</code>, <code>copy</code>'s <code>POST</code>, <code>move</code>'s <code>PATCH</code></td>
+<td>item</td>
+</tr>
+<tr>
+<td><code>_iter_child_items</code> → <code>iter_pages</code> (the listings), <code>_folder_is_nonempty</code></td>
+<td>item</td>
+</tr>
+<tr>
+<td>mid-session chunk <code>PUT</code> (<code>_upload_chunks</code>)</td>
+<td>item — its <code>404</code> is about the target item, a concurrent replace</td>
+</tr>
+<tr>
+<td><code>abort_upload_session</code>'s <code>DELETE</code></td>
+<td>item — errors are swallowed; the scope is never observed</td>
+</tr>
+<tr>
+<td><code>exists</code> / <code>is_file</code> / <code>is_folder</code></td>
+<td>probe</td>
+</tr>
+<tr>
+<td><code>_write_small</code>, <code>_create_upload_session</code></td>
+<td>identity</td>
+</tr>
+<tr>
+<td><code>check_health</code></td>
+<td>identity</td>
+</tr>
+<tr>
+<td><code>resolve_drive_id</code>'s five legs (4 <code>graph_send</code> + 1 <code>iter_pages</code>)</td>
+<td>identity</td>
+</tr>
+<tr>
+<td>the copy/move monitor poller's <strong>poll-request</strong> <code>4xx</code></td>
+<td>identity — its <code>404</code> is about the operation record, leaving the copy unconfirmable</td>
+</tr>
+<tr>
+<td>the monitor's <strong>failed-body</strong> channel, via <code>classify_graph_error_code</code></td>
+<td>item, and it takes no <code>scope</code> — see below</td>
+</tr>
+<tr>
+<td>—</td>
+<td>drive — <strong>no call site</strong></td>
+</tr>
+</tbody>
+</table>
+<p><code>classify_graph_error_code</code> maps a status-less <code>error.code</code> from a failed
+async operation through the same table, and has no <code>scope</code> parameter. It
+reaches the <code>404</code> row only for <code>itemNotFound</code>, which answers <code>NotFound</code> at the
+item default the helper takes, so the omission is currently unobservable —
+<code>resourceNotFound</code> is not in its reverse map and falls through to
+<code>BackendUnavailable</code> before the table is consulted. That is a bound, not a
+design: adding <code>resourceNotFound</code> to that map without giving the helper a
+scope would silently put a drive-identity failure on the item row.</p>
+<p><code>tests/backends/graph/aio/test_utils.py</code> enforces the resolver row by
+reading that module's call sites rather than a list, so a sixth leg left
+at the default fails a named cell. The other rows are review-enforced.</p>
+<p><strong>The table names every site whose scope is a decision</strong>, not every site
+that reaches the classifier: a handful more take the item default where
+nothing else would make sense and no clause turns on them — the
+<code>move</code>/<code>copy</code> destination-error helper and the range-download driver
+among them. They are covered by the first rows' reasoning rather than
+listed, and the enumeration above should be read as the decided set.</p>
+<p><strong>Adjudicated against BE-021</strong> (<a href="../../adrs/0038-absent-container-outranks-drive-identity/">ADR-0038</a>,
+BUG-248). This clause used to honour <code>resourceNotFound</code> at <em>every</em> URL
+scope for <em>every</em> error-raising operation, which contradicted
 <a href="../003-backend-adapter-contract/#be-021-error-mapping">BE-021</a>
-§ "An absent container reads as an absent path", which requires
-<code>delete(missing_ok=True)</code> and <code>delete_folder(missing_ok=True)</code> to return
-cleanly when the container is absent and binds every backend with no
-carve-out. A drive is a container, so against a drive-identity
-<code>resourceNotFound</code> this clause raises <code>BackendUnavailable</code> where that one
-requires a clean return. Both were written deliberately and neither
-implementation is wrong under its own; the disagreement is recorded in
-BE-021's divergence list and adjudicated as a whole rather than by
-assuming either clause wins. Whichever loses gets an amended
-cross-reference here as well as there — a resolution recorded on one side
-only is how the conflict went six review rounds without being noticed.</p>
+§ "An absent container reads as an absent path": a drive is a container,
+so BE-021 requires an absent drive to read as an absent path, and it
+binds every backend with no carve-out. Both were written deliberately and
+neither implementation was wrong under its own.</p>
+<p>The conflict was recorded as reaching the two tolerant deletes. Measured
+over every operation against an absent drive, it reached <strong>eleven</strong> of
+the operations BE-021 names — both deletes under either <code>missing_ok</code>
+value, <code>read</code>, <code>get_file_info</code>, <code>get_folder_info</code>, the <code>move</code>/<code>copy</code>
+source, and both listings — plus <code>read_bytes</code> and <code>iter_children</code> as
+unnamed siblings. A carve-out that wide would not have narrowed BE-021 on
+this backend, it would have voided it here.</p>
+<p>So BE-021 wins on every operation it decides, and this clause keeps the
+four identity-scope groups above. <code>write</code> is the load-bearing one — it
+is the call a caller makes first against a freshly configured store, so a
+misconfigured drive still surfaces as a configuration error rather than
+as a missing file. Drive-identity resolution kept its answer unchanged in
+the same change rather than inheriting the flattening: a drive that
+cannot be resolved at all still fails before any operation runs.</p>
 <p><strong>Verification note (live, consumer OneDrive, 2026-06):</strong> a
 nonexistent drive id returned <code>404 itemNotFound</code> on <strong>both</strong> URL
 forms — the item-by-path address and the bare <code>/drives/{drive_id}</code>
 resource; <code>resourceNotFound</code> was not observed. Two consequences.
 First, <code>error.code</code> is not a reliable scope signal in either
 direction, which is why the probe scope suppresses every <code>404</code>
-rather than trusting the code. Second, the <code>resourceNotFound</code> →
-<code>BackendUnavailable</code> escalation is defensive: it rests on Graph's
+rather than trusting the code. Second, the surviving <code>resourceNotFound</code>
+→ <code>BackendUnavailable</code> escalation is defensive: it rests on Graph's
 documented error contract and business/SharePoint-tier reports, not
 on verified consumer wire behaviour, and on a consumer drive a dead
 drive surfaces as <code>NotFound</code> from error-raising operations and
 <code>False</code> from probes. SharePoint-backed drives are outside the live
 tier's coverage (see the coverage-disclosure paragraph in
-§ Integration-only).</p>
+§ Integration-only).
+That unobserved-ness was weighed in the adjudication above and is what
+the residual identity-scope escalation costs: on the tier where the code
+has been seen, those four groups are the only place a caller can still
+tell a dead drive from a missing item, and on the tier where it has not,
+nothing about the answers changes.</p>
 <h3 id="gr-032-409-namealreadyexists">GR-032: 409 nameAlreadyExists<a class="headerlink" href="#gr-032-409-namealreadyexists" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>409 nameAlreadyExists</code> maps to <code>AlreadyExists</code>. For
 write operations, the backend uses Graph's <code>@microsoft.graph.conflictBehavior</code>
