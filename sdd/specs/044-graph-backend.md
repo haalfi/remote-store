@@ -1166,6 +1166,13 @@ scope would silently put a drive-identity failure on the item row.
 `tests/backends/graph/aio/test_utils.py` enforces the resolver row by
 reading that module's call sites rather than a list, so a sixth leg left
 at the default fails a named cell. The other rows are review-enforced.
+
+**The table names every site whose scope is a decision**, not every site
+that reaches the classifier: a handful more take the item default where
+nothing else would make sense and no clause turns on them — the
+`move`/`copy` destination-error helper and the range-download driver
+among them. They are covered by the first rows' reasoning rather than
+listed, and the enumeration above should be read as the decided set.
 - **Every other error-raising operation takes the item scope above**, so
   a drive-identity `404` reaches a caller as `NotFound` — not as
   `BackendUnavailable`. Graph's drive is a container, and BE-021 binds a

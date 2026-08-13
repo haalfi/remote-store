@@ -237,10 +237,12 @@ class TestPollHttpError:
     @respx.mock
     @pytest.mark.spec("GR-026", "GR-031")
     async def test_404_resource_not_found_during_poll_stays_backend_unavailable(self) -> None:
-        # The monitor URL is opaque, pre-signed and cross-host: it addresses no
-        # drive and no caller-supplied path, so the absent-container rule that
-        # flattens a data-plane 404 to NotFound does not reach it (ADR-0038) and
-        # this site sends at scope="identity". Flattened, a drive-identity 404
+        # This 404 is about the operation record, not about an item — which is
+        # the test that decides scope (ADR-0038). Being pre-signed and cross-host
+        # is not the reason: the upload chunk PUT is both and takes item scope,
+        # because its 404 *is* about an item. So the absent-container rule that
+        # flattens a data-plane 404 to NotFound does not reach this site and it
+        # sends at scope="identity". Flattened, a drive-identity 404
         # here would hand the caller NotFound for a copy that may have completed
         # and cannot be confirmed — the opposite of the err-toward-raising rule
         # this class exists to pin.

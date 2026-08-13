@@ -88,7 +88,7 @@ own name would suggest — `read_bytes` with `read`, `iter_children` with the
 listings — whether or not BE-021 names it.
 
 **The rule is published with its enumeration, not alone.** GR-031 carries a
-call-site-to-scope table covering every site, and `tests/backends/graph/aio/test_utils.py`
+call-site-to-scope table, and `tests/backends/graph/aio/test_utils.py`
 derives the resolver's row from that module's own call sites rather than a list.
 
 ## Consequences

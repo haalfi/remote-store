@@ -168,8 +168,13 @@ phases:
         section: "_create_upload_session, _upload_chunks"
         read_type: reference
         extract: >-
-          The second write call site, and the chunk PUT — left at item scope
-          because its URL is pre-authorised, cross-host and addresses no drive
+          The second write call site, and the chunk PUT — left at item scope. The
+          reason recorded here at the time ("pre-authorised, cross-host, addresses
+          no drive") was withdrawn in round 4, which found monitor.py deriving the
+          *opposite* scope from the identical premise: the surviving test is what
+          the 404 is about — the target item (item scope) or something that is not
+          an item at all (identity).
+        outcome: misleading
       - file: sdd/specs/026-health-check.md
         section: "PING-011"
         read_type: gate
@@ -201,7 +206,7 @@ phases:
           reverting the fix and watching the named cell fail. A third round then found
           a third mis-scoped site (the monitor poller), which is what showed a
           hand-written table can only catch the legs it lists: the durable half is a
-          test that reads utils.py's call sites, plus the ADR's call-site table.
+          test that reads utils.py's call sites, plus GR-031's call-site table.
   - id: verify
     name: Ripple-check
     steps:
