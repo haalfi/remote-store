@@ -127,7 +127,15 @@ class BackendUnavailable(RemoteStoreError):
 
     Raised during backend construction or first operation when the
     storage service is unreachable (e.g., network error, invalid
-    endpoint, missing container).
+    endpoint, bad credentials).
+
+    Not raised because the bucket, container or table is *absent*: a
+    container that does not exist holds no path either, so the operation
+    answers for a missing path instead — ``False`` from ``exists``,
+    ``is_file`` and ``is_folder``, ``NotFound`` from the file-shaped
+    operations, and an empty listing from the listings. Reach for
+    ``check_health()`` to tell a store that is gone from one that is
+    merely empty.
     """
 
 

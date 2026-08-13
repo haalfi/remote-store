@@ -311,10 +311,20 @@ otherwise.
 The reclassification asks only whether the table is reachable, and does not ask
 *why* it is not. A dropped table and a disposed in-memory engine — the one case
 where disposal destroys the database rather than releasing a connection to it —
-both answer "absent", so a discarded store reads as an *empty* store from every
-operation above. That uniformity is what makes the case testable at all: an
-exclusion for the disposed engine would have to be keyed on how the in-memory URL
-was spelled, which is a property of the caller rather than of the store.
+both answer "absent", so the two are indistinguishable to every operation above.
+That uniformity is what makes the case testable at all: an exclusion for the
+disposed engine would have to be keyed on how the in-memory URL was spelled,
+which is a property of the caller rather than of the store.
+
+**An absent store is not the same as an empty one, and the difference shows at
+the root.** Against an *empty* table `get_folder_info("")` returns
+`FolderInfo(file_count=0)`, because the root is a folder whether or not it has
+children (BE-029); against an *absent* table it raises `NotFound`, because
+`get_folder_info` takes the canonical row. Both answers follow from clauses this
+repository states, and which one the root of an absent container owes is not
+decided anywhere — BE-021 § Reach decides operations, not the root case within
+them. Recorded rather than resolved here: the backends disagree about it, and the
+disagreement is tracked in the backlog.
 
 ---
 

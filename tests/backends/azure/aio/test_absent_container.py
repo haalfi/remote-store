@@ -91,6 +91,46 @@ _PROBES = [
     ("is_folder", lambda b: b.is_folder(FOLDER)),
 ]
 
+_LISTINGS = [
+    ("list_files", lambda b: b.list_files("")),
+    ("list_files-recursive", lambda b: b.list_files(FOLDER, recursive=True)),
+    ("list_folders", lambda b: b.list_folders("")),
+    ("iter_children", lambda b: b.iter_children("")),
+    ("glob", lambda b: b.glob("**/*.txt")),
+]
+
+
+class TestTheListingsComeBackEmpty:
+    """An absent container holds nothing, async half.
+
+    Same reasoning as the sync sibling. ``AsyncAzureBackend`` carries its own copy
+    of each listing body, so a sync-only suite proves nothing here.
+    """
+
+    @pytest.mark.spec("BE-021", "AZ-026")
+    @pytest.mark.parametrize(("op_name", "call"), _LISTINGS, ids=[n for n, _ in _LISTINGS])
+    async def test_absent_container_yields_nothing(
+        self,
+        backend: Any,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        got = [item async for item in call(backend)]
+        assert got == [], f"{op_name} must yield nothing against an absent container"
+
+    @pytest.mark.spec("BE-021", "AZ-026")
+    @pytest.mark.parametrize(("op_name", "call"), _LISTINGS, ids=[n for n, _ in _LISTINGS])
+    async def test_denied_listing_still_raises(
+        self,
+        denied_backend: Any,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        """The narrowness guard: an empty listing must not be how a denial is reported."""
+        with pytest.raises(PermissionDenied) as exc_info:
+            [item async for item in call(denied_backend)]
+        assert exc_info.value.backend == "async-azure", op_name
+
 
 class TestTheProbesAnswerFalse:
     """BE-004 / BE-005, async half.

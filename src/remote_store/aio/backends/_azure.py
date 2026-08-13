@@ -1014,10 +1014,21 @@ class AsyncAzureBackend(AsyncBackend):
                 async for item in self._cc.walk_blobs(name_starts_with=prefix):
                     if not getattr(item, "prefix", None):
                         yield props_to_fileinfo(item, item.name)
+        except NotFound:
+            # An absent container holds nothing, so the listing is empty rather
+            # than an error -- the same answer an absent prefix already gives,
+            # and the one the HNS branch above reaches by its own early return.
+            return
         except RemoteStoreError:
             raise
         except Exception as exc:  # noqa: BLE001
-            raise classify_azure_error(exc, path, self.name) from None
+            mapped = classify_azure_error(exc, path, self.name)
+            if isinstance(mapped, NotFound):
+                # walk_blobs/list_blobs report an absent *prefix* as an empty
+                # page, so the only 404 they raise is the container's. A denial
+                # maps to PermissionDenied and still propagates below.
+                return
+            raise mapped from None
 
     async def list_folders(self, path: str) -> AsyncIterator[FolderEntry]:
         """List immediate subfolders under ``path``.
@@ -1054,10 +1065,21 @@ class AsyncAzureBackend(AsyncBackend):
                         rel = self.to_key(item.prefix.rstrip("/"))
                         folder_name = rel.rsplit("/", 1)[-1]
                         yield FolderEntry(path=RemotePath(rel), name=folder_name)
+        except NotFound:
+            # An absent container holds nothing, so the listing is empty rather
+            # than an error -- the same answer an absent prefix already gives,
+            # and the one the HNS branch above reaches by its own early return.
+            return
         except RemoteStoreError:
             raise
         except Exception as exc:  # noqa: BLE001
-            raise classify_azure_error(exc, path, self.name) from None
+            mapped = classify_azure_error(exc, path, self.name)
+            if isinstance(mapped, NotFound):
+                # walk_blobs/list_blobs report an absent *prefix* as an empty
+                # page, so the only 404 they raise is the container's. A denial
+                # maps to PermissionDenied and still propagates below.
+                return
+            raise mapped from None
 
     async def iter_children(self, path: str) -> AsyncIterator[FileInfo | FolderEntry]:
         """Yield both files and folders under ``path`` in a single pass.
@@ -1095,10 +1117,21 @@ class AsyncAzureBackend(AsyncBackend):
                         yield FolderEntry(path=RemotePath(rel), name=folder_name)
                     else:
                         yield props_to_fileinfo(item, item.name)
+        except NotFound:
+            # An absent container holds nothing, so the listing is empty rather
+            # than an error -- the same answer an absent prefix already gives,
+            # and the one the HNS branch above reaches by its own early return.
+            return
         except RemoteStoreError:
             raise
         except Exception as exc:  # noqa: BLE001
-            raise classify_azure_error(exc, path, self.name) from None
+            mapped = classify_azure_error(exc, path, self.name)
+            if isinstance(mapped, NotFound):
+                # walk_blobs/list_blobs report an absent *prefix* as an empty
+                # page, so the only 404 they raise is the container's. A denial
+                # maps to PermissionDenied and still propagates below.
+                return
+            raise mapped from None
 
     async def glob(self, pattern: str) -> AsyncIterator[FileInfo]:
         """Match files against a glob pattern.

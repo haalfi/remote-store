@@ -2578,24 +2578,45 @@ class TestAsyncAzureErrorPropagation:
             async for _ in backend.list_folders("data"):
                 pass
 
-    @pytest.mark.spec("ASYNC-024")
-    async def test_iter_children_error_mapped(self) -> None:
+    @pytest.mark.spec("ASYNC-024", "BE-021")
+    async def test_iter_children_absent_container_yields_nothing(self) -> None:
+        """A 404 on a listing is the container's, and an absent container holds nothing.
+
+        This cell asserted ``NotFound`` until the absent-container rule reached
+        the listings. The mapping is not gone — ``test_list_folders_error_mapped``
+        above still pins a non-404 fault as ``BackendUnavailable`` — but on this
+        path a 404 has exactly one cause: ``walk_blobs`` reports an absent
+        *prefix* as an empty page, so the only 404 it can raise is the
+        container's.
+        """
         backend, cc, bc = _setup_non_hns_backend()
         cc.walk_blobs.side_effect = ResourceNotFoundError("not here")
 
-        with pytest.raises(NotFound):
-            async for _ in backend.iter_children("missing"):
-                pass
+        assert [item async for item in backend.iter_children("missing")] == []
 
     @pytest.mark.spec("ASYNC-024")
     async def test_list_files_remote_store_error_passthrough(self) -> None:
-        """RemoteStoreError raised during list_files passes through unchanged."""
+        """RemoteStoreError raised during list_files passes through unchanged.
+
+        ``NotFound`` is the one exception and has its own cell below, so this
+        uses a different error type: the passthrough property has to stay pinned
+        for everything the absent-container rule does *not* swallow, or widening
+        that catch later would look like a pass.
+        """
+        backend, cc, bc = _setup_non_hns_backend()
+        cc.walk_blobs.side_effect = PermissionDenied("custom denial", path="x", backend="async-azure")
+
+        with pytest.raises(PermissionDenied, match="custom denial"):
+            async for _ in backend.list_files("data"):
+                pass
+
+    @pytest.mark.spec("ASYNC-024", "BE-021")
+    async def test_list_files_not_found_is_the_one_swallowed_error(self) -> None:
+        """The carve-out, stated as its own cell rather than left implicit."""
         backend, cc, bc = _setup_non_hns_backend()
         cc.walk_blobs.side_effect = NotFound("custom not found", path="x", backend="async-azure")
 
-        with pytest.raises(NotFound, match="custom not found"):
-            async for _ in backend.list_files("data"):
-                pass
+        assert [item async for item in backend.list_files("data")] == []
 
     @pytest.mark.spec("ASYNC-024")
     async def test_list_folders_remote_store_error_passthrough(self) -> None:

@@ -15,15 +15,21 @@ source_items:
   - BUG-243
 co_shipped_items:
   - BUG-249
+discovery_followups:
+  - BUG-254
 audience:
   - user.api
 expected_ripples:
-  - sdd/backlogid.json
   - CHANGELOG.md
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
   - sdd/specs/003-backend-adapter-contract.md
   - sdd/specs/040-sql-blob-backend.md
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+surprising_ripples:
+  - src/remote_store/_errors.py
+  - tests/backends/azure/aio/test_config.py
 
 phases:
   - id: orient
@@ -98,6 +104,42 @@ phases:
           _children_or_absent_bucket already existed for delete_folder. The
           listings needed the mapper *inside* the generator body, as BUG-249
           warned — outside, it would not be entered until the first next().
+
+  - id: fix
+    name: Fix (round 1)
+    steps:
+      - file: src/remote_store/backends/_azure.py
+        section: "list_files, list_folders, iter_children"
+        read_type: reference
+        extract: >-
+          Round 1 found the Azure half only half closed: the non-HNS listings
+          still raised NotFound where § Reach wants an empty listing, while the
+          HNS branch of the same methods already returned early on a mapped
+          NotFound. Measured on both adapters before fixing — nine cells.
+          Retrospect: this was subject 12 on the Step 1 list, marked
+          "measure", and never measured. The diff did not touch these methods, so
+          diff-shaped attention could not reach it; only the subject list could,
+          and it was not executed.
+        outcome: ok
+      - file: src/remote_store/aio/backends/_azure.py
+        section: "_errors"
+        read_type: reference
+        extract: >-
+          The async listings map inline rather than through the _errors context
+          manager, so the same tail text appears in four places and a
+          search-and-replace applied the listing rule to _errors itself — which
+          would have made every async operation swallow NotFound. Caught by
+          checking which methods the edit landed in rather than trusting the
+          replacement count.
+        outcome: ok
+      - file: tests/backends/azure/aio/test_config.py
+        section: "TestAsyncAzureErrorPropagation"
+        read_type: verify
+        extract: >-
+          Two cells pinned the old listing behaviour and had to flip. The
+          passthrough cell moved to PermissionDenied so the property it exists
+          for stays pinned for everything the new catch does not swallow.
+        outcome: ok
 
   - id: verify
     name: Verify

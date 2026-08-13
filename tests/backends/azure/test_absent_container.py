@@ -1,18 +1,22 @@
-"""What the two tolerant deletes do when the Azure *container* itself is gone.
+"""What every operation does when the Azure *container* itself is gone.
 
-BE-012 / BE-013. ``missing_ok`` is tolerance for a missing path, and a container
-that does not exist holds no path either — so both ``delete`` and
-``delete_folder`` return silently under ``missing_ok=True`` and raise
-``NotFound`` without it. Before this rule the pair disagreed: ``delete_blob``
-surfaces ``ContainerNotFound`` as a plain ``ResourceNotFoundError`` that the
-existing ``missing_ok`` branch already swallowed, while ``delete_folder``'s
-prefix listing raised the same 404 out of its determinant and past the
-tolerance check.
+BE-012 / BE-013 / BE-021 § Reach. A container that does not exist holds no path
+either, so each operation answers as it would for a missing path: the two deletes
+return silently under ``missing_ok=True`` and raise ``NotFound`` without it, the
+probes answer ``False``, and the listings come back empty.
 
-Sync half. The async twin carries its own copy of the non-HNS ``delete_folder``
-body and so gets its own file, ``aio/test_absent_container.py`` (TEST-003); the
-wire stubs both use live in ``.._helpers``, which also explains why this runs on
-a stub rather than the Docker-gated ``azurite`` fixture.
+The deletes came first and their history explains the shape of the rest. The pair
+disagreed: ``delete_blob`` surfaces ``ContainerNotFound`` as a plain
+``ResourceNotFoundError`` that the existing ``missing_ok`` branch already
+swallowed, while ``delete_folder``'s prefix listing raised the same 404 out of
+its determinant and past the tolerance check. The probes and the listings were
+the same omission one method further out — and in the listings' case the HNS
+branch already answered correctly while the flat branch beside it did not.
+
+Sync half. The async twin carries its own copy of each of these bodies and so
+gets its own file, ``aio/test_absent_container.py`` (TEST-003); the wire stubs
+both use live in ``.._helpers``, which also explains why this runs on a stub
+rather than the Docker-gated ``azurite`` fixture.
 
 Both axes are asserted, not just tolerance: a backend that simply stopped
 raising on the listing's 404 would pass the tolerant cells and silently turn a
@@ -114,6 +118,51 @@ _PROBES = [
     ("is_file", lambda b: b.is_file(KEY)),
     ("is_folder", lambda b: b.is_folder(FOLDER)),
 ]
+
+_LISTINGS = [
+    ("list_files", lambda b: list(b.list_files(""))),
+    ("list_files-recursive", lambda b: list(b.list_files(FOLDER, recursive=True))),
+    ("list_folders", lambda b: list(b.list_folders(""))),
+    ("iter_children", lambda b: list(b.iter_children(""))),
+    ("glob", lambda b: list(b.glob("**/*.txt"))),
+]
+
+
+class TestTheListingsComeBackEmpty:
+    """An absent container holds nothing, so a listing is empty rather than an error.
+
+    The flat lane reached the caller with ``NotFound`` where the contract wants an
+    empty listing, and the HNS branch of the *same* methods already returned early
+    on a mapped ``NotFound`` — so the two namespaces answered the identical
+    question differently inside one method body.
+
+    ``glob`` is here because it reaches the wire only through ``list_files``: it
+    inherits whatever that method does, and pinning it is what stops a later
+    change fixing the listing while leaving the glob path behind.
+    """
+
+    @pytest.mark.spec("BE-021", "AZ-026")
+    @pytest.mark.parametrize(("op_name", "call"), _LISTINGS, ids=[n for n, _ in _LISTINGS])
+    def test_absent_container_yields_nothing(
+        self,
+        backend: Any,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        assert call(backend) == [], f"{op_name} must yield nothing against an absent container"
+
+    @pytest.mark.spec("BE-021", "AZ-026")
+    @pytest.mark.parametrize(("op_name", "call"), _LISTINGS, ids=[n for n, _ in _LISTINGS])
+    def test_denied_listing_still_raises(
+        self,
+        denied_backend: Any,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        """The narrowness guard: an empty listing must not be how a denial is reported."""
+        with pytest.raises(PermissionDenied) as exc_info:
+            call(denied_backend)
+        assert exc_info.value.backend == "azure", op_name
 
 
 class TestTheProbesAnswerFalse:

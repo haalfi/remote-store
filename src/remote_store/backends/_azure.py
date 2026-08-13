@@ -376,6 +376,37 @@ class AzureBackend(Backend):
             absent_container=lambda exc: isinstance(exc, ResourceNotFoundError),
         )
 
+    @contextlib.contextmanager
+    def _listing_errors(self, path: str) -> Iterator[None]:
+        """``_errors`` for a listing, with an absent container ending the iteration.
+
+        An absent container holds nothing, so a listing over it comes back empty
+        rather than raising — the same answer an absent *prefix* already gives.
+        The HNS branch of these methods already reached that answer through its
+        own early return on a mapped ``NotFound``; the flat branch did not, so
+        the two namespaces answered the identical question differently inside one
+        method body.
+
+        It has to wrap ``_errors`` rather than sit inside it: the SDK raises
+        ``ResourceNotFoundError`` and only ``_errors`` turns that into a
+        ``NotFound``, so a guard placed within would never see the error it
+        exists to catch.
+
+        Narrow by construction. ``list_blobs`` / ``walk_blobs`` report an absent
+        prefix as an empty page rather than an error, so the only 404 they raise
+        is the container's; a denial maps to ``PermissionDenied`` and passes
+        straight through, which is what stops "you may not look" being reported
+        as "there is nothing there".
+
+        **Must be entered inside the generator body.** Wrapped around the call
+        that returns the generator it would not run until the first ``next()``.
+        """
+        try:
+            with self._errors(path):
+                yield
+        except NotFound:
+            return
+
     def _flat_is_blob(self, path: str) -> bool:
         """Non-HNS: one HEAD; ``True`` iff a blob exists at exactly *path*."""
         from azure.core.exceptions import AzureError
@@ -1123,7 +1154,7 @@ class AzureBackend(Backend):
             BackendUnavailable: On throttling (429), 5xx, or transport failure,
                 surfaced during iteration.
         """
-        with self._errors(path):
+        with self._listing_errors(path):
             azure_path = self._azure_path(path)
             prefix = (azure_path.rstrip("/") + "/") if azure_path else ""
 
@@ -1175,7 +1206,7 @@ class AzureBackend(Backend):
             BackendUnavailable: On throttling (429), 5xx, or transport failure,
                 surfaced during iteration.
         """
-        with self._errors(path):
+        with self._listing_errors(path):
             azure_path = self._azure_path(path)
             prefix = (azure_path.rstrip("/") + "/") if azure_path else ""
 
@@ -1216,7 +1247,7 @@ class AzureBackend(Backend):
             BackendUnavailable: On throttling (429), 5xx, or transport failure,
                 surfaced during iteration.
         """
-        with self._errors(path):
+        with self._listing_errors(path):
             azure_path = self._azure_path(path)
             prefix = (azure_path.rstrip("/") + "/") if azure_path else ""
 

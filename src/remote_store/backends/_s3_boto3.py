@@ -676,7 +676,8 @@ class S3Boto3Backend(Backend):
 
         Raises:
             PermissionDenied: If the credentials are rejected or lack access (403).
-            BackendUnavailable: On throttling, 5xx, or transport failure.
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after
+                ``close()``.
         """
         prefix = self._prefix_of(path)
         # Unified delimiter BFS: non-recursive == depth limit 0; recursive with
@@ -704,7 +705,8 @@ class S3Boto3Backend(Backend):
 
         Raises:
             PermissionDenied: If the credentials are rejected or lack access (403).
-            BackendUnavailable: On throttling, 5xx, or transport failure.
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after
+                ``close()``.
         """
         prefix = self._prefix_of(path)
         with self._listing_errors(path):
@@ -723,7 +725,8 @@ class S3Boto3Backend(Backend):
 
         Raises:
             PermissionDenied: If the credentials are rejected or lack access (403).
-            BackendUnavailable: On throttling, 5xx, or transport failure.
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after
+                ``close()``.
         """
         prefix = self._prefix_of(path)
         with self._listing_errors(path):
@@ -741,7 +744,13 @@ class S3Boto3Backend(Backend):
         """Yield files whose key matches the glob *pattern*.
 
         Narrows to the pattern's literal prefix, lists that subtree, and applies
-        the full glob regex to each key.
+        the full glob regex to each key. Reaches the wire only through
+        ``list_files``, so an absent bucket yields nothing here too.
+
+        Raises:
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after
+                ``close()``.
         """
         from remote_store._glob import extract_prefix, needs_recursive, pattern_to_regex
 
