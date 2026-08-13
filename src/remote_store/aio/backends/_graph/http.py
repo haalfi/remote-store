@@ -1,6 +1,6 @@
-"""HTTP request primitive, Microsoft Graph error mapping, and credential masking.
+"""HTTP request primitive, Graph error mapping, pagination, and credential masking.
 
-Centralises the three concerns the rest of the Graph sub-package shares: a
+Centralises the four concerns the rest of the Graph sub-package shares: a
 single ``graph_send`` request helper that attaches the bearer token and maps
 non-2xx responses to ``remote_store`` errors, the status-plus-``error.code``
 mapping table, pagination over ``@odata.nextLink``, and ``Authorization``-header
@@ -61,8 +61,9 @@ GraphScope = Literal["item", "drive", "probe", "identity"]
 """What a failing URL addressed, which is what a ``404`` from it means.
 
 ``"item"`` is the path-addressed data plane; ``"probe"`` the type probes;
-``"identity"`` the callers the absent-container contract does not reach, where
-Graph's drive-identity code is still honoured; ``"drive"`` the bare
+``"identity"`` the callers the absent-container contract does not *decide* —
+``write``, which it declines, and three it never reaches — where Graph's
+drive-identity code is still honoured; ``"drive"`` the bare
 ``/drives/{drive_id}`` resource, which no call site currently addresses. See
 ``classify_graph_error`` for what each answers and who is in it.
 """
@@ -168,8 +169,9 @@ def classify_graph_error(
         ``"drive"``.
       - **drive-identity resolution** (``GraphUtils.resolve_drive_id``'s five
         lookup legs), which runs before any backend exists.
-      - the **copy/move monitor poller**, whose URL is opaque, pre-signed and
-        cross-host, addressing neither a drive nor a caller-supplied path.
+      - the **copy/move monitor poller**, whose ``404`` is about the operation
+        record rather than an item, so the contract states no answer for it and
+        the pre-adjudication one is kept.
     * ``"drive"`` — the bare ``/drives/{drive_id}`` resource. Any ``404`` is
       ``BackendUnavailable``: no path is being addressed, so there is no absence
       to report, only a drive that is deleted or misconfigured. **No call site

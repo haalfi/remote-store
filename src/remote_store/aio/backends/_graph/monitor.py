@@ -191,17 +191,20 @@ async def poll_monitor(
                 # cannot confirm must not silently report done); GR-026 records
                 # the rare-reap residual.
                 #
-                # Classified at scope="identity", which keeps this site's answer
-                # exactly what it was before the absent-container adjudication
-                # (ADR-0038). The deciding question is what the 404 is *about*:
-                # here it is about the operation record, which is not an item, so
-                # there is no absence for item scope to report and BE-021 does
-                # not reach it. Flattening a drive-identity 404 here would hand a
-                # caller `NotFound` for an unconfirmable copy that may in fact
-                # have completed, which is the opposite of what the
-                # err-toward-raising rule above is for. Being pre-signed and
-                # cross-host is not the reason — the upload chunk PUT is both and
-                # takes item scope, because its 404 *is* about an item.
+                # Classified at scope="identity" for one reason and one only: it
+                # keeps this site's answer exactly what it was before the
+                # absent-container adjudication (ADR-0038). BE-021 does not reach
+                # here — this 404 is about the operation record, not an item — so
+                # the adjudication required no change, and preserving is the
+                # conservative choice when nothing requires moving.
+                #
+                # Do not read identity scope as solving the unconfirmable-copy
+                # problem. It escalates only on `resourceNotFound`, and the
+                # realistic 404 here is an expired or reaped monitor URL carrying
+                # `itemNotFound`, which still answers NotFound. Solving that would
+                # mean drive scope (every 404 unavailable) and a behaviour change
+                # this adjudication does not licence — GR-026's own cells pin
+                # NotFound for the itemNotFound case.
                 raise classify_graph_error(
                     response.status_code,
                     error_code(response_json(response)),

@@ -1087,7 +1087,12 @@ and by the resource scope of the failing URL:
   source). The code is not consulted here: a drive is a container, and
   BE-021 binds a container's absence to read as the path's absence, so
   `itemNotFound`, `resourceNotFound` and a bodyless `404` all answer
-  alike.
+  alike. **This is the half
+  [ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md)
+  changed** — see § "Adjudicated against BE-021" below. A sibling that
+  delegates to a named operation goes where that operation goes —
+  `read_bytes` with `read`, `iter_children` with the listings — whether
+  or not BE-021 spells it out.
 - For the type probes `exists`, `is_file`, `is_folder`, **any** `404`
   — whatever its `error.code` — is suppressed and returns `False` per
   BE-004 and BE-005 (probe scope). This scope now answers exactly as the
@@ -1122,13 +1127,31 @@ and by the resource scope of the failing URL:
     reports reachability rather than addressing a caller-supplied path.
   - Drive-identity resolution — `GraphUtils.resolve_drive_id`'s five
     lookup legs (GR-057) — which runs before any backend exists.
-  - The copy/move monitor poller (GR-026), whose URL is opaque,
-    pre-signed and cross-host, addressing neither a drive nor a
-    caller-supplied path. A flattened `404` there would report an
-    unconfirmable copy as a missing file.
+  - The copy/move monitor poller (GR-026), whose `404` is about the
+    operation record rather than an item, so this spec states no answer
+    for it and it keeps the one it had before the adjudication.
 
   The last three are off BE-021's roster entirely rather than declined by
   it, so nothing there is being overridden.
+
+- The backend does **not** attempt to discriminate "404 masking
+  403" (Graph occasionally returns `404 itemNotFound` where `403
+  accessDenied` would be semantically correct on restricted
+  resources). All `404 itemNotFound` at item scope map to
+  `NotFound`. Rationale: Graph offers no reliable, caller-agnostic
+  signal to tell a real not-found from a hidden permission denial,
+  and guessing would require the backend to track what the caller
+  "should" be able to enumerate — which it cannot. Callers that
+  need to distinguish confirm the drive is reachable first, then
+  treat `NotFound` as authoritative for the item. `check_health()`
+  is the reachability probe that holds in every configuration.
+  **`exists("")` is not**, and the difference is `base_path`:
+  `native_path("")` prepends it, so on a store constructed with one
+  the probe addresses the `base_path` folder rather than the drive
+  root, and `False` then means "drive gone **or** `base_path`
+  missing". Only with no `base_path` does `exists("")` address
+  `/drives/{id}/root` and mean what this bullet used to claim
+  unconditionally.
 
 **Which call site takes which scope**, stated rather than left to be
 re-derived. Three review rounds of the adjudication each found a site on
@@ -1156,8 +1179,8 @@ sides.
 
 `classify_graph_error_code` maps a status-less `error.code` from a failed
 async operation through the same table, and has no `scope` parameter. It
-reaches the `404` row only for `itemNotFound`, which answers `NotFound` at
-every scope, so the omission is currently unobservable —
+reaches the `404` row only for `itemNotFound`, which answers `NotFound` at the
+item default the helper takes, so the omission is currently unobservable —
 `resourceNotFound` is not in its reverse map and falls through to
 `BackendUnavailable` before the table is consulted. That is a bound, not a
 design: adding `resourceNotFound` to that map without giving the helper a
@@ -1173,33 +1196,6 @@ nothing else would make sense and no clause turns on them — the
 `move`/`copy` destination-error helper and the range-download driver
 among them. They are covered by the first rows' reasoning rather than
 listed, and the enumeration above should be read as the decided set.
-- **Every other error-raising operation takes the item scope above**, so
-  a drive-identity `404` reaches a caller as `NotFound` — not as
-  `BackendUnavailable`. Graph's drive is a container, and BE-021 binds a
-  container's absence to read as the path's absence. A sibling that
-  delegates to a named operation goes where that operation goes —
-  `read_bytes` with `read`, `iter_children` with the listings — whether
-  or not BE-021 spells it out. This is the half
-  [ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md)
-  changed; see § "Adjudicated against BE-021" below.
-- The backend does **not** attempt to discriminate "404 masking
-  403" (Graph occasionally returns `404 itemNotFound` where `403
-  accessDenied` would be semantically correct on restricted
-  resources). All `404 itemNotFound` at item scope map to
-  `NotFound`. Rationale: Graph offers no reliable, caller-agnostic
-  signal to tell a real not-found from a hidden permission denial,
-  and guessing would require the backend to track what the caller
-  "should" be able to enumerate — which it cannot. Callers that
-  need to distinguish confirm the drive is reachable first, then
-  treat `NotFound` as authoritative for the item. `check_health()`
-  is the reachability probe that holds in every configuration.
-  **`exists("")` is not**, and the difference is `base_path`:
-  `native_path("")` prepends it, so on a store constructed with one
-  the probe addresses the `base_path` folder rather than the drive
-  root, and `False` then means "drive gone **or** `base_path`
-  missing". Only with no `base_path` does `exists("")` address
-  `/drives/{id}/root` and mean what this bullet used to claim
-  unconditionally.
 
 **Adjudicated against BE-021** ([ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md),
 BUG-248). This clause used to honour `resourceNotFound` at *every* URL

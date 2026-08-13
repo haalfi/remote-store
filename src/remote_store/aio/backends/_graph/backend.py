@@ -660,8 +660,11 @@ class GraphBackend(AsyncBackend):
         Any 404 — including a drive-identity ``resourceNotFound`` — is
         suppressed to ``False``; never raises ``NotFound``. A misconfigured or
         deleted drive therefore probes as missing rather than raising, and so do
-        the path-addressed operations, which report it as absence. It surfaces as
-        ``BackendUnavailable`` from ``write`` or from ``check_health``.
+        the path-addressed operations, which report it as absence. ``write`` and
+        ``check_health`` are the two that still escalate — but only when Graph
+        names the drive, with ``error.code == "resourceNotFound"``. On a tier that
+        answers ``itemNotFound`` for a dead drive, as consumer OneDrive does, no
+        operation tells one apart from a missing file.
 
         Raises:
             PermissionDenied: If the token is rejected or lacks access to the
@@ -1002,20 +1005,25 @@ class GraphBackend(AsyncBackend):
                 backend directly (``USER_METADATA`` is not declared).
             PermissionDenied: If the token is rejected or lacks access to the
                 item (401/403).
-            NotFound: If Graph answers the write with a ``404`` carrying no
-                drive-identity code. On the small ``PUT /content`` path a file
-                ancestor is ruled out first and raises ``InvalidPath`` instead;
-                the upload-session path runs no such walk, so a large write
-                under a file ancestor reaches this row — a known divergence
-                between the two halves, tracked separately.
-            BackendUnavailable: If the drive itself is gone or misconfigured —
-                Graph's drive-identity ``404`` still escalates here, on both the
-                small and upload-session paths, where every path-addressed
-                operation instead reports an absent drive as absence. ``write``
-                is therefore the operation a caller runs to tell a dead store
-                from a missing file. Also on 5xx / throttling / transport
-                failure, or a Graph contract gap (missing ``uploadUrl`` /
-                ``nextExpectedRanges``).
+            NotFound: If Graph answers the write with a ``404`` this operation
+                does not escalate — any code on the mid-session chunk ``PUT``,
+                or a non-drive-identity code elsewhere. On the small
+                ``PUT /content`` path a file ancestor is ruled out first and
+                raises ``InvalidPath`` instead; the upload-session path runs no
+                such walk, so a large write under a file ancestor reaches this
+                row — a known divergence between the two halves, tracked
+                separately.
+            BackendUnavailable: If the drive itself is gone or misconfigured and
+                Graph names it (``404 resourceNotFound``) — this operation still
+                escalates that where every path-addressed one instead reports an
+                absent drive as absence, which is what makes ``write`` the call
+                that tells a dead store from a missing file. Two bounds: the
+                escalation is on the small ``PUT /content`` and the
+                ``createUploadSession`` request only, not on a mid-session chunk
+                ``PUT``, so a drive that dies mid-upload answers ``NotFound``;
+                and it needs that specific code, which some tiers never emit.
+                Also on 5xx / throttling / transport failure, or a Graph contract
+                gap (missing ``uploadUrl`` / ``nextExpectedRanges``).
             ResourceLocked: If the item is locked mid-session. The session
                 stays valid server-side, but its credentialed URL is not
                 exposed in the exception.

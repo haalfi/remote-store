@@ -1,17 +1,20 @@
 """Graph bulk-transfer drivers: the resilient range download, and the chunked upload.
 
-Both halves live here because both talk to a **pre-signed, cross-host** URL that
-the ordinary ``graph_send`` path does not model — the ``downloadUrl`` for reads,
-the upload-session ``uploadUrl`` for writes — and both therefore send
-unauthenticated and carry their own resume logic.
+Both halves live here because each ends up streaming against a **pre-signed,
+cross-host** URL the ordinary ``graph_send`` path does not model — the
+``downloadUrl`` for reads, the upload-session ``uploadUrl`` for chunk writes.
+Those transfers send unauthenticated and carry their own resume logic.
 
 **The upload half** (``spool_content``, ``upload_session`` and its helpers)
 materialises a possibly-streaming body into a replayable spool, opens a session
-with ``POST createUploadSession``, and PUTs aligned chunks, resuming from the
-server's ``nextExpectedRanges`` rather than the client cursor. Its ``404``
-classification is split deliberately: session creation is drive-addressed and
-sends at ``scope="identity"``, while a mid-session chunk ``PUT`` is not and keeps
-the item default — see the comments at each site.
+with an authenticated ``POST …/createUploadSession``, and PUTs aligned chunks to
+the pre-signed session URL, resuming from the server's ``nextExpectedRanges``
+rather than the client cursor. Its ``404`` classification is split deliberately,
+and by what each ``404`` is *about* rather than by URL shape: session creation is
+the large-file half of ``write``, the one roster operation the backend contract
+declines to decide, so it escalates a drive-identity ``404``; a mid-session chunk
+``PUT`` reports on the target item being swapped, which is a per-item condition,
+so it keeps the item default. See the comments at each site.
 
 **The download half** is described below.
 
