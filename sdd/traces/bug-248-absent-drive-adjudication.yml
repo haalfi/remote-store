@@ -14,6 +14,14 @@ source_items:
 audience:
   - user.api
   - contributor.process
+# Counted from `git log --oneline origin/master..HEAD`, nine commits. f173930
+# implements and does not count. Six incorporate review feedback: b4635ef (r1),
+# 3a5eeed (r2), 868e23b (r3), 2243a0e (r4), 9e86de6 (r5), 1162287 (r6). Two more
+# incorporate feedback from a human reviewer rather than a round — 6aa9c13 (the
+# repo owner, on ADR-0038's Decision section) and 235e8d8 (a question about
+# cassette coverage, asked in conversation) — and count on the same terms, since
+# each exists because feedback produced it. Value is 8.
+review_rounds: 8
 discovery_followups:
   # Born in round 3, while a panel member was checking both write halves against
   # the absent-drive axis and noticed they diverge on the file-ancestor one.
