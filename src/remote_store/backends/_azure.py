@@ -1145,8 +1145,9 @@ class AzureBackend(Backend):
 
         Lazily pages the service listing (``walk_blobs``/``list_blobs`` on flat
         accounts, ``get_paths`` on HNS); a missing path or a path under a file
-        ancestor yields nothing. ``recursive`` lists the whole prefix
-        (``max_depth`` prunes client-side).
+        ancestor yields nothing, and so does an absent container — it holds
+        nothing either. ``recursive`` lists the whole prefix (``max_depth``
+        prunes client-side).
 
         Raises:
             PermissionDenied: If credentials are rejected or lack access (401/403),
@@ -1198,7 +1199,7 @@ class AzureBackend(Backend):
 
         One paged prefix listing (``walk_blobs`` common-prefixes on flat
         accounts, non-recursive ``get_paths`` on HNS); a missing path yields
-        nothing.
+        nothing, and so does an absent container.
 
         Raises:
             PermissionDenied: If credentials are rejected or lack access (401/403),
@@ -1239,7 +1240,8 @@ class AzureBackend(Backend):
 
         Overrides the base two-pass default with a single ``walk_blobs`` (flat)
         or ``get_paths`` (HNS) pass, yielding ``FileInfo`` for files and
-        ``FolderEntry`` for folders. A missing path yields nothing.
+        ``FolderEntry`` for folders. A missing path yields nothing, and so does
+        an absent container.
 
         Raises:
             PermissionDenied: If credentials are rejected or lack access (401/403),

@@ -968,6 +968,9 @@ class AsyncAzureBackend(AsyncBackend):
     ) -> AsyncIterator[FileInfo]:
         """List files under ``path``.
 
+        A missing path yields nothing, and so does an absent container — it
+        holds nothing either.
+
         Args:
             path: Backend-relative folder key, or ``""`` for the root.
             recursive: If ``True``, include files in all subdirectories.
@@ -1033,6 +1036,8 @@ class AsyncAzureBackend(AsyncBackend):
     async def list_folders(self, path: str) -> AsyncIterator[FolderEntry]:
         """List immediate subfolders under ``path``.
 
+        A missing path yields nothing, and so does an absent container.
+
         Args:
             path: Backend-relative folder key, or ``""`` for the root.
 
@@ -1083,6 +1088,8 @@ class AsyncAzureBackend(AsyncBackend):
 
     async def iter_children(self, path: str) -> AsyncIterator[FileInfo | FolderEntry]:
         """Yield both files and folders under ``path`` in a single pass.
+
+        A missing path yields nothing, and so does an absent container.
 
         Args:
             path: Backend-relative folder key, or ``""`` for the root.

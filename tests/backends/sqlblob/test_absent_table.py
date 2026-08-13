@@ -80,6 +80,7 @@ import pytest
 import sqlalchemy as sa
 
 from remote_store._errors import BackendUnavailable, NotFound
+from remote_store._path import RemotePath
 from remote_store.backends._sqlalchemy import SQLBlobBackend
 
 if TYPE_CHECKING:
@@ -450,18 +451,28 @@ class TestEveryOperationReadsTheAbsentTableAsAnAbsentPath:
         assert info.file_count == 0
         assert info.total_size == 0
         assert info.modified_at is None
+        # The path is what makes the two spellings distinguishable at all: the
+        # three fields above are spelling-independent, so without this the
+        # parametrisation cannot fail in one leg and pass in the other, which is
+        # the whole reason the docstring gives for having two legs.
+        assert info.path == RemotePath.from_backend_path(root)
 
     @pytest.mark.spec("BE-029")
     @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
     def test_the_root_answers_the_same_on_an_empty_table(self, backend: SQLBlobBackend, root: str) -> None:
-        """The control: an absent table must not be distinguishable from an empty one here.
+        """The control: an absent table is indistinguishable from an empty one at the root.
 
-        Without this cell the one above pins only that the root does not raise,
-        and a backend that answered the root with some *other* empty-ish value
-        would satisfy it while still splitting the two stores.
+        This compares the two answers field for field rather than re-asserting
+        "empty" against a second store. Asserting a count here would restate the
+        cell above and could not catch the thing this control exists for — a
+        seeded value that is empty-ish but not *equal* to what an empty store
+        returns.
         """
         backend.delete("folder/object.txt")
-        assert backend.get_folder_info(root).file_count == 0
+        empty = backend.get_folder_info(root)
+        _drop_table(backend)
+        absent = backend.get_folder_info(root)
+        assert absent == empty, "an absent table must answer the root exactly as an empty one does"
 
     @pytest.mark.spec("BE-021")
     def test_write_still_reports_a_backend_failure(self, backend: SQLBlobBackend) -> None:
@@ -483,9 +494,16 @@ class TestTheWiderCatchStaysNarrow:
     """The narrowness branch, re-asserted on the operations this change reached.
 
     ``TestTheCatchStaysNarrow`` above covers the two deletes. The reclassification
-    now sits at eleven more call sites, and a widened catch at any one of them
-    reports a *broken* database as a missing path — silently, since every cell in
-    the class above would stay green.
+    sits at seventeen call sites in all — the two deletes plus the fifteen this
+    change added — and a widened catch at any one of them reports a *broken*
+    database as a missing path, silently, since every cell in the class above
+    would stay green.
+
+    The root branch of ``get_folder_info`` is the one that needs saying: it is
+    the only site whose tolerance is unconditional rather than keyed on
+    ``missing_ok``, so it is the one where a widened catch has nothing else
+    holding it back. ``test_a_broken_table_still_raises_at_the_root`` below is
+    its cell.
     """
 
     @pytest.mark.parametrize(
@@ -505,6 +523,23 @@ class TestTheWiderCatchStaysNarrow:
             call(backend)
         assert exc_info.value.backend == "sql-blob", op_name
 
+    @pytest.mark.spec("BE-021", "BE-029")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_a_broken_table_still_raises_at_the_root(self, backend: SQLBlobBackend, root: str) -> None:
+        """The root tolerance is keyed on the table being *absent*, not on any failure.
+
+        ``get_folder_info`` at the root is the one site that tolerates
+        unconditionally — every other tolerant site is gated by ``missing_ok`` or
+        answers ``False`` — so it is the one where widening the catch has nothing
+        else holding it back. A store whose table is *damaged* must still report
+        a backend failure rather than aggregating to an empty store, which is the
+        answer that would quietly tell a caller their data is gone.
+        """
+        _replace_table_with_incompatible_schema(backend)
+        with pytest.raises(BackendUnavailable) as exc_info:
+            backend.get_folder_info(root)
+        assert exc_info.value.backend == "sql-blob"
+
 
 @pytest.mark.spec("BE-021")
 class TestTheProbeStaysOffTheHotPathEverywhereElseToo:
@@ -513,9 +548,12 @@ class TestTheProbeStaysOffTheHotPathEverywhereElseToo:
     The clause forbids spending a round trip to tell an absent container from an
     absent path, and the tolerance cells pass just as happily with the inspector
     running on every miss. Only a call count keeps the budget honest, and it has
-    to be asserted per call site: the reclassification is applied eleven times
-    over, and one of them placed outside ``_map_errors`` would inspect on every
-    ordinary miss while every other cell in this module stayed green.
+    to be asserted per call site: this change added fifteen of them, and one
+    placed outside ``_map_errors`` would inspect on every ordinary miss while
+    every other cell in this module stayed green. The eight below are the sites
+    reachable with an ordinary miss on a live table; ``read``, ``list_folders``,
+    ``glob`` and the four ``move``/``copy`` source sites are not covered here,
+    which is a stated bound rather than a claim of completeness.
     """
 
     @pytest.mark.parametrize(

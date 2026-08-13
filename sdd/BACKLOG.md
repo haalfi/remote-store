@@ -201,7 +201,8 @@ store answers the same way on every backend.
 **Closes when:** the last adapter answers the contract against an absent
 container (BUG-247); the root of an absent container meets BE-029 on every
 backend (BUG-254); a listing does not truncate silently when its container is
-deleted mid-scan (BUG-255); a constructor does not leak its driver's exception
+deleted mid-scan (BUG-255); `ping()` does not report a vanished store as healthy
+(BUG-256); a constructor does not leak its driver's exception
 (BUG-245); one operation does not answer by payload size (BUG-253); and a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
 (BK-345). The spec contradiction is adjudicated — BUG-248, closed by
@@ -217,14 +218,15 @@ is why ID-242 is still open and still worth doing.
 
 **One backend class** now disagrees with **the absent-container clause** —
 `LocalBackend` (BUG-247), counted from BE-021's § Known divergences list, which
-this section tracks bullet for bullet and which holds one bullet. Three further
+this section tracks bullet for bullet and which holds one bullet. **Four** further
 disagreements sit in this section and none of them is with that clause, which is
 why they are not in the count: BUG-253 is between two halves of one Graph
 operation; BUG-245 is a constructor leak, which BE-021 scopes to operations and
-so does not reach; BUG-254 is with BE-029's root row rather than
-this one; and BUG-255 is with neither, being about a container that vanishes
-part-way through a listing rather than one that was absent when it began.
-Four classes have left the list. `GraphBackend` went first — BUG-248 adjudicated
+so does not reach; BUG-254 is with BE-029's root row rather than this one; and
+BUG-255 is with neither, being about a container that vanishes part-way through a
+listing rather than one that was absent when it began.
+**Five classes** have left the list — counted as classes, which is the frame this
+paragraph opens in and not the bullet frame the sentence above it uses. `GraphBackend` went first — BUG-248 adjudicated
 the spec contradiction behind it and brought the backend to the contract in the
 same change, which is why BK-345's exemption list, blocked on that adjudication,
 can now be written. `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` and
@@ -233,18 +235,21 @@ clause misreports rather than merely mistypes: on Local an absent store is
 reported as a *malformed path*, and until that goes, portable error handling is
 still impossible on the most-used backend, which is the whole promise.
 
-- [ ] **BUG-254 — Four backends breach BE-029's root row against an absent container**
+- [ ] **BUG-254 — Five backend classes breach BE-029's root row against an absent container**
   spec: BE-004, BE-021, BE-029 · effort: S · audience: user.api
   BE-029 already decides this and is not qualified by whether the container
   exists: the root is "a folder that always exists", `exists(root)` is `True`, and
   `get_folder_info(root)` "aggregates the whole store (never `NotFound`)".
   Measured against the absent-container stubs BUG-243 added and a dropped SQLite
-  table — every cell below that is not `—` breaches that row:
-  | Backend | `get_folder_info("")` | `exists("")` |
-  | --- | --- | --- |
-  | S3, S3-PyArrow | `FolderInfo(file_count=0)` | **`False`** |
-  | S3-Boto3, Azure (sync and async) | **raises `NotFound`** | `True` |
-  | SQLBlob | — (fixed by BUG-246) | `True` |
+  table. **Bold cells breach that row; the others are what it requires** — the
+  table records both so the fix has its control:
+  | Backend | `get_folder_info("")` | `exists("")` | `is_folder("")` |
+  | --- | --- | --- | --- |
+  | S3, S3-PyArrow | `FolderInfo(file_count=0)` | **`False`** | **`False`** |
+  | S3-Boto3, Azure (sync and async) | **raises `NotFound`** | `True` | `True` |
+  | SQLBlob | — (fixed by BUG-246) | `True` | `True` |
+  Five classes because the two Azure adapters carry their own copies and each
+  needs its own fix, which is the frame BUG-246 and the CHANGELOG both use.
   Two breaches, in opposite directions, which is why one fix will not cover both:
   the s3fs lanes go to the wire for `exists("")` and report a missing bucket as
   "the root is not there", while S3-Boto3 and Azure short-circuit `exists` but let
@@ -266,6 +271,27 @@ still impossible on the most-used backend, which is the whole promise.
   was read off BE-021 § Reach alone, which decides operations and is silent about
   the root; BE-029's table decides it and was not consulted. Recorded because the
   same miss is available to the next reader of § Reach.
+
+- [ ] **BUG-256 — `ping()` reports a healthy store on two backends whose container is gone**
+  spec: PING-001 · effort: S · audience: user.api
+  PING-001's postconditions give `ping()` a `NotFound` for a "missing
+  bucket/container/path". Measured against an absent container:
+  | Backend | `check_health()` |
+  | --- | --- |
+  | S3, S3-Boto3, Azure (sync and async) | raises `NotFound` |
+  | S3-PyArrow, SQLBlob | returns cleanly |
+  `SQLBlobBackend.check_health` is a bare `SELECT 1`: it verifies connectivity and
+  never looks at the table, so a dropped table and a discarded in-memory store
+  both read as healthy. The `S3PyArrowBackend` probe misses it for the same
+  reason one layer out.
+  The caller this hurts is the one doing the obvious thing — using `ping()` at
+  startup to check the store is really there — and getting "yes" for a store that
+  is not. It is also the operation an absent-container caller is *sent* to by the
+  error-model docs, which is how this was found.
+  **Pre-existing**, and out of BE-021's reach: a health probe is off the roster
+  that clause governs, which is why the divergence lives under PING-001 rather
+  than in BE-021's list. Discovered while measuring BUG-246's migration advice,
+  which is why that advice sends callers to `write()` instead.
 
 - [ ] **BUG-255 — A container deleted mid-listing truncates the listing silently on every S3 lane**
   spec: BE-021 · effort: M · audience: user.api

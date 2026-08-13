@@ -299,8 +299,12 @@ as a missing path before the rows above see it, and § Reach decides what each
 operation then answers: `delete` / `delete_folder` return cleanly under
 `missing_ok=True` and raise `NotFound` without it; `exists`, `is_file` and
 `is_folder` answer `False`; `read`, `read_bytes`, `get_file_info`,
-`get_folder_info` and the `move`/`copy` source raise `NotFound`; `list_files`,
-`list_folders`, `iter_children` and `glob` come back empty.
+`get_folder_info` (below the root — see the root paragraph further down) and the
+`move`/`copy` source raise `NotFound`; `list_files`, `list_folders`,
+`iter_children` and `glob` come back empty. § Reach itself names eleven
+operations and not `read_bytes`, `iter_children` or `glob`; those three take the
+answer their named sibling takes, which is a reading this backend applies rather
+than a row it is handed.
 
 `write` is the exception, and a deliberate one: BE-021 § Reach declines to decide
 what a write owes an absent container, so it maps through the `OperationalError`
@@ -316,15 +320,17 @@ That uniformity is what makes the case testable at all: an exclusion for the
 disposed engine would have to be keyed on how the in-memory URL was spelled,
 which is a property of the caller rather than of the store.
 
-**An absent store is not the same as an empty one, and the difference shows at
-the root.** Against an *empty* table `get_folder_info("")` returns
-`FolderInfo(file_count=0)`, because the root is a folder whether or not it has
-children (BE-029); against an *absent* table it raises `NotFound`, because
-`get_folder_info` takes the canonical row. Both answers follow from clauses this
-repository states, and which one the root of an absent container owes is not
-decided anywhere — BE-021 § Reach decides operations, not the root case within
-them. Recorded rather than resolved here: the backends disagree about it, and the
-disagreement is tracked in the backlog.
+**The root is the one place an absent store and an empty one agree.**
+`get_folder_info("")` returns `FolderInfo(file_count=0)` against both, because
+[BE-029](003-backend-adapter-contract.md#be-029-root-path) makes the root a
+folder that always exists and forbids `get_folder_info` on it from raising
+`NotFound` — a rule it states without qualifying it by whether the container is
+there. That outranks the canonical row BE-021 § Reach gives `get_folder_info`,
+which is why the tolerance below the root and the tolerance at it differ. Every
+other path answers `NotFound` as § Reach requires.
+
+Other backends do not all meet BE-029's root row against an absent container;
+that divergence is tracked in the backlog and is not this backend's.
 
 ---
 

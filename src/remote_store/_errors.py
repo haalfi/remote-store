@@ -136,11 +136,18 @@ class BackendUnavailable(RemoteStoreError):
     operations, and an empty listing from the listings.
 
     To tell a store that is *gone* from one that is merely *empty*,
-    attempt a ``write()``: it is the one operation no clause of the
-    backend contract decides, so every backend still reports an absent
-    container from it. ``check_health()`` does not answer this
-    reliably — on some backends it probes the service rather than the
-    container and succeeds against a container that is not there.
+    attempt a ``write()`` and catch ``RemoteStoreError``. ``write`` is
+    the operation the backend contract leaves each backend to answer its
+    own way, so it still fails against an absent container — but for that
+    same reason the *type* differs, and this class is only one of the
+    answers you may get. Catch the base class, not this one.
+
+    Two caveats worth knowing before relying on it. ``check_health()``
+    does not answer the question at all on some backends, where it probes
+    the service rather than the container and succeeds against a container
+    that is not there. And a ``LocalBackend`` whose root directory has been
+    deleted reports a malformed path instead of an absent one, so the
+    write fails but says something misleading about why.
     """
 
 

@@ -18,8 +18,10 @@ co_shipped_items:
 discovery_followups:
   - BUG-254
   - BUG-255
+  - BUG-256
 audience:
   - user.api
+  - user.api_docs
 expected_ripples:
   - CHANGELOG.md
   - sdd/BACKLOG.md
@@ -31,6 +33,14 @@ expected_ripples:
 surprising_ripples:
   - src/remote_store/_errors.py
   - tests/backends/azure/aio/test_config.py
+
+# Counted from `git log --oneline origin/master..HEAD`. b492cc0 is the
+# implementation and does not count. Five commits exist because review found
+# something: 7928f47 (round 1's Azure listings and five prose findings), 3f5102c
+# (round 1's code-scanning alert), 35b7281 (round 1's residual docstring map),
+# f164c97 (round 2), and the commit carrying this trace edit (round 3). Value is
+# 5.
+review_rounds: 5
 
 phases:
   - id: orient
@@ -44,7 +54,8 @@ phases:
           this was the right call — the item's SQLBlob table listed eleven
           operations and a run found fourteen raising, omitting iter_children and
           glob. The fix shape it proposed ("one shape at three call sites") was
-          also stale; the applied shape is one context manager at eleven sites.
+          also stale; the applied shape is one context manager at fifteen new
+          call sites, seventeen counting BUG-243's two deletes.
       - file: sdd/specs/003-backend-adapter-contract.md
         section: "BE-004, BE-005, BE-021"
         read_type: gate
@@ -169,6 +180,43 @@ phases:
           Measured across all five backends before rewriting; write() is the one
           operation that reports an absent container everywhere, which follows
           from it being the operation the contract declines to decide.
+        outcome: ok
+
+  - id: fix_3
+    name: Fix (round 3)
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 § Reach"
+        read_type: gate
+        extract: >-
+          Round 3's panel found the precedence this change relies on — BE-029's
+          root row outranking § Reach's NotFound row — stated only in a code
+          docstring and a backlog item, while § Reach itself still read as
+          deciding the root. § Reach now says BE-029 governs there, and says
+          that its roster is eleven operations rather than silently including
+          read_bytes, iter_children and glob. Both are the trap BUG-254 was
+          filed into, left standing by the round-2 fix that named it.
+        outcome: unclear
+      - file: sdd/specs/026-health-check.md
+        section: "PING-001"
+        read_type: verify
+        extract: >-
+          Publishing a measured fact in a docstring obliged reconciling the spec
+          that asserted the opposite: PING-001 gives ping() a NotFound for a
+          missing container, and two backends return cleanly. Recorded as a
+          known divergence and filed as BUG-256. The ripple-check's Error type
+          row names the error-model spec and the guides; it was walked for
+          BE-021 and not for the health-check clause the new advice touched.
+        outcome: ok
+      - file: tests/backends/sqlblob/test_absent_table.py
+        section: "TestTheWiderCatchStaysNarrow, root cells"
+        read_type: verify
+        extract: >-
+          Two mutations survived the round-2 cells — a wrong seeded FolderInfo
+          path, and a root tolerance ungated on table absence, the second of
+          which would report a damaged store as an empty one. Both now fail.
+          The lesson is that a cell asserting only spelling-independent fields
+          cannot justify a two-spelling parametrisation.
         outcome: ok
 
   - id: verify

@@ -182,8 +182,8 @@ if evidence changes; these are retired.
 - [x] **BUG-249 — Three `S3Boto3Backend` listings leak a raw `botocore.ClientError`**
   spec: BE-021 · effort: S · audience: user.api
   `list_files`, `list_folders` and `iter_children` were the only methods on the
-  class calling the wire without `_boto_errors` around it, at fourteen wrapped
-  sites, so the paginator's exception reached the caller untouched and an
+  class calling the wire without `_boto_errors` around it, against fifteen
+  methods that do wrap, so the paginator's exception reached the caller untouched and an
   `except RemoteStoreError` clause caught every backend but this one. All three
   now enter a `_listing_errors` context **inside the generator body** — the item's
   warning was right, and a wrapper around the call that returns the generator

@@ -605,6 +605,31 @@ one. All of these obligations are pre-existing — this
 clause neither creates nor relaxes them, and that is why those operations are
 absent from the roster above rather than exempt from it.
 
+**The root is decided by BE-029, not here, and BE-029 wins.** This paragraph
+assigns answers per *operation*; it says nothing about the store root within
+them, and reading a root answer off it is a mistake this spec has already
+produced once. [BE-029](#be-029-root-path) states the root case directly and
+without qualifying it by whether the container exists: the root is a folder that
+always exists, so `exists("")` and `is_folder("")` answer `True`, and
+`get_folder_info("")` aggregates the whole store and never raises `NotFound` —
+an empty store rather than a missing path. Where that meets the `NotFound` row
+above, **BE-029 governs**: against an absent container the root of a compliant
+backend answers as it would for an empty one.
+
+Stated here because this is where a reader looking for per-operation answers
+lands, and following it alone yields the wrong answer for one path in every
+operation it names. The divergences this rule exposes are in the list below.
+
+**The roster is eleven operations and its siblings are not silently included.**
+`read_bytes`, `read_seekable`, `iter_children` and `glob` are not named above.
+Each is a thin variant of one that is — `read`, `list_files`, `list_folders` —
+and a backend that answers a named operation one way and its variant another has
+a defect rather than a permission. But that is a *reading*, and it is the reading
+this section elsewhere makes explicit when it counts Graph's divergence as
+"eleven of the ones named above, plus `read_bytes` and `iter_children`". A
+backend spec relying on the reading should say so, as
+[SQL-BLOB-050](040-sql-blob-backend.md#sql-blob-050-exception-translation) does.
+
 **Known divergences, stated rather than implied.** These are what ships today,
 recorded so a reader does not mistake an obligation for a description, and
 tracked in the backlog. They are scoped to the whole absent-container question
@@ -640,11 +665,15 @@ needs in order to trust the list's remaining entry:
   they mapped the driver's complaint without asking whether the table was still
   there. It was the widest divergence this list ever held by operation count —
   fourteen operations, measured against a dropped SQLite table, of which thirteen
-  owed a different answer. Each of the thirteen now takes its § Reach row:
-  `exists`, `is_file` and `is_folder` answer `False`; `read`, `read_bytes`,
-  `get_file_info`, `get_folder_info` and the `move`/`copy` source raise
-  `NotFound`; `list_files`, `list_folders`, `iter_children` and `glob` come back
-  empty. The same split showed on a disposed in-memory engine, where disposal
+  owed a different answer. Each of the thirteen now takes the answer § Reach
+  gives it or its named sibling: `exists`, `is_file` and `is_folder` answer
+  `False`; `read`, `read_bytes`, `get_file_info`, the `move`/`copy` source and
+  `get_folder_info` **below the root** raise `NotFound`, while the root
+  aggregates to an empty store under BE-029; `list_files`, `list_folders`,
+  `iter_children` and `glob` come back empty. Four of those thirteen —
+  `read_bytes`, `iter_children`, `glob` and `read_seekable` where it is
+  overridden — are siblings § Reach does not name, per the roster paragraph
+  above. The same split showed on a disposed in-memory engine, where disposal
   destroys the database rather than releasing a connection to it — one divergence
   with two ways in, closed by the same change, and the reclassification
   deliberately does not try to tell them apart; see

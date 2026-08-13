@@ -895,11 +895,10 @@ class S3Boto3Backend(Backend):
         Two obligations at one call site, both from the backend error contract:
 
         * **Nothing native leaks.** These three listings were the only methods on
-          this class whose wire call was not wrapped, at fourteen wrapped sites,
-          so a ``botocore.exceptions.ClientError`` reached the caller untouched
-          and an ``except RemoteStoreError`` clause caught every backend but this
-          one. Every other method that reaches the wire wraps it, at fifteen
-          sites.
+          this class whose wire call was not wrapped, so a
+          ``botocore.exceptions.ClientError`` reached the caller untouched and an
+          ``except RemoteStoreError`` clause caught every backend but this one.
+          Every other method that reaches the wire wraps it, at fifteen sites.
         * **An absent container holds nothing**, so the listing is empty rather
           than an error — the answer the two s3fs-backed lanes already gave
           against the identical wire response.
@@ -1063,12 +1062,16 @@ class S3Boto3Backend(Backend):
     def _children_or_absent_bucket(self, path: str) -> bool:
         """``_prefix_has_children``, with a missing bucket answering "no children".
 
-        The ``delete_folder`` determinant. An absent container is an absent
-        path. Unlike the s3fs lane the shape here is a ``ClientError``
-        rather than a distinct exception type, so the predicate reuses
-        ``_is_404`` — which already treats ``NoSuchBucket`` as a not-found code,
-        the same reading that makes this backend's ``_head_or_none`` tolerate a
-        missing bucket on the ``delete`` side.
+        Shared by ``delete_folder``, ``exists`` and ``is_folder`` — every caller
+        whose answer *is* this listing rather than a reclassification of one. An
+        absent container is an absent path, so the delete proceeds to its
+        ``missing_ok`` branch and the two probes answer ``False``.
+
+        Unlike the s3fs lane the shape here is a ``ClientError`` rather than a
+        distinct exception type, so the predicate reuses ``_is_404`` — which
+        already treats ``NoSuchBucket`` as a not-found code, the same reading
+        that makes this backend's ``_head_or_none`` tolerate a missing bucket on
+        the ``delete`` side.
         """
         from botocore.exceptions import ClientError  # type: ignore[import-untyped]
 
