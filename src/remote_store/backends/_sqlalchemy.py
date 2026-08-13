@@ -459,6 +459,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         segs = self._validate_path(path, allow_empty=True)
         if not segs:
             return True  # root always exists
+        found = False
         with (
             self._map_errors(path),
             self._absent_table_is_absent_path(path, raises=False, what="File"),
@@ -467,14 +468,14 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             t = self._table
             # Check file
             row = conn.execute(sa.select(sa.literal(1)).where(t.c.key == path)).first()
-            if row is not None:
-                return True
-            # Check folder (any key with prefix)
-            prefix = path + "/"
-            row = conn.execute(sa.select(sa.literal(1)).where(t.c.key.like(prefix + "%")).limit(1)).first()
-            return row is not None
-        # Reached only when the table is gone: the block above was abandoned.
-        return False
+            if row is None:
+                # Check folder (any key with prefix)
+                prefix = path + "/"
+                row = conn.execute(sa.select(sa.literal(1)).where(t.c.key.like(prefix + "%")).limit(1)).first()
+            found = row is not None
+        # ``found`` keeps its seeded value when the table is gone and the block
+        # above is abandoned -- the same shape the listings below use for rows.
+        return found
 
     def is_file(self, path: str) -> bool:
         """Return ``True`` if an exact key exists at *path* (one ``SELECT``).
@@ -488,6 +489,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         segs = self._validate_path(path, allow_empty=True)
         if not segs:
             return False
+        found = False
         with (
             self._map_errors(path),
             self._absent_table_is_absent_path(path, raises=False, what="File"),
@@ -495,9 +497,9 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         ):
             t = self._table
             row = conn.execute(sa.select(sa.literal(1)).where(t.c.key == path)).first()
-            return row is not None
-        # Reached only when the table is gone: the block above was abandoned.
-        return False
+            found = row is not None
+        # ``found`` keeps its seeded value when the table is gone.
+        return found
 
     def is_folder(self, path: str) -> bool:
         """Return ``True`` if any key begins with ``path + "/"`` (a virtual folder).
@@ -512,6 +514,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         segs = self._validate_path(path, allow_empty=True)
         if not segs:
             return True  # root is a folder
+        found = False
         with (
             self._map_errors(path),
             self._absent_table_is_absent_path(path, raises=False, what="Folder"),
@@ -520,9 +523,9 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             t = self._table
             prefix = path + "/"
             row = conn.execute(sa.select(sa.literal(1)).where(t.c.key.like(prefix + "%")).limit(1)).first()
-            return row is not None
-        # Reached only when the table is gone: the block above was abandoned.
-        return False
+            found = row is not None
+        # ``found`` keeps its seeded value when the table is gone.
+        return found
 
     # endregion
 
