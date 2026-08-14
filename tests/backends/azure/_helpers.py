@@ -108,13 +108,34 @@ _ONE_BLOB_THEN_MORE = (
 )
 
 
-def serve_container_vanishing_mid_listing(httpserver: HTTPServer) -> str:
+# The mirror shape: a first page carrying only a common prefix and no blob.
+# Ordinary rather than contrived — a container organised into folders with no
+# top-level blobs returns exactly this from ``walk_blobs`` — and it is the page
+# on which a bound keyed on "an item was yielded" goes blind for ``list_files``
+# and ``glob``, which discard prefixes, while the container plainly answered.
+_ONE_PREFIX_THEN_MORE = (
+    b'<?xml version="1.0" encoding="utf-8"?>'
+    b'<EnumerationResults ServiceEndpoint="http://127.0.0.1/" ContainerName="' + CONTAINER.encode() + b'">'
+    b"<Delimiter>/</Delimiter>"
+    b"<Blobs><BlobPrefix><Name>folder/</Name></BlobPrefix></Blobs>"
+    b"<NextMarker>M2</NextMarker></EnumerationResults>"
+)
+
+
+def serve_container_vanishing_mid_listing(httpserver: HTTPServer, *, page_one: bytes = _ONE_BLOB_THEN_MORE) -> str:
     """One good page carrying a ``NextMarker``, then ``ContainerNotFound``.
 
     The shape that separates "the container was never there" from "the container
-    went away underneath the scan". The first page must carry a real blob: a stub
-    that 404s immediately would pass under an unbounded tolerance too, and prove
-    nothing about the bound.
+    went away underneath the scan". The first page must carry real content: a
+    stub that 404s immediately would pass under an unbounded tolerance too, and
+    prove nothing about the bound.
+
+    ``page_one`` selects what that content is. The default page carries a blob;
+    ``_ONE_PREFIX_THEN_MORE`` carries a common prefix instead. Which one a given
+    listing needs is the point of the parametrisation in the suites: each
+    operation must meet the page shape *it* discards entirely, because a page
+    that comes back 200 proves the container exists whatever the operation then
+    makes of it.
     """
     from werkzeug.wrappers import Response
 
@@ -125,7 +146,7 @@ def serve_container_vanishing_mid_listing(httpserver: HTTPServer) -> str:
             return Response(b"", status=404, content_type="application/xml")
         state["lists"] += 1
         if state["lists"] == 1:
-            return Response(_ONE_BLOB_THEN_MORE, status=200, content_type="application/xml")
+            return Response(page_one, status=200, content_type="application/xml")
         return Response(
             _CONTAINER_NOT_FOUND_XML,
             status=404,
@@ -135,6 +156,19 @@ def serve_container_vanishing_mid_listing(httpserver: HTTPServer) -> str:
 
     httpserver.expect_request(re.compile("^/.*$")).respond_with_handler(handler)
     return httpserver.url_for("/").rstrip("/")
+
+
+# Each listing paired with the page-one shape that yields it nothing. Under a
+# bound keyed on a yielded item these are the blind pairs; under one keyed on the
+# page they all raise. ``iter_children`` yields both kinds, so it has no blind
+# shape and takes the blob page as its control.
+MID_SCAN_BLIND_PAGES: dict[str, bytes] = {
+    "list_files": _ONE_PREFIX_THEN_MORE,
+    "list_files-recursive": _ONE_PREFIX_THEN_MORE,
+    "list_folders": _ONE_BLOB_THEN_MORE,
+    "iter_children": _ONE_BLOB_THEN_MORE,
+    "glob": _ONE_PREFIX_THEN_MORE,
+}
 
 
 def connection_string(endpoint: str) -> str:

@@ -216,18 +216,21 @@ second such dependency on **ID-242**; it shipped with the denied path asserted b
 the hand-written 403 probe that item names and by nothing in conformance, which
 is why ID-242 is still open and still worth doing.
 
-**One backend class** now disagrees with **the absent-container clause** —
-`LocalBackend` (BUG-247), counted from BE-021's § Known divergences list, which
-this section tracks bullet for bullet and which holds one bullet. **Five** further
-disagreements sit in this section and none of them is with the absent-container
-clause, which is why they are not in that count: BUG-253 is between two halves of
-one Graph operation; BUG-245 is a constructor leak, which BE-021 scopes to
-operations and so does not reach; BUG-254 is with **BE-029's root row**, which
-BE-021 § Reach now defers to rather than deciding, so the breach is of the row
-§ Reach points at and not of the clause this count is about; BUG-255 is about a
-container that vanishes part-way through a listing rather than one that was
-absent when it began; and BUG-256 is about a health probe, which is off the
-roster BE-021 governs.
+**Three backend classes** now disagree with **the absent-container clause** —
+`LocalBackend` (BUG-247), plus `S3Backend` and `S3PyArrowBackend` (BUG-255) —
+counted from BE-021's § Known divergences list, which this section tracks bullet
+for bullet and which holds two bullets, the second naming two classes. BUG-255
+joined that list rather than the "further disagreements" below it when BUG-246
+gave § Reach an explicit first-page bound: before that the clause said only what
+an absent container answers, so a container that vanished *during* a listing was
+outside it; now the bound is part of the clause and missing it is a breach of it.
+**Four** further disagreements sit in this section and none of them is with the
+absent-container clause, which is why they are not in that count: BUG-253 is
+between two halves of one Graph operation; BUG-245 is a constructor leak, which
+BE-021 scopes to operations and so does not reach; BUG-254 is with **BE-029's
+root row**, which BE-021 § Reach now defers to rather than deciding, so the
+breach is of the row § Reach points at and not of the clause this count is about;
+and BUG-256 is about a health probe, which is off the roster BE-021 governs.
 **Five classes** have left the list — counted as classes, which is the frame this
 paragraph opens in and not the bullet frame the sentence above it uses. `GraphBackend` went first — BUG-248 adjudicated
 the spec contradiction behind it and brought the backend to the contract in the
@@ -325,19 +328,31 @@ still impossible on the most-used backend, which is the whole promise.
   | Backend | `list_files("", recursive=True)` |
   | --- | --- |
   | S3, S3-PyArrow | yields 0 items, then returns cleanly |
-  | S3-Boto3, Azure, Async Azure | raises `NotFound` after yielding — fixed by BUG-246 |
+  | S3-Boto3, Azure, Async Azure | raises `NotFound` after the first page — fixed by BUG-246 |
+  Measured for `list_files` on a page of keys; re-measured for all five listings
+  on both page shapes (keys-only and prefixes-only) once the bound moved onto the
+  page, which is the parametrisation
+  `TestTheAbsentBucketToleranceIsBoundedToTheFirstPage` and its two Azure twins
+  now carry.
   The two s3fs lanes report a *complete* listing that is not complete — the other
   three rows are the control, and are what the fix looks like. The caller most hurt
   is the one doing list-then-delete or list-then-sync: it sees a short list, treats
   the absent entries as absent, and deletes or fails to copy data that was there.
   **Pre-existing on the two s3fs lanes**, which is what makes this an item rather
   than a BUG-249 residue: they truncated this way before that change and still do.
-  **Only the two s3fs lanes are left.** BUG-246 and BUG-249 briefly put
-  `S3Boto3Backend` and both Azure adapters onto this truncation — the boto3 lane
-  by replacing a leaked `ClientError` with a swallowed 404, the Azure adapters by
-  adding a swallow where the flat lane previously raised — and then bounded the
-  tolerance to the first page on all three, so they now raise once a listing has
-  yielded. SQLBlob is not affected (one `SELECT`, no pages).
+  **Only the two s3fs lanes are left, and only for the flat namespace.** BUG-246
+  and BUG-249 briefly put `S3Boto3Backend` and both Azure adapters onto this
+  truncation — the boto3 lane by replacing a leaked `ClientError` with a
+  swallowed 404, the Azure adapters by adding a swallow where the flat lane
+  previously raised — and then bounded the tolerance to the first page on all
+  three. The bound is keyed on a **page** having come back, which is the second
+  thing that PR got wrong and had to re-measure: keyed on a yielded *item*, as it
+  first shipped, every listing stayed blind on the page shapes its own filter
+  empties, so a folders-only first page still truncated `list_files` and a
+  keys-only one still truncated `list_folders` — measured at six cells per lane
+  across the three. The Azure HNS branches carry the bound too, argued rather
+  than executed (`pragma: no cover`). SQLBlob is not affected (one `SELECT`, no
+  pages).
   **A correction worth keeping**, because it cost a round: that PR first recorded
   the Azure rows as pre-existing, on the strength of a base-versus-head
   measurement that was broken — the base run set `PYTHONPATH` to a worktree root,

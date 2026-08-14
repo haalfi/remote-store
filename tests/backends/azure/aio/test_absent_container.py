@@ -24,6 +24,7 @@ from tests.backends.azure._helpers import (  # noqa: E402
     CONTAINER,
     FOLDER,
     KEY,
+    MID_SCAN_BLIND_PAGES,
     connection_string,
     serve_absent_container,
     serve_container_vanishing_mid_listing,
@@ -200,5 +201,34 @@ class TestTheToleranceIsBoundedToTheFirstPage:
             with pytest.raises(NotFound):
                 await _drain()
             assert seen, "the stub must yield before the container vanishes, or this cell proves nothing"
+        finally:
+            await instance.aclose()
+
+    @pytest.mark.spec("BE-021", "AZ-026")
+    @pytest.mark.parametrize(("op_name", "call"), _LISTINGS, ids=[n for n, _ in _LISTINGS])
+    async def test_every_listing_raises_on_its_own_blind_page_shape(
+        self,
+        httpserver: HTTPServer,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        """The bound must key on the page, not on what this operation made of it.
+
+        Same reasoning as the sync sibling, and the same reason for a separate
+        file: this adapter carries its own copy of each listing body, and its own
+        copy of the re-raise. Coverage said so — before this cell, five of the six
+        ``raise`` statements the mid-scan bound added here never executed, because
+        the only mid-scan cell drove ``list_files`` alone.
+        """
+        endpoint = serve_container_vanishing_mid_listing(httpserver, page_one=MID_SCAN_BLIND_PAGES[op_name])
+        instance = _backend_at(endpoint)
+        try:
+
+            async def _drain() -> None:
+                async for _ in call(instance):
+                    pass
+
+            with pytest.raises(NotFound):
+                await _drain()
         finally:
             await instance.aclose()

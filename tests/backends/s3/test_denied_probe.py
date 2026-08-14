@@ -502,6 +502,24 @@ class TestEveryLaneAnswersAnAbsentBucketTheSameWay:
         with _backend_at(dotted, endpoint) as backend:
             assert _BOTO3_LISTINGS[op_name](backend) == []
 
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.parametrize("op_name", sorted(_BOTO3_LISTINGS))
+    def test_no_native_error_escapes_a_broken_listing(self, httpserver: HTTPServer, op_name: str) -> None:
+        """BE-021's never-leak invariant, on the lane that used to breach it.
+
+        A 403 is the case that still raises, so it is the one that shows *which*
+        type comes out. The absent-bucket cells above cannot: an empty listing
+        raises nothing, so they would stay green with the mapping removed.
+        """
+        from botocore.exceptions import ClientError
+
+        endpoint = _serve_s3_stub(httpserver, object_denied=True, listing_denied=True)
+        with _backend_at(_S3B3, endpoint) as backend:
+            with pytest.raises(RemoteStoreError) as exc_info:
+                _BOTO3_LISTINGS[op_name](backend)
+            assert not isinstance(exc_info.value, ClientError), f"{op_name} leaks its native error"
+            assert isinstance(exc_info.value, PermissionDenied), f"{op_name} misclassified a denial"
+
 
 _TRUNCATED_PAGE_ONE = (
     b'<?xml version="1.0" encoding="UTF-8"?>'
@@ -516,7 +534,23 @@ _TRUNCATED_PAGE_ONE = (
 )
 
 
-def _serve_bucket_vanishing_on_page_two(httpserver: HTTPServer) -> str:
+# The mirror shape: a first page carrying only common prefixes and no keys.
+# Ordinary rather than contrived — a bucket organised into folders with no
+# top-level objects returns exactly this from `list_files("")`, and it is the
+# page shape on which a bound keyed on "an item was yielded" fails, because
+# `list_files` and `glob` yield nothing from it while the bucket plainly exists.
+_TRUNCATED_PAGE_ONE_PREFIXES_ONLY = (
+    b'<?xml version="1.0" encoding="UTF-8"?>'
+    b'<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
+    b"<Name>" + _BUCKET.encode() + b"</Name><Prefix></Prefix><Delimiter>/</Delimiter>"
+    b"<KeyCount>1</KeyCount><MaxKeys>1000</MaxKeys><IsTruncated>true</IsTruncated>"
+    b"<NextContinuationToken>tok</NextContinuationToken>"
+    b"<CommonPrefixes><Prefix>folder/</Prefix></CommonPrefixes>"
+    b"</ListBucketResult>"
+)
+
+
+def _serve_bucket_vanishing_on_page_two(httpserver: HTTPServer, *, page_one: bytes = _TRUNCATED_PAGE_ONE) -> str:
     """One good page carrying a continuation token, then ``NoSuchBucket``."""
     from werkzeug.wrappers import Response
 
@@ -527,11 +561,25 @@ def _serve_bucket_vanishing_on_page_two(httpserver: HTTPServer) -> str:
             return Response(b"", status=404, content_type="application/xml")
         state["gets"] += 1
         if state["gets"] == 1:
-            return Response(_TRUNCATED_PAGE_ONE, status=200, content_type="application/xml")
+            return Response(page_one, status=200, content_type="application/xml")
         return Response(_NO_SUCH_BUCKET_XML, status=404, content_type="application/xml")
 
     httpserver.expect_request(re.compile("^/.*$")).respond_with_handler(handler)
     return httpserver.url_for("/").rstrip("/")
+
+
+# Each listing paired with the page-one shape that yields it nothing. A bound
+# keyed on "this operation yielded an item" is blind on exactly these pairs: the
+# page came back 200, so the bucket existed, but the operation's own filter
+# discarded everything on it. `iter_children` yields both kinds, so it has no
+# blind shape and is covered by the key-page row as its control.
+_MID_SCAN_BLIND_SHAPES: dict[str, bytes] = {
+    "list_files": _TRUNCATED_PAGE_ONE_PREFIXES_ONLY,
+    "list_files-recursive": _TRUNCATED_PAGE_ONE_PREFIXES_ONLY,
+    "list_folders": _TRUNCATED_PAGE_ONE,
+    "iter_children": _TRUNCATED_PAGE_ONE,
+    "glob": _TRUNCATED_PAGE_ONE_PREFIXES_ONLY,
+}
 
 
 class TestTheAbsentBucketToleranceIsBoundedToTheFirstPage:
@@ -575,6 +623,23 @@ class TestTheAbsentBucketToleranceIsBoundedToTheFirstPage:
             assert seen, "the stub must yield before the bucket vanishes, or this cell proves nothing"
 
     @pytest.mark.spec("BE-021")
+    @pytest.mark.parametrize("op_name", sorted(_MID_SCAN_BLIND_SHAPES))
+    def test_every_listing_raises_on_its_own_blind_page_shape(self, httpserver: HTTPServer, op_name: str) -> None:
+        """The bound must key on the page, not on what this operation made of it.
+
+        Pinning only ``list_files`` against a page of keys proved the bound for
+        the one pairing where the operation's filter happens to pass the page's
+        contents through. Each listing here meets the page shape that yields *it*
+        nothing while the bucket plainly answered — a folders-only page for
+        ``list_files`` and ``glob``, a keys-only page for ``list_folders`` — and
+        under a bound keyed on "an item was yielded" every one of them swallowed
+        the second page's 404 and returned a short listing as a complete one.
+        """
+        endpoint = _serve_bucket_vanishing_on_page_two(httpserver, page_one=_MID_SCAN_BLIND_SHAPES[op_name])
+        with _backend_at(_S3B3, endpoint) as backend, pytest.raises(NotFound):
+            _BOTO3_LISTINGS[op_name](backend)
+
+    @pytest.mark.spec("BE-021")
     @pytest.mark.parametrize("dotted", [_S3, _S3PA], ids=["s3", "s3-pyarrow"])
     def test_the_s3fs_lanes_still_truncate(self, httpserver: HTTPServer, dotted: str) -> None:
         """A stated bound, not an endorsement.
@@ -587,21 +652,3 @@ class TestTheAbsentBucketToleranceIsBoundedToTheFirstPage:
         endpoint = _serve_bucket_vanishing_on_page_two(httpserver)
         with _backend_at(dotted, endpoint) as backend:
             assert list(backend.list_files("", recursive=True)) == []
-
-    @pytest.mark.spec("BE-021")
-    @pytest.mark.parametrize("op_name", sorted(_BOTO3_LISTINGS))
-    def test_no_native_error_escapes_a_broken_listing(self, httpserver: HTTPServer, op_name: str) -> None:
-        """BE-021's never-leak invariant, on the lane that used to breach it.
-
-        A 403 is the case that still raises, so it is the one that shows *which*
-        type comes out. The absent-bucket cells above cannot: an empty listing
-        raises nothing, so they would stay green with the mapping removed.
-        """
-        from botocore.exceptions import ClientError
-
-        endpoint = _serve_s3_stub(httpserver, object_denied=True, listing_denied=True)
-        with _backend_at(_S3B3, endpoint) as backend:
-            with pytest.raises(RemoteStoreError) as exc_info:
-                _BOTO3_LISTINGS[op_name](backend)
-            assert not isinstance(exc_info.value, ClientError), f"{op_name} leaks its native error"
-            assert isinstance(exc_info.value, PermissionDenied), f"{op_name} misclassified a denial"

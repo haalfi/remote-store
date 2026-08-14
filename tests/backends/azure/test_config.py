@@ -69,6 +69,28 @@ if TYPE_CHECKING:
 _BACKENDS: list[AzureBackend] = []
 
 
+class _Paged:
+    """Stands in for the SDK's ``ItemPaged``, which is iterable *and* pageable.
+
+    ``get_paths``, ``list_blobs`` and ``walk_blobs`` all return an ``ItemPaged``:
+    iterating walks items, ``by_page()`` walks pages of items. A bare list has
+    only the first half, so a double returning one lets a backend that reads
+    pages — as the listings must, to bound an absent-container tolerance to the
+    first page — fail against a shape the service never sends. One page is
+    enough here; the multi-page cases are pinned on the wire stubs in
+    ``test_absent_container.py``.
+    """
+
+    def __init__(self, items: list[Any]) -> None:
+        self._items = list(items)
+
+    def __iter__(self) -> Any:
+        return iter(self._items)
+
+    def by_page(self, continuation_token: str | None = None) -> Any:  # noqa: ARG002 -- SDK signature
+        return iter([iter(self._items)])
+
+
 def _make_backend(**kw: Any) -> AzureBackend:
     """Shorthand for creating an AzureBackend with sensible test defaults.
 
@@ -1524,7 +1546,7 @@ class TestAzureHNSPaths:
         mock_path.name = "dir/file.txt"
         mock_path.size = 42
         mock_path.last_modified = None
-        backend._fs_instance.get_paths.return_value = [mock_path]
+        backend._fs_instance.get_paths.return_value = _Paged([mock_path])
         files = list(backend.list_files("dir"))
         assert len(files) == 1
         assert files[0].name == "file.txt"
@@ -1534,7 +1556,7 @@ class TestAzureHNSPaths:
         mock_path = MagicMock(spec=PathProperties)
         mock_path.is_directory = True
         mock_path.name = "parent/sub"
-        backend._fs_instance.get_paths.return_value = [mock_path]
+        backend._fs_instance.get_paths.return_value = _Paged([mock_path])
         folders = list(backend.list_folders("parent"))
         assert [f.name for f in folders] == ["sub"]
 

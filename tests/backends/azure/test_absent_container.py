@@ -50,6 +50,7 @@ from tests.backends.azure._helpers import (  # noqa: E402
     CONTAINER,
     FOLDER,
     KEY,
+    MID_SCAN_BLIND_PAGES,
     connection_string,
     serve_absent_container,
     serve_container_vanishing_mid_listing,
@@ -250,5 +251,32 @@ class TestTheToleranceIsBoundedToTheFirstPage:
                 # survives the raise and the assertion below can check it.
                 seen.extend(instance.list_files("", recursive=True))
             assert seen, "the stub must yield before the container vanishes, or this cell proves nothing"
+        finally:
+            instance.close()
+
+    @pytest.mark.spec("BE-021", "AZ-026")
+    @pytest.mark.parametrize(("op_name", "call"), _LISTINGS, ids=[n for n, _ in _LISTINGS])
+    def test_every_listing_raises_on_its_own_blind_page_shape(
+        self,
+        httpserver: HTTPServer,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        """The bound must key on the page, not on what this operation made of it.
+
+        The cell above pins ``list_files`` against a page carrying a blob — the
+        one pairing where the operation's own filter passes the page's contents
+        through. Every listing here meets the page shape that yields *it*
+        nothing: a prefix-only page for ``list_files`` and ``glob``, which
+        discard prefixes, and a blob-only page for ``list_folders``, which
+        discards blobs. Keyed on a yielded item rather than on the page, each of
+        these swallowed the second page's 404 and returned a short listing as a
+        complete one.
+        """
+        endpoint = serve_container_vanishing_mid_listing(httpserver, page_one=MID_SCAN_BLIND_PAGES[op_name])
+        instance = _backend_at(endpoint)
+        try:
+            with pytest.raises(NotFound):
+                call(instance)
         finally:
             instance.close()

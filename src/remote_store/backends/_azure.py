@@ -385,7 +385,10 @@ class AzureBackend(Backend):
         The HNS branch of these methods already reached that answer through its
         own early return on a mapped ``NotFound``; the flat branch did not, so
         the two namespaces answered the identical question differently inside one
-        method body.
+        method body. The HNS branch keeps its own copy of the mid-scan bound for
+        the same reason it keeps its own catch — it never reaches this one. That
+        copy is argued rather than executed: the branch is ``pragma: no cover``
+        and reachable only through the Docker-gated or live fixtures.
 
         It has to wrap ``_errors`` rather than sit inside it: the SDK raises
         ``ResourceNotFoundError`` and only ``_errors`` turns that into a
@@ -397,10 +400,13 @@ class AzureBackend(Backend):
         only 404 they raise is the container's; a denial maps to
         ``PermissionDenied`` and passes straight through, which is what stops
         "you may not look" being reported as "there is nothing there". By
-        *position*: the caller sets ``cursor.yielded`` once it has produced
-        anything, after which a container 404 propagates. Past the first item the
-        container demonstrably existed, so the 404 means it was deleted mid-scan
-        — which must not reach the caller as a complete listing.
+        *position*: the caller sets ``cursor.saw_page`` as each page comes back,
+        after which a container 404 propagates. Past the first page the container
+        demonstrably existed, so the 404 means it was deleted mid-scan — which
+        must not reach the caller as a complete listing. The listings iterate
+        ``by_page()`` rather than item-by-item so that flag can exist; keyed on a
+        yielded item instead, it goes blind on every page this operation's filter
+        empties. ``_ListingCursor`` carries the worked case.
 
         **Must be entered inside the generator body.** Wrapped around the call
         that returns the generator it would not run until the first ``next()``.
@@ -410,7 +416,7 @@ class AzureBackend(Backend):
             with self._errors(path):
                 yield cursor
         except NotFound:
-            if cursor.yielded:
+            if cursor.saw_page:
                 raise
             return
 
@@ -1168,18 +1174,21 @@ class AzureBackend(Backend):
 
             if self._hns:  # pragma: no cover -- HNS only
                 try:
-                    paths = self._fs.get_paths(path=azure_path or "/", recursive=recursive)
-                    for p in paths:
-                        if not getattr(p, "is_directory", False):
-                            if recursive and max_depth is not None:
-                                rel = str(p.name)[len(prefix) :]
-                                depth = rel.count("/")
-                                if depth > max_depth:
-                                    continue
-                            yield self._props_to_fileinfo(p, str(p.name))
+                    for page in self._fs.get_paths(path=azure_path or "/", recursive=recursive).by_page():
+                        cursor.saw_page = True
+                        for p in page:
+                            if not getattr(p, "is_directory", False):
+                                if recursive and max_depth is not None:
+                                    rel = str(p.name)[len(prefix) :]
+                                    depth = rel.count("/")
+                                    if depth > max_depth:
+                                        continue
+                                yield self._props_to_fileinfo(p, str(p.name))
                 except Exception as exc:  # noqa: BLE001
                     mapped = self._classify(exc, path)
                     if isinstance(mapped, NotFound):
+                        if cursor.saw_page:
+                            raise mapped from None
                         return
                     # Listing under a file-ancestor must yield [] (BE-014),
                     # not leak the SDK's AlreadyExists/409.
@@ -1187,21 +1196,21 @@ class AzureBackend(Backend):
                         return
                     raise mapped from None
             elif recursive:
-                blobs = self._cc.list_blobs(name_starts_with=prefix)
-                for blob in blobs:
-                    if max_depth is not None:
-                        rel = blob.name[len(prefix) :]
-                        depth = rel.count("/")
-                        if depth > max_depth:
-                            continue
-                    cursor.yielded = True
-                    yield self._props_to_fileinfo(blob, blob.name)
+                for page in self._cc.list_blobs(name_starts_with=prefix).by_page():
+                    cursor.saw_page = True
+                    for blob in page:
+                        if max_depth is not None:
+                            rel = blob.name[len(prefix) :]
+                            depth = rel.count("/")
+                            if depth > max_depth:
+                                continue
+                        yield self._props_to_fileinfo(blob, blob.name)
             else:
-                blobs = self._cc.walk_blobs(name_starts_with=prefix)
-                for item in blobs:
-                    if not getattr(item, "prefix", None):
-                        cursor.yielded = True
-                        yield self._props_to_fileinfo(item, item.name)
+                for page in self._cc.walk_blobs(name_starts_with=prefix).by_page():
+                    cursor.saw_page = True
+                    for item in page:
+                        if not getattr(item, "prefix", None):
+                            yield self._props_to_fileinfo(item, item.name)
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
         """Yield immediate subfolders of *path* as ``FolderEntry`` records.
@@ -1222,28 +1231,31 @@ class AzureBackend(Backend):
 
             if self._hns:  # pragma: no cover -- HNS only
                 try:
-                    paths = self._fs.get_paths(path=azure_path or "/", recursive=False)
-                    for p in paths:
-                        if getattr(p, "is_directory", False):
-                            rel = str(p.name).rstrip("/")
-                            folder_name = rel.rsplit("/", 1)[-1]
-                            yield FolderEntry(path=RemotePath(rel), name=folder_name)
+                    for page in self._fs.get_paths(path=azure_path or "/", recursive=False).by_page():
+                        cursor.saw_page = True
+                        for p in page:
+                            if getattr(p, "is_directory", False):
+                                rel = str(p.name).rstrip("/")
+                                folder_name = rel.rsplit("/", 1)[-1]
+                                yield FolderEntry(path=RemotePath(rel), name=folder_name)
                 except Exception as exc:  # noqa: BLE001
                     mapped = self._classify(exc, path)
                     if isinstance(mapped, NotFound):
+                        if cursor.saw_page:
+                            raise mapped from None
                         return
                     # Listing under a file-ancestor must yield [] (BE-014).
                     if self._hns_first_file_ancestor(path) is not None:
                         return
                     raise mapped from None
             else:
-                blobs = self._cc.walk_blobs(name_starts_with=prefix)
-                for item in blobs:
-                    if getattr(item, "prefix", None):
-                        rel = self.to_key(item.prefix.rstrip("/"))
-                        folder_name = rel.rsplit("/", 1)[-1]
-                        cursor.yielded = True
-                        yield FolderEntry(path=RemotePath(rel), name=folder_name)
+                for page in self._cc.walk_blobs(name_starts_with=prefix).by_page():
+                    cursor.saw_page = True
+                    for item in page:
+                        if getattr(item, "prefix", None):
+                            rel = self.to_key(item.prefix.rstrip("/"))
+                            folder_name = rel.rsplit("/", 1)[-1]
+                            yield FolderEntry(path=RemotePath(rel), name=folder_name)
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         """Yield the immediate files and folders under *path* in one paged listing.
@@ -1265,29 +1277,32 @@ class AzureBackend(Backend):
 
             if self._hns:  # pragma: no cover -- HNS only
                 try:
-                    paths = self._fs.get_paths(path=azure_path or "/", recursive=False)
-                    for p in paths:
-                        if getattr(p, "is_directory", False):
-                            rel = str(p.name).rstrip("/")
-                            folder_name = rel.rsplit("/", 1)[-1]
-                            yield FolderEntry(path=RemotePath(rel), name=folder_name)
-                        else:
-                            yield self._props_to_fileinfo(p, str(p.name))
+                    for page in self._fs.get_paths(path=azure_path or "/", recursive=False).by_page():
+                        cursor.saw_page = True
+                        for p in page:
+                            if getattr(p, "is_directory", False):
+                                rel = str(p.name).rstrip("/")
+                                folder_name = rel.rsplit("/", 1)[-1]
+                                yield FolderEntry(path=RemotePath(rel), name=folder_name)
+                            else:
+                                yield self._props_to_fileinfo(p, str(p.name))
                 except Exception as exc:  # noqa: BLE001
                     mapped = self._classify(exc, path)
                     if isinstance(mapped, NotFound):
+                        if cursor.saw_page:
+                            raise mapped from None
                         return
                     raise mapped from None
             else:
-                blobs = self._cc.walk_blobs(name_starts_with=prefix)
-                for item in blobs:
-                    cursor.yielded = True
-                    if getattr(item, "prefix", None):
-                        rel = self.to_key(item.prefix.rstrip("/"))
-                        folder_name = rel.rsplit("/", 1)[-1]
-                        yield FolderEntry(path=RemotePath(rel), name=folder_name)
-                    else:
-                        yield self._props_to_fileinfo(item, item.name)
+                for page in self._cc.walk_blobs(name_starts_with=prefix).by_page():
+                    cursor.saw_page = True
+                    for item in page:
+                        if getattr(item, "prefix", None):
+                            rel = self.to_key(item.prefix.rstrip("/"))
+                            folder_name = rel.rsplit("/", 1)[-1]
+                            yield FolderEntry(path=RemotePath(rel), name=folder_name)
+                        else:
+                            yield self._props_to_fileinfo(item, item.name)
 
     def glob(self, pattern: str) -> Iterator[FileInfo]:
         """Match files against a glob pattern.

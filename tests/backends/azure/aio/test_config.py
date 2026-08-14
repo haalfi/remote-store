@@ -103,10 +103,37 @@ async def _aclose_tracked_backends() -> AsyncIterator[None]:
             await backend.aclose()
 
 
-async def _async_iter(items: list[Any]):  # noqa: ANN201 -- async generator
-    """Yield items from a list as an async iterator."""
+async def _apage(items: list[Any]):  # noqa: ANN201 -- async generator
+    """One page: an async iterator over its own items."""
     for item in items:
         yield item
+
+
+class _AsyncPaged:
+    """Stands in for the SDK's ``AsyncItemPaged``, which is iterable *and* pageable.
+
+    ``list_blobs``, ``walk_blobs`` and ``get_paths`` all return an
+    ``AsyncItemPaged``: ``async for`` walks items, and ``by_page()`` walks pages
+    of items. A bare async generator has only the first half, so a double
+    returning one lets a backend that reads pages — as these listings must, to
+    bound an absent-container tolerance to the first page — fail against a shape
+    the service never sends. Modelling one page is enough: the multi-page cases
+    are pinned on the wire stubs in ``test_absent_container.py``, not here.
+    """
+
+    def __init__(self, items: list[Any]) -> None:
+        self._items = list(items)
+
+    def __aiter__(self):  # noqa: ANN204 -- async iterator
+        return _apage(self._items)
+
+    async def by_page(self, continuation_token: str | None = None):  # noqa: ANN201, ARG002 -- SDK signature
+        yield _apage(self._items)
+
+
+def _async_iter(items: list[Any]) -> Any:
+    """An async-iterable double for an SDK listing result."""
+    return _AsyncPaged(items)
 
 
 def _mock_blob_props(

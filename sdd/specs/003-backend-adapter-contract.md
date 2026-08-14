@@ -605,6 +605,28 @@ one. All of these obligations are pre-existing — this
 clause neither creates nor relaxes them, and that is why those operations are
 absent from the roster above rather than exempt from it.
 
+**The empty listing is an answer about a container that was absent when the
+listing began.** A listing that has already received a page has been told the
+container exists; a container 404 arriving on a *later* page therefore reports a
+deletion that happened underneath the scan, not an absence, and a backend MUST
+let it propagate rather than end the iteration. Returning early there hands the
+caller a short listing indistinguishable from a complete one — the caller most
+harmed being the one diffing a listing against local state and deleting the
+difference, which is a data-loss shape rather than an error-reporting one.
+
+The bound is on the **page**, not on what the operation yielded from it. Every
+listing discards part of a page — `list_files` drops common prefixes, directory
+markers and anything past `max_depth`; `list_folders` drops keys; `glob` drops
+non-matches — so a backend keying the bound on a yielded item goes blind exactly
+where a page's contents are all filtered away, and those are ordinary page
+shapes: a container organised into folders returns a first page of nothing but
+prefixes.
+
+Backends whose listing API exposes no page boundary may satisfy this by marking
+each item the service returned *before* its own filters run; the residue is a
+truncated page carrying no items at all, which MUST then be stated as a
+divergence rather than left implied.
+
 **The root is decided by BE-029, not here, and BE-029 wins.** This paragraph
 assigns answers per *operation*; it says nothing about the store root within
 them, and reading a root answer off it is a mistake this spec has already
@@ -670,6 +692,15 @@ here is what makes the container case answerable from one place.
   so absence is misreported as an escape. This is the furthest from the clause
   any backend currently sits, and the only one where the error type actively
   misleads.
+
+- `S3Backend` and `S3PyArrowBackend` breach the **first-page bound** rather than
+  the empty-listing answer: a bucket deleted between pages of a listing ends the
+  iteration cleanly, so a truncated listing reads as a complete one. They answer
+  the absent-from-the-start case correctly. Tracked as **BUG-255**, with the fix
+  shape already worked on the three lanes that meet the bound. `AzureBackend` and
+  `AsyncAzureBackend` meet it on their flat branches, executed; their HNS
+  branches carry the same bound *argued rather than executed*, since those are
+  reachable only through the Docker-gated fixtures.
 
 Three bullets have left this list and are recorded rather than deleted, because
 each was a *measured* divergence and the measurement is what a later reader

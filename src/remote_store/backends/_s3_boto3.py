@@ -689,11 +689,11 @@ class S3Boto3Backend(Backend):
             while queue:
                 current, depth = queue.popleft()
                 for page in self._paginate(current, delimiter="/"):
+                    cursor.saw_page = True
                     for obj in page.get("Contents", []):
                         key = obj["Key"]
                         if key.endswith("/") or key == current:
                             continue
-                        cursor.yielded = True
                         yield self._obj_to_fileinfo(obj)
                     if depth_limit is None or depth < depth_limit:
                         for cp in page.get("CommonPrefixes", []):
@@ -713,9 +713,9 @@ class S3Boto3Backend(Backend):
         prefix = self._prefix_of(path)
         with self._listing_errors(path) as cursor:
             for page in self._paginate(prefix, delimiter="/"):
+                cursor.saw_page = True
                 for cp in page.get("CommonPrefixes", []):
                     rel = cp["Prefix"].rstrip("/")
-                    cursor.yielded = True
                     yield FolderEntry(path=RemotePath(rel), name=rel.rsplit("/", 1)[-1])
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
@@ -734,15 +734,14 @@ class S3Boto3Backend(Backend):
         prefix = self._prefix_of(path)
         with self._listing_errors(path) as cursor:
             for page in self._paginate(prefix, delimiter="/"):
+                cursor.saw_page = True
                 for obj in page.get("Contents", []):
                     key = obj["Key"]
                     if key.endswith("/") or key == prefix:
                         continue
-                    cursor.yielded = True
                     yield self._obj_to_fileinfo(obj)
                 for cp in page.get("CommonPrefixes", []):
                     rel = cp["Prefix"].rstrip("/")
-                    cursor.yielded = True
                     yield FolderEntry(path=RemotePath(rel), name=rel.rsplit("/", 1)[-1])
 
     def glob(self, pattern: str) -> Iterator[FileInfo]:
@@ -913,12 +912,12 @@ class S3Boto3Backend(Backend):
         the only 404 it can raise is the container's, and everything else
         propagates through ``_boto_errors`` — which is what keeps a denial a
         ``PermissionDenied`` rather than an invented empty listing. And by
-        *position*: the caller sets ``cursor.yielded`` once it has produced
-        anything, after which a container 404 propagates instead. "An absent
-        container holds nothing" is only sound while nothing has been handed
-        over; past that the container demonstrably existed and the 404 means it
-        was deleted mid-scan, which a caller must not receive as a complete
-        listing.
+        *position*: the caller sets ``cursor.saw_page`` as each page comes back,
+        after which a container 404 propagates instead. "An absent container
+        holds nothing" is only sound until the container has answered; past that
+        it demonstrably existed and the 404 means it was deleted mid-scan, which
+        a caller must not receive as a complete listing. The flag belongs to the
+        page and not to the yield — see ``_ListingCursor``, which carries why.
 
         **Must be entered inside the generator body.** Wrapped around the call
         that *returns* the generator it would not run until the first ``next()``,
@@ -932,7 +931,7 @@ class S3Boto3Backend(Backend):
             # Contract: 003-backend-adapter-contract BE-021, "An absent container
             # reads as an absent path" — a listing's share of it, bounded to the
             # first page.
-            if cursor.yielded:
+            if cursor.saw_page:
                 raise
             return
 

@@ -43,9 +43,10 @@ surprising_ripples:
 # residual docstring map), f164c97 (round 2), b5b0646 (round 3), b5af269
 # (round 4), fb5ff36 (the closing measuring gate's mid-scan truncation finding
 # and the false correction it retracted), and the commit carrying this trace
-# edit (the closing figure audit). Four numbered review rounds, eight commits:
-# round 1 took three, and round 4's gates took two after it. Value is 8.
-review_rounds: 8
+# edit (the closing figure audit), and the commit carrying the verification
+# pass's six findings. Four numbered review rounds, nine commits: round 1 took
+# three, and round 4's gates took three after it. Value is 9.
+review_rounds: 9
 
 phases:
   - id: orient
@@ -260,6 +261,55 @@ phases:
           read-only backend, and AlreadyExists on the second call, since
           overwrite defaults to False. The docstring now says there is no
           portable probe rather than naming one.
+        outcome: ok
+
+  - id: fix_5
+    name: Fix (verification pass)
+    steps:
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "_ListingCursor"
+        read_type: verify
+        extract: >-
+          The verification pass on the round-4 fix found the first-page bound
+          keyed on the wrong event. It set the flag immediately before each
+          yield, so a page that came back 200 and was then emptied by the
+          operation's own filter left it false and the next page's container 404
+          was still swallowed — list_files discards common prefixes, list_folders
+          discards keys, glob discards non-matches, and each of those is an
+          ordinary first page rather than a corner case. Reproduced before
+          fixing: 4 of 5 S3-Boto3 listings returned a truncated listing cleanly
+          against a stub serving one good page then NoSuchBucket, iter_children
+          being the one that passed because it yields both kinds and so has no
+          blind shape. The flag now marks a page, which on Azure meant iterating
+          by_page() instead of item-by-item. Mutation-checked: neutering the
+          page-level flag kills all 12 mid-scan cells on the two Azure adapters
+          and leaves the 13 absent-from-the-start cells green.
+        outcome: ok
+      - file: tests/backends/azure/aio/test_config.py
+        section: "_async_iter"
+        read_type: reference
+        extract: >-
+          The by_page() move broke the mock doubles, and the break was the
+          finding: list_blobs/walk_blobs/get_paths return an ItemPaged, which is
+          iterable *and* pageable, while the doubles returned a bare generator or
+          a list. A double that under-describes the SDK cannot fail the way the
+          service does. Replaced with _AsyncPaged / _Paged, one helper per file,
+          which fixed 30-odd call sites without touching them; only the two sync
+          HNS sites that pass a list directly needed editing.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 § Reach, § Known divergences"
+        read_type: gate
+        extract: >-
+          The pass also found the mid-scan behaviour had no clause: § Reach still
+          said only that a listing over an absent container comes back empty,
+          while the code now raises under a condition nothing stated. Writing the
+          bound into the clause changed what counts as a divergence from it —
+          BUG-255 had been justified as *outside* this clause, and is now a
+          breach of it, so it moves into § Known divergences and § 1's counts
+          move with it. That ripple is the argument for writing the clause first:
+          the code shipped a rule the spec did not have, and the backlog's
+          bookkeeping was reasoning off the spec's silence.
         outcome: ok
 
   - id: verify

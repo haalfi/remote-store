@@ -981,25 +981,28 @@ class AsyncAzureBackend(AsyncBackend):
         Returns:
             An async iterator of ``FileInfo`` objects.
         """
-        yielded = False
+        saw_page = False
         try:
             ap = _azure_path_fn(path)
             prefix = (ap.rstrip("/") + "/") if ap else ""
 
             if self._hns:  # pragma: no cover -- HNS only
                 try:
-                    paths = self._fs.get_paths(path=ap or "/", recursive=recursive)
-                    async for p in paths:
-                        if not getattr(p, "is_directory", False):
-                            if recursive and max_depth is not None:
-                                rel = str(p.name)[len(prefix) :]
-                                depth = rel.count("/")
-                                if depth > max_depth:
-                                    continue
-                            yield props_to_fileinfo(p, str(p.name))
+                    async for page in self._fs.get_paths(path=ap or "/", recursive=recursive).by_page():
+                        saw_page = True
+                        async for p in page:
+                            if not getattr(p, "is_directory", False):
+                                if recursive and max_depth is not None:
+                                    rel = str(p.name)[len(prefix) :]
+                                    depth = rel.count("/")
+                                    if depth > max_depth:
+                                        continue
+                                yield props_to_fileinfo(p, str(p.name))
                 except Exception as exc:  # noqa: BLE001
                     mapped = classify_azure_error(exc, path, self.name)
                     if isinstance(mapped, NotFound):
+                        if saw_page:
+                            raise mapped from None
                         return
                     # Listing under a file-ancestor must yield [] (BE-014),
                     # not leak the SDK's AlreadyExists/409.
@@ -1007,25 +1010,29 @@ class AsyncAzureBackend(AsyncBackend):
                         return
                     raise mapped from None
             elif recursive:
-                async for blob in self._cc.list_blobs(name_starts_with=prefix):
-                    if max_depth is not None:
-                        rel = blob.name[len(prefix) :]
-                        depth = rel.count("/")
-                        if depth > max_depth:
-                            continue
-                    yielded = True
-                    yield props_to_fileinfo(blob, blob.name)
+                async for page in self._cc.list_blobs(name_starts_with=prefix).by_page():
+                    saw_page = True
+                    async for blob in page:
+                        if max_depth is not None:
+                            rel = blob.name[len(prefix) :]
+                            depth = rel.count("/")
+                            if depth > max_depth:
+                                continue
+                        yield props_to_fileinfo(blob, blob.name)
             else:
-                async for item in self._cc.walk_blobs(name_starts_with=prefix):
-                    if not getattr(item, "prefix", None):
-                        yielded = True
-                        yield props_to_fileinfo(item, item.name)
+                async for page in self._cc.walk_blobs(name_starts_with=prefix).by_page():
+                    saw_page = True
+                    async for item in page:
+                        if not getattr(item, "prefix", None):
+                            yield props_to_fileinfo(item, item.name)
         except NotFound:
             # An absent container holds nothing, so the listing is empty rather
-            # than an error -- but only while nothing has been yielded. Past that
-            # the container demonstrably existed, so the 404 means it was deleted
-            # mid-scan and must not read as a complete listing.
-            if yielded:
+            # than an error -- but only until a page has come back. Past that the
+            # container demonstrably existed, so the 404 means it was deleted
+            # mid-scan and must not read as a complete listing. Keyed on the page
+            # and not on a yielded item: see _flat_ns._ListingCursor for why the
+            # item spelling goes blind on the pages a filter empties.
+            if saw_page:
                 raise
             return
         except RemoteStoreError:
@@ -1036,7 +1043,7 @@ class AsyncAzureBackend(AsyncBackend):
                 # walk_blobs/list_blobs report an absent *prefix* as an empty
                 # page, so the only 404 they raise is the container's. A denial
                 # maps to PermissionDenied and still propagates below.
-                if yielded:
+                if saw_page:
                     raise mapped from None
                 return
             raise mapped from None
@@ -1052,40 +1059,46 @@ class AsyncAzureBackend(AsyncBackend):
         Returns:
             An async iterator of ``FolderEntry`` objects.
         """
-        yielded = False
+        saw_page = False
         try:
             ap = _azure_path_fn(path)
             prefix = (ap.rstrip("/") + "/") if ap else ""
 
             if self._hns:  # pragma: no cover -- HNS only
                 try:
-                    paths = self._fs.get_paths(path=ap or "/", recursive=False)
-                    async for p in paths:
-                        if getattr(p, "is_directory", False):
-                            rel = str(p.name).rstrip("/")
-                            folder_name = rel.rsplit("/", 1)[-1]
-                            yield FolderEntry(path=RemotePath(rel), name=folder_name)
+                    async for page in self._fs.get_paths(path=ap or "/", recursive=False).by_page():
+                        saw_page = True
+                        async for p in page:
+                            if getattr(p, "is_directory", False):
+                                rel = str(p.name).rstrip("/")
+                                folder_name = rel.rsplit("/", 1)[-1]
+                                yield FolderEntry(path=RemotePath(rel), name=folder_name)
                 except Exception as exc:  # noqa: BLE001
                     mapped = classify_azure_error(exc, path, self.name)
                     if isinstance(mapped, NotFound):
+                        if saw_page:
+                            raise mapped from None
                         return
                     # Listing under a file-ancestor must yield [] (BE-014).
                     if await self._hns_first_file_ancestor(path) is not None:
                         return
                     raise mapped from None
             else:
-                async for item in self._cc.walk_blobs(name_starts_with=prefix):
-                    if getattr(item, "prefix", None):
-                        rel = self.to_key(item.prefix.rstrip("/"))
-                        folder_name = rel.rsplit("/", 1)[-1]
-                        yielded = True
-                        yield FolderEntry(path=RemotePath(rel), name=folder_name)
+                async for page in self._cc.walk_blobs(name_starts_with=prefix).by_page():
+                    saw_page = True
+                    async for item in page:
+                        if getattr(item, "prefix", None):
+                            rel = self.to_key(item.prefix.rstrip("/"))
+                            folder_name = rel.rsplit("/", 1)[-1]
+                            yield FolderEntry(path=RemotePath(rel), name=folder_name)
         except NotFound:
             # An absent container holds nothing, so the listing is empty rather
-            # than an error -- but only while nothing has been yielded. Past that
-            # the container demonstrably existed, so the 404 means it was deleted
-            # mid-scan and must not read as a complete listing.
-            if yielded:
+            # than an error -- but only until a page has come back. Past that the
+            # container demonstrably existed, so the 404 means it was deleted
+            # mid-scan and must not read as a complete listing. Keyed on the page
+            # and not on a yielded item: see _flat_ns._ListingCursor for why the
+            # item spelling goes blind on the pages a filter empties.
+            if saw_page:
                 raise
             return
         except RemoteStoreError:
@@ -1096,7 +1109,7 @@ class AsyncAzureBackend(AsyncBackend):
                 # walk_blobs/list_blobs report an absent *prefix* as an empty
                 # page, so the only 404 they raise is the container's. A denial
                 # maps to PermissionDenied and still propagates below.
-                if yielded:
+                if saw_page:
                     raise mapped from None
                 return
             raise mapped from None
@@ -1112,41 +1125,47 @@ class AsyncAzureBackend(AsyncBackend):
         Returns:
             An async iterator of ``FileInfo`` (files) and ``FolderEntry`` (folders).
         """
-        yielded = False
+        saw_page = False
         try:
             ap = _azure_path_fn(path)
             prefix = (ap.rstrip("/") + "/") if ap else ""
 
             if self._hns:  # pragma: no cover -- HNS only
                 try:
-                    paths = self._fs.get_paths(path=ap or "/", recursive=False)
-                    async for p in paths:
-                        if getattr(p, "is_directory", False):
-                            rel = str(p.name).rstrip("/")
-                            folder_name = rel.rsplit("/", 1)[-1]
-                            yield FolderEntry(path=RemotePath(rel), name=folder_name)
-                        else:
-                            yield props_to_fileinfo(p, str(p.name))
+                    async for page in self._fs.get_paths(path=ap or "/", recursive=False).by_page():
+                        saw_page = True
+                        async for p in page:
+                            if getattr(p, "is_directory", False):
+                                rel = str(p.name).rstrip("/")
+                                folder_name = rel.rsplit("/", 1)[-1]
+                                yield FolderEntry(path=RemotePath(rel), name=folder_name)
+                            else:
+                                yield props_to_fileinfo(p, str(p.name))
                 except Exception as exc:  # noqa: BLE001
                     mapped = classify_azure_error(exc, path, self.name)
                     if isinstance(mapped, NotFound):
+                        if saw_page:
+                            raise mapped from None
                         return
                     raise mapped from None
             else:
-                async for item in self._cc.walk_blobs(name_starts_with=prefix):
-                    yielded = True
-                    if getattr(item, "prefix", None):
-                        rel = self.to_key(item.prefix.rstrip("/"))
-                        folder_name = rel.rsplit("/", 1)[-1]
-                        yield FolderEntry(path=RemotePath(rel), name=folder_name)
-                    else:
-                        yield props_to_fileinfo(item, item.name)
+                async for page in self._cc.walk_blobs(name_starts_with=prefix).by_page():
+                    saw_page = True
+                    async for item in page:
+                        if getattr(item, "prefix", None):
+                            rel = self.to_key(item.prefix.rstrip("/"))
+                            folder_name = rel.rsplit("/", 1)[-1]
+                            yield FolderEntry(path=RemotePath(rel), name=folder_name)
+                        else:
+                            yield props_to_fileinfo(item, item.name)
         except NotFound:
             # An absent container holds nothing, so the listing is empty rather
-            # than an error -- but only while nothing has been yielded. Past that
-            # the container demonstrably existed, so the 404 means it was deleted
-            # mid-scan and must not read as a complete listing.
-            if yielded:
+            # than an error -- but only until a page has come back. Past that the
+            # container demonstrably existed, so the 404 means it was deleted
+            # mid-scan and must not read as a complete listing. Keyed on the page
+            # and not on a yielded item: see _flat_ns._ListingCursor for why the
+            # item spelling goes blind on the pages a filter empties.
+            if saw_page:
                 raise
             return
         except RemoteStoreError:
@@ -1157,7 +1176,7 @@ class AsyncAzureBackend(AsyncBackend):
                 # walk_blobs/list_blobs report an absent *prefix* as an empty
                 # page, so the only 404 they raise is the container's. A denial
                 # maps to PermissionDenied and still propagates below.
-                if yielded:
+                if saw_page:
                     raise mapped from None
                 return
             raise mapped from None
