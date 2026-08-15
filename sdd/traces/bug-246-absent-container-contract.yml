@@ -37,16 +37,22 @@ surprising_ripples:
   - sdd/specs/026-health-check.md
 
 # Counted from `git log --oneline origin/master..HEAD`. b492cc0 is the
-# implementation and does not count. Ten commits exist because review found
-# something, counted by naming them: 7928f47 (round 1's Azure listings and five
-# prose findings), 3f5102c (round 1's code-scanning alert), 35b7281 (round 1's
-# residual docstring map), f164c97 (round 2), b5b0646 (round 3), b5af269
-# (round 4), fb5ff36 (the closing measuring gate's mid-scan truncation finding
-# and the false correction it retracted), 0fc3611 (the closing figure audit),
-# 3026d4b (the first verification pass's six findings), and the commit carrying
-# this trace edit (the second verification pass's ten). That is ten names for
-# ten review-driven commits. Value is 10.
-review_rounds: 10
+# implementation and does not count. `git log --oneline origin/master..HEAD`
+# returns 12; minus b492cc0 that is 11 review-driven commits, named: 7928f47
+# (round 1's Azure listings and five prose findings), 3f5102c (round 1's
+# code-scanning alert), 35b7281 (round 1's residual docstring map), f164c97
+# (round 2), b5b0646 (round 3), b5af269 (round 4), fb5ff36 (the closing measuring
+# gate's mid-scan truncation finding and the false correction it retracted),
+# 0fc3611 (the closing figure audit), 3026d4b (the first verification pass's six
+# findings), 2e80fb1 (the second pass's ten), and aaa3c38 (the prose pass's
+# seven). The commit carrying this edit is excluded: it closes the loop and
+# incorporates no finding, which is the line this count draws.
+#
+# Four times in this PR that head sentence went stale while its tail was
+# re-derived, because it restates a number the log already holds. It is the
+# clearest single instance of what ID-245's fourth bullet asks to be generated
+# rather than maintained, and it sits in the schema's own required comment.
+review_rounds: 11
 
 phases:
   - id: orient
