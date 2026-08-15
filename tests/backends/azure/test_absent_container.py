@@ -24,15 +24,19 @@ strict ``delete_folder`` into a no-op. The ``missing_ok=False`` cells forbid
 that, and ``TestDeniedListingIsNotAnAbsentContainer`` forbids the other
 overshoot — widening the catch past the container's own 404.
 
-**Coverage bound: the flat lane only.** The docstrings on both deletes say the
-rule holds on HNS accounts too, and that is argued rather than executed — the
-HNS branches are ``# pragma: no cover -- HNS only`` and reachable only through
-the Docker-gated or live fixtures. The argument is that on HNS an absent
-container surfaces from ``delete_blob`` / ``get_directory_properties`` as
-``ResourceNotFoundError`` → ``NotFound`` → the pre-existing ``missing_ok``
-branch, with none of this work's changes involved. Sound, and still a reading:
-the one time a reading of a delete body was checked against a run during this
-change, it was wrong.
+**Coverage bound: the two deletes on HNS, and nothing else.** The listings'
+HNS branches are executed here — see ``TestTheHnsListingsAnswerTheSameWay`` —
+because ADLS Gen2's ``List Path`` is an ordinary JSON REST call and the same
+stub technique reaches it. What is still argued rather than executed is the
+*deletes* on HNS: that an absent container surfaces from ``delete_blob`` /
+``get_directory_properties`` as ``ResourceNotFoundError`` → ``NotFound`` → the
+pre-existing ``missing_ok`` branch, with none of this work's changes involved.
+
+That bound used to cover the listings too, on the stated grounds that the HNS
+branches were reachable only through the Docker-gated fixtures. It was false,
+and it hid the one guard in this change that nothing ran. The lesson is the
+repo's own and it has now cost this change twice: a reading of a body is not a
+run of it, and "cannot be tested" is a claim that must itself be measured.
 """
 
 from __future__ import annotations
@@ -49,12 +53,16 @@ from remote_store._errors import NotFound, PermissionDenied  # noqa: E402
 from tests.backends.azure._helpers import (  # noqa: E402
     CONTAINER,
     FOLDER,
+    HNS_MID_SCAN_BLIND_PAGES,
     KEY,
     MID_SCAN_BLIND_PAGES,
     connection_string,
     serve_absent_container,
     serve_container_vanishing_mid_listing,
     serve_denied,
+    serve_hns_absent_filesystem,
+    serve_hns_denied,
+    serve_hns_filesystem_vanishing_mid_listing,
 )
 
 if TYPE_CHECKING:
@@ -63,10 +71,10 @@ if TYPE_CHECKING:
     from pytest_httpserver import HTTPServer
 
 
-def _backend_at(endpoint: str) -> Any:
+def _backend_at(endpoint: str, *, hns: bool = False) -> Any:
     from remote_store.backends._azure import AzureBackend
 
-    return AzureBackend(container=CONTAINER, hns=False, connection_string=connection_string(endpoint))
+    return AzureBackend(container=CONTAINER, hns=hns, connection_string=connection_string(endpoint))
 
 
 @pytest.fixture
@@ -265,18 +273,98 @@ class TestTheToleranceIsBoundedToTheFirstPage:
         """The bound must key on the page, not on what this operation made of it.
 
         The cell above pins ``list_files`` against a page carrying a blob — the
-        one pairing where the operation's own filter passes the page's contents
-        through. Every listing here meets the page shape that yields *it*
-        nothing: a prefix-only page for ``list_files`` and ``glob``, which
-        discard prefixes, and a blob-only page for ``list_folders``, which
-        discards blobs. Keyed on a yielded item rather than on the page, each of
-        these swallowed the second page's 404 and returned a short listing as a
+        one pairing where the page's contents survive to the caller. Every
+        listing here meets the page shape that yields *it* nothing, and the two
+        reasons a page can yield nothing are both represented:
+
+        * ``list_folders`` and non-recursive ``list_files`` go through
+          ``walk_blobs`` and **discard** half of what it returns — keys and
+          prefixes respectively — so the blob page and the prefix page empty
+          them by filtering.
+        * ``list_files(recursive=True)`` and ``glob`` go through ``list_blobs``,
+          which has no delimiter and parses only ``segment.blob_items``. A
+          ``BlobPrefix`` is never surfaced to the backend at all, so the prefix
+          page reaches them as a page carrying **no items**, which is the other
+          residue the bound has to cover.
+
+        Keyed on a yielded item rather than on the page, every one of these
+        swallowed the second page's 404 and returned a short listing as a
         complete one.
         """
         endpoint = serve_container_vanishing_mid_listing(httpserver, page_one=MID_SCAN_BLIND_PAGES[op_name])
         instance = _backend_at(endpoint)
         try:
             with pytest.raises(NotFound):
+                call(instance)
+        finally:
+            instance.close()
+
+
+class TestTheHnsListingsAnswerTheSameWay:
+    """The ADLS Gen2 branches, executed rather than argued.
+
+    These branches carry their own copy of both rules — the empty listing and
+    the first-page bound — because they never reach ``_listing_errors``: each
+    catches its own exception so it can tell an absent container from a listing
+    under a file ancestor (BE-014). A copy is a place the two namespaces can
+    drift, and for the whole of this change the HNS copy was the one nothing
+    ran, on the stated grounds that only Docker could reach it.
+
+    It is reached here by a ``pytest-httpserver`` stub speaking ADLS Gen2's
+    ``List Path``, the same way the flat lane is reached — Stage 1, in process,
+    no Docker. Both axes and the narrowness control are asserted, because a
+    branch that stopped raising altogether would pass the tolerance cells alone.
+    """
+
+    @pytest.mark.spec("BE-021", "AZ-026")
+    @pytest.mark.parametrize(("op_name", "call"), _LISTINGS, ids=[n for n, _ in _LISTINGS])
+    def test_absent_filesystem_yields_nothing(
+        self,
+        httpserver: HTTPServer,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        instance = _backend_at(serve_hns_absent_filesystem(httpserver), hns=True)
+        try:
+            assert call(instance) == [], f"{op_name} must yield nothing against an absent filesystem"
+        finally:
+            instance.close()
+
+    @pytest.mark.spec("BE-021", "AZ-026")
+    @pytest.mark.parametrize(("op_name", "call"), _LISTINGS, ids=[n for n, _ in _LISTINGS])
+    def test_a_filesystem_deleted_mid_listing_raises(
+        self,
+        httpserver: HTTPServer,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        """The bound, on the branch that had it argued and unexecuted.
+
+        Each listing meets the ``List Path`` page it makes nothing of:
+        ``list_folders`` a page of one file, ``list_files`` and ``glob`` a page
+        of one directory. Before the page-keyed bound these returned a truncated
+        listing cleanly.
+        """
+        endpoint = serve_hns_filesystem_vanishing_mid_listing(httpserver, page_one=HNS_MID_SCAN_BLIND_PAGES[op_name])
+        instance = _backend_at(endpoint, hns=True)
+        try:
+            with pytest.raises(NotFound):
+                call(instance)
+        finally:
+            instance.close()
+
+    @pytest.mark.spec("BE-021", "AZ-026")
+    @pytest.mark.parametrize(("op_name", "call"), _LISTINGS, ids=[n for n, _ in _LISTINGS])
+    def test_denied_listing_still_raises(
+        self,
+        httpserver: HTTPServer,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        """The narrowness guard: an empty listing must not be how a denial is reported."""
+        instance = _backend_at(serve_hns_denied(httpserver), hns=True)
+        try:
+            with pytest.raises(PermissionDenied):
                 call(instance)
         finally:
             instance.close()

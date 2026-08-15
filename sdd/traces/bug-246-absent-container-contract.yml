@@ -37,16 +37,16 @@ surprising_ripples:
   - sdd/specs/026-health-check.md
 
 # Counted from `git log --oneline origin/master..HEAD`. b492cc0 is the
-# implementation and does not count. Eight commits exist because review found
+# implementation and does not count. Nine commits exist because review found
 # something, counted by naming them: 7928f47 (round 1's Azure listings and five
 # prose findings), 3f5102c (round 1's code-scanning alert), 35b7281 (round 1's
 # residual docstring map), f164c97 (round 2), b5b0646 (round 3), b5af269
 # (round 4), fb5ff36 (the closing measuring gate's mid-scan truncation finding
-# and the false correction it retracted), and the commit carrying this trace
-# edit (the closing figure audit), and the commit carrying the verification
-# pass's six findings. Four numbered review rounds, nine commits: round 1 took
-# three, and round 4's gates took three after it. Value is 9.
-review_rounds: 9
+# and the false correction it retracted), 0fc3611 (the closing figure audit),
+# 3026d4b (the first verification pass's six findings), and the commit carrying
+# this trace edit (the second verification pass's ten). That is ten names for
+# ten review-driven commits. Value is 10.
+review_rounds: 10
 
 phases:
   - id: orient
@@ -281,9 +281,14 @@ phases:
           against a stub serving one good page then NoSuchBucket, iter_children
           being the one that passed because it yields both kinds and so has no
           blind shape. The flag now marks a page, which on Azure meant iterating
-          by_page() instead of item-by-item. Mutation-checked: neutering the
-          page-level flag kills all 12 mid-scan cells on the two Azure adapters
-          and leaves the 13 absent-from-the-start cells green.
+          by_page() instead of item-by-item. Mutation-checked in both directions:
+          neutering the page flag kills the 12 Azure mid-scan cells and leaves
+          the 12 Azure absent-from-the-start cells green, and forcing the guard
+          always-on kills those 12 and leaves the mid-scan cells green — so the
+          two halves are pinned independently rather than by one assertion.
+          (An earlier draft of this step said "13 absent-from-the-start cells",
+          a figure matching no enumeration; on the Azure frame the sentence uses
+          it is 12, and across all three lanes 18.)
         outcome: ok
       - file: tests/backends/azure/aio/test_config.py
         section: "_async_iter"
@@ -310,6 +315,53 @@ phases:
           move with it. That ripple is the argument for writing the clause first:
           the code shipped a rule the spec did not have, and the backlog's
           bookkeeping was reasoning off the spec's silence.
+        outcome: ok
+
+  - id: fix_6
+    name: Fix (verification pass 2)
+    steps:
+      - file: tests/backends/azure/_helpers.py
+        section: "serve_hns_*"
+        read_type: verify
+        extract: >-
+          The claim that the Azure HNS branches are "reachable only through the
+          Docker-gated fixtures" was made in four places and is false. ADLS Gen2's
+          List Path is an ordinary JSON REST call, so the same pytest-httpserver
+          technique the flat lane has used since BUG-243 reaches all ten HNS
+          listing branches in process. The guard those branches gained was the
+          one part of this change nothing executed, and the stated reason for
+          that was never measured. Now covered by 30 cells per adapter-half
+          (absent, mid-scan, denied x five listings); mutation-checked, the ten
+          mid-scan cells die when the page flag is neutered. The pragmas stay:
+          the branch is executed but its file-ancestor fallback is not, so
+          removing them would overstate coverage in the other direction.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 § Known divergences"
+        read_type: gate
+        extract: >-
+          Adding the BUG-255 bullet took the list from one bullet to two and left
+          three sentences in the same file still saying "one bullet" and "the
+          list's remaining entry" — while BACKLOG § 1, edited in the same commit,
+          already said two. A count restated in prose beside the thing it counts
+          goes stale in the commit that changes it, every time; this is the same
+          defect ID-245's fourth bullet was filed for, now caught inside the
+          artifact the backlog defers to.
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_iter_child_items, _walk_files"
+        read_type: reference
+        extract: >-
+          Writing the first-page bound into § Reach enlarged what the clause
+          governs, and GraphBackend breaches the enlarged version: its bound is
+          per HTTP request while a recursive walk issues one request per folder,
+          so a folder whose /children 404s ends that folder's listing cleanly.
+          Measured with respx on the real backend. Recorded as a divergence and
+          filed as BUG-257 rather than fixed here — the user's call, and the
+          per-request-versus-per-walk choice is a design question this PR did not
+          open. The general lesson is the one this trace keeps recording: a spec
+          edit is a behaviour change to every backend the clause binds, and needs
+          the same ripple walk as a code change.
         outcome: ok
 
   - id: verify

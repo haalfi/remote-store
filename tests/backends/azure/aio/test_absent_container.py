@@ -23,22 +23,26 @@ from remote_store._errors import NotFound, PermissionDenied  # noqa: E402
 from tests.backends.azure._helpers import (  # noqa: E402
     CONTAINER,
     FOLDER,
+    HNS_MID_SCAN_BLIND_PAGES,
     KEY,
     MID_SCAN_BLIND_PAGES,
     connection_string,
     serve_absent_container,
     serve_container_vanishing_mid_listing,
     serve_denied,
+    serve_hns_absent_filesystem,
+    serve_hns_denied,
+    serve_hns_filesystem_vanishing_mid_listing,
 )
 
 if TYPE_CHECKING:
     from pytest_httpserver import HTTPServer
 
 
-def _backend_at(endpoint: str) -> Any:
+def _backend_at(endpoint: str, *, hns: bool = False) -> Any:
     from remote_store.aio.backends._azure import AsyncAzureBackend
 
-    return AsyncAzureBackend(container=CONTAINER, hns=False, connection_string=connection_string(endpoint))
+    return AsyncAzureBackend(container=CONTAINER, hns=hns, connection_string=connection_string(endpoint))
 
 
 @pytest.fixture
@@ -230,5 +234,70 @@ class TestTheToleranceIsBoundedToTheFirstPage:
 
             with pytest.raises(NotFound):
                 await _drain()
+        finally:
+            await instance.aclose()
+
+
+async def _drain_all(agen: Any) -> list[Any]:
+    """Collect an async listing, so a cell can assert on the whole of it."""
+    return [item async for item in agen]
+
+
+class TestTheHnsListingsAnswerTheSameWay:
+    """The ADLS Gen2 branches, async half, executed rather than argued.
+
+    See the sync sibling for why these branches need their own cells at all:
+    they never reach the shared ``_listing_errors``, each catching its own
+    exception so it can tell an absent container from a listing under a file
+    ancestor. This adapter then carries its own copy of that copy, so a
+    sync-only HNS suite would prove nothing here — which is the same reason
+    every other class in this file exists.
+    """
+
+    @pytest.mark.spec("BE-021", "AZ-026")
+    @pytest.mark.parametrize(("op_name", "call"), _LISTINGS, ids=[n for n, _ in _LISTINGS])
+    async def test_absent_filesystem_yields_nothing(
+        self,
+        httpserver: HTTPServer,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        instance = _backend_at(serve_hns_absent_filesystem(httpserver), hns=True)
+        try:
+            got = await _drain_all(call(instance))
+            assert got == [], f"{op_name} must yield nothing against an absent filesystem"
+        finally:
+            await instance.aclose()
+
+    @pytest.mark.spec("BE-021", "AZ-026")
+    @pytest.mark.parametrize(("op_name", "call"), _LISTINGS, ids=[n for n, _ in _LISTINGS])
+    async def test_a_filesystem_deleted_mid_listing_raises(
+        self,
+        httpserver: HTTPServer,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        """The bound, on the branch that had it argued and unexecuted."""
+        endpoint = serve_hns_filesystem_vanishing_mid_listing(httpserver, page_one=HNS_MID_SCAN_BLIND_PAGES[op_name])
+        instance = _backend_at(endpoint, hns=True)
+        try:
+            with pytest.raises(NotFound):
+                await _drain_all(call(instance))
+        finally:
+            await instance.aclose()
+
+    @pytest.mark.spec("BE-021", "AZ-026")
+    @pytest.mark.parametrize(("op_name", "call"), _LISTINGS, ids=[n for n, _ in _LISTINGS])
+    async def test_denied_listing_still_raises(
+        self,
+        httpserver: HTTPServer,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        """The narrowness guard: an empty listing must not be how a denial is reported."""
+        instance = _backend_at(serve_hns_denied(httpserver), hns=True)
+        try:
+            with pytest.raises(PermissionDenied):
+                await _drain_all(call(instance))
         finally:
             await instance.aclose()

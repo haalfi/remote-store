@@ -201,7 +201,8 @@ store answers the same way on every backend.
 **Closes when:** the last adapter answers the contract against an absent
 container (BUG-247); the root of an absent container meets BE-029 on every
 backend (BUG-254); a listing does not truncate silently when its container is
-deleted mid-scan (BUG-255); `ping()` does not report a vanished store as healthy
+deleted mid-scan (BUG-255) or when a folder vanishes part-way through a
+recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 (BUG-256); a constructor does not leak its driver's exception
 (BUG-245); one operation does not answer by payload size (BUG-253); and a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
@@ -216,14 +217,18 @@ second such dependency on **ID-242**; it shipped with the denied path asserted b
 the hand-written 403 probe that item names and by nothing in conformance, which
 is why ID-242 is still open and still worth doing.
 
-**Three backend classes** now disagree with **the absent-container clause** —
-`LocalBackend` (BUG-247), plus `S3Backend` and `S3PyArrowBackend` (BUG-255) —
-counted from BE-021's § Known divergences list, which this section tracks bullet
-for bullet and which holds two bullets, the second naming two classes. BUG-255
-joined that list rather than the "further disagreements" below it when BUG-246
-gave § Reach an explicit first-page bound: before that the clause said only what
-an absent container answers, so a container that vanished *during* a listing was
-outside it; now the bound is part of the clause and missing it is a breach of it.
+**Four backend classes** now disagree with **the absent-container clause** —
+`LocalBackend` (BUG-247), `S3Backend` and `S3PyArrowBackend` (BUG-255), and
+`GraphBackend` (BUG-257) — counted from BE-021's § Known divergences list, which
+this section tracks bullet for bullet and which holds three bullets, the second
+naming two classes. BUG-255 and BUG-257 joined that list rather than the "further
+disagreements" below it when BUG-246 gave § Reach an explicit first-page bound:
+before that the clause said only what an absent container answers, so a container
+that vanished *during* a listing was outside it; now the bound is part of the
+clause and missing it is a breach of it. Writing a rule into a clause enlarges
+what the clause governs, and the two items that changed side are the evidence —
+neither was a new defect, and both were pre-existing behaviour that a new
+sentence made answerable.
 **Four** further disagreements sit in this section and none of them is with the
 absent-container clause, which is why they are not in that count: BUG-253 is
 between two halves of one Graph operation; BUG-245 is a constructor leak, which
@@ -231,15 +236,20 @@ BE-021 scopes to operations and so does not reach; BUG-254 is with **BE-029's
 root row**, which BE-021 § Reach now defers to rather than deciding, so the
 breach is of the row § Reach points at and not of the clause this count is about;
 and BUG-256 is about a health probe, which is off the roster BE-021 governs.
-**Five classes** have left the list — counted as classes, which is the frame this
-paragraph opens in and not the bullet frame the sentence above it uses. `GraphBackend` went first — BUG-248 adjudicated
+**Five classes** have left the list on the *empty-listing and NotFound* rows —
+counted as classes, which is the frame this paragraph opens in and not the bullet
+frame the sentence above it uses. `GraphBackend` went first — BUG-248 adjudicated
 the spec contradiction behind it and brought the backend to the contract in the
 same change, which is why BK-345's exemption list, blocked on that adjudication,
 can now be written. `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` and
-`SQLBlobBackend` followed with BUG-246 and BUG-249. What is left is the one the
-clause misreports rather than merely mistypes: on Local an absent store is
-reported as a *malformed path*, and until that goes, portable error handling is
-still impossible on the most-used backend, which is the whole promise.
+`SQLBlobBackend` followed with BUG-246 and BUG-249. Graph is on both sides of
+this paragraph and that is not a bookkeeping error: it meets the rows it was
+brought to and misses the bound that arrived after, which is what a clause
+growing a new sentence does to a backend that was compliant the day before.
+What is left is the one the clause misreports rather than merely mistypes: on
+Local an absent store is reported as a *malformed path*, and until that goes,
+portable error handling is still impossible on the most-used backend, which is
+the whole promise.
 
 - [ ] **BUG-254 — Five backend classes breach BE-029's root row against an absent container**
   spec: BE-004, BE-021, BE-029 · effort: S · audience: user.api
@@ -340,7 +350,7 @@ still impossible on the most-used backend, which is the whole promise.
   the absent entries as absent, and deletes or fails to copy data that was there.
   **Pre-existing on the two s3fs lanes**, which is what makes this an item rather
   than a BUG-249 residue: they truncated this way before that change and still do.
-  **Only the two s3fs lanes are left, and only for the flat namespace.** BUG-246
+  **The two s3fs lanes are what this item is left holding.** BUG-246
   and BUG-249 briefly put `S3Boto3Backend` and both Azure adapters onto this
   truncation — the boto3 lane by replacing a leaked `ClientError` with a
   swallowed 404, the Azure adapters by adding a swallow where the flat lane
@@ -349,9 +359,14 @@ still impossible on the most-used backend, which is the whole promise.
   thing that PR got wrong and had to re-measure: keyed on a yielded *item*, as it
   first shipped, every listing stayed blind on the page shapes its own filter
   empties, so a folders-only first page still truncated `list_files` and a
-  keys-only one still truncated `list_folders` — measured at six cells per lane
-  across the three. The Azure HNS branches carry the bound too, argued rather
-  than executed (`pragma: no cover`). SQLBlob is not affected (one `SELECT`, no
+  keys-only one still truncated `list_folders`. **Four** of the five listings per
+  lane were blind — `list_files`, `list_files-recursive`, `list_folders` and
+  `glob`, measured by putting the item-keyed source back under the current tests
+  and counting failures (12, across the three lanes); `iter_children` yields both
+  kinds and so has no blind page shape, which is why it is the control. The Azure
+  HNS branches carry the bound too, and are executed: an ADLS Gen2 `List Path`
+  wire stub reaches all ten of them without Docker, which retired the claim that
+  only the Docker-gated fixture could. SQLBlob is not affected (one `SELECT`, no
   pages).
   **A correction worth keeping**, because it cost a round: that PR first recorded
   the Azure rows as pre-existing, on the strength of a base-versus-head
@@ -366,7 +381,36 @@ still impossible on the most-used backend, which is the whole promise.
   yielded, and let a later one propagate. `_flat_ns._ListingCursor` is the shared
   piece; `S3Boto3Backend._listing_errors` is the worked example. What remains is
   applying it to `_S3Base`'s s3fs-backed listings and pinning it per lane, which
-  closes the divergence rather than opening one.
+  closes the divergence rather than opening one. Take the bound from the worked
+  example rather than from this paragraph's first sentence: it is keyed on a page
+  having come back, not on an item having been yielded.
+
+- [ ] **BUG-257 — `GraphBackend` restarts the first-page bound at every folder of a recursive walk**
+  spec: BE-021 · effort: M · audience: user.api
+  BE-021 § Reach requires a container 404 arriving after a listing has received a
+  page to propagate rather than end the iteration. `GraphBackend` keys that bound
+  per **HTTP request** — `_iter_child_items` in
+  `src/remote_store/aio/backends/_graph/backend.py` sets its `started` flag
+  inside one request — while `_walk_files` issues one request per folder, so
+  every subfolder listing starts the bound over at `False`.
+  Measured with `respx` against the real backend: `list_files("", recursive=True)`
+  where the root `/children` returns `[a.txt, sub/]` and `sub`'s `/children`
+  returns 404 **returns `["a.txt"]` cleanly** — a truncated listing that reads as
+  complete. Reproduced with both `itemNotFound` and `resourceNotFound` bodies,
+  which matters because listings run at item scope where `graph_error_for` maps
+  any 404 to `NotFound`, so a genuinely deleted drive produces this.
+  The control passes: page 1 followed by a 404 on the `@odata.nextLink` **does**
+  raise `NotFound`, so the single-listing bound is correct and only the walk is
+  not.
+  **Pre-existing, and surfaced by a spec edit rather than by a code change.**
+  BUG-246 wrote the first-page bound into § Reach; before that no clause decided
+  the mid-scan case and this was undecided behaviour rather than a breach.
+  BUG-248 had brought Graph to the clause's other rows in the same section, which
+  is why it appears on both sides of § 1's paragraph.
+  The fix shape is `S3Boto3Backend.list_files`, where one `_listing_errors`
+  cursor wraps the whole breadth-first walk so a 404 on any sub-prefix
+  propagates: hoist the flag out of `_iter_child_items` and thread it through
+  `_walk_files`. Needs cells on the sync adapter too — it carries its own copy.
 
 - [ ] **BUG-247 — `LocalBackend` reports a deleted root as "Path escapes root directory"**
   spec: BE-004, BE-012, BE-013, BE-021 · effort: S · audience: user.api

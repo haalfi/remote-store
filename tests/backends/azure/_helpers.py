@@ -176,4 +176,109 @@ def connection_string(endpoint: str) -> str:
     return (
         f"DefaultEndpointsProtocol=http;AccountName={ACCOUNT};"
         f"AccountKey={ACCOUNT_KEY};BlobEndpoint={endpoint}/{ACCOUNT};"
+        f"DfsEndpoint={endpoint}/{ACCOUNT};"
     )
+
+
+# --- HNS (ADLS Gen2) ---------------------------------------------------------
+#
+# The HNS branches of the three listings were argued rather than executed for
+# the whole of BUG-246, on the stated grounds that they are reachable only
+# through the Docker-gated ``azurite`` fixture. That was false, and the guard
+# they gained was the one part of the change nothing ran. ADLS Gen2's
+# ``List Path`` is an ordinary JSON REST call, so the same ``pytest-httpserver``
+# technique the flat lane already uses reaches it: Stage 1, in process, no
+# Docker, no credentials.
+
+_FILESYSTEM_NOT_FOUND_JSON = (
+    b'{"error":{"code":"FilesystemNotFound","message":"The specified filesystem does not exist."}}'
+)
+
+# A page of one directory, and a page of one file. Which one empties a given
+# operation is the point: ``list_folders`` discards files, ``list_files`` and
+# ``glob`` discard directories, so each meets the page it makes nothing of while
+# the filesystem plainly answered.
+_HNS_DIR_PAGE = b'{"paths":[{"name":"folder","isDirectory":"true","lastModified":"Mon, 01 Jan 2026 00:00:00 GMT"}]}'
+_HNS_FILE_PAGE = (
+    b'{"paths":[{"name":"folder/object.txt","contentLength":"3","etag":"abc",'
+    b'"lastModified":"Mon, 01 Jan 2026 00:00:00 GMT"}]}'
+)
+
+HNS_MID_SCAN_BLIND_PAGES: dict[str, bytes] = {
+    "list_files": _HNS_DIR_PAGE,
+    "list_files-recursive": _HNS_DIR_PAGE,
+    "list_folders": _HNS_FILE_PAGE,
+    "iter_children": _HNS_FILE_PAGE,
+    "glob": _HNS_DIR_PAGE,
+}
+
+
+def _serve_hns(httpserver: HTTPServer, handler: Any) -> str:
+    httpserver.expect_request(re.compile("^/.*$")).respond_with_handler(handler)
+    return httpserver.url_for("/").rstrip("/")
+
+
+def serve_hns_absent_filesystem(httpserver: HTTPServer) -> str:
+    """Answer every ADLS Gen2 request the way an absent filesystem does."""
+    from werkzeug.wrappers import Response
+
+    def handler(request: Any) -> Any:
+        return Response(
+            b"" if request.method == "HEAD" else _FILESYSTEM_NOT_FOUND_JSON,
+            status=404,
+            content_type="application/json",
+            headers={"x-ms-error-code": "FilesystemNotFound"},
+        )
+
+    return _serve_hns(httpserver, handler)
+
+
+def serve_hns_denied(httpserver: HTTPServer) -> str:
+    """Answer every ADLS Gen2 request with a genuine 403.
+
+    The narrowness control for the HNS half: a denial is not an answer about
+    whether the folder is there, so the mid-scan guard must not read it as one.
+    """
+    from werkzeug.wrappers import Response
+
+    def handler(request: Any) -> Any:
+        return Response(
+            b"" if request.method == "HEAD" else _AUTH_FAILURE_XML,
+            status=403,
+            content_type="application/json",
+            headers={"x-ms-error-code": "AuthorizationPermissionMismatch"},
+        )
+
+    return _serve_hns(httpserver, handler)
+
+
+def serve_hns_filesystem_vanishing_mid_listing(httpserver: HTTPServer, *, page_one: bytes = _HNS_FILE_PAGE) -> str:
+    """One good ``List Path`` page carrying a continuation, then ``FilesystemNotFound``.
+
+    ``x-ms-continuation`` on the first response is what makes the SDK ask for a
+    second page; without it the listing ends before the deletion can be
+    observed and the cell proves nothing.
+    """
+    from werkzeug.wrappers import Response
+
+    state = {"lists": 0}
+
+    def handler(request: Any) -> Any:
+        if request.method == "HEAD":
+            return Response(b"", status=404, content_type="application/json")
+        state["lists"] += 1
+        if state["lists"] == 1:
+            return Response(
+                page_one,
+                status=200,
+                content_type="application/json",
+                headers={"x-ms-continuation": "C2"},
+            )
+        return Response(
+            _FILESYSTEM_NOT_FOUND_JSON,
+            status=404,
+            content_type="application/json",
+            headers={"x-ms-error-code": "FilesystemNotFound"},
+        )
+
+    return _serve_hns(httpserver, handler)

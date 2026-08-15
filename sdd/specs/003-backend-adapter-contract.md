@@ -643,8 +643,9 @@ lands, and following it alone yields the wrong answer for one path in every
 operation it names.
 
 **Most backends do not meet the root row yet, and the list below does not record
-it.** § Known divergences holds one bullet, `LocalBackend`, whose breach is
-whole-backend rather than root-specific. The root breaches are measured and
+it.** § Known divergences holds three bullets, and none of them is
+root-specific: `LocalBackend`'s breach is whole-backend, and the other two are
+of the first-page bound. The root breaches are measured and
 tracked as **BUG-254**: `exists("")` and `is_folder("")` answer `False` on
 `S3Backend` and `S3PyArrowBackend`, and `get_folder_info("")` raises `NotFound`
 on `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend` — five classes,
@@ -652,8 +653,8 @@ seven class-cells (two operations on two classes, plus one on three), in two
 opposite directions. `SQLBlobBackend` is the one that complies.
 They are absent from the list below because that list is organised by the
 absent-container *clause* and these are breaches of BE-029's root row; the
-pointer is here so a reader does not read the one-bullet list as meaning the root
-is settled.
+pointer is here so a reader does not read that list as meaning the root is
+settled.
 
 **§ Reach's roster is twelve operations, and its siblings are not silently
 included.** The twelve are the two tolerant deletes plus the ten this paragraph
@@ -698,13 +699,22 @@ here is what makes the container case answerable from one place.
   iteration cleanly, so a truncated listing reads as a complete one. They answer
   the absent-from-the-start case correctly. Tracked as **BUG-255**, with the fix
   shape already worked on the three lanes that meet the bound. `AzureBackend` and
-  `AsyncAzureBackend` meet it on their flat branches, executed; their HNS
-  branches carry the same bound *argued rather than executed*, since those are
-  reachable only through the Docker-gated fixtures.
+  `AsyncAzureBackend` meet it on both their flat and their HNS branches, each
+  executed against a wire stub.
+
+- `GraphBackend` (and its sync adapter) breaches the **first-page bound** on a
+  recursive listing, in a different way: its bound is per *HTTP request*, and a
+  recursive walk issues one request per folder, so every subfolder listing
+  restarts it. A folder whose `/children` 404s part-way through the walk ends
+  that folder's listing cleanly, and the walk returns a short result as a
+  complete one. The single-page and top-level cases are correct. Tracked as
+  **BUG-257**. Contrast `S3Boto3Backend.list_files`, where one cursor wraps the
+  whole breadth-first walk and a 404 on any sub-prefix propagates — that is the
+  shape a fix takes.
 
 Three bullets have left this list and are recorded rather than deleted, because
 each was a *measured* divergence and the measurement is what a later reader
-needs in order to trust the list's remaining entry:
+needs in order to trust the entries that remain:
 
 - `exists()` and `is_folder()` raised `NotFound` against an absent container on
   `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend`, where the strict

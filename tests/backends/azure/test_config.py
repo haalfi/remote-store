@@ -79,16 +79,24 @@ class _Paged:
     first page — fail against a shape the service never sends. One page is
     enough here; the multi-page cases are pinned on the wire stubs in
     ``test_absent_container.py``.
+
+    **Single-pass, like the real thing.** ``ItemPaged.__iter__`` returns ``self``,
+    so the SDK object is exhausted once iterated. A double that restarted would
+    let a backend iterating a listing result twice pass here and yield nothing
+    the second time against the service — over-describing the API fails the same
+    way round as under-describing it, which is the defect this class exists to
+    stop.
     """
 
     def __init__(self, items: list[Any]) -> None:
-        self._items = list(items)
+        self._iter = iter(items)
+        self._pages = iter([iter(items)])
 
     def __iter__(self) -> Any:
-        return iter(self._items)
+        return self._iter
 
     def by_page(self, continuation_token: str | None = None) -> Any:  # noqa: ARG002 -- SDK signature
-        return iter([iter(self._items)])
+        return self._pages
 
 
 def _make_backend(**kw: Any) -> AzureBackend:

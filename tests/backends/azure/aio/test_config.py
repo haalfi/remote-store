@@ -109,6 +109,12 @@ async def _apage(items: list[Any]):  # noqa: ANN201 -- async generator
         yield item
 
 
+async def _apages(pages: list[list[Any]]):  # noqa: ANN201 -- async generator
+    """The page stream ``by_page()`` returns: an async iterator of async iterators."""
+    for page in pages:
+        yield _apage(page)
+
+
 class _AsyncPaged:
     """Stands in for the SDK's ``AsyncItemPaged``, which is iterable *and* pageable.
 
@@ -119,16 +125,24 @@ class _AsyncPaged:
     bound an absent-container tolerance to the first page — fail against a shape
     the service never sends. Modelling one page is enough: the multi-page cases
     are pinned on the wire stubs in ``test_absent_container.py``, not here.
+
+    **Single-pass, like the real thing.** ``AsyncItemPaged.__aiter__`` returns
+    ``self``, so the SDK object is exhausted once iterated. A double that
+    restarted would let a backend iterating a listing result twice pass here and
+    yield nothing the second time against the service — over-describing the API
+    fails the same way round as under-describing it, which is the defect this
+    class exists to stop.
     """
 
     def __init__(self, items: list[Any]) -> None:
-        self._items = list(items)
+        self._aiter = _apage(list(items))
+        self._apages = _apages([list(items)])
 
     def __aiter__(self):  # noqa: ANN204 -- async iterator
-        return _apage(self._items)
+        return self._aiter
 
-    async def by_page(self, continuation_token: str | None = None):  # noqa: ANN201, ARG002 -- SDK signature
-        yield _apage(self._items)
+    def by_page(self, continuation_token: str | None = None):  # noqa: ANN201, ARG002 -- SDK signature
+        return self._apages
 
 
 def _async_iter(items: list[Any]) -> Any:

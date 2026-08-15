@@ -387,8 +387,10 @@ class AzureBackend(Backend):
         the two namespaces answered the identical question differently inside one
         method body. The HNS branch keeps its own copy of the mid-scan bound for
         the same reason it keeps its own catch — it never reaches this one. That
-        copy is argued rather than executed: the branch is ``pragma: no cover``
-        and reachable only through the Docker-gated or live fixtures.
+        copy is executed: ``TestTheHnsListingsAnswerTheSameWay`` drives it from
+        an ADLS Gen2 wire stub, no Docker. The ``pragma: no cover`` on the branch
+        stays because its file-ancestor fallback is still unreached, not because
+        the branch is.
 
         It has to wrap ``_errors`` rather than sit inside it: the SDK raises
         ``ResourceNotFoundError`` and only ``_errors`` turns that into a
