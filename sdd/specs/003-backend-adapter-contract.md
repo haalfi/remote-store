@@ -650,7 +650,12 @@ tracked as **BUG-254**: `exists("")` and `is_folder("")` answer `False` on
 `S3Backend` and `S3PyArrowBackend`, and `get_folder_info("")` raises `NotFound`
 on `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend` — five classes,
 seven class-cells (two operations on two classes, plus one on three), in two
-opposite directions. `SQLBlobBackend` is the one that complies.
+opposite directions. `SQLBlobBackend` is the one of the six flat-namespace
+classes BUG-254 measured that complies. The scope matters: `LocalBackend` misses
+the root row too, by the first bullet below — once its root directory is gone it
+answers *every* operation with `InvalidPath`, which includes all three root
+cells — and `GraphBackend`, `ReadOnlyHttpBackend` and `SQLQueryBackend` are
+simply unmeasured for the root.
 They are absent from the list below because that list is organised by the
 absent-container *clause* and these are breaches of BE-029's root row; the
 pointer is here so a reader does not read that list as meaning the root is
@@ -731,7 +736,9 @@ needs in order to trust the entries that remain:
   they mapped the driver's complaint without asking whether the table was still
   there. It was the widest divergence this list ever held by operation count —
   fourteen operations, measured against a dropped SQLite table, of which thirteen
-  owed a different answer. Each of the thirteen now takes the answer § Reach
+  owed a different answer — **counting `move` and `copy` separately here**, which
+  is the opposite of the roster paragraph's frame above and is why fourteen and
+  twelve can both be right about the same backend. Each of the thirteen now takes the answer § Reach
   gives it or its named sibling: `exists`, `is_file` and `is_folder` answer
   `False`; `read`, `read_bytes`, `get_file_info`, the `move`/`copy` source and
   `get_folder_info` **below the root** raise `NotFound`, while the root
@@ -751,8 +758,12 @@ needs in order to trust the entries that remain:
 `GraphBackend` was a bullet too, adjudicated by
 [ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md). Counting
 bullets rather than backend classes — one of the two frames `sdd/BACKLOG.md` § 1
-uses, and the one it counts this list in — this list held five and now holds
-one.
+uses, and the one it counts this list in — this list held five, three left, and
+one of the two survivors is `LocalBackend`. It holds three today because it has
+since gained two: the first-page bound BUG-246 wrote into § Reach made
+`S3Backend`/`S3PyArrowBackend` and `GraphBackend` breaches of a clause they were
+outside of before. A list of divergences grows when its clause does, not only
+when a backend regresses.
 [GR-031](044-graph-backend.md#gr-031-404-discrimination-item-vs-drive) mapped
 `404 resourceNotFound` to `BackendUnavailable` for every error-raising
 operation, deliberately, on the grounds that a deleted drive is a backend
@@ -802,7 +813,7 @@ change, exactly as its sibling did — that is the state *before BUG-243*, which
 is the change this paragraph is about, and not the state the departed bullet
 above describes, which is after it. The rule therefore changes `delete` on one
 backend rather than ratifying it everywhere. Both are recorded above — Local as
-this list's one remaining bullet, SQLBlob among the three that have left it; the
+one of this list's three bullets, SQLBlob among the three that have left it; the
 premise survived six review rounds because "the S3 family" and "the
 flat-namespace backends" were used interchangeably by a clause whose whole
 purpose is to bind the second set.

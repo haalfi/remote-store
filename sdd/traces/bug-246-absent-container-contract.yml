@@ -19,7 +19,7 @@ discovery_followups:
   - BUG-254
   - BUG-255
   - BUG-256
-  - ID-245
+  - BUG-257
 audience:
   - user.api
   - user.api_docs
@@ -37,7 +37,7 @@ surprising_ripples:
   - sdd/specs/026-health-check.md
 
 # Counted from `git log --oneline origin/master..HEAD`. b492cc0 is the
-# implementation and does not count. Nine commits exist because review found
+# implementation and does not count. Ten commits exist because review found
 # something, counted by naming them: 7928f47 (round 1's Azure listings and five
 # prose findings), 3f5102c (round 1's code-scanning alert), 35b7281 (round 1's
 # residual docstring map), f164c97 (round 2), b5b0646 (round 3), b5af269
@@ -57,9 +57,12 @@ phases:
         read_type: gate
         extract: >-
           Take the diagnosis and treat the prescription as advisory. Retrospect:
-          this was the right call — the item's SQLBlob table listed eleven
-          operations and a run found fourteen raising, omitting iter_children and
-          glob. The fix shape it proposed ("one shape at three call sites") was
+          this was the right call — the item's SQLBlob table listed twelve
+          operations and a run found fourteen raising, the two it omitted being
+          iter_children and glob. (Eleven is the same table's *owing* count,
+          twelve minus write, which pairs with thirteen rather than fourteen;
+          mixing the two frames makes the delta look like three.) The fix shape
+          it proposed ("one shape at three call sites") was
           also stale; the applied shape is one context manager at fifteen new
           call sites, seventeen counting BUG-243's two deletes.
       - file: sdd/specs/003-backend-adapter-contract.md
@@ -85,11 +88,14 @@ phases:
           pinned BUG-246 so closing it would be visible rather than silent. It
           was: the cell's assertions flipped rather than the cell being deleted.
       - file: tests/backends/s3/test_denied_probe.py
-        section: "_serve_missing_bucket_stub, TestS3Boto3ListingsLeakTheirNativeError"
+        section: "_serve_missing_bucket_stub, TestEveryLaneAnswersAnAbsentBucketTheSameWay"
         read_type: reference
         extract: >-
           The absent-bucket and 403 wire stubs, and the two-sided pin that
           asserted the leak *is* a ClientError and is *not* a RemoteStoreError.
+          That pin lived in TestS3Boto3ListingsLeakTheirNativeError, which the
+          fix removed rather than left vacuous; the surviving assertion is
+          test_no_native_error_escapes_a_broken_listing in the class named above.
       - file: tests/backends/azure/_helpers.py
         section: "serve_absent_container, serve_denied"
         read_type: reference
@@ -327,12 +333,15 @@ phases:
           The claim that the Azure HNS branches are "reachable only through the
           Docker-gated fixtures" was made in four places and is false. ADLS Gen2's
           List Path is an ordinary JSON REST call, so the same pytest-httpserver
-          technique the flat lane has used since BUG-243 reaches all ten HNS
-          listing branches in process. The guard those branches gained was the
-          one part of this change nothing executed, and the stated reason for
-          that was never measured. Now covered by 30 cells per adapter-half
-          (absent, mid-scan, denied x five listings); mutation-checked, the ten
-          mid-scan cells die when the page flag is neutered. The pragmas stay:
+          technique the flat lane has used since BUG-243 reaches all six HNS
+          listing branches in process — three methods on each of the two
+          adapters; glob has no HNS branch of its own and recursive is a
+          parameter inside list_files rather than a second branch. The guard
+          those branches gained was the one part of this change nothing executed,
+          and the stated reason for that was never measured. Now covered by 30
+          cells, 15 per adapter-half (absent, mid-scan, denied x five listings);
+          mutation-checked, the ten mid-scan cells die when the page flag is
+          neutered. The pragmas stay:
           the branch is executed but its file-ancestor fallback is not, so
           removing them would overstate coverage in the other direction.
         outcome: ok
@@ -341,12 +350,17 @@ phases:
         read_type: gate
         extract: >-
           Adding the BUG-255 bullet took the list from one bullet to two and left
-          three sentences in the same file still saying "one bullet" and "the
+          five sentences in the same file still saying "one bullet" and "the
           list's remaining entry" — while BACKLOG § 1, edited in the same commit,
           already said two. A count restated in prose beside the thing it counts
           goes stale in the commit that changes it, every time; this is the same
           defect ID-245's fourth bullet was filed for, now caught inside the
-          artifact the backlog defers to.
+          artifact the backlog defers to. This step first recorded three of the
+          five and fixed those three, and the under-count is exactly why the
+          other two survived to be found by the next pass: a sweep bounded by a
+          remembered number rather than by a search finds the number, not the
+          instances. The two that survived were "this list held five and now
+          holds one" and "this list's one remaining bullet".
         outcome: ok
       - file: src/remote_store/aio/backends/_graph/backend.py
         section: "_iter_child_items, _walk_files"

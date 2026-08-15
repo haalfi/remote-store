@@ -410,7 +410,10 @@ the whole promise.
   The fix shape is `S3Boto3Backend.list_files`, where one `_listing_errors`
   cursor wraps the whole breadth-first walk so a 404 on any sub-prefix
   propagates: hoist the flag out of `_iter_child_items` and thread it through
-  `_walk_files`. Needs cells on the sync adapter too — it carries its own copy.
+  `_walk_files`. **The fix lands once**, unlike the Azure case: `GraphBackend` is
+  a single class and sync access goes through `AsyncBackendSyncAdapter`
+  ([ADR-0025](adrs/0025-async-to-sync-backend-adapter.md)), not a second copy of
+  the walk. Only the *cells* need a sync lane.
 
 - [ ] **BUG-247 — `LocalBackend` reports a deleted root as "Path escapes root directory"**
   spec: BE-004, BE-012, BE-013, BE-021 · effort: S · audience: user.api

@@ -168,16 +168,23 @@ if evidence changes; these are retired.
   `_flat_children_or_absent_container`, both over `_flat_ns`). On `SQLBlobBackend`
   the reclassification BUG-243 built for the two deletes was generalised from a
   `missing_ok` axis to a `raises` one and applied at the remaining call sites.
-  **Filed as eleven operations wide on SQLBlob, measured at fourteen.** The item's
+  **Filed as twelve operations wide on SQLBlob, measured at fourteen.** The item's
   table omitted `iter_children` and `glob`. Run against a dropped SQLite table
   before the fix, fourteen operations raised `BackendUnavailable`; thirteen owed a
   different answer and now give it, and `write` keeps the escalation because
-  BE-021 § Reach declines to decide it. That is the second time in this section an
+  BE-021 § Reach declines to decide it. Both figures count `move` and `copy`
+  separately; the item's own prose used the *owing* frame — eleven, twelve minus
+  `write` — which pairs with thirteen, not fourteen, and stating one against the
+  other makes the gap look like three. That is the second time in this section an
   item's own operation count was low against a run — BUG-248 was filed at two and
-  measured at eleven — and both were found by executing the list rather than
-  reading it.
-  Closes three of BE-021's five § Known divergences bullets; `LocalBackend`
-  (BUG-247) is the one that remains.
+  measured at eleven **of the operations BE-021 § Reach names**, its total being
+  thirteen once `read_bytes` and `iter_children` are added — and both were found
+  by executing the list rather than reading it.
+  Closes three of the five § Known divergences bullets BE-021 held when this
+  item was filed. `LocalBackend` (BUG-247) is the survivor of those five; the
+  list holds three today, having gained `S3Backend`/`S3PyArrowBackend` (BUG-255)
+  and `GraphBackend` (BUG-257) when this same change wrote the first-page bound
+  into § Reach and enlarged what the clause governs.
 
 - [x] **BUG-249 — Three `S3Boto3Backend` listings leak a raw `botocore.ClientError`**
   spec: BE-021 · effort: S · audience: user.api

@@ -474,7 +474,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
                 row = conn.execute(sa.select(sa.literal(1)).where(t.c.key.like(prefix + "%")).limit(1)).first()
             found = row is not None
         # ``found`` keeps its seeded value when the table is gone and the block
-        # above is abandoned -- the same shape the listings below use for rows.
+        # above is abandoned — the same shape the listings below use for rows.
         return found
 
     def is_file(self, path: str) -> bool:

@@ -1027,7 +1027,7 @@ class AsyncAzureBackend(AsyncBackend):
                             yield props_to_fileinfo(item, item.name)
         except NotFound:
             # An absent container holds nothing, so the listing is empty rather
-            # than an error -- but only until a page has come back. Past that the
+            # than an error — but only until a page has come back. Past that the
             # container demonstrably existed, so the 404 means it was deleted
             # mid-scan and must not read as a complete listing. Keyed on the page
             # and not on a yielded item: see _flat_ns._ListingCursor for why the
@@ -1093,7 +1093,7 @@ class AsyncAzureBackend(AsyncBackend):
                             yield FolderEntry(path=RemotePath(rel), name=folder_name)
         except NotFound:
             # An absent container holds nothing, so the listing is empty rather
-            # than an error -- but only until a page has come back. Past that the
+            # than an error — but only until a page has come back. Past that the
             # container demonstrably existed, so the 404 means it was deleted
             # mid-scan and must not read as a complete listing. Keyed on the page
             # and not on a yielded item: see _flat_ns._ListingCursor for why the
@@ -1160,7 +1160,7 @@ class AsyncAzureBackend(AsyncBackend):
                             yield props_to_fileinfo(item, item.name)
         except NotFound:
             # An absent container holds nothing, so the listing is empty rather
-            # than an error -- but only until a page has come back. Past that the
+            # than an error — but only until a page has come back. Past that the
             # container demonstrably existed, so the 404 means it was deleted
             # mid-scan and must not read as a complete listing. Keyed on the page
             # and not on a yielded item: see _flat_ns._ListingCursor for why the
