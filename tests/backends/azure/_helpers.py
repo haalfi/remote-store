@@ -108,11 +108,9 @@ _ONE_BLOB_THEN_MORE = (
 )
 
 
-# The mirror shape: a first page carrying only a common prefix and no blob.
-# Ordinary rather than contrived — a container organised into folders with no
-# top-level blobs returns exactly this from ``walk_blobs`` — and it is the page
-# on which a bound keyed on "an item was yielded" goes blind for ``list_files``
-# and ``glob``, which discard prefixes, while the container plainly answered.
+# The mirror shape: a first page of one common prefix and no blob. Ordinary
+# rather than contrived — a container organised into folders returns exactly this
+# from ``walk_blobs`` — and the shape an item-keyed bound goes blind on.
 _ONE_PREFIX_THEN_MORE = (
     b'<?xml version="1.0" encoding="utf-8"?>'
     b'<EnumerationResults ServiceEndpoint="http://127.0.0.1/" ContainerName="' + CONTAINER.encode() + b'">'
@@ -130,12 +128,9 @@ def serve_container_vanishing_mid_listing(httpserver: HTTPServer, *, page_one: b
     stub that 404s immediately would pass under an unbounded tolerance too, and
     prove nothing about the bound.
 
-    ``page_one`` selects what that content is. The default page carries a blob;
-    ``_ONE_PREFIX_THEN_MORE`` carries a common prefix instead. Which one a given
-    listing needs is the point of the parametrisation in the suites: each
-    operation must meet the page shape *it* discards entirely, because a page
-    that comes back 200 proves the container exists whatever the operation then
-    makes of it.
+    ``page_one`` selects that content: a blob by default, a common prefix with
+    ``_ONE_PREFIX_THEN_MORE``. Each listing must meet the shape *it* discards
+    entirely — see ``MID_SCAN_BLIND_PAGES``.
     """
     from werkzeug.wrappers import Response
 
@@ -158,10 +153,9 @@ def serve_container_vanishing_mid_listing(httpserver: HTTPServer, *, page_one: b
     return httpserver.url_for("/").rstrip("/")
 
 
-# Each listing paired with the page-one shape that yields it nothing. Under a
-# bound keyed on a yielded item these are the blind pairs; under one keyed on the
-# page they all raise. ``iter_children`` yields both kinds, so it has no blind
-# shape and takes the blob page as its control.
+# Each listing paired with the page-one shape that yields it nothing — the pairs
+# an item-keyed bound is blind on. ``iter_children`` yields both kinds, so it has
+# no blind shape and takes the blob page as its control.
 MID_SCAN_BLIND_PAGES: dict[str, bytes] = {
     "list_files": _ONE_PREFIX_THEN_MORE,
     "list_files-recursive": _ONE_PREFIX_THEN_MORE,
@@ -182,22 +176,18 @@ def connection_string(endpoint: str) -> str:
 
 # --- HNS (ADLS Gen2) ---------------------------------------------------------
 #
-# The HNS branches of the three listings were argued rather than executed for
-# the whole of BUG-246, on the stated grounds that they are reachable only
-# through the Docker-gated ``azurite`` fixture. That was false, and the guard
-# they gained was the one part of the change nothing ran. ADLS Gen2's
-# ``List Path`` is an ordinary JSON REST call, so the same ``pytest-httpserver``
-# technique the flat lane already uses reaches it: Stage 1, in process, no
-# Docker, no credentials.
+# ADLS Gen2's ``List Path`` is an ordinary JSON REST call, so the same stub
+# technique the flat lane uses reaches the HNS branches: Stage 1, in process, no
+# Docker. Those branches were argued rather than executed for the whole of
+# BUG-246, on the false premise that only the Docker-gated fixture could reach
+# them (BUG-246, verification pass 2).
 
 _FILESYSTEM_NOT_FOUND_JSON = (
     b'{"error":{"code":"FilesystemNotFound","message":"The specified filesystem does not exist."}}'
 )
 
-# A page of one directory, and a page of one file. Which one empties a given
-# operation is the point: ``list_folders`` discards files, ``list_files`` and
-# ``glob`` discard directories, so each meets the page it makes nothing of while
-# the filesystem plainly answered.
+# A page of one directory, and a page of one file: ``list_folders`` discards
+# files, ``list_files`` and ``glob`` discard directories.
 _HNS_DIR_PAGE = b'{"paths":[{"name":"folder","isDirectory":"true","lastModified":"Mon, 01 Jan 2026 00:00:00 GMT"}]}'
 _HNS_FILE_PAGE = (
     b'{"paths":[{"name":"folder/object.txt","contentLength":"3","etag":"abc",'
@@ -255,9 +245,8 @@ def serve_hns_denied(httpserver: HTTPServer) -> str:
 def serve_hns_filesystem_vanishing_mid_listing(httpserver: HTTPServer, *, page_one: bytes = _HNS_FILE_PAGE) -> str:
     """One good ``List Path`` page carrying a continuation, then ``FilesystemNotFound``.
 
-    ``x-ms-continuation`` on the first response is what makes the SDK ask for a
-    second page; without it the listing ends before the deletion can be
-    observed and the cell proves nothing.
+    ``x-ms-continuation`` is what makes the SDK ask for a second page; without it
+    the listing ends before the deletion can be observed.
     """
     from werkzeug.wrappers import Response
 

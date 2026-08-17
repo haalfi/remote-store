@@ -896,41 +896,27 @@ class S3Boto3Backend(Backend):
     def _listing_errors(self, path: str = "") -> Iterator[_ListingCursor]:
         """``_boto_errors`` for a listing, with an absent bucket ending the iteration.
 
-        Two obligations at one call site, both from the backend error contract:
-
-        * **Nothing native leaks.** These three listings were the only methods on
-          this class whose wire call was not wrapped, so a
-          ``botocore.exceptions.ClientError`` reached the caller untouched and an
-          ``except RemoteStoreError`` clause caught every backend but this one.
-          Every other method that reaches the wire wraps it, at fifteen sites.
-        * **An absent container holds nothing**, so the listing is empty rather
-          than an error — the answer the two s3fs-backed lanes already gave
-          against the identical wire response.
+        Carries two obligations from the backend error contract: nothing native
+        leaks, and an absent bucket yields an empty listing rather than raising.
 
         The absent-bucket branch is narrow in two directions. By *shape*:
         ``ListObjectsV2`` answers an absent *prefix* with ``200 KeyCount=0``, so
-        the only 404 it can raise is the container's, and everything else
-        propagates through ``_boto_errors`` — which is what keeps a denial a
-        ``PermissionDenied`` rather than an invented empty listing. And by
-        *position*: the caller sets ``cursor.saw_page`` as each page comes back,
-        after which a container 404 propagates instead. "An absent container
-        holds nothing" is only sound until the container has answered; past that
-        it demonstrably existed and the 404 means it was deleted mid-scan, which
-        a caller must not receive as a complete listing. The flag belongs to the
-        page and not to the yield — see ``_ListingCursor``, which carries why.
+        the only 404 it can raise is the container's, and a denial still
+        propagates as ``PermissionDenied``. By *position*: callers set
+        ``cursor.saw_page`` per page, after which the 404 means a mid-scan
+        deletion and propagates — see ``_ListingCursor`` for why it is the page
+        and not the yield.
 
-        **Must be entered inside the generator body.** Wrapped around the call
-        that *returns* the generator it would not run until the first ``next()``,
-        which is exactly the shape that let this leak in the first place.
+        **Must be entered inside the generator body**, or it does not run until
+        the first ``next()``.
         """
         cursor = _ListingCursor()
         try:
             with self._boto_errors(path):
                 yield cursor
         except NotFound:
-            # Contract: 003-backend-adapter-contract BE-021, "An absent container
-            # reads as an absent path" — a listing's share of it, bounded to the
-            # first page.
+            # An absent container reads as an absent path, bounded to the first
+            # page.
             if cursor.saw_page:
                 raise
             return

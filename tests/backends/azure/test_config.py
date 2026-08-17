@@ -70,22 +70,17 @@ _BACKENDS: list[AzureBackend] = []
 
 
 class _Paged:
-    """Stands in for the SDK's ``ItemPaged``, which is iterable *and* pageable.
+    """Stands in for the SDK's ``ItemPaged``: iterable, pageable, and single-pass.
 
-    ``get_paths``, ``list_blobs`` and ``walk_blobs`` all return an ``ItemPaged``:
-    iterating walks items, ``by_page()`` walks pages of items. A bare list has
-    only the first half, so a double returning one lets a backend that reads
-    pages — as the listings must, to bound an absent-container tolerance to the
-    first page — fail against a shape the service never sends. One page is
-    enough here; the multi-page cases are pinned on the wire stubs in
+    ``get_paths``, ``list_blobs`` and ``walk_blobs`` all return one. A bare list
+    supports only iteration, so a double returning one fails against a backend
+    that reads pages — as these listings must, to bound an absent-container
+    tolerance to the first page. ``ItemPaged.__iter__`` returns ``self``, so the
+    real object is exhausted once iterated; over-describing the API fails the
+    same way round as under-describing it.
+
+    One page is enough here — multi-page cases are pinned on the wire stubs in
     ``test_absent_container.py``.
-
-    **Single-pass, like the real thing.** ``ItemPaged.__iter__`` returns ``self``,
-    so the SDK object is exhausted once iterated. A double that restarted would
-    let a backend iterating a listing result twice pass here and yield nothing
-    the second time against the service — over-describing the API fails the same
-    way round as under-describing it, which is the defect this class exists to
-    stop.
     """
 
     def __init__(self, items: list[Any]) -> None:

@@ -218,11 +218,10 @@ class TestTheToleranceIsBoundedToTheFirstPage:
     ) -> None:
         """The bound must key on the page, not on what this operation made of it.
 
-        Same reasoning as the sync sibling, and the same reason for a separate
-        file: this adapter carries its own copy of each listing body, and its own
-        copy of the re-raise. Coverage said so — before this cell, five of the six
-        ``raise`` statements the mid-scan bound added here never executed, because
-        the only mid-scan cell drove ``list_files`` alone.
+        Same reasoning as the sync sibling. Coverage is the argument for the
+        parametrisation: before this cell, five of the six ``raise`` statements
+        the bound added here never executed, because the only mid-scan cell drove
+        ``list_files`` alone.
         """
         endpoint = serve_container_vanishing_mid_listing(httpserver, page_one=MID_SCAN_BLIND_PAGES[op_name])
         instance = _backend_at(endpoint)
@@ -246,12 +245,9 @@ async def _drain_all(agen: Any) -> list[Any]:
 class TestTheHnsListingsAnswerTheSameWay:
     """The ADLS Gen2 branches, async half, executed rather than argued.
 
-    See the sync sibling for why these branches need their own cells at all:
-    they never reach the shared ``_listing_errors``, each catching its own
-    exception so it can tell an absent container from a listing under a file
-    ancestor. This adapter then carries its own copy of that copy, so a
-    sync-only HNS suite would prove nothing here — which is the same reason
-    every other class in this file exists.
+    See the sync sibling for why these branches need cells at all. This adapter
+    carries its own copy of that copy, so a sync-only HNS suite proves nothing
+    here — the same reason every other class in this file exists.
     """
 
     @pytest.mark.spec("BE-021", "AZ-026")

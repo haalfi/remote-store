@@ -130,28 +130,21 @@ class BackendUnavailable(RemoteStoreError):
     endpoint, bad credentials).
 
     **Mostly not raised because the bucket, container or table is
-    absent.** A container that does not exist holds no path either, so
-    the operations the backend contract decides answer for a missing path
-    instead — ``False`` from ``exists``, ``is_file`` and ``is_folder``,
-    ``NotFound`` from the file-shaped operations, and an empty listing
-    from the listings. ``write`` is the exception: no clause decides what
-    it owes an absent container, so a backend may still report one this
-    way, and ``SQLBlobBackend`` does for a dropped table.
+    absent.** A container that does not exist holds no path either, so the
+    operations the contract decides answer for a missing path instead
+    (``False``, ``NotFound``, or an empty listing). ``write`` is the
+    exception — no clause decides it — and ``SQLBlobBackend`` still
+    reports a dropped table this way.
 
-    **There is no portable way to ask "is my store there?"**, and the
-    obvious candidates are worse than they look. ``check_health()`` probes
-    the service rather than the container on some backends and returns
-    cleanly against a container that is not there. A trial ``write()``
-    distinguishes the two cases on backends that permit writes at all, but
-    it is a poor general recipe: it leaves an object behind, it raises
-    ``CapabilityNotSupported`` on read-only backends whatever the
-    container's state, it raises ``AlreadyExists`` on the second call
-    unless you pass ``overwrite=True``, and a denied write raises
-    ``PermissionDenied`` — so catching ``RemoteStoreError`` around it
-    reports "gone" for a store that is present and merely unwritable.
-
-    If you need the distinction, prefer one that fits your backend and
-    test it against a container you have really deleted.
+    **There is no portable way to ask "is my store there?"**
+    ``check_health()`` probes the service rather than the container on
+    some backends and returns cleanly against one that is gone. A trial
+    ``write()`` distinguishes the cases where writes are permitted at all,
+    but it leaves an object behind and raises for reasons unrelated to the
+    container — ``CapabilityNotSupported`` on read-only backends,
+    ``AlreadyExists`` without ``overwrite=True``, ``PermissionDenied`` on
+    a present but unwritable store. Pick a probe that fits your backend
+    and test it against a container you have really deleted.
     """
 
 

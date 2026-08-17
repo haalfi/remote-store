@@ -534,11 +534,9 @@ _TRUNCATED_PAGE_ONE = (
 )
 
 
-# The mirror shape: a first page carrying only common prefixes and no keys.
-# Ordinary rather than contrived — a bucket organised into folders with no
-# top-level objects returns exactly this from `list_files("")`, and it is the
-# page shape on which a bound keyed on "an item was yielded" fails, because
-# `list_files` and `glob` yield nothing from it while the bucket plainly exists.
+# The mirror shape: a first page of common prefixes and no keys. Ordinary rather
+# than contrived — a bucket organised into folders returns exactly this — and the
+# shape on which an item-keyed bound fails for `list_files` and `glob`.
 _TRUNCATED_PAGE_ONE_PREFIXES_ONLY = (
     b'<?xml version="1.0" encoding="UTF-8"?>'
     b'<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
@@ -568,11 +566,9 @@ def _serve_bucket_vanishing_on_page_two(httpserver: HTTPServer, *, page_one: byt
     return httpserver.url_for("/").rstrip("/")
 
 
-# Each listing paired with the page-one shape that yields it nothing. A bound
-# keyed on "this operation yielded an item" is blind on exactly these pairs: the
-# page came back 200, so the bucket existed, but the operation's own filter
-# discarded everything on it. `iter_children` yields both kinds, so it has no
-# blind shape and is covered by the key-page row as its control.
+# Each listing paired with the page-one shape that yields it nothing — the pairs
+# an item-keyed bound is blind on. `iter_children` yields both kinds, so it has
+# no blind shape and takes the key page as its control.
 _MID_SCAN_BLIND_SHAPES: dict[str, bytes] = {
     "list_files": _TRUNCATED_PAGE_ONE_PREFIXES_ONLY,
     "list_files-recursive": _TRUNCATED_PAGE_ONE_PREFIXES_ONLY,
@@ -583,15 +579,7 @@ _MID_SCAN_BLIND_SHAPES: dict[str, bytes] = {
 
 
 class TestTheAbsentBucketToleranceIsBoundedToTheFirstPage:
-    """ "An absent container holds nothing" is only sound while nothing was handed over.
-
-    The tolerance these listings gained reads the bucket's 404 as "the container
-    is not there, so it holds nothing". That argument is sound on the first page
-    and unsound after it: once the listing has yielded, the bucket demonstrably
-    existed, so a 404 on a later page means it was deleted underneath the scan.
-    Swallowing *that* hands the caller a short listing that looks complete, and
-    the caller most hurt is the one diffing a listing against local state and
-    deleting the difference.
+    """ "An absent container holds nothing" is only sound until a page comes back.
 
     Both halves are asserted because a fix for either alone is wrong: unbounded,
     a mid-scan deletion is silent; bounded too tightly, an absent bucket raises
@@ -627,13 +615,10 @@ class TestTheAbsentBucketToleranceIsBoundedToTheFirstPage:
     def test_every_listing_raises_on_its_own_blind_page_shape(self, httpserver: HTTPServer, op_name: str) -> None:
         """The bound must key on the page, not on what this operation made of it.
 
-        Pinning only ``list_files`` against a page of keys proved the bound for
-        the one pairing where the operation's filter happens to pass the page's
-        contents through. Each listing here meets the page shape that yields *it*
-        nothing while the bucket plainly answered — a folders-only page for
-        ``list_files`` and ``glob``, a keys-only page for ``list_folders`` — and
-        under a bound keyed on "an item was yielded" every one of them swallowed
-        the second page's 404 and returned a short listing as a complete one.
+        Each listing meets the page shape that yields *it* nothing while the
+        bucket plainly answered — a folders-only page for ``list_files`` and
+        ``glob``, a keys-only page for ``list_folders``. Keyed on a yielded item,
+        every one of them swallowed the second page's 404.
         """
         endpoint = _serve_bucket_vanishing_on_page_two(httpserver, page_one=_MID_SCAN_BLIND_SHAPES[op_name])
         with _backend_at(_S3B3, endpoint) as backend, pytest.raises(NotFound):

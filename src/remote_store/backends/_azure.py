@@ -380,38 +380,23 @@ class AzureBackend(Backend):
     def _listing_errors(self, path: str) -> Iterator[_ListingCursor]:
         """``_errors`` for a listing, with an absent container ending the iteration.
 
-        An absent container holds nothing, so a listing over it comes back empty
-        rather than raising — the same answer an absent *prefix* already gives.
-        The HNS branch of these methods already reached that answer through its
-        own early return on a mapped ``NotFound``; the flat branch did not, so
-        the two namespaces answered the identical question differently inside one
-        method body. The HNS branch keeps its own copy of the mid-scan bound for
-        the same reason it keeps its own catch — it never reaches this one. That
-        copy is executed: ``TestTheHnsListingsAnswerTheSameWay`` drives it from
-        an ADLS Gen2 wire stub, no Docker. The ``pragma: no cover`` on the branch
-        stays because its file-ancestor fallback is still unreached, not because
-        the branch is.
+        An absent container holds nothing, so a listing over it comes back empty.
+        The HNS branches never reach this one — each catches its own exception to
+        tell an absent container from a listing under a file ancestor — so they
+        carry their own copy of both rules.
 
         It has to wrap ``_errors`` rather than sit inside it: the SDK raises
-        ``ResourceNotFoundError`` and only ``_errors`` turns that into a
-        ``NotFound``, so a guard placed within would never see the error it
-        exists to catch.
+        ``ResourceNotFoundError`` and only ``_errors`` maps it to ``NotFound``.
 
         Narrow in two directions. By *shape*: ``list_blobs`` / ``walk_blobs``
-        report an absent prefix as an empty page rather than an error, so the
-        only 404 they raise is the container's; a denial maps to
-        ``PermissionDenied`` and passes straight through, which is what stops
-        "you may not look" being reported as "there is nothing there". By
-        *position*: the caller sets ``cursor.saw_page`` as each page comes back,
-        after which a container 404 propagates. Past the first page the container
-        demonstrably existed, so the 404 means it was deleted mid-scan — which
-        must not reach the caller as a complete listing. The listings iterate
-        ``by_page()`` rather than item-by-item so that flag can exist; keyed on a
-        yielded item instead, it goes blind on every page this operation's filter
-        empties. ``_ListingCursor`` carries the worked case.
+        report an absent prefix as an empty page, so the only 404 they raise is
+        the container's, and a denial still propagates as ``PermissionDenied``.
+        By *position*: callers set ``cursor.saw_page`` per page, after which the
+        404 means a mid-scan deletion. The listings iterate ``by_page()`` so that
+        flag can exist — see ``_ListingCursor``.
 
-        **Must be entered inside the generator body.** Wrapped around the call
-        that returns the generator it would not run until the first ``next()``.
+        **Must be entered inside the generator body**, or it does not run until
+        the first ``next()``.
         """
         cursor = _ListingCursor()
         try:

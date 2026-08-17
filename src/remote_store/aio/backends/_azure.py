@@ -1026,12 +1026,9 @@ class AsyncAzureBackend(AsyncBackend):
                         if not getattr(item, "prefix", None):
                             yield props_to_fileinfo(item, item.name)
         except NotFound:
-            # An absent container holds nothing, so the listing is empty rather
-            # than an error — but only until a page has come back. Past that the
-            # container demonstrably existed, so the 404 means it was deleted
-            # mid-scan and must not read as a complete listing. Keyed on the page
-            # and not on a yielded item: see _flat_ns._ListingCursor for why the
-            # item spelling goes blind on the pages a filter empties.
+            # BE-021: an absent container yields an empty listing, bounded to
+            # the first page. Keyed on the page, not on a yielded item — see
+            # _flat_ns._ListingCursor.
             if saw_page:
                 raise
             return
@@ -1040,9 +1037,8 @@ class AsyncAzureBackend(AsyncBackend):
         except Exception as exc:  # noqa: BLE001
             mapped = classify_azure_error(exc, path, self.name)
             if isinstance(mapped, NotFound):
-                # walk_blobs/list_blobs report an absent *prefix* as an empty
-                # page, so the only 404 they raise is the container's. A denial
-                # maps to PermissionDenied and still propagates below.
+                # An absent *prefix* comes back as an empty page, so the only
+                # 404 here is the container's; a denial still propagates below.
                 if saw_page:
                     raise mapped from None
                 return
@@ -1092,12 +1088,9 @@ class AsyncAzureBackend(AsyncBackend):
                             folder_name = rel.rsplit("/", 1)[-1]
                             yield FolderEntry(path=RemotePath(rel), name=folder_name)
         except NotFound:
-            # An absent container holds nothing, so the listing is empty rather
-            # than an error — but only until a page has come back. Past that the
-            # container demonstrably existed, so the 404 means it was deleted
-            # mid-scan and must not read as a complete listing. Keyed on the page
-            # and not on a yielded item: see _flat_ns._ListingCursor for why the
-            # item spelling goes blind on the pages a filter empties.
+            # BE-021: an absent container yields an empty listing, bounded to
+            # the first page. Keyed on the page, not on a yielded item — see
+            # _flat_ns._ListingCursor.
             if saw_page:
                 raise
             return
@@ -1106,9 +1099,8 @@ class AsyncAzureBackend(AsyncBackend):
         except Exception as exc:  # noqa: BLE001
             mapped = classify_azure_error(exc, path, self.name)
             if isinstance(mapped, NotFound):
-                # walk_blobs/list_blobs report an absent *prefix* as an empty
-                # page, so the only 404 they raise is the container's. A denial
-                # maps to PermissionDenied and still propagates below.
+                # An absent *prefix* comes back as an empty page, so the only
+                # 404 here is the container's; a denial still propagates below.
                 if saw_page:
                     raise mapped from None
                 return
@@ -1159,12 +1151,9 @@ class AsyncAzureBackend(AsyncBackend):
                         else:
                             yield props_to_fileinfo(item, item.name)
         except NotFound:
-            # An absent container holds nothing, so the listing is empty rather
-            # than an error — but only until a page has come back. Past that the
-            # container demonstrably existed, so the 404 means it was deleted
-            # mid-scan and must not read as a complete listing. Keyed on the page
-            # and not on a yielded item: see _flat_ns._ListingCursor for why the
-            # item spelling goes blind on the pages a filter empties.
+            # BE-021: an absent container yields an empty listing, bounded to
+            # the first page. Keyed on the page, not on a yielded item — see
+            # _flat_ns._ListingCursor.
             if saw_page:
                 raise
             return
@@ -1173,9 +1162,8 @@ class AsyncAzureBackend(AsyncBackend):
         except Exception as exc:  # noqa: BLE001
             mapped = classify_azure_error(exc, path, self.name)
             if isinstance(mapped, NotFound):
-                # walk_blobs/list_blobs report an absent *prefix* as an empty
-                # page, so the only 404 they raise is the container's. A denial
-                # maps to PermissionDenied and still propagates below.
+                # An absent *prefix* comes back as an empty page, so the only
+                # 404 here is the container's; a denial still propagates below.
                 if saw_page:
                     raise mapped from None
                 return

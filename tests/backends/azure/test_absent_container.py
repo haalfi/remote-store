@@ -5,38 +5,20 @@ either, so each operation answers as it would for a missing path: the two delete
 return silently under ``missing_ok=True`` and raise ``NotFound`` without it, the
 probes answer ``False``, and the listings come back empty.
 
-The deletes came first and their history explains the shape of the rest. The pair
-disagreed: ``delete_blob`` surfaces ``ContainerNotFound`` as a plain
-``ResourceNotFoundError`` that the existing ``missing_ok`` branch already
-swallowed, while ``delete_folder``'s prefix listing raised the same 404 out of
-its determinant and past the tolerance check. The probes and the listings were
-the same omission one method further out — and in the listings' case the HNS
-branch already answered correctly while the flat branch beside it did not.
+Sync half; the async adapter carries its own copy of every body and gets its own
+file (TEST-003). Wire stubs live in ``.._helpers``, which is also why this runs
+on a stub rather than the Docker-gated ``azurite`` fixture.
 
-Sync half. The async twin carries its own copy of each of these bodies and so
-gets its own file, ``aio/test_absent_container.py`` (TEST-003); the wire stubs
-both use live in ``.._helpers``, which also explains why this runs on a stub
-rather than the Docker-gated ``azurite`` fixture.
+Both axes are asserted, not just tolerance. A backend that simply stopped
+raising would pass the tolerant cells while turning a strict ``delete_folder``
+into a no-op; the ``missing_ok=False`` cells forbid that, and the denied-listing
+classes forbid the opposite overshoot — widening the catch past the container's
+own 404.
 
-Both axes are asserted, not just tolerance: a backend that simply stopped
-raising on the listing's 404 would pass the tolerant cells and silently turn a
-strict ``delete_folder`` into a no-op. The ``missing_ok=False`` cells forbid
-that, and ``TestDeniedListingIsNotAnAbsentContainer`` forbids the other
-overshoot — widening the catch past the container's own 404.
-
-**Coverage bound: the two deletes on HNS, and nothing else.** The listings'
-HNS branches are executed here — see ``TestTheHnsListingsAnswerTheSameWay`` —
-because ADLS Gen2's ``List Path`` is an ordinary JSON REST call and the same
-stub technique reaches it. What is still argued rather than executed is the
-*deletes* on HNS: that an absent container surfaces from ``delete_blob`` /
-``get_directory_properties`` as ``ResourceNotFoundError`` → ``NotFound`` → the
-pre-existing ``missing_ok`` branch, with none of this work's changes involved.
-
-That bound used to cover the listings too, on the stated grounds that the HNS
-branches were reachable only through the Docker-gated fixtures. It was false,
-and it hid the one guard in this change that nothing ran. The lesson is the
-repo's own and it has now cost this change twice: a reading of a body is not a
-run of it, and "cannot be tested" is a claim that must itself be measured.
+**Coverage bound: the two deletes on HNS.** Their rule is argued from the code
+(``ResourceNotFoundError`` → ``NotFound`` → the pre-existing ``missing_ok``
+branch) rather than run. The HNS *listings* are executed — see
+``TestTheHnsListingsAnswerTheSameWay``.
 """
 
 from __future__ import annotations
@@ -141,14 +123,8 @@ _LISTINGS = [
 class TestTheListingsComeBackEmpty:
     """An absent container holds nothing, so a listing is empty rather than an error.
 
-    The flat lane reached the caller with ``NotFound`` where the contract wants an
-    empty listing, and the HNS branch of the *same* methods already returned early
-    on a mapped ``NotFound`` — so the two namespaces answered the identical
-    question differently inside one method body.
-
-    ``glob`` is here because it reaches the wire only through ``list_files``: it
-    inherits whatever that method does, and pinning it is what stops a later
-    change fixing the listing while leaving the glob path behind.
+    ``glob`` is included because it reaches the wire only through ``list_files``:
+    pinning it stops a later change fixing the listing and leaving glob behind.
     """
 
     @pytest.mark.spec("BE-021", "AZ-026")
@@ -178,11 +154,8 @@ class TestTheListingsComeBackEmpty:
 class TestTheProbesAnswerFalse:
     """BE-004 and BE-005 forbid these from raising, and an absent container is no exception.
 
-    ``exists`` and ``is_folder`` reached the strict prefix listing once the
-    tolerant blob HEAD came back empty, so a ``ContainerNotFound`` escaped as
-    ``NotFound`` from two methods the contract says never raise it. ``is_file``
-    is HEAD-only and already answered ``False``; it is parametrised in anyway, as
-    the control that says what the other two owe.
+    ``is_file`` was already correct — its HEAD absorbs the 404 — and is
+    parametrised in as the control that says what the other two owe.
     """
 
     @pytest.mark.spec("BE-004", "BE-005", "BE-021", "AZ-026")
@@ -199,16 +172,10 @@ class TestTheProbesAnswerFalse:
 class TestDeniedListingIsNotAnAbsentContainer:
     """The determinant's catch stays narrow: a 403 is not an answer about the folder.
 
-    The control case for the tolerance above, and the failure mode worth
-    guarding — widening the catch to every ``AzureError`` would make this pass
-    silently as a clean return, reporting "nothing to delete" for a folder the
-    caller merely cannot see. It goes through ``delete_folder``, whose
-    determinant is the listing this rule touched, in its tolerant form: that is
-    the one that would swallow the denial.
-
-    The probe cells carry the same guard for the same reason: those probes now
-    read the container's own 404 as an answer, and one narrowing away is reading
-    every error as one.
+    Widening the catch to every ``AzureError`` would report "nothing to delete"
+    for a folder the caller merely cannot see. Driven through the tolerant
+    ``delete_folder``, which is the form that would swallow the denial; the probe
+    cells carry the same guard because they now read a 404 as an answer too.
     """
 
     @pytest.mark.spec("BE-013", "BE-021", "AZ-025", "AZ-026")
@@ -233,12 +200,6 @@ class TestDeniedListingIsNotAnAbsentContainer:
 
 class TestTheToleranceIsBoundedToTheFirstPage:
     """ "An absent container holds nothing" is only sound while nothing was handed over.
-
-    Once a listing has yielded, the container demonstrably existed, so a
-    ``ContainerNotFound`` on a later page means it was deleted underneath the
-    scan. Swallowing that returns a short listing that looks complete, and the
-    caller most hurt is the one diffing a listing against local state and
-    deleting the difference.
 
     Both halves are pinned because a fix for either alone is wrong: unbounded, a
     mid-scan deletion is silent; bounded too tightly, an absent container raises
@@ -272,24 +233,13 @@ class TestTheToleranceIsBoundedToTheFirstPage:
     ) -> None:
         """The bound must key on the page, not on what this operation made of it.
 
-        The cell above pins ``list_files`` against a page carrying a blob — the
-        one pairing where the page's contents survive to the caller. Every
-        listing here meets the page shape that yields *it* nothing, and the two
-        reasons a page can yield nothing are both represented:
-
-        * ``list_folders`` and non-recursive ``list_files`` go through
-          ``walk_blobs`` and **discard** half of what it returns — keys and
-          prefixes respectively — so the blob page and the prefix page empty
-          them by filtering.
-        * ``list_files(recursive=True)`` and ``glob`` go through ``list_blobs``,
-          which has no delimiter and parses only ``segment.blob_items``. A
-          ``BlobPrefix`` is never surfaced to the backend at all, so the prefix
-          page reaches them as a page carrying **no items**, which is the other
-          residue the bound has to cover.
-
-        Keyed on a yielded item rather than on the page, every one of these
-        swallowed the second page's 404 and returned a short listing as a
-        complete one.
+        Each listing meets the page shape that yields *it* nothing, covering both
+        reasons a page can yield nothing: ``walk_blobs`` callers
+        (``list_folders``, non-recursive ``list_files``) discard half of what
+        comes back, while ``list_blobs`` callers (``list_files(recursive=True)``,
+        ``glob``) never see a ``BlobPrefix`` at all, so the prefix page reaches
+        them carrying no items. Keyed on a yielded item, every one of these
+        swallowed the second page's 404.
         """
         endpoint = serve_container_vanishing_mid_listing(httpserver, page_one=MID_SCAN_BLIND_PAGES[op_name])
         instance = _backend_at(endpoint)
@@ -303,17 +253,11 @@ class TestTheToleranceIsBoundedToTheFirstPage:
 class TestTheHnsListingsAnswerTheSameWay:
     """The ADLS Gen2 branches, executed rather than argued.
 
-    These branches carry their own copy of both rules — the empty listing and
-    the first-page bound — because they never reach ``_listing_errors``: each
-    catches its own exception so it can tell an absent container from a listing
-    under a file ancestor (BE-014). A copy is a place the two namespaces can
-    drift, and for the whole of this change the HNS copy was the one nothing
-    ran, on the stated grounds that only Docker could reach it.
-
-    It is reached here by a ``pytest-httpserver`` stub speaking ADLS Gen2's
-    ``List Path``, the same way the flat lane is reached — Stage 1, in process,
-    no Docker. Both axes and the narrowness control are asserted, because a
-    branch that stopped raising altogether would pass the tolerance cells alone.
+    These carry their own copy of both rules because they never reach
+    ``_listing_errors``: each catches its own exception so it can tell an absent
+    container from a listing under a file ancestor (BE-014). A copy is a place
+    the two namespaces can drift, so it needs its own cells — driven by a
+    ``pytest-httpserver`` stub speaking ``List Path``, Stage 1, no Docker.
     """
 
     @pytest.mark.spec("BE-021", "AZ-026")

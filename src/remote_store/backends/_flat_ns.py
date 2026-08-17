@@ -149,31 +149,20 @@ async def _acheck_no_file_ancestor(
 
 
 class _ListingCursor:
-    """Tracks whether the container has answered yet, so tolerance can be bounded to the first page.
+    """Has the container answered yet? Bounds an absent-container tolerance to the first page.
 
-    "An absent container holds nothing" is sound only until the container has
-    demonstrably existed. Once a page has come back, it did, so a container 404
-    arriving on a later page means it was **deleted underneath the scan** — and
-    swallowing that hands the caller a short listing that looks complete. The
-    caller most hurt is the one diffing a listing against local state and
-    deleting the difference.
+    "An absent container holds nothing" holds only until a page comes back; after
+    that a container 404 means it was deleted mid-scan, and swallowing it returns
+    a short listing that looks complete.
 
-    **Set this on a page, never on a yield.** A page that comes back 200 proves
-    the container exists whatever the listing then makes of it, and every listing
-    here drops part of a page on the floor: ``list_files`` discards common
-    prefixes and directory markers and anything past ``max_depth``,
-    ``list_folders`` discards keys, ``glob`` discards non-matches. Keyed on a
-    yielded *item*, the bound goes blind on precisely the page shapes those
-    filters empty — a folders-only page for ``list_files``, a keys-only page for
-    ``list_folders`` — and those are the ordinary shapes of a bucket organised
-    into folders and a container of flat files, not corner cases. This was
-    written the wrong way round first, and the mistake was silent: the two
-    spellings agree on every page that happens to survive the operation's own
-    filter, which is the only page shape the first cell pinned.
+    **Set on a page, never on a yield.** Every listing here discards part of a
+    page — ``list_files`` drops prefixes, markers and anything past ``max_depth``;
+    ``list_folders`` drops keys; ``glob`` drops non-matches — so an item-keyed
+    bound goes blind on the page shapes those filters empty, which are ordinary
+    shapes rather than corner cases.
 
-    A mutable cursor rather than a return value because the tolerance lives in a
-    context manager wrapping the generator body, and a context manager cannot see
-    what the body received.
+    Mutable because the tolerance lives in a context manager around the generator
+    body, which cannot see what the body received.
     """
 
     __slots__ = ("saw_page",)
