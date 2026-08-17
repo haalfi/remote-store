@@ -19,10 +19,11 @@ have.
 **Sourcing note.** The Tao slides were read in full from the PDF. Several primary
 sources cited below were unreachable from this environment (the egress proxy
 blocks `arxiv.org`, `dora.dev`, `martinfowler.com`, `simonwillison.net`,
-`leidendeclaration.ai`, `flowverify.co`); those figures come from search-engine
-extractions of the primary documents, not from the documents themselves, and are
-marked accordingly in the table in § 4. Repo counts in the appendix were derived
-by running the stated command.
+`leidendeclaration.ai`, `flowverify.co`, `polvara.me`, `queue.acm.org`); those
+figures come from search-engine extractions of the primary documents, not from
+the documents themselves, and are marked accordingly in the table in § 4. Polvara's
+essay was supplied as text by the reader who raised it; see the note under that
+table. Repo counts in the appendix were derived by running the stated command.
 
 ## 1. The source argument
 
@@ -156,12 +157,91 @@ The deep version of this is 40 years old. Peter Naur's _Programming as Theory
 Building_ (1985) holds that the program is not the artifact; the theory of the
 program — held in the heads of the people who built it — is. Code is a
 projection of the theory, and when the theory is lost the code becomes
-unmaintainable regardless of its quality. Naur's conclusion, that the only way to
-acquire the theory is active engagement in developing the program, is the precise
-software analogue of Tao's canonicalization stage: the slowest, least
-automatable, and most valuable step.
+unmaintainable regardless of its quality. Naur's argument runs on a comparison of
+two teams building a compiler: the group that built it from scratch could extend
+it safely, and a second group handed the finished code _and_ complete
+documentation could not, because the theory does not survive the translation into
+text. His conclusion, that the only way to acquire the theory is active
+engagement in developing the program, is the precise software analogue of Tao's
+canonicalization stage: the slowest, least automatable, and most valuable step.
 
-### 2.3 Goodhart, applied
+### 2.3 Three debts, not one
+
+"Understanding" is not one quantity, and treating it as one obscures the
+remedies. Margaret-Anne Storey's _triple debt model_ ("From Technical Debt to
+Cognitive and Intent Debt: Rethinking Software Health in the Age of AI", arXiv
+2603.22106 / ACM Queue, 2026) splits it into three layers that fail
+independently:
+
+| Debt | Where it lives | What is missing | Tao's stage |
+|---|---|---|---|
+| Technical | The code | Modularity, coherence, sound dependencies | Verification |
+| Cognitive | People | Shared understanding of how the system works | Canonicalization |
+| Intent | Externalized artifacts | The recorded _why_ — goals, constraints, decision history | Exposition |
+
+The mapping onto Tao's pipeline in § 2.5 is the useful part. It says the three
+debts are not three views of one problem but three distinct stage failures, with
+distinct remedies: **technical debt is paid down by refactoring, cognitive debt
+only by engagement, and intent debt only by writing.** Nothing you do to the code
+pays down the other two.
+
+**Intent debt is the concept Tao's framework lacks, and it is agent-specific.**
+Tao's exposition worry is that a human reader will be misled by
+over-polished prose. Intent debt is worse in a way mathematics has no analogue
+for: the rationale that was never externalized is not merely unavailable to the
+agent — the agent _fabricates a replacement_. An unstated constraint is not read
+as a gap; it is filled with the most statistically plausible assumption, which is
+how a rare financial safeguard gets "optimized" away. Rationale held in a
+senior engineer's head does not count, because a model cannot read heads. This
+is a substantially harder argument for architecture decision records than the
+pedagogical one, and it is the reason `AGENTS.md`-style intent files are load
+bearing rather than courtesy documentation.
+
+**Why the friction mattered.** Giorgio Polvara's essay _The Persistence of
+Theory_ (June 19, 2026), which is where this model reached this record, supplies
+the mechanism through Brooks' distinction between accidental and essential
+complexity. Agents are an accidental-complexity killer: they remove the friction
+of syntax, setup, and library archaeology, and leave the essential difficulty of
+deciding what to build untouched. The catch is that **the friction was not
+incidental to theory building; it was the process by which the theory got
+built.** Fighting a library's API was how the mental model of that library
+formed. Remove the friction and the code arrives without it. This is a stronger
+claim than Tao's, whose friction argument is about a reader being prompted to
+slow down; here the friction is load-bearing for the author.
+
+**The measurement exists, and it is the best evidence in this record.**
+Anthropic's randomized controlled trial (published January 29, 2026) put 52
+junior engineers on an unfamiliar Python library, Trio, with and without AI
+assistance. The AI group averaged 50% on the follow-up comprehension quiz against
+67% for the hand-coding group — a 17-point gap — with debugging showing the
+steepest decline, while finishing only about two minutes faster, a difference
+that did not reach significance. Speed bought nothing and cost comprehension.
+
+The interaction-pattern result matters more than the headline. Participants who
+used AI to ask conceptual questions and request explanations scored 65% or
+higher; those who delegated code generation wholesale scored below 40%. **The
+tool did not determine the outcome; the mode of use did.** That is the strongest
+available evidence for the "give the talk" rule in § 6, because it shows the
+comprehension cost is avoidable rather than intrinsic — and it is a
+comprehension outcome measured directly, which is precisely the instrument this
+record argues the industry lacks.
+
+Thoughtworks' Technology Radar Vol. 34 (April 2026) places _codebase cognitive
+debt_ on **Hold**, defining it as "the growing gap between a system's
+implementation and a team's shared understanding of how and why it works" — the
+same failure, named by a practitioner body rather than a researcher.
+
+**One claim in the model is not supported.** Polvara's presentation of the table
+holds that generative AI _reduces_ technical debt by automating refactoring and
+test-writing. The evidence in § 3 says the opposite for the code layer:
+duplication up eightfold, refactored lines down from 24.1% to 9.5%, security pass
+rates flat near 55%. The essay contradicts itself here, citing the churn doubling
+and copy-paste overtaking refactoring in a later section. The three-layer split
+survives this; the claim that one layer is now self-healing does not. Read
+correctly, AI makes _all three_ debts worse, and only the cognitive and intent
+layers are novel.
+
+### 2.4 Goodhart, applied
 
 Every conventional engineering metric measures volume, speed, or frequency of
 human effort, and every one of them can now be inflated by an agent without
@@ -176,7 +256,7 @@ Note that the DORA metrics themselves partially survive, because two of them
 is the discriminator: **metrics that measure what happened as a result of the
 work survive; metrics that measure how much work happened do not.**
 
-### 2.4 The pipeline, with one extra stage
+### 2.5 The pipeline, with one extra stage
 
 | Tao's stage | Software analogue | What it produces |
 |---|---|---|
@@ -294,21 +374,39 @@ environment and the figure comes from a search-engine extraction of it.
 | 45% insecure choice; ~55% security pass rate | Veracode GenAI Code Security 2025 / Spring 2026 | 80 tasks, 100+ models | Extraction |
 | 1.7% high-inconsistency PRs; 45.4% claim unimplemented changes; 28.3% vs 80.0% acceptance; 3.5× merge time | Message-Code Inconsistency study (arXiv 2601.04886) | 23,247 agentic PRs, 5 agents, 974 annotated | Extraction |
 | 43% of AI changes need production debugging | Lightrun survey | Apr 2026 | Extraction (secondary) |
+| 50% vs 67% comprehension; 17-point gap; ~2 min faster, not significant; 65%+ conceptual-question users vs <40% delegators | Anthropic, "How AI assistance impacts the formation of coding skills" | RCT, 52 junior engineers, published 29 Jan 2026 | Extraction |
+| _Codebase cognitive debt_ on Hold | Thoughtworks Technology Radar Vol. 34 | Apr 2026 | Extraction |
+| Triple debt model | Storey, arXiv 2603.22106 / ACM Queue | Analytical, 2026 | Extraction, reached via Polvara (below) |
 | Truck-factor invalidation argument | "The Substrate Collapse" (arXiv 2606.20882) | Analytical, Jun 2026 | Extraction |
 | Modular mirage | arXiv 2605.02741 | 2026 | Extraction |
 | SDD artifact counts | This repo | `ls` commands in § Appendix | Direct |
 
-Three cautions about this table. The Faros/LinearB/CircleCI/Lightrun rows are
+One row needs its provenance stated rather than cited. Polvara's essay is
+unreachable from this environment — `polvara.me` returns 403 under organization
+egress policy, as do `queue.acm.org`, `arxiv.org` and `margaretstorey.com` — and
+search does not index it. The text used here was supplied directly by the reader
+who raised it, and its claims were checked against independently reachable
+sources before use: the Anthropic and Thoughtworks rows above were verified that
+way, and one claim in the essay was rejected on that basis (§ 2.3, last
+paragraph). Its own footer records that it was researched with an AI deep-research
+tool and edited by its author, which is a reason for the checking rather than an
+objection to the essay.
+
+Four cautions about this table. The Faros/LinearB/CircleCI/Lightrun rows are
 vendor telemetry reported through a secondary aggregator, and vendors selling
 review tooling have an interest in a review crisis. The GitClear correlation is
 temporal, not causal — 2020–2024 also contains a hiring bust and a rates cycle.
-And Tao's own warning applies to the whole table: this is largely uncontrolled
-evidence gathered under commercial incentives. It is consistent, which is
-something, but consistency across biased sources is weaker than it feels.
+The Anthropic RCT is vendor-published research about the vendor's own product
+category, and it is small (52 juniors, one unfamiliar library, one task); the
+mitigating fact is that its headline result cuts against the publisher's
+commercial interest, which is the rarer direction of bias. And Tao's own warning
+applies to the whole table: this is largely uncontrolled evidence gathered under
+commercial incentives. It is consistent, which is something, but consistency
+across biased sources is weaker than it feels.
 
 ## 5. Where the analogy breaks
 
-Faithfulness requires marking the disanalogies, and three of them matter enough
+Faithfulness requires marking the disanalogies, and five of them matter enough
 to change the recommendations.
 
 **Software's peer review is far weaker than mathematics'.** Tao can lean on
@@ -337,15 +435,54 @@ literature permanently; wrong code can be reverted. This cuts both ways and the
 second way is worse: reverted code still ran, still leaked data, still lost
 money. Software's mistakes are cheaper to _remove_ and more expensive to _make_.
 
-**The value of understanding is instrumental in software, terminal in
-mathematics.** Thurston's line, which Tao quotes — "the measure of our success is
-whether what we do enables people to understand and think more clearly" — makes
-understanding the product. In software the product is working systems, and
-understanding is a means. This is the honest reason software teams will be
-tempted to skip the digestion stage: they can, for a while. The argument for not
-skipping it is not aesthetic. It is that change, incident response, security
-review, and audit all cash out understanding, and they arrive later than the
-ship date.
+**Software's understanding loss is self-reinforcing; mathematics' is not.** This
+is the disanalogy with the sharpest consequences, and it comes from the debt
+model in § 2.3. Cognitive debt feeds itself: code arrives faster than the team
+can build theory, the thinner theory makes the team less able to work
+unassisted, and the response to being less able to work unassisted is to delegate
+more. Mathematics has no comparable loop. A mathematician who understood the last
+AI-assisted proof less does not thereby become more dependent on AI for the next
+one; the proof is a terminal artifact and the field's canon is public and
+shared. A codebase is re-entered continuously by the same small group, so each
+round of delegation raises the cost of the next non-delegated round.
+
+The practical implication is that Tao's gradualism does not transfer. He can
+describe indigestion as a backlog that accumulates and can be worked off with
+policy changes. A positive feedback loop cannot be worked off later by the same
+means; it has to be damped while the team still has the capacity to damp it.
+
+**Agents cannot hold the theory, and this is structural rather than a capability
+gap.** A tempting escape from all of the above is that agents will hold the
+theory instead. They do build one — a coding agent forms hypotheses, tests them,
+and revises its model of a system, which is recognizably theory building — but
+they are amnesiacs. The theory lives in an ephemeral context window and is
+rebuilt from scratch each session, and session summaries are lossy compressions
+of exactly the tacit content Naur says does not survive translation into text.
+Worse, agents working separately build subtly incompatible local theories of the
+same system, which is architectural drift arriving from a new direction.
+
+This is why the Working Hypothesis in § 2.1 does not rescue the argument. A
+stronger agent writes better code; it does not accumulate the cross-session,
+cross-agent shared theory that Tao's canonicalization stage consists of. The
+stage stays human by construction, not by current limitation.
+
+**Understanding is instrumental in software and terminal in mathematics — but
+the distinction is thinner than it first appears.** Thurston's line, which Tao
+quotes — "the measure of our success is whether what we do enables people to
+understand and think more clearly" — makes understanding the product. In software
+the product is working systems, and understanding is a means. That much holds,
+and it is the honest reason teams will be tempted to skip the digestion stage:
+they can, for a while.
+
+An earlier draft of this record stopped there. That was too clean. Given the
+feedback loop above, understanding in software is not merely one input among
+others that can be traded against delivery speed: it is the variable that
+determines whether the delegation loop is stable or divergent. A means you can
+spend down to zero and still have a system is instrumental. A means whose
+depletion accelerates its own depletion is a control variable, and it has to be
+managed as one. The argument for not skipping digestion is therefore stronger
+than "change, incident response, security review, and audit all cash out
+understanding, and they arrive later than the ship date" — though they do.
 
 ## 6. Proposals
 
@@ -385,6 +522,17 @@ This is a stronger claim than "review it." It is a claim about a named person
 holding the theory. It is testable in the review conversation, it degrades
 gracefully (the answer can be "not yet"), and it is the only proposal here that
 directly defends the operation stage.
+
+Two independent supports arrived after this proposal was drafted, and both
+strengthen it. Polvara reaches the same practice from Naur rather than from Tao,
+recommending that developers be required to explain AI-generated code verbally to
+peers — the same test, derived from theory building instead of from
+mathematical publication norms, which is weak evidence that the test is the
+natural one rather than an artifact of the transposition. And the Anthropic RCT
+in § 2.3 supplies the mechanism: the comprehension gap tracked mode of use, not
+tool access, so a rule that forces explanation is not merely an audit of
+understanding after the fact. It changes how the code gets read in the first
+place, which is where the 65%-versus-40% split was decided.
 
 **4. Make verification adversarial, and never let one agent close the loop.**
 Press software's oracle advantage, but respect the oracle problem: the agent that
@@ -483,15 +631,28 @@ Counts derived by running, from the repository root:
 | Operation | CI operations handbook, health checks, benchmark lane | Present but the thinnest stage relative to the others — expected for a library rather than a service. |
 | Canonicalization | [`sdd/000-process.md`](../000-process.md) ("specs are source of truth"), the ripple-check, [`sdd/DRIFT-RULES.md`](../DRIFT-RULES.md), 279 traces, `sdd/BACKLOG.md` | This is the distinctive investment. Most repositories have nothing at this stage. |
 
-Three observations worth recording.
+Read through the debt decomposition in § 2.3, the shape of this repository is
+specific: **it is an unusually heavy intent-debt paydown with cognitive debt
+entirely uninstrumented.** Nearly every artifact above externalizes a _why_ —
+specs, ADRs, the ripple-check, drift rules, backlog rationale, the Dafny twins.
+That is the layer Storey says is a debt when unwritten and the layer Polvara says
+an agent will otherwise fabricate. On that layer the repo is close to the
+proposal in § 6.
 
-**The traces are an instrument for the substrate collapse.** Trace files record
-what an agent actually read, tagged `unclear` or `misleading` where a document
-failed the reader, aggregated by `hatch run report-trace-outcomes`. That measures
-comprehension transfer rather than authorship footprint — which is precisely the
-substitution the truck-factor critique argues is now required. The schema's own
+Cognitive debt is a different account, and nothing here debits or credits it.
+That distinction reframes the observations below more usefully than the earlier
+framing did.
+
+**The traces measure the wrong side of the transfer — deliberately, and the
+limit matters.** Trace files record what an agent actually read, tagged `unclear`
+or `misleading` where a document failed the reader, aggregated by `hatch run
+report-trace-outcomes`. In debt terms this is an _intent-debt_ instrument: it
+measures whether the externalized rationale was findable and usable. It is not a
+cognitive-debt instrument, because the comprehension it records is the agent's,
+and per § 5 the agent's theory does not persist past the session. The schema's
 warning that "cleaned-up 'ideal' traces silently lie to the aggregator" is Tao's
-friction argument applied to process data.
+friction argument applied to process data, and it is doing real work — but on the
+intent layer only.
 
 **Principle 9 is the talk rule in miniature.** Requiring that a figure name the
 command it came from, derived before the sentence is written, is the same
@@ -503,10 +664,15 @@ measured failure modes that motivated it.
 (1) Disclosure — commit messages carry backlog IDs but no `Assisted-by:` trailer,
 so AI provenance does not survive into `git log`. (7) The training pipeline — a
 single-maintainer project has no junior path to defend, but that also means the
-repo cannot demonstrate the hardest proposal. (8) Comprehension measurement — the
-traces instrument agent comprehension, not human comprehension of
-agent-authored changes, and nothing currently asks whether a human could explain
-a merged change at review depth.
+repo cannot demonstrate the hardest proposal. (8) Comprehension measurement —
+this is the cognitive-debt gap, and it is the one the repo's strength on intent
+debt most easily disguises. A codebase can carry 38 ADRs, 50 specs and 279
+traces and still have no living human theory of itself, because those artifacts
+record the _why_ rather than transfer it; per Naur's two compiler teams, complete
+documentation was exactly what failed to convey the theory. Nothing currently
+asks whether a human could explain a merged change at review depth, and the
+single-maintainer structure makes the question harder rather than moot: there is
+no second person whose comprehension would reveal the first person's gap.
 
 These are observations, not recommendations to act. Per
 [`CLAUDE.md` § Audits](../../CLAUDE.md), disposition is the user's call.
@@ -541,6 +707,10 @@ Pipeline degradation:
 Theory, norms, and practice:
 
 - [Peter Naur, Programming as Theory Building (1985)](https://pages.cs.wisc.edu/~remzi/Naur.pdf)
+- [Margaret-Anne Storey, From Technical Debt to Cognitive and Intent Debt](https://queue.acm.org/detail.cfm?id=3807966) · [arXiv 2603.22106](https://arxiv.org/pdf/2603.22106)
+- [Giorgio Polvara, The Persistence of Theory: Reevaluating Naur's "Programming as Theory Building" in the Generative AI Era](https://polvara.me/posts/the-persistence-of-theory-reevaluating-naur-s-programming-as-theory-building-in-the-generative-ai-era/) (19 Jun 2026)
+- [Anthropic, How AI assistance impacts the formation of coding skills](https://www.anthropic.com/research/AI-assistance-coding-skills) (29 Jan 2026)
+- [Thoughtworks Technology Radar: Codebase cognitive debt](https://www.thoughtworks.com/radar/techniques/codebase-cognitive-debt) · [Vol. 34 announcement](https://www.thoughtworks.com/about-us/news/2026/combat-ai-cognitive-debt-radar-v34)
 - [Assisted-by: how open source projects are drawing the line on AI contributions](https://allthingsopen.org/articles/open-source-ai-contributions-assisted-by-git-trailer-standard) · [Linux kernel policy coverage](https://www.tomshardware.com/software/linux/linux-lays-down-the-law-on-ai-generated-code-yes-to-copilot-no-to-ai-slop-and-humans-take-the-fall-for-mistakes-after-months-of-fierce-debate-torvalds-and-maintainers-come-to-an-agreement) · [QEMU relaxation patch](https://lists.nongnu.org/archive/html/qemu-devel/2026-05/msg07614.html)
 - [Martin Fowler / Birgitta Böckeler, Exploring Gen AI](https://martinfowler.com/articles/exploring-gen-ai.html) · [Harness Engineering](https://martinfowler.com/articles/exploring-gen-ai/harness-engineering-memo.html) · [TDD inside the agent loop](https://martinfowler.com/articles/exploring-gen-ai/tdd-in-the-agent-loop.html)
 - [Simon Willison, Agentic Engineering Patterns](https://simonwillison.net/2026/Feb/23/agentic-engineering-patterns/)
