@@ -70,8 +70,10 @@ first pass never reached (§ 5, § 6, § 8), at search-summary level only.
 ### 2.2 The access limitation
 
 Every scholarly host tried returned 403 on CONNECT from this environment's egress
-proxy. Derivation: `curl -sS http://127.0.0.1:44289/__agentproxy/status`, whose
-`recentRelayFailures` names `aclanthology.org`, `doi.org`,
+proxy. Derivation: the agent proxy's status endpoint
+(`curl -sS "$HTTPS_PROXY/__agentproxy/status"`; the port is session-local, so the
+literal URL is not reproducible), whose
+`recentRelayFailures` named `aclanthology.org`, `doi.org`,
 `www.semanticscholar.org`, `api.crossref.org`, `api.openalex.org`,
 `journals.uic.edu`, `www.pedocs.de` and `en.wikipedia.org`; `arxiv.org` and
 `pmc.ncbi.nlm.nih.gov` were re-tested directly and also returned 403. The proxy's
@@ -256,9 +258,11 @@ this corpus. Each figure names its derivation.
 
 ### 9.1 The local instrument points the other way
 
-`hatch run report-trace-outcomes` on this branch: 279 traces, 4052 steps, 1826
-carrying an explicit outcome (45.1%), **223 negative tags (191 `misleading`, 32
-`unclear`)** across 115 traces and 114 references. Reading the `unclear`
+`hatch run report-trace-outcomes`, run on this branch at `2bbb802` (the state
+this document was written against; the corpus grows with every trace, so the
+figures are pinned to that base rather than to "now"): 279 traces, 4052 steps,
+1826 carrying an explicit outcome (45.1%), **223 negative tags (191 `misleading`,
+32 `unclear`)** across 115 traces and 114 references. Reading the `unclear`
 extracts, the dominant failure is a **missing** unit, not a buried one: "the row
 did not ask the question that mattered", "**no row covers** a change to a skill's
 frontmatter", "a semantic change behind an unchanged signature has no row".
@@ -355,10 +359,11 @@ cleanly**. Section 6 ("The repo does not mislead the next person") is the neares
 but its promise is about artifacts asserting what is true, its `Closes when` is
 "bounded to those five deliberately", and every one of its six open items is a
 closing condition. Filing a seventh that is not one would break that pattern.
-Next free ID is **250**, derived from `sdd/backlogid.json` reading `"ID": 248`
-against `rg -o 'ID-[0-9]{3}' sdd/BACKLOG*.md`, which returns an open `ID-249` at
-`sdd/BACKLOG.md:1360`; the JSON is behind and both must be re-checked at filing
-time.
+Next free ID is **250**, confirmed by `hatch run lint` (`gen_backlogid.py
+--check` reports `ID=250`). Worth noting for whoever files it: `sdd/backlogid.json`
+reads `"ID": 248` while `rg -o 'ID-[0-9]{3}' sdd/BACKLOG*.md` returns an open
+`ID-249` at `sdd/BACKLOG.md:1360`, so the JSON alone would have given the wrong
+answer and the generator is the derivation that matters.
 
 ## 11. What would settle it
 
