@@ -54,10 +54,3 @@ sdd_kinds:
     title_prefixes:
       - "Research: "
     numbered: false
-    # Translations are repo-only copies of a record whose single home is the
-    # English file (AUTHORING Rule 2). The docs site stays monolingual, so a
-    # `-de` twin carries `<!-- doc: repo-only -->` and is skipped here too —
-    # the marker settles classification, this list keeps the nav and the
-    # dual-render bridge from emitting a page that does not exist.
-    skip_stems:
-      - research-code-abundance-goals-and-values-de
