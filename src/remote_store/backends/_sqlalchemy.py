@@ -473,8 +473,8 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
                 prefix = path + "/"
                 row = conn.execute(sa.select(sa.literal(1)).where(t.c.key.like(prefix + "%")).limit(1)).first()
             found = row is not None
-        # ``found`` keeps its seeded value when the table is gone and the block
-        # above is abandoned — the same shape the listings below use for rows.
+        # Keeps the seeded ``False`` when the table is gone and the block above
+        # is abandoned — the shape every probe and listing here uses.
         return found
 
     def is_file(self, path: str) -> bool:
@@ -717,29 +717,19 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         an error it already holds, so a failed inspection leaves that original
         error standing rather than replacing it with a guess.
 
-        **A discarded in-memory store is not special-cased**, and that is a
-        decision rather than an oversight. Disposing an in-memory SQLite engine
-        throws the data away, so the next statement opens a *different, empty*
-        database and the inspector truthfully reports no table — whereupon every
-        operation that carries this reclassification answers as it would for any
-        other absent container. A discarded store reads as an *empty* store,
-        consistently, with no special case here to get wrong.
+        **A discarded in-memory store is not special-cased**, deliberately.
+        Disposing an in-memory SQLite engine throws the data away, so the next
+        statement opens a different, empty database and the inspector truthfully
+        reports no table — and every operation then answers as it would for any
+        other absent container, so a discarded store reads as an empty one.
 
-        Guarding against it is not possible from here, and the reason is worth
-        keeping so nobody re-derives the attempt. The condition is "was the store
-        discarded", which is not decidable from this object's state: a *borrowed*
-        engine can be disposed by its owner without any call on this backend, and
-        a ``close()``-based test therefore cannot see it, while an in-memory URL
-        test cannot see the URI-form spellings (``file::memory:``,
-        ``mode=memory``) and so makes behaviour depend on how the store was
-        addressed rather than on the store.
-
-        The asymmetry a guard would have hidden — the deletes tolerating while
-        ``read`` and ``exists`` raised ``BackendUnavailable`` — was a defect in
-        its own right, and closing it is what made the guard unnecessary rather
-        than merely undecidable. The one operation still outside the
-        reclassification is ``write``, which no clause of the backend contract
-        decides.
+        A guard is not possible from here anyway, and the reason is worth keeping
+        so nobody re-derives the attempt: "was the store discarded" is not
+        decidable from this object's state. A *borrowed* engine can be disposed
+        by its owner with no call on this backend, so a ``close()``-based test
+        cannot see it; an in-memory URL test misses the URI spellings
+        (``file::memory:``, ``mode=memory``) and makes behaviour depend on how
+        the store was addressed rather than on the store.
         """
         try:
             return not sa.inspect(self._engine).has_table(self._table.name, schema=self._table.schema)
@@ -751,50 +741,31 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         """A dropped table is a missing path, not a failed statement.
 
         The table is this backend's container, so an absent one owes whatever an
-        absent bucket owes on S3. The contract settles that per operation, and this
-        helper carries all three answers on one axis:
+        absent bucket owes on S3 — per operation, on one axis:
 
-        * ``raises=False`` — the block is abandoned and control resumes *after*
-          the ``with``. Each caller seeds its answer before the block and returns
-          it afterwards, so what the abandonment produces is the seed: ``False``
-          for a probe, an empty ``rows`` for a listing, an empty ``FolderInfo``
-          for ``get_folder_info`` at the root. A tolerant delete seeds nothing
-          and simply returns. What separates them is only what surrounds the
-          block.
-        * ``raises=True`` — ``NotFound``, for the file-shaped operations
-          (``read``, ``read_bytes``, ``get_file_info``, the ``move``/``copy``
-          source), for ``get_folder_info`` below the root, and for a delete
-          without ``missing_ok``.
+        * ``raises=False`` abandons the block and resumes *after* the ``with``,
+          so the answer is whatever the caller seeded beforehand: ``False`` for a
+          probe, empty ``rows`` for a listing, an empty ``FolderInfo`` for
+          ``get_folder_info`` at the root. A tolerant delete seeds nothing and
+          returns.
+        * ``raises=True`` gives ``NotFound`` — the file-shaped operations,
+          ``get_folder_info`` below the root, and a strict delete.
 
-        ``get_folder_info`` is on both axes because the root outranks the
-        canonical row there: the store root is a folder that always exists, so it
-        aggregates an absent container to an empty store instead of reporting
-        itself missing.
+        Without it a dropped table surfaced as whatever ``_map_errors`` made of
+        the driver's complaint, so a store that is *gone* was reported as one
+        that is *broken* — a retryable classification for a permanent condition.
+        ``write`` is deliberately left out: no clause decides what a write owes
+        an absent container.
 
-        Without this, a dropped table surfaced as whatever ``_map_errors`` made
-        of the driver's complaint (``BackendUnavailable`` from
-        ``OperationalError`` on SQLite, the base error from ``ProgrammingError``
-        on PostgreSQL and MySQL) — so a caller could not tell a store that is
-        *gone* from one that is *broken*, and got a retryable classification for
-        a permanent condition.
-
-        ``write`` is the one operation deliberately left out. No clause of the
-        backend contract decides what a write owes an absent container, so
-        reporting a backend-identity failure stays defensible there.
-
-        **Placement is the whole cost story.** This catches
-        ``SQLAlchemyError`` — a *driver* failure — and nothing else, so the
-        inspector call is charged only to a statement that already failed. An
-        ordinary miss raises this module's own ``NotFound`` from a query that
-        succeeded, which is not a ``SQLAlchemyError`` and passes straight
-        through: the common path pays nothing, and the contract's
-        "no extra round trip to tell an absent container from an absent path"
-        budget is kept. Sitting inside ``_map_errors`` rather than outside it is
-        what preserves that, since by the time ``_map_errors`` has run the
-        driver's exception type is gone.
-
-        A ``SQLAlchemyError`` raised while the table is still there re-raises
-        untouched, so a genuine connection or syntax failure keeps its mapping.
+        **Placement is the whole cost story.** It catches ``SQLAlchemyError`` —
+        a *driver* failure — and nothing else, so the inspector call is charged
+        only to a statement that already failed; an ordinary miss raises this
+        module's own ``NotFound`` from a query that succeeded and passes straight
+        through. That keeps the contract's "no extra round trip to tell an absent
+        container from an absent path" budget. It must sit *inside*
+        ``_map_errors``, which has already discarded the driver's exception type
+        by the time it returns. A ``SQLAlchemyError`` raised while the table is
+        still there re-raises untouched.
         """
         # Contract: 003-backend-adapter-contract BE-004 / BE-005 / BE-012 /
         # BE-013, and the shared rule under BE-021 ("An absent container reads as
@@ -1044,11 +1015,9 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         aggregate ``SELECT`` (``COUNT``/``SUM``/``MAX``) over keys under the
         prefix — no per-file round-trips.
 
-        **The root never raises**, absent table included: the store root is a
-        folder that always exists, so a store whose container is gone aggregates
-        to an empty one rather than reporting itself missing. That is the same
-        answer an empty table gives, and it is why the tolerance below is keyed
-        on the root rather than applied to every path.
+        **The root never raises**, absent table included: it is a folder that
+        always exists, so a gone store aggregates to an empty one. That is why
+        the tolerance below is keyed on the root rather than on every path.
 
         Raises:
             NotFound: If no key exists under *path*, including when the backing
@@ -1058,9 +1027,9 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         """
         self._validate_path(path, allow_empty=True)
         prefix = "" if is_root(path) else path + "/"
-        # Left as ``None`` when the block below is abandoned, which happens only
-        # for the root of an absent table. Seeding an empty ``FolderInfo`` here
-        # instead would build one on every successful call and discard it.
+        # Stays ``None`` only when the block is abandoned — the root of an absent
+        # table. Seeding a ``FolderInfo`` here would build one on every call and
+        # discard it.
         info: FolderInfo | None = None
 
         with (
@@ -1108,8 +1077,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
                 modified_at=modified_at,
             )
         if info is None:
-            # The block was abandoned: the table is gone and this is the root,
-            # which BE-029 says aggregates to an empty store rather than raising.
+            # Table gone, and this is the root: an empty store, not a miss.
             return FolderInfo(
                 path=RemotePath.from_backend_path(path),
                 file_count=0,

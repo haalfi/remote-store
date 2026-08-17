@@ -1411,7 +1411,8 @@ the commit that writes it lands, so cite the generator instead.
 
 - [ ] **ID-245 — Derived inventories replacing hand-maintained ones**
   spec: — · effort: M · audience: infra.test, contributor.tooling
-  Three generated surfaces, one shared design decision, and the same
+  Four generated surfaces — three of them sharing one design decision, the
+  fourth independent — and the same
   [`DRIFT-RULES.md`](DRIFT-RULES.md#rules) obligations on each: Rule 3 (the claim
   space must be *derived*, and its granularity stated), Rule 4 (which of document
   and generator governs), Rule 5 (gating or advisory, and why).
@@ -1468,9 +1469,9 @@ the commit that writes it lands, so cite the generator instead.
     sentence uses — that prose was two of the eleven findings on its own.
     **Position: independent of the other three**, and the only one of the four
     with a measured defect rate behind it.
-  **The shared open question:** the first three complications push toward either
-  a docstring convention or a curated mapping, and a curated mapping is precisely
-  the parallel-artifact-that-drifts problem these exist to close. That decision is
+  **The shared open question:** both complications push toward either a docstring
+  convention or a curated mapping, and a curated mapping is precisely the
+  parallel-artifact-that-drifts problem these exist to close. That decision is
   unmade and it is one decision, not three. The fourth bullet does not share it:
   its answer is to have one table rather than a better-maintained several.
 
