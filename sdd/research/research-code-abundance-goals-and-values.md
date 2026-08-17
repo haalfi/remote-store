@@ -241,6 +241,45 @@ survives this; the claim that one layer is now self-healing does not. Read
 correctly, AI makes _all three_ debts worse, and only the cognitive and intent
 layers are novel.
 
+**The model is diagnostic, and its remedies are paydown remedies.** This is its
+main limitation, and correcting it is the most useful thing this record can add
+to it. Storey and Polvara both answer the question "what do you do about the
+debt" with work performed after the debt exists: write the architecture decision
+records, run pair programming, schedule AI-free checkpoints, explain the code to
+a peer. Those are repayments. They presume the debt was taken on and is now
+being serviced.
+
+There is a third posture the model does not name: **arrange the workflow so the
+debt cannot be taken on.** Prevention differs from paydown in what it constrains
+— it fixes the _order_ of operations rather than adding a later obligation:
+
+| Debt | Paydown remedy | Preventive control |
+|---|---|---|
+| Technical | Refactoring sprints, cleanup backlogs | Merge gates: conformance suites, coverage floors, mutation testing |
+| Intent | Write the ADR afterwards | The _why_ is required before the code exists — no implementation without a spec section, decision records immutable once accepted |
+| Cognitive | Pair programming, AI-free checkpoints, explain-to-a-peer | Mandate the engagement in the workflow itself — reproduce the bug and watch the test fail before fixing; read the change's ripple set before starting; verify behaviour by running it, never by type-checking it |
+
+**For cognitive debt the distinction is not a preference. It is the whole
+game.** The three debts differ in whether they can be serviced late, and this is
+the asymmetry neither source draws out. Technical debt is fully repayable:
+badly-shaped code can be refactored into good shape at any later date, by someone
+who never saw the original. Intent debt is partially repayable: rationale can be
+reconstructed after the fact, degraded and lossy, but reconstructed. **Cognitive
+debt is not repayable at all, because there is no later action that makes you
+have understood something at the moment you needed to.** The window in which the
+theory could have been built was the window in which the work was done. Once it
+closes, what remains is not a debt to be serviced but a fact about the system:
+nobody holds its theory.
+
+This is why the preventive column is the load-bearing one, and it converges with
+the evidence rather than merely being tidier. The Anthropic RCT found the
+comprehension outcome determined by mode of use, not by tool access — that is, by
+_how the work was ordered while it was being done_, which is precisely what a
+preventive control fixes and what no subsequent remedy can reach. Naur reaches
+the same place from the other end: the theory is acquired only by active
+engagement in developing the program, which is a statement about when
+understanding forms, not about what documents exist afterwards.
+
 ### 2.4 Goodhart, applied
 
 Every conventional engineering metric measures volume, speed, or frequency of
@@ -451,6 +490,16 @@ describe indigestion as a backlog that accumulates and can be worked off with
 policy changes. A positive feedback loop cannot be worked off later by the same
 means; it has to be damped while the team still has the capacity to damp it.
 
+Combined with the non-repayability argument in § 2.3, this settles the choice
+between the two postures rather than leaving it to taste. Cognitive debt is the
+one debt that compounds on its own _and_ cannot be serviced retroactively.
+Against a quantity with both properties, paydown remedies are not a weaker
+option than preventive controls — they are not an option. Prevention is the only
+control that acts inside the window where the outcome is still determined, which
+is a stronger claim than "process discipline is good practice" and is the reason
+this record treats workflow ordering as an engineering control rather than a
+cultural preference.
+
 **Agents cannot hold the theory, and this is structural rather than a capability
 gap.** A tempting escape from all of the above is that agents will hold the
 theory instead. They do build one — a coding agent forms hypotheses, tests them,
@@ -580,6 +629,15 @@ changes whose author can explain them. Accept that the truck factor, computed
 over authorship, no longer measures retained understanding, and either
 instrument comprehension directly or stop quoting the number.
 
+One caveat on this proposal, following § 2.3. Measuring comprehension is a
+second-best control, not the primary one. A measurement reports on a window that
+has already closed, and cognitive debt cannot be serviced once it has. A team
+that has ordered its workflow so understanding precedes action — reproduce before
+fixing, read the ripple set before starting, run it rather than type-check it —
+has already acted where the outcome was determined, and needs the measurement
+mainly to detect that the ordering has quietly stopped being followed. Reach for
+the metric to audit the control, not in place of it.
+
 ## 7. What a Leiden Declaration for software would need to say
 
 Tao points to the [Leiden Declaration on AI and Mathematics](https://leidendeclaration.ai)
@@ -631,28 +689,50 @@ Counts derived by running, from the repository root:
 | Operation | CI operations handbook, health checks, benchmark lane | Present but the thinnest stage relative to the others — expected for a library rather than a service. |
 | Canonicalization | [`sdd/000-process.md`](../000-process.md) ("specs are source of truth"), the ripple-check, [`sdd/DRIFT-RULES.md`](../DRIFT-RULES.md), 279 traces, `sdd/BACKLOG.md` | This is the distinctive investment. Most repositories have nothing at this stage. |
 
-Read through the debt decomposition in § 2.3, the shape of this repository is
-specific: **it is an unusually heavy intent-debt paydown with cognitive debt
-entirely uninstrumented.** Nearly every artifact above externalizes a _why_ —
-specs, ADRs, the ripple-check, drift rules, backlog rationale, the Dafny twins.
-That is the layer Storey says is a debt when unwritten and the layer Polvara says
-an agent will otherwise fabricate. On that layer the repo is close to the
-proposal in § 6.
+Read through the debt decomposition in § 2.3, this repository is an instance of
+the **preventive** column rather than the paydown one, and that is the accurate
+way to describe it. It does not measure cognitive and intent debt and it does not
+service them; it orders the work so that neither is taken on. The distinction
+matters because measuring for a debt and structuring against one look identical
+from the outside — both produce an absence of the debt — and only the second
+survives the non-repayability argument.
 
-Cognitive debt is a different account, and nothing here debits or credits it.
-That distinction reframes the observations below more usefully than the earlier
-framing did.
+The controls are explicit and predate this record:
 
-**The traces measure the wrong side of the transfer — deliberately, and the
-limit matters.** Trace files record what an agent actually read, tagged `unclear`
-or `misleading` where a document failed the reader, aggregated by `hatch run
-report-trace-outcomes`. In debt terms this is an _intent-debt_ instrument: it
-measures whether the externalized rationale was findable and usable. It is not a
-cognitive-debt instrument, because the comprehension it records is the agent's,
-and per § 5 the agent's theory does not persist past the session. The schema's
-warning that "cleaned-up 'ideal' traces silently lie to the aggregator" is Tao's
-friction argument applied to process data, and it is doing real work — but on the
-intent layer only.
+| Debt | Control | Where it is written |
+|---|---|---|
+| Intent | No implementation without a spec section; decision records immutable once accepted, superseded rather than edited | [`sdd/000-process.md`](../000-process.md) Rules 1 and 4 |
+| Intent | Specs authoritative against code, so the recorded _why_ cannot silently drift behind the implementation | [`sdd/000-process.md`](../000-process.md) Rule 3 |
+| Cognitive | Bug fixes reproduce the failure and watch the test fail _before_ the fix; features run SPEC → TEST → IMPLEMENT | [`sdd/000-process.md`](../000-process.md) Rule 6 |
+| Cognitive | Behaviour verified by running it, never by type-checking it; bugs reproduced before fixes are claimed | [`CLAUDE.md`](../../CLAUDE.md) principle 6 |
+| Cognitive | The change's ripple set is read _before_ starting, not at verify-end | [`sdd/CLAUDE-REFERENCE.md`](../CLAUDE-REFERENCE.md) Pre-work index |
+| Cognitive | Figures state the command they came from, run before the sentence is written | [`CLAUDE.md`](../../CLAUDE.md) principle 9 |
+
+Every entry in the cognitive column fixes an _order_: understand, then act. That
+is the same variable the Anthropic RCT found to be decisive, encoded as process
+rather than left to individual habit. The Pre-work index is the clearest case —
+it exists because sampled PRs consulted the ripple table only at verify-end,
+which is a diagnosis of exactly this failure and a control aimed exactly at it.
+
+**Naur supports this arrangement; an earlier draft of this record had him
+arguing against it.** That draft invoked Naur's second compiler team — handed
+complete code and documentation, unable to extend the system — as evidence that
+the repository's written artifacts cannot convey theory. The inference was wrong.
+Group B failed because they were handed a finished artifact, not because written
+intent is worthless; Naur's own remedy is active engagement in developing the
+program. A workflow that requires reproducing the failure, reading the ripple
+set, and running the behaviour _is_ that engagement, mandated. The written
+artifacts are not a substitute for it here, and the process does not ask them to
+be.
+
+**The traces sit on the intent layer, and the boundary is worth keeping
+straight.** Trace files record what an agent actually read, tagged `unclear` or
+`misleading` where a document failed the reader, aggregated by `hatch run
+report-trace-outcomes`. That measures whether externalized rationale was findable
+and usable — an intent-layer instrument, and a good one. It is not the
+cognitive-layer control; the rules in the table above are. The schema's warning
+that "cleaned-up 'ideal' traces silently lie to the aggregator" is Tao's friction
+argument applied to process data.
 
 **Principle 9 is the talk rule in miniature.** Requiring that a figure name the
 command it came from, derived before the sentence is written, is the same
@@ -660,19 +740,26 @@ demand: demonstrate that you can defend the claim, or do not publish it.
 [ADR-0037](../adrs/0037-whole-file-gate-and-derived-figures.md) records the
 measured failure modes that motivated it.
 
-**The gaps.** Measured against § 6, three proposals have no mechanism here.
+**The gaps.** Measured against § 6, two proposals have no mechanism here.
 (1) Disclosure — commit messages carry backlog IDs but no `Assisted-by:` trailer,
 so AI provenance does not survive into `git log`. (7) The training pipeline — a
-single-maintainer project has no junior path to defend, but that also means the
-repo cannot demonstrate the hardest proposal. (8) Comprehension measurement —
-this is the cognitive-debt gap, and it is the one the repo's strength on intent
-debt most easily disguises. A codebase can carry 38 ADRs, 50 specs and 279
-traces and still have no living human theory of itself, because those artifacts
-record the _why_ rather than transfer it; per Naur's two compiler teams, complete
-documentation was exactly what failed to convey the theory. Nothing currently
-asks whether a human could explain a merged change at review depth, and the
-single-maintainer structure makes the question harder rather than moot: there is
-no second person whose comprehension would reveal the first person's gap.
+single-maintainer project has no junior path to defend, which means the repo
+cannot demonstrate the hardest proposal rather than that it fails it.
+
+Proposal 8's comprehension measurement is deliberately not listed as a third gap.
+The preventive controls above address the same failure by a different route, and
+on the non-repayability argument in § 2.3 they address it at the only point where
+it can be addressed. A measurement would report, after the fact, on a window that
+has already closed.
+
+**The open question is operational, not structural.** The controls guarantee that
+the mandated engagement happens; what they do not by themselves fix is whose
+theory it builds, since the reproducing, ripple-reading and running can be
+performed by the agent, by the maintainer, or by both. Nothing in the process is
+missing here — this is a question about how the process is operated, and it is
+the reason "try to avoid those debts" is the right register for the claim rather
+than "eliminate". It is also the question a second maintainer would answer for
+free, by making one person's gap visible to another.
 
 These are observations, not recommendations to act. Per
 [`CLAUDE.md` § Audits](../../CLAUDE.md), disposition is the user's call.
