@@ -515,6 +515,15 @@ stronger agent writes better code; it does not accumulate the cross-session,
 cross-agent shared theory that Tao's canonicalization stage consists of. The
 stage stays human by construction, not by current limitation.
 
+One qualification, from a trial run on this record's own author and reported in
+the appendix. Amnesia bounds what an agent _retains_; it does not bound how
+cheaply the theory can be _rebuilt_ at the start of a session, and that cost is a
+property of the artifacts rather than of the agent. Where the recorded rationale
+sits at the points where the reasoning was contested, rebuilding is fast enough
+to change the economics of requiring it. The stage still stays human — nothing
+here accumulates across sessions — but the reconstruction cost is a design
+variable, not a constant.
+
 **Understanding is instrumental in software and terminal in mathematics — but
 the distinction is thinner than it first appears.** Thurston's line, which Tao
 quotes — "the measure of our success is whether what we do enables people to
@@ -739,6 +748,58 @@ command it came from, derived before the sentence is written, is the same
 demand: demonstrate that you can defend the claim, or do not publish it.
 [ADR-0037](../adrs/0037-whole-file-gate-and-derived-figures.md) records the
 measured failure modes that motivated it.
+
+**A comprehension trial, and what it found.** After this record was drafted, its
+author was asked whether it actually held a model of what remote-store is and why
+it is built this way. The test was run in the repository's own style: state the
+model first as a falsifiable claim, then check it against source. Prior model —
+a Store facade over pluggable backends; a capability system because backends
+genuinely differ; refusal of lowest-common-denominator behaviour; mirrored
+sync and async surfaces; conformance parametrised across backends with Dafny and
+TLA+ as independent oracles. That model was formed from `CLAUDE.md`, directory
+listings and trace filenames over the course of writing this record, without
+reading a spec or a source module. It was then checked against
+[`sdd/DESIGN.md`](../DESIGN.md), specs [003](../specs/003-backend-adapter-contract.md),
+[004](../specs/004-path-model.md) and [010](../specs/010-native-path-resolution.md),
+the `_GATING` table at the head of `src/remote_store/_store.py`, and listings of
+`src/remote_store/` and `sdd/specs/`.
+
+The skeleton survived. Three things did not, and all three were _why_ questions
+rather than _what_ questions:
+
+- **Capabilities are two kinds, not one.** CAP-007 separates gates, which raise
+  `CapabilityNotSupported` and block a method, from quality flags
+  (`ATOMIC_MOVE`, `SEEKABLE_READ`, `LAZY_READ`), which describe a property of an
+  existing method and gate nothing. The prior model would have produced an active
+  error: that a backend must declare `SEEKABLE_READ` to serve `read_seekable()`,
+  when that method is available everywhere and the flag reports only what it costs.
+- **Path resolution was absent entirely** — `_resolution.py`, `_proxy.py`, specs
+  010 and 043 — along with its motivating invariant, round-trip safety: anything a
+  Store method returns must be usable as input to another without manual
+  stripping, after `FileInfo.path` leaked the `root_path` prefix and callers
+  double-prefixed it.
+- **The governing principle was mis-stated.** Not "refuse
+  lowest-common-denominator behaviour" but something sharper: normalize the
+  interface hard — path validation, one error hierarchy — while refusing to
+  normalize guarantees, which stay visible as declarations the caller inspects.
+  That rule explains CAP-007 instead of treating it as a quirk.
+
+**The finding qualifies both § 5 and the Naur reading above.** It confirms the
+amnesia argument: this record was written at length about a system whose theory
+its author did not hold. But it also shows the gap closing faster than Naur's
+compiler example predicts. Group B had complete code and documentation and still
+could not extend the system; four reads here recovered the contested reasoning,
+because these specs record _why_ at the points where the why was disputed — spec
+010 opens with a section headed "The Problem" and a failing example, and CAP-007
+argues for quality flags rather than merely listing them. **Documentation that
+carries reasoning is not the documentation Naur ruled out.** It does not remove
+the need for engagement, and it does not survive the session; it makes the
+engagement cheap enough to be worth requiring.
+
+Two limits on the trial. Its subject is an agent, so it measures intent-layer
+transfer rather than human cognitive debt. And a self-administered comprehension
+test is graded by the same party that sat it: the three misses are the ones the
+checking surfaced, and they are a lower bound on what was missing.
 
 **The gaps.** Measured against § 6, two proposals have no mechanism here.
 (1) Disclosure — commit messages carry backlog IDs but no `Assisted-by:` trailer,
