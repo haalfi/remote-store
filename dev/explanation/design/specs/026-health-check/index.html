@@ -11037,7 +11037,7 @@ lightweight connectivity check.
 <h3 id="ping-004-s3backend">PING-004: S3Backend<a class="headerlink" href="#ping-004-s3backend" title="Permanent link">&para;</a></h3>
 <p><strong>Strategy:</strong> <code>head_bucket</code> via s3fs's synchronous <code>call_s3</code> wrapper, inside <code>_s3fs_errors()</code>.
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s3fs_errors</span><span class="p">():</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_fs</span><span class="o">.</span><span class="n">call_s3</span><span class="p">(</span><span class="s2">&quot;head_bucket&quot;</span><span class="p">,</span> <span class="n">Bucket</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_bucket</span><span class="p">)</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">_fs</span><span class="o">.</span><span class="n">call_s3</span><span class="p">(</span><span class="s2">"head_bucket"</span><span class="p">,</span> <span class="n">Bucket</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_bucket</span><span class="p">)</span>
 </code></pre></div>
 <code>self._fs.s3</code> is the raw <code>aiobotocore</code> client — its methods return
 coroutines, so calling <code>self._fs.s3.head_bucket(...)</code> directly never
@@ -11070,7 +11070,7 @@ the call on the s3fs event loop.</p>
 /drives/{id}/root</code> when no <code>base_path</code> is configured, or the <code>base_path</code> folder
 item when one is pinned — reusing the backend's existing <code>_get_item("")</code> primitive.
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">check_health</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_item</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s2">&quot;identity&quot;</span><span class="p">)</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_item</span><span class="p">(</span><span class="s2">""</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s2">"identity"</span><span class="p">)</span>
 </code></pre></div>
 The probe <strong>must</strong> use the identity scope, and none of the other three will do:
 a <code>resourceNotFound</code> (a missing/misconfigured drive) must map to

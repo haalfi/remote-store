@@ -11737,7 +11737,7 @@ missing convenience methods that would be breaking to fix after v1.</p>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">ChildEntry</span><span class="p">:</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>           <span class="c1"># bare name (last path component)</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">path</span><span class="p">:</span> <span class="n">RemotePath</span>     <span class="c1"># store-relative full path</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">kind</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;file&quot;</span><span class="p">,</span> <span class="s2">&quot;folder&quot;</span><span class="p">]</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">kind</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"file"</span><span class="p">,</span> <span class="s2">"folder"</span><span class="p">]</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">info</span><span class="p">:</span> <span class="n">FileInfo</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># populated for files, None for folders</span>
 </code></pre></div>
 <ul>
@@ -11763,7 +11763,7 @@ missing convenience methods that would be breaking to fix after v1.</p>
 <p><strong>Option D (preferred): Protocol + FolderEntry</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nd">@typing</span><span class="o">.</span><span class="n">runtime_checkable</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">PathEntry</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Structural type shared by all listing results.&quot;&quot;&quot;</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="sd">"""Structural type shared by all listing results."""</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="nd">@property</span>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span> <span class="o">...</span>
 <a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="nd">@property</span>
@@ -11790,9 +11790,9 @@ richer info that only files have."</p>
 existing callers, not just a type-level one. Currently <code>iter_children()</code> yields
 bare <code>str</code> names for folders. Under Option D, folders become <code>FolderEntry</code>
 objects. Existing code like:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">iter_children</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">):</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">iter_children</span><span class="p">(</span><span class="s2">"data"</span><span class="p">):</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>        <span class="n">subfolder_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;data/</span><span class="si">{</span><span class="n">child</span><span class="si">}</span><span class="s2">&quot;</span>  <span class="c1"># child IS the name string</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>        <span class="n">subfolder_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"data/</span><span class="si">{</span><span class="n">child</span><span class="si">}</span><span class="s2">"</span>  <span class="c1"># child IS the name string</span>
 </code></pre></div>
 <p>will fail at runtime — <code>isinstance(child, str)</code> returns <code>False</code> for
 <code>FolderEntry</code>, so the folder branch never triggers. <strong>All callers must change
@@ -11960,7 +11960,7 @@ untouched — it already structurally satisfies <code>PathEntry</code>.</p>
 <ol>
 <li><strong>Fix the docstring immediately</strong> — remove "<code>str</code>" from <code>write()</code> and <code>write_atomic()</code> parameter descriptions. This is a documentation bug, not a feature gap.</li>
 <li><strong>Consider adding <code>write_text()</code></strong> as a convenience (symmetric with <code>read_text()</code>):
-   <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">write_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">encoding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;utf-8&quot;</span><span class="p">,</span>
+   <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">write_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">encoding</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"utf-8"</span><span class="p">,</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>               <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="bp">self</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">text</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoding</span><span class="p">),</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">)</span>
 </code></pre></div>
@@ -11982,11 +11982,11 @@ untouched — it already structurally satisfies <code>PathEntry</code>.</p>
 <h3 id="recommendation_2">Recommendation<a class="headerlink" href="#recommendation_2" title="Permanent link">&para;</a></h3>
 <p>Change to:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>See the :mod:`codecs` module for available error handlers
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>(e.g., ``&quot;strict&quot;``, ``&quot;ignore&quot;``, ``&quot;replace&quot;``).
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>(e.g., ``"strict"``, ``"ignore"``, ``"replace"``).
 </code></pre></div>
 <p>Or more precisely:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Standard error handlers: ``&quot;strict&quot;`` (default, raises ``UnicodeDecodeError``),
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>``&quot;ignore&quot;``, ``&quot;replace&quot;``, ``&quot;backslashreplace&quot;``.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>Standard error handlers: ``"strict"`` (default, raises ``UnicodeDecodeError``),
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>``"ignore"``, ``"replace"``, ``"backslashreplace"``.
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>See :func:`codecs.register_error` for custom handlers.
 </code></pre></div>
 <h3 id="impact">Impact<a class="headerlink" href="#impact" title="Permanent link">&para;</a></h3>

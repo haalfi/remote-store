@@ -10779,11 +10779,11 @@ rewriting needed at this stage).</p>
 <p>Both the pytest-driven spike and the standalone <code>isolation_check.py</code>
 fail in the same way during recording, with a <code>--record-mode=all</code>
 (equivalently <code>rewrite</code>) session pointed at a real AWS endpoint:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>File &quot;site-packages/s3fs/core.py&quot;, line 211, in _error_wrapper
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    await tb.tb_frame.f_locals[&quot;response&quot;]
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>File "site-packages/s3fs/core.py", line 211, in _error_wrapper
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    await tb.tb_frame.f_locals["response"]
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>          ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>KeyError: &quot;local variable &#39;&#39;response&#39;&#39; is not defined&quot;
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>&lt;sys&gt;:0: RuntimeWarning: coroutine &#39;AioAwsChunkedWrapper.read&#39; was never awaited
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>KeyError: "local variable ''response'' is not defined"
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>&lt;sys&gt;:0: RuntimeWarning: coroutine 'AioAwsChunkedWrapper.read' was never awaited
 </code></pre></div>
 <p>What this is saying:</p>
 <ol>

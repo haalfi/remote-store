@@ -12244,7 +12244,7 @@ full-file download is comparable to a few range requests.</p>
 <p>For files exceeding the threshold, use <code>PythonFile</code> wrapping of the Store's
 read stream:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">stream</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">return</span> <span class="n">pa</span><span class="o">.</span><span class="n">PythonFile</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;r&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="k">return</span> <span class="n">pa</span><span class="o">.</span><span class="n">PythonFile</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"r"</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Seekability caveat:</strong> <code>PythonFile</code> with <code>mode="r"</code> creates a
 <code>PyReadableFile</code> which requires the underlying stream to support <code>seek()</code>.
@@ -12548,7 +12548,7 @@ management is clearer and consistent with how the Store context manager works.</
 <h2 id="public-api-surface">Public API Surface<a class="headerlink" href="#public-api-surface" title="Permanent link">&para;</a></h2>
 <h3 id="pa-022-exports">PA-022: Exports<a class="headerlink" href="#pa-022-exports" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> The <code>ext.arrow</code> module exports exactly two names:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;StoreFileSystemHandler&quot;</span><span class="p">,</span> <span class="s2">&quot;pyarrow_fs&quot;</span><span class="p">]</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"StoreFileSystemHandler"</span><span class="p">,</span> <span class="s2">"pyarrow_fs"</span><span class="p">]</span>
 </code></pre></div>
 <p>Both are imported directly from <code>remote_store.ext.arrow</code> (ADR-0013). When
 PyArrow is not installed, importing <code>ext.arrow</code> raises <code>ImportError</code> with a
@@ -12556,7 +12556,7 @@ helpful message.</p>
 <h3 id="pa-023-optional-dependency">PA-023: Optional Dependency<a class="headerlink" href="#pa-023-optional-dependency" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> PyArrow is declared as an optional extra in <code>pyproject.toml</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">[project.optional-dependencies]</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">arrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;pyarrow&gt;=12.0.0&quot;</span><span class="p">]</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">arrow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"pyarrow&gt;=12.0.0"</span><span class="p">]</span>
 </code></pre></div>
 <p><strong>Minimum version:</strong> 12.0.0. <code>FileSystemHandler</code> was introduced in PyArrow
 2.0.0. However, PyArrow 5.0 changed the <code>open_output_stream</code> signature to add

@@ -11091,21 +11091,21 @@ a backend participates in: what capabilities exist, what errors are
 possible, what the outcome of each operation class is.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>CONSTANTS Paths, Capabilities, Errors
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>VARIABLES fs,          \* function: Paths -&gt; {&quot;file&quot;, &quot;dir&quot;, &quot;missing&quot;}
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>VARIABLES fs,          \* function: Paths -&gt; {"file", "dir", "missing"}
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>          declared_caps \* set of declared Capability values
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>TypeInvariant ==
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    /\ fs \in [Paths -&gt; {&quot;file&quot;, &quot;dir&quot;, &quot;missing&quot;}]
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    /\ fs \in [Paths -&gt; {"file", "dir", "missing"}]
 <a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    /\ declared_caps \subseteq Capabilities
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>EntryPartition ==
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    \A p \in Paths: ~(fs[p] = &quot;file&quot; /\ fs[p] = &quot;dir&quot;)
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    \A p \in Paths: ~(fs[p] = "file" /\ fs[p] = "dir")
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>\* NOTE: sketch only. In a real TLA+ action, outcome must be declared as
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>\* a VARIABLE and assigned via a primed expression (outcome&#39;).
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>\* a VARIABLE and assigned via a primed expression (outcome').
 <a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>CapabilityGate(op_cap) ==
 <a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    op_cap \notin declared_caps =&gt;
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        outcome&#39; = &quot;CapabilityNotSupported&quot;
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        outcome' = "CapabilityNotSupported"
 </code></pre></div>
 <p>Key properties to check:
 - <code>EntryPartition</code>: invariant — no path is simultaneously file and dir.
@@ -11129,7 +11129,7 @@ always fire before any backend action?</p>
 <a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
 <a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>CapGatePrecedesIO ==
 <a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    \* If Store fires CapabilityNotSupported, backend action is skipped.
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    (store_outcome = &quot;CapabilityNotSupported&quot;) =&gt;
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    (store_outcome = "CapabilityNotSupported") =&gt;
 <a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        UNCHANGED fs
 </code></pre></div>
 <p>For now Store.tla is thin — it establishes the scaffold that WR-019
@@ -11201,7 +11201,7 @@ This keeps TLC state space tractable while covering all relevant cases.</p>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">  </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">...changed files include sdd/formal/tla/...</span>
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="nt">steps</span><span class="p">:</span>
 <a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/setup-java@v4</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">      </span><span class="nt">with</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> java-version</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;21&#39;</span><span class="w"> </span><span class="p p-Indicator">}</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">      </span><span class="nt">with</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt"> java-version</span><span class="p">:</span><span class="w"> </span><span class="s">'21'</span><span class="w"> </span><span class="p p-Indicator">}</span>
 <a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bash scripts/tlc_check.sh</span>
 </code></pre></div>
 <p><code>scripts/tlc_check.sh</code> runs TLC on each <code>MC_*.tla</code> and exits non-zero on

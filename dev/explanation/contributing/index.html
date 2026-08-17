@@ -11590,8 +11590,8 @@ the forgotten copies are the ones that go stale.</p>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="kn">import</span><span class="w"> </span><span class="nn">some_lib</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">except</span> <span class="ne">ModuleNotFoundError</span> <span class="k">as</span> <span class="n">_exc</span><span class="p">:</span>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="k">raise</span> <span class="ne">ModuleNotFoundError</span><span class="p">(</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="s2">&quot;some_lib is required for the &lt;name&gt; extension. &quot;</span>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        <span class="s2">&quot;Install it with: pip install &#39;remote-store[&lt;name&gt;]&#39;&quot;</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="s2">"some_lib is required for the &lt;name&gt; extension. "</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        <span class="s2">"Install it with: pip install 'remote-store[&lt;name&gt;]'"</span>
 <a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">_exc</span>
 </code></pre></div>
 <ol>
@@ -11599,7 +11599,7 @@ the forgotten copies are the ones that go stale.</p>
 </ol>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">try</span><span class="p">:</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.</span><span class="o">&lt;</span><span class="n">name</span><span class="o">&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">Foo</span><span class="o">,</span><span class="w"> </span><span class="nn">bar</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">__all__</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;Foo&quot;</span><span class="p">,</span> <span class="s2">&quot;bar&quot;</span><span class="p">]</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">__all__</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">"Foo"</span><span class="p">,</span> <span class="s2">"bar"</span><span class="p">]</span>
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="k">pass</span>
 </code></pre></div>
@@ -11720,7 +11720,7 @@ for persistence across sessions.</p>
 allowed-signers file, <code>git log --show-signature</code> (and <code>%G?</code>) reports <code>N</code> for your
 own SSH-signed commits — they are signed, but Git has nothing to verify against.
 To make local verification resolve to <code>G</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>git<span class="w"> </span>config<span class="w"> </span>user.email<span class="k">)</span><span class="s2"> </span><span class="k">$(</span>cat<span class="w"> </span>~/.ssh/&lt;your-key&gt;.pub<span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.ssh/allowed_signers
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nb">echo</span><span class="w"> </span><span class="s2">"</span><span class="k">$(</span>git<span class="w"> </span>config<span class="w"> </span>user.email<span class="k">)</span><span class="s2"> </span><span class="k">$(</span>cat<span class="w"> </span>~/.ssh/&lt;your-key&gt;.pub<span class="k">)</span><span class="s2">"</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>~/.ssh/allowed_signers
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>git<span class="w"> </span>config<span class="w"> </span>--global<span class="w"> </span>gpg.ssh.allowedSignersFile<span class="w"> </span>~/.ssh/allowed_signers
 </code></pre></div>
 <p>This is purely local; GitHub verifies independently regardless. Note: commits

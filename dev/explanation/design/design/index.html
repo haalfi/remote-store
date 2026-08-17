@@ -10887,10 +10887,10 @@
 </ul>
 <h3 id="2-module-package-descriptions">2. Module &amp; Package Descriptions<a class="headerlink" href="#2-module-package-descriptions" title="Permanent link">&para;</a></h3>
 <p>Every module starts with a 1-2 sentence docstring explaining <em>why it exists</em>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="sd">&quot;&quot;&quot;Normalized error hierarchy for remote_store.&quot;&quot;&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="sd">"""Normalized error hierarchy for remote_store."""</span>
 </code></pre></div>
 <p>Package <code>__init__.py</code> files follow the same rule:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="sd">&quot;&quot;&quot;Backend implementations for remote_store.&quot;&quot;&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="sd">"""Backend implementations for remote_store."""</span>
 </code></pre></div>
 <h3 id="3-type-annotations">3. Type Annotations<a class="headerlink" href="#3-type-annotations" title="Permanent link">&para;</a></h3>
 <p>Public method signatures use PEP 604 union syntax (Python &gt;=3.10):</p>
@@ -10906,7 +10906,7 @@
 <h3 id="4-docstrings">4. Docstrings<a class="headerlink" href="#4-docstrings" title="Permanent link">&para;</a></h3>
 <p>Google style (<code>Args:</code>, <code>Returns:</code>, <code>Raises:</code>). Short and purpose-focused:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="n">WritableContent</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Write content to a file.</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span><span class="sd">"""Write content to a file.</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
 <a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="sd">    Args:</span>
 <a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="sd">        path: Relative path within the store.</span>
@@ -10917,24 +10917,24 @@
 <a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="sd">        AlreadyExists: If file exists and ``overwrite`` is ``False``.</span>
 <a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
 <a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="sd">    ```python</span>
-<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="sd">    store.write(&quot;data/report.csv&quot;, b&quot;hello&quot;, overwrite=True)</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="sd">    store.write("data/report.csv", b"hello", overwrite=True)</span>
 <a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a><span class="sd">    ```</span>
-<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="sd">    """</span>
 </code></pre></div>
 <p>RST inline roles (colon-word-colon-backtick patterns) are banned;
 <code>scripts/check_rst_roles.py</code> enforces this in <code>hatch run lint</code> and via the
 <code>no-rst-roles</code> pre-commit hook.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># bad — RST role; fails the lint gate</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">store_type</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">type</span><span class="p">:</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the :class:`Store` class.&quot;&quot;&quot;</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="sd">"""Return the :class:`Store` class."""</span>
 <a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
 <a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1"># good — plain text</span>
 <a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">store_type</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">type</span><span class="p">:</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the Store class.&quot;&quot;&quot;</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="sd">"""Return the Store class."""</span>
 <a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
 <a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="c1"># good — double backticks for inline code (not a role)</span>
 <a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">store_type</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">type</span><span class="p">:</span>
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the ``Store`` class.&quot;&quot;&quot;</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="w">    </span><span class="sd">"""Return the ``Store`` class."""</span>
 </code></pre></div>
 <h3 id="5-code-organisation-comments">5. Code Organisation Comments<a class="headerlink" href="#5-code-organisation-comments" title="Permanent link">&para;</a></h3>
 <p>Two styles for structuring large files, each with a distinct purpose.</p>
@@ -11016,21 +11016,21 @@ regions there instead.</p>
 <p>Declared only in public-facing <code>__init__.py</code> modules. Internal modules (<code>_errors.py</code>, etc.) do not need <code>__all__</code> — the underscore prefix signals "internal".</p>
 <h3 id="10-error-messages">10. Error Messages<a class="headerlink" href="#10-error-messages" title="Permanent link">&para;</a></h3>
 <p>f-strings with context for human-readable tracebacks. Structured attributes for programmatic access:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File not found: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="sa">f</span><span class="s2">"File not found: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 </code></pre></div>
 <p><a id="test-style"></a></p>
 <h3 id="11-test-style">11. Test Style<a class="headerlink" href="#11-test-style" title="Permanent link">&para;</a></h3>
 <p>Tests are grouped into classes by spec aspect. The class docstring references the spec IDs covered:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">TestRemotePathNormalization</span><span class="p">:</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;PATH-002 through PATH-006: normalization rules.&quot;&quot;&quot;</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span><span class="sd">"""PATH-002 through PATH-006: normalization rules."""</span>
 <a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">spec</span><span class="p">(</span><span class="s2">&quot;PATH-002&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">spec</span><span class="p">(</span><span class="s2">"PATH-002"</span><span class="p">)</span>
 <a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_backslash_to_forward_slash</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>        <span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a</span><span class="se">\\</span><span class="s2">b</span><span class="se">\\</span><span class="s2">c&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="s2">&quot;a/b/c&quot;</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>        <span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">"a</span><span class="se">\\</span><span class="s2">b</span><span class="se">\\</span><span class="s2">c"</span><span class="p">))</span> <span class="o">==</span> <span class="s2">"a/b/c"</span>
 <a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">spec</span><span class="p">(</span><span class="s2">&quot;PATH-005&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    <span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">spec</span><span class="p">(</span><span class="s2">"PATH-005"</span><span class="p">)</span>
 <a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">test_collapse_consecutive_slashes</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>        <span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a///b&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="s2">&quot;a/b&quot;</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>        <span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">"a///b"</span><span class="p">))</span> <span class="o">==</span> <span class="s2">"a/b"</span>
 </code></pre></div>
 <p>Each test method carries a <code>@pytest.mark.spec("ID")</code> marker for traceability.</p>
 <p>For test <strong>quality</strong> rules (assertions, mocking, coverage), see <code>sdd/TESTING.md</code>.</p>

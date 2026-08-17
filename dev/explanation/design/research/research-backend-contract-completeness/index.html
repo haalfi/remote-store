@@ -11086,7 +11086,7 @@ operations — it trusts the backend to return empty. If a backend raised
 <p><strong>What the spec says:</strong> DEPTH-001 defines depth as "the number of folder
 levels between the listing root and the file's parent directory" with an
 example:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>store.list_files(&quot;data&quot;, max_depth=1)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>store.list_files("data", max_depth=1)
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>data/file_a.csv          → depth 0  ✓ included
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>data/raw/file_b.csv      → depth 1  ✓ included

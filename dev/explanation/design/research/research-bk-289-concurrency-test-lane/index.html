@@ -10996,7 +10996,7 @@ another such gated property.</p>
 <code>flat_namespace</code>, and <code>large_write_distinct</code> are carried today — sourced
 per-family from <code>backends.toml</code>, surfaced on <code>BackendFixture</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># BackendFixture, sourced from [backend.&lt;x&gt;] in backends.toml</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">concurrency</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;thread_safe&quot;</span><span class="p">,</span> <span class="s2">&quot;single_connection&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;thread_safe&quot;</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">concurrency</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"thread_safe"</span><span class="p">,</span> <span class="s2">"single_connection"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"thread_safe"</span>
 </code></pre></div>
 <ul>
 <li><code>thread_safe</code> — concurrent threads on one instance are safe (Memory, Local,

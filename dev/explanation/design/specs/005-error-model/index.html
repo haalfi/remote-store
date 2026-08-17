@@ -10849,7 +10849,7 @@
 <strong>Postconditions:</strong> Carries optional <code>path: str | None</code> and <code>backend: str | None</code> attributes.
 <strong>Example:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">try</span><span class="p">:</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;missing.txt&quot;</span><span class="p">)</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">"missing.txt"</span><span class="p">)</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">except</span> <span class="n">RemoteStoreError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="n">e</span><span class="o">.</span><span class="n">backend</span><span class="p">)</span>
 </code></pre></div></p>
@@ -10859,17 +10859,17 @@
 <strong>Postconditions:</strong> <code>path</code> attribute is set to the requested path.
 <strong>Example:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">NotFound</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc_info</span><span class="p">:</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;nonexistent.txt&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">assert</span> <span class="n">exc_info</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="s2">&quot;nonexistent.txt&quot;</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">"nonexistent.txt"</span><span class="p">)</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">assert</span> <span class="n">exc_info</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">path</span> <span class="o">==</span> <span class="s2">"nonexistent.txt"</span>
 </code></pre></div></p>
 <h2 id="err-003-alreadyexists">ERR-003: AlreadyExists<a class="headerlink" href="#err-003-alreadyexists" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Raised when a target already exists and overwrite is not allowed.
 <strong>Preconditions:</strong> Caller writes to an existing path with <code>overwrite=False</code>.
 <strong>Postconditions:</strong> <code>path</code> attribute is set to the conflicting path.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;file.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"file.txt"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"data"</span><span class="p">)</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">AlreadyExists</span><span class="p">):</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;file.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;new&quot;</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"file.txt"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"new"</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </code></pre></div></p>
 <h2 id="err-004-permissiondenied">ERR-004: PermissionDenied<a class="headerlink" href="#err-004-permissiondenied" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Raised when access is denied by the storage backend.
@@ -10880,12 +10880,12 @@
 <strong>Postconditions:</strong> <code>path</code> attribute is set to the offending path.
 <strong>Example (malformed path):</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">InvalidPath</span><span class="p">):</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;foo/../bar&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">RemotePath</span><span class="p">(</span><span class="s2">"foo/../bar"</span><span class="p">)</span>
 </code></pre></div>
 <strong>Example (type mismatch):</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;dir/file.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>   <span class="c1"># creates directory &quot;dir&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"dir/file.txt"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"data"</span><span class="p">)</span>   <span class="c1"># creates directory "dir"</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">InvalidPath</span><span class="p">):</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;dir&quot;</span><span class="p">)</span>                   <span class="c1"># &quot;dir&quot; exists but is a directory, not a file</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">"dir"</span><span class="p">)</span>                   <span class="c1"># "dir" exists but is a directory, not a file</span>
 </code></pre></div></p>
 <h2 id="err-006-capabilitynotsupported">ERR-006: CapabilityNotSupported<a class="headerlink" href="#err-006-capabilitynotsupported" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Raised when an operation requires a capability the backend does not support.
@@ -10893,7 +10893,7 @@
 <strong>Example:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">CapabilityNotSupported</span><span class="p">)</span> <span class="k">as</span> <span class="n">exc_info</span><span class="p">:</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">backend</span><span class="o">.</span><span class="n">write_atomic</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">assert</span> <span class="n">exc_info</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">capability</span> <span class="o">==</span> <span class="s2">&quot;atomic_write&quot;</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">assert</span> <span class="n">exc_info</span><span class="o">.</span><span class="n">value</span><span class="o">.</span><span class="n">capability</span> <span class="o">==</span> <span class="s2">"atomic_write"</span>
 </code></pre></div></p>
 <h2 id="err-007-backendunavailable">ERR-007: BackendUnavailable<a class="headerlink" href="#err-007-backendunavailable" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Raised when the backend cannot be reached or initialized.
@@ -10903,17 +10903,17 @@
 <h2 id="err-009-meaningful-string-representations">ERR-009: Meaningful String Representations<a class="headerlink" href="#err-009-meaningful-string-representations" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>str()</code> and <code>repr()</code> produce meaningful messages including all non-None context attributes.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">e</span> <span class="o">=</span> <span class="n">NotFound</span><span class="p">(</span><span class="s2">&quot;File not found&quot;</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="s2">&quot;data/file.txt&quot;</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;s3&quot;</span><span class="p">)</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">assert</span> <span class="s2">&quot;data/file.txt&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="k">assert</span> <span class="s2">&quot;NotFound&quot;</span> <span class="ow">in</span> <span class="nb">repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">e</span> <span class="o">=</span> <span class="n">NotFound</span><span class="p">(</span><span class="s2">"File not found"</span><span class="p">,</span> <span class="n">path</span><span class="o">=</span><span class="s2">"data/file.txt"</span><span class="p">,</span> <span class="n">backend</span><span class="o">=</span><span class="s2">"s3"</span><span class="p">)</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">assert</span> <span class="s2">"data/file.txt"</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="k">assert</span> <span class="s2">"NotFound"</span> <span class="ow">in</span> <span class="nb">repr</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
 </code></pre></div></p>
 <h2 id="err-010-directorynotempty">ERR-010: DirectoryNotEmpty<a class="headerlink" href="#err-010-directorynotempty" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Raised when <code>delete_folder(..., recursive=False)</code> targets a non-empty directory.
 <strong>Postconditions:</strong> <code>path</code> attribute is set to the offending folder path.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;folder/file.txt&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"folder/file.txt"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"data"</span><span class="p">)</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">DirectoryNotEmpty</span><span class="p">):</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">store</span><span class="o">.</span><span class="n">delete_folder</span><span class="p">(</span><span class="s2">&quot;folder&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">store</span><span class="o">.</span><span class="n">delete_folder</span><span class="p">(</span><span class="s2">"folder"</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </code></pre></div></p>
 <h2 id="err-013-resourcelocked">ERR-013: ResourceLocked<a class="headerlink" href="#err-013-resourcelocked" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Raised when a target resource exists and the caller is
@@ -10931,7 +10931,7 @@ lock holder widens this class via a covering spec amendment
 policy. Callers decide their own retry cadence, if any.
 <strong>Example:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">ResourceLocked</span><span class="p">):</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;contracts/report.docx&quot;</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"contracts/report.docx"</span><span class="p">,</span> <span class="n">content</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 <strong>See also:</strong> <a href="../../adrs/0024-resource-locked-error/">ADR-0024</a>,
 <a href="../044-graph-backend/">044-graph-backend.md</a> (GR-045).</p>

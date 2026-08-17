@@ -11318,7 +11318,7 @@ sections.</p>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    options:
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>      members: false
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>!!! info &quot;Key behavioral fact&quot;
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>!!! info "Key behavioral fact"
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    One-sentence callout for a fact that callers must know before reading
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    any method (e.g. thread safety, context-manager usage, immutability).
 </code></pre></div>
@@ -11331,7 +11331,7 @@ its own directive so admonitions can be inserted between them.</p>
 <a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>      show_root_heading: true
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>      heading_level: 3
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>!!! note &quot;Requires <span class="sb">`Capability.X`</span>&quot;
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>!!! note "Requires <span class="sb">`Capability.X`</span>"
 <a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    Raises <span class="sb">`CapabilityNotSupported`</span> on backends that do not declare this capability.
 <a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
 <a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>::: remote_store.ClassName.method_two
@@ -11340,19 +11340,19 @@ its own directive so admonitions can be inserted between them.</p>
 <a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>      heading_level: 3
 </code></pre></div>
 <p><strong>Info note</strong> — pure context; helpful to know, no runtime consequence.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>!!! info &quot;Ordering and laziness&quot;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>!!! info "Ordering and laziness"
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    Short, concrete statement. One or two sentences max.
 </code></pre></div>
 <p><strong>Constraint note</strong> — capability gate or argument that changes capability requirements.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>!!! note &quot;Requires <span class="sb">`Capability.X`</span>&quot;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>!!! note "Requires <span class="sb">`Capability.X`</span>"
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    Raises <span class="sb">`CapabilityNotSupported`</span> on backends that do not declare this capability.
 </code></pre></div>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>!!! note &quot;Backend-conditional argument: <span class="sb">`param=`</span>&quot;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>!!! note "Backend-conditional argument: <span class="sb">`param=`</span>"
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    Passing <span class="sb">`param`</span> raises <span class="sb">`CapabilityNotSupported`</span> on backends that do not
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    declare <span class="sb">`Capability.X`</span>. Passing <span class="sb">`None`</span> or the default is safe on all backends.
 </code></pre></div>
 <p><strong>Warning block</strong> — backend coupling: ties code irrevocably to a specific backend.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>!!! warning &quot;Backend-specific methods&quot;
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>!!! warning "Backend-specific methods"
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    Methods in this section expose backend internals. Using them ties your
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    code to a specific backend. For portable alternatives, use the methods
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    above.

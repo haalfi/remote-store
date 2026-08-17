@@ -11475,29 +11475,29 @@
 <h1 id="s3-backend">S3 Backend<a class="headerlink" href="#s3-backend" title="Permanent link">&para;</a></h1>
 <p>The S3 backend stores files on Amazon S3 or any S3-compatible service (MinIO, DigitalOcean Spaces, etc.).</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[s3]&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"remote-store[s3]"</span>
 </code></pre></div>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">BackendConfig</span><span class="p">,</span> <span class="n">RegistryConfig</span><span class="p">,</span> <span class="n">Registry</span><span class="p">,</span> <span class="n">StoreProfile</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="p">(</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">backends</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="s2">&quot;s3&quot;</span><span class="p">:</span> <span class="n">BackendConfig</span><span class="p">(</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>            <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;s3&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="s2">"s3"</span><span class="p">:</span> <span class="n">BackendConfig</span><span class="p">(</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>            <span class="nb">type</span><span class="o">=</span><span class="s2">"s3"</span><span class="p">,</span>
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>            <span class="n">options</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>                <span class="s2">&quot;bucket&quot;</span><span class="p">:</span> <span class="s2">&quot;my-bucket&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>                <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="s2">&quot;AWS_ACCESS_KEY_ID&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>                <span class="s2">&quot;secret&quot;</span><span class="p">:</span> <span class="s2">&quot;AWS_SECRET_ACCESS_KEY&quot;</span><span class="p">,</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>                <span class="s2">&quot;endpoint_url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://s3.amazonaws.com&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>                <span class="s2">"bucket"</span><span class="p">:</span> <span class="s2">"my-bucket"</span><span class="p">,</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>                <span class="s2">"key"</span><span class="p">:</span> <span class="s2">"AWS_ACCESS_KEY_ID"</span><span class="p">,</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>                <span class="s2">"secret"</span><span class="p">:</span> <span class="s2">"AWS_SECRET_ACCESS_KEY"</span><span class="p">,</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>                <span class="s2">"endpoint_url"</span><span class="p">:</span> <span class="s2">"https://s3.amazonaws.com"</span><span class="p">,</span>
 <a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>            <span class="p">},</span>
 <a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        <span class="p">),</span>
 <a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>    <span class="p">},</span>
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="n">stores</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">StoreProfile</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="s2">&quot;s3&quot;</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)},</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="n">stores</span><span class="o">=</span><span class="p">{</span><span class="s2">"data"</span><span class="p">:</span> <span class="n">StoreProfile</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="s2">"s3"</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)},</span>
 <a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="p">)</span>
 <a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
 <a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="k">with</span> <span class="n">Registry</span><span class="p">(</span><span class="n">config</span><span class="p">)</span> <span class="k">as</span> <span class="n">registry</span><span class="p">:</span>
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="n">store</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;report.csv&quot;</span><span class="p">,</span> <span class="sa">b</span><span class="s2">&quot;col1,col2</span><span class="se">\n</span><span class="s2">1,2</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="n">store</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">"data"</span><span class="p">)</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"report.csv"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"col1,col2</span><span class="se">\n</span><span class="s2">1,2</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="options">Options<a class="headerlink" href="#options" title="Permanent link">&para;</a></h2>
 <table>
@@ -11550,9 +11550,9 @@
 <p>Use <code>tls_ca_bundle</code> when connecting to S3-compatible services with custom or
 self-signed certificates (e.g., on-premises MinIO):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">S3Backend</span><span class="p">(</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">endpoint_url</span><span class="o">=</span><span class="s2">&quot;https://minio.internal:9000&quot;</span><span class="p">,</span>
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">tls_ca_bundle</span><span class="o">=</span><span class="s2">&quot;/etc/ssl/certs/internal-ca.pem&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">"my-bucket"</span><span class="p">,</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="n">endpoint_url</span><span class="o">=</span><span class="s2">"https://minio.internal:9000"</span><span class="p">,</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="n">tls_ca_bundle</span><span class="o">=</span><span class="s2">"/etc/ssl/certs/internal-ca.pem"</span><span class="p">,</span>
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="p">)</span>
 </code></pre></div>
 <p>Or via config:</p>
@@ -11619,23 +11619,23 @@ pins the routing: every <code>Config</code> option flows through
 environment but the S3 endpoint is reachable directly (typical for
 on-premises MinIO):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">S3Backend</span><span class="p">(</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">,</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">endpoint_url</span><span class="o">=</span><span class="s2">&quot;https://s3.internal:9000&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">"my-bucket"</span><span class="p">,</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">endpoint_url</span><span class="o">=</span><span class="s2">"https://s3.internal:9000"</span><span class="p">,</span>
 <a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">client_options</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>        <span class="s2">&quot;config_kwargs&quot;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>            <span class="s2">&quot;proxies&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;http&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;https&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>        <span class="s2">"config_kwargs"</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>            <span class="s2">"proxies"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"http"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"https"</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
 <a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>        <span class="p">},</span>
 <a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="p">},</span>
 <a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="p">)</span>
 </code></pre></div>
 <h3 id="pointing-at-a-corporate-proxy">Pointing at a corporate proxy<a class="headerlink" href="#pointing-at-a-corporate-proxy" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">S3Backend</span><span class="p">(</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">"my-bucket"</span><span class="p">,</span>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">client_options</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>        <span class="s2">&quot;config_kwargs&quot;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>            <span class="s2">&quot;proxies&quot;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>                <span class="s2">&quot;http&quot;</span><span class="p">:</span> <span class="s2">&quot;http://proxy.corp:3128&quot;</span><span class="p">,</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>                <span class="s2">&quot;https&quot;</span><span class="p">:</span> <span class="s2">&quot;http://proxy.corp:3128&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>        <span class="s2">"config_kwargs"</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>            <span class="s2">"proxies"</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>                <span class="s2">"http"</span><span class="p">:</span> <span class="s2">"http://proxy.corp:3128"</span><span class="p">,</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>                <span class="s2">"https"</span><span class="p">:</span> <span class="s2">"http://proxy.corp:3128"</span><span class="p">,</span>
 <a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>            <span class="p">},</span>
 <a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>        <span class="p">},</span>
 <a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    <span class="p">},</span>
@@ -11645,7 +11645,7 @@ on-premises MinIO):</p>
 <p>Prefer the first-class <code>retry=RetryPolicy(...)</code> argument — it is portable
 across backends and applied via the same merge path:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">S3Backend</span><span class="p">(</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">"my-bucket"</span><span class="p">,</span>
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">retry</span><span class="o">=</span><span class="n">RetryPolicy</span><span class="p">(</span><span class="n">max_attempts</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span>
 <a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="p">)</span>
 </code></pre></div>
@@ -11655,21 +11655,21 @@ pass them through <code>config_kwargs.retries</code> and <strong>do not</strong>
 dict (matching <code>botocore.Config.merge</code> semantics), so any caller-supplied
 <code>mode</code> / non-<code>max_attempts</code> fields are lost. Pick one channel:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">S3Backend</span><span class="p">(</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">"my-bucket"</span><span class="p">,</span>
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">client_options</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>        <span class="s2">&quot;config_kwargs&quot;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>            <span class="s2">&quot;retries&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;max_attempts&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s2">&quot;mode&quot;</span><span class="p">:</span> <span class="s2">&quot;adaptive&quot;</span><span class="p">},</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>        <span class="s2">"config_kwargs"</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>            <span class="s2">"retries"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"max_attempts"</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span> <span class="s2">"mode"</span><span class="p">:</span> <span class="s2">"adaptive"</span><span class="p">},</span>
 <a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>        <span class="p">},</span>
 <a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="p">},</span>
 <a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="p">)</span>
 </code></pre></div>
 <h3 id="connect-read-timeouts">Connect / read timeouts<a class="headerlink" href="#connect-read-timeouts" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">S3Backend</span><span class="p">(</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">"my-bucket"</span><span class="p">,</span>
 <a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="n">client_options</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>        <span class="s2">&quot;config_kwargs&quot;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>            <span class="s2">&quot;connect_timeout&quot;</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>            <span class="s2">&quot;read_timeout&quot;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>        <span class="s2">"config_kwargs"</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>            <span class="s2">"connect_timeout"</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>            <span class="s2">"read_timeout"</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
 <a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>        <span class="p">},</span>
 <a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    <span class="p">},</span>
 <a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="p">)</span>
@@ -11678,13 +11678,13 @@ dict (matching <code>botocore.Config.merge</code> semantics), so any caller-supp
 <p>Required for endpoints that do not support virtual-host-style bucket
 addressing (most on-premises MinIO deployments):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">S3Backend</span><span class="p">(</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">,</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    <span class="n">endpoint_url</span><span class="o">=</span><span class="s2">&quot;https://minio.internal:9000&quot;</span><span class="p">,</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">key</span><span class="o">=</span><span class="s2">&quot;AKIA...&quot;</span><span class="p">,</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">secret</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">"my-bucket"</span><span class="p">,</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    <span class="n">endpoint_url</span><span class="o">=</span><span class="s2">"https://minio.internal:9000"</span><span class="p">,</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">key</span><span class="o">=</span><span class="s2">"AKIA..."</span><span class="p">,</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">secret</span><span class="o">=</span><span class="s2">"..."</span><span class="p">,</span>
 <a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">client_options</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>        <span class="s2">&quot;config_kwargs&quot;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>            <span class="s2">&quot;s3&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;addressing_style&quot;</span><span class="p">:</span> <span class="s2">&quot;path&quot;</span><span class="p">},</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>        <span class="s2">"config_kwargs"</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>            <span class="s2">"s3"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"addressing_style"</span><span class="p">:</span> <span class="s2">"path"</span><span class="p">},</span>
 <a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>        <span class="p">},</span>
 <a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="p">},</span>
 <a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="p">)</span>
@@ -11694,17 +11694,17 @@ addressing (most on-premises MinIO deployments):</p>
 (custom CA bundle continues to come from <code>tls_ca_bundle=</code> / env vars,
 <a href="#custom-tls-certificates">Custom TLS Certificates</a>):</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">S3Backend</span><span class="p">(</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">,</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    <span class="n">endpoint_url</span><span class="o">=</span><span class="s2">&quot;https://s3.internal:9000&quot;</span><span class="p">,</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    <span class="n">key</span><span class="o">=</span><span class="s2">&quot;AKIA...&quot;</span><span class="p">,</span>
-<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="n">secret</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">,</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">"my-bucket"</span><span class="p">,</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    <span class="n">endpoint_url</span><span class="o">=</span><span class="s2">"https://s3.internal:9000"</span><span class="p">,</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    <span class="n">key</span><span class="o">=</span><span class="s2">"AKIA..."</span><span class="p">,</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="n">secret</span><span class="o">=</span><span class="s2">"..."</span><span class="p">,</span>
 <a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="n">retry</span><span class="o">=</span><span class="n">RetryPolicy</span><span class="p">(</span><span class="n">max_attempts</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span>
 <a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    <span class="n">client_options</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>        <span class="s2">&quot;config_kwargs&quot;</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>            <span class="s2">&quot;connect_timeout&quot;</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span>
-<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>            <span class="s2">&quot;read_timeout&quot;</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
-<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>            <span class="s2">&quot;s3&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;addressing_style&quot;</span><span class="p">:</span> <span class="s2">&quot;path&quot;</span><span class="p">},</span>
-<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>            <span class="s2">&quot;proxies&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;http&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;https&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>        <span class="s2">"config_kwargs"</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>            <span class="s2">"connect_timeout"</span><span class="p">:</span> <span class="mf">3.0</span><span class="p">,</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>            <span class="s2">"read_timeout"</span><span class="p">:</span> <span class="mf">10.0</span><span class="p">,</span>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>            <span class="s2">"s3"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"addressing_style"</span><span class="p">:</span> <span class="s2">"path"</span><span class="p">},</span>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>            <span class="s2">"proxies"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"http"</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"https"</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
 <a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>        <span class="p">},</span>
 <a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>    <span class="p">},</span>
 <a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a><span class="p">)</span>
@@ -11744,7 +11744,7 @@ round-trip through <code>get_file_info()</code> in <code>FileInfo.metadata</code
 <h3 id="shallow-listing-non-recursive">Shallow Listing (Non-Recursive)<a class="headerlink" href="#shallow-listing-non-recursive" title="Permanent link">&para;</a></h3>
 <p>Use <code>list_files(path, recursive=False)</code> or <code>iter_children(path)</code> to list only direct children:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># List direct children only</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">iter_children</span><span class="p">(</span><span class="s2">&quot;data/&quot;</span><span class="p">):</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">iter_children</span><span class="p">(</span><span class="s2">"data/"</span><span class="p">):</span>
 <a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>  <span class="c1"># Files and folders one level deep</span>
 </code></pre></div>
 <p><strong>Characteristics:</strong>
@@ -11755,7 +11755,7 @@ round-trip through <code>get_file_info()</code> in <code>FileInfo.metadata</code
 <h3 id="recursive-listing-flat-stream">Recursive Listing (Flat Stream)<a class="headerlink" href="#recursive-listing-flat-stream" title="Permanent link">&para;</a></h3>
 <p>Use <code>list_files(path, recursive=True)</code> to fetch all files under a prefix:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="c1"># Stream all files under a prefix, regardless of depth</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="k">for</span> <span class="n">file_info</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;data/&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="k">for</span> <span class="n">file_info</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">"data/"</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file_info</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Why flat streaming wins:</strong>
@@ -11765,7 +11765,7 @@ round-trip through <code>get_file_info()</code> in <code>FileInfo.metadata</code
 - Avoids the O(n_folders) × (API calls + parsing overhead) of delimiter-based iteration</p>
 <p><strong>If you need all objects under a prefix, use <code>recursive=True</code>:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># ✓ Single flat stream (optimal)</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;data/&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">"data/"</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Do not implement folder-by-folder traversal:</strong></p>
@@ -11779,7 +11779,7 @@ round-trip through <code>get_file_info()</code> in <code>FileInfo.metadata</code
 <h3 id="streaming-over-parallelization">Streaming Over Parallelization<a class="headerlink" href="#streaming-over-parallelization" title="Permanent link">&para;</a></h3>
 <p>For large buckets, use a <strong>single sequential flat stream</strong>, not parallel folder traversal:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># ✓ Single flat stream (optimal for large buckets)</span>
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;data/&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">"data/"</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
 </code></pre></div>
 <p><strong>Why not parallelize folder traversal:</strong></p>
@@ -11817,8 +11817,8 @@ round trip; the default favours correctness.</p>
 <p>Re-enable the cache when you have a single-writer (or read-only) workload and
 want to avoid repeated listing round trips:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">S3Backend</span><span class="p">(</span>
-<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">,</span>
-<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>    <span class="n">client_options</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;use_listings_cache&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>    <span class="n">bucket</span><span class="o">=</span><span class="s2">"my-bucket"</span><span class="p">,</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>    <span class="n">client_options</span><span class="o">=</span><span class="p">{</span><span class="s2">"use_listings_cache"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
 <a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="p">)</span>
 </code></pre></div>
 <p><code>client_options["use_listings_cache"]</code> takes precedence over the default, so
@@ -11829,18 +11829,18 @@ backend-agnostic alternative when you want caching with explicit invalidation.</
 <p>If you have few root-level folders (e.g., <code>/bronze</code>, <code>/silver</code>, <code>/gold</code>) with deeply nested structures:</p>
 <p><strong>To explore the structure:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># ✓ Shallow listing to see root tiers</span>
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="k">for</span> <span class="n">folder</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_folders</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">):</span>  <span class="c1"># bronze/, silver/, gold/</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="k">for</span> <span class="n">folder</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_folders</span><span class="p">(</span><span class="s2">""</span><span class="p">):</span>  <span class="c1"># bronze/, silver/, gold/</span>
 <a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">folder</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
 </code></pre></div></p>
 <p><strong>To process a specific tier incrementally:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="c1"># ✓ Depth-limited listing to explore one branch without full recursion</span>
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;bronze&quot;</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">"bronze"</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">):</span>
 <a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>    <span class="c1"># Gets files up to 3 levels deep under bronze/</span>
 <a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
 </code></pre></div></p>
 <p><strong>Only if you need all files across all depths:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="c1"># ✓ Full recursive listing (streaming, memory-efficient despite size)</span>
-<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;bronze&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="k">for</span> <span class="n">file</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">"bronze"</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>    <span class="n">process</span><span class="p">(</span><span class="n">file</span><span class="p">)</span>
 </code></pre></div></p>
 <p><strong>Characteristics:</strong>

@@ -11576,14 +11576,14 @@ lookups that evaporates the moment any hierarchical query is needed.</p>
 <p><strong>Decision:</strong> Tree-indexed storage with path-segment nodes.</p>
 <h3 id="mem-ds-002-tree-structure">MEM-DS-002: Tree Structure<a class="headerlink" href="#mem-ds-002-tree-structure" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>_root (_DirNode)
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── &quot;data&quot; (_DirNode)
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│   ├── &quot;images&quot; (_DirNode)
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│   │   ├── &quot;cat.jpg&quot; (_FileEntry: 2.1 MB)
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│   │   └── &quot;dog.jpg&quot; (_FileEntry: 1.8 MB)
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│   └── &quot;config.yaml&quot; (_FileEntry: 412 B)
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>└── &quot;logs&quot; (_DirNode)
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    └── &quot;2024&quot; (_DirNode)
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        └── &quot;app.log&quot; (_FileEntry: 50 KB)
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── "data" (_DirNode)
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│   ├── "images" (_DirNode)
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│   │   ├── "cat.jpg" (_FileEntry: 2.1 MB)
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│   │   └── "dog.jpg" (_FileEntry: 1.8 MB)
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│   └── "config.yaml" (_FileEntry: 412 B)
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>└── "logs" (_DirNode)
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    └── "2024" (_DirNode)
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        └── "app.log" (_FileEntry: 50 KB)
 </code></pre></div>
 <p>Each internal <strong><code>_DirNode</code></strong> holds a <code>dict[str, _DirNode | _FileEntry]</code> mapping
 segment names to children. Each leaf <strong><code>_FileEntry</code></strong> stores the file's content
@@ -11630,8 +11630,8 @@ this saves ~1 GB of pure object overhead.</p>
 <h3 id="mem-ds-005-path-traversal">MEM-DS-005: Path Traversal<a class="headerlink" href="#mem-ds-005-path-traversal" title="Permanent link">&para;</a></h3>
 <p>All operations share a single traversal primitive:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">_traverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_DirNode</span> <span class="o">|</span> <span class="n">_FileEntry</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Walk the tree by splitting path on &#39;/&#39; and following children dicts.</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="sd">    Returns None if any segment is missing.&quot;&quot;&quot;</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="sd">"""Walk the tree by splitting path on '/' and following children dicts.</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="sd">    Returns None if any segment is missing."""</span>
 </code></pre></div>
 <p>This is O(d) dict lookups where d = path depth. Each lookup is an O(1) hash
 operation on a short string (single path segment, not the full path).</p>

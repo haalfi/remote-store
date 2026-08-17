@@ -10994,29 +10994,29 @@
 <h2 id="path-002-backslash-normalization">PATH-002: Backslash Normalization<a class="headerlink" href="#path-002-backslash-normalization" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Backslash characters (<code>\</code>) are converted to forward slashes (<code>/</code>) during normalization.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a</span><span class="se">\\</span><span class="s2">b</span><span class="se">\\</span><span class="s2">c&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="s2">&quot;a/b/c&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">"a</span><span class="se">\\</span><span class="s2">b</span><span class="se">\\</span><span class="s2">c"</span><span class="p">))</span> <span class="o">==</span> <span class="s2">"a/b/c"</span>
 </code></pre></div></p>
 <h2 id="path-003-double-dot-rejection">PATH-003: Double-Dot Rejection<a class="headerlink" href="#path-003-double-dot-rejection" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> A path segment exactly equal to <code>..</code> is rejected. A segment that merely contains <code>..</code> as a substring (e.g. a filename like <code>a..b</code>) is allowed.
 <strong>Raises:</strong> <code>InvalidPath</code>
 <strong>Example:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">InvalidPath</span><span class="p">):</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;foo/../bar&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">RemotePath</span><span class="p">(</span><span class="s2">"foo/../bar"</span><span class="p">)</span>
 </code></pre></div></p>
 <h2 id="path-004-leading-and-trailing-slash-stripping">PATH-004: Leading and Trailing Slash Stripping<a class="headerlink" href="#path-004-leading-and-trailing-slash-stripping" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Leading and trailing <code>/</code> characters are stripped from the normalized path.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;/a/b/&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="s2">&quot;a/b&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">"/a/b/"</span><span class="p">))</span> <span class="o">==</span> <span class="s2">"a/b"</span>
 </code></pre></div></p>
 <h2 id="path-005-consecutive-slash-collapsing">PATH-005: Consecutive Slash Collapsing<a class="headerlink" href="#path-005-consecutive-slash-collapsing" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Consecutive <code>/</code> characters are collapsed to a single <code>/</code>.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a///b&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="s2">&quot;a/b&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">"a///b"</span><span class="p">))</span> <span class="o">==</span> <span class="s2">"a/b"</span>
 </code></pre></div></p>
 <h2 id="path-006-dot-segment-removal">PATH-006: Dot Segment Removal<a class="headerlink" href="#path-006-dot-segment-removal" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Single-dot (<code>.</code>) segments are removed during normalization.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a/./b&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="s2">&quot;a/b&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">"a/./b"</span><span class="p">))</span> <span class="o">==</span> <span class="s2">"a/b"</span>
 </code></pre></div></p>
 <h2 id="path-007-null-byte-rejection">PATH-007: Null Byte Rejection<a class="headerlink" href="#path-007-null-byte-rejection" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Paths containing null bytes (<code>\0</code>) are rejected.
@@ -11026,44 +11026,44 @@
 <strong>Raises:</strong> <code>InvalidPath</code>
 <strong>Example:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">InvalidPath</span><span class="p">):</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">RemotePath</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">InvalidPath</span><span class="p">):</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">RemotePath</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
 <a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="n">InvalidPath</span><span class="p">):</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">RemotePath</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span>
 </code></pre></div></p>
 <h2 id="path-009-name-property">PATH-009: Name Property<a class="headerlink" href="#path-009-name-property" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>name</code> returns the final component of the path.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a/b/c.txt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;c.txt&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">"a/b/c.txt"</span><span class="p">)</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">"c.txt"</span>
 </code></pre></div></p>
 <h2 id="path-010-parent-property">PATH-010: Parent Property<a class="headerlink" href="#path-010-parent-property" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>parent</code> returns the parent <code>RemotePath</code>, or <code>None</code> for a single-component path.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a/b/c&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">==</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a/b&quot;</span><span class="p">)</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;file.txt&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="ow">is</span> <span class="kc">None</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">"a/b/c"</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">==</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">"a/b"</span><span class="p">)</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">"file.txt"</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="ow">is</span> <span class="kc">None</span>
 </code></pre></div></p>
 <h2 id="path-011-parts-property">PATH-011: Parts Property<a class="headerlink" href="#path-011-parts-property" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>parts</code> returns a tuple of path components.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a/b/c&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">parts</span> <span class="o">==</span> <span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">"a/b/c"</span><span class="p">)</span><span class="o">.</span><span class="n">parts</span> <span class="o">==</span> <span class="p">(</span><span class="s2">"a"</span><span class="p">,</span> <span class="s2">"b"</span><span class="p">,</span> <span class="s2">"c"</span><span class="p">)</span>
 </code></pre></div></p>
 <h2 id="path-012-join-operator">PATH-012: Join Operator<a class="headerlink" href="#path-012-join-operator" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> The <code>/</code> operator joins a <code>RemotePath</code> with a string to produce a new <code>RemotePath</code>.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">)</span> <span class="o">/</span> <span class="s2">&quot;b&quot;</span> <span class="o">==</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a/b&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">"a"</span><span class="p">)</span> <span class="o">/</span> <span class="s2">"b"</span> <span class="o">==</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">"a/b"</span><span class="p">)</span>
 </code></pre></div></p>
 <h2 id="path-013-equality-and-hashing">PATH-013: Equality and Hashing<a class="headerlink" href="#path-013-equality-and-hashing" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Equality and hashing are based on the normalized path string.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a/b&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a//b&quot;</span><span class="p">)</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="k">assert</span> <span class="nb">hash</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a/b&quot;</span><span class="p">))</span> <span class="o">==</span> <span class="nb">hash</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a//b&quot;</span><span class="p">))</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">"a/b"</span><span class="p">)</span> <span class="o">==</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">"a//b"</span><span class="p">)</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="k">assert</span> <span class="nb">hash</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">"a/b"</span><span class="p">))</span> <span class="o">==</span> <span class="nb">hash</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">"a//b"</span><span class="p">))</span>
 </code></pre></div></p>
 <h2 id="path-014-suffix-property">PATH-014: Suffix Property<a class="headerlink" href="#path-014-suffix-property" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>suffix</code> returns the file extension (including the dot), or empty string if none.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;file.tar.gz&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">suffix</span> <span class="o">==</span> <span class="s2">&quot;.gz&quot;</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;noext&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">suffix</span> <span class="o">==</span> <span class="s2">&quot;&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">"file.tar.gz"</span><span class="p">)</span><span class="o">.</span><span class="n">suffix</span> <span class="o">==</span> <span class="s2">".gz"</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">"noext"</span><span class="p">)</span><span class="o">.</span><span class="n">suffix</span> <span class="o">==</span> <span class="s2">""</span>
 </code></pre></div></p>
 <h2 id="path-015-root-sentinel">PATH-015: Root Sentinel<a class="headerlink" href="#path-015-root-sentinel" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>RemotePath.ROOT</code> is a class-level singleton sentinel representing the root folder.
@@ -11080,10 +11080,10 @@ It bypasses <code>__init__</code> validation (PATH-008 still rejects <code>Remot
 <p><strong>Round-trip:</strong> Store methods that accept a folder path (<code>get_folder_info</code>, <code>list_files</code>, etc.)
 accept <code>"."</code> as a root alias, so <code>str(folder_info.path)</code> can be fed back into Store methods.</p>
 <p><strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">fi</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_folder_info</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">fi</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_folder_info</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span>
 <a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="k">assert</span> <span class="n">fi</span><span class="o">.</span><span class="n">path</span> <span class="ow">is</span> <span class="n">RemotePath</span><span class="o">.</span><span class="n">ROOT</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">fi</span><span class="o">.</span><span class="n">path</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;.&quot;</span>
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1"># Round-trip: &quot;.&quot; works as input</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">fi</span><span class="o">.</span><span class="n">path</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"."</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1"># Round-trip: "." works as input</span>
 <a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="n">fi2</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_folder_info</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">fi</span><span class="o">.</span><span class="n">path</span><span class="p">))</span>
 <a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="k">assert</span> <span class="n">fi2</span><span class="o">.</span><span class="n">path</span> <span class="ow">is</span> <span class="n">RemotePath</span><span class="o">.</span><span class="n">ROOT</span>
 </code></pre></div></p>
@@ -11095,8 +11095,8 @@ Because <code>RemotePath</code> always stores forward slashes, the result equals
 <strong>Postconditions:</strong> <code>RemotePath("a/b").as_posix() == "a/b"</code>;
 <code>RemotePath.ROOT.as_posix() == "."</code>.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a</span><span class="se">\\</span><span class="s2">b&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;a/b&quot;</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="o">.</span><span class="n">ROOT</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span> <span class="o">==</span> <span class="s2">&quot;.&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="p">(</span><span class="s2">"a</span><span class="se">\\</span><span class="s2">b"</span><span class="p">)</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"a/b"</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="k">assert</span> <span class="n">RemotePath</span><span class="o">.</span><span class="n">ROOT</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"."</span>
 </code></pre></div></p>
 <h2 id="path-017-not-ospathlike">PATH-017: Not <code>os.PathLike</code><a class="headerlink" href="#path-017-not-ospathlike" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>RemotePath</code> deliberately does <strong>not</strong> implement <code>__fspath__</code>
@@ -11110,7 +11110,7 @@ filesystem, masking a category error. Callers that need a string use
 <strong>Example:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">):</span>
-<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="n">os</span><span class="o">.</span><span class="n">fspath</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">))</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="n">os</span><span class="o">.</span><span class="n">fspath</span><span class="p">(</span><span class="n">RemotePath</span><span class="p">(</span><span class="s2">"a"</span><span class="p">))</span>
 </code></pre></div></p>
 <h3 id="pathlib-parity-scope-informative">pathlib parity scope (informative)<a class="headerlink" href="#pathlib-parity-scope-informative" title="Permanent link">&para;</a></h3>
 <p><code>RemotePath</code> is a deliberately minimal subset of <code>pathlib.PurePath</code>, not a

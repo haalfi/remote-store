@@ -11286,10 +11286,10 @@ converts native paths to relative keys.</p>
 <code>FolderInfo.path</code>, or <code>list_folders</code> results) must be directly usable as input
 to other Store methods without modification.</p>
 <p><strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">local</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;reports/q1.csv&quot;</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">local</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"reports/q1.csv"</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">""</span><span class="p">):</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">data</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">path</span><span class="p">))</span>  <span class="c1"># must work — no manual stripping</span>
 </code></pre></div></p>
 <p><strong>Current violation:</strong> <code>FileInfo.path</code> includes the store's <code>root_path</code> prefix
@@ -11299,11 +11299,11 @@ prefixing when fed back into Store methods.</p>
 <p><strong>Invariant:</strong> <code>Store.to_key(path)</code> converts an absolute or backend-native path
 to a store-relative key that can be used with any Store method.</p>
 <p><strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">sftp</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">sftp</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Path from an SFTP server log</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">key</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">&quot;/srv/sftp/data/reports/q1.csv&quot;</span><span class="p">)</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">assert</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">&quot;reports/q1.csv&quot;</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">key</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">"/srv/sftp/data/reports/q1.csv"</span><span class="p">)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="k">assert</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">"reports/q1.csv"</span>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">content</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>  <span class="c1"># works</span>
 </code></pre></div></p>
@@ -11312,11 +11312,11 @@ to a store-relative key that can be used with any Store method.</p>
 <h3 id="npr-003-backendto_key-method">NPR-003: Backend.to_key Method<a class="headerlink" href="#npr-003-backendto_key-method" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> The Backend ABC gains a concrete (non-abstract) method:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">to_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">native_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert a backend-native path to a backend-relative key.</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="sd">"""Convert a backend-native path to a backend-relative key.</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="sd">    :param native_path: Absolute or backend-native path string.</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="sd">    :returns: Path relative to the backend&#39;s root.</span>
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="sd">    :returns: Path relative to the backend's root.</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="sd">    """</span>
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="k">return</span> <span class="n">native_path</span>  <span class="c1"># default: identity</span>
 </code></pre></div>
 <strong>Postconditions:</strong> The default implementation is the identity function.
@@ -11344,19 +11344,19 @@ path cannot invert to two spellings. All backends with a native root
 <p><strong>Invariant:</strong> <code>LocalBackend.to_key(native_path)</code> strips the backend's
 filesystem root directory.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">LocalBackend</span><span class="p">(</span><span class="s2">&quot;/tmp/store&quot;</span><span class="p">)</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">&quot;/tmp/store/data/file.txt&quot;</span><span class="p">)</span>  <span class="c1"># → &quot;data/file.txt&quot;</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">&quot;data/file.txt&quot;</span><span class="p">)</span>             <span class="c1"># → &quot;data/file.txt&quot; (no prefix, unchanged)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">LocalBackend</span><span class="p">(</span><span class="s2">"/tmp/store"</span><span class="p">)</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">"/tmp/store/data/file.txt"</span><span class="p">)</span>  <span class="c1"># → "data/file.txt"</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">"data/file.txt"</span><span class="p">)</span>             <span class="c1"># → "data/file.txt" (no prefix, unchanged)</span>
 </code></pre></div>
 <strong>Postconditions:</strong> Replaces the inline <code>Path.relative_to(self._root)</code> calls
 currently scattered across listing methods.</p>
 <h3 id="npr-007-s3backendto_key">NPR-007: S3Backend.to_key<a class="headerlink" href="#npr-007-s3backendto_key" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>S3Backend.to_key(native_path)</code> strips the bucket prefix.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">S3Backend</span><span class="p">(</span><span class="n">bucket</span><span class="o">=</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">)</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">&quot;my-bucket/data/file.txt&quot;</span><span class="p">)</span>   <span class="c1"># → &quot;data/file.txt&quot;</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">&quot;data/file.txt&quot;</span><span class="p">)</span>             <span class="c1"># → &quot;data/file.txt&quot; (no prefix, unchanged)</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">&quot;my-bucket&quot;</span><span class="p">)</span>                 <span class="c1"># → &quot;&quot; (bare bucket is the root, BK-234)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">S3Backend</span><span class="p">(</span><span class="n">bucket</span><span class="o">=</span><span class="s2">"my-bucket"</span><span class="p">)</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">"my-bucket/data/file.txt"</span><span class="p">)</span>   <span class="c1"># → "data/file.txt"</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">"data/file.txt"</span><span class="p">)</span>             <span class="c1"># → "data/file.txt" (no prefix, unchanged)</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">"my-bucket"</span><span class="p">)</span>                 <span class="c1"># → "" (bare bucket is the root, BK-234)</span>
 </code></pre></div>
 <strong>Postconditions:</strong> Replaces the existing <code>_rel_path()</code> helper with a public,
 contract-backed method.</p>
@@ -11364,9 +11364,9 @@ contract-backed method.</p>
 <p><strong>Invariant:</strong> <code>SFTPBackend.to_key(native_path)</code> strips the configured
 <code>base_path</code>.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">SFTPBackend</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;srv&quot;</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="s2">&quot;/srv/sftp&quot;</span><span class="p">)</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">&quot;/srv/sftp/data/file.txt&quot;</span><span class="p">)</span>   <span class="c1"># → &quot;data/file.txt&quot;</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">&quot;data/file.txt&quot;</span><span class="p">)</span>             <span class="c1"># → &quot;data/file.txt&quot; (no prefix, unchanged)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">SFTPBackend</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">"srv"</span><span class="p">,</span> <span class="n">base_path</span><span class="o">=</span><span class="s2">"/srv/sftp"</span><span class="p">)</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">"/srv/sftp/data/file.txt"</span><span class="p">)</span>   <span class="c1"># → "data/file.txt"</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">backend</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">"data/file.txt"</span><span class="p">)</span>             <span class="c1"># → "data/file.txt" (no prefix, unchanged)</span>
 </code></pre></div></p>
 <h3 id="npr-009-future-backends">NPR-009: Future Backends<a class="headerlink" href="#npr-009-future-backends" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> New backends (Azure Blob, GCS, etc.) implement <code>to_key</code> to strip
@@ -11378,11 +11378,11 @@ backend-specific reverse path resolution.</p>
 <p><strong>Invariant:</strong> <code>Store.to_key(path)</code> is a public method that composes backend
 conversion with store-root stripping:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">to_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert an absolute or backend-native path to a store-relative key.</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">    </span><span class="sd">"""Convert an absolute or backend-native path to a store-relative key.</span>
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
 <a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="sd">    :param path: Absolute, backend-native, or backend-relative path.</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="sd">    :returns: Key relative to this store&#39;s root_path.</span>
-<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="sd">    :returns: Key relative to this store's root_path.</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="sd">    """</span>
 </code></pre></div>
 <p><strong>Sequence:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>native_path  →  backend.to_key()  →  strip root_path prefix  →  store-relative key
@@ -11392,13 +11392,13 @@ conversion with store-root stripping:</p>
 its own <code>root_path</code> prefix from the result. The two levels are independent and
 composable.</p>
 <p><strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># SFTP backend with base_path=&quot;/srv/sftp&quot;, store with root_path=&quot;data&quot;</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">sftp</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># SFTP backend with base_path="/srv/sftp", store with root_path="data"</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">sftp</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
 <a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># Full chain: &quot;/srv/sftp/data/reports/q1.csv&quot;</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="c1">#   → backend.to_key → &quot;data/reports/q1.csv&quot;</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="c1">#   → strip root_path → &quot;reports/q1.csv&quot;</span>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="n">store</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">&quot;/srv/sftp/data/reports/q1.csv&quot;</span><span class="p">)</span>  <span class="c1"># → &quot;reports/q1.csv&quot;</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1"># Full chain: "/srv/sftp/data/reports/q1.csv"</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="c1">#   → backend.to_key → "data/reports/q1.csv"</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="c1">#   → strip root_path → "reports/q1.csv"</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="n">store</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">"/srv/sftp/data/reports/q1.csv"</span><span class="p">)</span>  <span class="c1"># → "reports/q1.csv"</span>
 </code></pre></div></p>
 <h3 id="npr-012-storeto_key-with-no-root_path">NPR-012: Store.to_key With No root_path<a class="headerlink" href="#npr-012-storeto_key-with-no-root_path" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> When <code>root_path</code> is empty, <code>Store.to_key</code> returns the result of
@@ -11408,8 +11408,8 @@ composable.</p>
 <code>root_path</code>, <code>Store.to_key</code> raises <code>InvalidPath</code>. The path does not belong to
 this store.</p>
 <p><strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">local</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">store</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">&quot;/tmp/store/other/file.txt&quot;</span><span class="p">)</span>  <span class="c1"># → InvalidPath (not under &quot;data/&quot;)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">local</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">store</span><span class="o">.</span><span class="n">to_key</span><span class="p">(</span><span class="s2">"/tmp/store/other/file.txt"</span><span class="p">)</span>  <span class="c1"># → InvalidPath (not under "data/")</span>
 </code></pre></div></p>
 <hr />
 <h2 id="round-trip-fix">Round-Trip Fix<a class="headerlink" href="#round-trip-fix" title="Permanent link">&para;</a></h2>
@@ -11418,21 +11418,21 @@ this store.</p>
 <code>root_path</code> from the paths in returned <code>FileInfo</code> / <code>FolderInfo</code> objects.
 The returned <code>path</code> attribute contains a store-relative key.</p>
 <p><strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">local</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;reports/q1.csv&quot;</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">local</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">"data"</span><span class="p">)</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"reports/q1.csv"</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>
 <a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">files</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">))</span>
-<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">files</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">path</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;reports/q1.csv&quot;</span>  <span class="c1"># NOT &quot;data/reports/q1.csv&quot;</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">files</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">""</span><span class="p">))</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="k">assert</span> <span class="nb">str</span><span class="p">(</span><span class="n">files</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">path</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"reports/q1.csv"</span>  <span class="c1"># NOT "data/reports/q1.csv"</span>
 </code></pre></div></p>
 <h3 id="npr-015-list_folders-returns-store-relative-names">NPR-015: list_folders Returns Store-Relative Names<a class="headerlink" href="#npr-015-list_folders-returns-store-relative-names" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>list_folders</code> returns immediate subfolder <strong>names</strong> (not full
 paths). This is already the current behavior and is unaffected by this spec.</p>
 <h3 id="npr-016-round-trip-with-nested-paths">NPR-016: Round-Trip With Nested Paths<a class="headerlink" href="#npr-016-round-trip-with-nested-paths" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> Round-trip works at any nesting depth:
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">local</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">&quot;project/data&quot;</span><span class="p">)</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;2024/q1/report.csv&quot;</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="o">=</span><span class="n">local</span><span class="p">,</span> <span class="n">root_path</span><span class="o">=</span><span class="s2">"project/data"</span><span class="p">)</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"2024/q1/report.csv"</span><span class="p">,</span> <span class="n">content</span><span class="p">)</span>
 <a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_files</span><span class="p">(</span><span class="s2">""</span><span class="p">,</span> <span class="n">recursive</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 <a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="k">assert</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">path</span><span class="p">))</span>  <span class="c1"># works for all depths</span>
 </code></pre></div></p>
 <hr />
@@ -11455,7 +11455,7 @@ per NPR-001.</p>
 <h3 id="npr-020-backendnative_path-method">NPR-020: Backend.native_path Method<a class="headerlink" href="#npr-020-backendnative_path-method" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> The Backend ABC gains a concrete (non-abstract) method:
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">native_path</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert a backend-relative key to the backend-native path.&quot;&quot;&quot;</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">    </span><span class="sd">"""Convert a backend-relative key to the backend-native path."""</span>
 <a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>    <span class="k">return</span> <span class="n">path</span>  <span class="c1"># default: identity</span>
 </code></pre></div>
 <strong>Postconditions:</strong> The default is the identity function. Backends with a native

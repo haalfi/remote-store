@@ -10840,7 +10840,7 @@ with shape:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">DualEntry</span><span class="p">:</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">source</span><span class="p">:</span> <span class="n">Path</span>        <span class="c1"># absolute repo path</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">dest</span><span class="p">:</span> <span class="nb">str</span>           <span class="c1"># virtual dest, e.g. &quot;explanation/design/authoring.md&quot;</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">dest</span><span class="p">:</span> <span class="nb">str</span>           <span class="c1"># virtual dest, e.g. "explanation/design/authoring.md"</span>
 </code></pre></div>
 <p><code>DualEntry</code> carries no class field: by construction, only dual entries
 reach render input. Repo-only and docs-only files are observed by the

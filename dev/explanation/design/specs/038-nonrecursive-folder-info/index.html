@@ -10622,11 +10622,11 @@ max_depth=max_depth)</code>. No Backend ABC change. The aggregation builds a
 <code>FolderInfo</code> from the yielded <code>FileInfo</code> objects (count, total size, latest
 <code>modified_at</code>).</p>
 <p><strong>Depth examples:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>store.get_folder_info(&quot;data&quot;, max_depth=0)
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>store.get_folder_info("data", max_depth=0)
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a># Aggregates: data/file_a.csv, data/file_b.csv
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a># Excludes:   data/raw/file_c.csv
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>store.get_folder_info(&quot;data&quot;, max_depth=1)
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>store.get_folder_info("data", max_depth=1)
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a># Aggregates: data/file_a.csv, data/raw/file_c.csv
 <a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a># Excludes:   data/raw/2026/file_d.csv
 </code></pre></div>

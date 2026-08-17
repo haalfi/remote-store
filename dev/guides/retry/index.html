@@ -10826,7 +10826,7 @@ retry multiplication.</p>
 <a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">jitter</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="p">)</span>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">SFTPBackend</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">&quot;sftp.example.com&quot;</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="n">policy</span><span class="p">)</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">SFTPBackend</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">"sftp.example.com"</span><span class="p">,</span> <span class="n">retry</span><span class="o">=</span><span class="n">policy</span><span class="p">)</span>
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="retrypolicy-fields">RetryPolicy Fields<a class="headerlink" href="#retrypolicy-fields" title="Permanent link">&para;</a></h2>
@@ -10890,10 +10890,10 @@ retry multiplication.</p>
 <h2 id="toml-yaml-configuration">TOML / YAML Configuration<a class="headerlink" href="#toml-yaml-configuration" title="Permanent link">&para;</a></h2>
 <p>Retry can be configured per-backend in config files:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">[backends.production]</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;sftp&quot;</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"sftp"</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="k">[backends.production.options]</span>
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;sftp.example.com&quot;</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"sftp.example.com"</span>
 <a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="k">[backends.production.retry]</span>
 <a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">max_attempts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5</span>
@@ -10915,9 +10915,9 @@ retry multiplication.</p>
 <p>Load with the standard config loaders:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">RegistryConfig</span><span class="p">,</span> <span class="n">Registry</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_toml</span><span class="p">(</span><span class="s2">&quot;config.toml&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">config</span> <span class="o">=</span> <span class="n">RegistryConfig</span><span class="o">.</span><span class="n">from_toml</span><span class="p">(</span><span class="s2">"config.toml"</span><span class="p">)</span>
 <a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">registry</span> <span class="o">=</span> <span class="n">Registry</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">store</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;my-store&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">store</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">"my-store"</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="per-backend-mapping">Per-Backend Mapping<a class="headerlink" href="#per-backend-mapping" title="Permanent link">&para;</a></h2>
 <p>Each backend translates <code>RetryPolicy</code> to its native retry mechanism.
@@ -10958,7 +10958,7 @@ logged at debug level.</p>
 <p>Retry scope: <strong>connection only</strong> (not per-operation).</p>
 <h3 id="s3">S3<a class="headerlink" href="#s3" title="Permanent link">&para;</a></h3>
 <p>Only <code>max_attempts</code> is mappable to botocore:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>botocore.config.Config(retries={&quot;max_attempts&quot;: N, &quot;mode&quot;: &quot;standard&quot;})
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>botocore.config.Config(retries={"max_attempts": N, "mode": "standard"})
 </code></pre></div>
 <p><code>backoff_base</code>, <code>backoff_max</code>, <code>jitter</code>, and <code>timeout</code> are managed by
 botocore internally and cannot be overridden.</p>

@@ -10871,21 +10871,21 @@ to that tenant instead:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>az<span class="w"> </span>login<span class="w"> </span>--tenant<span class="w"> </span>&lt;TENANT_ID&gt;
 </code></pre></div>
 <p>Verify you have an enabled subscription:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>az<span class="w"> </span>account<span class="w"> </span>show<span class="w"> </span>--query<span class="w"> </span><span class="s2">&quot;{name:name, state:state}&quot;</span><span class="w"> </span>-o<span class="w"> </span>table
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>az<span class="w"> </span>account<span class="w"> </span>show<span class="w"> </span>--query<span class="w"> </span><span class="s2">"{name:name, state:state}"</span><span class="w"> </span>-o<span class="w"> </span>table
 </code></pre></div>
 <p>The <code>state</code> column should read <code>Enabled</code>.</p>
 <h2 id="register-the-storage-resource-provider">Register the storage resource provider<a class="headerlink" href="#register-the-storage-resource-provider" title="Permanent link">&para;</a></h2>
 <p>A new subscription often has <code>Microsoft.Storage</code> unregistered. Registration
 is idempotent and takes about a minute.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>az<span class="w"> </span>provider<span class="w"> </span>register<span class="w"> </span>--namespace<span class="w"> </span>Microsoft.Storage
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>az<span class="w"> </span>provider<span class="w"> </span>show<span class="w"> </span>--namespace<span class="w"> </span>Microsoft.Storage<span class="w"> </span>--query<span class="w"> </span><span class="s2">&quot;{state:registrationState}&quot;</span><span class="w"> </span>-o<span class="w"> </span>table
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>az<span class="w"> </span>provider<span class="w"> </span>show<span class="w"> </span>--namespace<span class="w"> </span>Microsoft.Storage<span class="w"> </span>--query<span class="w"> </span><span class="s2">"{state:registrationState}"</span><span class="w"> </span>-o<span class="w"> </span>table
 </code></pre></div>
 <p>Re-run the second command until the state is <code>Registered</code>.</p>
 <h2 id="pick-a-region">Pick a region<a class="headerlink" href="#pick-a-region" title="Permanent link">&para;</a></h2>
 <p>Choose a region close to your egress location. <code>westeurope</code>, <code>switzerlandnorth</code>,
 and <code>germanywestcentral</code> are common picks for European users. List the
 display names with:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>az<span class="w"> </span>account<span class="w"> </span>list-locations<span class="w"> </span>--query<span class="w"> </span><span class="s2">&quot;[].{name:name, displayName:displayName}&quot;</span><span class="w"> </span>-o<span class="w"> </span>table
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>az<span class="w"> </span>account<span class="w"> </span>list-locations<span class="w"> </span>--query<span class="w"> </span><span class="s2">"[].{name:name, displayName:displayName}"</span><span class="w"> </span>-o<span class="w"> </span>table
 </code></pre></div>
 <p>Storage accounts incur cross-region egress fees, so keeping the region
 close to whoever runs the tests reduces both latency and cost.</p>
@@ -10939,7 +10939,7 @@ account and re-run as a single line.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>az<span class="w"> </span>storage<span class="w"> </span>account<span class="w"> </span>show<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span>--name<span class="w"> </span>&lt;ACCOUNT_NAME&gt;<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span>--resource-group<span class="w"> </span>&lt;RESOURCE_GROUP&gt;<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span>--query<span class="w"> </span><span class="s2">&quot;{name:name, hns:isHnsEnabled, tls:minimumTlsVersion}&quot;</span><span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="w">  </span>--query<span class="w"> </span><span class="s2">"{name:name, hns:isHnsEnabled, tls:minimumTlsVersion}"</span><span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">  </span>-o<span class="w"> </span>table
 </code></pre></div>
 <p>The <code>hns</code> column should read <code>True</code>.</p>

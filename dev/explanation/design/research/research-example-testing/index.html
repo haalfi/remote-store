@@ -11015,9 +11015,9 @@ Expected output follows on the next line. Integrated into pytest via
 <h3 id="pytest-examples-pydantic">pytest-examples (Pydantic)<a class="headerlink" href="#pytest-examples-pydantic" title="Permanent link">&para;</a></h3>
 <p>Extracts Python code blocks from markdown files or <code>#&gt;</code> output markers in <code>.py</code>
 files. Runs them and compares output. <code>--update-examples</code> auto-syncs markers.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">content</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">&quot;hello.txt&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">content</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">"hello.txt"</span><span class="p">)</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1">#&gt; b&#39;Hello, world!&#39;</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1">#&gt; b'Hello, world!'</span>
 </code></pre></div>
 <ul>
 <li><strong>Pros:</strong> Output validated, auto-update keeps examples current.</li>
@@ -11050,7 +11050,7 @@ published crate.</p>
 <p>Functions named <code>ExampleFoo</code> in <code>_test.go</code> files are compiled and run by
 <code>go test</code>. A trailing <code>// Output:</code> comment is compared against stdout.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kd">func</span><span class="w"> </span><span class="nx">ExampleReverse</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">stringutil</span><span class="p">.</span><span class="nx">Reverse</span><span class="p">(</span><span class="s">&quot;hello&quot;</span><span class="p">))</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="nx">fmt</span><span class="p">.</span><span class="nx">Println</span><span class="p">(</span><span class="nx">stringutil</span><span class="p">.</span><span class="nx">Reverse</span><span class="p">(</span><span class="s">"hello"</span><span class="p">))</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="c1">// Output: olleh</span>
 <a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="p">}</span>
 </code></pre></div>

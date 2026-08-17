@@ -11076,7 +11076,7 @@ field (default <code>None</code>).
 <p><strong>Invariant:</strong> <code>RegistryConfig._from_dict()</code> parses a nested <code>retry</code> dict
 in backend config sections into a <code>RetryPolicy</code> instance.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;sftp&quot;</span><span class="p">,</span> <span class="s2">&quot;options&quot;</span><span class="p">:</span> <span class="p">{</span><span class="o">...</span><span class="p">},</span> <span class="s2">&quot;retry&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;max_attempts&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">}}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"sftp"</span><span class="p">,</span> <span class="s2">"options"</span><span class="p">:</span> <span class="p">{</span><span class="o">...</span><span class="p">},</span> <span class="s2">"retry"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"max_attempts"</span><span class="p">:</span> <span class="mi">5</span><span class="p">}}</span>
 </code></pre></div>
 <strong>Postconditions:</strong>
 - <code>retry</code> key is parsed into <code>BackendConfig(retry=RetryPolicy(...))</code>.

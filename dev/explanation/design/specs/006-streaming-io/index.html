@@ -10796,7 +10796,7 @@ implementation is a helper that closes <code>raw</code> on exception before re-r
 <p>Failure to observe this invariant causes resource leaks even when the caller
 never receives the stream and therefore cannot close it.
 <strong>Example:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">stream</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;data.bin&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">stream</span> <span class="o">=</span> <span class="n">backend</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">"data.bin"</span><span class="p">)</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">chunk</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="mi">4096</span><span class="p">)</span>
 </code></pre></div></p>
 <h2 id="sio-002-convenience-reads">SIO-002: Convenience Reads<a class="headerlink" href="#sio-002-convenience-reads" title="Permanent link">&para;</a></h2>

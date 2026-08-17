@@ -10787,7 +10787,7 @@ guarantee alongside the per-stream dynamic check.</p>
 <h3 id="tier-3-extseekableseekable_read-portable-fallback">Tier 3: <code>ext.seekable.seekable_read()</code> — portable fallback<a class="headerlink" href="#tier-3-extseekableseekable_read-portable-fallback" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.seekable</span><span class="w"> </span><span class="kn">import</span> <span class="n">seekable_read</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">with</span> <span class="n">seekable_read</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">&quot;report.csv&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="k">with</span> <span class="n">seekable_read</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">"report.csv"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># works on any backend</span>
 </code></pre></div>
 <p>Algorithm:</p>

@@ -10977,10 +10977,10 @@ any existing <code>Store</code> as a Dagster <code>IOManager</code> with zero co
 <p>This also fills a gap for <strong>SFTP backends</strong> — Dagster has no native SFTP IO
 manager, but remote-store covers that backend directly.</p>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[dagster]&quot;</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"remote-store[dagster]"</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># For Parquet serializer support:</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;remote-store[dagster,arrow]&quot;</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"remote-store[dagster,arrow]"</span>
 </code></pre></div>
 <h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">Definitions</span><span class="p">,</span> <span class="n">asset</span><span class="p">,</span> <span class="n">IOManager</span><span class="p">,</span> <span class="n">io_manager</span>
@@ -10991,18 +10991,18 @@ manager, but remote-store covers that backend directly.</p>
 <a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="nd">@io_manager</span>
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">my_io_manager</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">IOManager</span><span class="p">:</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">LocalBackend</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">&quot;/data/dagster&quot;</span><span class="p">))</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="k">return</span> <span class="n">dagster_io_manager</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="s2">&quot;pickle&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">LocalBackend</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">"/data/dagster"</span><span class="p">))</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>    <span class="k">return</span> <span class="n">dagster_io_manager</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="s2">"pickle"</span><span class="p">)</span>
 <a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>
 <a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
 <a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="nd">@asset</span>
 <a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="k">def</span><span class="w"> </span><span class="nf">raw_data</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;rows&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]}</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">"rows"</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]}</span>
 <a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>
 <a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
 <a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="n">defs</span> <span class="o">=</span> <span class="n">Definitions</span><span class="p">(</span>
 <a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="n">assets</span><span class="o">=</span><span class="p">[</span><span class="n">raw_data</span><span class="p">],</span>
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="n">resources</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;io_manager&quot;</span><span class="p">:</span> <span class="n">my_io_manager</span><span class="p">},</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="n">resources</span><span class="o">=</span><span class="p">{</span><span class="s2">"io_manager"</span><span class="p">:</span> <span class="n">my_io_manager</span><span class="p">},</span>
 <a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="p">)</span>
 </code></pre></div>
 <h2 id="serializers">Serializers<a class="headerlink" href="#serializers" title="Permanent link">&para;</a></h2>
@@ -11043,17 +11043,17 @@ for storage and back.</p>
 </tbody>
 </table>
 <h3 id="pickle-default">Pickle (default)<a class="headerlink" href="#pickle-default" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">mgr</span> <span class="o">=</span> <span class="n">dagster_io_manager</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="s2">&quot;pickle&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">mgr</span> <span class="o">=</span> <span class="n">dagster_io_manager</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="s2">"pickle"</span><span class="p">)</span>
 </code></pre></div>
 <p>Universal — works with any picklable Python object. The default choice when
 you don't need human-readable storage.</p>
 <h3 id="json">JSON<a class="headerlink" href="#json" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">mgr</span> <span class="o">=</span> <span class="n">dagster_io_manager</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">mgr</span> <span class="o">=</span> <span class="n">dagster_io_manager</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="s2">"json"</span><span class="p">)</span>
 </code></pre></div>
 <p>Human-readable, but limited to JSON-serializable types (dicts, lists,
 strings, numbers, booleans, None).</p>
 <h3 id="parquet">Parquet<a class="headerlink" href="#parquet" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">mgr</span> <span class="o">=</span> <span class="n">dagster_io_manager</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="s2">&quot;parquet&quot;</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">mgr</span> <span class="o">=</span> <span class="n">dagster_io_manager</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="s2">"parquet"</span><span class="p">)</span>
 </code></pre></div>
 <p>Efficient columnar storage for DataFrames. Requires PyArrow. Accepts pandas
 DataFrames, polars DataFrames (via <code>.to_arrow()</code>), and Arrow Tables.
@@ -11064,7 +11064,7 @@ Deserializes to a PyArrow Table.</p>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
 <a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">MsgpackSerializer</span><span class="p">:</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">extension</span> <span class="o">=</span> <span class="s2">&quot;.msgpack&quot;</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">extension</span> <span class="o">=</span> <span class="s2">".msgpack"</span>
 <a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
 <a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">):</span>
 <a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">msgpack</span>
@@ -11125,38 +11125,38 @@ the path.</p>
 <a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalBackend</span>
 <a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">dagster_io_manager</span>  <span class="c1"># noqa: F811</span>
 <a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>
-<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="n">monthly</span> <span class="o">=</span> <span class="n">MonthlyPartitionsDefinition</span><span class="p">(</span><span class="n">start_date</span><span class="o">=</span><span class="s2">&quot;2026-01-01&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="n">monthly</span> <span class="o">=</span> <span class="n">MonthlyPartitionsDefinition</span><span class="p">(</span><span class="n">start_date</span><span class="o">=</span><span class="s2">"2026-01-01"</span><span class="p">)</span>
 <a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>
 <a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="nd">@io_manager</span>
 <a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="k">def</span><span class="w"> </span><span class="nf">my_io_manager</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">IOManager</span><span class="p">:</span>
-<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>    <span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">LocalBackend</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">&quot;/data/dagster&quot;</span><span class="p">))</span>
-<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>    <span class="k">return</span> <span class="n">dagster_io_manager</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>    <span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">LocalBackend</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="s2">"/data/dagster"</span><span class="p">))</span>
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>    <span class="k">return</span> <span class="n">dagster_io_manager</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="s2">"json"</span><span class="p">)</span>
 <a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>
 <a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="nd">@asset</span><span class="p">(</span><span class="n">partitions_def</span><span class="o">=</span><span class="n">monthly</span><span class="p">)</span>
 <a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a><span class="k">def</span><span class="w"> </span><span class="nf">sales_monthly</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
-<a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Upstream asset — one partition per month.&quot;&quot;&quot;</span>
-<a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;revenue&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">}</span>
+<a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a><span class="w">    </span><span class="sd">"""Upstream asset — one partition per month."""</span>
+<a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">"revenue"</span><span class="p">:</span> <span class="mi">100</span><span class="p">}</span>
 <a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a>
 <a id="__codelineno-6-26" name="__codelineno-6-26" href="#__codelineno-6-26"></a><span class="nd">@asset</span><span class="p">(</span>
 <a id="__codelineno-6-27" name="__codelineno-6-27" href="#__codelineno-6-27"></a>    <span class="n">partitions_def</span><span class="o">=</span><span class="n">monthly</span><span class="p">,</span>
 <a id="__codelineno-6-28" name="__codelineno-6-28" href="#__codelineno-6-28"></a>    <span class="n">ins</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-6-29" name="__codelineno-6-29" href="#__codelineno-6-29"></a>        <span class="s2">&quot;sales_monthly&quot;</span><span class="p">:</span> <span class="n">AssetIn</span><span class="p">(</span>
+<a id="__codelineno-6-29" name="__codelineno-6-29" href="#__codelineno-6-29"></a>        <span class="s2">"sales_monthly"</span><span class="p">:</span> <span class="n">AssetIn</span><span class="p">(</span>
 <a id="__codelineno-6-30" name="__codelineno-6-30" href="#__codelineno-6-30"></a>            <span class="n">partition_mapping</span><span class="o">=</span><span class="n">TimeWindowPartitionMapping</span><span class="p">(</span><span class="n">start_offset</span><span class="o">=-</span><span class="mi">2</span><span class="p">),</span>
 <a id="__codelineno-6-31" name="__codelineno-6-31" href="#__codelineno-6-31"></a>        <span class="p">),</span>
 <a id="__codelineno-6-32" name="__codelineno-6-32" href="#__codelineno-6-32"></a>    <span class="p">},</span>
 <a id="__codelineno-6-33" name="__codelineno-6-33" href="#__codelineno-6-33"></a><span class="p">)</span>
 <a id="__codelineno-6-34" name="__codelineno-6-34" href="#__codelineno-6-34"></a><span class="k">def</span><span class="w"> </span><span class="nf">sales_rolling_3m</span><span class="p">(</span><span class="n">sales_monthly</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
-<a id="__codelineno-6-35" name="__codelineno-6-35" href="#__codelineno-6-35"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Downstream — receives last 3 months as dict[str, Any].</span>
+<a id="__codelineno-6-35" name="__codelineno-6-35" href="#__codelineno-6-35"></a><span class="w">    </span><span class="sd">"""Downstream — receives last 3 months as dict[str, Any].</span>
 <a id="__codelineno-6-36" name="__codelineno-6-36" href="#__codelineno-6-36"></a>
-<a id="__codelineno-6-37" name="__codelineno-6-37" href="#__codelineno-6-37"></a><span class="sd">    ``sales_monthly`` is ``{&quot;2026-01&quot;: {...}, &quot;2026-02&quot;: {...}, &quot;2026-03&quot;: {...}}``</span>
-<a id="__codelineno-6-38" name="__codelineno-6-38" href="#__codelineno-6-38"></a><span class="sd">    when the current partition is ``&quot;2026-03&quot;``.</span>
-<a id="__codelineno-6-39" name="__codelineno-6-39" href="#__codelineno-6-39"></a><span class="sd">    &quot;&quot;&quot;</span>
-<a id="__codelineno-6-40" name="__codelineno-6-40" href="#__codelineno-6-40"></a>    <span class="n">total</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s2">&quot;revenue&quot;</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">sales_monthly</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
-<a id="__codelineno-6-41" name="__codelineno-6-41" href="#__codelineno-6-41"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;rolling_revenue&quot;</span><span class="p">:</span> <span class="n">total</span><span class="p">}</span>
+<a id="__codelineno-6-37" name="__codelineno-6-37" href="#__codelineno-6-37"></a><span class="sd">    ``sales_monthly`` is ``{"2026-01": {...}, "2026-02": {...}, "2026-03": {...}}``</span>
+<a id="__codelineno-6-38" name="__codelineno-6-38" href="#__codelineno-6-38"></a><span class="sd">    when the current partition is ``"2026-03"``.</span>
+<a id="__codelineno-6-39" name="__codelineno-6-39" href="#__codelineno-6-39"></a><span class="sd">    """</span>
+<a id="__codelineno-6-40" name="__codelineno-6-40" href="#__codelineno-6-40"></a>    <span class="n">total</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="s2">"revenue"</span><span class="p">]</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">sales_monthly</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+<a id="__codelineno-6-41" name="__codelineno-6-41" href="#__codelineno-6-41"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">"rolling_revenue"</span><span class="p">:</span> <span class="n">total</span><span class="p">}</span>
 <a id="__codelineno-6-42" name="__codelineno-6-42" href="#__codelineno-6-42"></a>
 <a id="__codelineno-6-43" name="__codelineno-6-43" href="#__codelineno-6-43"></a><span class="n">defs</span> <span class="o">=</span> <span class="n">Definitions</span><span class="p">(</span>
 <a id="__codelineno-6-44" name="__codelineno-6-44" href="#__codelineno-6-44"></a>    <span class="n">assets</span><span class="o">=</span><span class="p">[</span><span class="n">sales_monthly</span><span class="p">,</span> <span class="n">sales_rolling_3m</span><span class="p">],</span>
-<a id="__codelineno-6-45" name="__codelineno-6-45" href="#__codelineno-6-45"></a>    <span class="n">resources</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;io_manager&quot;</span><span class="p">:</span> <span class="n">my_io_manager</span><span class="p">},</span>
+<a id="__codelineno-6-45" name="__codelineno-6-45" href="#__codelineno-6-45"></a>    <span class="n">resources</span><span class="o">=</span><span class="p">{</span><span class="s2">"io_manager"</span><span class="p">:</span> <span class="n">my_io_manager</span><span class="p">},</span>
 <a id="__codelineno-6-46" name="__codelineno-6-46" href="#__codelineno-6-46"></a><span class="p">)</span>
 </code></pre></div>
 <p>Single-partition inputs continue to return a single deserialized object
@@ -11173,8 +11173,8 @@ backends, consider pre-aggregating upstream or limiting the time-window span.</p
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nd">@io_manager</span>
 <a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="k">def</span><span class="w"> </span><span class="nf">production_io_manager</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">IOManager</span><span class="p">:</span>
 <a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">registry</span> <span class="o">=</span> <span class="n">Registry</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">store</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">&quot;production&quot;</span><span class="p">)</span>
-<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="k">return</span> <span class="n">dagster_io_manager</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="s2">&quot;pickle&quot;</span><span class="p">)</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">store</span> <span class="o">=</span> <span class="n">registry</span><span class="o">.</span><span class="n">get_store</span><span class="p">(</span><span class="s2">"production"</span><span class="p">)</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="k">return</span> <span class="n">dagster_io_manager</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="s2">"pickle"</span><span class="p">)</span>
 </code></pre></div>
 <h2 id="lifecycle">Lifecycle<a class="headerlink" href="#lifecycle" title="Permanent link">&para;</a></h2>
 <p>The caller owns the Store. The IO manager does not close it. If the Store
@@ -11190,16 +11190,16 @@ outside Dagster.</p>
 <a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
 <a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="nd">@asset</span>
 <a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="k">def</span><span class="w"> </span><span class="nf">raw_data</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;rows&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]}</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">"rows"</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]}</span>
 <a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>
 <a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>
 <a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="n">defs</span> <span class="o">=</span> <span class="n">Definitions</span><span class="p">(</span>
 <a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>    <span class="n">assets</span><span class="o">=</span><span class="p">[</span><span class="n">raw_data</span><span class="p">],</span>
 <a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>    <span class="n">resources</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>        <span class="s2">&quot;io_manager&quot;</span><span class="p">:</span> <span class="n">RemoteStoreIOManager</span><span class="p">(</span>
-<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>            <span class="n">backend_type</span><span class="o">=</span><span class="s2">&quot;local&quot;</span><span class="p">,</span>
-<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>            <span class="n">backend_options</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;root&quot;</span><span class="p">:</span> <span class="s2">&quot;/data/dagster&quot;</span><span class="p">},</span>
-<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>            <span class="n">serializer</span><span class="o">=</span><span class="s2">&quot;pickle&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>        <span class="s2">"io_manager"</span><span class="p">:</span> <span class="n">RemoteStoreIOManager</span><span class="p">(</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>            <span class="n">backend_type</span><span class="o">=</span><span class="s2">"local"</span><span class="p">,</span>
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>            <span class="n">backend_options</span><span class="o">=</span><span class="p">{</span><span class="s2">"root"</span><span class="p">:</span> <span class="s2">"/data/dagster"</span><span class="p">},</span>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a>            <span class="n">serializer</span><span class="o">=</span><span class="s2">"pickle"</span><span class="p">,</span>
 <a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>        <span class="p">)</span>
 <a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>    <span class="p">},</span>
 <a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a><span class="p">)</span>
@@ -11220,10 +11220,10 @@ as the corresponding backend constructor.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.ext.dagster</span><span class="w"> </span><span class="kn">import</span> <span class="n">RemoteStoreIOManager</span>
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
 <a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">resources</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="s2">&quot;io_manager&quot;</span><span class="p">:</span> <span class="n">RemoteStoreIOManager</span><span class="p">(</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>        <span class="n">backend_type</span><span class="o">=</span><span class="s2">&quot;s3&quot;</span><span class="p">,</span>
-<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>        <span class="n">backend_options</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;bucket&quot;</span><span class="p">:</span> <span class="s2">&quot;my-bucket&quot;</span><span class="p">,</span> <span class="s2">&quot;prefix&quot;</span><span class="p">:</span> <span class="s2">&quot;dagster/&quot;</span><span class="p">},</span>
-<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>        <span class="n">serializer</span><span class="o">=</span><span class="s2">&quot;parquet-dataset&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="s2">"io_manager"</span><span class="p">:</span> <span class="n">RemoteStoreIOManager</span><span class="p">(</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>        <span class="n">backend_type</span><span class="o">=</span><span class="s2">"s3"</span><span class="p">,</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>        <span class="n">backend_options</span><span class="o">=</span><span class="p">{</span><span class="s2">"bucket"</span><span class="p">:</span> <span class="s2">"my-bucket"</span><span class="p">,</span> <span class="s2">"prefix"</span><span class="p">:</span> <span class="s2">"dagster/"</span><span class="p">},</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>        <span class="n">serializer</span><span class="o">=</span><span class="s2">"parquet-dataset"</span><span class="p">,</span>
 <a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>    <span class="p">)</span>
 <a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="p">}</span>
 </code></pre></div>
