@@ -386,13 +386,62 @@ structural modularity while failing at semantic cohesion, producing a "modular
 mirage" where file separation does not correspond to logical separation (arXiv
 2605.02741).
 
-**And the substrate dependency holds.** Tao's observation that AI mathematics
-depends on painstakingly canonicalized human theory has a direct software
-counterpart: agents perform markedly better on popular, well-documented libraries
-that are dense in training data, and misuse niche or new ones. Documentation
-written for humans is often insufficient. This is the sharpest practical argument
-against letting canonicalization decay: **the stage the agents cannot do is the
-stage that determines how well the agents work.**
+**And the substrate dependency holds.** This is the sharpest practical argument
+against letting canonicalization decay, so it is worth stating at length rather
+than as a closing line. Tao observes that AI mathematics depends on painstakingly
+canonicalized human theory. The software counterpart is measurable: agents
+perform markedly better on popular, well-documented libraries that are dense in
+training data, and misuse niche or newly released ones. Documentation written for
+humans is often insufficient.
+
+Two claims chain here, and the conclusion follows from their conjunction rather
+than from either one alone.
+
+1. **Agents cannot do canonicalization.** It is the accumulation of agreement
+   about what the right shape is, across people and across time, which is exactly
+   what an entity whose theory dies with its context window cannot accumulate.
+   § 5 argues that this is structural rather than a limitation of current models.
+2. **Agent quality is a function of canonicalized material.** The canon is the
+   training corpus. Where a domain has been worked into a settled form the agent
+   is good at it; where it has not, the agent invents.
+
+So the one output agents cannot produce is the main input to how well they
+perform. **The stage the agents cannot do — canonicalization, the last one in
+§ 2.5 — is the stage that determines how well the agents work.** It is the
+binding constraint on the whole pipeline rather than its final chore.
+
+Two consequences follow, and both cut against what the rest of this section
+would suggest on its own.
+
+**Neglecting it is self-undermining.** Under agents every other stage
+accelerates, and this one measurably decelerates: the refactoring share above
+fell from 24.1% to 9.5% across the window in which generation got cheap. The
+input agents depend on therefore degrades precisely as agents produce more of
+everything else. No other stage in the pipeline has that property, which is what
+makes this failure different in kind from the backlogs described above rather
+than merely larger.
+
+**It inverts the intuitive allocation of scarce human attention.** The natural
+move under cheap generation is to spend people on whatever agents cannot do yet
+and treat that work as residue. This argument says the opposite: what agents
+cannot do is not residue, it is the multiplier on everything they can.
+Consolidating five near-duplicate implementations into one well-named abstraction
+is not cleanup. It raises the ceiling on every future agent run against that
+code, which is what makes proposal 2 in § 6 an economic claim rather than a
+matter of taste.
+
+**One qualification, because the argument runs on two mechanisms with very
+different levers and stating it as one overstates what a team can do.** The
+global half is training-data density, and no team controls it: you cannot
+canonicalize your way into a model's weights, and a team maintaining a niche
+library is on the wrong side of that however well it works. The half a team does
+control is its local canon — the repository's own conventions, abstractions and
+recorded rationale, which reach the agent through context rather than through
+training. Both obey the same logic and answer to entirely different effort, so a
+recommendation derived from the global half would be advice nobody can take. The
+comprehension trial in the appendix is the local half appearing as evidence: four
+reads recovered the contested reasoning, not because the model knew this
+repository, but because the local canon made reconstruction cheap.
 
 ## 4. Figures and their derivations
 
@@ -566,7 +615,10 @@ and canonicalization. Software's version is concrete and unpopular: **promote
 people for review throughput, consolidation, deletion, and documentation, not for
 PR count.** Given the collapse in refactoring share, the highest-leverage
 engineering work available in 2026 is probably consolidating what agents have
-already produced. Almost no compensation system rewards it.
+already produced. The leverage is the substrate argument in § 3: consolidation
+raises the ceiling on every subsequent agent run against that code rather than
+merely tidying the last one, which is why this is an economic claim and not a
+plea for craftsmanship. Almost no compensation system rewards it.
 
 **3. The talk rule, transposed.** Tao: if the authors cannot give a clear,
 expert-level talk on the result, that is correct and properly attributed, do not
