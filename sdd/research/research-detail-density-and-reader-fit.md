@@ -175,6 +175,20 @@ the same diagram is intelligible in isolation to more experienced learners, who
 require the elimination of redundant text to reduce cognitive load.
 **[Search-summary.]**
 
+**Independently corroborated on the citation, not on the finding.** The
+commissioner later supplied the same reference — title, journal, volume and pages
+all matching — hedged as "the likely reference", together with a summary of the
+**expertise-reversal effect**: techniques that help novices (worked examples,
+explanatory guidance, additional cues) become ineffective or harmful for more
+knowledgeable learners through redundant processing, so guidance should taper as
+prior knowledge grows. **That corroborates the bibliographic record and the
+general mechanism. It does not corroborate the specific result this section leans
+on** — three experiments in which the winning design became *text eliminated*.
+The two are compatible and are not the same claim, and neither has been checked
+against the paper. Two further hosts carrying candidate copies
+(`tecfa.unige.ch`, `core.ac.uk`) were tried after the input arrived and both
+returned the same egress denial as § 2.2, so the paper remains unread here.
+
 **Why this matters more than anything in § 3.** Every disqualified candidate
 manipulated something other than load-bearing material: coherence, or
 interesting-but-irrelevant trivia, or a four-way bundle. This one **removes
@@ -399,7 +413,7 @@ exception. "Vote" is the adversarial verification result where one was run.
 | A6 | Seductive detail licenses only the interesting-and-irrelevant rule | Verified | 3-0 | Medium |
 | A7 | McNamara et al. manipulated coherence, not surplus detail | Verified | 3-0 | Medium |
 | A8 | Carroll et al. is a four-way bundle | Verified | 3-0 | Medium |
-| A9 | Kalyuga et al. (1998): text elimination best for experts across three experiments | Search-summary | — | Low-medium |
+| A9 | Kalyuga et al. (1998): text elimination best for experts across three experiments | Search-summary; citation corroborated by the commissioner, the specific result not (§ 5) | — | Low-medium |
 | A10 | Kürze/Prägnanz is a mid-scale optimum | Search-summary | — | Low-medium |
 | A11 | Groeben's interactional turn; Göpferich's text-centred critique | Search-summary | — | Low-medium |
 | A12 | Hamburg dimensions not independent, contrast pairs ad hoc | Search-summary | — | Low-medium |
