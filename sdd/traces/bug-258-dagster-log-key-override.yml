@@ -10,14 +10,17 @@ trigger: >-
 source_items:
   - BUG-258
 audience:
+  - user.api
   - contributor.tooling
 expected_ripples:
   - CHANGELOG.md
   - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
 
-# Counted from `git log --oneline origin/master..HEAD`: one commit, which is the
-# implementation. No commit exists because review found something. Value is 0.
-review_rounds: 0
+# Counted from `git log --oneline origin/master..HEAD`, which returns two:
+# fdcfe28 is the implementation and does not count; the commit carrying this
+# edit exists because review found five record defects. Value is 1.
+review_rounds: 1
 
 phases:
   - id: orient
@@ -44,23 +47,30 @@ phases:
           dagster.py` is empty and `git log origin/master..HEAD -- <that file>`
           names no commit, so the file is byte-identical to master.
         outcome: ok
-      - file: dagster._core.storage.compute_log_manager
-        section: "ComputeLogManager.get_log_keys_for_log_key_prefix"
+      - file: src/remote_store/ext/dagster.py
+        section: "get_log_keys_for_log_key_prefix, against the installed dagster"
         read_type: verify
         extract: >-
           The decisive measurement, and the reason a local run disagreed with CI.
-          `inspect.getsource` on the installed dagster 1.13.17 shows the supertype
-          still returning Sequence[Sequence[str]], so `hatch run typecheck` passed
-          locally while CI, which resolves fresh, saw the narrowed
-          Sequence[list[str]]. A green local gate is not evidence about an
-          unpinned dependency; only the resolved version is.
+          Ran `inspect.getsource(ComputeLogManager.get_log_keys_for_log_key_prefix)`
+          against the installed dagster (1.13.17): the supertype there still
+          returns Sequence[Sequence[str]], so `hatch run typecheck` passed locally
+          while CI, which resolves fresh, saw the narrowed Sequence[list[str]].
+          A green local gate is not evidence about an unpinned dependency; only
+          the resolved version is. The supertype lives in an installed package
+          rather than this repo, so the read is recorded against the override
+          being compared and the command that produced it.
         outcome: ok
-      - file: .github/workflows/ci.yml
-        section: "(master run history)"
+      - file: pyproject.toml
+        section: "[project.optional-dependencies] dagster"
         read_type: verify
         extract: >-
-          Master's most recent ci.yml run is 2026-08-17 and green; the failure
-          appeared 2026-08-23. Master is therefore untested against the current
+          `dagster = ["dagster>=1.9"]` — no upper bound, so CI resolves whatever
+          is current and a supertype narrowing lands without a commit here. That
+          is the repo-side fact the diagnosis rests on. Supporting context, from
+          `mcp__github__actions_list list_workflow_runs` on ci.yml filtered to
+          branch master: the most recent run is 2026-08-17 and green, while the
+          failure appeared 2026-08-23 — so master is untested against the current
           dagster rather than passing it, which is the accurate statement and a
           different one from "master is green".
         outcome: ok
@@ -81,6 +91,39 @@ phases:
           only the new supertype would both have needed revisiting on the next
           release; this does not.
 
+  - id: fix
+    name: Fix (round 1)
+    steps:
+      - file: sdd/traces/_schema.yml
+        section: "audience"
+        read_type: gate
+        extract: >-
+          Review found the audience tag and the CHANGELOG entry contradicting
+          each other: the derived rule makes a CHANGELOG entry required iff an
+          audience starts with user., and contributor.tooling alone says skip it
+          — while this PR shipped one. The tag was the wrong half. A return
+          annotation on a method of a class exported in __all__ is a signature
+          visible to consumers, which is the schema's own definition of user.api,
+          so the entry stays and the tag gains it. This was not read during
+          implement; the CHANGELOG line was written from habit rather than from
+          the rule that decides whether it should exist.
+        outcome: ok
+      - file: .github/workflows/drift-guard.yml
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          The entry's "recurrence" paragraph offered three undecided mitigations,
+          two of which already ship — this workflow is the scheduled latest-deps
+          job (ID-182), and infra/drift-locks/dagster.txt is the lockfile, which
+          pins the exact dagster==1.13.17 the diagnosis rests on. Writing about
+          the repo's tooling without reading it produced a paragraph describing a
+          repo that does not exist, against principle 3. The real gap is one
+          thing: `rg 'mypy' .github/workflows/drift-guard.yml` returns nothing,
+          so the smoke cannot see a type-only narrowing. Filed as ID-250 in
+          section 5 rather than left as prose in the done-register, where nothing
+          would surface it again.
+        outcome: ok
+
   - id: verify
     name: Verify
     steps:
@@ -88,10 +131,18 @@ phases:
         section: "Ripple-check / Detailed checklist"
         read_type: verify
         extract: >-
-          No row triggers. This changes no public method signature of this
-          library's own surface (the method implements a third-party ABC), no
-          error type, no capability and no spec clause; the ext/ extension
-          inventory is unchanged because no extension was added or removed.
+          The **Public method signature** row triggers after all — an earlier
+          draft of this step dismissed it on the grounds that the method
+          implements a third-party ABC, but RemoteStoreComputeLogManager is
+          exported in __all__, so the annotation is this library's own public
+          surface and a downstream override is bound by it. Walked the row:
+          `rg get_log_keys_for_log_key_prefix` outside the source and the traces
+          returns seven references, and none of them states a return type.
+          DAG-031 describes the returned value ("one log key
+          [*log_key_prefix, filebase] per file"), which is what the narrowed
+          annotation says, so the spec agrees rather than needing an edit; the
+          example and the tests call the method without annotating it. No error
+          type, no capability, and the ext/ inventory is unchanged.
       - file: sdd/000-process.md
         section: "Rule 6"
         read_type: gate
@@ -103,5 +154,7 @@ phases:
           recorded here rather than being quietly skipped.
         outcome: ok
 
-discovery_followups: []
-surprising_ripples: []
+discovery_followups:
+  - ID-250
+surprising_ripples:
+  - sdd/BACKLOG.md

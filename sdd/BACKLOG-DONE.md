@@ -156,7 +156,7 @@ if evidence changes; these are retired.
 ## Unreleased
 
 - [x] **BUG-258 — `RemoteStoreComputeLogManager` no longer conforms to Dagster's compute-log-manager signature**
-  spec: — · effort: S · audience: contributor.tooling
+  spec: — · effort: S · audience: user.api, contributor.tooling
   `mypy` fails on `src/remote_store/ext/dagster.py:773` with
   `Return type "Sequence[Sequence[str]]" of "get_log_keys_for_log_key_prefix"
   incompatible with return type "Sequence[list[str]]" in supertype
@@ -182,11 +182,24 @@ if evidence changes; these are retired.
   **ID note:** filed as BUG-258 rather than BUG-254 (the next free ID on `master`)
   because BUG-254 through BUG-257 are filed on the open BUG-246 branch and would
   collide once both merge. `gen_backlogid.py` cannot see an unmerged branch.
-  **Recurrence is the real exposure, and is not closed here.** Any unpinned
-  dependency whose signatures `mypy` checks can redden every open PR without a
-  commit; `dagster` is one of several. Deciding between an upper bound, a
-  lockfile for the typecheck job, and a scheduled latest-deps job is a separate
-  question and is left open rather than settled by this one-line fix.
+  **`user.api` because this is a public signature**, not just tooling:
+  `RemoteStoreComputeLogManager` is exported in `__all__`, and a downstream
+  subclass overriding `get_log_keys_for_log_key_prefix` with the old, wider
+  `Sequence[Sequence[str]]` now fails `mypy` against remote-store where it
+  previously passed. That is what makes the CHANGELOG entry required rather than
+  optional, per the `audience` rule in `sdd/traces/_schema.yml`.
+  **Recurrence is narrower than it first looked, and is filed as ID-250.** Two of
+  the three mitigations an earlier draft of this entry called undecided already
+  ship: `.github/workflows/drift-guard.yml` (ID-182) is the scheduled latest-deps
+  job — Monday 07:00 UTC, re-resolves every extra with `--upgrade --pre`, opens a
+  rolling `[drift-guard]` issue and never reds a PR — and
+  `infra/drift-locks/dagster.txt` is the lockfile, pinning `dagster==1.13.17`,
+  which is the very version this diagnosis rests on. The residual gap is one
+  thing, not a choice among three: **drift-guard's smoke runs pytest targets and
+  an import smoke, never `mypy`** (`rg 'mypy' .github/workflows/drift-guard.yml`
+  returns nothing), so a purely type-level narrowing in a dependency is invisible
+  to the guard even when the version drift itself is reported. That is why this
+  reached PRs as a red `typecheck` job instead of a triaged rolling-issue row.
 
 - [x] **BUG-248 — BE-021's absent-container rule and GR-031's drive-identity escalation contradict each other**
   spec: BE-021, GR-031, PING-011 · effort: M · audience: user.api

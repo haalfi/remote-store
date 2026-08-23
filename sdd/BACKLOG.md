@@ -932,7 +932,8 @@ here as legitimately as "built".
 
 **Closes when:** every checker a diff can invalidate is reachable from a gate
 that diff actually triggers (BK-333); every extra's drift smoke exercises the
-packages it pins (BUG-250); **every install channel we intend to offer is
+packages it pins (BUG-250) and catches the drift that is visible only to a type
+checker (ID-250); **every install channel we intend to offer is
 published and working** (ID-018); and every upstream that can break us on its
 own schedule has a standing watch (ID-229, ID-225).
 
@@ -943,6 +944,40 @@ narrower wording would be vacuously true while the item stays open.
 conda-forge reviewer, so no work in this repo can close section 5 — a real
 property of the section, not a defect in it, and stated so nobody reads the
 open item as neglect.
+
+- [ ] **ID-250 — The drift smoke never type-checks, so a signature-only narrowing reaches PRs as a red gate**
+  spec: — · effort: M · audience: infra.ci
+  `.github/workflows/drift-guard.yml` resolves every extra with
+  `--upgrade --pre`, diffs against the committed baselines and runs the smoke —
+  which is a pytest target or an `--import-only` module import, per
+  `scripts/drift_smoke_map.py`. It never runs `mypy`: `rg 'mypy'
+  .github/workflows/drift-guard.yml` returns nothing. So a dependency change that
+  is invisible at runtime and visible only to a type checker passes the smoke,
+  the rolling `[drift-guard]` issue reports the version bump with a green
+  verdict, and the first person to learn that it breaks us is whoever opens the
+  next PR.
+  **Measured, in BUG-258.** Dagster narrowed
+  `ComputeLogManager.get_log_keys_for_log_key_prefix` from
+  `Sequence[Sequence[str]]` to `Sequence[list[str]]`. Nothing raised, nothing
+  failed to import, no test changed behaviour — and every open PR's
+  `typecheck (3.13)` job went red against code no commit had touched. The version
+  drift itself was inside drift-guard's remit; the consequence was outside its
+  instrument.
+  This is the sibling of BUG-250 one layer up: that item is about the smoke
+  reaching the *packages* an extra pins, this one about the smoke reaching the
+  *properties* of them that we actually depend on. Both are the same failure —
+  a green verdict from an instrument that never looked.
+  Fix shape is open, and the cheap option may not be the right one. Adding
+  `mypy` to the smoke leg is small but types the whole tree against one drifted
+  extra, so a failure will not say which; typing only the extra's own module is
+  narrower but needs a map from extra to source path, which is
+  `drift_smoke_map.py`'s existing shape. Either way the verdict must be
+  *advisory* like the rest of drift-guard — the point is a triaged rolling-issue
+  row before the PR, not a second gate that blocks one.
+  **Not** about pinning `dagster`, which BUG-258 considered and rejected:
+  `infra/drift-locks/dagster.txt` already freezes the extra, and the annotation
+  fix it shipped is valid against both supertype versions, so no upper bound was
+  needed.
 
 - [ ] **BUG-250 — `[graph]`'s drift smoke reaches one of the extra's four declared dependencies**
   spec: — · effort: S · audience: infra.ci
