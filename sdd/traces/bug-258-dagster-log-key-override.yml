@@ -1,0 +1,107 @@
+id: BUG-258
+title: "RemoteStoreComputeLogManager conforms to Dagster's narrowed compute-log signature"
+trigger: >-
+  The typecheck (3.13) CI job failed on an unrelated PR with
+  'Return type "Sequence[Sequence[str]]" of "get_log_keys_for_log_key_prefix"
+  incompatible with return type "Sequence[list[str]]" in supertype
+  "ComputeLogManager"'. No commit touched src/remote_store/ext/dagster.py; the
+  variable was dagster, which is declared as dagster>=1.9 with no upper bound and
+  narrowed that supertype in a release after 2026-08-17.
+source_items:
+  - BUG-258
+audience:
+  - contributor.tooling
+expected_ripples:
+  - CHANGELOG.md
+  - sdd/BACKLOG-DONE.md
+
+# Counted from `git log --oneline origin/master..HEAD`: one commit, which is the
+# implementation. No commit exists because review found something. Value is 0.
+review_rounds: 0
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: src/remote_store/ext/dagster.py
+        section: "get_log_keys_for_log_key_prefix"
+        read_type: reference
+        extract: >-
+          The override's body already builds `results: list[list[str]]` and
+          returns it, so only the annotation was ever wider than the value. That
+          is what makes the fix one token rather than a signature negotiation.
+
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: src/remote_store/ext/dagster.py
+        section: "(diff against master)"
+        read_type: verify
+        extract: >-
+          Established pre-existing before touching anything, because a failure
+          discovered on a feature branch is assumed to be that branch's until
+          shown otherwise. `git diff origin/master HEAD -- src/remote_store/ext/
+          dagster.py` is empty and `git log origin/master..HEAD -- <that file>`
+          names no commit, so the file is byte-identical to master.
+        outcome: ok
+      - file: dagster._core.storage.compute_log_manager
+        section: "ComputeLogManager.get_log_keys_for_log_key_prefix"
+        read_type: verify
+        extract: >-
+          The decisive measurement, and the reason a local run disagreed with CI.
+          `inspect.getsource` on the installed dagster 1.13.17 shows the supertype
+          still returning Sequence[Sequence[str]], so `hatch run typecheck` passed
+          locally while CI, which resolves fresh, saw the narrowed
+          Sequence[list[str]]. A green local gate is not evidence about an
+          unpinned dependency; only the resolved version is.
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "(master run history)"
+        read_type: verify
+        extract: >-
+          Master's most recent ci.yml run is 2026-08-17 and green; the failure
+          appeared 2026-08-23. Master is therefore untested against the current
+          dagster rather than passing it, which is the accurate statement and a
+          different one from "master is green".
+        outcome: ok
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/ext/dagster.py
+        section: "get_log_keys_for_log_key_prefix"
+        read_type: reference
+        extract: >-
+          Annotated the return as Sequence[list[str]], which satisfies both
+          supertype versions rather than tracking whichever is current: Sequence
+          is covariant and list[str] is a subtype of Sequence[str], so
+          Sequence[list[str]] is a legal override return under the old
+          Sequence[Sequence[str]] too. Confirmed by running the local typecheck
+          against 1.13.17 after the change. Pinning dagster or narrowing to match
+          only the new supertype would both have needed revisiting on the next
+          release; this does not.
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Detailed checklist"
+        read_type: verify
+        extract: >-
+          No row triggers. This changes no public method signature of this
+          library's own surface (the method implements a third-party ABC), no
+          error type, no capability and no spec clause; the ext/ extension
+          inventory is unchanged because no extension was added or removed.
+      - file: sdd/000-process.md
+        section: "Rule 6"
+        read_type: gate
+        extract: >-
+          The pipeline wants a failing test before the fix. There is none to
+          write: the annotation is erased at runtime, the returned object is
+          unchanged, and the property is only observable to a type checker. The
+          failing check the fix closes is the typecheck job itself, which is
+          recorded here rather than being quietly skipped.
+        outcome: ok
+
+discovery_followups: []
+surprising_ripples: []
