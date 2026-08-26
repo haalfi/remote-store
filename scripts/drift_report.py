@@ -14,9 +14,10 @@ Logic:
 
 Drift-gate::
 
-    kind:       rule
-    rule: the rolling dependency-drift issue reflects the current per-extra drift reports: open
-        while any extra drifts, closed once all clear
+    kind:       report
+    surfaces:   the current per-extra dependency-drift state, as a rolling GitHub issue it opens,
+        updates or closes; it acts on that state rather than asserting anything, and exits 0 either
+        way
     domain:     process
 """
 

@@ -160,10 +160,25 @@ class TestParseDeclarations:
             )
 
     @pytest.mark.spec("ID-245")
-    def test_multiple_blocks_need_entrypoints(self) -> None:
-        """Without entrypoints nothing matches an argv, so every row would drop in silence."""
-        with pytest.raises(_mod.DeclarationError, match="needs an `entrypoint:`"):
-            _mod.parse_declarations(_module(PAIR_BLOCK + RULE_BLOCK), "s.py")
+    def test_blocks_without_entrypoints_all_apply(self) -> None:
+        """One command can drive several mechanisms; check_links.py drives three."""
+        declarations = _mod.parse_declarations(_module(PAIR_BLOCK + RULE_BLOCK), "s.py")
+        assert [d.kind for d in declarations] == ["pair", "rule"]
+        assert _mod._matching(declarations, "") == declarations
+
+    @pytest.mark.spec("ID-245")
+    def test_mixing_entrypoint_and_entrypointless_blocks_is_rejected(self) -> None:
+        """An argv would match both forms, and nothing in the file says which was meant."""
+        keyed = """
+    Drift-gate::
+
+        kind:       pair
+        entrypoint: diff
+        compares:   a <-> b
+        domain:     process
+"""
+        with pytest.raises(_mod.DeclarationError, match="mixing `entrypoint:`"):
+            _mod.parse_declarations(_module(PAIR_BLOCK + keyed), "s.py")
 
     @pytest.mark.spec("ID-245")
     def test_multiple_blocks_with_entrypoints_are_accepted(self) -> None:
@@ -221,6 +236,13 @@ class TestWiringDerivation:
         assert _mod._resolve("a", table, frozenset()) == [("scripts/check_x.py", "")]
 
     @pytest.mark.spec("ID-245")
+    def test_unbalanced_quote_names_the_target(self) -> None:
+        """A bare shlex traceback names neither the target nor the file (Rule 2)."""
+        table = {"a": ['python scripts/check_x.py "unclosed']}
+        with pytest.raises(_mod.DeclarationError, match="hatch target 'a' has an unparseable command"):
+            _mod._resolve("a", table, frozenset())
+
+    @pytest.mark.spec("ID-245")
     def test_invocation_captures_trailing_argv(self) -> None:
         assert _mod._invocations("python scripts/drift_check.py render-docs --check") == [
             ("scripts/drift_check.py", "render-docs --check")
@@ -235,8 +257,8 @@ class TestWiringDerivation:
     def test_entrypoint_matches_by_argv_prefix(self) -> None:
         diff = _mod.Declaration(kind="pair", domain="process", compares="a <-> b", entrypoint="diff")
         render = _mod.Declaration(kind="pair", domain="process", compares="c <-> d", entrypoint="render-docs")
-        assert _mod._match([diff, render], "render-docs --check") is render
-        assert _mod._match([diff, render], "extras") is None
+        assert _mod._matching([diff, render], "render-docs --check") == [render]
+        assert _mod._matching([diff, render], "extras") == []
 
 
 class TestEnforcement:

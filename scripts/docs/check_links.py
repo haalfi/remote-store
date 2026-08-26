@@ -48,8 +48,21 @@ Exit 0 = clean.  Exit 1 = broken links found.
 Drift-gate::
 
     kind:       pair
-    compares: every Markdown link and context7 manifest entry ↔ the on-disk files and built
+    compares: every Markdown link and context7 manifest path ↔ the on-disk files and built
         docs-site pages they name
+    domain:     explanation
+
+Drift-gate::
+
+    kind:       rule
+    rule: every <a id> anchor in a link target is unique within its file and adjacent to a heading
+    domain:     explanation
+
+Drift-gate::
+
+    kind:       rule
+    rule: both context7 manifests stay within Context7's per-field list and rule-length maxima,
+        which it silently rejects a manifest for exceeding
     domain:     explanation
 """
 

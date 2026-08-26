@@ -64,8 +64,8 @@ Exit codes
 Drift-gate::
 
     kind:       pair
-    compares: the canonical backend order pinned in CONTRIBUTING.md ↔ every backend enumeration in
-        README.md, docs-src/, context7.json and the conda recipe
+    compares: the canonical order in this script's own _BACKENDS constant ↔ every backend
+        enumeration in the scanned surfaces, CONTRIBUTING.md and README.md among them
     domain:     cross-surface
 """
 

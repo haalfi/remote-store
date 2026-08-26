@@ -11,8 +11,8 @@ string / extra name (ID-169).
 Drift-gate::
 
     kind:       pair
-    compares: docs-src/_data/graph/graph.json and pyproject.toml's extras ↔ the generated sections
-        of FEATURES.md
+    compares: docs-src/_data/graph/graph.json, pyproject.toml's extras and the backend order in
+        src/remote_store/_registry.py ↔ the generated sections of FEATURES.md
     domain:     realization ↔ explanation
 """
 

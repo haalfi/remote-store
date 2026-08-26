@@ -46,9 +46,14 @@ takes ``surfaces:`` instead, for a mechanism that measures rather than asserts:
 is true or false of nothing, so a ``rule:`` describing it would render under a
 column promising an assertion nobody makes.
 
-``entrypoint:`` disambiguates a script carrying more than one mechanism
-(``drift_check.py``); it is matched against the argv that the wiring actually
-passes, and may be omitted when a script declares exactly one block.
+A script may carry several blocks, because a script may run several mechanisms.
+Two shapes, and a file uses one or the other: with ``entrypoint:`` on every
+block, the argv the wiring passes selects among them (``drift_check.py``, whose
+``diff`` and ``render-docs`` compare different things); with no ``entrypoint:``
+anywhere, every block applies to every invocation (``check_links.py``, which
+enforces link resolution, the anchor rules and the context7 manifest caps in one
+pass). Mixing the two is rejected — an invocation would match both forms, and
+nothing in the file says which was meant.
 
 The claim space (Rule 3)
 ------------------------
@@ -103,14 +108,18 @@ Bounds -- what this gate does not catch (``sdd/DRIFT-RULES.md`` Rule 7):
   ``scripts/*.py``; what remains is bounded to text that looks exactly like a
   command, and the failure direction is a spurious row rather than a missing
   one.
-* Once a script declares at least one block, a wired invocation matching no
-  ``entrypoint:`` is treated as an operational subcommand rather than a
-  mechanism -- ``drift_check.py extras`` lists extras and compares nothing.
-  A genuinely forgotten *second* mechanism on an already-declaring script is
-  therefore silent. The backstop catches the file that declared nothing, which
-  is the case that has an obvious right answer; distinguishing a forgotten
-  mechanism from an operational subcommand needs a judgement about what the
-  subcommand does, and a gate that guesses it would fail on correct code.
+* On a script whose blocks carry entrypoints, a wired invocation matching none
+  of them is treated as an operational subcommand rather than a mechanism --
+  ``drift_check.py extras`` lists extras and compares nothing. A genuinely
+  forgotten mechanism behind such a subcommand is therefore silent. The backstop
+  catches the file that declared nothing, which is the case with an obvious right
+  answer; telling a forgotten mechanism from an operational subcommand needs a
+  judgement about what the subcommand does, and a gate that guessed it would fail
+  on correct code.
+* Nothing checks that a script's blocks are *all* of its mechanisms. Review found
+  ``check_links.py`` declaring one of the three it runs, and the fix was to add
+  the missing two by hand. A script that runs four and declares three renders
+  three truthful rows and no signal at all.
 
 This gate inventories itself, which is the point: § 4b's finding was that the
 checking layer had no enumeration of its own coverage, and an inventory that
@@ -292,11 +301,14 @@ def parse_declarations(text: str, path: str) -> list[Declaration]:
                 raise DeclarationError(f"{path}: duplicate Drift-gate field {key!r}")
             fields[key] = value
         declarations.append(_build(fields, path))
-    if len(declarations) > 1 and any(d.entrypoint is None for d in declarations):
-        # Without an entrypoint on each, nothing matches an invocation to a
-        # block and every row for this script drops in silence.
+    entrypoints = [d.entrypoint for d in declarations]
+    if len(declarations) > 1 and any(entrypoints) and not all(entrypoints):
+        # Mixing the two forms is the one ambiguous case: an invocation would
+        # match both an entrypoint-keyed block and every unkeyed one, and there
+        # is no reading of the file that says which was meant.
         raise DeclarationError(
-            f"{path}: {len(declarations)} Drift-gate blocks, so each needs an `entrypoint:` to match a wired argv"
+            f"{path}: {len(declarations)} Drift-gate blocks mixing `entrypoint:` with blocks that have none; "
+            "give every block an entrypoint, or none of them"
         )
     return declarations
 
@@ -358,7 +370,15 @@ def _resolve(target: str, table: dict[str, list[str]], seen: frozenset[str]) -> 
     seen = seen | {target}
     found: list[tuple[str, str]] = []
     for command in table.get(target, []):
-        tokens = shlex.split(command, posix=True) if command.strip() else []
+        try:
+            tokens = shlex.split(command, posix=True) if command.strip() else []
+        except ValueError as exc:
+            # An unbalanced quote anywhere in the script table would otherwise
+            # surface as a bare traceback naming neither the target nor the
+            # file (DRIFT-RULES Rule 2: localize, do not merely fail).
+            raise DeclarationError(
+                f"pyproject.toml: hatch target {target!r} has an unparseable command: {exc}"
+            ) from exc
         if tokens and tokens[0] in table:
             found.extend(_resolve(tokens[0], table, seen))
             continue
@@ -388,14 +408,18 @@ def _run_steps(workflow: Path) -> list[tuple[str, str]]:
 # ---------------------------------------------------------------------------
 
 
-def _match(declarations: list[Declaration], argv: str) -> Declaration | None:
-    """Pick the declaration whose ``entrypoint:`` matches *argv*."""
-    if len(declarations) == 1 and declarations[0].entrypoint is None:
-        return declarations[0]
-    for declaration in declarations:
-        if declaration.entrypoint and argv.startswith(declaration.entrypoint):
-            return declaration
-    return None
+def _matching(declarations: list[Declaration], argv: str) -> list[Declaration]:
+    """The declarations *argv* runs.
+
+    Entrypoint-less blocks all apply to every invocation, because one command
+    can drive several mechanisms: ``check_links.py`` enforces link resolution,
+    the context7 manifest caps and the anchor rules in a single pass, and one
+    block per script would leave two of the three undeclared. Where blocks do
+    carry entrypoints, argv selects among them (``drift_check.py``).
+    """
+    if any(d.entrypoint for d in declarations):
+        return [d for d in declarations if d.entrypoint and argv.startswith(d.entrypoint)]
+    return list(declarations)
 
 
 def collect(root: Path = ROOT) -> tuple[list[Mechanism], list[str]]:
@@ -452,20 +476,18 @@ def collect(root: Path = ROOT) -> tuple[list[Mechanism], list[str]]:
                 problems.append(f"{path}: wired but carries no `Drift-gate::` declaration block")
             continue
         for argv, homes in sorted(wiring[path].items()):
-            declaration = _match(declarations, argv)
-            if declaration is None:
-                # The script has declared its mechanisms; this invocation is an
-                # operational subcommand (`drift_check.py extras`), not one of
-                # them. See the module docstring's bounds for what that costs.
-                continue
-            mechanisms.append(
-                Mechanism(
-                    path=path,
-                    declaration=declaration,
-                    homes=tuple(sorted(homes)),
-                    gate_homes=gate_homes,
+            # No match means the script has declared its mechanisms and this
+            # invocation is an operational subcommand (`drift_check.py extras`),
+            # not one of them. See the module docstring's bounds for the cost.
+            for declaration in _matching(declarations, argv):
+                mechanisms.append(
+                    Mechanism(
+                        path=path,
+                        declaration=declaration,
+                        homes=tuple(sorted(homes)),
+                        gate_homes=gate_homes,
+                    )
                 )
-            )
 
     merged = _merge(mechanisms)
     return merged, problems
@@ -473,9 +495,11 @@ def collect(root: Path = ROOT) -> tuple[list[Mechanism], list[str]]:
 
 def _merge(mechanisms: list[Mechanism]) -> list[Mechanism]:
     """Fold rows that resolve to one declaration, unioning their homes."""
-    folded: dict[tuple[str, str], Mechanism] = {}
+    folded: dict[tuple[str, str, str], Mechanism] = {}
     for mechanism in mechanisms:
-        key = (mechanism.path, mechanism.declaration.entrypoint or "")
+        # Subject is part of the key: a script may declare several mechanisms
+        # under one command, and those are distinct rows, not one to fold.
+        key = (mechanism.path, mechanism.declaration.entrypoint or "", mechanism.declaration.subject)
         existing = folded.get(key)
         homes = set(mechanism.homes) | (set(existing.homes) if existing else set())
         folded[key] = Mechanism(
@@ -484,7 +508,7 @@ def _merge(mechanisms: list[Mechanism]) -> list[Mechanism]:
             tuple(sorted(homes)),
             mechanism.gate_homes,
         )
-    return sorted(folded.values(), key=lambda m: (m.path, m.declaration.entrypoint or ""))
+    return sorted(folded.values(), key=lambda m: (m.path, m.declaration.entrypoint or "", m.declaration.subject))
 
 
 # ---------------------------------------------------------------------------
