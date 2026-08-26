@@ -1,0 +1,199 @@
+id: BUG-247
+title: "LocalBackend reports a deleted root as 'Path escapes root directory'"
+trigger: >-
+  Every LocalBackend operation but glob and check_health raised
+  InvalidPath("Path escapes root directory") once the root directory was deleted
+  underneath the backend, including the two tolerant deletes BE-021's
+  absent-container rule requires to return cleanly and the three probes BE-004 /
+  BE-005 forbid from raising at all.
+source_items:
+  - BUG-247
+  - BUG-243
+  - BUG-248
+audience:
+  - user.api
+  - contributor.process
+expected_ripples:
+  - sdd/backlogid.json
+  - docs-src/_data/graph/graph.json
+surprising_ripples:
+  - src/remote_store/_store.py
+  - src/remote_store/aio/_async_store.py
+  - src/remote_store/_backend.py
+  - src/remote_store/aio/_async_backend.py
+  - CHANGELOG.md
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-247"
+        read_type: gate
+        extract: >-
+          The diagnosis (the ancestor walk climbs past a deleted root) held
+          exactly. The prescription did not: it names four cells and proposes a
+          root-existence stat "measure before adopting it". Measured, the walk
+          stop costs nothing and the affected surface is 40 cells, not 4.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-004, BE-005, BE-012, BE-013, BE-021"
+        read_type: gate
+        extract: >-
+          What an absent container owes per operation. BE-021 § Reach is the
+          load-bearing part: it decides the two tolerant deletes and says every
+          other operation keeps a pre-existing answer, which is what makes this
+          a whole-surface fix rather than a two-cell one.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029"
+        read_type: gate
+        extract: >-
+          Reached only because the fix turns _resolve from raising into
+          returning, which puts the root's own cells in play. BE-029 is
+          unconditional and BE-021 § Reach says an absent container answers
+          False; neither says which governs the root spelling when the container
+          is the root. The gap is real, not a misreading.
+        outcome: unclear
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Pre-work index"
+        read_type: gate
+        extract: >-
+          Triggered rows: Bug fix, Spec section, Error type, Backlog item
+          touched, CHANGELOG entry, Public method signature.
+        outcome: ok
+
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: tests/backends/local/test_absent_root.py
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          The reproduction was already pinned, xfail(strict=True), so the
+          failing test predates the work. Running the fix flipped both cells to
+          XPASS and broke the suite, which is the prompt the module was written
+          to give.
+        outcome: ok
+      - file: src/remote_store/backends/_local.py
+        section: "_within_root, _resolve"
+        read_type: reference
+        extract: >-
+          Enumerated the whole operation surface against a deleted root rather
+          than reading the four cells the item named. 27 of 29 raised the escape
+          error; glob (which never calls _resolve) and check_health were already
+          correct. That table is what scoped the work.
+        outcome: ok
+
+  - id: design
+    name: Design
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "exists, is_file, is_folder, get_folder_info, _reject_root_as_file"
+        read_type: reference
+        extract: >-
+          The hierarchical sibling had already solved the root half, for the
+          same reason in a different guise: base_path is created lazily, so SFTP
+          could never answer BE-029 from a stat. Local answered from a stat and
+          got away with it only because __init__ mkdirs the root.
+        outcome: ok
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "SQLBlobBackend root handling"
+        read_type: verify
+        extract: >-
+          Measured rather than read, against a dropped table: the root probes
+          still answer True/True/False. Two backends agreeing settled the root
+          question without an adjudication record.
+        outcome: ok
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "_reject_root_as_file"
+        read_type: reference
+        extract: >-
+          The shared pre-check every backend but Local and Memory already calls.
+          Reused rather than reimplemented.
+        outcome: ok
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_local.py
+        section: "_within_root, exists, is_file, is_folder, get_folder_info, _reject_root_as_file"
+        read_type: reference
+        extract: >-
+          Two changes, not one: stop the ancestor walk at the root, and give
+          Local the BE-029 short-circuits it had been doing without. Fenced
+          separately — reverting the stop fails 24 of 46 cells, reverting the
+          pre-check fails the root type-error cell.
+        outcome: ok
+      - file: tests/backends/local/test_absent_root.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Rewritten from two xfail cells plus a divergence-pinning class into an
+          enumeration of the surface. The class pinning today's wrong answer was
+          deleted: it existed to catch the divergence changing into some third
+          behaviour, and there is no divergence left for it to watch.
+        outcome: ok
+      - file: src/remote_store/backends/_local.py
+        section: "write, write_atomic, open_atomic"
+        read_type: verify
+        extract: >-
+          The fix's own hole, found by reading the diff against the write paths
+          rather than by any gate. Once _resolve stops raising, write("") reaches
+          the filesystem, and the writers' root check is full.is_dir() — False
+          with the root gone. The bytes landed at the root path and only the
+          WriteResult's empty-key check objected, leaving the store root a
+          regular file. My first pin for it asserted is_file(root), which the
+          BE-029 short-circuit answers False without a syscall: the assertion
+          passed on the corruption it was written to catch. Re-pinned against
+          the filesystem.
+        outcome: ok
+
+  - id: docs
+    name: Docs and record
+    steps:
+      - file: src/remote_store/_backend.py
+        section: "delete, delete_folder"
+        read_type: verify
+        extract: >-
+          Eight docstring sites across four files named Local as the backend
+          that "still raises InvalidPath when its root directory is gone" —
+          both Backend ABCs and both Store facades. They render into the public
+          API reference. The ripple-check's "Public method signature" row points
+          at docstrings but nothing points at a docstring asserting another
+          backend's defect, which is how BUG-248 hit the identical set.
+        outcome: misleading
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 § Known divergences, § Reach"
+        read_type: reference
+        extract: >-
+          Removed Local's bullet, re-derived the bullet count from the survivors
+          rather than decrementing, moved the false-premise paragraph to past
+          tense, and gave BE-021 § Reach the sentence that says the root
+          spelling is BE-029's to decide.
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: >-
+          BUG-243's own entry asserted that Local still diverged. Not a
+          ripple-check row: an unreleased entry describing a defect a later
+          unreleased entry fixes.
+        outcome: ok
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Detailed checklist"
+        read_type: verify
+        extract: "Full pass over the triggered rows once the diff was complete"
+      - file: tests/backends/conformance/test_io.py
+        section: "BE-029 root cells"
+        read_type: verify
+        extract: >-
+          Confirmed the root cells assert error type and is_root(path), never
+          the message, so Local's root InvalidPath text changing to the shared
+          wording breaks nothing. Local's own message-matching tests all use
+          non-root paths.
+        outcome: ok

@@ -155,6 +155,58 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-247 — `LocalBackend` reports a deleted root as "Path escapes root directory"**
+  spec: BE-004, BE-005, BE-012, BE-013, BE-021, BE-029 · effort: S · audience: user.api
+  Delete a `LocalBackend`'s root out from under it and every operation but
+  `glob` and `check_health` raised `InvalidPath("Path escapes root directory")`
+  — including `delete(missing_ok=True)` and `delete_folder(missing_ok=True)`,
+  which BE-021's absent-container rule requires to return cleanly, and
+  `exists()`, which BE-004 forbids from raising at all. Nothing was escaping:
+  `_within_root` walks up to the deepest *lexically existing* ancestor for its
+  symlink-escape check, and once the root is gone that walk climbs past the
+  root, so `anchor.resolve().relative_to(self._root)` raises `ValueError` and
+  absence is reported as an escape. `InvalidPath` was the worst of the plausible
+  answers: it tells the caller their path is malformed when the path is fine and
+  the store is simply absent.
+  **Fixed by stopping the walk at the root**, not by the root-existence `stat`
+  the item proposed. The item asked for that shape to be measured before
+  adopting; measured, the stop costs no syscall at all (a path comparison inside
+  a loop whose body runs only for components that do not exist) and is provably
+  inert while the root exists, since an existing root is already an existing
+  ancestor of every contained target. A lexically escaping path never has the
+  root on its ancestor chain for the stop to fire on, so the symlink-escape
+  guard the item flagged as at risk is untouched — fenced by reverting the stop
+  and watching 24 of the 46 new cells fail.
+  **Two subjects the item did not name.** The fix turns `_resolve` from raising
+  into returning, which exposes what each operation does next — so the work was
+  the whole surface, not the four cells the item listed: 40 operation cells were
+  measured before and after. And it put the **store root** in play, which the
+  item never mentions: BE-029 makes `""` / `"."` a folder by definition, and
+  Local satisfied that only by observation, because `__init__` mkdirs the root.
+  With the root gone, observation disagreed. Local gained the root
+  short-circuits `SFTPBackend` has carried for the same reason (`base_path` is
+  created lazily there) plus the shared `_reject_root_as_file` pre-check every
+  other backend already calls — Local was the only one relying on a stat to
+  learn that its root is a folder. BE-021 § Reach now says outright that the
+  root's own spellings are BE-029's to decide and not the absent-container
+  clause's; the two read as though they met, and nothing had said which won.
+  `write` recreates the root and succeeds, which BE-021 § Reach explicitly
+  leaves to the backend and which matches `__init__`; `check_health` remains the
+  operation that reports an absent root, and is what keeps the BE-029 answers
+  from being a lie about store health.
+  **The fix opened one hole of its own, found by reviewing the diff against the
+  write paths.** Turning `_resolve` from raising into returning means `write("")`
+  no longer stops there, and the writers' own root check is `full.is_dir()` —
+  which answers `False` once the root is gone. The write then ran to completion:
+  `parent.mkdir` recreated the tree, the bytes landed at the root path, and only
+  building the `WriteResult` rejected the empty key, leaving the store root as a
+  regular **file**. All three writers now refuse the root key definitionally,
+  before touching the disk. Writes *under* the root are unaffected. Caught by
+  measuring the filesystem rather than the exception — the first version of that
+  cell asserted `is_file(root)`, which the new BE-029 short-circuit answers
+  `False` without looking at the disk, so it passed on the corruption it existed
+  to catch.
+
 - [x] **BUG-248 — BE-021's absent-container rule and GR-031's drive-identity escalation contradict each other**
   spec: BE-021, GR-031, PING-011 · effort: M · audience: user.api
   Two deliberate clauses giving opposite answers for the same call, neither

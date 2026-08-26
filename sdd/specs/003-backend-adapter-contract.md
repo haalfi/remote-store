@@ -592,7 +592,18 @@ container before this clause, and keeps it: `get_folder_info`, `read`,
 `NotFound` row; `list_files` and `list_folders` return an empty listing, since an
 absent container holds nothing; `exists()`, `is_file()` and `is_folder()` MUST
 answer `False`, which BE-004 / BE-005 and this section's own rule already forbid
-them from breaching. `write` is the one operation *on the roster* that no clause
+them from breaching.
+
+**The store root's own spellings are not this clause's to decide.** `""` and
+`"."` name the container rather than a path inside it, and
+[BE-029](#be-029-root-path) already answers them unconditionally: the root is a
+folder by definition, not by observation. So an absent container does *not* flip
+`exists("")` to `False` or make `get_folder_info("")` report itself missing — it
+aggregates to zero — and a file-shaped call on the root stays the type error
+BE-029 makes it, `missing_ok` included. Stated because the two clauses read as
+though they met: the answers above are for a path the container would hold, and
+the root is not one. `check_health` is the operation that reports an absent
+container, and it is off this roster entirely. `write` is the one operation *on the roster* that no clause
 of this spec decides, and this one does not decide it either — which leaves it
 the one roster operation a backend spec may decide, as
 [GR-031](044-graph-backend.md#gr-031-404-discrimination-item-vs-drive) does for
@@ -636,17 +647,24 @@ here is what makes the container case answerable from one place.
   sees a backend that is broken. That is one divergence with two ways in, not
   two, and the reclassification deliberately does not try to tell them apart —
   see [SQL-BLOB-050](040-sql-blob-backend.md#sql-blob-050-exception-translation).
-- `LocalBackend` answers **every** operation with
-  `InvalidPath("Path escapes root directory")` once its root directory is
-  deleted, including both tolerant deletes. The containment check walks up to
-  the deepest existing ancestor, which is above the root once the root is gone,
-  so absence is misreported as an escape. This is the furthest from the clause
-  any backend currently sits, and the only one where the error type actively
-  misleads.
+`GraphBackend` and `LocalBackend` were the fourth and fifth bullets in this list
+— counting bullets, not backend classes, which is the frame `sdd/BACKLOG.md` § 1
+uses when it calls Graph the sixth of six — and neither is one now; three bullets
+remain.
 
-`GraphBackend` was the fifth bullet in this list — counting bullets, not backend
-classes, which is the frame `sdd/BACKLOG.md` § 1 uses when it calls Graph the
-sixth of six — and is no longer one; four bullets remain.
+`LocalBackend` answered **every** operation with
+`InvalidPath("Path escapes root directory")` once its root directory was deleted,
+including both tolerant deletes: its containment check walked up to the deepest
+existing ancestor, which is above the root once the root is gone, so absence was
+misreported as an escape. It was the furthest from this clause any backend sat,
+and the only one where the error type actively misled. BUG-247 stopped the walk
+at the root, which brings the whole surface to the clause at once — the tolerant
+deletes return, the strict ones and the reads raise `NotFound`, the probes answer
+`False`, the listings are empty. The store root itself is decided by BE-029 and
+not by this clause (§ Reach above), so it still answers as a folder; the
+operation that reports an absent root is `check_health`.
+
+`GraphBackend`'s bullet is the other one this list has lost.
 [GR-031](044-graph-backend.md#gr-031-404-discrimination-item-vs-drive) mapped
 `404 resourceNotFound` to `BackendUnavailable` for every error-raising
 operation, deliberately, on the grounds that a deleted drive is a backend
@@ -679,12 +697,14 @@ run, which is the argument for the rule being stated as an obligation rather
 than inferred from what backends happened to do.
 
 The first was that the hierarchical backends had already settled it, because on
-Local an absent store root is just an absent path. With its root deleted,
-`LocalBackend` raises `InvalidPath("Path escapes root directory")` from the
-containment check, before either delete's `missing_ok` branch is reached. It is
-a divergence from this clause, not evidence for it, and it went unnoticed
-because both deletes look correct in isolation — the guard that fires is two
-lines upstream in `_resolve`.
+Local an absent store root is just an absent path. It was not: with its root
+deleted, `LocalBackend` raised `InvalidPath("Path escapes root directory")` from
+the containment check, before either delete's `missing_ok` branch was reached. It
+was a divergence from this clause, not evidence for it, and it went unnoticed
+because both deletes look correct in isolation — the guard that fired was two
+lines upstream in `_resolve`. BUG-247 has since made the premise true, which does
+not make the reasoning sound: it was asserted from a reading, and what settled it
+either way was running it.
 
 The second was that the rule merely ratified what `delete` already did on every
 flat-namespace backend, correcting only its sibling. That holds for the S3 and

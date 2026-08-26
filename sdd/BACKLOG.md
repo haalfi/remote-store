@@ -198,7 +198,7 @@ be edited to point elsewhere.
 store answers the same way on every backend.
 
 **Closes when:** the four adapters answer the contract against an absent
-container (BUG-246, BUG-249, BUG-247, BUG-245); no native exception escapes on
+container (BUG-246, BUG-249, BUG-245); no native exception escapes on
 either the absent or the **denied** path (BUG-249); one operation does not answer
 by payload size (BUG-253); and a newly registered backend cannot pass CI without
 meeting BE-004, BE-005 and BE-021 (BK-345). The spec contradiction is
@@ -211,17 +211,20 @@ section 2, the only item whose subject is that path's coverage. Both are stated
 inside the items that carry them, as the rule requires; this section cannot
 close on its own items alone.
 
-**Five backend classes** still disagree with **the absent-container clause**,
-counted from the items below — BUG-253 is a sixth disagreement in this section
+**Four backend classes** still disagree with **the absent-container clause**,
+counted from the items below — BUG-253 is a fifth disagreement in this section
 but a different one, between two halves of one Graph operation rather than with
 that clause: `S3Boto3Backend`, `AzureBackend` and
 `AsyncAzureBackend` (BUG-246, which collapses the two Azure adapters into one row
-because they answer identically and take one fix), `SQLBlobBackend` (BUG-246 and
-BUG-245) and `LocalBackend` (BUG-247). `GraphBackend` was a sixth and is done
-**for that clause** — it still carries BUG-253:
-BUG-248 adjudicated the spec contradiction behind it and brought the backend to
-the contract in the same change, which is why BK-345's exemption list — blocked
-on that adjudication — can now be written. The remaining group ships together or
+because they answer identically and take one fix) and `SQLBlobBackend` (BUG-246
+and BUG-245). **Two classes have left this count**, both by shipping rather than
+by exemption. `GraphBackend` is done **for that clause** — it still carries
+BUG-253: BUG-248 adjudicated the spec contradiction behind it and brought the
+backend to the contract in the same change, which is why BK-345's exemption list
+— blocked on that adjudication — can now be written. `LocalBackend` is done
+outright (BUG-247): its containment check reported a deleted root as an escape,
+and stopping the ancestor walk at the root brought every operation to the clause
+at once. The remaining group ships together or
 not at all: any one left behind leaves portable error handling impossible, which
 is the whole promise.
 
@@ -307,32 +310,6 @@ is the whole promise.
   **ID-242** in section 2 — four `moto doesn't raise PermissionError` pragmas
   that are coverage holes. Closing this item without ID-242 leaves the denied
   path asserted by one hand-written probe and by nothing in conformance.
-
-- [ ] **BUG-247 — `LocalBackend` reports a deleted root as "Path escapes root directory"**
-  spec: BE-004, BE-012, BE-013, BE-021 · effort: S · audience: user.api
-  Delete a `LocalBackend`'s root directory out from under it and **every** operation
-  raises `InvalidPath("Path escapes root directory")` — including
-  `delete(missing_ok=True)` and `delete_folder(missing_ok=True)`, which BE-021's
-  absent-container rule requires to return cleanly, and `exists()`, which BE-004
-  forbids from raising at all.
-  Nothing is escaping. `_within_root` walks up from the target to the deepest
-  *lexically existing* ancestor for its symlink-escape check; once the root is
-  gone that walk climbs past the root, so
-  `anchor.resolve().relative_to(self._root)` raises `ValueError` and containment
-  is reported as an escape. `InvalidPath` is the worst of the plausible answers:
-  it tells the caller their path is malformed when the path is fine and the store
-  is simply absent.
-  Reproduction and the current behaviour are pinned in
-  `tests/backends/local/test_absent_root.py` — the contract cells are
-  `xfail(strict=True)`, so fixing this flips them to XPASS and fails the suite
-  until the markers come off.
-  **Care required:** `_within_root` is the symlink-escape guard, so a fix must
-  distinguish "anchor escaped because the root is gone" from "anchor escaped
-  because the path really does point outside" without weakening the second. A
-  root-existence check before the walk is the obvious shape, at the cost of a
-  `stat` per call — measure before adopting it.
-  Local is the most-used backend, so this reaches more callers than any other
-  item in this section.
 
 - [ ] **BUG-245 — `SQLBlobBackend(create_table=False)` leaks `NoSuchTableError` from its constructor**
   spec: BE-021, SQL-BLOB-012 · effort: S · audience: user.api

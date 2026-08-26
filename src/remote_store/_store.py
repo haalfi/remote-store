@@ -358,10 +358,9 @@ class Store:
         """Delete a single file.
 
         A store whose backing container is gone — a deleted bucket, container or
-        table — holds no file either, so *missing_ok* tolerates that too on the
-        S3, Azure and SQL backends, and on Graph when its drive is gone. One does
-        not yet: a local store whose root directory was deleted raises
-        ``InvalidPath``.
+        table — holds no file either, so *missing_ok* tolerates that too: on the
+        S3, Azure and SQL backends, on Graph when its drive is gone, and on a
+        local store whose root directory was deleted.
 
         Args:
             path: Store-relative file path.
@@ -386,10 +385,9 @@ class Store:
         """Delete a folder.
 
         A store whose backing container is gone — a deleted bucket, container or
-        table — holds no folder either, so *missing_ok* tolerates that too on the
-        S3, Azure and SQL backends, and on Graph when its drive is gone. One does
-        not yet: a local store whose root directory was deleted raises
-        ``InvalidPath``.
+        table — holds no folder either, so *missing_ok* tolerates that too: on the
+        S3, Azure and SQL backends, on Graph when its drive is gone, and on a
+        local store whose root directory was deleted.
 
         Args:
             path: Store-relative folder path.  Must not be ``""``
