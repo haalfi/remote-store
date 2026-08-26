@@ -103,10 +103,46 @@ async def _aclose_tracked_backends() -> AsyncIterator[None]:
             await backend.aclose()
 
 
-async def _async_iter(items: list[Any]):  # noqa: ANN201 -- async generator
-    """Yield items from a list as an async iterator."""
+async def _apage(items: list[Any]):  # noqa: ANN201 -- async generator
+    """One page: an async iterator over its own items."""
     for item in items:
         yield item
+
+
+async def _apages(pages: list[list[Any]]):  # noqa: ANN201 -- async generator
+    """The page stream ``by_page()`` returns: an async iterator of async iterators."""
+    for page in pages:
+        yield _apage(page)
+
+
+class _AsyncPaged:
+    """Stands in for the SDK's ``AsyncItemPaged``: iterable, pageable, single-pass.
+
+    ``list_blobs``, ``walk_blobs`` and ``get_paths`` all return one. A bare async
+    generator supports only iteration, so a double returning one fails against a
+    backend that reads pages — as these listings must, to bound an
+    absent-container tolerance to the first page. ``AsyncItemPaged.__aiter__``
+    returns ``self``, so the real object is exhausted once iterated;
+    over-describing the API fails the same way round as under-describing it.
+
+    One page is enough here — multi-page cases are pinned on the wire stubs in
+    ``test_absent_container.py``.
+    """
+
+    def __init__(self, items: list[Any]) -> None:
+        self._aiter = _apage(list(items))
+        self._apages = _apages([list(items)])
+
+    def __aiter__(self):  # noqa: ANN204 -- async iterator
+        return self._aiter
+
+    def by_page(self, continuation_token: str | None = None):  # noqa: ANN201, ARG002 -- SDK signature
+        return self._apages
+
+
+def _async_iter(items: list[Any]) -> Any:
+    """An async-iterable double for an SDK listing result."""
+    return _AsyncPaged(items)
 
 
 def _mock_blob_props(
@@ -2578,24 +2614,65 @@ class TestAsyncAzureErrorPropagation:
             async for _ in backend.list_folders("data"):
                 pass
 
-    @pytest.mark.spec("ASYNC-024")
-    async def test_iter_children_error_mapped(self) -> None:
+    @pytest.mark.spec("ASYNC-024", "BE-021")
+    async def test_iter_children_absent_container_yields_nothing(self) -> None:
+        """A 404 on a listing is the container's, and an absent container holds nothing.
+
+        This cell asserted ``NotFound`` until the absent-container rule reached
+        the listings. The mapping is not gone — ``test_list_folders_error_mapped``
+        above still pins a non-404 fault as ``BackendUnavailable`` — but on this
+        path a 404 has exactly one cause: ``walk_blobs`` reports an absent
+        *prefix* as an empty page, so the only 404 it can raise is the
+        container's.
+        """
         backend, cc, bc = _setup_non_hns_backend()
         cc.walk_blobs.side_effect = ResourceNotFoundError("not here")
 
-        with pytest.raises(NotFound):
-            async for _ in backend.iter_children("missing"):
-                pass
+        assert [item async for item in backend.iter_children("missing")] == []
 
     @pytest.mark.spec("ASYNC-024")
     async def test_list_files_remote_store_error_passthrough(self) -> None:
-        """RemoteStoreError raised during list_files passes through unchanged."""
+        """RemoteStoreError raised during list_files passes through unchanged.
+
+        ``NotFound`` is the one exception and has its own cell below, so this
+        uses a different error type: the passthrough property has to stay pinned
+        for everything the absent-container rule does *not* swallow, or widening
+        that catch later would look like a pass.
+        """
+        backend, cc, bc = _setup_non_hns_backend()
+        cc.walk_blobs.side_effect = PermissionDenied("custom denial", path="x", backend="async-azure")
+
+        with pytest.raises(PermissionDenied, match="custom denial"):
+            async for _ in backend.list_files("data"):
+                pass
+
+    @pytest.mark.spec("ASYNC-024", "BE-021")
+    @pytest.mark.parametrize(
+        ("op_name", "call"),
+        [
+            ("list_files", lambda b: b.list_files("data")),
+            ("list_folders", lambda b: b.list_folders("data")),
+            ("iter_children", lambda b: b.iter_children("data")),
+        ],
+        ids=["list_files", "list_folders", "iter_children"],
+    )
+    async def test_not_found_is_the_one_swallowed_error(
+        self,
+        op_name: str,
+        call,  # noqa: ANN001 -- parametrized callable
+    ) -> None:
+        """The carve-out, stated as its own cell rather than left implicit.
+
+        Parametrised over all three because each listing carries its own copy of
+        the branch: a `NotFound` already mapped to a ``remote_store`` type takes
+        a different path through the tail than the SDK's ``ResourceNotFoundError``
+        does, and the stub-driven suites only ever produce the latter. Covering
+        one listing left the other two branches unexecuted.
+        """
         backend, cc, bc = _setup_non_hns_backend()
         cc.walk_blobs.side_effect = NotFound("custom not found", path="x", backend="async-azure")
 
-        with pytest.raises(NotFound, match="custom not found"):
-            async for _ in backend.list_files("data"):
-                pass
+        assert [item async for item in call(backend)] == [], op_name
 
     @pytest.mark.spec("ASYNC-024")
     async def test_list_folders_remote_store_error_passthrough(self) -> None:

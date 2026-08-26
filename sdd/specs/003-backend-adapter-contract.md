@@ -605,6 +605,84 @@ one. All of these obligations are pre-existing — this
 clause neither creates nor relaxes them, and that is why those operations are
 absent from the roster above rather than exempt from it.
 
+**The empty listing is an answer about a container that was absent when the
+listing began.** A listing that has already received a page has been told the
+container exists; a container 404 arriving on a *later* page therefore reports a
+deletion that happened underneath the scan, not an absence, and a backend MUST
+let it propagate rather than end the iteration. Returning early there hands the
+caller a short listing indistinguishable from a complete one — the caller most
+harmed being the one diffing a listing against local state and deleting the
+difference, which is a data-loss shape rather than an error-reporting one.
+
+The bound is on the **page**, not on what the operation yielded from it. Every
+listing discards part of a page — `list_files` drops common prefixes, directory
+markers and anything past `max_depth`; `list_folders` drops keys; `glob` drops
+non-matches — so a backend keying the bound on a yielded item goes blind exactly
+where a page's contents are all filtered away, and those are ordinary page
+shapes: a container organised into folders returns a first page of nothing but
+prefixes.
+
+Backends whose listing API exposes no page boundary may satisfy this by marking
+each item the service returned *before* its own filters run; the residue is a
+truncated page carrying no items at all, which MUST then be stated as a
+divergence rather than left implied.
+
+**The root is decided by BE-029, not here, and BE-029 wins.** This paragraph
+assigns answers per *operation*; it says nothing about the store root within
+them, and reading a root answer off it is a mistake this spec has already
+produced once. [BE-029](#be-029-root-path) states the root case directly and
+without qualifying it by whether the container exists: the root is a folder that
+always exists, so `exists("")` and `is_folder("")` answer `True`, and
+`get_folder_info("")` aggregates the whole store and never raises `NotFound` —
+an empty store rather than a missing path. Where that meets the `NotFound` row
+above, **BE-029 governs**: against an absent container the root of a compliant
+backend answers as it would for an empty one.
+
+Stated here because this is where a reader looking for per-operation answers
+lands, and following it alone yields the wrong answer for one path in every
+operation it names.
+
+**Most backends do not meet the root row yet, and the list below does not record
+it.** § Known divergences holds three bullets, and none of them is
+root-specific: `LocalBackend`'s breach is whole-backend, and the other two are
+of the first-page bound. The root breaches are measured and
+tracked as **BUG-254**: `exists("")` and `is_folder("")` answer `False` on
+`S3Backend` and `S3PyArrowBackend`, and `get_folder_info("")` raises `NotFound`
+on `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend` — five classes,
+seven class-cells (two operations on two classes, plus one on three), in two
+opposite directions. `SQLBlobBackend` is the one of the six flat-namespace
+classes BUG-254 measured that complies. The scope matters: `LocalBackend` misses
+the root row too, by the first bullet below — once its root directory is gone it
+answers *every* operation with `InvalidPath`, which includes all three root
+cells — and `GraphBackend`, `ReadOnlyHttpBackend` and `SQLQueryBackend` are
+simply unmeasured for the root.
+They are absent from the list below because that list is organised by the
+absent-container *clause* and these are breaches of BE-029's root row; the
+pointer is here so a reader does not read that list as meaning the root is
+settled.
+
+**§ Reach's roster is twelve operations, and its siblings are not silently
+included.** The twelve are the two tolerant deletes plus the ten this paragraph
+names, counting the `move`/`copy` source as one. (The Graph paragraph below says
+GR-031 reached "eleven of the ones named above" and kept `write`; eleven plus
+`write` is the same twelve.)
+
+`read_bytes`, `read_seekable`, `iter_children` and `glob` are not among them.
+Each is a thin variant of one that is — `read`, `list_files`, `list_folders` —
+and a backend that answers a named operation one way and its variant another has
+a defect rather than a permission. But that is a *reading*, and it is the reading
+this section elsewhere makes explicit when it counts Graph's divergence as
+"eleven of the ones named above, plus `read_bytes` and `iter_children`". A
+backend spec relying on the reading should say so, as
+[SQL-BLOB-050](040-sql-blob-backend.md#sql-blob-050-exception-translation) does.
+
+**"Roster" is used twice in this section and the two sets differ.** The
+type-mismatch rows above have their own roster — the one their scope paragraph
+calls "the single roster for both halves", which *does* name `read_bytes` and
+`read_seekable`, and which the "`read_seekable` is in the list" paragraph is
+about. This paragraph is about § Reach's roster only. Neither is wrong; a reader
+meeting the word in one place and the membership claim from the other is.
+
 **Known divergences, stated rather than implied.** These are what ships today,
 recorded so a reader does not mistake an obligation for a description, and
 tracked in the backlog. They are scoped to the whole absent-container question
@@ -613,29 +691,6 @@ operations keep obligations this clause did not write, and a divergence from one
 of *those* is no less real for having been written down elsewhere. Listing them
 here is what makes the container case answerable from one place.
 
-- `exists()` and `is_folder()` *raise* `NotFound` against an absent container on
-  `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend`, where the strict
-  prefix probe is reached after the tolerant HEAD comes back empty.
-  `S3Backend` and `S3PyArrowBackend` answer `False`.
-- `S3Boto3Backend`'s `list_files`, `list_folders` and `iter_children` raise a
-  raw `botocore.exceptions.ClientError` against an absent container, breaching
-  the never-leak invariant at the top of this section rather than the mapping
-  row. They are the only methods on that class whose wire call is not wrapped in
-  its error mapper; the two s3fs-backed lanes answer the identical response with
-  an empty listing.
-- On `SQLBlobBackend`, **every operation except the two deletes** answers an
-  absent table with `BackendUnavailable` (or the base error, by dialect) rather
-  than `NotFound`, because they map the driver's complaint without asking
-  whether the table is still there. That includes `exists()`, `is_file()` and
-  `is_folder()`, so this backend breaches the never-raise rule above as well as
-  the mapping row — the widest divergence in this list by operation count,
-  measured rather than inferred. The same split shows on a disposed in-memory
-  engine, where disposal destroys the database rather than releasing a
-  connection to it: the deletes return and everything else raises, so a caller
-  watching one call sees a store that is gone and a caller watching the next
-  sees a backend that is broken. That is one divergence with two ways in, not
-  two, and the reclassification deliberately does not try to tell them apart —
-  see [SQL-BLOB-050](040-sql-blob-backend.md#sql-blob-050-exception-translation).
 - `LocalBackend` answers **every** operation with
   `InvalidPath("Path escapes root directory")` once its root directory is
   deleted, including both tolerant deletes. The containment check walks up to
@@ -644,9 +699,71 @@ here is what makes the container case answerable from one place.
   any backend currently sits, and the only one where the error type actively
   misleads.
 
-`GraphBackend` was the fifth bullet in this list — counting bullets, not backend
-classes, which is the frame `sdd/BACKLOG.md` § 1 uses when it calls Graph the
-sixth of six — and is no longer one; four bullets remain.
+- `S3Backend` and `S3PyArrowBackend` breach the **first-page bound** rather than
+  the empty-listing answer: a bucket deleted between pages of a listing ends the
+  iteration cleanly, so a truncated listing reads as a complete one. They answer
+  the absent-from-the-start case correctly. Tracked as **BUG-255**, with the fix
+  shape already worked on the three lanes that meet the bound. `AzureBackend` and
+  `AsyncAzureBackend` meet it on both their flat and their HNS branches, each
+  executed against a wire stub.
+
+- `GraphBackend` (and its sync adapter) breaches the **first-page bound** on a
+  recursive listing, in a different way: its bound is per *HTTP request*, and a
+  recursive walk issues one request per folder, so every subfolder listing
+  restarts it. A folder whose `/children` 404s part-way through the walk ends
+  that folder's listing cleanly, and the walk returns a short result as a
+  complete one. The single-page and top-level cases are correct. Tracked as
+  **BUG-257**. Contrast `S3Boto3Backend.list_files`, where one cursor wraps the
+  whole breadth-first walk and a 404 on any sub-prefix propagates — that is the
+  shape a fix takes.
+
+Three bullets have left this list and are recorded rather than deleted, because
+each was a *measured* divergence and the measurement is what a later reader
+needs in order to trust the entries that remain:
+
+- `exists()` and `is_folder()` raised `NotFound` against an absent container on
+  `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend`, where the strict
+  prefix probe was reached after the tolerant HEAD came back empty. All three now
+  answer `False`, as `S3Backend` and `S3PyArrowBackend` already did (BUG-246).
+- `S3Boto3Backend`'s `list_files`, `list_folders` and `iter_children` raised a
+  raw `botocore.exceptions.ClientError`, breaching the never-leak invariant at
+  the top of this section rather than the mapping row: they were the only methods
+  on that class whose wire call was not wrapped in its error mapper, against
+  fifteen methods that do wrap. All three now return an empty listing, as the two s3fs-backed
+  lanes already did against the identical response (BUG-249).
+- On `SQLBlobBackend`, **every operation except the two deletes** answered an
+  absent table with `BackendUnavailable` (or the base error, by dialect), because
+  they mapped the driver's complaint without asking whether the table was still
+  there. It was the widest divergence this list ever held by operation count —
+  fourteen operations, measured against a dropped SQLite table, of which thirteen
+  owed a different answer — **counting `move` and `copy` separately here**, which
+  is the opposite of the roster paragraph's frame above and is why fourteen and
+  twelve can both be right about the same backend. Each of the thirteen now takes the answer § Reach
+  gives it or its named sibling: `exists`, `is_file` and `is_folder` answer
+  `False`; `read`, `read_bytes`, `get_file_info`, the `move`/`copy` source and
+  `get_folder_info` **below the root** raise `NotFound`, while the root
+  aggregates to an empty store under BE-029; `list_files`, `list_folders`,
+  `iter_children` and `glob` come back empty. Three of those thirteen —
+  `read_bytes`, `iter_children` and `glob` — are siblings § Reach does not name,
+  per the roster paragraph above. `read_seekable` is not among them: this backend
+  does not override it, so it is not a distinct operation here. The same split showed on a disposed in-memory engine, where disposal
+  destroys the database rather than releasing a connection to it — one divergence
+  with two ways in, closed by the same change, and the reclassification
+  deliberately does not try to tell them apart; see
+  [SQL-BLOB-050](040-sql-blob-backend.md#sql-blob-050-exception-translation).
+  **`write` keeps `BackendUnavailable`** and is not a residue: it is the one
+  roster operation § Reach declines to decide, so a backend answering it its own
+  way contradicts nothing here (BUG-246).
+
+`GraphBackend` was a bullet too, adjudicated by
+[ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md). Counting
+bullets rather than backend classes — one of the two frames `sdd/BACKLOG.md` § 1
+uses, and the one it counts this list in — this list held five, three left, and
+one of the two survivors is `LocalBackend`. It holds three today because it has
+since gained two: the first-page bound BUG-246 wrote into § Reach made
+`S3Backend`/`S3PyArrowBackend` and `GraphBackend` breaches of a clause they were
+outside of before. A list of divergences grows when its clause does, not only
+when a backend regresses.
 [GR-031](044-graph-backend.md#gr-031-404-discrimination-item-vs-drive) mapped
 `404 resourceNotFound` to `BackendUnavailable` for every error-raising
 operation, deliberately, on the grounds that a deleted drive is a backend
@@ -692,9 +809,12 @@ Azure family, whose bodyless `HeadObject` 404 cannot name the bucket, and it is
 where the reported symptom came from. It does not hold for `SQLBlobBackend`,
 which is flat-namespace by this spec's own classification and whose `delete` was
 measured raising `BackendUnavailable` against a dropped table before this
-change, exactly as its sibling did. The rule therefore changes `delete` on one
-backend rather than ratifying it everywhere. Both divergences are listed above;
-the premise survived six review rounds because "the S3 family" and "the
+change, exactly as its sibling did — that is the state *before BUG-243*, which
+is the change this paragraph is about, and not the state the departed bullet
+above describes, which is after it. The rule therefore changes `delete` on one
+backend rather than ratifying it everywhere. Both are recorded above — Local as
+one of this list's three bullets, SQLBlob among the three that have left it; the
+premise survived six review rounds because "the S3 family" and "the
 flat-namespace backends" were used interchangeably by a clause whose whole
 purpose is to bind the second set.
 
