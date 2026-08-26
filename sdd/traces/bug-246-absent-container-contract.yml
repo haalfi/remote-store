@@ -36,23 +36,37 @@ surprising_ripples:
   - tests/backends/azure/aio/test_config.py
   - sdd/specs/026-health-check.md
 
-# Counted from `git log --oneline origin/master..HEAD`. b492cc0 is the
-# implementation and does not count. `git log --oneline origin/master..HEAD`
-# returns 12; minus b492cc0 that is 11 review-driven commits, named: 7928f47
-# (round 1's Azure listings and five prose findings), 3f5102c (round 1's
-# code-scanning alert), 35b7281 (round 1's residual docstring map), f164c97
-# (round 2), b5b0646 (round 3), b5af269 (round 4), fb5ff36 (the closing measuring
-# gate's mid-scan truncation finding and the false correction it retracted),
-# 0fc3611 (the closing figure audit), 3026d4b (the first verification pass's six
-# findings), 2e80fb1 (the second pass's ten), and aaa3c38 (the prose pass's
-# seven). The commit carrying this edit is excluded: it closes the loop and
-# incorporates no finding, which is the line this count draws.
+# `git log --oneline origin/master..HEAD` returns 17; `--no-merges` returns 15.
+# The two merges are freshness updates onto master, not review. Of the 15,
+# b492cc0 is the implementation and 83d9d9c is pure bookkeeping (it re-derived
+# this very field and incorporated no finding), leaving 13 that exist because
+# feedback was incorporated:
 #
-# Four times in this PR that head sentence went stale while its tail was
-# re-derived, because it restates a number the log already holds. It is the
-# clearest single instance of what ID-245's fourth bullet asks to be generated
-# rather than maintained, and it sits in the schema's own required comment.
-review_rounds: 11
+#   7928f47  round 1's Azure listings and five prose findings
+#   3f5102c  round 1's code-scanning alert
+#   35b7281  round 1's residual docstring map
+#   f164c97  round 2
+#   b5b0646  round 3
+#   b5af269  round 4
+#   fb5ff36  closing measuring gate: mid-scan truncation, false correction retracted
+#   0fc3611  closing figure audit
+#   3026d4b  first verification pass, six findings
+#   2e80fb1  second verification pass, ten findings
+#   aaa3c38  prose pass, seven findings
+#   6896110  user review: changelog stubs and over-long comments
+#   a07622b  user review: _sqlalchemy comments, ID-245's own bullet count
+#
+# The last two are user feedback rather than a review round, and count: the
+# schema's test is "commits that exist specifically because review feedback was
+# incorporated", which does not distinguish the reviewer.
+#
+# Five times in this PR the head sentence of this comment went stale while its
+# tail was re-derived, and once the two disagreed by three commits because the
+# list was not re-enumerated alongside the total. Both failures are the same
+# one: a number restated beside the thing that holds it. This is the clearest
+# single instance of what ID-245's fourth bullet asks to be generated rather
+# than maintained, and it sits in the schema's own required comment.
+review_rounds: 13
 
 phases:
   - id: orient
