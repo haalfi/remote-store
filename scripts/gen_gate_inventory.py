@@ -20,9 +20,11 @@ Rule 4). No cell of the rendered document is authored in the rendered document:
 * *Mechanism path*, *Runs in*, *Enforcement* — derived here from
   ``pyproject.toml``'s script table and ``.github/workflows/*.yml``. A
   declaration cannot lie about where it runs or whether it gates.
-* *Kind*, *Compares* / *Rule*, *Domain* — read from the mechanism's own module
-  docstring, which is next to the code whose change invalidates them
-  (Rule 8: the derivation path is recorded rather than assumed).
+* *Kind*, the subject field its kind takes (*Compares* / *Rule* / *Surfaces*)
+  and *Domain* — read from the mechanism's own module docstring, which is next
+  to the code whose change invalidates them (Rule 8: the derivation path is
+  recorded rather than assumed). *Domain* is checked against a closed
+  vocabulary; the subject fields are free text, and unverifiable — see Bounds.
 
 A declaration is a line reading ``Drift-gate::`` on its own, followed by an
 indented field list::
@@ -82,9 +84,19 @@ Bounds -- what this gate does not catch (``sdd/DRIFT-RULES.md`` Rule 7):
   block on a conventionally-named script, not a detector of unconventional
   ones; a mechanism that wants to be found either declares or is named like its
   siblings.
-* A mechanism wired nowhere -- no hatch target, no workflow step -- is not
-  listed. The inventory answers "what watches what *in this repo's gates*",
-  and an unwired script watches nothing.
+* A mechanism wired nowhere -- no hatch target, no workflow step, no pre-commit
+  hook -- is not listed. The inventory answers "what watches what *in this
+  repo's gates*", and an unwired script watches nothing.
+* **The invocation *shape* is a third way out, distinct from name and wiring.**
+  Only a ``scripts/...py`` path used as a command path is read as wiring, so a
+  gate a gate reaches by *importing* it, or through a plugin manifest, is
+  invisible however it is named. Two live instances, both conventionally named
+  and both genuinely reached: ``drift_smoke_map.py``, imported by a ``python
+  -c`` step in ``drift-guard.yml``, and ``gen_pages.py``, listed under
+  ``mkdocs.yml``'s gen-files plugin and so run by ``docs-build`` inside both
+  ``all`` and ``docs-gate``. Neither is a cross-artifact mechanism, so neither
+  owes a row -- but the backstop cannot see them either way, and "wired but
+  undeclared is a failure" is bounded by that.
 * A mechanism that is not a *script invocation* is out of range entirely. The
   conformance suite is the standing example: it drives every backend from one
   shared suite, which is the strongest cross-artifact check the repo has
@@ -99,6 +111,14 @@ Bounds -- what this gate does not catch (``sdd/DRIFT-RULES.md`` Rule 7):
   problem this design declines to solve.
 * Enforcement is derived from *wiring*, not from exit codes. A script wired
   into a gate bundle that always exits 0 is reported as gating.
+* *Runs in* lists a generator's bare write-mode alias (``gen-features``)
+  alongside its ``--check`` gate. Both run the same comparison and both are real
+  homes, so both are reported; only the gate bundles decide *Enforcement*.
+* Declaration text is rendered into a Markdown table with only ``|`` escaped, so
+  a declaration spelling out Markdown link syntax emits a link the docs gate
+  then reports as broken. That is a caught failure rather than a silent one --
+  ``check_docs_framework`` fails the build and names the line -- so the
+  constraint is left to the gate rather than duplicated as escaping here.
 * **Over-reach, since the rest of this list is under-reach.** A ``scripts/*.py``
   path is read as an invocation wherever it appears in a command, provided it
   starts at a path boundary and not on a ``#`` comment line. A path inside a
@@ -117,9 +137,11 @@ Bounds -- what this gate does not catch (``sdd/DRIFT-RULES.md`` Rule 7):
   judgement about what the subcommand does, and a gate that guessed it would fail
   on correct code.
 * Nothing checks that a script's blocks are *all* of its mechanisms. Review found
-  ``check_links.py`` declaring one of the three it runs, and the fix was to add
-  the missing two by hand. A script that runs four and declares three renders
-  three truthful rows and no signal at all.
+  ``check_links.py`` declaring one of the **five** its own docstring enumerates,
+  and the fix was to add the rest by hand -- twice, because the first attempt
+  added two and left ID-180's fragment resolution undeclared until a later round
+  counted them against that docstring. A script that runs five and declares four
+  renders four truthful rows and no signal at all.
 
 This gate inventories itself, which is the point: § 4b's finding was that the
 checking layer had no enumeration of its own coverage, and an inventory that
@@ -136,6 +158,7 @@ Drift-gate::
 from __future__ import annotations
 
 import argparse
+import itertools
 import re
 import shlex
 import sys
@@ -152,11 +175,13 @@ except ImportError:  # pragma: no cover - Python 3.10 fallback
 ROOT = Path(__file__).resolve().parent.parent
 PYPROJECT = ROOT / "pyproject.toml"
 WORKFLOWS = ROOT / ".github" / "workflows"
+PRE_COMMIT = ROOT / ".pre-commit-config.yaml"
 OUTPUT = ROOT / "sdd" / "GATE-INVENTORY.md"
 
-# The one local entry point not derivable from CI: `hatch run all` is the
-# pre-commit gate named in CLAUDE.md § Dev commands. Every other reported
-# target is discovered from a workflow's `hatch run <target>` step.
+# The one *gate* home not derivable from CI: `hatch run all` is the pre-commit
+# gate named in CLAUDE.md § Dev commands. Every other gate home is discovered
+# from a workflow's `hatch run <target>` step. A target reached by neither is
+# still reported, named by itself and classified advisory -- see `collect`.
 LOCAL_GATE_TARGET = "all"
 
 # Basenames that must carry a declaration block once wired. The backstop, not
@@ -185,6 +210,14 @@ _VALID_FIELDS = frozenset({"kind", "entrypoint", "compares", "rule", "surfaces",
 
 # Per kind: the field it requires, and the fields it must not carry.
 _KIND_FIELDS: dict[str, str] = {"pair": "compares", "rule": "rule", "report": "surfaces"}
+
+# The description domains research § 4a names as canonical for this repo. A
+# `domain:` is one of these, or several joined by the arrows a mechanism spans.
+# Closed, because *Domain* is an authored column and an unvalidated one renders
+# a truthful-looking wrong cell: a typo or an invented label reads as fact and
+# makes grouping the inventory by domain unreliable.
+_VALID_DOMAINS = frozenset({"intent", "intent-formalized", "realization", "verification", "explanation", "process"})
+_DOMAIN_SPLIT_RE = re.compile(r"\s*(?:↔|<->)\s*")
 
 
 class DeclarationError(ValueError):
@@ -236,17 +269,33 @@ class Mechanism:
 
 
 def _module_docstring(text: str) -> str:
-    """Return the module docstring of *text*, or "" when there is none."""
-    match = re.match(r'\s*(?:#![^\n]*\n)?\s*(?:"""|\'\'\')', text)
+    """Return the module docstring of *text*, or "" when there is none.
+
+    Leading comments are skipped, not just a shebang. A gate script that grows a
+    ``# ruff: noqa`` line or a licence header above its docstring keeps a valid
+    declaration; matching only the shebang would return "", drop every block,
+    and fail the backstop on a script whose block is right there.
+    """
+    body = "\n".join(
+        itertools.dropwhile(lambda line: not line.strip() or line.lstrip().startswith("#"), text.splitlines())
+    )
+    match = re.match(r'\s*(?:"""|\'\'\')', body)
     if match is None:
         return ""
+    text = body
     quote = text[match.end() - 3 : match.end()]
     end = text.find(quote, match.end())
     return text[match.end() : end] if end != -1 else ""
 
 
-def _block_bodies(docstring: str) -> list[list[str]]:
-    """Return the indented body lines of each ``Drift-gate::`` block."""
+def _block_bodies(docstring: str, path: str = "?") -> list[list[str]]:
+    """Return the indented body lines of each ``Drift-gate::`` block.
+
+    A header with no indented body raises rather than being skipped: the natural
+    typo (header, blank line, prose that dedents back to the header's column)
+    would otherwise produce either a silent drop or a "carries no block" error
+    pointing at a file whose block is visibly present.
+    """
     lines = docstring.splitlines()
     bodies: list[list[str]] = []
     index = 0
@@ -272,8 +321,9 @@ def _block_bodies(docstring: str) -> list[list[str]]:
                 break
             body.append(line)
             index += 1
-        if body:
-            bodies.append(body)
+        if not body:
+            raise DeclarationError(f"{path}: a `Drift-gate::` header has no indented field block under it")
+        bodies.append(body)
     return bodies
 
 
@@ -283,7 +333,7 @@ def parse_declarations(text: str, path: str) -> list[Declaration]:
     Raises DeclarationError, naming *path*, on any malformed block.
     """
     declarations: list[Declaration] = []
-    for body in _block_bodies(_module_docstring(text)):
+    for body in _block_bodies(_module_docstring(text), path):
         fields: dict[str, str] = {}
         for line in body:
             field = _FIELD_RE.match(line.strip())
@@ -320,6 +370,11 @@ def _build(fields: dict[str, str], path: str) -> Declaration:
         raise DeclarationError(f"{path}: Drift-gate `kind:` must be one of {sorted(_VALID_KINDS)}, got {kind!r}")
     if not fields.get("domain"):
         raise DeclarationError(f"{path}: Drift-gate block needs a `domain:`")
+    unknown = [d for d in _DOMAIN_SPLIT_RE.split(fields["domain"]) if d and d not in _VALID_DOMAINS]
+    if unknown:
+        raise DeclarationError(
+            f"{path}: Drift-gate `domain:` has unknown component(s) {unknown}; use {sorted(_VALID_DOMAINS)}"
+        )
     required = _KIND_FIELDS[kind]
     if not fields.get(required):
         raise DeclarationError(f"{path}: Drift-gate `kind: {kind}` needs a `{required}:`")
@@ -391,6 +446,19 @@ def _resolve(target: str, table: dict[str, list[str]], seen: frozenset[str]) -> 
 # ---------------------------------------------------------------------------
 
 
+def _pre_commit_entries(config: Path) -> list[str]:
+    """Return every local hook's ``entry:`` command in *config*."""
+    if not config.exists():
+        return []
+    document = yaml.safe_load(config.read_text(encoding="utf-8")) or {}
+    return [
+        hook["entry"]
+        for repo in (document.get("repos") or [])
+        for hook in ((repo or {}).get("hooks") or [])
+        if isinstance((hook or {}).get("entry"), str)
+    ]
+
+
 def _run_steps(workflow: Path) -> list[tuple[str, str]]:
     """Return ``(job id, run body)`` for every ``run:`` step in *workflow*."""
     document = yaml.safe_load(workflow.read_text(encoding="utf-8")) or {}
@@ -418,8 +486,15 @@ def _matching(declarations: list[Declaration], argv: str) -> list[Declaration]:
     carry entrypoints, argv selects among them (``drift_check.py``).
     """
     if any(d.entrypoint for d in declarations):
-        return [d for d in declarations if d.entrypoint and argv.startswith(d.entrypoint)]
+        # Whole-token match, not a prefix: with `startswith`, an entrypoint
+        # `diff` would also claim the argv of a sibling `diff-all`.
+        return [d for d in declarations if d.entrypoint and _argv_selects(argv, d.entrypoint)]
     return list(declarations)
+
+
+def _argv_selects(argv: str, entrypoint: str) -> bool:
+    """True when *argv* begins with *entrypoint* on a token boundary."""
+    return argv == entrypoint or argv.startswith(f"{entrypoint} ")
 
 
 def collect(root: Path = ROOT) -> tuple[list[Mechanism], list[str]]:
@@ -455,13 +530,23 @@ def collect(root: Path = ROOT) -> tuple[list[Mechanism], list[str]]:
             for path, argv in _invocations(body):
                 record(path, argv, home)
 
+    # Pre-commit hooks are a third wiring home. Nothing reaches the inventory
+    # only this way today, but a gate wired here alone would otherwise be
+    # invisible to both the inventory and the backstop -- silent in both
+    # directions, which is what the backstop exists to prevent.
+    for hook in _pre_commit_entries(root / ".pre-commit-config.yaml"):
+        for path, argv in _invocations(hook):
+            record(path, argv, "pre-commit")
+
     # A hatch target that no gate bundle and no workflow reaches is advisory;
-    # it still belongs in the inventory, named by its own target.
+    # the mechanism still belongs in the inventory, named by its own target.
+    # Keyed per (path, argv), not per path: a script whose other entrypoint is
+    # gated elsewhere would otherwise lose this one's row entirely.
     for target in table:
         if target in ci_targets or target == LOCAL_GATE_TARGET:
             continue
         for path, argv in _resolve(target, table, frozenset()):
-            if path not in wiring:
+            if argv not in wiring.get(path, {}):
                 record(path, argv, target)
 
     mechanisms: list[Mechanism] = []

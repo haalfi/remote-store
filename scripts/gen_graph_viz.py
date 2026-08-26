@@ -48,7 +48,8 @@ gracefully when any of these are absent.
 Drift-gate::
 
     kind:       pair
-    compares:   docs-src/_data/graph/graph.json ↔ docs-src/explanation/graph_viz.html
+    compares: docs-src/_data/graph/graph.json, plus the Repository URL in pyproject.toml that the
+        page's source links are built from ↔ docs-src/explanation/graph_viz.html
     domain:     explanation
 """
 

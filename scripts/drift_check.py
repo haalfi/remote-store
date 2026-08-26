@@ -35,15 +35,16 @@ Drift-gate::
 
     kind:       pair
     entrypoint: diff
-    compares: the freshly resolved dependency set for each extra ↔ the committed baseline in
-        infra/drift-locks/
+    compares: the freshly resolved dependency set for each extra in pyproject.toml's
+        optional-dependencies table ↔ the committed baseline in infra/drift-locks/
     domain:     process
 
 Drift-gate::
 
     kind:       pair
     entrypoint: render-docs
-    compares:   the lock files in infra/drift-locks/ ↔ docs-src/reference/tested-versions.md
+    compares: the lock files in infra/drift-locks/, over the extras derived from pyproject.toml
+        ↔ docs-src/reference/tested-versions.md
     domain:     process ↔ explanation
 """
 

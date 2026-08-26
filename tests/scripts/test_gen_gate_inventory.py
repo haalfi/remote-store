@@ -203,6 +203,33 @@ class TestParseDeclarations:
         assert [d.entrypoint for d in declarations] == ["diff", "render-docs"]
 
     @pytest.mark.spec("ID-245")
+    def test_header_with_no_body_is_rejected(self) -> None:
+        """The natural typo would otherwise drop silently, or blame a file whose block is present."""
+        source = '"""Summary.\n\nDrift-gate::\n\nBack at column zero.\n"""\n'
+        with pytest.raises(_mod.DeclarationError, match="no indented field block"):
+            _mod.parse_declarations(source, "s.py")
+
+    @pytest.mark.spec("ID-245")
+    def test_docstring_is_found_behind_a_leading_comment(self) -> None:
+        """A `# ruff: noqa` line above the docstring must not hide every declaration."""
+        source = "# ruff: noqa: E501\n# a licence header\n" + _module(PAIR_BLOCK)
+        (declaration,) = _mod.parse_declarations(source, "s.py")
+        assert declaration.compares == "a.md <-> b.json"
+
+    @pytest.mark.spec("ID-245")
+    def test_unknown_domain_is_rejected(self) -> None:
+        """Domain is the one authored column with a closed vocabulary behind it."""
+        block = PAIR_BLOCK.replace("domain:     process", "domain:     cross-surface")
+        with pytest.raises(_mod.DeclarationError, match="unknown component"):
+            _mod.parse_declarations(_module(block), "s.py")
+
+    @pytest.mark.spec("ID-245")
+    def test_multi_component_domain_is_accepted(self) -> None:
+        block = PAIR_BLOCK.replace("domain:     process", "domain:     realization ↔ explanation")
+        (declaration,) = _mod.parse_declarations(_module(block), "s.py")
+        assert declaration.domain == "realization ↔ explanation"
+
+    @pytest.mark.spec("ID-245")
     def test_block_is_read_only_from_the_module_docstring(self) -> None:
         """A block in a comment or a function docstring is not a declaration."""
         source = (
@@ -260,6 +287,14 @@ class TestWiringDerivation:
         assert _mod._matching([diff, render], "render-docs --check") == [render]
         assert _mod._matching([diff, render], "extras") == []
 
+    @pytest.mark.spec("ID-245")
+    def test_entrypoint_matches_whole_tokens_only(self) -> None:
+        """A prefix match would let `diff` claim a sibling `diff-all`'s argv."""
+        diff = _mod.Declaration(kind="pair", domain="process", compares="a <-> b", entrypoint="diff")
+        diff_all = _mod.Declaration(kind="pair", domain="process", compares="c <-> d", entrypoint="diff-all")
+        assert _mod._matching([diff, diff_all], "diff-all --check") == [diff_all]
+        assert _mod._matching([diff, diff_all], "diff extra") == [diff]
+
 
 class TestEnforcement:
     """Enforcement is derived from wiring; a declaration cannot claim it."""
@@ -285,9 +320,15 @@ class TestEnforcement:
         assert self._mechanism("report-trace-outcomes").enforcement == "advisory"
 
 
-def _tree(tmp_path: Path, scripts: dict[str, str], lint: list[str] | None = None) -> Path:
+def _tree(
+    tmp_path: Path,
+    scripts: dict[str, str],
+    lint: list[str] | None = None,
+    workflows: dict[str, str] | None = None,
+    pre_commit: str | None = None,
+) -> Path:
     """Build a minimal repo: a hatch script table, workflows, and scripts/."""
-    (tmp_path / "scripts").mkdir()
+    (tmp_path / "scripts").mkdir(exist_ok=True)
     for name, body in scripts.items():
         (tmp_path / "scripts" / name).write_text(body, encoding="utf-8")
     commands = lint if lint is not None else [f"python scripts/{name}" for name in scripts]
@@ -295,9 +336,13 @@ def _tree(tmp_path: Path, scripts: dict[str, str], lint: list[str] | None = None
     (tmp_path / "pyproject.toml").write_text(
         f'[tool.hatch.envs.default.scripts]\nlint = [{rendered}]\nall = ["lint"]\n', encoding="utf-8"
     )
-    workflows = tmp_path / ".github" / "workflows"
-    workflows.mkdir(parents=True)
-    (workflows / "ci.yml").write_text("jobs:\n  lint:\n    steps:\n      - run: uvx hatch run lint\n", encoding="utf-8")
+    workflow_dir = tmp_path / ".github" / "workflows"
+    workflow_dir.mkdir(parents=True, exist_ok=True)
+    files = workflows or {"ci.yml": "jobs:\n  lint:\n    steps:\n      - run: uvx hatch run lint\n"}
+    for name, body in files.items():
+        (workflow_dir / name).write_text(body, encoding="utf-8")
+    if pre_commit is not None:
+        (tmp_path / ".pre-commit-config.yaml").write_text(pre_commit, encoding="utf-8")
     return tmp_path
 
 
@@ -333,6 +378,43 @@ class TestBackstop:
         assert mechanism.path == "scripts/check_x.py"
         assert mechanism.homes == ("all", "lint")
         assert mechanism.enforcement == "gating"
+
+
+class TestWiringHomes:
+    """The two homes `collect` reaches only through non-ci paths."""
+
+    @pytest.mark.spec("ID-245")
+    def test_a_non_ci_workflow_yields_a_scheduled_row(self, tmp_path: Path) -> None:
+        """The `<workflow>:<job>` branch that produces every scheduled row."""
+        root = _tree(
+            tmp_path,
+            {"check_x.py": _module(PAIR_BLOCK)},
+            lint=[],
+            workflows={
+                "ci.yml": "jobs: {}\n",
+                "guard.yml": "jobs:\n  check:\n    steps:\n      - run: python scripts/check_x.py\n",
+            },
+        )
+        (mechanism,), problems = _mod.collect(root)
+        assert problems == []
+        assert mechanism.homes == ("guard.yml:check",)
+        assert mechanism.enforcement == "scheduled"
+
+    @pytest.mark.spec("ID-245")
+    def test_a_pre_commit_hook_is_a_wiring_home(self, tmp_path: Path) -> None:
+        """A gate wired only as a hook would otherwise be invisible in both directions."""
+        root = _tree(
+            tmp_path,
+            {"check_x.py": _module(PAIR_BLOCK)},
+            lint=[],
+            workflows={"ci.yml": "jobs: {}\n"},
+            pre_commit=(
+                "repos:\n  - repo: local\n    hooks:\n      - id: x\n        entry: python scripts/check_x.py --check\n"
+            ),
+        )
+        (mechanism,), problems = _mod.collect(root)
+        assert problems == []
+        assert mechanism.homes == ("pre-commit",)
 
 
 class TestCallIsolation:

@@ -54,8 +54,16 @@ Drift-gate::
 
 Drift-gate::
 
+    kind:       pair
+    compares: every Markdown link carrying a #fragment, off the historical denylist ↔ the explicit
+        <a id> tags and heading slugs of the file it names
+    domain:     explanation
+
+Drift-gate::
+
     kind:       rule
-    rule: every <a id> anchor in a link target is unique within its file and adjacent to a heading
+    rule: every <a id> anchor in any git-tracked Markdown file off the consumer denylist is unique
+        within its file and adjacent to a heading, whether or not a link points into it
     domain:     explanation
 
 Drift-gate::

@@ -5,7 +5,8 @@ Run with:  hatch run python scripts/gen_graph.py
 Drift-gate::
 
     kind:       pair
-    compares:   the source tree under src/remote_store/ ↔ docs-src/_data/graph/graph.json
+    compares: the source tree under src/remote_store/, plus the version and optional-dependency
+        tables in pyproject.toml ↔ docs-src/_data/graph/graph.json
     domain:     realization
 """
 

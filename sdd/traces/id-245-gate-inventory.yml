@@ -11,6 +11,11 @@ source_items:
 audience:
   - contributor.tooling
   - contributor.process
+# Counted from `git log --oneline origin/master..HEAD`: three commits, of which
+# 1a49812 and 3118fe4 exist solely because review findings were incorporated;
+# ed47c31 is the initial implementation. A fourth review round's fixes land in
+# the commit following 3118fe4.
+review_rounds: 3
 expected_ripples:
   # Anticipated by the ripple-check: DRIFT-RULES by the "new or changed
   # cross-artifact check" row, BACKLOG by "backlog item touched".
@@ -128,8 +133,11 @@ phases:
           of the block format parsed as a real declaration, giving the file two
           undifferentiated blocks and silently dropping the generator's own row.
           The count read 31 where it should have read 32 and nothing failed. Fixed
-          by dropping the header line from the example, and by making two blocks
-          without entrypoints a hard error rather than a silent skip.
+          by dropping the header line from the example, which is still what stops
+          the format documentation declaring a mechanism. Also made two
+          entrypoint-less blocks a hard error — a rule review round 2 then
+          reversed, because check_links.py legitimately needs three of them; the
+          error now fires only on a file mixing the two forms.
         outcome: ok
       - file: sdd/research/research-inconsistency-detection-multi-artifact.md
         section: "4b"
@@ -142,3 +150,72 @@ phases:
           check_dafny_twin_parity.py, which the generated file shows and the
           snapshot does not.
         outcome: misleading
+
+  - id: review
+    name: "Three review rounds"
+    steps:
+      - file: scripts/gen_gate_inventory.py
+        section: "_SCRIPT_INVOCATION_RE, _GATE_HOMES"
+        read_type: verify
+        extract: >-
+          Round 1, unprimed, 7 findings. Two real bugs neither the build nor the
+          gate caught: the invocation regex matched a scripts/ path as a suffix,
+          so a tests/scripts/ command read as wiring the scripts/ file of the same
+          basename, and _GATE_HOMES was module state that made enforcement a
+          function of call history. Both reproduced before fixing.
+        outcome: ok
+      - file: tests/scripts/test_gen_gate_inventory.py
+        section: "TestBackstop, TestCallIsolation"
+        read_type: verify
+        extract: >-
+          Round 1 also found the backstop had no test that it fires, only that it
+          stays silent on a clean tree. The synthetic-tree fixture that fixes it
+          then found its own defect: main() raised ValueError for any output path
+          outside the repo. Writing the test for a gate found a bug in the gate.
+        outcome: ok
+      - file: scripts/check_backend_order.py
+        section: "_BACKENDS, _SCANNED_FILES"
+        read_type: verify
+        extract: >-
+          Round 2, measuring, scoped to the 29 declaration blocks no round had
+          reviewed — the content the generator cannot check. Three declarations
+          were wrong about their own script. This one named CONTRIBUTING.md as the
+          authority where the canonical order is a constant in the script and
+          CONTRIBUTING.md is among the scanned files: the pair was inverted and
+          the checked side omitted. Plausible on any reading, refuted in one
+          command. Round 3 then ruled it kind rule, not pair, since no two repo
+          artifacts are compared.
+        outcome: ok
+      - file: scripts/docs/check_links.py
+        section: "(full) module docstring"
+        read_type: verify
+        extract: >-
+          Rounds 2 and 3 both found this file under-declared, and the first fix was
+          itself incomplete: round 2 raised one block covering three of five
+          mechanisms, the fix added two, and round 3 counted the blocks against
+          this docstring and found ID-180 fragment resolution still undeclared. The
+          format could not hold two mechanisms sharing one argv until round 2
+          changed the keying — the bound was in the keying, not the subject matter.
+        outcome: ok
+      - file: sdd/GATE-INVENTORY.md
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Own miss, three times over: the mechanism total went stale in the backlog,
+          the PR body and the research doc across successive fix passes. Each
+          sentence named its derivation and the derivation was run once, so the
+          figure outlived it. Principle 9's load-bearing half is "run before the
+          sentence is written", not "name a command". The research doc now points
+          at the generated file for the total rather than restating it.
+        outcome: ok
+      - file: .pre-commit-config.yaml
+        section: "backlogid-check"
+        read_type: verify
+        extract: >-
+          Round 3, unprimed, found a third wiring home the claim space never read:
+          a hook whose entry is `python scripts/gen_backlogid.py --check`. Nothing
+          was missing from the output, because that script is also wired through
+          hatch — but a gate wired only as a hook would have been invisible to both
+          the inventory and the backstop. Added to the claim space rather than
+          stated as a bound.
+        outcome: ok

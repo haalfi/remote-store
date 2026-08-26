@@ -499,8 +499,10 @@ finding 7's trace-tag counts, and the same remedy. Two things the generated
 inventory shows that this snapshot does not: the `MemoryBackend` ↔
 `MemoryBackendMinimal` row's "None in CI" was overtaken by
 `check_dafny_twin_parity.py`, and **ten** of the eleven rows here have a
-successor entry, out of the 32 mechanisms the generator reports — counted by
-walking this table against `sdd/GATE-INVENTORY.md` row by row. The eleventh,
+successor entry, out of the 35 mechanisms the generated file's preamble reports
+— counted by walking this table against `sdd/GATE-INVENTORY.md` row by row.
+Read the total off that file rather than from here: it moves whenever a
+mechanism is declared, and this sentence cannot. The eleventh,
 `Backend` *i* ↔ backend *j*, has none: the conformance suite is pytest
 collection rather than a script invocation, so the generator cannot reach it —
 stated as a bound in its docstring.

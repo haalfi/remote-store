@@ -2,7 +2,7 @@
 
 <!-- doc: repo-only -->
 
-Derived from 34 declared mechanism(s) by `scripts/gen_gate_inventory.py`. Do not edit by hand; run `hatch run gen-gate-inventory`.
+Derived from 35 declared mechanism(s) by `scripts/gen_gate_inventory.py`. Do not edit by hand; run `hatch run gen-gate-inventory`.
 
 Which artifact pairs this repo checks, which single-artifact rules it
 asserts, and what its reports surface. *Kind*, the subject column and
@@ -16,13 +16,12 @@ module docstring states what this inventory does not catch.
 | Mechanism | Compares | Domain | Runs in | Enforcement |
 |---|---|---|---|---|
 | `scripts/check_api_docs.py` | the graph IR in docs-src/_data/graph/graph.json ↔ the API reference pages under docs-src/reference/api/ | realization ↔ explanation | `all`, `preflight` | gating |
-| `scripts/check_backend_order.py` | the canonical order in this script's own _BACKENDS constant ↔ every backend enumeration in the scanned surfaces, CONTRIBUTING.md and README.md among them | cross-surface | `all`, `docs-gate`, `lint` | gating |
 | `scripts/check_capability_parity.py` | the Capability enum in src/remote_store/_capabilities.py ↔ the Capability datatype and CapabilityName arms in sdd/formal/BackendContract.dfy | realization ↔ intent-formalized | `all`, `ci.yml:verify-formal`, `lint` | gating |
 | `scripts/check_ci_full_matrix.py` | ci.yml's ALL_PYTHONS interpreter list ↔ ci-full.yml's test-full matrix | process | `all`, `lint` | gating |
 | `scripts/check_ci_inventory.py` | the scheduled-family workflows under .github/workflows/ ↔ the workflow inventory in sdd/CI-OPERATIONS.md | process | `all`, `lint` | gating |
 | `scripts/check_custom_backend_guide.py` | docs-src/guides/custom-backend-guide.md ↔ Backend.__abstractmethods__, the conformance suite files and the fixture loader's closed vocabularies | explanation ↔ realization | `all`, `docs-gate`, `lint` | gating |
-| `scripts/check_dafny_twin_parity.py` | the MemoryBackend and MemoryBackendMinimal twin classes in sdd/formal/ | intent-formalized | `all`, `ci.yml:verify-formal`, `lint` | gating |
-| `scripts/check_docstring_parity.py` | the sync API docstrings in src/remote_store/ ↔ their hand-mirrored twins in src/remote_store/aio/ | realization | `all`, `preflight` | gating |
+| `scripts/check_dafny_twin_parity.py` | the MemoryBackend and MemoryBackendMinimal twin classes in sdd/formal/ | intent-formalized | `all`, `check-dafny-twin-parity`, `ci.yml:verify-formal`, `lint` | gating |
+| `scripts/check_docstring_parity.py` | the sync API docstrings in src/remote_store/ ↔ their hand-mirrored twins in src/remote_store/aio/ | realization | `all`, `check-docstring-parity`, `preflight` | gating |
 | `scripts/check_formal_trace.py` | spec IDs declared in sdd/specs/ ↔ Dafny @spec tags in sdd/formal/ and conformance pytest.mark.spec markers | intent ↔ intent-formalized ↔ verification | `all`, `ci.yml:verify-formal`, `lint` | gating |
 | `scripts/check_infra_settings.py` | infra/.env ↔ infra/_settings.py, the compose file and the port and credential references in CI workflows | process | `all`, `lint` | gating |
 | `scripts/check_readthedocs_python.py` | .python-version ↔ .readthedocs.yaml's build.tools.python | process | `all`, `lint` | gating |
@@ -30,22 +29,24 @@ module docstring states what this inventory does not catch.
 | `scripts/check_spec_marks.py` | spec IDs declared in sdd/specs/ ↔ spec IDs cited by pytest.mark.spec markers under tests/ | intent ↔ verification | `all`, `ci.yml:verify-formal`, `lint` | gating |
 | `scripts/check_traces.py` | every trace under sdd/traces/ ↔ the schema in sdd/traces/_schema.yml | process | `all`, `docs-gate`, `lint` | gating |
 | `scripts/docs/check_links.py` | every Markdown link and context7 manifest path ↔ the on-disk files and built docs-site pages they name | explanation | `all`, `docs-gate` | gating |
-| `scripts/drift_check.py diff` | the freshly resolved dependency set for each extra ↔ the committed baseline in infra/drift-locks/ | process | `drift-guard.yml:check` | scheduled |
-| `scripts/drift_check.py render-docs` | the lock files in infra/drift-locks/ ↔ docs-src/reference/tested-versions.md | process ↔ explanation | `all`, `docs-gate`, `preflight` | gating |
-| `scripts/gen_adr_digest.py` | the Status tables and Decision sections of sdd/adrs/*.md ↔ sdd/adrs/DIGEST.md | intent | `all`, `preflight` | gating |
-| `scripts/gen_backlogid.py` | the max ID per prefix in sdd/BACKLOG-DONE.md ↔ sdd/backlogid.json, and the open IDs in sdd/BACKLOG.md against both | process | `all`, `docs-gate`, `lint` | gating |
-| `scripts/gen_features.py` | docs-src/_data/graph/graph.json, pyproject.toml's extras and the backend order in src/remote_store/_registry.py ↔ the generated sections of FEATURES.md | realization ↔ explanation | `all`, `preflight` | gating |
-| `scripts/gen_gate_inventory.py` | the Drift-gate declarations and gate wiring across scripts/, pyproject.toml and .github/workflows/ ↔ sdd/GATE-INVENTORY.md | process | `all`, `docs-gate`, `lint` | gating |
-| `scripts/gen_graph.py` | the source tree under src/remote_store/ ↔ docs-src/_data/graph/graph.json | realization | `all`, `preflight` | gating |
-| `scripts/gen_graph_viz.py` | docs-src/_data/graph/graph.json ↔ docs-src/explanation/graph_viz.html | explanation | `all`, `preflight` | gating |
+| `scripts/docs/check_links.py` | every Markdown link carrying a #fragment, off the historical denylist ↔ the explicit <a id> tags and heading slugs of the file it names | explanation | `all`, `docs-gate` | gating |
+| `scripts/drift_check.py diff` | the freshly resolved dependency set for each extra in pyproject.toml's optional-dependencies table ↔ the committed baseline in infra/drift-locks/ | process | `drift-guard.yml:check` | scheduled |
+| `scripts/drift_check.py render-docs` | the lock files in infra/drift-locks/, over the extras derived from pyproject.toml ↔ docs-src/reference/tested-versions.md | process ↔ explanation | `all`, `docs-gate`, `preflight` | gating |
+| `scripts/gen_adr_digest.py` | the Status tables and Decision sections of sdd/adrs/*.md ↔ sdd/adrs/DIGEST.md | intent | `all`, `gen-adr-digest`, `preflight` | gating |
+| `scripts/gen_backlogid.py` | the max ID per prefix in sdd/BACKLOG-DONE.md ↔ sdd/backlogid.json, and the open IDs in sdd/BACKLOG.md against both | process | `all`, `docs-gate`, `gen-backlogid`, `lint`, `pre-commit` | gating |
+| `scripts/gen_features.py` | docs-src/_data/graph/graph.json, pyproject.toml's extras and the backend order in src/remote_store/_registry.py ↔ the generated sections of FEATURES.md | realization ↔ explanation | `all`, `gen-features`, `preflight` | gating |
+| `scripts/gen_gate_inventory.py` | the Drift-gate declarations and gate wiring across scripts/, pyproject.toml and .github/workflows/ ↔ sdd/GATE-INVENTORY.md | process | `all`, `docs-gate`, `gen-gate-inventory`, `lint` | gating |
+| `scripts/gen_graph.py` | the source tree under src/remote_store/, plus the version and optional-dependency tables in pyproject.toml ↔ docs-src/_data/graph/graph.json | realization | `all`, `gen-graph`, `preflight` | gating |
+| `scripts/gen_graph_viz.py` | docs-src/_data/graph/graph.json, plus the Repository URL in pyproject.toml that the page's source links are built from ↔ docs-src/explanation/graph_viz.html | explanation | `all`, `gen-graph-viz`, `preflight` | gating |
 
-## Rule checks, no pair (9)
+## Rule checks, no pair (10)
 
 Single-artifact checks. They guard no pair, so a derivation over compared
 artifacts alone would yield no row for them at all.
 
 | Mechanism | Rule asserted | Domain | Runs in | Enforcement |
 |---|---|---|---|---|
+| `scripts/check_backend_order.py` | every backend enumeration in a scanned surface lists backends in the canonical order, which this script's own _BACKENDS constant holds; CONTRIBUTING.md is scanned like any other | explanation | `all`, `docs-gate`, `lint` | gating |
 | `scripts/check_docs_framework.py` | every Markdown file resolves to exactly one documentation class and obeys the framework's placement, nav and bridge rules (G-01 through G-07) | explanation | `all`, `docs-gate`, `lint` | gating |
 | `scripts/check_mock_spec.py` | every MagicMock or Mock call passes spec= or spec_set= (TESTING.md Rule 4) | verification | `all`, `lint` | gating |
 | `scripts/check_no_tracker_refs.py` | no internal tracker ID appears in a surface that reaches users (CONTENT-RULES Rules 1 and 5) | explanation | `all`, `docs-gate`, `lint` | gating |
@@ -54,7 +55,7 @@ artifacts alone would yield no row for them at all.
 | `scripts/check_test_placement.py` | every test file sits in the subpackage TESTING.md and spec 048 place it in | verification | `all`, `lint` | gating |
 | `scripts/check_tla_no_emdash.py` | no TLA+ module under sdd/formal/tla/ contains an em dash, which TLC rejects | intent-formalized | `all`, `ci.yml:verify-tla`, `lint` | gating |
 | `scripts/docs/check_links.py` | both context7 manifests stay within Context7's per-field list and rule-length maxima, which it silently rejects a manifest for exceeding | explanation | `all`, `docs-gate` | gating |
-| `scripts/docs/check_links.py` | every <a id> anchor in a link target is unique within its file and adjacent to a heading | explanation | `all`, `docs-gate` | gating |
+| `scripts/docs/check_links.py` | every <a id> anchor in any git-tracked Markdown file off the consumer denylist is unique within its file and adjacent to a heading, whether or not a link points into it | explanation | `all`, `docs-gate` | gating |
 
 ## Reports, no assertion (2)
 

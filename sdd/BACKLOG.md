@@ -1479,10 +1479,11 @@ the commit that writes it lands, so cite the generator instead.
     `lint` and `docs-gate` (two homes because CODE_PAT skips `lint` for an
     `sdd/`-only edit, which is exactly an edit to the generated file). Both
     named complications were answered as scoped: single-artifact rule checks
-    carry `kind: rule` and render in their own section — 9 of the 34 mechanisms
-    the generator reports, against 23 pair gates and 2 reports, counted by
-    `hatch run gen-gate-inventory` and shown in that file's section headings;
-    and the claim space is the wiring in `pyproject.toml`
+    carry `kind: rule` and render in their own section, alongside a third
+    `kind: report` for the mechanisms that measure rather than assert; read the
+    per-kind split off that file's section headings rather than from here, since
+    it moves whenever a mechanism is declared. The claim space is the wiring in
+    `pyproject.toml`, `.pre-commit-config.yaml`
     plus `.github/workflows/` rather than a glob, which is what reaches
     `scripts/docs/check_links.py`. Research § 4b's eleven-row table is annotated
     as a dated measurement naming the generated file as its successor. Two
