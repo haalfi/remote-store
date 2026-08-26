@@ -635,6 +635,20 @@ class TestRendering:
         assert f"## What this inventory does not catch ({len(_mod._BOUNDS)})" in rendered
         assert all(bound in rendered for bound in _mod._BOUNDS)
 
+    @pytest.mark.spec("ID-245")
+    def test_the_bound_count_is_pinned(self) -> None:
+        """Bump deliberately. Losing a bound is otherwise invisible to every gate.
+
+        `DRIFT-RULES.md` Rule 7 says the generated inventory carries the full bound
+        list, and nothing mechanical backs that: dropping an entry regenerates the
+        document in the same commit, so generator and output stay in agreement and
+        `--check` passes. A cut did exactly that here, taking 13 bounds to 11 with
+        every gate green, and only a whole-file reviewer noticed. This is the same
+        pinned-baseline shape `check_formal_trace.py` uses for its known gaps.
+        """
+        assert len(_mod._BOUNDS) == 13
+        assert len(set(_mod._BOUNDS)) == len(_mod._BOUNDS), "a duplicated bound renders twice"
+
 
 class TestLocalization:
     """DRIFT-RULES Rule 2: report which element differs, not that a difference exists."""

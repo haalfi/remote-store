@@ -204,11 +204,13 @@ _BOUNDS: tuple[str, ...] = (
     "*triggered by a cron*; today the only such workflow is `drift-guard.yml`, "
     "which is genuinely scheduled.",
     "**Runs in lists a generator's write-mode alias beside its `--check` gate.** "
-    "Both run the same comparison and both are real homes. An alias whose command "
-    "contains hatch's `{args}` placeholder anywhere is recorded for every block the "
-    "script declares, since the argv it will be given is unknown here — so an alias "
-    "pinning one subcommand *and* forwarding `{args}` is over-reported, which no "
-    "target in this repo currently does.",
+    "Both run the same comparison and both are real homes. An alias whose *argv* — "
+    "the text after the script path, up to the first `|`, `&` or `;` — carries "
+    "hatch's `{args}` placeholder is recorded for every block the script declares, "
+    "since the argv it will be given is unknown here. So an alias pinning one "
+    "subcommand *and* forwarding `{args}` is over-reported, and one spelling "
+    "`{args}` before the path or past a pipe is not matched at all; no target in "
+    "this repo has either shape.",
     "**`_VALID_DOMAINS` is a hand-maintained copy of research § 4a's six domains** "
     "— the curated parallel list Rule 3 warns about, one layer down. Kept because "
     "the alternative is parsing a prose research doc, and because § 4a is a "

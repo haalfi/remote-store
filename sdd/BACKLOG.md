@@ -1491,7 +1491,18 @@ the commit that writes it lands, so cite the generator instead.
     is out of range (the conformance suite, § 4b's one row with no successor
     entry), and the declarations' *content* is unverified — a gate rewritten to
     compare something else, with its block left alone, renders a truthful-looking
-    wrong row.
+    wrong row. The full bound list is the generated file's last section.
+    **One measured lesson worth carrying to the remaining bullets**, since they
+    build the same shape: across six review passes the *code* converged after two
+    (the last four execution-based passes found no bug between them), while the
+    *narrative* around it — the generator's docstring, this entry, the research
+    annotation, the trace — kept producing defects at roughly the rate the fix
+    passes edited it. Every recurrence was a sentence describing code that a later
+    commit changed. Two remedies worked and are worth reusing rather than
+    rediscovering: name a thing once in code and render it (`_WIRING_SOURCES`,
+    `_BOUNDS`), and point at the derived artifact for any figure that moves rather
+    than restating it. One did not: correcting the prose in place, which is what
+    the first four passes did.
   - **BE-021's divergence counts, and the artifacts that re-count against them.**
     The absent-container divergence set is stated as a bullet list in BE-021, as
     a class count in `sdd/BACKLOG.md` § 1, and again in the CHANGELOG, spec 040
