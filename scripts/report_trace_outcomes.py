@@ -186,9 +186,9 @@ Exit codes
 
 Drift-gate::
 
-    kind:       rule
-    rule: aggregates trace outcome tags per referenced document and ranks the documents that failed
-        their readers
+    kind:       report
+    surfaces:   which documents readers recorded as unclear or misleading, ranked by tag rate over
+        reads across the trace corpus
     domain:     process
 """
 

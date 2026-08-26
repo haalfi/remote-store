@@ -66,13 +66,18 @@ touch.
    discrepancies and report what fraction was caught. An unstated bound gets
    trusted past its range.
    Declare in the same docstring **what the mechanism compares** — the artifact
-   pair, or the rule when it guards a single artifact — in the machine-readable
-   `Drift-gate::` block that
+   pair, the rule when it guards a single artifact, or what it surfaces when it
+   only measures — in the machine-readable `Drift-gate::` block that
    [`gen_gate_inventory.py`](../scripts/gen_gate_inventory.py) reads to derive
-   [`GATE-INVENTORY.md`](GATE-INVENTORY.md). Wiring a mechanism without one fails
-   that gate. The declaration lives beside the code because a curated mapping of
-   which mechanism watches which pair is the parallel artifact Rule 3 forbids,
-   one layer up.
+   [`GATE-INVENTORY.md`](GATE-INVENTORY.md). The declaration lives beside the
+   code because a curated mapping of which mechanism watches which pair is the
+   parallel artifact Rule 3 forbids, one layer up.
+   **What enforcement reaches, stated because this rule is the one that asks for
+   bounds:** wiring a script named `check_*`, `gen_*`, `drift_*` or `report_*`
+   without a block fails that gate. A mechanism named outside those prefixes is
+   not caught — it passes silently and never reaches the inventory. So the
+   obligation is on the author, and the gate is a backstop for the conventional
+   case, not a guarantee of coverage.
 
 8. <a id="independence"></a>**Verify independence of derivation path; never assume
    it.** [review-enforced]

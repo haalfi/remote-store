@@ -37,12 +37,18 @@ file is the one place that documents the format and so the one place that could
 have declared a mechanism by describing one; it did, on the first run, and the
 row it displaced was this generator's own.
 
-``kind: pair`` states the two artifacts compared. ``kind: rule`` is for the
-single-artifact rule checks — assertion presence, mock discipline, forbidden
-RST roles, em dashes in TLA+ — which guard no pair and would otherwise yield no
-row at all. ``entrypoint:`` disambiguates a script carrying more than one
-mechanism (``drift_check.py``); it is matched against the argv that the wiring
-actually passes, and may be omitted when a script declares exactly one block.
+Three kinds, because two would force a false claim. ``kind: pair`` states the
+two artifacts compared. ``kind: rule`` is for the single-artifact rule checks —
+assertion presence, mock discipline, forbidden RST roles, em dashes in TLA+ —
+which guard no pair and would otherwise yield no row at all. ``kind: report``
+takes ``surfaces:`` instead, for a mechanism that measures rather than asserts:
+``report_trace_outcomes.py`` ranks the documents that failed their readers and
+is true or false of nothing, so a ``rule:`` describing it would render under a
+column promising an assertion nobody makes.
+
+``entrypoint:`` disambiguates a script carrying more than one mechanism
+(``drift_check.py``); it is matched against the argv that the wiring actually
+passes, and may be omitted when a script declares exactly one block.
 
 The claim space (Rule 3)
 ------------------------
@@ -88,6 +94,15 @@ Bounds -- what this gate does not catch (``sdd/DRIFT-RULES.md`` Rule 7):
   problem this design declines to solve.
 * Enforcement is derived from *wiring*, not from exit codes. A script wired
   into a gate bundle that always exits 0 is reported as gating.
+* **Over-reach, since the rest of this list is under-reach.** A ``scripts/*.py``
+  path is read as an invocation wherever it appears in a command, provided it
+  starts at a path boundary and not on a ``#`` comment line. A path inside a
+  quoted string, a heredoc body or an ``echo`` still counts, so prose that
+  happens to spell a command wires the script it names. Both filters were added
+  after review found the unanchored form reading ``tests/scripts/*.py`` as
+  ``scripts/*.py``; what remains is bounded to text that looks exactly like a
+  command, and the failure direction is a spurious row rather than a missing
+  one.
 * Once a script declares at least one block, a wired invocation matching no
   ``entrypoint:`` is treated as an operational subcommand rather than a
   mechanism -- ``drift_check.py extras`` lists extras and compares nothing.
@@ -139,17 +154,28 @@ LOCAL_GATE_TARGET = "all"
 # the claim space -- see the module docstring's bounds.
 _MECHANISM_STEM_RE = re.compile(r"^(check|gen|drift|report)_")
 
-# A `scripts/...py` path anywhere in a shell command, plus whatever follows it
-# on that command line (the argv used to match `entrypoint:`).
-_SCRIPT_INVOCATION_RE = re.compile(r"(scripts/[\w/]+\.py)([^\n|&;]*)")
+# A repo-root-relative `scripts/...py` path in a shell command, plus whatever
+# follows it on that line (the argv used to match `entrypoint:`).
+#
+# The left anchor is load-bearing: unanchored, `scripts/[\w/]+\.py` matches as a
+# *suffix*, so `python tests/scripts/run_examples.py` in ci.yml reads as an
+# invocation of `scripts/run_examples.py`. Today `source.exists()` drops those,
+# but this repo puts each script's tests under `tests/scripts/` with a related
+# name, so a `scripts/` file sharing a basename with a `tests/scripts/` file CI
+# runs would gain a row claiming a job it never runs in -- and fail `lint` on a
+# missing block if its stem matched the backstop.
+_SCRIPT_INVOCATION_RE = re.compile(r"(?:^|[\s;&|(=\"'])(scripts/[\w/]+\.py)([^\n|&;]*)")
 
 # `hatch run <target>` / `uvx hatch run <target>` inside a workflow run step.
 _HATCH_RUN_RE = re.compile(r"hatch run ([a-z0-9][\w-]*)")
 
 _BLOCK_HEADER = "Drift-gate::"
 _FIELD_RE = re.compile(r"^(\w+):\s*(.*)$")
-_VALID_KINDS = frozenset({"pair", "rule"})
-_VALID_FIELDS = frozenset({"kind", "entrypoint", "compares", "rule", "domain"})
+_VALID_KINDS = frozenset({"pair", "rule", "report"})
+_VALID_FIELDS = frozenset({"kind", "entrypoint", "compares", "rule", "surfaces", "domain"})
+
+# Per kind: the field it requires, and the fields it must not carry.
+_KIND_FIELDS: dict[str, str] = {"pair": "compares", "rule": "rule", "report": "surfaces"}
 
 
 class DeclarationError(ValueError):
@@ -164,12 +190,13 @@ class Declaration:
     domain: str
     compares: str | None = None
     rule: str | None = None
+    surfaces: str | None = None
     entrypoint: str | None = None
 
     @property
     def subject(self) -> str:
-        """The compared pair or the asserted rule, whichever this kind carries."""
-        return self.compares if self.kind == "pair" else self.rule  # type: ignore[return-value]
+        """The compared pair, the asserted rule, or what a report surfaces."""
+        return getattr(self, _KIND_FIELDS[self.kind])  # type: ignore[no-any-return]
 
 
 @dataclass(frozen=True)
@@ -179,21 +206,19 @@ class Mechanism:
     path: str
     declaration: Declaration
     homes: tuple[str, ...]
+    # The gate-home set this mechanism was resolved against, carried rather than
+    # read from module state so `enforcement` is a function of the mechanism and
+    # not of what `collect` was last pointed at.
+    gate_homes: frozenset[str] = frozenset({LOCAL_GATE_TARGET})
 
     @property
     def enforcement(self) -> str:
         """gating | scheduled | advisory, derived from *homes* alone."""
-        if any(h in _GATE_HOMES or h.startswith("ci.yml:") for h in self.homes):
+        if any(h in self.gate_homes or h.startswith("ci.yml:") for h in self.homes):
             return "gating"
         if any(":" in h for h in self.homes):
             return "scheduled"
         return "advisory"
-
-
-# Hatch targets whose failure blocks a commit or a PR. `all` is the local
-# pre-commit gate; the rest are discovered from workflow steps at run time and
-# merged into this set by `collect`.
-_GATE_HOMES: set[str] = {LOCAL_GATE_TARGET}
 
 
 # ---------------------------------------------------------------------------
@@ -280,19 +305,21 @@ def _build(fields: dict[str, str], path: str) -> Declaration:
     """Validate *fields* into a Declaration, or raise DeclarationError."""
     kind = fields.get("kind")
     if kind not in _VALID_KINDS:
-        raise DeclarationError(f"{path}: Drift-gate `kind:` must be pair or rule, got {kind!r}")
+        raise DeclarationError(f"{path}: Drift-gate `kind:` must be one of {sorted(_VALID_KINDS)}, got {kind!r}")
     if not fields.get("domain"):
         raise DeclarationError(f"{path}: Drift-gate block needs a `domain:`")
-    required, forbidden = ("compares", "rule") if kind == "pair" else ("rule", "compares")
+    required = _KIND_FIELDS[kind]
     if not fields.get(required):
         raise DeclarationError(f"{path}: Drift-gate `kind: {kind}` needs a `{required}:`")
-    if fields.get(forbidden):
-        raise DeclarationError(f"{path}: Drift-gate `kind: {kind}` must not carry `{forbidden}:`")
+    for forbidden in set(_KIND_FIELDS.values()) - {required}:
+        if fields.get(forbidden):
+            raise DeclarationError(f"{path}: Drift-gate `kind: {kind}` must not carry `{forbidden}:`")
     return Declaration(
         kind=kind,
         domain=fields["domain"],
         compares=fields.get("compares"),
         rule=fields.get("rule"),
+        surfaces=fields.get("surfaces"),
         entrypoint=fields.get("entrypoint"),
     )
 
@@ -310,8 +337,18 @@ def _script_table(pyproject: Path) -> dict[str, list[str]]:
 
 
 def _invocations(command: str) -> list[tuple[str, str]]:
-    """Return ``(script path, trailing argv)`` for each script call in *command*."""
-    return [(m.group(1), m.group(2).strip()) for m in _SCRIPT_INVOCATION_RE.finditer(command)]
+    """Return ``(script path, trailing argv)`` for each script call in *command*.
+
+    Shell comment lines are skipped. ``yaml.safe_load`` strips YAML comments, but
+    a ``#`` line inside a ``run: |`` block survives into the body, and prose
+    naming a script is not a wiring of it.
+    """
+    found: list[tuple[str, str]] = []
+    for line in command.splitlines():
+        if line.lstrip().startswith("#"):
+            continue
+        found += [(m.group(1), m.group(2).strip()) for m in _SCRIPT_INVOCATION_RE.finditer(line)]
+    return found
 
 
 def _resolve(target: str, table: dict[str, list[str]], seen: frozenset[str]) -> list[tuple[str, str]]:
@@ -373,7 +410,7 @@ def collect(root: Path = ROOT) -> tuple[list[Mechanism], list[str]]:
             continue
         for _job, body in _run_steps(workflow):
             ci_targets.update(_HATCH_RUN_RE.findall(body))
-    _GATE_HOMES.update(ci_targets)
+    gate_homes = frozenset(ci_targets | {LOCAL_GATE_TARGET})
 
     # script path → argv → set of homes
     wiring: dict[str, dict[str, set[str]]] = {}
@@ -421,7 +458,14 @@ def collect(root: Path = ROOT) -> tuple[list[Mechanism], list[str]]:
                 # operational subcommand (`drift_check.py extras`), not one of
                 # them. See the module docstring's bounds for what that costs.
                 continue
-            mechanisms.append(Mechanism(path=path, declaration=declaration, homes=tuple(sorted(homes))))
+            mechanisms.append(
+                Mechanism(
+                    path=path,
+                    declaration=declaration,
+                    homes=tuple(sorted(homes)),
+                    gate_homes=gate_homes,
+                )
+            )
 
     merged = _merge(mechanisms)
     return merged, problems
@@ -434,7 +478,12 @@ def _merge(mechanisms: list[Mechanism]) -> list[Mechanism]:
         key = (mechanism.path, mechanism.declaration.entrypoint or "")
         existing = folded.get(key)
         homes = set(mechanism.homes) | (set(existing.homes) if existing else set())
-        folded[key] = Mechanism(mechanism.path, mechanism.declaration, tuple(sorted(homes)))
+        folded[key] = Mechanism(
+            mechanism.path,
+            mechanism.declaration,
+            tuple(sorted(homes)),
+            mechanism.gate_homes,
+        )
     return sorted(folded.values(), key=lambda m: (m.path, m.declaration.entrypoint or ""))
 
 
@@ -455,10 +504,26 @@ def _name(mechanism: Mechanism) -> str:
     return f"`{mechanism.path}`"
 
 
+def _rows(mechanisms: list[Mechanism], header: str) -> list[str]:
+    """Render one section's table, *header* naming its subject column."""
+    out = [
+        "",
+        f"| Mechanism | {header} | Domain | Runs in | Enforcement |",
+        "|---|---|---|---|---|",
+    ]
+    out += [
+        f"| {_name(m)} | {_cell(m.declaration.subject)} | {_cell(m.declaration.domain)} "
+        f"| {', '.join(f'`{h}`' for h in m.homes)} | {m.enforcement} |"
+        for m in mechanisms
+    ]
+    return out
+
+
 def render(mechanisms: list[Mechanism]) -> str:
     """Render the inventory document."""
     pairs = [m for m in mechanisms if m.declaration.kind == "pair"]
     rules = [m for m in mechanisms if m.declaration.kind == "rule"]
+    reports = [m for m in mechanisms if m.declaration.kind == "report"]
 
     out: list[str] = [
         "# Cross-artifact gate inventory",
@@ -469,23 +534,16 @@ def render(mechanisms: list[Mechanism]) -> str:
         "`scripts/gen_gate_inventory.py`. Do not edit by hand; run "
         "`hatch run gen-gate-inventory`.",
         "",
-        "Which artifact pairs this repo checks, and which single-artifact rules it",
-        "asserts. *Kind*, *Compares*, *Rule* and *Domain* come from each mechanism's",
-        "`Drift-gate::` docstring block; *Runs in* and *Enforcement* are derived from",
-        "`pyproject.toml` and `.github/workflows/`, so no column is maintained here.",
-        "The generator's module docstring states what this inventory does not catch.",
+        "Which artifact pairs this repo checks, which single-artifact rules it",
+        "asserts, and what its reports surface. *Kind*, the subject column and",
+        "*Domain* come from each mechanism's `Drift-gate::` docstring block; *Runs",
+        "in* and *Enforcement* are derived from `pyproject.toml` and",
+        "`.github/workflows/`, so no column is maintained here. The generator's",
+        "module docstring states what this inventory does not catch.",
         "",
         f"## Pair gates ({len(pairs)})",
-        "",
-        "| Mechanism | Compares | Domain | Runs in | Enforcement |",
-        "|---|---|---|---|---|",
     ]
-    for mechanism in pairs:
-        out.append(
-            f"| {_name(mechanism)} | {_cell(mechanism.declaration.subject)} "
-            f"| {_cell(mechanism.declaration.domain)} "
-            f"| {', '.join(f'`{h}`' for h in mechanism.homes)} | {mechanism.enforcement} |"
-        )
+    out += _rows(pairs, "Compares")
 
     out += [
         "",
@@ -493,16 +551,18 @@ def render(mechanisms: list[Mechanism]) -> str:
         "",
         "Single-artifact checks. They guard no pair, so a derivation over compared",
         "artifacts alone would yield no row for them at all.",
-        "",
-        "| Mechanism | Rule asserted | Domain | Runs in | Enforcement |",
-        "|---|---|---|---|---|",
     ]
-    for mechanism in rules:
-        out.append(
-            f"| {_name(mechanism)} | {_cell(mechanism.declaration.subject)} "
-            f"| {_cell(mechanism.declaration.domain)} "
-            f"| {', '.join(f'`{h}`' for h in mechanism.homes)} | {mechanism.enforcement} |"
-        )
+    out += _rows(rules, "Rule asserted")
+
+    out += [
+        "",
+        f"## Reports, no assertion ({len(reports)})",
+        "",
+        "These measure rather than assert. Nothing here is true or false of an",
+        "artifact, so neither of the columns above fits: putting a description in",
+        "a *Rule asserted* cell would claim a check that is not being made.",
+    ]
+    out += _rows(reports, "Surfaces")
     out.append("")
     return "\n".join(out)
 
@@ -510,6 +570,14 @@ def render(mechanisms: list[Mechanism]) -> str:
 # ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
+
+
+def _display(path: Path) -> str:
+    """*path* relative to the repo when it sits inside it, else in full."""
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
 
 
 def _row_subject(line: str) -> str:
@@ -552,20 +620,18 @@ def main() -> None:
     rendered = render(mechanisms)
     current = OUTPUT.read_text(encoding="utf-8") if OUTPUT.exists() else ""
 
+    name = _display(OUTPUT)
     if args.check:
         if rendered != current:
             for line in _differing_rows(current, rendered):
                 print(line, file=sys.stderr)
-            print(
-                f"\n{OUTPUT.relative_to(ROOT)} is out of date.\nRun:  hatch run gen-gate-inventory",
-                file=sys.stderr,
-            )
+            print(f"\n{name} is out of date.\nRun:  hatch run gen-gate-inventory", file=sys.stderr)
             sys.exit(1)
-        print(f"{OUTPUT.relative_to(ROOT)} is up to date ({len(mechanisms)} mechanisms).")
+        print(f"{name} is up to date ({len(mechanisms)} mechanisms).")
         return
 
     OUTPUT.write_text(rendered, encoding="utf-8")
-    print(f"Wrote {OUTPUT.relative_to(ROOT)} ({len(mechanisms)} mechanisms).")
+    print(f"Wrote {name} ({len(mechanisms)} mechanisms).")
 
 
 if __name__ == "__main__":

@@ -4,11 +4,12 @@
 
 Derived from 32 declared mechanism(s) by `scripts/gen_gate_inventory.py`. Do not edit by hand; run `hatch run gen-gate-inventory`.
 
-Which artifact pairs this repo checks, and which single-artifact rules it
-asserts. *Kind*, *Compares*, *Rule* and *Domain* come from each mechanism's
-`Drift-gate::` docstring block; *Runs in* and *Enforcement* are derived from
-`pyproject.toml` and `.github/workflows/`, so no column is maintained here.
-The generator's module docstring states what this inventory does not catch.
+Which artifact pairs this repo checks, which single-artifact rules it
+asserts, and what its reports surface. *Kind*, the subject column and
+*Domain* come from each mechanism's `Drift-gate::` docstring block; *Runs
+in* and *Enforcement* are derived from `pyproject.toml` and
+`.github/workflows/`, so no column is maintained here. The generator's
+module docstring states what this inventory does not catch.
 
 ## Pair gates (23)
 
@@ -38,7 +39,7 @@ The generator's module docstring states what this inventory does not catch.
 | `scripts/gen_graph.py` | the source tree under src/remote_store/ ↔ docs-src/_data/graph/graph.json | realization | `all`, `preflight` | gating |
 | `scripts/gen_graph_viz.py` | docs-src/_data/graph/graph.json ↔ docs-src/explanation/graph_viz.html | explanation | `all`, `preflight` | gating |
 
-## Rule checks, no pair (9)
+## Rule checks, no pair (8)
 
 Single-artifact checks. They guard no pair, so a derivation over compared
 artifacts alone would yield no row for them at all.
@@ -53,4 +54,13 @@ artifacts alone would yield no row for them at all.
 | `scripts/check_test_placement.py` | every test file sits in the subpackage TESTING.md and spec 048 place it in | verification | `all`, `lint` | gating |
 | `scripts/check_tla_no_emdash.py` | no TLA+ module under sdd/formal/tla/ contains an em dash, which TLC rejects | intent-formalized | `all`, `ci.yml:verify-tla`, `lint` | gating |
 | `scripts/drift_report.py` | the rolling dependency-drift issue reflects the current per-extra drift reports: open while any extra drifts, closed once all clear | process | `drift-guard.yml:report` | scheduled |
-| `scripts/report_trace_outcomes.py` | aggregates trace outcome tags per referenced document and ranks the documents that failed their readers | process | `report-trace-outcomes` | advisory |
+
+## Reports, no assertion (1)
+
+These measure rather than assert. Nothing here is true or false of an
+artifact, so neither of the columns above fits: putting a description in
+a *Rule asserted* cell would claim a check that is not being made.
+
+| Mechanism | Surfaces | Domain | Runs in | Enforcement |
+|---|---|---|---|---|
+| `scripts/report_trace_outcomes.py` | which documents readers recorded as unclear or misleading, ranked by tag rate over reads across the trace corpus | process | `report-trace-outcomes` | advisory |

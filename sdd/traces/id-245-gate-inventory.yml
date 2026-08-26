@@ -12,11 +12,17 @@ audience:
   - contributor.tooling
   - contributor.process
 expected_ripples:
+  # Anticipated by the ripple-check: DRIFT-RULES by the "new or changed
+  # cross-artifact check" row, BACKLOG by "backlog item touched".
+  - sdd/DRIFT-RULES.md
+  - sdd/BACKLOG.md
   - sdd/GATE-INVENTORY.md
   - CHANGELOG.md
 surprising_ripples:
-  # Neither anticipated by the ripple-check nor by the item body.
-  - scripts/gen_gate_inventory.py
+  # Neither anticipated by the ripple-check nor cited as a read before the work
+  # began. The research doc's § 4b table is the artifact this item exists to
+  # replace, yet no ripple-check row points from a new gate to the doc whose
+  # hand-built table it supersedes.
   - sdd/research/research-inconsistency-detection-multi-artifact.md
 
 phases:

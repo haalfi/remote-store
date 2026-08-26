@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 import sys
 import textwrap
 from pathlib import Path
@@ -38,6 +39,14 @@ RULE_BLOCK = """
         domain:     verification
 """
 
+REPORT_BLOCK = """
+    Drift-gate::
+
+        kind:       report
+        surfaces:   which documents readers found unclear
+        domain:     process
+"""
+
 
 class TestParseDeclarations:
     """The docstring block is the only authored input; parsing it must be strict."""
@@ -56,6 +65,29 @@ class TestParseDeclarations:
         assert declaration.kind == "rule"
         assert declaration.compares is None
         assert declaration.subject == "every test asserts something"
+
+    @pytest.mark.spec("ID-245")
+    def test_report_block_yields_surfaces_as_subject(self) -> None:
+        """A report measures rather than asserts, so `rule:` would claim a check nobody makes."""
+        (declaration,) = _mod.parse_declarations(_module(REPORT_BLOCK), "s.py")
+        assert declaration.kind == "report"
+        assert declaration.rule is None
+        assert declaration.subject == "which documents readers found unclear"
+
+    @pytest.mark.spec("ID-245")
+    def test_report_carrying_rule_is_rejected(self) -> None:
+        with pytest.raises(_mod.DeclarationError, match="must not carry `rule:`"):
+            _mod.parse_declarations(
+                _module("""
+    Drift-gate::
+
+        kind:       report
+        surfaces:   something
+        rule:       every test asserts something
+        domain:     process
+"""),
+                "s.py",
+            )
 
     @pytest.mark.spec("ID-245")
     def test_no_block_yields_no_declaration(self) -> None:
@@ -107,7 +139,7 @@ class TestParseDeclarations:
 
     @pytest.mark.spec("ID-245")
     def test_unknown_kind_is_rejected(self) -> None:
-        with pytest.raises(_mod.DeclarationError, match="must be pair or rule"):
+        with pytest.raises(_mod.DeclarationError, match="must be one of"):
             _mod.parse_declarations(
                 _module("\n    Drift-gate::\n\n        kind:       vibes\n        domain:     process\n"), "s.py"
             )
@@ -210,9 +242,9 @@ class TestWiringDerivation:
 class TestEnforcement:
     """Enforcement is derived from wiring; a declaration cannot claim it."""
 
-    def _mechanism(self, *homes: str) -> _mod.Mechanism:
+    def _mechanism(self, *homes: str, gate_homes: frozenset[str] = frozenset({"all", "lint"})) -> _mod.Mechanism:
         declaration = _mod.Declaration(kind="pair", domain="process", compares="a <-> b")
-        return _mod.Mechanism(path="scripts/check_x.py", declaration=declaration, homes=homes)
+        return _mod.Mechanism(path="scripts/check_x.py", declaration=declaration, homes=homes, gate_homes=gate_homes)
 
     @pytest.mark.spec("ID-245")
     def test_gate_bundle_is_gating(self) -> None:
@@ -229,6 +261,138 @@ class TestEnforcement:
     @pytest.mark.spec("ID-245")
     def test_bare_hatch_target_is_advisory(self) -> None:
         assert self._mechanism("report-trace-outcomes").enforcement == "advisory"
+
+
+def _tree(tmp_path: Path, scripts: dict[str, str], lint: list[str] | None = None) -> Path:
+    """Build a minimal repo: a hatch script table, workflows, and scripts/."""
+    (tmp_path / "scripts").mkdir()
+    for name, body in scripts.items():
+        (tmp_path / "scripts" / name).write_text(body, encoding="utf-8")
+    commands = lint if lint is not None else [f"python scripts/{name}" for name in scripts]
+    rendered = ", ".join(f'"{c}"' for c in commands)
+    (tmp_path / "pyproject.toml").write_text(
+        f'[tool.hatch.envs.default.scripts]\nlint = [{rendered}]\nall = ["lint"]\n', encoding="utf-8"
+    )
+    workflows = tmp_path / ".github" / "workflows"
+    workflows.mkdir(parents=True)
+    (workflows / "ci.yml").write_text("jobs:\n  lint:\n    steps:\n      - run: uvx hatch run lint\n", encoding="utf-8")
+    return tmp_path
+
+
+class TestBackstop:
+    """`unknown is a failure, not a skip` is the clause the whole design rests on."""
+
+    @pytest.mark.spec("ID-245")
+    def test_wired_mechanism_without_a_block_is_a_problem(self, tmp_path: Path) -> None:
+        root = _tree(tmp_path, {"check_x.py": '"""Summary, no declaration."""\n'})
+        mechanisms, problems = _mod.collect(root)
+        assert mechanisms == []
+        assert problems == ["scripts/check_x.py: wired but carries no `Drift-gate::` declaration block"]
+
+    @pytest.mark.spec("ID-245")
+    def test_wired_non_mechanism_without_a_block_is_not_a_problem(self, tmp_path: Path) -> None:
+        """The heuristic must drop `run_mutate.py` and fail `check_foo.py`, not both or neither."""
+        root = _tree(tmp_path, {"run_mutate.py": '"""Summary, no declaration."""\n'})
+        mechanisms, problems = _mod.collect(root)
+        assert (mechanisms, problems) == ([], [])
+
+    @pytest.mark.spec("ID-245")
+    def test_every_backstop_prefix_fires(self, tmp_path: Path) -> None:
+        names = ["check_a.py", "gen_a.py", "drift_a.py", "report_a.py"]
+        root = _tree(tmp_path, dict.fromkeys(names, '"""Summary."""\n'))
+        _mechanisms, problems = _mod.collect(root)
+        assert sorted(p.split(":")[0] for p in problems) == sorted(f"scripts/{n}" for n in names)
+
+    @pytest.mark.spec("ID-245")
+    def test_a_declared_mechanism_collects_with_its_homes(self, tmp_path: Path) -> None:
+        root = _tree(tmp_path, {"check_x.py": _module(PAIR_BLOCK)})
+        (mechanism,), problems = _mod.collect(root)
+        assert problems == []
+        assert mechanism.path == "scripts/check_x.py"
+        assert mechanism.homes == ("all", "lint")
+        assert mechanism.enforcement == "gating"
+
+
+class TestCallIsolation:
+    """`collect(root)` must not leak derived state into a later call."""
+
+    @pytest.mark.spec("ID-245")
+    def test_a_foreign_ci_target_does_not_become_a_gate_home_globally(self, tmp_path: Path) -> None:
+        """Enforcement is a function of the mechanism, not of what collect last saw."""
+        foreign = tmp_path / "foreign"
+        foreign.mkdir()
+        _tree(foreign, {"check_x.py": _module(PAIR_BLOCK)})
+        (foreign / ".github" / "workflows" / "ci.yml").write_text(
+            "jobs:\n  smoke:\n    steps:\n      - run: uvx hatch run smoke\n", encoding="utf-8"
+        )
+        _mod.collect(foreign)
+
+        home = tmp_path / "home"
+        home.mkdir()
+        _tree(
+            home,
+            {"check_y.py": _module(PAIR_BLOCK)},
+            lint=["python scripts/check_y.py"],
+        )
+        (home / "pyproject.toml").write_text(
+            '[tool.hatch.envs.default.scripts]\nsmoke = ["python scripts/check_y.py"]\n', encoding="utf-8"
+        )
+        (home / ".github" / "workflows" / "ci.yml").write_text("jobs: {}\n", encoding="utf-8")
+        (mechanism,), _problems = _mod.collect(home)
+        assert mechanism.homes == ("smoke",)
+        assert mechanism.enforcement == "advisory"
+
+
+class TestPathBoundary:
+    """A `tests/scripts/` path is not an invocation of the `scripts/` file it suffixes."""
+
+    @pytest.mark.spec("ID-245")
+    def test_nested_test_path_is_not_read_as_a_scripts_invocation(self) -> None:
+        assert _mod._invocations("python tests/scripts/run_examples.py") == []
+
+    @pytest.mark.spec("ID-245")
+    def test_shell_comment_line_is_not_wiring(self) -> None:
+        assert _mod._invocations("# see python scripts/check_x.py for details") == []
+
+    @pytest.mark.spec("ID-245")
+    def test_a_real_invocation_beside_a_comment_still_counts(self) -> None:
+        body = "# python scripts/check_a.py is documented below\npython scripts/check_b.py --check\n"
+        assert _mod._invocations(body) == [("scripts/check_b.py", "--check")]
+
+
+class TestCli:
+    """main()'s exit codes, which nothing else covers."""
+
+    @pytest.mark.spec("ID-245")
+    def test_check_exits_zero_on_the_committed_tree(self) -> None:
+        result = subprocess.run(
+            [sys.executable, str(SCRIPTS / "gen_gate_inventory.py"), "--check"],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stderr
+
+    @pytest.mark.spec("ID-245")
+    def test_check_exits_one_when_the_inventory_is_stale(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        stale = tmp_path / "GATE-INVENTORY.md"
+        stale.write_text("# not what the generator renders\n", encoding="utf-8")
+        monkeypatch.setattr(_mod, "OUTPUT", stale)
+        monkeypatch.setattr(sys, "argv", ["gen_gate_inventory.py", "--check"])
+        with pytest.raises(SystemExit) as exit_info:
+            _mod.main()
+        assert exit_info.value.code == 1
+        assert "is out of date" in capsys.readouterr().err
+
+    @pytest.mark.spec("ID-245")
+    def test_write_mode_renders_to_the_output_path(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        out = tmp_path / "GATE-INVENTORY.md"
+        monkeypatch.setattr(_mod, "OUTPUT", out)
+        monkeypatch.setattr(sys, "argv", ["gen_gate_inventory.py"])
+        _mod.main()
+        mechanisms, _problems = _mod.collect()
+        assert out.read_text(encoding="utf-8") == _mod.render(mechanisms)
 
 
 class TestLocalization:

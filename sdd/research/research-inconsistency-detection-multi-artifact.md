@@ -498,10 +498,12 @@ follows is unintelligible without it — the same reasoning § 10 records for
 finding 7's trace-tag counts, and the same remedy. Two things the generated
 inventory shows that this snapshot does not: the `MemoryBackend` ↔
 `MemoryBackendMinimal` row's "None in CI" was overtaken by
-`check_dafny_twin_parity.py`, and the eleven rows here are 11 of 32 mechanisms.
-The one row with no successor entry is `Backend` *i* ↔ backend *j*: the
-conformance suite is pytest collection rather than a script invocation, so the
-generator cannot reach it — stated as a bound in its docstring.
+`check_dafny_twin_parity.py`, and **ten** of the eleven rows here have a
+successor entry, out of the 32 mechanisms the generator reports — counted by
+walking this table against `sdd/GATE-INVENTORY.md` row by row. The eleventh,
+`Backend` *i* ↔ backend *j*, has none: the conformance suite is pytest
+collection rather than a script invocation, so the generator cannot reach it —
+stated as a bound in its docstring.
 
 | Pair | Domain | Current detection |
 |---|---|---|
