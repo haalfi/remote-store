@@ -17,10 +17,12 @@ absent — and ``InvalidPath`` was the worst of the three plausible answers, sin
 it tells the caller their path is malformed when the path is fine.
 
 **Why this module is worth its weight.** The claim that Local already treated an
-absent root as an absent path was written into BE-021's rationale, into
-``_flat_ns._children_or_absent_container``'s docstring, and into BUG-243's trace,
-as the argument that tolerating "makes flat-namespace agree with the hierarchical
-backends". It was false, and it was false in a way reading could not catch:
+absent root as an absent path was written into BE-021's rationale and into
+BUG-243's trace, as the argument that tolerating "makes flat-namespace agree with
+the hierarchical backends". (It was *not* in
+``_flat_ns._children_or_absent_container``'s docstring, which an earlier version
+of this paragraph asserted; ``git log -S`` finds the phrase in no revision of
+that file.) It was false, and it was false in a way reading could not catch:
 ``delete`` and ``delete_folder`` both look correct in isolation
 (``full.exists()`` → ``missing_ok`` → return), because ``_resolve`` raised two
 lines earlier. Two readers checked the code and both missed it; running it took
@@ -49,6 +51,8 @@ from remote_store.backends._local import LocalBackend
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+    from remote_store._models import WriteResult
 
 # The behaviour pinned here comes from ``Path.resolve()`` / ``relative_to()``
 # semantics in ``_within_root``, which differ most on macOS and Windows — the
@@ -144,12 +148,16 @@ class TestAbsentRootReadsRaiseNotFound:
         [
             ("read", lambda b: b.read("folder/object.txt")),
             ("read_bytes", lambda b: b.read_bytes("folder/object.txt")),
+            # Not overridden by LocalBackend — the ABC default delegates to
+            # read(), so this cell is what makes the inherited path an enumerated
+            # member rather than an assumed one.
+            ("read_seekable", lambda b: b.read_seekable("folder/object.txt")),
             ("get_file_info", lambda b: b.get_file_info("folder/object.txt")),
             ("get_folder_info", lambda b: b.get_folder_info("folder")),
             ("move_src", lambda b: b.move("folder/object.txt", "folder/other.txt")),
             ("copy_src", lambda b: b.copy("folder/object.txt", "folder/other.txt")),
         ],
-        ids=["read", "read_bytes", "get_file_info", "get_folder_info", "move_src", "copy_src"],
+        ids=["read", "read_bytes", "read_seekable", "get_file_info", "get_folder_info", "move_src", "copy_src"],
     )
     def test_operation_raises_not_found(
         self,
@@ -228,13 +236,23 @@ class TestAbsentRootStillAnswersAsTheRoot:
         [
             ("read", lambda b, p: b.read(p)),
             ("read_bytes", lambda b, p: b.read_bytes(p)),
+            ("read_seekable", lambda b, p: b.read_seekable(p)),
             ("get_file_info", lambda b, p: b.get_file_info(p)),
             ("delete", lambda b, p: b.delete(p)),
             ("delete_missing_ok", lambda b, p: b.delete(p, missing_ok=True)),
             ("move_src", lambda b, p: b.move(p, "dst.txt")),
             ("copy_src", lambda b, p: b.copy(p, "dst.txt")),
         ],
-        ids=["read", "read_bytes", "get_file_info", "delete", "delete_missing_ok", "move_src", "copy_src"],
+        ids=[
+            "read",
+            "read_bytes",
+            "read_seekable",
+            "get_file_info",
+            "delete",
+            "delete_missing_ok",
+            "move_src",
+            "copy_src",
+        ],
     )
     def test_file_operation_on_root_is_a_type_error(
         self,
@@ -333,6 +351,45 @@ class TestTheContainmentGuardStillGuards:
         with pytest.raises(InvalidPath, match="escapes root"):
             instance.read_bytes("link/secret.txt")
 
+    def test_root_replaced_by_a_symlink_is_an_escape(self, tmp_path: Path) -> None:
+        """The state the sibling above cannot reach: the walk stop actually executes.
+
+        With the root present, the ancestor walk halts at an existing component
+        before it ever reaches ``self._root``, so the ``break`` this fix adds is
+        dead code in that cell — it pins the guard, but not the guard *under the
+        change*. Here the root is deleted and replaced by a symlink pointing
+        outside, so the walk runs to the root, the stop fires, and the resolve
+        that follows is the thing that has to still reject it.
+
+        This is the case where a fix that reached for "root missing → contained"
+        instead of "stop the walk, then resolve" would silently hand back a path
+        outside the root.
+
+        ``exists`` is in the list and is expected to *raise* here rather than
+        answer ``False``. That is not a breach of BE-004's never-raise rule: the
+        rule is about missing paths and traversal failures, and the method's own
+        ``Raises:`` block has always documented ``InvalidPath`` for a path that
+        escapes the root. An escape is a different verdict from an absence, which
+        is the whole distinction this fix exists to restore.
+        """
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        (outside / "secret.txt").write_bytes(b"secret")
+        root = tmp_path / "store"
+        root.mkdir()
+
+        instance = LocalBackend(str(root))
+        root.rmdir()
+        root.symlink_to(outside, target_is_directory=True)
+
+        for call in (
+            lambda: instance.read_bytes("secret.txt"),
+            lambda: instance.delete("secret.txt", missing_ok=True),
+            lambda: instance.exists("secret.txt"),
+        ):
+            with pytest.raises(InvalidPath, match="escapes root"):
+                call()
+
 
 @pytest.mark.spec("BE-008")
 class TestWriteRecreatesTheRoot:
@@ -351,8 +408,8 @@ class TestWriteRecreatesTheRoot:
     @pytest.mark.parametrize(
         ("op_name", "call"),
         [
-            ("write", lambda b: b.write("folder/new.txt", b"x")),
-            ("write_atomic", lambda b: b.write_atomic("folder/new2.txt", b"x")),
+            ("write", lambda b: (b.write("folder/new.txt", b"x"), "folder/new.txt")),
+            ("write_atomic", lambda b: (b.write_atomic("folder/new2.txt", b"x"), "folder/new2.txt")),
         ],
         ids=["write", "write_atomic"],
     )
@@ -360,11 +417,12 @@ class TestWriteRecreatesTheRoot:
         self,
         backend: LocalBackend,
         op_name: str,
-        call: Callable[[LocalBackend], object],
+        call: Callable[[LocalBackend], tuple[WriteResult, str]],
     ) -> None:
-        result = call(backend)
-        assert result.size == 1  # type: ignore[attr-defined]
-        assert backend.exists("folder/new.txt") or backend.exists("folder/new2.txt")
+        result, written = call(backend)
+        assert result.size == 1
+        assert backend.exists(written), f"{op_name} reported success but {written} is not readable"
+        assert backend.read_bytes(written) == b"x"
 
     @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
     @pytest.mark.parametrize(

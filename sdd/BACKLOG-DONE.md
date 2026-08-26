@@ -176,7 +176,13 @@ if evidence changes; these are retired.
   ancestor of every contained target. A lexically escaping path never has the
   root on its ancestor chain for the stop to fire on, so the symlink-escape
   guard the item flagged as at risk is untouched — fenced by reverting the stop
-  and watching 24 of the 46 new cells fail.
+  and watching 29 of the module's 62 cells fail. Each of the change's three
+  parts was fenced separately, against the module as it finally stands rather
+  than as it stood when the part landed: 29/62 for the walk stop, 16/62 for the
+  file-shaped root pre-check, 8/62 for the write guard. An earlier version of
+  this sentence said 24 of 46 and was left behind when review added cells, which
+  is the failure mode [principle 9](../CLAUDE.md#principles) names: the figure
+  was re-read rather than re-run.
   **Two subjects the item did not name.** The fix turns `_resolve` from raising
   into returning, which exposes what each operation does next — so the work was
   the whole surface, not the four cells the item listed: 40 operation cells were

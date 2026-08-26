@@ -466,6 +466,15 @@ class LocalBackend(Backend):
         leave the tree partially deleted. ``recursive=False`` removes only an
         empty folder (``rmdir``).
 
+        Unlike ``exists``, ``is_folder`` and ``get_folder_info``, this method
+        answers the store root from the filesystem rather than by definition: on
+        a store whose root directory has been removed, ``delete_folder(root)``
+        raises ``NotFound`` while ``exists(root)`` still reports the root
+        present. That is deliberate — the root rule does not reach a folder
+        *delete*, and ``SFTPBackend`` answers this cell the same way — and
+        ``Store`` refuses a root delete before it reaches a backend, so a caller
+        going through the facade never sees the disagreement.
+
         Raises:
             NotFound: If the folder does not exist and ``missing_ok`` is ``False``.
             InvalidPath: If *path* names a file, not a folder.

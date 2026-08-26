@@ -602,8 +602,13 @@ folder by definition, not by observation. So an absent container does *not* flip
 aggregates to zero — and a file-shaped call on the root stays the type error
 BE-029 makes it, `missing_ok` included. Stated because the two clauses read as
 though they met: the answers above are for a path the container would hold, and
-the root is not one. `check_health` is the operation that reports an absent
-container, and it is off this roster entirely. `write` is the one operation *on the roster* that no clause
+the root is not one. Which operation *does* report an absent container is a
+per-backend question this section does not answer: `LocalBackend.check_health`
+stats its root and raises `NotFound`, while `SQLBlobBackend.check_health` is a
+`SELECT 1` and was measured returning cleanly against a dropped table. Health
+probes are off this roster entirely, so that difference is not a divergence from
+this clause — but it is a reason not to point callers at `check_health` as a
+general answer. `write` is the one operation *on the roster* that no clause
 of this spec decides, and this one does not decide it either — which leaves it
 the one roster operation a backend spec may decide, as
 [GR-031](044-graph-backend.md#gr-031-404-discrimination-item-vs-drive) does for
@@ -662,8 +667,9 @@ and the only one where the error type actively misled. BUG-247 stopped the walk
 at the root, which brings the whole surface to the clause at once — the tolerant
 deletes return, the strict ones and the reads raise `NotFound`, the probes answer
 `False`, the listings are empty. The store root itself is decided by BE-029 and
-not by this clause (§ Reach above), so it still answers as a folder; the
-operation that reports an absent root is `check_health`.
+not by this clause (§ Reach above), so it still answers as a folder; on this
+backend the operation that reports an absent root is `check_health`, which stats
+the root directly.
 
 `GraphBackend`'s bullet is the other one this list has lost.
 [GR-031](044-graph-backend.md#gr-031-404-discrimination-item-vs-drive) mapped

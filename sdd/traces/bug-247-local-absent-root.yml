@@ -184,6 +184,49 @@ phases:
           alike unless read as Markdown.
         outcome: ok
 
+  - id: fix_measuring
+    name: Round-2 fix pass (measuring round)
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 § Reach, § Known divergences"
+        read_type: verify
+        extract: >-
+          I wrote "check_health is the operation that reports an absent
+          container" as a general claim, generalised from Local without running
+          it anywhere else. SQLBlobBackend's check_health is a SELECT 1 and was
+          measured returning cleanly against a dropped table, so the sentence was
+          false on a backend this same section lists as divergent. Scoped to the
+          backend it was measured on. This is the false-premise class the clause
+          two paragraphs down already warns about, committed inside the edit that
+          quotes the warning.
+        outcome: ok
+      - file: tests/backends/local/test_absent_root.py
+        section: "module docstring, TestAbsentRootReadsRaiseNotFound, TestTheContainmentGuardStillGuards"
+        read_type: reference
+        extract: >-
+          Three holes a reading round had passed over twice. The module docstring
+          attributed the original false premise to _flat_ns's docstring, which
+          git log -S shows never carried it — inherited from the version on
+          master and repeated unchecked. read_seekable was absent from both root
+          enumerations in a module whose whole claim is that it enumerates rather
+          than samples; it is not overridden, so the ABC default is exactly the
+          inherited path TESTING.md Rule 13 warns about. And the symlink-escape
+          cell ran only with the root present — the one state in which the new
+          break is unreachable — so it pinned the guard but not the guard under
+          the change.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) BUG-247"
+        read_type: verify
+        extract: >-
+          The fence figure said 24 of 46 and the module had grown to 62 cells in
+          the round-1 fix pass. Re-ran all three fences against the module as it
+          now stands (29/62 walk stop, 16/62 read pre-check, 8/62 write guard)
+          rather than adjusting the number. A figure written once and re-read
+          afterwards is the failure principle 9 exists for, and this one drifted
+          inside the same PR that cites the principle.
+        outcome: ok
+
   - id: docs
     name: Docs and record
     steps:
