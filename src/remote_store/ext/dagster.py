@@ -772,7 +772,7 @@ class RemoteStoreComputeLogManager(  # type: ignore[misc]
 
     def get_log_keys_for_log_key_prefix(
         self, log_key_prefix: Sequence[str], io_type: ComputeIOType
-    ) -> Sequence[Sequence[str]]:
+    ) -> Sequence[list[str]]:
         """Enumerate the stored log keys under a log-key prefix."""
         extension = IO_TYPE_EXTENSION[io_type]
         results: list[list[str]] = []
