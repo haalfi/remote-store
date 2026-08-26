@@ -11010,6 +11010,22 @@ traffic"), liveness probes (Kubernetes), and connection validation.</p>
   - <code>BackendUnavailable</code> for network/DNS/timeout errors.
 - Not capability-gated (all backends support health checks).
 - Logs <code>DEBUG</code> on entry, <code>INFO</code> on success.</p>
+<p><strong>Known divergence: three backends do not raise for a missing container.</strong>
+Measured against an absent container, <code>S3PyArrowBackend</code>, <code>SQLBlobBackend</code> and
+<code>SQLQueryBackend</code> return cleanly where the <code>NotFound</code> row above requires them to
+raise. Both SQL backends inherit the same <code>SELECT 1</code>, which verifies connectivity
+and never touches the table or the queried relation. <code>S3Backend</code>,
+<code>S3Boto3Backend</code>, <code>AzureBackend</code>, <code>AsyncAzureBackend</code> and <code>LocalBackend</code> raise
+<code>NotFound</code> as stated.</p>
+<p>Recorded here rather than left implicit because a caller reading this clause
+would use <code>ping()</code> to answer "is my store there?", and on those three it answers
+"yes" for a store that is not. Tracked as <strong>BUG-256</strong>, which also carries a
+fourth, narrower case this sentence deliberately excludes:
+<code>ReadOnlyHttpBackend</code> <em>does</em> raise, but <code>BackendUnavailable</code> rather than
+<code>NotFound</code> — a wrong type rather than a missing raise, which is why folding it
+into the headline above would make that headline false.</p>
+<p>The obligation itself is unchanged, and the surrounding prose and the
+health-check guide state it.</p>
 <hr />
 <h2 id="backend-api">Backend API<a class="headerlink" href="#backend-api" title="Permanent link">&para;</a></h2>
 <h3 id="ping-002-backendcheck_health">PING-002: <code>Backend.check_health()</code><a class="headerlink" href="#ping-002-backendcheck_health" title="Permanent link">&para;</a></h3>

@@ -128,6 +128,8 @@ exists(path: str) -> bool
 
 Check if a file or folder exists.
 
+An absent *container* answers `False` — a container that does not exist holds no path either, and this probe never raises for a missing path. A *denied* container still raises: the prefix listing is the determinant here, so it fails closed rather than reporting "nothing there" for something you may not see.
+
 Parameters:
 
 - **`path`** (`str`) – Backend-relative key, or "" for the root.
@@ -159,6 +161,8 @@ is_folder(path: str) -> bool
 ```
 
 Return `True` if `path` is an existing folder.
+
+An absent container answers `False`, on the same terms as `exists`.
 
 Parameters:
 
@@ -335,6 +339,8 @@ list_files(
 
 List files under `path`.
 
+A missing path yields nothing, and so does an absent container — it holds nothing either.
+
 Parameters:
 
 - **`path`** (`str`) – Backend-relative folder key, or "" for the root.
@@ -352,6 +358,8 @@ list_folders(path: str) -> AsyncIterator[FolderEntry]
 ```
 
 List immediate subfolders under `path`.
+
+A missing path yields nothing, and so does an absent container.
 
 Parameters:
 
@@ -371,6 +379,8 @@ iter_children(
 
 Yield both files and folders under `path` in a single pass.
 
+A missing path yields nothing, and so does an absent container.
+
 Parameters:
 
 - **`path`** (`str`) – Backend-relative folder key, or "" for the root.
@@ -386,6 +396,8 @@ glob(pattern: str) -> AsyncIterator[FileInfo]
 ```
 
 Match files against a glob pattern.
+
+Reaches the wire only through `list_files`, so an absent container yields nothing here too.
 
 Parameters:
 

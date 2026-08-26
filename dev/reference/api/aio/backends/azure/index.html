@@ -11657,6 +11657,11 @@ Default <code>False</code>.</p>
     <div class="doc doc-contents ">
 
         <p>Check if a file or folder exists.</p>
+<p>An absent <em>container</em> answers <code>False</code> — a container that does not exist
+holds no path either, and this probe never raises for a missing path. A
+<em>denied</em> container still raises: the prefix listing is the determinant
+here, so it fails closed rather than reporting "nothing there" for
+something you may not see.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -11756,6 +11761,7 @@ which is a folder and answers <code>False</code> without a round trip.</p>
     <div class="doc doc-contents ">
 
         <p>Return <code>True</code> if <code>path</code> is an existing folder.</p>
+<p>An absent container answers <code>False</code>, on the same terms as <code>exists</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -12423,6 +12429,8 @@ itself is absent) and <code>missing_ok</code> is <code>False</code>.</p>
     <div class="doc doc-contents ">
 
         <p>List files under <code>path</code>.</p>
+<p>A missing path yields nothing, and so does an absent container — it
+holds nothing either.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -12504,6 +12512,7 @@ results without reducing I/O.</p>
     <div class="doc doc-contents ">
 
         <p>List immediate subfolders under <code>path</code>.</p>
+<p>A missing path yields nothing, and so does an absent container.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -12570,6 +12579,7 @@ results without reducing I/O.</p>
     <div class="doc doc-contents ">
 
         <p>Yield both files and folders under <code>path</code> in a single pass.</p>
+<p>A missing path yields nothing, and so does an absent container.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -12634,6 +12644,8 @@ results without reducing I/O.</p>
     <div class="doc doc-contents ">
 
         <p>Match files against a glob pattern.</p>
+<p>Reaches the wire only through <code>list_files</code>, so an absent container
+yields nothing here too.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

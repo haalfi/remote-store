@@ -11431,7 +11431,11 @@ short-circuit.</p>
         <p>Return <code>True</code> if a blob or folder exists at <em>path</em>; never <code>NotFound</code>.</p>
 <p>Probes the blob first (one HEAD); if absent, probes for a folder (an HNS
 directory, or any blob under the <code>path/</code> prefix on flat accounts). The
-root always exists.</p>
+root always exists. An absent <em>container</em> answers <code>False</code> — a container
+that does not exist holds no path either, and this probe never raises for
+a missing path. A <em>denied</em> container still raises: the prefix listing is
+the determinant here, so it fails closed rather than reporting "nothing
+there" for something you may not see.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11514,7 +11518,8 @@ without a round trip. Otherwise one HEAD; a missing blob or an
 
         <p>Return <code>True</code> if <em>path</em> is an existing folder (HNS directory or non-HNS prefix).</p>
 <p>The root is always a folder. Costs one directory HEAD (HNS) or a
-one-item prefix listing (flat).</p>
+one-item prefix listing (flat). An absent container answers <code>False</code>, on
+the same terms as <code>exists</code>.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -12096,8 +12101,9 @@ itself is absent) and <code>missing_ok</code> is <code>False</code>.</p>
         <p>Yield files under <em>path</em>, one <code>FileInfo</code> at a time.</p>
 <p>Lazily pages the service listing (<code>walk_blobs</code>/<code>list_blobs</code> on flat
 accounts, <code>get_paths</code> on HNS); a missing path or a path under a file
-ancestor yields nothing. <code>recursive</code> lists the whole prefix
-(<code>max_depth</code> prunes client-side).</p>
+ancestor yields nothing, and so does an absent container — it holds
+nothing either. <code>recursive</code> lists the whole prefix (<code>max_depth</code>
+prunes client-side).</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -12146,7 +12152,7 @@ surfaced during iteration.</p>
         <p>Yield immediate subfolders of <em>path</em> as <code>FolderEntry</code> records.</p>
 <p>One paged prefix listing (<code>walk_blobs</code> common-prefixes on flat
 accounts, non-recursive <code>get_paths</code> on HNS); a missing path yields
-nothing.</p>
+nothing, and so does an absent container.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -12202,7 +12208,8 @@ surfaced during iteration.</p>
         <p>Yield the immediate files and folders under <em>path</em> in one paged listing.</p>
 <p>Overrides the base two-pass default with a single <code>walk_blobs</code> (flat)
 or <code>get_paths</code> (HNS) pass, yielding <code>FileInfo</code> for files and
-<code>FolderEntry</code> for folders. A missing path yields nothing.</p>
+<code>FolderEntry</code> for folders. A missing path yields nothing, and so does
+an absent container.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -12249,6 +12256,8 @@ surfaced during iteration.</p>
     <div class="doc doc-contents ">
 
         <p>Match files against a glob pattern.</p>
+<p>Reaches the wire only through <code>list_files</code>, so an absent container
+yields nothing here too.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

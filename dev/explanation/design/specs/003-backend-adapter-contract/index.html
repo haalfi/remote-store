@@ -12068,6 +12068,75 @@ reaches at all, so it needs no such permission and is not counted against this
 one. All of these obligations are pre-existing — this
 clause neither creates nor relaxes them, and that is why those operations are
 absent from the roster above rather than exempt from it.</p>
+<p><strong>The empty listing is an answer about a container that was absent when the
+listing began.</strong> A listing that has already received a page has been told the
+container exists; a container 404 arriving on a <em>later</em> page therefore reports a
+deletion that happened underneath the scan, not an absence, and a backend MUST
+let it propagate rather than end the iteration. Returning early there hands the
+caller a short listing indistinguishable from a complete one — the caller most
+harmed being the one diffing a listing against local state and deleting the
+difference, which is a data-loss shape rather than an error-reporting one.</p>
+<p>The bound is on the <strong>page</strong>, not on what the operation yielded from it. Every
+listing discards part of a page — <code>list_files</code> drops common prefixes, directory
+markers and anything past <code>max_depth</code>; <code>list_folders</code> drops keys; <code>glob</code> drops
+non-matches — so a backend keying the bound on a yielded item goes blind exactly
+where a page's contents are all filtered away, and those are ordinary page
+shapes: a container organised into folders returns a first page of nothing but
+prefixes.</p>
+<p>Backends whose listing API exposes no page boundary may satisfy this by marking
+each item the service returned <em>before</em> its own filters run; the residue is a
+truncated page carrying no items at all, which MUST then be stated as a
+divergence rather than left implied.</p>
+<p><strong>The root is decided by BE-029, not here, and BE-029 wins.</strong> This paragraph
+assigns answers per <em>operation</em>; it says nothing about the store root within
+them, and reading a root answer off it is a mistake this spec has already
+produced once. <a href="#be-029-root-path">BE-029</a> states the root case directly and
+without qualifying it by whether the container exists: the root is a folder that
+always exists, so <code>exists("")</code> and <code>is_folder("")</code> answer <code>True</code>, and
+<code>get_folder_info("")</code> aggregates the whole store and never raises <code>NotFound</code> —
+an empty store rather than a missing path. Where that meets the <code>NotFound</code> row
+above, <strong>BE-029 governs</strong>: against an absent container the root of a compliant
+backend answers as it would for an empty one.</p>
+<p>Stated here because this is where a reader looking for per-operation answers
+lands, and following it alone yields the wrong answer for one path in every
+operation it names.</p>
+<p><strong>Most backends do not meet the root row yet, and the list below does not record
+it.</strong> § Known divergences holds three bullets, and none of them is
+root-specific: <code>LocalBackend</code>'s breach is whole-backend, and the other two are
+of the first-page bound. The root breaches are measured and
+tracked as <strong>BUG-254</strong>: <code>exists("")</code> and <code>is_folder("")</code> answer <code>False</code> on
+<code>S3Backend</code> and <code>S3PyArrowBackend</code>, and <code>get_folder_info("")</code> raises <code>NotFound</code>
+on <code>S3Boto3Backend</code>, <code>AzureBackend</code> and <code>AsyncAzureBackend</code> — five classes,
+seven class-cells (two operations on two classes, plus one on three), in two
+opposite directions. <code>SQLBlobBackend</code> is the one of the six flat-namespace
+classes BUG-254 measured that complies. The scope matters: <code>LocalBackend</code> misses
+the root row too, by the first bullet below — once its root directory is gone it
+answers <em>every</em> operation with <code>InvalidPath</code>, which includes all three root
+cells — and <code>GraphBackend</code>, <code>ReadOnlyHttpBackend</code> and <code>SQLQueryBackend</code> are
+simply unmeasured for the root.
+They are absent from the list below because that list is organised by the
+absent-container <em>clause</em> and these are breaches of BE-029's root row; the
+pointer is here so a reader does not read that list as meaning the root is
+settled.</p>
+<p><strong>§ Reach's roster is twelve operations, and its siblings are not silently
+included.</strong> The twelve are the two tolerant deletes plus the ten this paragraph
+names, counting the <code>move</code>/<code>copy</code> source as one. (The Graph paragraph below says
+GR-031 reached "eleven of the ones named above" and kept <code>write</code>; eleven plus
+<code>write</code> is the same twelve.)</p>
+<p><code>read_bytes</code>, <code>read_seekable</code>, <code>iter_children</code> and <code>glob</code> are not among them.
+Each is a thin variant of one that is — <code>read</code>, <code>list_files</code>, <code>list_folders</code> —
+and a backend that answers a named operation one way and its variant another has
+a defect rather than a permission. But that is a <em>reading</em>, and it is the reading
+this section elsewhere makes explicit when it counts Graph's divergence as
+"eleven of the ones named above, plus <code>read_bytes</code> and <code>iter_children</code>". A
+backend spec relying on the reading should say so, as
+<a href="../040-sql-blob-backend/#sql-blob-050-exception-translation">SQL-BLOB-050</a> does.</p>
+<p><strong>"Roster" is used twice in this section and the two sets differ.</strong> The
+type-mismatch rows above have their own roster — the one their scope paragraph
+calls "the single roster for both halves", which <em>does</em> name <code>read_bytes</code> and
+<code>read_seekable</code>, and which the "<code>read_seekable</code> is in the list" paragraph is
+about. This paragraph is about § Reach's roster only. Neither is wrong; a reader
+meeting the word in one place and the membership claim from the other is.</p>
 <p><strong>Known divergences, stated rather than implied.</strong> These are what ships today,
 recorded so a reader does not mistake an obligation for a description, and
 tracked in the backlog. They are scoped to the whole absent-container question
@@ -12076,40 +12145,83 @@ operations keep obligations this clause did not write, and a divergence from one
 of <em>those</em> is no less real for having been written down elsewhere. Listing them
 here is what makes the container case answerable from one place.</p>
 <ul>
-<li><code>exists()</code> and <code>is_folder()</code> <em>raise</em> <code>NotFound</code> against an absent container on
-  <code>S3Boto3Backend</code>, <code>AzureBackend</code> and <code>AsyncAzureBackend</code>, where the strict
-  prefix probe is reached after the tolerant HEAD comes back empty.
-  <code>S3Backend</code> and <code>S3PyArrowBackend</code> answer <code>False</code>.</li>
-<li><code>S3Boto3Backend</code>'s <code>list_files</code>, <code>list_folders</code> and <code>iter_children</code> raise a
-  raw <code>botocore.exceptions.ClientError</code> against an absent container, breaching
-  the never-leak invariant at the top of this section rather than the mapping
-  row. They are the only methods on that class whose wire call is not wrapped in
-  its error mapper; the two s3fs-backed lanes answer the identical response with
-  an empty listing.</li>
-<li>On <code>SQLBlobBackend</code>, <strong>every operation except the two deletes</strong> answers an
-  absent table with <code>BackendUnavailable</code> (or the base error, by dialect) rather
-  than <code>NotFound</code>, because they map the driver's complaint without asking
-  whether the table is still there. That includes <code>exists()</code>, <code>is_file()</code> and
-  <code>is_folder()</code>, so this backend breaches the never-raise rule above as well as
-  the mapping row — the widest divergence in this list by operation count,
-  measured rather than inferred. The same split shows on a disposed in-memory
-  engine, where disposal destroys the database rather than releasing a
-  connection to it: the deletes return and everything else raises, so a caller
-  watching one call sees a store that is gone and a caller watching the next
-  sees a backend that is broken. That is one divergence with two ways in, not
-  two, and the reclassification deliberately does not try to tell them apart —
-  see <a href="../040-sql-blob-backend/#sql-blob-050-exception-translation">SQL-BLOB-050</a>.</li>
-<li><code>LocalBackend</code> answers <strong>every</strong> operation with
+<li>
+<p><code>LocalBackend</code> answers <strong>every</strong> operation with
   <code>InvalidPath("Path escapes root directory")</code> once its root directory is
   deleted, including both tolerant deletes. The containment check walks up to
   the deepest existing ancestor, which is above the root once the root is gone,
   so absence is misreported as an escape. This is the furthest from the clause
   any backend currently sits, and the only one where the error type actively
-  misleads.</li>
+  misleads.</p>
+</li>
+<li>
+<p><code>S3Backend</code> and <code>S3PyArrowBackend</code> breach the <strong>first-page bound</strong> rather than
+  the empty-listing answer: a bucket deleted between pages of a listing ends the
+  iteration cleanly, so a truncated listing reads as a complete one. They answer
+  the absent-from-the-start case correctly. Tracked as <strong>BUG-255</strong>, with the fix
+  shape already worked on the three lanes that meet the bound. <code>AzureBackend</code> and
+  <code>AsyncAzureBackend</code> meet it on both their flat and their HNS branches, each
+  executed against a wire stub.</p>
+</li>
+<li>
+<p><code>GraphBackend</code> (and its sync adapter) breaches the <strong>first-page bound</strong> on a
+  recursive listing, in a different way: its bound is per <em>HTTP request</em>, and a
+  recursive walk issues one request per folder, so every subfolder listing
+  restarts it. A folder whose <code>/children</code> 404s part-way through the walk ends
+  that folder's listing cleanly, and the walk returns a short result as a
+  complete one. The single-page and top-level cases are correct. Tracked as
+  <strong>BUG-257</strong>. Contrast <code>S3Boto3Backend.list_files</code>, where one cursor wraps the
+  whole breadth-first walk and a 404 on any sub-prefix propagates — that is the
+  shape a fix takes.</p>
+</li>
 </ul>
-<p><code>GraphBackend</code> was the fifth bullet in this list — counting bullets, not backend
-classes, which is the frame <code>sdd/BACKLOG.md</code> § 1 uses when it calls Graph the
-sixth of six — and is no longer one; four bullets remain.
+<p>Three bullets have left this list and are recorded rather than deleted, because
+each was a <em>measured</em> divergence and the measurement is what a later reader
+needs in order to trust the entries that remain:</p>
+<ul>
+<li><code>exists()</code> and <code>is_folder()</code> raised <code>NotFound</code> against an absent container on
+  <code>S3Boto3Backend</code>, <code>AzureBackend</code> and <code>AsyncAzureBackend</code>, where the strict
+  prefix probe was reached after the tolerant HEAD came back empty. All three now
+  answer <code>False</code>, as <code>S3Backend</code> and <code>S3PyArrowBackend</code> already did (BUG-246).</li>
+<li><code>S3Boto3Backend</code>'s <code>list_files</code>, <code>list_folders</code> and <code>iter_children</code> raised a
+  raw <code>botocore.exceptions.ClientError</code>, breaching the never-leak invariant at
+  the top of this section rather than the mapping row: they were the only methods
+  on that class whose wire call was not wrapped in its error mapper, against
+  fifteen methods that do wrap. All three now return an empty listing, as the two s3fs-backed
+  lanes already did against the identical response (BUG-249).</li>
+<li>On <code>SQLBlobBackend</code>, <strong>every operation except the two deletes</strong> answered an
+  absent table with <code>BackendUnavailable</code> (or the base error, by dialect), because
+  they mapped the driver's complaint without asking whether the table was still
+  there. It was the widest divergence this list ever held by operation count —
+  fourteen operations, measured against a dropped SQLite table, of which thirteen
+  owed a different answer — <strong>counting <code>move</code> and <code>copy</code> separately here</strong>, which
+  is the opposite of the roster paragraph's frame above and is why fourteen and
+  twelve can both be right about the same backend. Each of the thirteen now takes the answer § Reach
+  gives it or its named sibling: <code>exists</code>, <code>is_file</code> and <code>is_folder</code> answer
+  <code>False</code>; <code>read</code>, <code>read_bytes</code>, <code>get_file_info</code>, the <code>move</code>/<code>copy</code> source and
+  <code>get_folder_info</code> <strong>below the root</strong> raise <code>NotFound</code>, while the root
+  aggregates to an empty store under BE-029; <code>list_files</code>, <code>list_folders</code>,
+  <code>iter_children</code> and <code>glob</code> come back empty. Three of those thirteen —
+  <code>read_bytes</code>, <code>iter_children</code> and <code>glob</code> — are siblings § Reach does not name,
+  per the roster paragraph above. <code>read_seekable</code> is not among them: this backend
+  does not override it, so it is not a distinct operation here. The same split showed on a disposed in-memory engine, where disposal
+  destroys the database rather than releasing a connection to it — one divergence
+  with two ways in, closed by the same change, and the reclassification
+  deliberately does not try to tell them apart; see
+  <a href="../040-sql-blob-backend/#sql-blob-050-exception-translation">SQL-BLOB-050</a>.
+  <strong><code>write</code> keeps <code>BackendUnavailable</code></strong> and is not a residue: it is the one
+  roster operation § Reach declines to decide, so a backend answering it its own
+  way contradicts nothing here (BUG-246).</li>
+</ul>
+<p><code>GraphBackend</code> was a bullet too, adjudicated by
+<a href="../../adrs/0038-absent-container-outranks-drive-identity/">ADR-0038</a>. Counting
+bullets rather than backend classes — one of the two frames <code>sdd/BACKLOG.md</code> § 1
+uses, and the one it counts this list in — this list held five, three left, and
+one of the two survivors is <code>LocalBackend</code>. It holds three today because it has
+since gained two: the first-page bound BUG-246 wrote into § Reach made
+<code>S3Backend</code>/<code>S3PyArrowBackend</code> and <code>GraphBackend</code> breaches of a clause they were
+outside of before. A list of divergences grows when its clause does, not only
+when a backend regresses.
 <a href="../044-graph-backend/#gr-031-404-discrimination-item-vs-drive">GR-031</a> mapped
 <code>404 resourceNotFound</code> to <code>BackendUnavailable</code> for every error-raising
 operation, deliberately, on the grounds that a deleted drive is a backend
@@ -12151,9 +12263,12 @@ Azure family, whose bodyless <code>HeadObject</code> 404 cannot name the bucket,
 where the reported symptom came from. It does not hold for <code>SQLBlobBackend</code>,
 which is flat-namespace by this spec's own classification and whose <code>delete</code> was
 measured raising <code>BackendUnavailable</code> against a dropped table before this
-change, exactly as its sibling did. The rule therefore changes <code>delete</code> on one
-backend rather than ratifying it everywhere. Both divergences are listed above;
-the premise survived six review rounds because "the S3 family" and "the
+change, exactly as its sibling did — that is the state <em>before BUG-243</em>, which
+is the change this paragraph is about, and not the state the departed bullet
+above describes, which is after it. The rule therefore changes <code>delete</code> on one
+backend rather than ratifying it everywhere. Both are recorded above — Local as
+one of this list's three bullets, SQLBlob among the three that have left it; the
+premise survived six review rounds because "the S3 family" and "the
 flat-namespace backends" were used interchangeably by a clause whose whole
 purpose is to bind the second set.</p>
 <p>Reading the container's 404 as "no children" does not shortcut the rest of the

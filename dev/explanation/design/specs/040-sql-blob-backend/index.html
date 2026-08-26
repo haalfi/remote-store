@@ -11754,20 +11754,40 @@ gets them.</p>
 <code>_map_errors</code> catches <code>sa.exc.OperationalError</code> unconditionally; SQLite reports
 a missing table that way, for instance. The parenthetical in the row says so
 explicitly because the narrower reading is the natural one and it is wrong.</p>
-<p><strong>Absent table:</strong> <code>delete</code> and <code>delete_folder</code> do <strong>not</strong> reach this table when
-the table is not there — BE-021's absent-container rule reclassifies the
-driver's complaint as a missing path first, so <code>missing_ok=True</code> returns cleanly
-and <code>missing_ok=False</code> raises <code>NotFound</code>. Every other operation still maps
-through the rows above, which is a known divergence from the canonical
-<code>NotFound</code> row and is recorded in BE-021.</p>
+<p><strong>Absent table: only <code>write</code> reaches this table.</strong> The table is this backend's
+container, so BE-021's absent-container rule reclassifies the driver's complaint
+as a missing path before the rows above see it, and § Reach decides what each
+operation then answers: <code>delete</code> / <code>delete_folder</code> return cleanly under
+<code>missing_ok=True</code> and raise <code>NotFound</code> without it; <code>exists</code>, <code>is_file</code> and
+<code>is_folder</code> answer <code>False</code>; <code>read</code>, <code>read_bytes</code>, <code>get_file_info</code>,
+<code>get_folder_info</code> (below the root — see the root paragraph further down) and the
+<code>move</code>/<code>copy</code> source raise <code>NotFound</code>; <code>list_files</code>, <code>list_folders</code>,
+<code>iter_children</code> and <code>glob</code> come back empty. § Reach itself names twelve
+operations and not <code>read_bytes</code>, <code>iter_children</code> or <code>glob</code>; those three take the
+answer their named sibling takes, which is a reading this backend applies rather
+than a row it is handed.</p>
+<p><code>write</code> is the exception, and a deliberate one: BE-021 § Reach declines to decide
+what a write owes an absent container, so it maps through the <code>OperationalError</code>
+row above and reports <code>BackendUnavailable</code>. A vanished table is a configuration
+failure from a writer's point of view, and no clause of the contract says
+otherwise.</p>
 <p>The reclassification asks only whether the table is reachable, and does not ask
 <em>why</em> it is not. A dropped table and a disposed in-memory engine — the one case
 where disposal destroys the database rather than releasing a connection to it —
-both answer "absent", and both deletes therefore return. Excluding the second
-case would make the deletes answer what <code>read</code> and <code>exists</code> answer for the same
-dead store, but no test for it can be written that does not depend on how the
-in-memory URL was spelled, and the asymmetry it would hide is a divergence
-tracked in BE-021 rather than one this table should paper over.</p>
+both answer "absent", so the two are indistinguishable to every operation above.
+That uniformity is what makes the case testable at all: an exclusion for the
+disposed engine would have to be keyed on how the in-memory URL was spelled,
+which is a property of the caller rather than of the store.</p>
+<p><strong>The root is the one place an absent store and an empty one agree.</strong>
+<code>get_folder_info("")</code> returns <code>FolderInfo(file_count=0)</code> against both, because
+<a href="../003-backend-adapter-contract/#be-029-root-path">BE-029</a> makes the root a
+folder that always exists and forbids <code>get_folder_info</code> on it from raising
+<code>NotFound</code> — a rule it states without qualifying it by whether the container is
+there. That outranks the canonical row BE-021 § Reach gives <code>get_folder_info</code>,
+which is why the tolerance below the root and the tolerance at it differ. Every
+other path answers <code>NotFound</code> as § Reach requires.</p>
+<p>Other backends do not all meet BE-029's root row against an absent container;
+that divergence is <strong>BUG-254</strong> and is not this backend's.</p>
 <hr />
 <h2 id="path-handling">Path Handling<a class="headerlink" href="#path-handling" title="Permanent link">&para;</a></h2>
 <h3 id="sql-blob-060-path-validation">SQL-BLOB-060: Path Validation<a class="headerlink" href="#sql-blob-060-path-validation" title="Permanent link">&para;</a></h3>

@@ -11789,6 +11789,8 @@ paths without slashes short-circuit.</p>
 <p>Folders are virtual — <em>path</em> counts as a folder when any key begins with
 <code>path + "/"</code>. The root (<code>""</code>) always exists. Costs one or two
 <code>SELECT</code>s.</p>
+<p>A dropped table is an absent container, and an absent container holds no
+path either, so this answers <code>False</code> rather than raising.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11828,6 +11830,7 @@ paths without slashes short-circuit.</p>
     <div class="doc doc-contents ">
 
         <p>Return <code>True</code> if an exact key exists at <em>path</em> (one <code>SELECT</code>).</p>
+<p>A dropped table answers <code>False</code>, on the same terms as <code>exists</code>.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11867,7 +11870,8 @@ paths without slashes short-circuit.</p>
     <div class="doc doc-contents ">
 
         <p>Return <code>True</code> if any key begins with <code>path + "/"</code> (a virtual folder).</p>
-<p>The root is always a folder. Costs one <code>SELECT</code>.</p>
+<p>The root is always a folder. Costs one <code>SELECT</code>. A dropped table
+answers <code>False</code>, on the same terms as <code>exists</code>.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11919,7 +11923,8 @@ blob-storage backend (S3, Local, Azure).</p>
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../../reference/api/errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
-            <p>If no key exists at <em>path</em>.</p>
+            <p>If no key exists at <em>path</em>, including when the backing
+table is absent.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -11966,7 +11971,8 @@ blob-storage backend (S3, Local, Azure).</p>
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../../reference/api/errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
-            <p>If no key exists at <em>path</em>.</p>
+            <p>If no key exists at <em>path</em>, including when the backing
+table is absent.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12307,7 +12313,8 @@ folder is never empty).</p>
         <p>Yield files under <em>path</em>.</p>
 <p>One <code>SELECT</code> fetches every key under the prefix; folder structure is
 derived from <code>/</code> in the key suffix, and <code>recursive</code> / <code>max_depth</code>
-filter client-side. A missing prefix yields nothing.</p>
+filter client-side. A missing prefix yields nothing, and so does an
+absent backing table — a table that is not there holds nothing either.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -12347,7 +12354,8 @@ iteration.</p>
 
         <p>Yield immediate virtual subfolders of <em>path</em> as <code>FolderEntry</code> records.</p>
 <p>One <code>SELECT</code> over keys under the prefix; folder names are the distinct
-first segments of the key suffixes. A missing prefix yields nothing.</p>
+first segments of the key suffixes. A missing prefix yields nothing, and
+so does an absent backing table.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -12395,7 +12403,8 @@ iteration.</p>
         <p>Yield the immediate files and virtual folders under <em>path</em> in one <code>SELECT</code>.</p>
 <p>Overrides the base two-pass default: a single query over the prefix
 yields <code>FileInfo</code> for direct-child keys and <code>FolderEntry</code> for the
-distinct first suffix segments. A missing prefix yields nothing.</p>
+distinct first suffix segments. A missing prefix yields nothing, and so
+does an absent backing table.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -12442,7 +12451,8 @@ iteration.</p>
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../../reference/api/errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
-            <p>If no key exists at <em>path</em>.</p>
+            <p>If no key exists at <em>path</em>, including when the backing
+table is absent.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12488,6 +12498,9 @@ iteration.</p>
 <p>File count, total size, and latest modification time come from one
 aggregate <code>SELECT</code> (<code>COUNT</code>/<code>SUM</code>/<code>MAX</code>) over keys under the
 prefix — no per-file round-trips.</p>
+<p><strong>The root never raises</strong>, absent table included: it is a folder that
+always exists, so a gone store aggregates to an empty one. That is why
+the tolerance below is keyed on the root rather than on every path.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -12496,7 +12509,8 @@ prefix — no per-file round-trips.</p>
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../../reference/api/errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
-            <p>If no key exists under <em>path</em>.</p>
+            <p>If no key exists under <em>path</em>, including when the backing
+table is absent. Not raised for the store root.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12549,7 +12563,8 @@ a no-op.</p>
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../../reference/api/errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>src</em> does not exist.</p>
+            <p>If <em>src</em> does not exist, including when the backing table
+is absent.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12608,7 +12623,8 @@ verifies the source exists and is otherwise a no-op.</p>
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../../reference/api/errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>src</em> does not exist.</p>
+            <p>If <em>src</em> does not exist, including when the backing table
+is absent.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12662,7 +12678,8 @@ of <em>dst</em> exists as a file.</p>
 <p>Narrows SQL-side with a prefix <code>LIKE</code> where the pattern allows (on
 every dialect — SQLite's native <code>GLOB</code> is deliberately avoided because
 it mishandles <code>**</code>), then applies the full glob regex to each row.
-Costs one <code>SELECT</code>.</p>
+Costs one <code>SELECT</code>. An absent backing table yields nothing, on the same
+terms as the other listings.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>

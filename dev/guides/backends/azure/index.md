@@ -347,7 +347,7 @@ exists(path: str) -> bool
 
 Return `True` if a blob or folder exists at *path*; never `NotFound`.
 
-Probes the blob first (one HEAD); if absent, probes for a folder (an HNS directory, or any blob under the `path/` prefix on flat accounts). The root always exists.
+Probes the blob first (one HEAD); if absent, probes for a folder (an HNS directory, or any blob under the `path/` prefix on flat accounts). The root always exists. An absent *container* answers `False` — a container that does not exist holds no path either, and this probe never raises for a missing path. A *denied* container still raises: the prefix listing is the determinant here, so it fails closed rather than reporting "nothing there" for something you may not see.
 
 Raises:
 
@@ -377,7 +377,7 @@ is_folder(path: str) -> bool
 
 Return `True` if *path* is an existing folder (HNS directory or non-HNS prefix).
 
-The root is always a folder. Costs one directory HEAD (HNS) or a one-item prefix listing (flat).
+The root is always a folder. Costs one directory HEAD (HNS) or a one-item prefix listing (flat). An absent container answers `False`, on the same terms as `exists`.
 
 Raises:
 
@@ -557,7 +557,7 @@ list_files(
 
 Yield files under *path*, one `FileInfo` at a time.
 
-Lazily pages the service listing (`walk_blobs`/`list_blobs` on flat accounts, `get_paths` on HNS); a missing path or a path under a file ancestor yields nothing. `recursive` lists the whole prefix (`max_depth` prunes client-side).
+Lazily pages the service listing (`walk_blobs`/`list_blobs` on flat accounts, `get_paths` on HNS); a missing path or a path under a file ancestor yields nothing, and so does an absent container — it holds nothing either. `recursive` lists the whole prefix (`max_depth` prunes client-side).
 
 Raises:
 
@@ -572,7 +572,7 @@ list_folders(path: str) -> Iterator[FolderEntry]
 
 Yield immediate subfolders of *path* as `FolderEntry` records.
 
-One paged prefix listing (`walk_blobs` common-prefixes on flat accounts, non-recursive `get_paths` on HNS); a missing path yields nothing.
+One paged prefix listing (`walk_blobs` common-prefixes on flat accounts, non-recursive `get_paths` on HNS); a missing path yields nothing, and so does an absent container.
 
 Raises:
 
@@ -589,7 +589,7 @@ iter_children(
 
 Yield the immediate files and folders under *path* in one paged listing.
 
-Overrides the base two-pass default with a single `walk_blobs` (flat) or `get_paths` (HNS) pass, yielding `FileInfo` for files and `FolderEntry` for folders. A missing path yields nothing.
+Overrides the base two-pass default with a single `walk_blobs` (flat) or `get_paths` (HNS) pass, yielding `FileInfo` for files and `FolderEntry` for folders. A missing path yields nothing, and so does an absent container.
 
 Raises:
 
@@ -603,6 +603,8 @@ glob(pattern: str) -> Iterator[FileInfo]
 ```
 
 Match files against a glob pattern.
+
+Reaches the wire only through `list_files`, so an absent container yields nothing here too.
 
 Parameters:
 

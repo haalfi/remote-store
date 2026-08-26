@@ -11252,7 +11252,22 @@ default) and the folder contains files or subfolders.</p>
         <p>Raised when the backend cannot be reached or initialized.</p>
 <p>Raised during backend construction or first operation when the
 storage service is unreachable (e.g., network error, invalid
-endpoint, missing container).</p>
+endpoint, bad credentials).</p>
+<p><strong>Mostly not raised because the bucket, container or table is
+absent.</strong> A container that does not exist holds no path either, so the
+operations the contract decides answer for a missing path instead
+(<code>False</code>, <code>NotFound</code>, or an empty listing). <code>write</code> is the
+exception — no clause decides it — and <code>SQLBlobBackend</code> still
+reports a dropped table this way.</p>
+<p><strong>There is no portable way to ask "is my store there?"</strong>
+<code>check_health()</code> probes the service rather than the container on
+some backends and returns cleanly against one that is gone. A trial
+<code>write()</code> distinguishes the cases where writes are permitted at all,
+but it leaves an object behind and raises for reasons unrelated to the
+container — <code>CapabilityNotSupported</code> on read-only backends,
+<code>AlreadyExists</code> without <code>overwrite=True</code>, <code>PermissionDenied</code> on
+a present but unwritable store. Pick a probe that fits your backend
+and test it against a container you have really deleted.</p>
 
 
 

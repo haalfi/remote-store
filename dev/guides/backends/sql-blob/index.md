@@ -215,6 +215,8 @@ Return `True` if a key or key-prefix exists at *path*; never `NotFound`.
 
 Folders are virtual — *path* counts as a folder when any key begins with `path + "/"`. The root (`""`) always exists. Costs one or two `SELECT`s.
 
+A dropped table is an absent container, and an absent container holds no path either, so this answers `False` rather than raising.
+
 Raises:
 
 - `InvalidPath` – If path is absolute or contains a .. segment.
@@ -227,6 +229,8 @@ is_file(path: str) -> bool
 ```
 
 Return `True` if an exact key exists at *path* (one `SELECT`).
+
+A dropped table answers `False`, on the same terms as `exists`.
 
 Raises:
 
@@ -241,7 +245,7 @@ is_folder(path: str) -> bool
 
 Return `True` if any key begins with `path + "/"` (a virtual folder).
 
-The root is always a folder. Costs one `SELECT`.
+The root is always a folder. Costs one `SELECT`. A dropped table answers `False`, on the same terms as `exists`.
 
 Raises:
 
@@ -260,7 +264,7 @@ Loads the entire BLOB into memory before returning the stream — the read does 
 
 Raises:
 
-- `NotFound` – If no key exists at path.
+- `NotFound` – If no key exists at path, including when the backing table is absent.
 - `InvalidPath` – If path is empty, absolute, or malformed.
 - `BackendUnavailable` – If the database is unreachable.
 
@@ -276,7 +280,7 @@ Like `read`, materialises the whole object in memory.
 
 Raises:
 
-- `NotFound` – If no key exists at path.
+- `NotFound` – If no key exists at path, including when the backing table is absent.
 - `InvalidPath` – If path is empty, absolute, or malformed.
 - `BackendUnavailable` – If the database is unreachable.
 
@@ -395,7 +399,7 @@ list_files(
 
 Yield files under *path*.
 
-One `SELECT` fetches every key under the prefix; folder structure is derived from `/` in the key suffix, and `recursive` / `max_depth` filter client-side. A missing prefix yields nothing.
+One `SELECT` fetches every key under the prefix; folder structure is derived from `/` in the key suffix, and `recursive` / `max_depth` filter client-side. A missing prefix yields nothing, and so does an absent backing table — a table that is not there holds nothing either.
 
 Raises:
 
@@ -409,7 +413,7 @@ list_folders(path: str) -> Iterator[FolderEntry]
 
 Yield immediate virtual subfolders of *path* as `FolderEntry` records.
 
-One `SELECT` over keys under the prefix; folder names are the distinct first segments of the key suffixes. A missing prefix yields nothing.
+One `SELECT` over keys under the prefix; folder names are the distinct first segments of the key suffixes. A missing prefix yields nothing, and so does an absent backing table.
 
 Raises:
 
@@ -425,7 +429,7 @@ iter_children(
 
 Yield the immediate files and virtual folders under *path* in one `SELECT`.
 
-Overrides the base two-pass default: a single query over the prefix yields `FileInfo` for direct-child keys and `FolderEntry` for the distinct first suffix segments. A missing prefix yields nothing.
+Overrides the base two-pass default: a single query over the prefix yields `FileInfo` for direct-child keys and `FolderEntry` for the distinct first suffix segments. A missing prefix yields nothing, and so does an absent backing table.
 
 Raises:
 
@@ -441,7 +445,7 @@ Return metadata for the file at *path* from one `SELECT`.
 
 Raises:
 
-- `NotFound` – If no key exists at path.
+- `NotFound` – If no key exists at path, including when the backing table is absent.
 - `InvalidPath` – If path is empty, absolute, or malformed.
 - `BackendUnavailable` – If the database is unreachable.
 
@@ -455,9 +459,11 @@ Return aggregate metadata for the virtual folder *path*.
 
 File count, total size, and latest modification time come from one aggregate `SELECT` (`COUNT`/`SUM`/`MAX`) over keys under the prefix — no per-file round-trips.
 
+**The root never raises**, absent table included: it is a folder that always exists, so a gone store aggregates to an empty one. That is why the tolerance below is keyed on the root rather than on every path.
+
 Raises:
 
-- `NotFound` – If no key exists under path.
+- `NotFound` – If no key exists under path, including when the backing table is absent. Not raised for the store root.
 - `InvalidPath` – If path is absolute or malformed.
 - `BackendUnavailable` – If the database is unreachable.
 
@@ -475,7 +481,7 @@ Implemented as an `UPDATE` of the row's key — the BLOB is never transferred th
 
 Raises:
 
-- `NotFound` – If src does not exist.
+- `NotFound` – If src does not exist, including when the backing table is absent.
 - `AlreadyExists` – If dst exists and overwrite is False.
 - `InvalidPath` – If src or dst is malformed, or (opt-in) an ancestor of dst exists as a file.
 - `BackendUnavailable` – If the database operation fails.
@@ -494,7 +500,7 @@ Implemented as a single `INSERT ... SELECT`, so the BLOB is duplicated entirely 
 
 Raises:
 
-- `NotFound` – If src does not exist.
+- `NotFound` – If src does not exist, including when the backing table is absent.
 - `AlreadyExists` – If dst exists and overwrite is False.
 - `InvalidPath` – If src or dst is malformed, or (opt-in) an ancestor of dst exists as a file.
 - `BackendUnavailable` – If the database operation fails.
@@ -507,7 +513,7 @@ glob(pattern: str) -> Iterator[FileInfo]
 
 Yield files whose key matches the glob *pattern*.
 
-Narrows SQL-side with a prefix `LIKE` where the pattern allows (on every dialect — SQLite's native `GLOB` is deliberately avoided because it mishandles `**`), then applies the full glob regex to each row. Costs one `SELECT`.
+Narrows SQL-side with a prefix `LIKE` where the pattern allows (on every dialect — SQLite's native `GLOB` is deliberately avoided because it mishandles `**`), then applies the full glob regex to each row. Costs one `SELECT`. An absent backing table yields nothing, on the same terms as the other listings.
 
 Raises:
 
