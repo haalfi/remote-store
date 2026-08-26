@@ -197,8 +197,10 @@ be edited to point elsewhere.
 **Promise:** a caller catches one exception type, and an absent or denied
 store answers the same way on every backend.
 
-**Closes when:** the four adapters answer the contract against an absent
-container (BUG-246, BUG-249, BUG-245); no native exception escapes on
+**Closes when:** the four remaining adapters answer the contract against an
+absent container — `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` and
+`SQLBlobBackend`, the same four the count below enumerates
+(BUG-246, BUG-249, BUG-245); no native exception escapes on
 either the absent or the **denied** path (BUG-249); one operation does not answer
 by payload size (BUG-253); and a newly registered backend cannot pass CI without
 meeting BE-004, BE-005 and BE-021 (BK-345). The spec contradiction is

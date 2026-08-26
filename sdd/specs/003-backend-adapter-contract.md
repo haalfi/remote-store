@@ -647,6 +647,7 @@ here is what makes the container case answerable from one place.
   sees a backend that is broken. That is one divergence with two ways in, not
   two, and the reclassification deliberately does not try to tell them apart —
   see [SQL-BLOB-050](040-sql-blob-backend.md#sql-blob-050-exception-translation).
+
 `GraphBackend` was the fifth bullet in this list and `LocalBackend` the fourth —
 counting bullets, not backend classes, which is the frame `sdd/BACKLOG.md` § 1
 uses when it calls Graph the sixth of six — and neither is one now; three bullets

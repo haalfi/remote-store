@@ -149,6 +149,41 @@ phases:
           the filesystem.
         outcome: ok
 
+  - id: fix
+    name: Round-1 fix pass
+    steps:
+      - file: src/remote_store/backends/_local.py
+        section: "exists, is_file, is_folder docstrings"
+        read_type: reference
+        extract: >-
+          Round 1 caught the probe docstrings still stating the negation of the
+          new root behaviour — is_folder promised False for an absent path, and
+          the root now answers True. get_folder_info's had been updated in the
+          same commit and these three had not, which is the shape a whole-file
+          read finds and a diff read does not.
+        outcome: ok
+      - file: tests/backends/local/test_absent_root.py
+        section: "TestWriteRecreatesTheRoot, TestAbsentRootStillAnswersAsTheRoot"
+        read_type: reference
+        extract: >-
+          Two gaps. open_atomic took the write guard but had no cell, and its
+          @contextmanager shape means a copy of the sibling's assertion would
+          have passed with the guard deleted — fenced by removing the guard and
+          watching both cells fail. And delete_folder(root, missing_ok=False)
+          answers NotFound while exists(root) reports the root present; measured
+          SFTPBackend answering that cell identically from its own stat, so it is
+          pinned with its bound rather than reconciled.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 § Known divergences"
+        read_type: verify
+        extract: >-
+          Deleting the Local bullet took its trailing blank line with it, so the
+          paragraph after the list rendered as a lazy continuation inside the
+          SQLBlob bullet. Invisible in the source diff and in the rendered spec
+          alike unless read as Markdown.
+        outcome: ok
+
   - id: docs
     name: Docs and record
     steps:

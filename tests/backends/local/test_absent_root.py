@@ -263,6 +263,30 @@ class TestAbsentRootStillAnswersAsTheRoot:
         """
         assert backend.delete_folder(root, recursive=True, missing_ok=True) is None
 
+    @pytest.mark.spec("BE-013")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("recursive", [True, False], ids=["recursive", "nonrecursive"])
+    def test_strict_delete_folder_on_the_root_answers_from_the_filesystem(
+        self, backend: LocalBackend, root: str, recursive: bool
+    ) -> None:
+        """The one root cell that answers by observation, pinned with its bound.
+
+        ``delete_folder(root, missing_ok=False)`` raises ``NotFound`` on an
+        absent root, while ``exists(root)`` in the sibling above reports the root
+        present. The two disagree, and deliberately: BE-029 § Out of scope
+        excludes ``delete_folder("")`` from the root rule, `Store` refuses a root
+        delete before it reaches a backend (STORE-002), and ``SFTPBackend`` — the
+        other hierarchical backend, whose ``base_path`` is likewise absent on an
+        untouched store — answers this cell identically from its own stat.
+
+        So this is pinned rather than reconciled: making it definitional would
+        put Local alone among the backends, on a call no spec decides and no
+        supported caller can reach. What the cell buys is that the disagreement
+        is now a recorded answer instead of an unexamined one.
+        """
+        with pytest.raises(NotFound):
+            backend.delete_folder(root, recursive=recursive)
+
 
 @pytest.mark.spec("BE-021")
 class TestTheContainmentGuardStillGuards:
@@ -378,6 +402,21 @@ class TestWriteRecreatesTheRoot:
         with pytest.raises(InvalidPath):
             call(backend, root)
         assert not on_disk.is_file(), f"{op_name} left a regular file at the store root"
+
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_open_atomic_on_the_root_is_refused_on_enter(self, backend: LocalBackend, root: str) -> None:
+        """The third writer, which the sibling above cannot reach.
+
+        ``open_atomic`` is a ``@contextmanager``: calling it builds a generator
+        and runs no body, so the guard fires on ``__enter__`` rather than at the
+        call. A copy of the sibling's ``pytest.raises(...): call(...)`` shape
+        would pass without ever entering the block, and would still pass with the
+        guard deleted.
+        """
+        on_disk = Path(backend.native_path(root))
+        with pytest.raises(InvalidPath), backend.open_atomic(root) as stream:
+            stream.write(b"x")
+        assert not on_disk.is_file(), "open_atomic left a regular file at the store root"
 
     @pytest.mark.spec("BE-026")
     def test_check_health_still_reports_the_absent_root(self, backend: LocalBackend) -> None:

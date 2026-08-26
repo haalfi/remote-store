@@ -127,7 +127,10 @@ class LocalBackend(Backend):
         """Return ``True`` if a file or folder exists at *path*; never ``NotFound``.
 
         Returns ``False`` when a path component is itself a file, since the
-        directory descent cannot proceed.
+        directory descent cannot proceed. The store root (``""`` or ``"."``) is
+        the one path that answers ``True`` without being looked for: it is a
+        folder by definition, so it reads as present even on a store whose root
+        directory has been removed.
 
         Raises:
             InvalidPath: If *path* escapes the backend root.
@@ -146,7 +149,8 @@ class LocalBackend(Backend):
         """Return ``True`` if *path* is an existing regular file.
 
         ``False`` if *path* is absent, names a directory, or has a file as an
-        ancestor component.
+        ancestor component — and ``False`` for the store root (``""`` or
+        ``"."``), which is a folder, never a regular file.
 
         Raises:
             InvalidPath: If *path* escapes the backend root.
@@ -159,7 +163,9 @@ class LocalBackend(Backend):
         """Return ``True`` if *path* is an existing directory.
 
         ``False`` if *path* is absent, names a file, or has a file as an ancestor
-        component.
+        component. The store root (``""`` or ``"."``) is the exception to the
+        absent case: it is a folder by definition, so it answers ``True`` even
+        on a store whose root directory has been removed.
 
         Raises:
             InvalidPath: If *path* escapes the backend root.

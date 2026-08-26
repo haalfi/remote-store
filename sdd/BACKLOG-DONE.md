@@ -206,6 +206,14 @@ if evidence changes; these are retired.
   cell asserted `is_file(root)`, which the new BE-029 short-circuit answers
   `False` without looking at the disk, so it passed on the corruption it existed
   to catch.
+  **One root cell is left answering by observation, with its bound stated.**
+  `delete_folder(root, missing_ok=False)` raises `NotFound` on an absent root
+  while `exists(root)` reports the root present. Not reconciled: BE-029 § Out of
+  scope excludes `delete_folder("")` from the root rule, STORE-002 refuses a root
+  delete before it reaches a backend, and `SFTPBackend` was measured answering
+  that cell identically from its own stat — so making it definitional would put
+  Local alone among the backends on a call no spec decides. Pinned by a test
+  instead, which is what turns it from an unexamined answer into a recorded one.
 
 - [x] **BUG-248 — BE-021's absent-container rule and GR-031's drive-identity escalation contradict each other**
   spec: BE-021, GR-031, PING-011 · effort: M · audience: user.api
