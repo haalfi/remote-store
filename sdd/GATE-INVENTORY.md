@@ -8,9 +8,8 @@ Which artifact pairs this repo checks, which single-artifact rules it
 asserts, and what its reports surface. *Kind*, the subject column and
 *Domain* come from each mechanism's `Drift-gate::` docstring block; *Runs
 in* and *Enforcement* are derived from `pyproject.toml`, `.github/workflows/`, `.pre-commit-config.yaml`,
-so no column is maintained here. The generator's module docstring states
-what this inventory does not catch — including what *Enforcement* does
-not mean.
+so no column is maintained here. What this inventory does not catch —
+including what *Enforcement* does not mean — is the last section below.
 
 ## Pair gates (23)
 
@@ -71,7 +70,7 @@ a *Rule asserted* cell would claim a check that is not being made.
 | `scripts/drift_report.py` | the current per-extra dependency-drift state, as a rolling GitHub issue it opens, updates or closes; it acts on that state rather than asserting anything, and exits 0 either way | process | `drift-guard.yml:report` | scheduled |
 | `scripts/report_trace_outcomes.py` | which documents readers recorded as unclear or misleading, ranked by tag rate over reads across the trace corpus | process | `report-trace-outcomes` | advisory |
 
-## What this inventory does not catch (11)
+## What this inventory does not catch (13)
 
 Stated here rather than in the generator, because a bound is read by
 whoever this table would mislead, and they read this table.
@@ -84,6 +83,8 @@ whoever this table would mislead, and they read this table.
 - **Nothing checks that a script's blocks are _all_ of its mechanisms.** A script that runs one it does not declare renders only truthful rows, and no signal that one is missing.
 - **Enforcement says a home _is_ a gate, not that it _runs on a given diff_.** The CI homes are all path-filtered — `lint` and `docs-gate` behind `CODE_PAT` / `DOCS_PAT`, `verify-formal` and `verify-tla` behind their own — so a `gating` row is not a claim that the gate runs on the change that invalidates it. That reachability question is open item BK-333's. The two non-CI gate homes are the exceptions: `all` is a local whole-tree command, and the `pre-commit` hook that reaches a mechanism is declared `always_run`.
 - **Enforcement is derived from wiring, not exit codes.** A script wired into a gate bundle that always exits 0 is reported as gating. `scheduled` likewise means *reached only from a workflow other than `ci.yml`* rather than *triggered by a cron*; today the only such workflow is `drift-guard.yml`, which is genuinely scheduled.
-- **Runs in lists a generator's write-mode alias beside its `--check` gate.** Both run the same comparison and both are real homes. An alias whose command is hatch's bare `{args}` placeholder is recorded for every block the script declares, since the argv it will be given is unknown here.
+- **Runs in lists a generator's write-mode alias beside its `--check` gate.** Both run the same comparison and both are real homes. An alias whose command contains hatch's `{args}` placeholder anywhere is recorded for every block the script declares, since the argv it will be given is unknown here — so an alias pinning one subcommand *and* forwarding `{args}` is over-reported, which no target in this repo currently does.
 - **`_VALID_DOMAINS` is a hand-maintained copy of research § 4a's six domains** — the curated parallel list Rule 3 warns about, one layer down. Kept because the alternative is parsing a prose research doc, and because § 4a is a point-in-time snapshot that does not move; if it ever does, this will not notice.
 - **Declaration text is rendered into a Markdown table with only `|` escaped**, so a declaration spelling out Markdown link syntax emits a link the docs gate then reports as broken. That is a caught failure rather than a silent one, so the constraint is left to that gate rather than duplicated as escaping.
+- **On a script whose blocks carry `entrypoint:`, a wired invocation matching none of them is read as an operational subcommand, not a mechanism** — `drift_check.py extras` lists extras and compares nothing. A genuinely forgotten mechanism behind such a subcommand is therefore silent. The backstop catches the file that declared nothing, which is the case with an obvious right answer; telling a forgotten mechanism from an operational subcommand needs a judgement about what the subcommand does, and a gate that guessed it would fail on correct code.
+- **Over-reach, since the rest of this list is under-reach.** A `scripts/*.py` path is read as an invocation wherever it appears in a command, provided it starts at a path boundary and not on a `#` comment line. A path inside a quoted string, a heredoc body or an `echo` still counts, so prose that happens to spell a command wires the script it names. Both filters were added after review found the unanchored form reading `tests/scripts/*.py` as `scripts/*.py`; what remains is bounded to text that looks exactly like a command, and the failure direction is a spurious row rather than a missing one.

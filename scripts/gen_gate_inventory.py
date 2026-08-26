@@ -122,7 +122,7 @@ LOCAL_GATE_TARGET = "all"
 PRE_COMMIT_HOME = "pre-commit"
 
 # Basenames that must carry a declaration block once wired. The backstop, not
-# the claim space -- see the module docstring's bounds.
+# the claim space -- see `_BOUNDS`, which states what it does not reach.
 _MECHANISM_STEM_RE = re.compile(r"^(check|gen|drift|report)_")
 
 # A repo-root-relative `scripts/...py` path in a shell command, plus whatever
@@ -205,8 +205,10 @@ _BOUNDS: tuple[str, ...] = (
     "which is genuinely scheduled.",
     "**Runs in lists a generator's write-mode alias beside its `--check` gate.** "
     "Both run the same comparison and both are real homes. An alias whose command "
-    "is hatch's bare `{args}` placeholder is recorded for every block the script "
-    "declares, since the argv it will be given is unknown here.",
+    "contains hatch's `{args}` placeholder anywhere is recorded for every block the "
+    "script declares, since the argv it will be given is unknown here — so an alias "
+    "pinning one subcommand *and* forwarding `{args}` is over-reported, which no "
+    "target in this repo currently does.",
     "**`_VALID_DOMAINS` is a hand-maintained copy of research § 4a's six domains** "
     "— the curated parallel list Rule 3 warns about, one layer down. Kept because "
     "the alternative is parsing a prose research doc, and because § 4a is a "
@@ -216,6 +218,22 @@ _BOUNDS: tuple[str, ...] = (
     "so a declaration spelling out Markdown link syntax emits a link the docs gate "
     "then reports as broken. That is a caught failure rather than a silent one, so "
     "the constraint is left to that gate rather than duplicated as escaping.",
+    "**On a script whose blocks carry `entrypoint:`, a wired invocation matching "
+    "none of them is read as an operational subcommand, not a mechanism** — "
+    "`drift_check.py extras` lists extras and compares nothing. A genuinely "
+    "forgotten mechanism behind such a subcommand is therefore silent. The "
+    "backstop catches the file that declared nothing, which is the case with an "
+    "obvious right answer; telling a forgotten mechanism from an operational "
+    "subcommand needs a judgement about what the subcommand does, and a gate that "
+    "guessed it would fail on correct code.",
+    "**Over-reach, since the rest of this list is under-reach.** A `scripts/*.py` "
+    "path is read as an invocation wherever it appears in a command, provided it "
+    "starts at a path boundary and not on a `#` comment line. A path inside a "
+    "quoted string, a heredoc body or an `echo` still counts, so prose that happens "
+    "to spell a command wires the script it names. Both filters were added after "
+    "review found the unanchored form reading `tests/scripts/*.py` as "
+    "`scripts/*.py`; what remains is bounded to text that looks exactly like a "
+    "command, and the failure direction is a spurious row rather than a missing one.",
 )
 
 
@@ -597,7 +615,7 @@ def collect(root: Path = ROOT) -> tuple[list[Mechanism], list[str]]:
         for argv, homes in sorted(wiring[path].items()):
             # No match means the script has declared its mechanisms and this
             # invocation is an operational subcommand (`drift_check.py extras`),
-            # not one of them. See the module docstring's bounds for the cost.
+            # not one of them. `_BOUNDS` states what that costs.
             for declaration in _matching(declarations, argv):
                 mechanisms.append(
                     Mechanism(
@@ -681,9 +699,8 @@ def render(mechanisms: list[Mechanism]) -> str:
         "asserts, and what its reports surface. *Kind*, the subject column and",
         "*Domain* come from each mechanism's `Drift-gate::` docstring block; *Runs",
         "in* and *Enforcement* are derived from " + ", ".join(f"`{source}`" for source in _WIRING_SOURCES) + ",",
-        "so no column is maintained here. The generator's module docstring states",
-        "what this inventory does not catch — including what *Enforcement* does",
-        "not mean.",
+        "so no column is maintained here. What this inventory does not catch —",
+        "including what *Enforcement* does not mean — is the last section below.",
         "",
         f"## Pair gates ({len(pairs)})",
     ]

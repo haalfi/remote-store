@@ -11,12 +11,18 @@ source_items:
 audience:
   - contributor.tooling
   - contributor.process
-# Named rather than counted, per the schema's review_rounds clause. The four
-# review-driven commits are 1a49812 (round 1), 3118fe4 (round 2), d2ef5b5
-# (round 3) and the commit carrying this line (round 4); ed47c31 is the initial
-# implementation and is not one. Re-derive with
-# `git log --oneline origin/master..HEAD`, which returns those five.
-review_rounds: 4
+# Named rather than counted, per the schema's review_rounds clause. Every commit
+# on this branch except the first exists because review feedback was
+# incorporated: ed47c31 is the implementation, and 1a49812, 3118fe4, d2ef5b5,
+# 4c28a17, f4b3437 and the commit carrying this line are the six fix passes.
+# Re-derive as `git log --oneline origin/master..HEAD | wc -l` minus one.
+#
+# This field went stale three times on this branch, each time because a number
+# was written while the loop that moves it was still running. The rule above is
+# what makes it re-derivable rather than remembered; the value is the count of
+# fix-pass commits, not of review rounds, which differ here because the last
+# pass answered a verification pass rather than a full panel.
+review_rounds: 6
 expected_ripples:
   # Anticipated by the ripple-check: DRIFT-RULES by the "new or changed
   # cross-artifact check" row, BACKLOG by "backlog item touched".
@@ -154,7 +160,7 @@ phases:
         outcome: misleading
 
   - id: review
-    name: "Four review rounds"
+    name: "Five review rounds and a verification pass"
     steps:
       - file: scripts/gen_gate_inventory.py
         section: "_SCRIPT_INVOCATION_RE, _GATE_HOMES"
@@ -249,6 +255,18 @@ phases:
           *added* count, transposed onto round 4's *restored* set, and it went
           into four artifacts in the commit that fixed the previous instance of
           exactly this. Naming a derivation is not running it.
+        outcome: ok
+      - file: scripts/gen_gate_inventory.py
+        section: "_BOUNDS"
+        read_type: verify
+        extract: >-
+          Round 5 cut the docstring from 172 lines to 82 and moved its bounds into
+          _BOUNDS, which render prints into the generated file — the recurring site
+          closed by relocation after five rounds of correcting it. The verification
+          pass then caught the cut dropping two of thirteen bounds rather than
+          moving eleven, while DRIFT-RULES Rule 7 had just been changed to claim
+          the generated file carries the full list. Cutting prose loses information
+          unless the count is checked, and the count was not.
         outcome: ok
       - file: scripts/gen_gate_inventory.py
         section: "module docstring, claim space"

@@ -504,7 +504,7 @@ successor entry — counted by walking this table against
 `sdd/GATE-INVENTORY.md` row by row, a ratio over this snapshot that does not
 move. The eleventh, `Backend` *i* ↔ backend *j*, has none: the conformance suite
 is pytest collection rather than a script invocation, so the generator cannot
-reach it — stated as a bound in its docstring.
+reach it — stated as a bound in the generated file's own last section.
 
 | Pair | Domain | Current detection |
 |---|---|---|
