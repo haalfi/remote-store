@@ -12094,6 +12094,22 @@ layer has exactly the defect this document diagnoses in the specification layer.
 The table will drift, and nothing will notice — which is why § 9 step 8 proposes
 deriving it from the <code>check_*.py</code> docstrings rather than leaving the gap named and
 unaddressed.</p>
+<p><strong>Step 8 has since shipped, and this table is now a dated measurement.</strong> The
+successor SSoT is <a href="https://github.com/haalfi/remote-store/blob/master/sdd/GATE-INVENTORY.md"><code>sdd/GATE-INVENTORY.md</code></a>, derived by
+<code>scripts/gen_gate_inventory.py</code> from each mechanism's <code>Drift-gate::</code> docstring
+block and from the wiring sources that file's own preamble names; read it for
+the live answer, including the mechanism total, which moves whenever a
+mechanism is declared and is therefore not restated here. The table below is
+kept because the gap analysis that follows is unintelligible without it — the
+same reasoning § 10 records for finding 7's trace-tag counts, and the same
+remedy. Two things the generated inventory shows that this snapshot does not:
+the <code>MemoryBackend</code> ↔ <code>MemoryBackendMinimal</code> row's "None in CI" was overtaken by
+<code>check_dafny_twin_parity.py</code>, and <strong>ten</strong> of the eleven rows here have a
+successor entry — counted by walking this table against
+<code>sdd/GATE-INVENTORY.md</code> row by row, a ratio over this snapshot that does not
+move. The eleventh, <code>Backend</code> <em>i</em> ↔ backend <em>j</em>, has none: the conformance suite
+is pytest collection rather than a script invocation, so the generator cannot
+reach it — stated as a bound in the generated file's own last section.</p>
 <table>
 <thead>
 <tr>

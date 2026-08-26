@@ -14370,6 +14370,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>ID-245: Derive the cross-artifact gate inventory from each gate's own docstring instead of maintaining it by hand</li>
 <li>BUG-246: An absent container reads as an absent path on <code>S3Boto3Backend</code>, <code>AzureBackend</code>, <code>AsyncAzureBackend</code> and <code>SQLBlobBackend</code></li>
 <li>BUG-249: <code>S3Boto3Backend</code>'s three listings no longer leak a raw <code>botocore.ClientError</code></li>
 <li>BUG-258: Conform <code>RemoteStoreComputeLogManager.get_log_keys_for_log_key_prefix</code> to Dagster's narrowed return type</li>

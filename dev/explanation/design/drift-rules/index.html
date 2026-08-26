@@ -10763,11 +10763,27 @@ touch.</p>
    rationale qualifies. A check with no such register will be switched off instead.</p>
 </li>
 <li>
-<p><a id="miss-rate"></a><strong>State the bound, and estimate the miss rate.</strong>
-   [review-enforced]
-   Document in the check itself what it does not catch. Where feasible, seed known
+<p><a id="miss-rate"></a><strong>State the bound, and declare the subject, in the check
+   itself.</strong> [review-enforced]
+   Document what the check does not catch. Where feasible, seed known
    discrepancies and report what fraction was caught. An unstated bound gets
-   trusted past its range.</p>
+   trusted past its range.
+   Declare in the same docstring <strong>what the mechanism compares</strong> — the artifact
+   pair, the rule when it guards a single artifact, or what it surfaces when it
+   only measures — in the machine-readable <code>Drift-gate::</code> block that
+   <a href="https://github.com/haalfi/remote-store/blob/master/scripts/gen_gate_inventory.py"><code>gen_gate_inventory.py</code></a> reads to derive
+   <a href="https://github.com/haalfi/remote-store/blob/master/sdd/GATE-INVENTORY.md"><code>GATE-INVENTORY.md</code></a>. The declaration lives beside the
+   code because a curated mapping of which mechanism watches which pair is the
+   parallel artifact Rule 3 forbids, one layer up.
+   <strong>What enforcement reaches, stated because this rule is the one that asks for
+   bounds:</strong> wiring a script named <code>check_*</code>, <code>gen_*</code>, <code>drift_*</code> or <code>report_*</code>
+   as a command without a block fails that gate. A mechanism named outside those
+   prefixes <strong>and</strong> carrying no block passes silently — declaring is what puts a
+   mechanism in the inventory, whatever it is called; the prefixes only decide
+   what failing to declare costs. So the obligation is on the author, and the
+   gate is a backstop for the conventional case rather than a guarantee of
+   coverage. The generated inventory carries the full bound list, including the
+   other ways a mechanism escapes.</p>
 </li>
 <li>
 <p><a id="independence"></a><strong>Verify independence of derivation path; never assume
@@ -10800,6 +10816,10 @@ touch.</p>
 <a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a># bad:  "verifies spec-to-test traceability"
 <a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a># good: "verifies a marker citing the ID exists; does not verify the test asserts
 <a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>#        the clause, is enabled, or cites the right ID"
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a># Rule 7: declare the subject, machine-readably, in the same docstring
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a># bad:  a row added by hand to an inventory of what checks what
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a># good: Drift-gate:: kind: pair / compares: A &lt;-&gt; B / domain: intent &lt;-&gt; verification
 </code></pre></div>
 <h3 id="how-the-rules-interact">How the rules interact<a class="headerlink" href="#how-the-rules-interact" title="Permanent link">&para;</a></h3>
 <p>Rules 3, 4 and 8 are <strong>preconditions</strong>: without a derived enumeration, a declared
