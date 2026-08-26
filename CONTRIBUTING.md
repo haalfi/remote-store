@@ -109,9 +109,9 @@ of the surfaces that gate scans. So a new backend is added to `_BACKENDS` first,
 and the paragraph above is updated to match — not the other way round.
 
 **Do not go looking for the enumerations — the gate knows where they are.**
-`hatch run check-backend-order` reads every enumeration across the README, the
-guides, the API reference, `context7.json`, and the conda recipe, and fails on any
-that is out of order. It runs inside `hatch run lint` and `hatch run docs-gate`, so
+`hatch run check-backend-order` reads every enumeration across the README, this
+page, the guides, the API reference, `context7.json`, and the conda recipe, and
+fails on any that is out of order. It runs inside `hatch run lint` and `hatch run docs-gate`, so
 CI enforces it on every PR. Add the backend, run the gate, fix what it names.
 
 This replaced a `git grep`, and the reason is worth knowing before anyone proposes

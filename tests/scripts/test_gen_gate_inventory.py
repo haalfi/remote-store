@@ -145,6 +145,21 @@ class TestParseDeclarations:
             )
 
     @pytest.mark.spec("ID-245")
+    def test_duplicate_field_is_rejected(self) -> None:
+        with pytest.raises(_mod.DeclarationError, match="duplicate Drift-gate field"):
+            _mod.parse_declarations(
+                _module("""
+    Drift-gate::
+
+        kind:       pair
+        compares:   a <-> b
+        compares:   c <-> d
+        domain:     process
+"""),
+                "s.py",
+            )
+
+    @pytest.mark.spec("ID-245")
     def test_unknown_field_is_rejected(self) -> None:
         with pytest.raises(_mod.DeclarationError, match="unknown Drift-gate field"):
             _mod.parse_declarations(
@@ -161,7 +176,7 @@ class TestParseDeclarations:
 
     @pytest.mark.spec("ID-245")
     def test_blocks_without_entrypoints_all_apply(self) -> None:
-        """One command can drive several mechanisms; check_links.py drives three."""
+        """One command can drive several mechanisms; check_links.py declares four."""
         declarations = _mod.parse_declarations(_module(PAIR_BLOCK + RULE_BLOCK), "s.py")
         assert [d.kind for d in declarations] == ["pair", "rule"]
         assert _mod._matching(declarations, "") == declarations
@@ -303,6 +318,18 @@ class TestWiringDerivation:
         assert _mod._matching([diff, render], "extras") == []
 
     @pytest.mark.spec("ID-245")
+    def test_args_placeholder_reaches_every_entrypoint(self) -> None:
+        """A passthrough alias runs any subcommand, so it is a home for every block."""
+        diff = _mod.Declaration(kind="pair", domain="process", compares="a <-> b", entrypoint="diff")
+        render = _mod.Declaration(kind="pair", domain="process", compares="c <-> d", entrypoint="render-docs")
+        assert _mod._matching([diff, render], "{args}") == [diff, render]
+
+    @pytest.mark.spec("ID-245")
+    def test_hatch_target_on_a_comment_line_is_not_a_gate_home(self) -> None:
+        """The sibling reader skipped comments; this one did not."""
+        assert _mod._hatch_targets("# uvx hatch run docs-gate\nuvx hatch run lint\n") == ["lint"]
+
+    @pytest.mark.spec("ID-245")
     def test_entrypoint_matches_whole_tokens_only(self) -> None:
         """A prefix match would let `diff` claim a sibling `diff-all`'s argv."""
         diff = _mod.Declaration(kind="pair", domain="process", compares="a <-> b", entrypoint="diff")
@@ -388,7 +415,7 @@ class TestBackstop:
 
     @pytest.mark.spec("ID-245")
     def test_a_standalone_alias_is_reported_beside_the_gate_that_shares_its_command(self, tmp_path: Path) -> None:
-        """Suppressing a duplicate (path, argv) dropped eight real hatch homes."""
+        """Suppressing a duplicate (path, argv) dropped 17 real hatch targets from the column."""
         root = _tree(tmp_path, {"check_x.py": _module(PAIR_BLOCK)})
         (root / "pyproject.toml").write_text(
             "[tool.hatch.envs.default.scripts]\n"
@@ -577,6 +604,36 @@ class TestCli:
         _mod.main()
         mechanisms, _problems = _mod.collect()
         assert out.read_text(encoding="utf-8") == _mod.render(mechanisms)
+
+
+class TestRendering:
+    """The table cells, which only the whole-document round trip otherwise covers."""
+
+    @pytest.mark.spec("ID-245")
+    def test_a_pipe_in_declaration_text_is_escaped(self) -> None:
+        """An unescaped `|` would split a cell and shift every column right of it."""
+        assert _mod._cell("a | b") == "a \\| b"
+
+    @pytest.mark.spec("ID-245")
+    def test_the_generator_declares_every_wiring_source_it_reads(self) -> None:
+        """Its own `compares:` is hand-written and renders into the shipped file.
+
+        `_WIRING_SOURCES` closed the drift in the docstring's prose; this closes it
+        in the one declaration that reaches the generated document, which is where
+        review found it stale a fourth time.
+        """
+        mechanisms, _problems = _mod.collect()
+        (own,) = [m for m in mechanisms if m.path == "scripts/gen_gate_inventory.py"]
+        assert "_WIRING_SOURCES" in own.declaration.subject, (
+            "name the constant rather than listing the sources, or the list goes stale"
+        )
+
+    @pytest.mark.spec("ID-245")
+    def test_bounds_are_rendered_into_the_generated_file(self) -> None:
+        mechanisms, _problems = _mod.collect()
+        rendered = _mod.render(mechanisms)
+        assert f"## What this inventory does not catch ({len(_mod._BOUNDS)})" in rendered
+        assert all(bound in rendered for bound in _mod._BOUNDS)
 
 
 class TestLocalization:

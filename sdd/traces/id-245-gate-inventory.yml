@@ -236,12 +236,19 @@ phases:
         section: "collect (advisory sweep)"
         read_type: verify
         extract: >-
-          Round 4 also found that the round-3 re-key silently dropped eight real
-          standalone hatch homes — gen-api-check, check-test-placement and six
-          more — whenever their command duplicated one a gate already reached,
-          and that the bound written that round to justify the behaviour
-          ("both are real homes, so both are reported") was true only by
-          accident. Homes are now recorded unconditionally.
+          Round 4 also found the advisory sweep suppressing any target whose
+          command duplicated one a gate already reached, and the bound written
+          that round to justify it ("both are real homes, so both are reported")
+          true only by accident. Homes are now recorded unconditionally, which
+          restored 17 hatch targets across 22 cells — counted by diffing the
+          rendered inventory d2ef5b5..4c28a17 for homes added.
+          Own miss, caught by round 5: the round-4 commit, this step and a test
+          docstring all said "eight", and attributed the loss to round 3. Both
+          halves were wrong. Round 3 removed no home — it added nine; the
+          suppression dated from the original design. Eight was round 3's
+          *added* count, transposed onto round 4's *restored* set, and it went
+          into four artifacts in the commit that fixed the previous instance of
+          exactly this. Naming a derivation is not running it.
         outcome: ok
       - file: scripts/gen_gate_inventory.py
         section: "module docstring, claim space"
