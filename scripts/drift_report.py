@@ -11,6 +11,14 @@ Logic:
   → create-or-update the issue.
 * All extras clear → comment "drift cleared" on the open issue (if any)
   and close it; no-op if no issue is open.
+
+Drift-gate::
+
+    kind:       report
+    surfaces:   the current per-extra dependency-drift state, as a rolling GitHub issue it opens,
+        updates or closes; it acts on that state rather than asserting anything, and exits 0 either
+        way
+    domain:     process
 """
 
 from __future__ import annotations

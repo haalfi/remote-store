@@ -3,6 +3,12 @@
 
 CI enforcement for Testing Rule 1 (see sdd/TESTING.md).
 Exit code 0 = all tests have assertions; 1 = violations found.
+
+Drift-gate::
+
+    kind:       rule
+    rule: every test function contains at least one assert or pytest.raises (TESTING.md Rule 1)
+    domain:     verification
 """
 
 from __future__ import annotations

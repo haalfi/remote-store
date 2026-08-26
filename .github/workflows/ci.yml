@@ -55,7 +55,14 @@ jobs:
           # truncated write) must re-run the gate, else code=false skips every
           # shard and gate goes green having validated nothing (BK-319 review).
           CODE_PAT='^(src|tests|examples|scripts)/|^pyproject\.toml$|^\.python-version$|^\.test_durations_pass1$|^docs-src/reference/FEATURES\.md$|^docs-src/_data/graph/|^\.github/workflows/|^\.github/actions/'
-          DOCS_PAT='^(docs-src|src)/|^mkdocs\.yml$|^README\.md$|^CHANGELOG\.md$|^sdd/|^scripts/(docs/|check_docs_framework\.py$)|^\.github/workflows/ci\.yml$'
+          # .pre-commit-config.yaml is an input to gen_gate_inventory's claim
+          # space (ID-245): a hook's `entry:` is wiring, so editing one changes
+          # sdd/GATE-INVENTORY.md and the gate that notices must run. It goes in
+          # DOCS_PAT, not CODE_PAT: `docs` gates one job and that job runs
+          # `docs-gate`, which carries gen-gate-inventory-check, where `code`
+          # gates fifteen. That is the narrow-output preference the ripple-check
+          # states and the job budget the HOOKS_PAT comment below defends.
+          DOCS_PAT='^(docs-src|src)/|^mkdocs\.yml$|^README\.md$|^CHANGELOG\.md$|^sdd/|^scripts/(docs/|check_docs_framework\.py$)|^\.pre-commit-config\.yaml$|^\.github/workflows/ci\.yml$'
           if echo "$FILES" | grep -qE "$CODE_PAT"; then echo "code=true" >> "$GITHUB_OUTPUT"
           else echo "code=false" >> "$GITHUB_OUTPUT"; fi
           if echo "$FILES" | grep -qE "$DOCS_PAT"; then echo "docs=true" >> "$GITHUB_OUTPUT"

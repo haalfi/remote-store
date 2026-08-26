@@ -1,0 +1,90 @@
+# Cross-artifact gate inventory
+
+<!-- doc: repo-only -->
+
+Derived from 35 declared mechanism(s) by `scripts/gen_gate_inventory.py`. Do not edit by hand; run `hatch run gen-gate-inventory`.
+
+Which artifact pairs this repo checks, which single-artifact rules it
+asserts, and what its reports surface. *Kind*, the subject column and
+*Domain* come from each mechanism's `Drift-gate::` docstring block; *Runs
+in* and *Enforcement* are derived from `pyproject.toml`, `.github/workflows/`, `.pre-commit-config.yaml`,
+so no column is maintained here. What this inventory does not catch —
+including what *Enforcement* does not mean — is the last section below.
+
+## Pair gates (23)
+
+| Mechanism | Compares | Domain | Runs in | Enforcement |
+|---|---|---|---|---|
+| `scripts/check_api_docs.py` | the graph IR in docs-src/_data/graph/graph.json ↔ the API reference pages under docs-src/reference/api/ | realization ↔ explanation | `all`, `gen-api-check`, `preflight` | gating |
+| `scripts/check_capability_parity.py` | the Capability enum in src/remote_store/_capabilities.py ↔ the Capability datatype and CapabilityName arms in sdd/formal/BackendContract.dfy | realization ↔ intent-formalized | `all`, `ci.yml:verify-formal`, `lint` | gating |
+| `scripts/check_ci_full_matrix.py` | ci.yml's ALL_PYTHONS interpreter list ↔ ci-full.yml's test-full matrix | process | `all`, `lint` | gating |
+| `scripts/check_ci_inventory.py` | the scheduled-family workflows under .github/workflows/ ↔ the workflow inventory in sdd/CI-OPERATIONS.md | process | `all`, `lint` | gating |
+| `scripts/check_custom_backend_guide.py` | docs-src/guides/custom-backend-guide.md ↔ Backend.__abstractmethods__, the conformance suite files and the fixture loader's closed vocabularies | explanation ↔ realization | `all`, `check-custom-backend-guide`, `docs-gate`, `lint` | gating |
+| `scripts/check_dafny_twin_parity.py` | the MemoryBackend and MemoryBackendMinimal twin classes in sdd/formal/ | intent-formalized | `all`, `check-dafny-twin-parity`, `ci.yml:verify-formal`, `lint` | gating |
+| `scripts/check_docstring_parity.py` | the sync API docstrings in src/remote_store/ ↔ their hand-mirrored twins in src/remote_store/aio/ | realization | `all`, `check-docstring-parity`, `preflight` | gating |
+| `scripts/check_formal_trace.py` | spec IDs declared in sdd/specs/ ↔ Dafny @spec tags in sdd/formal/ and conformance pytest.mark.spec markers | intent ↔ intent-formalized ↔ verification | `all`, `ci.yml:verify-formal`, `lint` | gating |
+| `scripts/check_infra_settings.py` | infra/.env ↔ infra/_settings.py, the compose file and the port and credential references in CI workflows | process | `all`, `lint` | gating |
+| `scripts/check_readthedocs_python.py` | .python-version ↔ .readthedocs.yaml's build.tools.python | process | `all`, `lint` | gating |
+| `scripts/check_ripple_parity.py` | the ripple-check Pre-work index ↔ the Detailed checklist, both in sdd/CLAUDE-REFERENCE.md | process | `all`, `check-ripple-parity`, `docs-gate`, `lint` | gating |
+| `scripts/check_spec_marks.py` | spec IDs declared in sdd/specs/ ↔ spec IDs cited by pytest.mark.spec markers under tests/ | intent ↔ verification | `all`, `ci.yml:verify-formal`, `lint` | gating |
+| `scripts/check_traces.py` | every trace under sdd/traces/ ↔ the schema in sdd/traces/_schema.yml | process | `all`, `check-traces`, `docs-gate`, `lint` | gating |
+| `scripts/docs/check_links.py` | every Markdown link and context7 manifest path ↔ the on-disk files and built docs-site pages they name | explanation | `all`, `check-links`, `docs-gate` | gating |
+| `scripts/docs/check_links.py` | every Markdown link carrying a #fragment, off the historical denylist ↔ the explicit <a id> tags and heading slugs of the file it names | explanation | `all`, `check-links`, `docs-gate` | gating |
+| `scripts/drift_check.py diff` | the freshly resolved dependency set for each extra in pyproject.toml's optional-dependencies table ↔ the committed baseline in infra/drift-locks/ | process | `drift-check`, `drift-guard.yml:check` | scheduled |
+| `scripts/drift_check.py render-docs` | the lock files in infra/drift-locks/, over the extras derived from pyproject.toml ↔ docs-src/reference/tested-versions.md | process ↔ explanation | `all`, `docs-gate`, `drift-check`, `drift-docs-check`, `preflight` | gating |
+| `scripts/gen_adr_digest.py` | the Status tables and Decision sections of sdd/adrs/*.md ↔ sdd/adrs/DIGEST.md | intent | `all`, `gen-adr-digest`, `gen-adr-digest-check`, `preflight` | gating |
+| `scripts/gen_backlogid.py` | the max ID per prefix in sdd/BACKLOG-DONE.md ↔ sdd/backlogid.json, and the open IDs in sdd/BACKLOG.md against both | process | `all`, `docs-gate`, `gen-backlogid`, `gen-backlogid-check`, `lint`, `pre-commit` | gating |
+| `scripts/gen_features.py` | docs-src/_data/graph/graph.json, pyproject.toml's extras and the backend order in src/remote_store/_registry.py ↔ the generated sections of FEATURES.md | realization ↔ explanation | `all`, `gen-features`, `gen-features-check`, `preflight` | gating |
+| `scripts/gen_gate_inventory.py` | the Drift-gate declarations under scripts/, and the wiring in every source _WIRING_SOURCES names ↔ sdd/GATE-INVENTORY.md | process | `all`, `docs-gate`, `gen-gate-inventory`, `gen-gate-inventory-check`, `lint` | gating |
+| `scripts/gen_graph.py` | the source tree under src/remote_store/, plus the version and optional-dependency tables in pyproject.toml ↔ docs-src/_data/graph/graph.json | realization | `all`, `gen-graph`, `gen-graph-check`, `preflight` | gating |
+| `scripts/gen_graph_viz.py` | docs-src/_data/graph/graph.json, plus the Repository URL in pyproject.toml that the page's source links are built from ↔ docs-src/explanation/graph_viz.html | realization ↔ explanation | `all`, `gen-graph-viz`, `gen-graph-viz-check`, `preflight` | gating |
+
+## Rule checks, no pair (10)
+
+Checks whose subject is a rule rather than one artifact pair — either
+because they guard a single artifact, or because they bundle several
+rules under one gate. A derivation over compared artifacts alone would
+yield no row for them at all.
+
+| Mechanism | Rule asserted | Domain | Runs in | Enforcement |
+|---|---|---|---|---|
+| `scripts/check_backend_order.py` | every backend enumeration in a scanned surface lists backends in the canonical order, which this script's own _BACKENDS constant holds; CONTRIBUTING.md is scanned like any other | explanation | `all`, `check-backend-order`, `docs-gate`, `lint` | gating |
+| `scripts/check_docs_framework.py` | every Markdown file resolves to exactly one documentation class and obeys the framework's placement, nav and bridge rules (G-01 through G-07) | explanation | `all`, `docs-check`, `docs-gate`, `lint` | gating |
+| `scripts/check_mock_spec.py` | every MagicMock or Mock call passes spec= or spec_set= (TESTING.md Rule 4) | verification | `all`, `check-test-quality`, `lint` | gating |
+| `scripts/check_no_tracker_refs.py` | no internal tracker ID appears in a surface that reaches users (CONTENT-RULES Rules 1 and 5) | explanation | `all`, `check-no-tracker-refs`, `docs-gate`, `lint` | gating |
+| `scripts/check_rst_roles.py` | no line of any Python file under src/, tests/, scripts/ or examples/ uses RST inline-role syntax, which is incompatible with this project's Google-style docstrings | explanation | `all`, `lint` | gating |
+| `scripts/check_test_assertions.py` | every test function contains at least one assert or pytest.raises (TESTING.md Rule 1) | verification | `all`, `check-test-quality`, `lint` | gating |
+| `scripts/check_test_placement.py` | every test file sits in the subpackage TESTING.md and spec 048 place it in | verification | `all`, `check-test-placement`, `check-test-quality`, `lint` | gating |
+| `scripts/check_tla_no_emdash.py` | no TLA+ module under sdd/formal/tla/ contains an em dash, which TLC rejects | intent-formalized | `all`, `ci.yml:verify-tla`, `lint` | gating |
+| `scripts/docs/check_links.py` | both context7 manifests stay within Context7's per-field list and rule-length maxima, which it silently rejects a manifest for exceeding | explanation | `all`, `check-links`, `docs-gate` | gating |
+| `scripts/docs/check_links.py` | every <a id> anchor in any git-tracked Markdown file off the consumer denylist is unique within its file and adjacent to a heading, whether or not a link points into it | explanation | `all`, `check-links`, `docs-gate` | gating |
+
+## Reports, no assertion (2)
+
+These measure rather than assert. Nothing here is true or false of an
+artifact, so neither of the columns above fits: putting a description in
+a *Rule asserted* cell would claim a check that is not being made.
+
+| Mechanism | Surfaces | Domain | Runs in | Enforcement |
+|---|---|---|---|---|
+| `scripts/drift_report.py` | the current per-extra dependency-drift state, as a rolling GitHub issue it opens, updates or closes; it acts on that state rather than asserting anything, and exits 0 either way | process | `drift-guard.yml:report` | scheduled |
+| `scripts/report_trace_outcomes.py` | which documents readers recorded as unclear or misleading, ranked by tag rate over reads across the trace corpus | process | `report-trace-outcomes` | advisory |
+
+## What this inventory does not catch (13)
+
+Stated here rather than in the generator, because a bound is read by
+whoever this table would mislead, and they read this table.
+
+- **A mechanism named outside the `check_*` / `gen_*` / `drift_*` / `report_*` prefixes and carrying no declaration is invisible.** The prefix test is a backstop for a forgotten block on a conventionally-named script, not a detector of unconventional ones. A mechanism that declares is inventoried whatever it is called; the prefixes only decide what failing to declare costs.
+- **A mechanism wired nowhere is not listed.** This answers what watches what *in this repo's gates*, and an unwired script watches nothing.
+- **The invocation _shape_ is a separate escape from the name.** Only a `scripts/…py` path used as a command is read as wiring, so a mechanism a gate reaches by *importing* it, or through a plugin manifest, is invisible however it is named. Three live instances: `drift_smoke_map.py`, imported by a `python -c` step in `drift-guard.yml`; `gen_pages.py`, under `mkdocs.yml`'s gen-files plugin and so run by `docs-build`; and `check_docs_framework.py`'s G-05, which imports `docs.check_links`. The third is a genuine pair gate, so this escape can hide one — it is listed here only because `check_links.py` is separately wired as a command.
+- **A mechanism that is not a script invocation at all is out of range.** The conformance suite is the standing example: it drives every backend from one shared suite, the strongest cross-artifact check the repo has, and it is pytest collection rather than a `scripts/` entry point. Reading this file as the whole checking layer understates it.
+- **A declaration's content is unverified.** Nothing confirms that a `Compares` cell names the artifacts the code reads. A gate rewritten to compare something else, with its block left alone, renders a truthful-looking wrong row — and review has caught exactly that four times on this PR's own rows.
+- **Nothing checks that a script's blocks are _all_ of its mechanisms.** A script that runs one it does not declare renders only truthful rows, and no signal that one is missing.
+- **Enforcement says a home _is_ a gate, not that it _runs on a given diff_.** The CI homes are all path-filtered — `lint` and `docs-gate` behind `CODE_PAT` / `DOCS_PAT`, `verify-formal` and `verify-tla` behind their own — so a `gating` row is not a claim that the gate runs on the change that invalidates it. That reachability question is open item BK-333's. The two non-CI gate homes are the exceptions: `all` is a local whole-tree command, and the `pre-commit` hook that reaches a mechanism is declared `always_run`.
+- **Enforcement is derived from wiring, not exit codes.** A script wired into a gate bundle that always exits 0 is reported as gating. `scheduled` likewise means *reached only from a workflow other than `ci.yml`* rather than *triggered by a cron*; today the only such workflow is `drift-guard.yml`, which is genuinely scheduled.
+- **Runs in lists a generator's write-mode alias beside its `--check` gate.** Both run the same comparison and both are real homes. An alias whose *argv* — the text after the script path, up to the first `|`, `&` or `;` — carries hatch's `{args}` placeholder is recorded for every block the script declares, since the argv it will be given is unknown here. So an alias pinning one subcommand *and* forwarding `{args}` is over-reported, and one spelling `{args}` before the path or past a pipe is not matched at all; no target in this repo has either shape.
+- **`_VALID_DOMAINS` is a hand-maintained copy of research § 4a's six domains** — the curated parallel list Rule 3 warns about, one layer down. Kept because the alternative is parsing a prose research doc, and because § 4a is a point-in-time snapshot that does not move; if it ever does, this will not notice.
+- **Declaration text is rendered into a Markdown table with only `|` escaped**, so a declaration spelling out Markdown link syntax emits a link the docs gate then reports as broken. That is a caught failure rather than a silent one, so the constraint is left to that gate rather than duplicated as escaping.
+- **On a script whose blocks carry `entrypoint:`, a wired invocation matching none of them is read as an operational subcommand, not a mechanism** — `drift_check.py extras` lists extras and compares nothing. A genuinely forgotten mechanism behind such a subcommand is therefore silent. The backstop catches the file that declared nothing, which is the case with an obvious right answer; telling a forgotten mechanism from an operational subcommand needs a judgement about what the subcommand does, and a gate that guessed it would fail on correct code.
+- **Over-reach, since the rest of this list is under-reach.** A `scripts/*.py` path is read as an invocation wherever it appears in a command, provided it starts at a path boundary and not on a `#` comment line. A path inside a quoted string, a heredoc body or an `echo` still counts, so prose that happens to spell a command wires the script it names. Both filters were added after review found the unanchored form reading `tests/scripts/*.py` as `scripts/*.py`; what remains is bounded to text that looks exactly like a command, and the failure direction is a spurious row rather than a missing one.

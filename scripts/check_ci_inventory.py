@@ -29,6 +29,13 @@ stderr, sorted for stable diffs.
 Run with:
     hatch run lint                       # bundled
     python scripts/check_ci_inventory.py
+
+Drift-gate::
+
+    kind:       pair
+    compares: the scheduled-family workflows under .github/workflows/ ↔ the workflow inventory in
+        sdd/CI-OPERATIONS.md
+    domain:     process
 """
 
 from __future__ import annotations

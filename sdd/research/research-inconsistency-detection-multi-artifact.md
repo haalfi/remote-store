@@ -489,6 +489,23 @@ The table will drift, and nothing will notice — which is why § 9 step 8 propo
 deriving it from the `check_*.py` docstrings rather than leaving the gap named and
 unaddressed.
 
+**Step 8 has since shipped, and this table is now a dated measurement.** The
+successor SSoT is [`sdd/GATE-INVENTORY.md`](../GATE-INVENTORY.md), derived by
+`scripts/gen_gate_inventory.py` from each mechanism's `Drift-gate::` docstring
+block and from the wiring sources that file's own preamble names; read it for
+the live answer, including the mechanism total, which moves whenever a
+mechanism is declared and is therefore not restated here. The table below is
+kept because the gap analysis that follows is unintelligible without it — the
+same reasoning § 10 records for finding 7's trace-tag counts, and the same
+remedy. Two things the generated inventory shows that this snapshot does not:
+the `MemoryBackend` ↔ `MemoryBackendMinimal` row's "None in CI" was overtaken by
+`check_dafny_twin_parity.py`, and **ten** of the eleven rows here have a
+successor entry — counted by walking this table against
+`sdd/GATE-INVENTORY.md` row by row, a ratio over this snapshot that does not
+move. The eleventh, `Backend` *i* ↔ backend *j*, has none: the conformance suite
+is pytest collection rather than a script invocation, so the generator cannot
+reach it — stated as a bound in the generated file's own last section.
+
 | Pair | Domain | Current detection |
 |---|---|---|
 | `Store` ↔ `AsyncStore` | realization | `check_docstring_parity.py` (docstrings only); behavioral parity is a DoD checkbox |

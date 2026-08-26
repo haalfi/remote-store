@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- ID-245: Derive the cross-artifact gate inventory from each gate's own docstring instead of maintaining it by hand
 - BUG-246: An absent container reads as an absent path on `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` and `SQLBlobBackend`
 - BUG-249: `S3Boto3Backend`'s three listings no longer leak a raw `botocore.ClientError`
 - BUG-258: Conform `RemoteStoreComputeLogManager.get_log_keys_for_log_key_prefix` to Dagster's narrowed return type

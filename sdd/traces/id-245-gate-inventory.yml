@@ -1,0 +1,282 @@
+id: ID-245
+title: "Derive the cross-artifact gate inventory instead of hand-maintaining it"
+trigger: >-
+  The research doc's own § 4b inventory of which artifact pairs are checked was
+  assembled by hand and said of itself "The table will drift, and nothing will
+  notice." The checking layer had the defect the document diagnoses in the
+  specification layer: no enumeration of its own coverage.
+source_items:
+  - ID-245
+  - ID-237
+audience:
+  - contributor.tooling
+  - contributor.process
+# Named rather than counted, per the schema's review_rounds clause. Seven review
+# passes ran, each answered by exactly one fix commit: 1a49812, 3118fe4,
+# d2ef5b5, 4c28a17, f4b3437, df04d5e, a66dbbb. ed47c31 is the implementation and
+# answers nothing; a commit that only corrects this file is housekeeping and is
+# not a pass. Five of the seven were review rounds (rounds 3 to 5 three-member
+# panels), one a verification pass over round 5's fix, one a final pass.
+#
+# This field went stale four times, the last time to a commit of my own that
+# changed the log it was derived from. That is why the rule counts *passes
+# answered* rather than log length: the count of what happened does not move
+# when the trace recording it is edited.
+review_rounds: 7
+expected_ripples:
+  # Anticipated by the ripple-check: DRIFT-RULES by the "new or changed
+  # cross-artifact check" row, BACKLOG by "backlog item touched".
+  - sdd/DRIFT-RULES.md
+  - sdd/BACKLOG.md
+  - sdd/GATE-INVENTORY.md
+  - CHANGELOG.md
+surprising_ripples:
+  # Neither anticipated by the ripple-check nor cited as a read before the work
+  # began. The research doc's § 4b table is the artifact this item exists to
+  # replace, yet no ripple-check row points from a new gate to the doc whose
+  # hand-built table it supersedes.
+  - sdd/research/research-inconsistency-detection-multi-artifact.md
+
+phases:
+  - id: orient
+    name: "Frame the item and bound the scope"
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) ID-245"
+        read_type: gate
+        extract: >-
+          Three inventory bullets plus a fourth added by BUG-246 on master. Two are
+          blocked: the cassette table is pinned after ID-244 and the accountability
+          record waits on ID-207, both still open. Only the checker inventory is
+          reachable, which set the scope to one bullet.
+      - file: sdd/research/research-inconsistency-detection-multi-artifact.md
+        section: "4b, 9 (steps 7 and 8), 10"
+        read_type: gate
+        extract: >-
+          The eleven-row hand table, the two named complications (rule checks guard
+          no pair; the check_*.py glob under-reaches), and § 10's record that the
+          table was deliberately kept because the gap analysis is unintelligible
+          without it. That last read is what stopped the table being replaced.
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules"
+        read_type: gate
+        extract: >-
+          Rule 3 (derive the claim space, state the granularity), Rule 4 (declare
+          the authority per pair), Rule 5 (gating or advisory, and why), Rule 7
+          (state the bound in the check itself) as the obligations on the new gate.
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: >-
+          Triggered rows: new cross-artifact check, backlog item touched, CHANGELOG
+          entry, and the CODE_PAT reachability row for a subject outside src/.
+
+  - id: design
+    name: "Settle the shared design decision"
+    steps:
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts]"
+        read_type: reference
+        extract: >-
+          The script table is the authoritative wiring, and composed targets
+          (docs-gate to check-links to the script) mean resolution must be
+          transitive. This is what reaches scripts/docs/check_links.py, which the
+          glob named in the item misses.
+      - file: .github/workflows/ci.yml
+        section: "setup (CODE_PAT, DOCS_PAT), verify-formal"
+        read_type: gate
+        extract: >-
+          CODE_PAT excludes sdd/ while DOCS_PAT matches it, so a gate whose output
+          lives under sdd/ needs a home in docs-gate as well as lint. verify-formal
+          wires four gates a second time, so a mechanism has more than one home.
+      - file: scripts/gen_adr_digest.py
+        section: "(full) module docstring, main"
+        read_type: reference
+        extract: >-
+          The generated-artifact pattern to follow: --check mode, a repo-only
+          marker on the output, and a header naming the regeneration command.
+      - file: sdd/AUTHORING.md
+        section: "Decision procedure, Classification markers"
+        read_type: gate
+        extract: >-
+          Pure internal tooling declares repo-only, which settles the marker on the
+          generated inventory without a docs-site nav ripple.
+
+  - id: implement
+    name: "Generator, declarations, wiring"
+    steps:
+      - file: scripts/gen_gate_inventory.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Parse the Drift-gate block from each module docstring; derive homes and
+          enforcement from pyproject plus workflows so no authored field can claim
+          where it runs. Authority answered per column, not per table.
+      - file: scripts/check_dafny_twin_parity.py
+        section: "module docstring (unknown-is-a-failure)"
+        read_type: reference
+        extract: >-
+          Precedent for the backstop: a class the gate does not know is a failure,
+          not a skip. Applied to a wired check_*/gen_*/drift_*/report_* script that
+          carries no declaration.
+
+  - id: verify
+    name: "Run it, not type-check it"
+    steps:
+      - file: scripts/gen_gate_inventory.py
+        section: "--check"
+        read_type: verify
+        extract: >-
+          Mutated a declaration and confirmed exit 1; deleted a block and confirmed
+          the backstop fired naming the file; restored and confirmed exit 0. The
+          first run reported the failure without naming the mechanism, which is a
+          DRIFT-RULES Rule 2 breach — added _differing_rows so it localizes.
+        outcome: ok
+      - file: scripts/gen_gate_inventory.py
+        section: "module docstring, format example"
+        read_type: verify
+        extract: >-
+          Own miss, caught by running rather than reading: the docstring's example
+          of the block format parsed as a real declaration, giving the file two
+          undifferentiated blocks and silently dropping the generator's own row.
+          The count read 31 where it should have read 32 and nothing failed. Fixed
+          by dropping the header line from the example, which is still what stops
+          the format documentation declaring a mechanism. Also made two
+          entrypoint-less blocks a hard error — a rule review round 2 then
+          reversed, because check_links.py legitimately needs several of them
+          (four, as round 4 left it); the error now fires only on a file mixing
+          the two forms.
+        outcome: ok
+      - file: sdd/research/research-inconsistency-detection-multi-artifact.md
+        section: "4b"
+        read_type: verify
+        extract: >-
+          Checked the generated inventory against all eleven rows. Ten are covered;
+          the eleventh (backend i to backend j) is the conformance suite, which is
+          pytest collection rather than a script invocation and is stated as a
+          bound. The snapshot's "None in CI" row was also overtaken by
+          check_dafny_twin_parity.py, which the generated file shows and the
+          snapshot does not.
+        outcome: misleading
+
+  - id: review
+    name: "Five review rounds and a verification pass"
+    steps:
+      - file: scripts/gen_gate_inventory.py
+        section: "_SCRIPT_INVOCATION_RE, _GATE_HOMES"
+        read_type: verify
+        extract: >-
+          Round 1, unprimed, 7 findings. Two real bugs neither the build nor the
+          gate caught: the invocation regex matched a scripts/ path as a suffix,
+          so a tests/scripts/ command read as wiring the scripts/ file of the same
+          basename, and _GATE_HOMES was module state that made enforcement a
+          function of call history. Both reproduced before fixing.
+        outcome: ok
+      - file: tests/scripts/test_gen_gate_inventory.py
+        section: "TestBackstop, TestCallIsolation"
+        read_type: verify
+        extract: >-
+          Round 1 also found the backstop had no test that it fires, only that it
+          stays silent on a clean tree. The synthetic-tree fixture that fixes it
+          then found its own defect: main() raised ValueError for any output path
+          outside the repo. Writing the test for a gate found a bug in the gate.
+        outcome: ok
+      - file: scripts/check_backend_order.py
+        section: "_BACKENDS, _SCANNED_FILES"
+        read_type: verify
+        extract: >-
+          Round 2, measuring, scoped to the 29 declaration blocks no round had
+          reviewed — the content the generator cannot check. Three declarations
+          were wrong about their own script. This one named CONTRIBUTING.md as the
+          authority where the canonical order is a constant in the script and
+          CONTRIBUTING.md is among the scanned files: the pair was inverted and
+          the checked side omitted. Plausible on any reading, refuted in one
+          command. Round 3 then ruled it kind rule, not pair, since no two repo
+          artifacts are compared.
+        outcome: ok
+      - file: scripts/docs/check_links.py
+        section: "(full) module docstring"
+        read_type: verify
+        extract: >-
+          Rounds 2 and 3 both found this file under-declared, and the first fix was
+          itself incomplete: round 2 raised one block covering three of five
+          mechanisms, the fix added two, and round 3 counted the blocks against
+          this docstring and found ID-180 fragment resolution still undeclared. The
+          format could not hold two mechanisms sharing one argv until round 2
+          changed the keying — the bound was in the keying, not the subject matter.
+        outcome: ok
+      - file: sdd/GATE-INVENTORY.md
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Own miss, three times over: the mechanism total went stale in the backlog,
+          the PR body and the research doc across successive fix passes. Each
+          sentence named its derivation and the derivation was run once, so the
+          figure outlived it. Principle 9's load-bearing half is "run before the
+          sentence is written", not "name a command". The research doc now points
+          at the generated file for the total rather than restating it.
+        outcome: ok
+      - file: .pre-commit-config.yaml
+        section: "backlogid-check"
+        read_type: verify
+        extract: >-
+          Round 3, unprimed, found a third wiring home the claim space never read:
+          a hook whose entry is `python scripts/gen_backlogid.py --check`. Nothing
+          was missing from the output, because that script is also wired through
+          hatch — but a gate wired only as a hook would have been invisible to both
+          the inventory and the backstop. Added to the claim space rather than
+          stated as a bound.
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "setup (CODE_PAT)"
+        read_type: verify
+        extract: >-
+          Round 4 found the cost of the previous line: adding
+          .pre-commit-config.yaml to the claim space made it an input that
+          neither CODE_PAT nor DOCS_PAT matched, so editing a hook could change
+          the generated file while running neither gate. Adding an input to a
+          derivation is a CI path-filter ripple, and no ripple-check row says so
+          — the closest, BK-333, is about gate reachability generally.
+        outcome: ok
+      - file: scripts/gen_gate_inventory.py
+        section: "collect (advisory sweep)"
+        read_type: verify
+        extract: >-
+          Round 4 also found the advisory sweep suppressing any target whose
+          command duplicated one a gate already reached, and the bound written
+          that round to justify it ("both are real homes, so both are reported")
+          true only by accident. Homes are now recorded unconditionally, which
+          restored 17 hatch targets across 22 cells — counted by diffing the
+          rendered inventory d2ef5b5..4c28a17 for homes added.
+          Own miss, caught by round 5: the round-4 commit, this step and a test
+          docstring all said "eight", and attributed the loss to round 3. Both
+          halves were wrong. Round 3 removed no home — it added nine; the
+          suppression dated from the original design. Eight was round 3's
+          *added* count, transposed onto round 4's *restored* set, and it went
+          into four artifacts in the commit that fixed the previous instance of
+          exactly this. Naming a derivation is not running it.
+        outcome: ok
+      - file: scripts/gen_gate_inventory.py
+        section: "_BOUNDS"
+        read_type: verify
+        extract: >-
+          Round 5 cut the docstring from 172 lines to 82 and moved its bounds into
+          _BOUNDS, which render prints into the generated file — the recurring site
+          closed by relocation after five rounds of correcting it. The verification
+          pass then caught the cut dropping two of thirteen bounds rather than
+          moving eleven, while DRIFT-RULES Rule 7 had just been changed to claim
+          the generated file carries the full list. Cutting prose loses information
+          unless the count is checked, and the count was not.
+        outcome: ok
+      - file: scripts/gen_gate_inventory.py
+        section: "module docstring, claim space"
+        read_type: verify
+        extract: >-
+          The recurring site, and the reason this round stopped patching it: the
+          docstring hand-enumerated the wiring sources, and that enumeration was
+          falsified once per source added, in three consecutive rounds. Replaced
+          by _WIRING_SOURCES, which collect walks and render prints into the
+          generated file, so the statement of the claim space is produced by the
+          code rather than restated beside it. This is the item's own thesis
+          applied to its own deliverable.
+        outcome: ok

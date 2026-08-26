@@ -12,6 +12,13 @@ Check mode (--check):
     Wired into `hatch run lint` and `hatch run docs-gate` — the latter because
     `lint` is CODE_PAT-gated and so skipped for an `sdd/`-only change, which is
     exactly the change that bumps this file.
+
+Drift-gate::
+
+    kind:       pair
+    compares: the max ID per prefix in sdd/BACKLOG-DONE.md ↔ sdd/backlogid.json, and the open IDs in
+        sdd/BACKLOG.md against both
+    domain:     process
 """
 
 from __future__ import annotations

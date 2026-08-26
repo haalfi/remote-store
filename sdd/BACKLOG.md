@@ -1232,8 +1232,9 @@ ripple-check, the revisit pins, the generated inventories — say what is
 actually true.
 
 **Closes when:** the backlog files are structurally linted (ID-235); the
-ripple-check's six measured blind spots are answered (BK-346); the three
-hand-maintained inventories are generated (ID-245); `check_formal_trace` proves
+ripple-check's six measured blind spots are answered (BK-346); the
+hand-maintained inventories ID-245 names are generated — four bullets, of which
+the checker inventory has shipped; `check_formal_trace` proves
 assertion rather than citation (ID-207); and both open revisit pins have fired
 and named successors (ID-150, ID-249).
 **Bounded to those five deliberately.** "No artifact asserts what no mechanism
@@ -1472,17 +1473,36 @@ the commit that writes it lands, so cite the generator instead.
     marker, Dafny tag, TLA+ invariant), its status — so "what was verified, and
     by what" is answerable historically rather than only at HEAD. Its shape
     changes under ID-207, so cost is unknown until that lands.
-  - **The cross-artifact checker inventory** (was ID-237, absorbed here),
-    research § 9 step 8.
-    The research doc's own inventory of which artifact pairs are checked was
-    assembled by hand, and says of itself: "The table will drift, and nothing
-    will notice." Derive it from the `check_*.py` docstrings. Two complications
-    belong in the scope rather than in the implementation surprise: a substantial
-    minority of gates are single-artifact rule checks whose docstrings state a
-    *rule*, not a pair (assertion presence, mock discipline, forbidden RST roles,
-    em dashes in TLA+), so the deliverable needs an explicit "rule check, no
-    pair" classification; and the `scripts/check_*.py` glob under-reaches —
-    `scripts/docs/check_links.py` is a genuine cross-artifact gate outside it.
+  - [x] **The cross-artifact checker inventory** (was ID-237, absorbed here),
+    research § 9 step 8. **Shipped.** [`GATE-INVENTORY.md`](GATE-INVENTORY.md),
+    derived by `scripts/gen_gate_inventory.py` and gating via `--check` in both
+    `lint` and `docs-gate` (two homes because CODE_PAT skips `lint` for an
+    `sdd/`-only edit, which is exactly an edit to the generated file). Both
+    named complications were answered as scoped: single-artifact rule checks
+    carry `kind: rule` and render in their own section, alongside a third
+    `kind: report` for the mechanisms that measure rather than assert; read the
+    per-kind split off that file's section headings rather than from here, since
+    it moves whenever a mechanism is declared. The claim space is the wiring in
+    `pyproject.toml`, `.pre-commit-config.yaml`
+    plus `.github/workflows/` rather than a glob, which is what reaches
+    `scripts/docs/check_links.py`. Research § 4b's eleven-row table is annotated
+    as a dated measurement naming the generated file as its successor. Two
+    bounds worth carrying forward: a mechanism that is not a script invocation
+    is out of range (the conformance suite, § 4b's one row with no successor
+    entry), and the declarations' *content* is unverified — a gate rewritten to
+    compare something else, with its block left alone, renders a truthful-looking
+    wrong row. The full bound list is the generated file's last section.
+    **One measured lesson worth carrying to the remaining bullets**, since they
+    build the same shape: across six review passes the *code* converged after two
+    (the last four execution-based passes found no bug between them), while the
+    *narrative* around it — the generator's docstring, this entry, the research
+    annotation, the trace — kept producing defects at roughly the rate the fix
+    passes edited it. Every recurrence was a sentence describing code that a later
+    commit changed. Two remedies worked and are worth reusing rather than
+    rediscovering: name a thing once in code and render it (`_WIRING_SOURCES`,
+    `_BOUNDS`), and point at the derived artifact for any figure that moves rather
+    than restating it. One did not: correcting the prose in place, which is what
+    the first four passes did.
   - **BE-021's divergence counts, and the artifacts that re-count against them.**
     The absent-container divergence set is stated as a bullet list in BE-021, as
     a class count in `sdd/BACKLOG.md` § 1, and again in the CHANGELOG, spec 040
@@ -1504,11 +1524,57 @@ the commit that writes it lands, so cite the generator instead.
     sentence uses — that prose was two of the eleven findings on its own.
     **Position: independent of the other three**, and the only one of the four
     with a measured defect rate behind it.
-  **The shared open question:** both complications push toward either a docstring
-  convention or a curated mapping, and a curated mapping is precisely the
-  parallel-artifact-that-drifts problem these exist to close. That decision is
-  unmade and it is one decision, not three. The fourth bullet does not share it:
-  its answer is to have one table rather than a better-maintained several.
+    **Four qualifications from the session that closed BUG-246**, each amending
+    the fix shape above rather than restating it:
+    1. **The four frames are four different questions, so one flat table serves
+       none of them.** Bullets answer how many divergence entries exist; classes,
+       how many backends disagree; operations, how wide the breach is on one
+       backend; call sites, how much code implements the rule. The shape that
+       works is one row per (backend × operation) carrying the clause it
+       breaches, with every count derived by filtering it — never a second table.
+    2. **"Delete the meta-prose" is too blunt, and following it literally will
+       create a defect.** BE-021 counts move/copy as one operation in the roster
+       paragraph and as two in the SQLBlob divergence bullet, seventy lines
+       apart; the sentence saying so is the only thing stopping a future reader
+       "fixing" fourteen or twelve to match the other. Delete prose that explains
+       which frame a sentence uses; keep prose that explains why two frames
+       legitimately differ.
+    3. **A generator cannot produce the whole table.** "Pre-existing", "outside
+       the clause until BUG-246 wrote the bound", "the error type actively
+       misleads" are judgements. Realistic shape: generated columns for what each
+       backend answers, curated annotations for why — which means
+       [`DRIFT-RULES.md` Rule 4](DRIFT-RULES.md#authority) is answered **per
+       column, not per table**. Bullet 3 shipped that pattern; its per-column
+       authority table is the worked example. It also settles this bullet's
+       [Rule 5](DRIFT-RULES.md#mandatory-path) side: **advisory, not gating** —
+       a gate over a table containing judgements produces false failures, where
+       bullet 3 gates precisely because no column of it carries one.
+    4. **The set changes when the clause changes, not only when code changes** —
+       and this is the blocker. BUG-255 and BUG-257 entered § Known divergences
+       with no behaviour changing at all: writing the first-page bound into
+       § Reach enlarged what the clause governs. A generator keyed on backend
+       behaviour alone would have missed both. The input is code-behaviour ×
+       clause-text, and the clause-text half has no machine-readable form today.
+    **The surface to re-point**, counted at `959814e` with a case-sensitive
+    match on `absent container|absent-container`, one count per file, `sdd/` and
+    docs prose only: `sdd/specs/003` 15, `sdd/BACKLOG.md` 15,
+    `sdd/BACKLOG-DONE.md` 9, `sdd/specs/044` 5, `sdd/specs/040` 3,
+    `sdd/specs/029` 2, `sdd/specs/026` 2, `sdd/adrs/0038` 2,
+    `docs-src/guides/custom-backend-guide.md` 2, `CHANGELOG.md` 1. Traces and
+    the `src/`/`tests/` hits are excluded as records and as the behaviour itself.
+    Read the custom-backend guide first: it is the one artifact in that set that
+    never drifted, so it shows what a correctly placed statement of this clause
+    looks like.
+  **The shared question, now answered once by bullet 3:** a docstring
+  convention, not a curated mapping — a curated mapping is precisely the
+  parallel-artifact-that-drifts problem these exist to close. It shipped as the
+  `Drift-gate::` block that [`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)
+  now requires of every wired mechanism. The two unbuilt inventory bullets
+  inherit that decision rather than re-make it. The fourth bullet never shared
+  it: its answer is one table rather than a better-maintained several, and what
+  it takes from bullet 3 instead is the per-column authority pattern, since the
+  convention governs generated columns only and its curated ones need their
+  authority stated per column.
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   spec: — · effort: S · audience: library.maintainer
