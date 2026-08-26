@@ -576,9 +576,11 @@ class SFTPBackend(Backend):
             blocking forever. Must be positive when set; ``0`` is rejected
             because paramiko reads it as non-blocking. A streamed ``read``
             raises rather than returning short, so a truncated transfer is
-            never mistaken for a complete one. The stall is reported, not
-            retried: the ``retry`` policy governs connecting only, so a
-            partially consumed stream is never silently restarted.
+            never mistaken for a complete one. Every stall is reported, never
+            retried: the ``retry`` policy wraps the SSH connect call alone, so
+            a partially consumed stream is never silently restarted — and a
+            stall during session setup is reported too, rather than retried as
+            a connect failure would be.
         connect_kwargs: Extra kwargs passed to ``SSHClient.connect()``.
     """
 
@@ -1694,8 +1696,10 @@ class SFTPBackend(Backend):
         That window is not a connect-phase edge case. Every reconnect re-runs
         ``_connect``, so a flaky peer that drops and comes back half-alive would
         park the caller indefinitely *with* ``io_timeout`` set, which is the
-        guarantee this option is bought for. The connect ``RetryPolicy`` cannot
-        cover it either: a hang raises nothing for tenacity to retry.
+        guarantee this option is bought for. The connect ``RetryPolicy`` does
+        not reach it either, on two counts: the retried closure is the
+        ``ssh.connect()`` call above, not this method, and a hang raises nothing
+        for tenacity to retry in any case.
 
         The four timeouts handed to ``ssh.connect()`` do not reach here. They
         expire during the connect phase — ``channel_timeout`` included, which
@@ -1825,7 +1829,7 @@ class SFTPBackend(Backend):
             return f"/{path}"
         return f"{self._base_path}/{path}"
 
-    def _raise_if_dir(self, sftp_path: str, path: str) -> None:
+    def _raise_if_dir(self, sftp_path: str, path: str, *, cause: Exception | None = None) -> None:
         """Raise ``InvalidPath`` if *sftp_path* is a directory; return otherwise.
 
         This ``stat`` is what carries the file-vs-directory type-mismatch
@@ -1853,7 +1857,16 @@ class SFTPBackend(Backend):
         issues). ``open_atomic`` also rejects a directory up front for the same
         reason, but folds that check into its own single setup ``stat`` rather
         than calling this helper.
+
+        *cause* is the failure the caller is classifying, where it has one. When
+        that failure already concludes the connection is dead, this probe is
+        skipped: statting a channel that will not answer buys no classification
+        and pays another ``io_timeout``. Callers with no prior failure
+        — ``read``'s eager check — pass nothing, and are covered instead by the
+        dead-connection re-raise below.
         """
+        if cause is not None and self._is_connection_dead(cause):
+            return  # caller re-raises; do not re-enter a channel known to be dead
         try:
             st = self._sftp.stat(sftp_path)
         except OSError as exc:
@@ -1869,6 +1882,14 @@ class SFTPBackend(Backend):
             # file-ancestor ``NotFound`` path on a server whose classification stat
             # reports the failure with a different errno.
             if getattr(exc, "errno", None) in (errno.EACCES, errno.EPERM):
+                raise
+            if self._is_connection_dead(exc):
+                # A dead channel is not "cannot classify": swallowing it leaves
+                # the caller to re-enter the same channel and pay ``io_timeout``
+                # a second time, and the eager caller (``read``) has no original
+                # error for it to stand aside for. Report the drop instead —
+                # ``_map_exception`` maps it to ``BackendUnavailable`` and clears
+                # the client, so the next operation reconnects (SFTP-030).
                 raise
             return  # cannot classify — let the caller's original error stand
         if st is not None and st.st_mode is not None and stat.S_ISDIR(st.st_mode):
@@ -1918,8 +1939,8 @@ class SFTPBackend(Backend):
         """
         try:
             f: BinaryIO = self._sftp.file(sftp_path, "w")
-        except OSError:
-            self._raise_if_dir(sftp_path, path)
+        except OSError as exc:
+            self._raise_if_dir(sftp_path, path, cause=exc)
             raise
         return f
 
@@ -1946,8 +1967,14 @@ class SFTPBackend(Backend):
         """
         try:
             self._sftp.posix_rename(tmp_path, sftp_path)
-        except OSError:
-            self._raise_if_dir(sftp_path, path)
+        except OSError as exc:
+            if self._is_connection_dead(exc):
+                # Neither the classification stat nor the fallback's remove +
+                # rename can succeed on a dead channel, and each would pay
+                # ``io_timeout`` again — up to three further bounds out of one
+                # failed promote. Report the drop (SFTP-030).
+                raise
+            self._raise_if_dir(sftp_path, path, cause=exc)
             self._rename_fallback(tmp_path, sftp_path, overwrite=overwrite)
 
     def _rename_fallback(  # pragma: no cover -- fallback for servers without posix_rename

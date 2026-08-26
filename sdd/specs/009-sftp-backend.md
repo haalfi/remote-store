@@ -131,7 +131,11 @@ the Base64 payload. Invalid PEM structures (not 5 parts) raise `ValueError`.
 
 ### SFTP-009: Tenacity Retry on Connect
 
-**Invariant:** The `_connect()` method retries on transient SSH errors using tenacity.
+**Invariant:** `_connect()` retries the `ssh.connect()` call on transient SSH
+errors using tenacity. The retried closure is that call alone, **not** the whole
+of `_connect`: the SFTP channel open and session setup that follow it run once,
+outside the retry, so a failure there is reported rather than retried (SFTP-030
+depends on this scope being stated precisely).
 When no `RetryPolicy` is provided, uses defaults: 3 attempts, exponential backoff
 (2s min, 10s max). When a `RetryPolicy` is provided via the `retry` constructor
 parameter, maps its fields to tenacity: `max_attempts` -> `stop_after_attempt`,
@@ -409,20 +413,38 @@ nothing to retry.
 not on the duration of a transfer. A large file over a slow link is unaffected
 however long it takes; a peer that goes silent for longer than `io_timeout`
 raises `socket.timeout`. Since it is `settimeout()`, the bound covers writes as
-well as reads — a write reaches it by a different route, through SSH window
-exhaustion in `Channel.sendall` rather than an empty receive pipe.
+well as reads. Measured, a stalled write reaches it on the receive side like a
+read does: paramiko's `SFTPFile.write` is not pipelined by default, so it waits
+for each chunk's response before sending the next, and the receive bound fires
+before the SSH out-window can drain. The distinct fault it covers is a request
+that never reaches the server, as against a reply that never returns.
 
 **Postconditions:** A stalled operation raises `BackendUnavailable`, via the
 existing `_is_connection_dead` / `_map_exception` path (SFTP-023), which also
 clears the cached client so the next operation reconnects (SFTP-010 tier 2).
 
-The caller-visible wall clock is one bound, not several: the error paths of
-`read`, `read_bytes` and `delete` classify a failure by re-probing the server
-(`_raise_if_dir`, `_has_file_ancestor`), and those probes are skipped when the
-exception already concludes the connection is dead — otherwise each would
-re-enter the stalled channel and pay `io_timeout` again on a client
-`_map_exception` has not yet cleared. This is the same guard `write_atomic` and
-`open_atomic` apply to their cleanup round-trip.
+The caller-visible wall clock for a stalled operation is one bound, not
+several. Classification re-probes the server (`_raise_if_dir`,
+`_has_file_ancestor`), and each probe would re-enter the stalled channel and
+pay `io_timeout` again on a client `_map_exception` has not yet cleared. Two
+rules prevent that, because callers reach the probe two different ways:
+a caller that already holds a failed operation's exception passes it, and the
+probe is skipped when that exception concludes the connection is dead; and
+`_raise_if_dir`'s own stat re-raises a dead-connection error rather than
+swallowing it as "cannot classify", which is what covers `read`, whose is-dir
+check is eager and so has no prior exception to pass. `_promote` additionally
+skips the `rename` fallback, whose `remove` + `rename` would each pay the bound
+again. This generalises the guard `write_atomic` and `open_atomic` already
+apply to their cleanup round-trip.
+
+**Bounded, with one stated exception:** releasing a stalled handle can pay one
+further bound. `_ErrorMappingStream.close` closes the underlying paramiko file
+under `contextlib.suppress`, and that `CMD_CLOSE` is synchronous, so exiting
+the `with` block of a stream that has already failed may block once more before
+being discarded. It is silent rather than surfaced, since the close is
+suppressed. Left as-is here because the fix belongs to the shared stream
+wrapper rather than this backend; recorded so the guarantee above is not read
+wider than it holds.
 
 For a **streamed** read (`read`), a stall after the caller has consumed bytes
 raises rather than returning short, so a truncated stream is never
@@ -431,10 +453,20 @@ prefix and the handle is dead: the caller discards it rather than resuming.
 This is the premise the retry exclusion below is argued from, so it is stated
 here rather than left implied.
 
-**Excluded from retry:** `RetryPolicy` governs `_connect` only (SFTP-009), so a
-stall reaches the caller rather than being retried. Retrying it transparently
-would restart a partially consumed stream underneath a caller that had already
-read from it.
+**Excluded from retry:** `RetryPolicy` wraps the `ssh.connect()` call alone, not
+the whole of `_connect` (SFTP-009), so **no** stall bounded by `io_timeout` is
+retried — neither one on a caller's operation nor one in the session setup
+described above, which happens inside `_connect` but outside the retried
+closure. Every stall reaches the caller.
+
+For an operation-level stall the exclusion is deliberate: retrying
+transparently would restart a partially consumed stream underneath a caller
+that had already read from it. That rationale does **not** reach a
+version-exchange stall, where nothing has been consumed yet, so the exclusion
+there is a consequence of where the retry boundary sits rather than a decision
+argued on its merits. Recorded as an open question rather than presented as
+settled: a session-setup stall is arguably a connect failure and could be
+retried like one.
 
 **Rationale:** Without this, a silent peer blocks forever while holding whatever
 pooled resource the operation runs on, and emits no signal — while the recovery

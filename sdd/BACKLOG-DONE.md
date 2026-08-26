@@ -170,7 +170,7 @@ if evidence changes; these are retired.
 ## Unreleased
 
 - [x] **BK-354 — SFTP has no way to bound a read that stalls on an open channel**
-  spec: SFTP-030, SFTP-005, SFTP-010 · effort: S · audience: user.api, user.api_docs
+  spec: SFTP-030, SFTP-005, SFTP-009, SFTP-010 · effort: S · audience: user.api, user.api_docs, user.site
   Reported as [issue #970](https://github.com/haalfi/remote-store/issues/970) by a
   consumer pulling vendor deliveries over a slow link, where a 214 MB file takes
   ~20 min and a 2 GiB file ~70 min — a 3x spread that makes elapsed time useless

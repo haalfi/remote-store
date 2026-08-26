@@ -18,12 +18,14 @@ link needs it.
 Three faults are covered, because they fail by different mechanisms and none
 implies the others:
 
-- **A silent peer mid-transfer** (server→client), driven through a TCP relay
-  that stops delivering on command once the handshake is done. The bytes really
-  stop arriving on an open channel; this is the fault, not a simulation of it.
-- **A stalled upload** (client→server), which reaches the bound through SSH
-  window exhaustion in ``Channel.sendall`` rather than through an empty receive
-  pipe, so it is not equivalent to the read case by inspection.
+- **A silent peer** (server→client), driven through a TCP relay that stops
+  delivering on command once the handshake is done. The bytes really stop
+  arriving on an open channel; this is the fault, not a simulation of it. Both
+  moments are covered: a stall armed before the call, which lands on the open,
+  and one armed after bytes are already consumed, which lands mid-transfer.
+- **A stalled upload** (client→server), where the request never reaches the
+  server so no reply is ever generated — a different fault from a dropped
+  reply, though both surface as a receive timeout.
 - **A peer that never completes the SFTP version exchange**, which happens
   *inside* the client construction that opens the channel. That window sits
   before any caller-visible operation and is re-entered on every reconnect, so
@@ -113,14 +115,19 @@ class _StallRelay:
     and discards instead of forwarding — while leaving every socket open. What
     differs is the fault that produces, and the two are not interchangeable:
 
-    - ``stall_download()`` silences server→client. The client waits on a channel
+    - ``stall_download()`` silences server→client. The server still receives and
+      still replies; the replies are discarded. The client waits on a channel
       that will never produce another byte: a silent peer, not a closed one, so
       the failure is a read timeout rather than EOF.
-    - ``stall_upload()`` silences client→server. The server never sees the data,
-      so it never sends the window adjustments that let the client keep writing;
-      the client's SSH window drains and ``Channel.sendall`` blocks. That is
-      window exhaustion, not an empty receive pipe, which is why the write half
-      of the bound needs its own test rather than being taken on symmetry.
+    - ``stall_upload()`` silences client→server. The server never sees the
+      request at all, so no reply is ever generated.
+
+    Both end in a receive timeout on the channel, which is measured rather than
+    assumed: paramiko's ``SFTPFile.write`` is not pipelined by default, so it
+    waits for each chunk's response before sending the next and the receive
+    bound fires before the SSH out-window can drain. An earlier version of this
+    docstring claimed the upload case reached ``Channel.sendall`` via window
+    exhaustion; it does not.
     """
 
     def __init__(self, target_port: int) -> None:
@@ -406,11 +413,18 @@ def test_version_exchange_unbounded_without_io_timeout(
 
 
 @pytest.mark.spec("SFTP-030")
-def test_stalled_peer_raises_backend_unavailable(stall_relay: _StallRelay) -> None:
-    """A peer that goes silent mid-transfer fails within the bound instead of hanging.
+def test_stalled_open_raises_backend_unavailable(stall_relay: _StallRelay) -> None:
+    """A peer that goes silent fails the next operation within the bound.
 
-    Without ``io_timeout`` this read blocks indefinitely; the assertion on
-    elapsed time is what distinguishes "raised" from "eventually gave up".
+    The stall is armed before the call, so what is bounded here is the first
+    round-trip the operation makes — the ``CMD_OPEN`` for the handle, not a
+    later transfer. Mid-transfer is a different moment and is covered by
+    ``test_streaming_read_raises_rather_than_truncating``, which consumes bytes
+    before stalling; naming the distinction matters because an earlier version
+    of this test claimed to cover mid-transfer and did not.
+
+    Without ``io_timeout`` this blocks indefinitely; the elapsed assertion is
+    what distinguishes "raised" from "eventually gave up".
     """
     io_timeout = 2.0
     backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
@@ -418,38 +432,67 @@ def test_stalled_peer_raises_backend_unavailable(stall_relay: _StallRelay) -> No
     payload = b"x" * (256 * 1024)
     backend.write(name, payload)
 
-    # Handshake, auth and channel open have all completed by now; only then
-    # does the peer go quiet, so what is bounded here is a read on an
-    # already-open channel.
     stall_relay.stall_download()
 
     start = time.monotonic()
     with pytest.raises(BackendUnavailable):
-        # read_bytes, not read: this must pull the payload over the wire, so
-        # the failure lands mid-transfer rather than on the open.
         backend.read_bytes(name)
     elapsed = time.monotonic() - start
 
     # Tied to the bound, not merely to the runner's patience: a band wide
     # enough to admit any bound would make the assertion vacuous, since the
-    # pytest.raises above already catches an outright hang. 3x leaves room for
-    # a loaded runner while still failing a bound armed at the wrong value, a
-    # TCP-level give-up, or a classification path that re-pays the timeout.
+    # pytest.raises above already catches an outright hang.
     assert elapsed < io_timeout * 3, f"read took {elapsed:.1f}s; expected ~{io_timeout}s"
 
 
 @pytest.mark.spec("SFTP-030")
+@pytest.mark.parametrize("op", ["read", "read_bytes", "delete"])
+def test_stall_costs_one_bound_not_several(stall_relay: _StallRelay, op: str) -> None:
+    """A stalled operation pays the bound once, not once per classification probe.
+
+    These three classify a failure by re-probing the server (``_raise_if_dir``,
+    ``_has_file_ancestor``). Each probe re-enters the same stalled channel while
+    the cached client is still set, so without a guard the caller waits a
+    multiple of the bound rather than the bound.
+
+    The band is deliberately tighter than the other elapsed assertions here: at
+    3x it would admit the doubling it exists to catch. ``read`` measured 2.0x
+    before the guard and 1.0x after (a 2 s bound, so 4.0 s → 2.0 s), so 1.75x
+    fails the regression while leaving ~1.5 s of slack on a loaded runner.
+    """
+    io_timeout = 2.0
+    backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
+    name = f"onebound_{uuid.uuid4().hex[:8]}.bin"
+    backend.write(name, b"x" * 4096)
+
+    stall_relay.stall_download()
+    start = time.monotonic()
+    with pytest.raises(BackendUnavailable):
+        getattr(backend, op)(name)
+    elapsed = time.monotonic() - start
+    assert elapsed < io_timeout * 1.75, (
+        f"{op} took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "
+        "a classification probe is re-entering the stalled channel"
+    )
+
+
+@pytest.mark.spec("SFTP-030")
 def test_stalled_upload_raises_backend_unavailable(stall_relay: _StallRelay) -> None:
-    """The bound covers writes, which reach it by a different mechanism than reads.
+    """A write against a peer that stops receiving fails within the bound.
 
-    A read stalls on an empty receive pipe; a write stalls because the server
-    never acknowledges data, so the SSH window drains and ``Channel.sendall``
-    blocks. Paramiko bounds each ``send`` inside ``sendall`` rather than the
-    call as a whole, so the two cases are not equivalent by inspection and the
-    "covers writes as well as reads" claim needs its own evidence.
+    This is a distinct fault from the read stalls above, though it is worth
+    being precise about *how*. Here the client's requests never reach the
+    server, so no reply is ever generated; in the download stalls the server
+    replies and the reply is discarded. Both surface as a receive timeout on
+    the channel, because paramiko's ``SFTPFile.write`` is not pipelined by
+    default and waits for each chunk's response before sending the next — so
+    the receive bound always fires before the SSH out-window drains.
 
-    The payload exceeds paramiko's default 2 MiB window so the send is forced
-    to block rather than fitting entirely into it.
+    An earlier version of this test asserted the failure came from window
+    exhaustion in ``Channel.sendall``. Measured, it does not: the write fails on
+    a blocked receive after ~1x the bound, with ``sendall`` never reached. The
+    claim is corrected here and in SFTP-030 rather than left as an unverified
+    mechanism.
     """
     io_timeout = 2.0
     backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
@@ -460,7 +503,7 @@ def test_stalled_upload_raises_backend_unavailable(stall_relay: _StallRelay) -> 
     with pytest.raises(BackendUnavailable):
         backend.write(f"upload_{uuid.uuid4().hex[:8]}.bin", b"w" * (8 * 1024 * 1024))
     elapsed = time.monotonic() - start
-    assert elapsed < io_timeout * 6, f"write took {elapsed:.1f}s; expected ~{io_timeout}s"
+    assert elapsed < io_timeout * 3, f"write took {elapsed:.1f}s; expected ~{io_timeout}s"
 
 
 @pytest.mark.spec("SFTP-030")

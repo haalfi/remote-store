@@ -16,9 +16,9 @@ expected_ripples:
   - CHANGELOG.md
   - docs-src/guides/backends/sftp.md
 # Counted from `git log --oneline origin/master..HEAD`: b5e3d22 implements and
-# does not count; the round-1 fix commit incorporates the 16-finding review
-# posted on PR #973 and is the one counted. Value is 1.
-review_rounds: 1
+# does not count; 66e2d2c incorporates the 16-finding round-1 review on PR #973,
+# and the round-2 fix commit incorporates its 6-finding follow-up. Value is 2.
+review_rounds: 2
 phases:
   - id: orient
     name: Orient on the report
@@ -149,6 +149,55 @@ phases:
           without the bound, so the unbounded default is asserted to still be
           blocked at 8s.
         outcome: ok
+  - id: fix2
+    name: Round 2 review
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_raise_if_dir"
+        read_type: reference
+        extract: >-
+          Round 1's guards were placed at the call sites, which round 2 showed
+          was the wrong altitude: read's is-dir check is eager, so it has no
+          prior exception to guard on, and _raise_if_dir swallowed the stat's
+          own socket.timeout as "cannot classify" — leaving read to re-enter the
+          dead channel and pay a second bound. Measured before/after with a
+          throwaway probe: read 4.00s -> 2.00s at a 2s bound, read_bytes and
+          delete already 2.00s. Fix moved into the helper (skip on a dead cause,
+          re-raise a dead stat) so eager and error-path callers are both covered.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_open_write, _promote"
+        read_type: reference
+        extract: >-
+          Same class, unswept in round 1 because the finding named only the read
+          paths: both re-probe through _raise_if_dir on failure, and _promote
+          would additionally feed a dead channel to the rename fallback's remove
+          + rename. Guarded.
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "stalled upload, stalled open"
+        read_type: verify
+        extract: >-
+          Two of my round-1 tests did not exercise the mechanism their docstrings
+          named. The upload test failed on a receive timeout, never reaching
+          Channel.sendall — I had asserted SSH window exhaustion without
+          measuring it, and a probe showed paramiko's non-pipelined SFTPFile.write
+          makes that route unreachable here. The mid-transfer claim on the other
+          test was wrong too: the stall was armed before the open, so it failed on
+          CMD_OPEN. Both docstrings and the SFTP-030 sentence corrected to what
+          was measured; the genuine mid-transfer case was already covered by the
+          streaming test.
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-009"
+        read_type: gate
+        extract: >-
+          Source of a false premise I inherited and amplified: it said _connect()
+          retries, but tenacity wraps only the ssh.connect() call inside it.
+          Harmless until this PR put a stall inside _connect and outside that
+          closure, at which point SFTP-030's retry-exclusion clause read as
+          saying the version-exchange stall is retried. Both clauses corrected.
+        outcome: misleading
   - id: docs
     name: Document the distinction
     steps:
