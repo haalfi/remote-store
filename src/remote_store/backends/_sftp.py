@@ -566,15 +566,19 @@ class SFTPBackend(Backend):
             channel *open*, not traffic on an opened channel.
         io_timeout: Seconds a single blocking read or write on the open SFTP
             channel may go without progress before it fails, or ``None``
-            (default) for no bound. Applied with ``Channel.settimeout()`` after
-            connect *and after every reconnect*, so a transparently re-established
-            connection stays bounded. This is silence between bytes, not a
-            deadline for the whole transfer: a large file over a slow link is
-            unaffected, while a peer that stops sending mid-transfer raises
-            ``BackendUnavailable`` instead of blocking forever. Must be
-            positive when set. The stall is reported, not retried: the
-            ``retry`` policy governs connecting only, so a partially consumed
-            stream is never silently restarted.
+            (default) for no bound. Applied with ``Channel.settimeout()`` on
+            every connect *and every reconnect*, and armed before the SFTP
+            session setup, so a peer that completes the SSH handshake and then
+            falls silent is bounded there too. This is silence between bytes,
+            not a deadline for the whole transfer: a large file over a slow
+            link is unaffected however long it takes, while a peer that stops
+            sending mid-transfer raises ``BackendUnavailable`` instead of
+            blocking forever. Must be positive when set; ``0`` is rejected
+            because paramiko reads it as non-blocking. A streamed ``read``
+            raises rather than returning short, so a truncated transfer is
+            never mistaken for a complete one. The stall is reported, not
+            retried: the ``retry`` policy governs connecting only, so a
+            partially consumed stream is never silently restarted.
         connect_kwargs: Extra kwargs passed to ``SSHClient.connect()``.
     """
 
@@ -789,6 +793,11 @@ class SFTPBackend(Backend):
                 code = getattr(exc, "errno", None)
                 if code == errno.ENOENT:
                     raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
+                if self._is_connection_dead(exc):
+                    # See ``read_bytes``: the ancestor walk below would re-enter
+                    # the channel this exception says is dead, re-paying
+                    # ``io_timeout`` on each probe.
+                    raise
                 if code is None and self._has_file_ancestor(sftp_path):
                     # ID-209 round-3: paramiko surfaces SSH_FX_FAILURE as
                     # ``OSError("...", errno=None)`` for a wide range of
@@ -843,6 +852,16 @@ class SFTPBackend(Backend):
                 code = getattr(exc, "errno", None)
                 if code == errno.ENOENT:
                     raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
+                if self._is_connection_dead(exc):
+                    # The classification below re-enters the channel this
+                    # exception says is unusable, and the cached client is still
+                    # set (``_map_exception`` clears it only once this raise
+                    # escapes), so each probe would pay the ``io_timeout`` bound
+                    # again — turning one bound into several for the caller.
+                    # Same reasoning as the ``connection_lost`` guard in
+                    # ``write_atomic`` / ``open_atomic``: classify no further,
+                    # let the drop be reported.
+                    raise
                 # BK-313: lazy is-dir classification — see ``read``.
                 self._raise_if_dir(sftp_path, path)
                 if code is None and self._has_file_ancestor(sftp_path):
@@ -1139,6 +1158,10 @@ class SFTPBackend(Backend):
                     if not missing_ok:
                         raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
                     return
+                if self._is_connection_dead(exc):
+                    # See ``read_bytes``: classifying past a dead channel re-enters
+                    # it and re-pays ``io_timeout`` on every probe.
+                    raise
                 # BK-313: lazy is-dir classification — see ``read``. Note this
                 # runs before ``missing_ok`` can swallow anything: a directory is
                 # a type mismatch, not a missing file.
@@ -1651,34 +1674,46 @@ class SFTPBackend(Backend):
                 ssh.close()
             raise
         self._ssh_client = ssh
-        self._sftp_client = ssh.open_sftp()
-        self._arm_io_timeout()
+        self._sftp_client = self._open_sftp_bounded(ssh)
         log.info("SFTP connection established.", extra={"op": "connect", "backend": "sftp"})
 
-    def _arm_io_timeout(self) -> None:
-        """Bound blocking I/O on the freshly opened SFTP channel.
+    def _open_sftp_bounded(self, ssh: Any) -> Any:
+        """Open the SFTP channel with ``io_timeout`` armed before any blocking read.
 
-        The four timeouts handed to ``ssh.connect()`` all expire during the
-        connect phase; ``channel_timeout`` included, which paramiko documents as
-        the wait for *opening* a channel. Traffic on an opened channel is
-        governed by ``Channel.timeout``, which paramiko initialises to ``None``.
-        Without this call a peer that completes the handshake and then stops
-        sending blocks forever, and ``_is_connection_dead`` — which already
-        matches ``TimeoutError``, and whose docstring already names the channel
-        timeout as its most realistic trigger — is never reached.
+        This inlines what ``ssh.open_sftp()`` does — ``open_session()``,
+        ``invoke_subsystem("sftp")``, then ``SFTPClient(chan)`` — for one reason:
+        to get a ``settimeout()`` in between. ``SFTPClient.__init__`` runs the
+        SFTP version exchange (``_send_version()``), which *blocks reading the
+        server's reply*, and ``Transport.open_session`` hands back a channel
+        whose ``Channel.timeout`` is still ``None``. Arming after
+        ``open_sftp()`` returns therefore leaves the version exchange itself
+        unbounded, and a peer that completes the SSH handshake and then falls
+        silent hangs there forever — the exact fault ``io_timeout`` exists to
+        bound, reached before the bound is set.
 
-        This runs on every ``_connect``, so a transparent reconnect re-arms the
-        bound on its new channel. That is the part a caller cannot do from
-        outside: a ``settimeout()`` applied to an unwrapped client is lost with
-        the channel it was set on, precisely when a recovered drop makes it
-        matter most.
+        That window is not a connect-phase edge case. Every reconnect re-runs
+        ``_connect``, so a flaky peer that drops and comes back half-alive would
+        park the caller indefinitely *with* ``io_timeout`` set, which is the
+        guarantee this option is bought for. The connect ``RetryPolicy`` cannot
+        cover it either: a hang raises nothing for tenacity to retry.
+
+        The four timeouts handed to ``ssh.connect()`` do not reach here. They
+        expire during the connect phase — ``channel_timeout`` included, which
+        paramiko documents as the wait for *opening* a channel, and which does
+        bound ``open_session`` below.
         """
-        if self._io_timeout is None:
-            return
-        channel = self._sftp_client.get_channel()
-        if channel is None:  # pragma: no cover — paramiko always attaches one here
-            return
-        channel.settimeout(self._io_timeout)
+        import paramiko
+
+        transport = ssh.get_transport()
+        chan = transport.open_session(timeout=self._timeout)
+        if chan is None:  # pragma: no cover — paramiko raises rather than returning None
+            raise BackendUnavailable("SSH transport refused an SFTP session channel", backend=self.name)
+        # Before invoke_subsystem, not just before SFTPClient: both wait on the
+        # already-open channel, so both belong inside the bound.
+        if self._io_timeout is not None:
+            chan.settimeout(self._io_timeout)
+        chan.invoke_subsystem("sftp")
+        return paramiko.SFTPClient(chan)
 
     def _create_ssh_client(self) -> Any:
         """Create and configure an SSHClient with host key policy."""

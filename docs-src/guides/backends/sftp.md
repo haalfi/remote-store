@@ -71,7 +71,7 @@ pkey = SFTPUtils.load_private_key(pem_string)
 | `host_keys_path` | `str` | `~/.ssh/known_hosts` | Path to known_hosts file |
 | `config` | `dict` | `None` | Config dict (may contain `known_host_keys`) |
 | `timeout` | `int` | `10` | Connect-phase timeout in seconds (connect, banner, auth, channel open) |
-| `io_timeout` | `float` | `None` | Seconds a blocking read or write on the open channel may stall before failing; `None` means no bound |
+| `io_timeout` | `float` | `None` | Seconds a blocking read or write on the open channel may stall before failing. `None` (the default) means no bound; `0` and negatives are rejected |
 | `connect_kwargs` | `dict` | `None` | Extra kwargs passed to `SSHClient.connect()` |
 
 ### Bounding a stalled transfer
@@ -84,27 +84,46 @@ the transfer was running on, with no error to act on.
 `io_timeout` bounds the silence *between* bytes rather than the transfer as a
 whole, which is what makes it usable on slow links: a multi-gigabyte fetch that
 takes an hour is unaffected, while a flow that goes quiet for longer than the
-bound raises [`BackendUnavailable`][remote_store.BackendUnavailable].
+bound raises [`BackendUnavailable`](../../reference/api/errors.md).
 
 ```python
-store = Store.from_backend(
-    SFTPBackend(host="sftp.example.com", username="svc", io_timeout=120)
+from remote_store.backends import SFTPBackend
+
+backend = SFTPBackend(
+    host="files.example.com",
+    username="deploy",
+    io_timeout=120,
+)
+```
+
+It is an ordinary option, so it is equally settable from a declarative config:
+
+```python
+BackendConfig(
+    type="sftp",
+    options={"host": "files.example.com", "username": "deploy", "io_timeout": 120},
 )
 ```
 
 The bound is re-applied on every reconnect, including the transparent ones the
-backend performs after a dropped connection. Setting it through the
+backend performs after a dropped connection, and it covers the SFTP session
+setup as well as later transfers. Setting it through the
 [escape hatch](#escape-hatch) instead does not survive those reconnects, because
 each one opens a fresh channel.
 
 A stall is reported, not retried: the connect-phase `RetryPolicy` does not cover
 it, so a partially consumed stream is never silently restarted underneath you.
-The backend does drop the dead client, so the next operation reconnects.
+A streamed read raises rather than returning short, so a truncated transfer is
+never mistaken for a complete one — discard the handle and start again, since
+the bytes already delivered are a valid prefix but the handle is dead. The
+backend drops the dead client, so the next operation reconnects.
 
 !!! tip "Choosing a value"
     Size it against the longest legitimate pause your server can produce — an
     antivirus or dedup appliance may go quiet for a while on `open()` of a large
-    file — not against total transfer time.
+    file — not against total transfer time. `0` does not mean "no bound": it is
+    rejected at construction, because paramiko reads it as non-blocking, which
+    would fail every operation instantly. Use `None` for no bound.
 
 ## Preflight host-key discovery
 

@@ -10,14 +10,15 @@ source_items:
 audience:
   - user.api
   - user.api_docs
+  - user.site
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
   - docs-src/guides/backends/sftp.md
-# No review rounds yet — this trace ships with the first push of the branch.
-# Counted from `git log --oneline origin/master..HEAD`, which holds a single
-# implementation commit and no review-driven follow-up.
-review_rounds: 0
+# Counted from `git log --oneline origin/master..HEAD`: b5e3d22 implements and
+# does not count; the round-1 fix commit incorporates the 16-finding review
+# posted on PR #973 and is the one counted. Value is 1.
+review_rounds: 1
 phases:
   - id: orient
     name: Orient on the report
@@ -86,23 +87,67 @@ phases:
         section: "(full)"
         read_type: verify
         extract: >-
-          Ran before implementing: 4 failed on the missing kwarg, 1 passed (the
-          default-None guard, vacuously true). A relay that goes silent
-          server->client after the handshake is what makes the stall real rather
-          than mocked. First green run then failed on a sixth test, which was my
-          own bug, not the fix's — both stall tests wrote the same filename into
-          a session-scoped server root; fixed with per-test uuid names.
+          Ran before implementing, via `hatch run pytest
+          tests/backends/sftp/test_io_timeout.py`: 7 failed on the missing
+          kwarg, 1 passed (the default-None guard, vacuously true). I first
+          wrote this as "4 failed", the count of failing *functions*, against a
+          file whose total I quoted elsewhere as tests — three tests looked
+          unaccounted for. Naming the command is what settles the unit; review
+          caught it. A relay that goes silent server->client after the handshake
+          is what makes the stall real rather than mocked. First green run then
+          failed on one more test, which was my own bug, not the fix's — both
+          stall tests wrote the same filename into a session-scoped server root;
+          fixed with per-test uuid names.
         outcome: ok
   - id: implement
     name: Arm the channel
     steps:
       - file: src/remote_store/backends/_sftp.py
-        section: "_connect, _arm_io_timeout, __init__"
+        section: "_connect, _open_sftp_bounded, __init__"
         read_type: reference
         extract: >-
-          Apply settimeout() after open_sftp() inside _connect so every
-          reconnect re-arms it; reject non-positive values, since paramiko reads
-          0 as non-blocking
+          Apply settimeout() inside _connect so every reconnect re-arms it;
+          reject non-positive values, since paramiko reads 0 as non-blocking.
+          Round 1 corrected where: I first armed after ssh.open_sftp() returned,
+          which leaves the SFTP version exchange inside SFTPClient.__init__
+          unbounded — the exact hang the item exists to close, reached before
+          the bound is set, and re-entered on every reconnect. _connect now
+          inlines open_session / settimeout / invoke_subsystem / SFTPClient to
+          get the arm in before the first blocking read.
+        outcome: ok
+  - id: fix
+    name: Round 1 review
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_open_sftp_bounded"
+        read_type: verify
+        extract: >-
+          Reproduced the reviewer's headline finding independently rather than
+          taking it: paramiko 5.0.0 SFTPClient.__init__ calls _send_version(),
+          and from_transport never sets a timeout on the new channel. Confirmed
+          the fix is load-bearing by restoring the late-arming order, at which
+          point `timeout 120 pytest -k version_exchange_is_bounded` exits 124
+          (killed while hung) instead of passing.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "read, read_bytes, delete error paths"
+        read_type: reference
+        extract: >-
+          Review found the bound was multiplied for callers: classification
+          re-probes (_raise_if_dir, _has_file_ancestor) re-enter the stalled
+          channel while the cached client is still set, each paying io_timeout
+          again. Guarded all three with the _is_connection_dead short-circuit
+          write_atomic/open_atomic already used — the finding named read_bytes
+          and delete, and `read` shares the shape, so it was swept too.
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "A green test can be vacuous — No positive control"
+        read_type: gate
+        extract: >-
+          Drove the shape of the two new version-exchange tests: a bounded case
+          is only meaningful beside a control proving the same peer hangs
+          without the bound, so the unbounded default is asserted to still be
+          blocked at 8s.
         outcome: ok
   - id: docs
     name: Document the distinction
@@ -113,8 +158,10 @@ phases:
         extract: >-
           The options table described `timeout` as "SSH connection timeout"
           without saying it stops at connect; corrected, and a section added on
-          why the bound is on silence between bytes rather than transfer time
-        outcome: ok
+          why the bound is on silence between bytes rather than transfer time.
+          Tagged misleading, not unclear: the row stated something that proved
+          wrong, and that wrong meaning is the whole premise of this item.
+        outcome: misleading
   - id: verify
     name: Ripple check
     steps:
