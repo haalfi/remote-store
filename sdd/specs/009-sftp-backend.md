@@ -442,9 +442,10 @@ further bound. `_ErrorMappingStream.close` closes the underlying paramiko file
 under `contextlib.suppress`, and that `CMD_CLOSE` is synchronous, so exiting
 the `with` block of a stream that has already failed may block once more before
 being discarded. It is silent rather than surfaced, since the close is
-suppressed. Left as-is here because the fix belongs to the shared stream
-wrapper rather than this backend; recorded so the guarantee above is not read
-wider than it holds.
+suppressed. The fix belongs to the shared stream wrapper rather than to this
+backend — `_ErrorMappingStream` serves the S3, Azure and HTTP backends too — so
+it is tracked as BK-355 rather than fixed here. Stated so the guarantee above
+is not read wider than it holds; when BK-355 lands, this exception goes.
 
 For a **streamed** read (`read`), a stall after the caller has consumed bytes
 raises rather than returning short, so a truncated stream is never

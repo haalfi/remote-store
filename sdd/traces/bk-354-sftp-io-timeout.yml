@@ -11,6 +11,8 @@ audience:
   - user.api
   - user.api_docs
   - user.site
+discovery_followups:
+  - BK-355
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
@@ -198,6 +200,18 @@ phases:
           closure, at which point SFTP-030's retry-exclusion clause read as
           saying the version-exchange stall is retried. Both clauses corrected.
         outcome: misleading
+      - file: src/remote_store/_stream.py
+        section: "_ErrorMappingStream.close"
+        read_type: reference
+        extract: >-
+          Third multiplier the review found, and the one not fixed here: the
+          suppressed inner close re-enters a connection the failure already
+          condemned, so releasing a stalled handle pays a further silent bound.
+          Shared by the S3, Azure and HTTP backends, so the fix surface is one
+          wrapper and the regression surface is every backend using it — filed
+          as BK-355 and named as a stated exception in SFTP-030 rather than
+          widened into this PR.
+        outcome: ok
   - id: docs
     name: Document the distinction
     steps:
