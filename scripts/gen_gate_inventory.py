@@ -17,9 +17,9 @@ What a mechanism declares, and what is derived
 Authority is answered **per column, not per table** (``sdd/DRIFT-RULES.md``
 Rule 4). No cell of the rendered document is authored in the rendered document:
 
-* *Mechanism path*, *Runs in*, *Enforcement* — derived here from
-  ``pyproject.toml``'s script table and ``.github/workflows/*.yml``. A
-  declaration cannot lie about where it runs or whether it gates.
+* *Mechanism path*, *Runs in*, *Enforcement* — derived here from the wiring
+  sources ``_WIRING_SOURCES`` names. A declaration cannot lie about where it
+  runs or whether it gates.
 * *Kind*, the subject field its kind takes (*Compares* / *Rule* / *Surfaces*)
   and *Domain* — read from the mechanism's own module docstring, which is next
   to the code whose change invalidates them (Rule 8: the derivation path is
@@ -30,7 +30,7 @@ A declaration is a line reading ``Drift-gate::`` on its own, followed by an
 indented field list::
 
     kind:       pair
-    compares:   docs-src/reference/FEATURES.md <-> graph.json
+    compares:   FEATURES.md <-> graph.json
     domain:     explanation <-> realization
 
 The header line is the whole trigger, so prose *about* the format must never
@@ -53,9 +53,8 @@ Two shapes, and a file uses one or the other: with ``entrypoint:`` on every
 block, the argv the wiring passes selects among them (``drift_check.py``, whose
 ``diff`` and ``render-docs`` compare different things); with no ``entrypoint:``
 anywhere, every block applies to every invocation (``check_links.py``, which
-enforces link resolution, the anchor rules and the context7 manifest caps in one
-pass). Mixing the two is rejected — an invocation would match both forms, and
-nothing in the file says which was meant.
+runs four declared mechanisms in one pass). Mixing the two is rejected — an
+invocation would match both forms, and nothing in the file says which was meant.
 
 The claim space (Rule 3)
 ------------------------
@@ -63,13 +62,18 @@ Derived from what the repo actually runs, never from a glob over
 ``scripts/check_*.py`` — that glob under-reaches, and
 ``scripts/docs/check_links.py`` is the standing proof.
 
-* ``pyproject.toml`` ``[tool.hatch.envs.default.scripts]``, with composed
-  targets expanded transitively (``docs-gate`` -> ``check-links`` ->
-  ``python scripts/docs/check_links.py``).
-* ``.github/workflows/*.yml`` ``run:`` steps, for both ``hatch run <target>``
-  and direct ``python scripts/<name>.py`` invocations. Four gates are wired a
-  second time in ``ci.yml``'s ``verify-formal`` job so a ``sdd/``-only change
-  still runs them; both homes show in the output.
+**The sources are named once, in ``_WIRING_SOURCES``**, which ``collect`` walks
+and ``render`` prints into the generated file's preamble. This paragraph
+deliberately does not list them: a prose list beside the code is the parallel
+artifact Rule 3 forbids, and it drifted in three consecutive review rounds --
+once for each source added -- before it was replaced by the constant.
+
+What each source contributes: the hatch script table expands composed targets
+transitively (``docs-gate`` -> ``check-links`` -> the script); workflow ``run:``
+steps are read for both ``hatch run <target>`` and direct ``python
+scripts/<name>.py`` invocations, so the gates ``ci.yml``'s ``verify-formal`` job
+wires a second time show both homes; pre-commit hook ``entry:`` commands are
+read the same way as a workflow step.
 
 A wired script whose basename matches ``check_*``, ``gen_*``, ``drift_*`` or
 ``report_*`` and which carries no declaration block is a **failure**, not a
@@ -89,7 +93,7 @@ Bounds -- what this gate does not catch (``sdd/DRIFT-RULES.md`` Rule 7):
   repo's gates*", and an unwired script watches nothing.
 * **The invocation *shape* is a third way out, distinct from name and wiring.**
   Only a ``scripts/...py`` path used as a command path is read as wiring, so a
-  gate a gate reaches by *importing* it, or through a plugin manifest, is
+  mechanism a gate reaches by *importing* it, or through a plugin manifest, is
   invisible however it is named. Two live instances, both conventionally named
   and both genuinely reached: ``drift_smoke_map.py``, imported by a ``python
   -c`` step in ``drift-guard.yml``, and ``gen_pages.py``, listed under
@@ -114,6 +118,18 @@ Bounds -- what this gate does not catch (``sdd/DRIFT-RULES.md`` Rule 7):
 * *Runs in* lists a generator's bare write-mode alias (``gen-features``)
   alongside its ``--check`` gate. Both run the same comparison and both are real
   homes, so both are reported; only the gate bundles decide *Enforcement*.
+* *Enforcement* says whether a home **is a gate**, not whether it **runs on a
+  given diff**. Every gate home in this repo is path-filtered -- ``lint`` and
+  ``docs-gate`` behind ``CODE_PAT`` / ``DOCS_PAT``, ``verify-formal`` and
+  ``verify-tla`` behind their own -- so a row reading ``gating`` is not a claim
+  that the gate runs on the change that invalidates it. That reachability
+  question is open item BK-333's, not this inventory's, and flattening it here
+  is the thing to know before trusting the column.
+* ``_VALID_DOMAINS`` is a hand-maintained copy of research § 4a's six domains,
+  which is the curated parallel list Rule 3 warns about, one layer down. It is
+  kept because the alternative is parsing a prose research doc for a
+  vocabulary, and because § 4a is a point-in-time snapshot that does not move;
+  if it ever does, this constant will not notice.
 * Declaration text is rendered into a Markdown table with only ``|`` escaped, so
   a declaration spelling out Markdown link syntax emits a link the docs gate
   then reports as broken. That is a caught failure rather than a silent one --
@@ -137,11 +153,13 @@ Bounds -- what this gate does not catch (``sdd/DRIFT-RULES.md`` Rule 7):
   judgement about what the subcommand does, and a gate that guessed it would fail
   on correct code.
 * Nothing checks that a script's blocks are *all* of its mechanisms. Review found
-  ``check_links.py`` declaring one of the **five** its own docstring enumerates,
-  and the fix was to add the rest by hand -- twice, because the first attempt
-  added two and left ID-180's fragment resolution undeclared until a later round
-  counted them against that docstring. A script that runs five and declares four
-  renders four truthful rows and no signal at all.
+  ``check_links.py`` declaring one of the five rules its own docstring
+  enumerates, and the fix took two rounds: the first added two blocks, and
+  ID-180's fragment resolution stayed undeclared until a later round counted the
+  blocks against that docstring. It now declares four, which covers all five
+  rules because one block spans the three that resolve a link against a file. A
+  script that runs a mechanism it does not declare renders only truthful rows,
+  and no signal at all that one is missing.
 
 This gate inventories itself, which is the point: § 4b's finding was that the
 checking layer had no enumeration of its own coverage, and an inventory that
@@ -173,16 +191,25 @@ except ImportError:  # pragma: no cover - Python 3.10 fallback
     import tomli as tomllib  # type: ignore[no-redef]
 
 ROOT = Path(__file__).resolve().parent.parent
-PYPROJECT = ROOT / "pyproject.toml"
-WORKFLOWS = ROOT / ".github" / "workflows"
-PRE_COMMIT = ROOT / ".pre-commit-config.yaml"
 OUTPUT = ROOT / "sdd" / "GATE-INVENTORY.md"
 
-# The one *gate* home not derivable from CI: `hatch run all` is the pre-commit
-# gate named in CLAUDE.md § Dev commands. Every other gate home is discovered
-# from a workflow's `hatch run <target>` step. A target reached by neither is
-# still reported, named by itself and classified advisory -- see `collect`.
+# The wiring this inventory is derived from, named once. `collect` reads exactly
+# these and `render` prints them into the generated file, so the statement of
+# the claim space is produced by the code rather than restated beside it. A
+# prose list here drifted in three consecutive review rounds, once per source
+# added; a test asserts each entry is genuinely read.
+_WIRING_SOURCES: tuple[str, ...] = (
+    "pyproject.toml",
+    ".github/workflows/",
+    ".pre-commit-config.yaml",
+)
+
+# Gate homes not derivable from ci.yml's `hatch run` steps: `hatch run all` is
+# the local pre-commit gate named in CLAUDE.md § Dev commands, and a
+# `.pre-commit-config.yaml` hook blocks the commit, so both enforce. A target
+# reached by neither is still reported, named by itself and classified advisory.
 LOCAL_GATE_TARGET = "all"
+PRE_COMMIT_HOME = "pre-commit"
 
 # Basenames that must carry a declaration block once wired. The backstop, not
 # the claim space -- see the module docstring's bounds.
@@ -335,12 +362,17 @@ def parse_declarations(text: str, path: str) -> list[Declaration]:
     declarations: list[Declaration] = []
     for body in _block_bodies(_module_docstring(text), path):
         fields: dict[str, str] = {}
+        field_indent = len(body[0]) - len(body[0].lstrip())
         for line in body:
             field = _FIELD_RE.match(line.strip())
             if field is None:
-                if not fields:
+                # A continuation is indented deeper than the field lines. Prose
+                # at field depth is not one: without this test a paragraph
+                # following the block folds into the last field's value, and on
+                # a field order ending in `compares:` that renders a
+                # truthful-looking wrong row rather than failing.
+                if not fields or len(line) - len(line.lstrip()) <= field_indent:
                     raise DeclarationError(f"{path}: Drift-gate block line is not `key: value`: {line.strip()!r}")
-                # Continuation of the previous field.
                 key = next(reversed(fields))
                 fields[key] = f"{fields[key]} {line.strip()}"
                 continue
@@ -447,7 +479,13 @@ def _resolve(target: str, table: dict[str, list[str]], seen: frozenset[str]) -> 
 
 
 def _pre_commit_entries(config: Path) -> list[str]:
-    """Return every local hook's ``entry:`` command in *config*."""
+    """Return every hook's ``entry:`` command in *config*, local or not.
+
+    A remote repo's hook can carry an ``entry:`` override that runs a repo
+    script, so the filter is on having a string ``entry``, not on ``repo:
+    local``. Entries that are not commands (``language: pygrep`` patterns)
+    contribute no invocation and drop out downstream.
+    """
     if not config.exists():
         return []
     document = yaml.safe_load(config.read_text(encoding="utf-8")) or {}
@@ -480,10 +518,10 @@ def _matching(declarations: list[Declaration], argv: str) -> list[Declaration]:
     """The declarations *argv* runs.
 
     Entrypoint-less blocks all apply to every invocation, because one command
-    can drive several mechanisms: ``check_links.py`` enforces link resolution,
-    the context7 manifest caps and the anchor rules in a single pass, and one
-    block per script would leave two of the three undeclared. Where blocks do
-    carry entrypoints, argv selects among them (``drift_check.py``).
+    can drive several mechanisms: ``check_links.py`` declares four and runs them
+    in a single pass, so one block per script would leave three undeclared.
+    Where blocks do carry entrypoints, argv selects among them
+    (``drift_check.py``).
     """
     if any(d.entrypoint for d in declarations):
         # Whole-token match, not a prefix: with `startswith`, an entrypoint
@@ -509,7 +547,7 @@ def collect(root: Path = ROOT) -> tuple[list[Mechanism], list[str]]:
             continue
         for _job, body in _run_steps(workflow):
             ci_targets.update(_HATCH_RUN_RE.findall(body))
-    gate_homes = frozenset(ci_targets | {LOCAL_GATE_TARGET})
+    gate_homes = frozenset(ci_targets | {LOCAL_GATE_TARGET, PRE_COMMIT_HOME})
 
     # script path → argv → set of homes
     wiring: dict[str, dict[str, set[str]]] = {}
@@ -536,24 +574,29 @@ def collect(root: Path = ROOT) -> tuple[list[Mechanism], list[str]]:
     # directions, which is what the backstop exists to prevent.
     for hook in _pre_commit_entries(root / ".pre-commit-config.yaml"):
         for path, argv in _invocations(hook):
-            record(path, argv, "pre-commit")
+            record(path, argv, PRE_COMMIT_HOME)
 
-    # A hatch target that no gate bundle and no workflow reaches is advisory;
-    # the mechanism still belongs in the inventory, named by its own target.
-    # Keyed per (path, argv), not per path: a script whose other entrypoint is
-    # gated elsewhere would otherwise lose this one's row entirely.
+    # Every remaining hatch target that reaches a mechanism is a home too, and
+    # is recorded unconditionally. Suppressing a target because a gate already
+    # reached the same (path, argv) dropped real standalone aliases --
+    # `gen-api-check`, `check-test-placement` and six more -- and made the
+    # column a function of this file's key order.
     for target in table:
         if target in ci_targets or target == LOCAL_GATE_TARGET:
             continue
         for path, argv in _resolve(target, table, frozenset()):
-            if argv not in wiring.get(path, {}):
-                record(path, argv, target)
+            record(path, argv, target)
 
     mechanisms: list[Mechanism] = []
     problems: list[str] = []
     for path in sorted(wiring):
         source = root / path
         if not source.exists():
+            # A wired path with no file is a misconfiguration, not a mechanism
+            # to skip: `unknown is a failure` applies here as much as to a
+            # missing block. Reachable only through a genuine typo now that the
+            # invocation pattern is anchored to a path boundary.
+            problems.append(f"{path}: wired but no such file exists")
             continue
         declarations = parse_declarations(source.read_text(encoding="utf-8"), path)
         if not declarations:
@@ -646,9 +689,10 @@ def render(mechanisms: list[Mechanism]) -> str:
         "Which artifact pairs this repo checks, which single-artifact rules it",
         "asserts, and what its reports surface. *Kind*, the subject column and",
         "*Domain* come from each mechanism's `Drift-gate::` docstring block; *Runs",
-        "in* and *Enforcement* are derived from `pyproject.toml` and",
-        "`.github/workflows/`, so no column is maintained here. The generator's",
-        "module docstring states what this inventory does not catch.",
+        "in* and *Enforcement* are derived from " + ", ".join(f"`{source}`" for source in _WIRING_SOURCES) + ",",
+        "so no column is maintained here. The generator's module docstring states",
+        "what this inventory does not catch — including what *Enforcement* does",
+        "not mean.",
         "",
         f"## Pair gates ({len(pairs)})",
     ]
@@ -658,8 +702,10 @@ def render(mechanisms: list[Mechanism]) -> str:
         "",
         f"## Rule checks, no pair ({len(rules)})",
         "",
-        "Single-artifact checks. They guard no pair, so a derivation over compared",
-        "artifacts alone would yield no row for them at all.",
+        "Checks whose subject is a rule rather than one artifact pair — either",
+        "because they guard a single artifact, or because they bundle several",
+        "rules under one gate. A derivation over compared artifacts alone would",
+        "yield no row for them at all.",
     ]
     out += _rows(rules, "Rule asserted")
 

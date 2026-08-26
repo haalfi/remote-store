@@ -203,6 +203,21 @@ class TestParseDeclarations:
         assert [d.entrypoint for d in declarations] == ["diff", "render-docs"]
 
     @pytest.mark.spec("ID-245")
+    def test_prose_after_a_block_is_not_folded_into_the_last_field(self) -> None:
+        """At field depth it is prose, not a continuation; folding it renders a wrong row."""
+        source = _module("""
+    Drift-gate::
+
+        kind:       pair
+        compares:   a.md <-> b.json
+        domain:     process
+
+        And then some prose, indented to field depth rather than deeper.
+""")
+        with pytest.raises(_mod.DeclarationError, match="not `key: value`"):
+            _mod.parse_declarations(source, "s.py")
+
+    @pytest.mark.spec("ID-245")
     def test_header_with_no_body_is_rejected(self) -> None:
         """The natural typo would otherwise drop silently, or blame a file whose block is present."""
         source = '"""Summary.\n\nDrift-gate::\n\nBack at column zero.\n"""\n'
@@ -328,6 +343,7 @@ def _tree(
     pre_commit: str | None = None,
 ) -> Path:
     """Build a minimal repo: a hatch script table, workflows, and scripts/."""
+    tmp_path.mkdir(parents=True, exist_ok=True)
     (tmp_path / "scripts").mkdir(exist_ok=True)
     for name, body in scripts.items():
         (tmp_path / "scripts" / name).write_text(body, encoding="utf-8")
@@ -369,6 +385,29 @@ class TestBackstop:
         root = _tree(tmp_path, dict.fromkeys(names, '"""Summary."""\n'))
         _mechanisms, problems = _mod.collect(root)
         assert sorted(p.split(":")[0] for p in problems) == sorted(f"scripts/{n}" for n in names)
+
+    @pytest.mark.spec("ID-245")
+    def test_a_standalone_alias_is_reported_beside_the_gate_that_shares_its_command(self, tmp_path: Path) -> None:
+        """Suppressing a duplicate (path, argv) dropped eight real hatch homes."""
+        root = _tree(tmp_path, {"check_x.py": _module(PAIR_BLOCK)})
+        (root / "pyproject.toml").write_text(
+            "[tool.hatch.envs.default.scripts]\n"
+            'lint = ["python scripts/check_x.py"]\n'
+            'all = ["lint"]\n'
+            'check-x = ["python scripts/check_x.py"]\n',
+            encoding="utf-8",
+        )
+        (mechanism,), problems = _mod.collect(root)
+        assert problems == []
+        assert mechanism.homes == ("all", "check-x", "lint")
+
+    @pytest.mark.spec("ID-245")
+    def test_a_wired_path_with_no_file_is_a_problem(self, tmp_path: Path) -> None:
+        """`unknown is a failure` covers a typo'd path as much as a missing block."""
+        root = _tree(tmp_path, {"check_x.py": _module(PAIR_BLOCK)}, lint=["python scripts/check_typo.py"])
+        mechanisms, problems = _mod.collect(root)
+        assert mechanisms == []
+        assert problems == ["scripts/check_typo.py: wired but no such file exists"]
 
     @pytest.mark.spec("ID-245")
     def test_a_declared_mechanism_collects_with_its_homes(self, tmp_path: Path) -> None:
@@ -415,6 +454,47 @@ class TestWiringHomes:
         (mechanism,), problems = _mod.collect(root)
         assert problems == []
         assert mechanism.homes == ("pre-commit",)
+        assert mechanism.enforcement == "gating", "a pre-commit hook blocks the commit, so it enforces"
+
+    @pytest.mark.spec("ID-245")
+    def test_every_declared_wiring_source_is_actually_read(self, tmp_path: Path) -> None:
+        """`_WIRING_SOURCES` is printed into the generated file as the claim space.
+
+        A source named there but not read would be a false statement of coverage in
+        the one place a reader is pointed at, which is what the constant exists to
+        prevent. Each is exercised as the *only* wiring for a mechanism.
+        """
+        block = _module(PAIR_BLOCK)
+        reached: dict[str, tuple[str, ...]] = {}
+
+        for source, tree in {
+            "pyproject.toml": lambda p: _tree(p, {"check_x.py": block}, workflows={"ci.yml": "jobs: {}\n"}),
+            ".github/workflows/": lambda p: _tree(
+                p,
+                {"check_x.py": block},
+                lint=[],
+                workflows={
+                    "ci.yml": "jobs: {}\n",
+                    "g.yml": "jobs:\n  j:\n    steps:\n      - run: python scripts/check_x.py\n",
+                },
+            ),
+            ".pre-commit-config.yaml": lambda p: _tree(
+                p,
+                {"check_x.py": block},
+                lint=[],
+                workflows={"ci.yml": "jobs: {}\n"},
+                pre_commit=(
+                    "repos:\n  - repo: local\n    hooks:\n      - id: x\n        entry: python scripts/check_x.py\n"
+                ),
+            ),
+        }.items():
+            root = tree(tmp_path / source.replace("/", "_").replace(".", "_"))
+            (mechanism,), problems = _mod.collect(root)
+            assert problems == [], source
+            reached[source] = mechanism.homes
+
+        assert set(reached) == set(_mod._WIRING_SOURCES)
+        assert all(homes for homes in reached.values())
 
 
 class TestCallIsolation:

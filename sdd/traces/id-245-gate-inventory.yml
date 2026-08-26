@@ -11,11 +11,12 @@ source_items:
 audience:
   - contributor.tooling
   - contributor.process
-# Counted from `git log --oneline origin/master..HEAD`: three commits, of which
-# 1a49812 and 3118fe4 exist solely because review findings were incorporated;
-# ed47c31 is the initial implementation. A fourth review round's fixes land in
-# the commit following 3118fe4.
-review_rounds: 3
+# Named rather than counted, per the schema's review_rounds clause. The four
+# review-driven commits are 1a49812 (round 1), 3118fe4 (round 2), d2ef5b5
+# (round 3) and the commit carrying this line (round 4); ed47c31 is the initial
+# implementation and is not one. Re-derive with
+# `git log --oneline origin/master..HEAD`, which returns those five.
+review_rounds: 4
 expected_ripples:
   # Anticipated by the ripple-check: DRIFT-RULES by the "new or changed
   # cross-artifact check" row, BACKLOG by "backlog item touched".
@@ -136,8 +137,9 @@ phases:
           by dropping the header line from the example, which is still what stops
           the format documentation declaring a mechanism. Also made two
           entrypoint-less blocks a hard error — a rule review round 2 then
-          reversed, because check_links.py legitimately needs three of them; the
-          error now fires only on a file mixing the two forms.
+          reversed, because check_links.py legitimately needs several of them
+          (four, as round 4 left it); the error now fires only on a file mixing
+          the two forms.
         outcome: ok
       - file: sdd/research/research-inconsistency-detection-multi-artifact.md
         section: "4b"
@@ -152,7 +154,7 @@ phases:
         outcome: misleading
 
   - id: review
-    name: "Three review rounds"
+    name: "Four review rounds"
     steps:
       - file: scripts/gen_gate_inventory.py
         section: "_SCRIPT_INVOCATION_RE, _GATE_HOMES"
@@ -218,4 +220,38 @@ phases:
           hatch — but a gate wired only as a hook would have been invisible to both
           the inventory and the backstop. Added to the claim space rather than
           stated as a bound.
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "setup (CODE_PAT)"
+        read_type: verify
+        extract: >-
+          Round 4 found the cost of the previous line: adding
+          .pre-commit-config.yaml to the claim space made it an input that
+          neither CODE_PAT nor DOCS_PAT matched, so editing a hook could change
+          the generated file while running neither gate. Adding an input to a
+          derivation is a CI path-filter ripple, and no ripple-check row says so
+          — the closest, BK-333, is about gate reachability generally.
+        outcome: ok
+      - file: scripts/gen_gate_inventory.py
+        section: "collect (advisory sweep)"
+        read_type: verify
+        extract: >-
+          Round 4 also found that the round-3 re-key silently dropped eight real
+          standalone hatch homes — gen-api-check, check-test-placement and six
+          more — whenever their command duplicated one a gate already reached,
+          and that the bound written that round to justify the behaviour
+          ("both are real homes, so both are reported") was true only by
+          accident. Homes are now recorded unconditionally.
+        outcome: ok
+      - file: scripts/gen_gate_inventory.py
+        section: "module docstring, claim space"
+        read_type: verify
+        extract: >-
+          The recurring site, and the reason this round stopped patching it: the
+          docstring hand-enumerated the wiring sources, and that enumeration was
+          falsified once per source added, in three consecutive rounds. Replaced
+          by _WIRING_SOURCES, which collect walks and render prints into the
+          generated file, so the statement of the claim space is produced by the
+          code rather than restated beside it. This is the item's own thesis
+          applied to its own deliverable.
         outcome: ok

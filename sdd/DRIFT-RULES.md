@@ -74,10 +74,12 @@ touch.
    parallel artifact Rule 3 forbids, one layer up.
    **What enforcement reaches, stated because this rule is the one that asks for
    bounds:** wiring a script named `check_*`, `gen_*`, `drift_*` or `report_*`
-   without a block fails that gate. A mechanism named outside those prefixes is
-   not caught — it passes silently and never reaches the inventory. So the
-   obligation is on the author, and the gate is a backstop for the conventional
-   case, not a guarantee of coverage.
+   as a command without a block fails that gate. Two things pass silently and
+   never reach the inventory: a mechanism named outside those prefixes, and one
+   a gate reaches by *importing* it or through a plugin manifest rather than as
+   a command path, whatever its name. So the obligation is on the author, and
+   the gate is a backstop for the conventional case, not a guarantee of
+   coverage; the generator's docstring carries the live instances of both.
 
 8. <a id="independence"></a>**Verify independence of derivation path; never assume
    it.** [review-enforced]
