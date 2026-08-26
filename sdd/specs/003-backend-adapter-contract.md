@@ -136,6 +136,26 @@ the bare prefix back as a zero-length object and *succeeds*. Root-ness is
 decidable from the string with no round trip, so neither outcome has to be
 risked to learn it.
 
+**The MAY above is narrower than "the root is an addressable node", and BUG-247
+is why.** Reading the verdict off the SDK is sound only while the node is
+*there*. A filesystem directory — the first example this clause offers — can be
+removed underneath a live backend, and then the OS answers ENOENT rather than
+`IsADirectoryError`: the verdict is not late, it is **wrong**, and every answer
+in the table above flips. `LocalBackend` took the MAY, satisfied this clause for
+years by observation, and breached it the moment its root was deleted. So the
+MAY holds for a node whose absence the backend has already ruled out, and a
+backend whose root can vanish under it decides root-ness from the key like any
+flat namespace. `SFTPBackend` was already there for the neighbouring reason: its
+`base_path` is created lazily, so the node is absent on an untouched store.
+
+**One operation must still observe the root**, or the definitional answers
+become unfalsifiable. If every probe answers from the key, nothing reports a
+root that exists but is the wrong *type* — a regular file where the store root
+belongs — and the store reports itself healthy while holding nothing. That
+observation belongs in the health probe, which is off BE-021's roster and free
+to make it: `LocalBackend.check_health` tests `is_dir()`, not mere existence,
+for exactly this reason.
+
 **Conformance pins the outcome, not the order** — and does not need to pin
 both: a backend that gets the order wrong is observable as exactly the wrong
 error class or a spurious success, which is what the cells below assert.
@@ -655,8 +675,8 @@ here is what makes the container case answerable from one place.
 
 `GraphBackend` was the fifth bullet in this list and `LocalBackend` the fourth —
 counting bullets, not backend classes, which is the frame `sdd/BACKLOG.md` § 1
-uses when it calls Graph the sixth of six — and neither is one now; three bullets
-remain, the three above.
+uses when it counts *classes* still disagreeing and names the ones that have left
+— and neither is one now; three bullets remain, the three above.
 
 `LocalBackend` answered **every** operation with
 `InvalidPath("Path escapes root directory")` once its root directory was deleted,

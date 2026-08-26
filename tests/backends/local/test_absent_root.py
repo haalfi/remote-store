@@ -41,6 +41,8 @@ that exists to — is measured against.
 from __future__ import annotations
 
 import shutil
+import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -58,6 +60,26 @@ if TYPE_CHECKING:
 # semantics in ``_within_root``, which differ most on macOS and Windows — the
 # platforms this mark is what runs the file on.
 pytestmark = pytest.mark.os_sensitive
+
+
+@dataclass(frozen=True)
+class _SizeOnly:
+    """The one field the recreate cell asserts on, for the writer that returns nothing."""
+
+    size: int
+
+
+def _open_atomic_write(backend: LocalBackend, path: str) -> _SizeOnly:
+    """Write one byte through ``open_atomic`` and report the size, like a ``WriteResult``.
+
+    ``open_atomic`` yields a stream and returns nothing, so it cannot be dropped
+    into the recreate cell's ``(result, path)`` shape directly. Entering the
+    block is the point: the guard under test fires on ``__enter__``, and the
+    recreate behaviour only happens inside it.
+    """
+    with backend.open_atomic(path) as stream:
+        stream.write(b"x")
+    return _SizeOnly(size=1)
 
 
 @pytest.fixture
@@ -170,7 +192,7 @@ class TestAbsentRootReadsRaiseNotFound:
         assert exc_info.value.backend == "local"
 
 
-@pytest.mark.spec("BE-014", "BE-015", "BE-021")
+@pytest.mark.spec("BE-014", "BE-015", "BE-021", "BE-026")
 class TestAbsentRootListingsAreEmpty:
     """An absent container holds nothing, so every listing is empty rather than an error.
 
@@ -333,6 +355,10 @@ class TestTheContainmentGuardStillGuards:
         with pytest.raises(InvalidPath, match="escapes root"):
             call(backend)
 
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="symlink creation requires SeCreateSymbolicLinkPrivilege on Windows",
+    )
     def test_symlink_escape_still_rejected_with_the_root_present(self, tmp_path: Path) -> None:
         """The guard's original job, unchanged: a symlink out of the root is an escape.
 
@@ -351,6 +377,10 @@ class TestTheContainmentGuardStillGuards:
         with pytest.raises(InvalidPath, match="escapes root"):
             instance.read_bytes("link/secret.txt")
 
+    @pytest.mark.skipif(
+        sys.platform == "win32",
+        reason="symlink creation requires SeCreateSymbolicLinkPrivilege on Windows",
+    )
     def test_root_replaced_by_a_symlink_is_an_escape(self, tmp_path: Path) -> None:
         """The state the sibling above cannot reach: the walk stop actually executes.
 
@@ -360,6 +390,14 @@ class TestTheContainmentGuardStillGuards:
         change*. Here the root is deleted and replaced by a symlink pointing
         outside, so the walk runs to the root, the stop fires, and the resolve
         that follows is the thing that has to still reject it.
+
+        The leaf is deliberately one that does **not** exist. Measured by
+        counting ``os.path.lexists`` calls inside ``_within_root``: against an
+        existing leaf the loop condition is true immediately, the body never
+        runs (1 call) and the ``break`` is unreachable — such a cell passes for
+        the same pre-existing reason as the sibling above. Against an absent
+        leaf the body runs (2 calls), the walk reaches ``self._root`` and the
+        stop fires.
 
         This is the case where a fix that reached for "root missing → contained"
         instead of "stop the walk, then resolve" would silently hand back a path
@@ -383,9 +421,9 @@ class TestTheContainmentGuardStillGuards:
         root.symlink_to(outside, target_is_directory=True)
 
         for call in (
-            lambda: instance.read_bytes("secret.txt"),
-            lambda: instance.delete("secret.txt", missing_ok=True),
-            lambda: instance.exists("secret.txt"),
+            lambda: instance.read_bytes("missing.txt"),
+            lambda: instance.delete("missing.txt", missing_ok=True),
+            lambda: instance.exists("missing.txt"),
         ):
             with pytest.raises(InvalidPath, match="escapes root"):
                 call()
@@ -410,14 +448,15 @@ class TestWriteRecreatesTheRoot:
         [
             ("write", lambda b: (b.write("folder/new.txt", b"x"), "folder/new.txt")),
             ("write_atomic", lambda b: (b.write_atomic("folder/new2.txt", b"x"), "folder/new2.txt")),
+            ("open_atomic", lambda b: (_open_atomic_write(b, "folder/new3.txt"), "folder/new3.txt")),
         ],
-        ids=["write", "write_atomic"],
+        ids=["write", "write_atomic", "open_atomic"],
     )
     def test_write_recreates_the_root_and_succeeds(
         self,
         backend: LocalBackend,
         op_name: str,
-        call: Callable[[LocalBackend], tuple[WriteResult, str]],
+        call: Callable[[LocalBackend], tuple[WriteResult | _SizeOnly, str]],
     ) -> None:
         result, written = call(backend)
         assert result.size == 1
@@ -476,7 +515,47 @@ class TestWriteRecreatesTheRoot:
             stream.write(b"x")
         assert not on_disk.is_file(), "open_atomic left a regular file at the store root"
 
-    @pytest.mark.spec("BE-026")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize(
+        ("op_name", "call"),
+        [
+            ("write", lambda b, p: b.write(p, b"x")),
+            ("write_atomic", lambda b, p: b.write_atomic(p, b"x")),
+            ("open_atomic", lambda b, p: _open_atomic_write(b, p)),
+        ],
+        ids=["write", "write_atomic", "open_atomic"],
+    )
+    def test_writing_to_the_root_is_refused_with_the_root_present_too(
+        self,
+        tmp_path: Path,
+        root: str,
+        op_name: str,
+        call: Callable[[LocalBackend, str], object],
+    ) -> None:
+        """The guard is unconditional, so the ordinary state needs a cell as well.
+
+        Every other cell in this class runs against the absent-root fixture, and
+        the present root is the overwhelmingly common case — the one where this
+        PR changed the answer silently. It used to come from ``full.is_dir()``
+        as ``"Cannot write — '' exists as a directory"``; it now comes from the
+        pre-check, before the disk is touched. Conformance cannot cover it:
+        BE-029 § Out of scope excludes writes *to* the root, so ``_ROOT_FILE_OPS``
+        carries no writer.
+
+        Uses its own store rather than the module fixture, because the point is
+        precisely that the root is there.
+        """
+        root_dir = tmp_path / "present"
+        root_dir.mkdir()
+        instance = LocalBackend(str(root_dir))
+        instance.write("keep.txt", b"payload")
+
+        with pytest.raises(InvalidPath, match="store root"):
+            call(instance, root)
+        assert root_dir.is_dir(), f"{op_name} must leave the root a directory"
+        assert instance.read_bytes("keep.txt") == b"payload"
+
+    @pytest.mark.spec("PING-002", "PING-003")
     def test_check_health_still_reports_the_absent_root(self, backend: LocalBackend) -> None:
         """The one operation whose job is to notice, and it still does.
 

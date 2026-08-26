@@ -61,16 +61,24 @@ class LocalBackend(Backend):
     # region: public methods
 
     def check_health(self) -> None:
-        """Confirm the root directory exists and is readable.
+        """Confirm the root directory exists, is a directory, and is readable.
 
-        A lightweight two-syscall probe (``exists`` then ``os.access``) that
+        A lightweight two-syscall probe (``is_dir`` then ``os.access``) that
         touches no file content and is safe to call repeatedly.
 
+        The type half is load-bearing rather than pedantic. ``exists()`` and
+        ``is_folder()`` answer the store root by definition — they say the root
+        is a folder without looking — so this is the only operation that
+        observes what is actually at the root path. Testing mere existence would
+        let a root replaced by a regular *file* report a healthy, empty store
+        from every probe on the backend.
+
         Raises:
-            NotFound: If the root directory does not exist.
+            NotFound: If the root directory does not exist, or something that is
+                not a directory occupies its path.
             PermissionDenied: If the root directory exists but is not readable.
         """
-        if not self._root.exists():
+        if not self._root.is_dir():
             raise NotFound(
                 f"Root directory not found: {self._root}",
                 path=str(self._root),
@@ -857,14 +865,15 @@ class LocalBackend(Backend):
         sibling-created long-named directory and is 24/24 green: the evidence
         that resolving the deepest *existing* anchor does not itself flicker.
 
-        * **An absent root is absence, not escape.** The walk stops at
-          ``self._root``. Without that stop it climbs *past* a deleted root and
-          the resolved anchor is no longer ``relative_to`` it, so a store whose
-          root was removed reported every path as escaping -- the worst of the
-          plausible answers, since it tells the caller their path is malformed
-          when the path is fine and the store is simply gone. A deleted root is
-          the absent-container case, and the operations answer it as absence:
-          the tolerant deletes return, the rest report the path missing.
+        **The walk stops at ``self._root``, so an absent root is absence rather
+        than escape.** This is a property of the walk that feeds the two axes,
+        not a third axis of its own. Without the stop the walk climbs *past* a
+        deleted root and the resolved anchor is no longer ``relative_to`` it, so
+        a store whose root was removed reported every path as escaping -- the
+        worst of the plausible answers, since it tells the caller their path is
+        malformed when the path is fine and the store is simply gone. A deleted
+        root is the absent-container case, and the operations answer it as
+        absence: the tolerant deletes return, the rest report the path missing.
 
         The stop is inert whenever the root exists: an existing root is itself
         an existing ancestor of every lexically-contained target, so the walk

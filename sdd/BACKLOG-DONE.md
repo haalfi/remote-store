@@ -155,6 +155,23 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-254 — `DagsterComputeLogManager.get_log_keys_for_log_key_prefix` annotates a return type wider than its supertype**
+  spec: — · effort: S · audience: user.api_docs
+  The repo pins `dagster>=1.9`, and resolutions from that range declare
+  `ComputeLogManager.get_log_keys_for_log_key_prefix` as `Sequence[list[str]]`.
+  The override annotated `Sequence[Sequence[str]]`, which mypy rejects as an
+  incompatible override — the pre-push typecheck gate failed on a clean tree.
+  Narrowed to `Sequence[list[str]]`, the narrowest annotation valid under every
+  supported dagster: the body already built `list[list[str]]`, so this states
+  what was being returned all along, and a narrower return is a legal override
+  against the wider supertype too. No behaviour change; callers annotating the
+  wider type are unaffected.
+  **Filed after the fact rather than before**, which the admission test would
+  normally refuse: it was found and done in the same breath, while it blocked an
+  unrelated branch. The ID exists because the CHANGELOG entry needs one — every
+  other line in that file carries one, and a stub with no item cannot be paired
+  at release time.
+
 - [x] **BUG-247 — `LocalBackend` reports a deleted root as "Path escapes root directory"**
   spec: BE-004, BE-005, BE-012, BE-013, BE-021, BE-029 · effort: S · audience: user.api
   Delete a `LocalBackend`'s root out from under it and every operation but
@@ -175,14 +192,15 @@ if evidence changes; these are retired.
   inert while the root exists, since an existing root is already an existing
   ancestor of every contained target. A lexically escaping path never has the
   root on its ancestor chain for the stop to fire on, so the symlink-escape
-  guard the item flagged as at risk is untouched — fenced by reverting the stop
-  and watching 29 of the module's 62 cells fail. Each of the change's three
-  parts was fenced separately, against the module as it finally stands rather
-  than as it stood when the part landed: 29/62 for the walk stop, 16/62 for the
-  file-shaped root pre-check, 8/62 for the write guard. An earlier version of
-  this sentence said 24 of 46 and was left behind when review added cells, which
-  is the failure mode [principle 9](../CLAUDE.md#principles) names: the figure
-  was re-read rather than re-run.
+  guard the item flagged as at risk is untouched. Each of the change's three
+  parts is fenced separately by mutation, re-run against the module as it
+  finally stands rather than as it stood when the part landed: **30/69** for the
+  walk stop, **16/69** for the file-shaped root pre-check, **14/69** for the
+  write guard. Two earlier versions of this sentence (24 of 46, then 29 of 62)
+  were left behind as review added cells, which is the failure mode
+  [principle 9](../CLAUDE.md#principles) names: the figure was re-read rather
+  than re-run. Round 3's measuring member independently reproduced the middle
+  set exactly, which is how a figure earns trust.
   **Two subjects the item did not name.** The fix turns `_resolve` from raising
   into returning, which exposes what each operation does next — so the work was
   the whole surface, not the four cells the item listed: 40 operation cells were
@@ -212,6 +230,16 @@ if evidence changes; these are retired.
   cell asserted `is_file(root)`, which the new BE-029 short-circuit answers
   `False` without looking at the disk, so it passed on the corruption it existed
   to catch.
+  **The BE-029 short-circuits blinded the one operation that still looked.** Once
+  `exists`, `is_file`, `is_folder` and `get_folder_info` answer the root from the
+  key, nothing observes what is actually at the root path — and `check_health`
+  tested `exists()`, which a regular *file* satisfies. Measured: a store whose
+  root was replaced by a file reported `exists("")` True, `is_folder("")` True
+  and a clean `check_health()`, i.e. a healthy empty store that cannot exist.
+  `check_health` now tests `is_dir()`, which its own docstring already promised
+  ("Confirm the root **directory** exists"). Found by round 3's unprimed member;
+  the generalisation — when the probes stop observing, one operation must keep
+  doing it — went into BE-029 rather than staying a Local detail.
   **One root cell is left answering by observation, with its bound stated.**
   `delete_folder(root, missing_ok=False)` raises `NotFound` on an absent root
   while `exists(root)` reports the root present. Not reconciled: BE-029 § Out of

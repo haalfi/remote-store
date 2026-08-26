@@ -202,7 +202,8 @@ absent container — `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` and
 `SQLBlobBackend`, the same four the count below enumerates
 (BUG-246, BUG-249, BUG-245); no native exception escapes on
 either the absent or the **denied** path (BUG-249); one operation does not answer
-by payload size (BUG-253); and a newly registered backend cannot pass CI without
+by payload size (BUG-253); a write to the store root cannot leave the container a
+regular file (BUG-255); and a newly registered backend cannot pass CI without
 meeting BE-004, BE-005 and BE-021 (BK-345). The spec contradiction is
 adjudicated — BUG-248, closed by
 [ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md).
@@ -214,9 +215,12 @@ inside the items that carry them, as the rule requires; this section cannot
 close on its own items alone.
 
 **Four backend classes** still disagree with **the absent-container clause**,
-counted from the items below — BUG-253 is a fifth disagreement in this section
-but a different one, between two halves of one Graph operation rather than with
-that clause: `S3Boto3Backend`, `AzureBackend` and
+counted from the items below. Two further items in this section are
+disagreements of *other* kinds and are deliberately outside that count: BUG-253,
+between two halves of one Graph operation, and BUG-255, where an SFTP write to
+the store root leaves an absent container occupied by a regular file — a
+BE-029 breach on the write path rather than a wrong answer about absence. The
+four are: `S3Boto3Backend`, `AzureBackend` and
 `AsyncAzureBackend` (BUG-246, which collapses the two Azure adapters into one row
 because they answer identically and take one fix) and `SQLBlobBackend` (BUG-246
 and BUG-245). **Two classes have left this count**, both by shipping rather than
@@ -312,6 +316,36 @@ is the whole promise.
   **ID-242** in section 2 — four `moto doesn't raise PermissionError` pragmas
   that are coverage holes. Closing this item without ID-242 leaves the denied
   path asserted by one hand-written probe and by nothing in conformance.
+
+- [ ] **BUG-255 — `SFTPBackend` writes leave an absent `base_path` occupied by a regular file**
+  spec: BE-029, BE-021 · effort: S · audience: user.api
+  Write to the store root of an SFTP store whose `base_path` does not exist and
+  the bytes land at the container path itself, leaving the store's container a
+  regular **file**. `open_atomic("")` does not even raise — it returns cleanly
+  having done it. Measured against the Stage-1 in-process paramiko server, with
+  `base_path` absent, checking the server-side filesystem after each call:
+  | Call | Server-side result | Raised |
+  | --- | --- | --- |
+  | `write("")` / `write(".")` | `base_path` is a file, size 1 | `InvalidPath("Path is empty after normalization")` |
+  | `write_atomic("")` / `write_atomic(".")` | `base_path` is a file, size 1 | `InvalidPath("Path is empty after normalization")` |
+  | `open_atomic("")` / `open_atomic(".")` | `base_path` is a file, size 1 | — **returns cleanly** |
+  | `write("")`, `base_path` present | unchanged directory | `InvalidPath("Not a file: ")` |
+  Note the error on the absent-`base_path` rows carries no `backend=` attribute:
+  it arrives from the `RemotePath` / `WriteResult` layer *after* the write, not
+  from the backend before it. The backend's own root guard is the observational
+  `is_dir()`-shaped check, which answers `False` when the container is gone.
+  Afterwards `is_folder("")` still answers `True` from SFTP's root
+  short-circuit, so BE-029's "a folder that always exists" becomes a claim about
+  a regular file and every later call answers about a store that cannot exist.
+  **This is BUG-247's defect on the other hierarchical backend**, found by that
+  work's round-3 measuring pass rather than by reading: BUG-247 borrowed SFTP's
+  *read*-side root short-circuits, which are correct, and did not look at its
+  write paths. The fix has the same shape — refuse the root key definitionally,
+  before the transport is touched — but the surfaces only *overlap*
+  ([§ Granularity](#how-this-file-works)), so it is a separate item.
+  **Not co-shipped with BUG-247 deliberately:** that item's scope is Local, and
+  widening it to a second backend mid-review would have put an untested SFTP
+  change into a PR whose SFTP claims are otherwise measurement-only.
 
 - [ ] **BUG-245 — `SQLBlobBackend(create_table=False)` leaks `NoSuchTableError` from its constructor**
   spec: BE-021, SQL-BLOB-012 · effort: S · audience: user.api

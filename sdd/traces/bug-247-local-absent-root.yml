@@ -16,12 +16,27 @@ audience:
 expected_ripples:
   - sdd/backlogid.json
   - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
 surprising_ripples:
   - src/remote_store/_store.py
   - src/remote_store/aio/_async_store.py
   - src/remote_store/_backend.py
   - src/remote_store/aio/_async_backend.py
   - CHANGELOG.md
+  - src/remote_store/ext/dagster.py
+  - .github/workflows/ci.yml
+
+discovery_followups:
+  - BUG-254
+  - BUG-255
+
+# Counted from `git log --oneline origin/master..HEAD`, seven commits:
+# b2674d9 implements and does not count; 376624c is the dagster narrowing, found
+# by a blocked push rather than by review, and does not count; 2215525, b2392be,
+# 3c2e82f and 4bd6e84 are the four review-driven fix commits; 9135017 is the CI
+# fix, driven by a red check this loop read rather than by a reviewer, and does
+# not count. Value is 4, plus the round-3 pass this trace ships with.
+review_rounds: 5
 
 phases:
   - id: orient
@@ -80,9 +95,13 @@ phases:
         read_type: reference
         extract: >-
           Enumerated the whole operation surface against a deleted root rather
-          than reading the four cells the item named. 27 of 29 raised the escape
-          error; glob (which never calls _resolve) and check_health were already
-          correct. That table is what scoped the work.
+          than reading the four cells the item named. 27 of 29 probe rows raised
+          the escape error; glob (which never calls _resolve) and check_health
+          were already correct. That table is what scoped the work. The "40
+          operation cells" figure elsewhere in this record counts the same probe
+          after review added the BE-029 root rows to it — 29 rows at this phase,
+          40 at the end; they are the same enumeration at two points, not two
+          measurements of one thing.
         outcome: ok
 
   - id: design
@@ -122,8 +141,11 @@ phases:
         extract: >-
           Two changes, not one: stop the ancestor walk at the root, and give
           Local the BE-029 short-circuits it had been doing without. Fenced
-          separately — reverting the stop fails 24 of 46 cells, reverting the
-          pre-check fails the root type-error cell.
+          separately — reverting the stop failed 24 of the 46 cells that existed
+          at this point, reverting the pre-check failed the root type-error
+          cell. Both figures are point-in-time and were superseded once review
+          grew the module; see the fix_measuring phase for the re-derivation
+          against the final module, which is the one to trust.
         outcome: ok
       - file: tests/backends/local/test_absent_root.py
         section: "(full)"
@@ -225,6 +247,58 @@ phases:
           rather than adjusting the number. A figure written once and re-read
           afterwards is the failure principle 9 exists for, and this one drifted
           inside the same PR that cites the principle.
+        outcome: ok
+
+  - id: fix_panel
+    name: Round-3 fix pass (three-member panel)
+    steps:
+      - file: src/remote_store/backends/_local.py
+        section: "check_health"
+        read_type: verify
+        extract: >-
+          The round's one behavioural finding, and it was a regression this work
+          introduced. The BE-029 short-circuits answer the root from the key, so
+          after them no operation observed what is actually at the root path —
+          and check_health tested exists(), which a regular *file* satisfies.
+          Reproduced: a store whose root was replaced by a file reported
+          exists("")=True, is_folder("")=True and a clean check_health. Now
+          tests is_dir(). The lesson generalises and went into BE-029: when the
+          probes stop observing, one operation must keep doing it.
+        outcome: ok
+      - file: tests/backends/local/test_absent_root.py
+        section: "TestTheContainmentGuardStillGuards"
+        read_type: verify
+        extract: >-
+          The round-2 symlink cell did not reach the state its own docstring
+          claimed. Instrumented os.path.lexists inside _within_root: against the
+          existing leaf the loop condition is true immediately, the body never
+          runs (1 call) and the new break is unreachable — the cell passed for
+          the pre-existing reason, exactly the weakness round 2 filed it to fix.
+          An absent leaf runs the body (2 calls) and reaches the stop. A fix pass
+          answering a finding in form rather than in substance is the failure
+          mode here, and only execution separated the two.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029 § Where a backend has to decide it"
+        read_type: verify
+        extract: >-
+          Round 2 scoped one false sentence and left the neighbouring clause
+          standing — BE-029 still licensed reading the root verdict off the SDK
+          for "a filesystem directory", which is the implementation this whole
+          item replaced. Amended with the bound BUG-247 establishes: the MAY
+          holds only while the node's absence is ruled out.
+        outcome: misleading
+      - file: src/remote_store/backends/_sftp.py
+        section: "write, write_atomic, open_atomic"
+        read_type: verify
+        extract: >-
+          Filed as BUG-255, not fixed. The panel's measuring member found the
+          same write-to-root corruption this item fixed on Local, live on SFTP:
+          the bytes land at base_path, open_atomic returns cleanly having done
+          it. The design phase above read SFTP's read-side root handling and
+          borrowed it; the write side was never in that read, which is precisely
+          where this item later found its own hole. Reading a sibling for the
+          half you are copying does not cover the half you are not.
         outcome: ok
 
   - id: docs
