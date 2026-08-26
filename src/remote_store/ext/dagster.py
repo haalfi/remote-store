@@ -775,9 +775,11 @@ class RemoteStoreComputeLogManager(  # type: ignore[misc]
     ) -> Sequence[list[str]]:
         """Enumerate the stored log keys under a log-key prefix.
 
-        Returns ``list`` rows rather than bare ``Sequence`` rows because the
-        supertype declares ``Sequence[list[str]]``; the body already builds
-        ``list[list[str]]``, so this narrows the annotation to what is returned.
+        Returns ``list`` rows rather than bare ``Sequence`` rows: this is the
+        narrowest annotation valid under every supported dagster, some of which
+        declare the supertype method as ``Sequence[list[str]]``. The body
+        already builds ``list[list[str]]``, so it narrows the annotation to what
+        was being returned all along.
         """
         extension = IO_TYPE_EXTENSION[io_type]
         results: list[list[str]] = []
