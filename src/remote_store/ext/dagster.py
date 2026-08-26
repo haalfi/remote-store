@@ -772,8 +772,13 @@ class RemoteStoreComputeLogManager(  # type: ignore[misc]
 
     def get_log_keys_for_log_key_prefix(
         self, log_key_prefix: Sequence[str], io_type: ComputeIOType
-    ) -> Sequence[Sequence[str]]:
-        """Enumerate the stored log keys under a log-key prefix."""
+    ) -> Sequence[list[str]]:
+        """Enumerate the stored log keys under a log-key prefix.
+
+        Returns ``list`` rows rather than bare ``Sequence`` rows because the
+        supertype declares ``Sequence[list[str]]``; the body already builds
+        ``list[list[str]]``, so this narrows the annotation to what is returned.
+        """
         extension = IO_TYPE_EXTENSION[io_type]
         results: list[list[str]] = []
         for info in self._store.list_files(self._store_folder(log_key_prefix)):
