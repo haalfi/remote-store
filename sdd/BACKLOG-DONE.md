@@ -155,6 +155,52 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-258 — `RemoteStoreComputeLogManager` no longer conforms to Dagster's compute-log-manager signature**
+  spec: — · effort: S · audience: user.api, contributor.tooling
+  `mypy` fails on `src/remote_store/ext/dagster.py:773` with
+  `Return type "Sequence[Sequence[str]]" of "get_log_keys_for_log_key_prefix"
+  incompatible with return type "Sequence[list[str]]" in supertype
+  "ComputeLogManager"`. Nothing in this repository changed: `dagster` is declared
+  as `dagster>=1.9` with no upper bound, so CI resolves whatever is current, and a
+  release after 2026-08-17 narrowed the supertype's return from
+  `Sequence[Sequence[str]]` to `Sequence[list[str]]`. Our override still declared
+  the old, now-wider type, which is illegal for a covariant return.
+  Measured rather than assumed: the installed `dagster` here is **1.13.17**, whose
+  `ComputeLogManager.get_log_keys_for_log_key_prefix` still returns
+  `Sequence[Sequence[str]]` (`inspect.getsource`), which is why a local
+  `hatch run typecheck` passed while CI failed. Master's last CI run was
+  2026-08-17, before the release, so master was untested rather than green.
+  The override's body already builds `results: list[list[str]]`, so the fix is the
+  annotation alone: `-> Sequence[list[str]]`. That satisfies **both** versions —
+  `Sequence` is covariant and `list[str]` is a subtype of `Sequence[str]`, so
+  `Sequence[list[str]]` is a valid override return under the old supertype too.
+  Verified against the local 1.13.17 (`hatch run typecheck` clean) and against the
+  new supertype by the CI error text naming exactly that expected type.
+  **No runtime behaviour change and therefore no new test**: the annotation is
+  erased at runtime, the returned object is unchanged, and the gate that catches
+  this is `mypy` in the `typecheck` job, which is the failing check this closes.
+  **ID note:** filed as BUG-258 rather than BUG-254 (the next free ID on `master`)
+  because BUG-254 through BUG-257 are filed on the open BUG-246 branch and would
+  collide once both merge. `gen_backlogid.py` cannot see an unmerged branch.
+  **`user.api` because this is a public signature**, not just tooling:
+  `RemoteStoreComputeLogManager` is exported in `__all__`, and a downstream
+  subclass overriding `get_log_keys_for_log_key_prefix` with the old, wider
+  `Sequence[Sequence[str]]` now fails `mypy` against remote-store where it
+  previously passed. That is what makes the CHANGELOG entry required rather than
+  optional, per the `audience` rule in `sdd/traces/_schema.yml`.
+  **Recurrence is narrower than it first looked, and is filed as ID-250.** Two of
+  the three mitigations an earlier draft of this entry called undecided already
+  ship: `.github/workflows/drift-guard.yml` (ID-182) is the scheduled latest-deps
+  job — Monday 07:00 UTC, re-resolves every extra with `--upgrade --pre`, opens a
+  rolling `[drift-guard]` issue and never reds a PR — and
+  `infra/drift-locks/dagster.txt` is the lockfile, pinning `dagster==1.13.17`,
+  which is the very version this diagnosis rests on. The residual gap is one
+  thing, not a choice among three: **drift-guard's smoke runs pytest targets and
+  an import smoke, never `mypy`** (`rg 'mypy' .github/workflows/drift-guard.yml`
+  returns nothing), so a purely type-level narrowing in a dependency is invisible
+  to the guard even when the version drift itself is reported. That is why this
+  reached PRs as a red `typecheck` job instead of a triaged rolling-issue row.
+
 - [x] **BUG-248 — BE-021's absent-container rule and GR-031's drive-identity escalation contradict each other**
   spec: BE-021, GR-031, PING-011 · effort: M · audience: user.api
   Two deliberate clauses giving opposite answers for the same call, neither
