@@ -1,0 +1,138 @@
+id: ID-245
+title: "Derive the cross-artifact gate inventory instead of hand-maintaining it"
+trigger: >-
+  The research doc's own § 4b inventory of which artifact pairs are checked was
+  assembled by hand and said of itself "The table will drift, and nothing will
+  notice." The checking layer had the defect the document diagnoses in the
+  specification layer: no enumeration of its own coverage.
+source_items:
+  - ID-245
+  - ID-237
+audience:
+  - contributor.tooling
+  - contributor.process
+expected_ripples:
+  - sdd/GATE-INVENTORY.md
+  - CHANGELOG.md
+surprising_ripples:
+  # Neither anticipated by the ripple-check nor by the item body.
+  - scripts/gen_gate_inventory.py
+  - sdd/research/research-inconsistency-detection-multi-artifact.md
+
+phases:
+  - id: orient
+    name: "Frame the item and bound the scope"
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) ID-245"
+        read_type: gate
+        extract: >-
+          Three inventory bullets plus a fourth added by BUG-246 on master. Two are
+          blocked: the cassette table is pinned after ID-244 and the accountability
+          record waits on ID-207, both still open. Only the checker inventory is
+          reachable, which set the scope to one bullet.
+      - file: sdd/research/research-inconsistency-detection-multi-artifact.md
+        section: "4b, 9 (steps 7 and 8), 10"
+        read_type: gate
+        extract: >-
+          The eleven-row hand table, the two named complications (rule checks guard
+          no pair; the check_*.py glob under-reaches), and § 10's record that the
+          table was deliberately kept because the gap analysis is unintelligible
+          without it. That last read is what stopped the table being replaced.
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules"
+        read_type: gate
+        extract: >-
+          Rule 3 (derive the claim space, state the granularity), Rule 4 (declare
+          the authority per pair), Rule 5 (gating or advisory, and why), Rule 7
+          (state the bound in the check itself) as the obligations on the new gate.
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index"
+        read_type: gate
+        extract: >-
+          Triggered rows: new cross-artifact check, backlog item touched, CHANGELOG
+          entry, and the CODE_PAT reachability row for a subject outside src/.
+
+  - id: design
+    name: "Settle the shared design decision"
+    steps:
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts]"
+        read_type: reference
+        extract: >-
+          The script table is the authoritative wiring, and composed targets
+          (docs-gate to check-links to the script) mean resolution must be
+          transitive. This is what reaches scripts/docs/check_links.py, which the
+          glob named in the item misses.
+      - file: .github/workflows/ci.yml
+        section: "setup (CODE_PAT, DOCS_PAT), verify-formal"
+        read_type: gate
+        extract: >-
+          CODE_PAT excludes sdd/ while DOCS_PAT matches it, so a gate whose output
+          lives under sdd/ needs a home in docs-gate as well as lint. verify-formal
+          wires four gates a second time, so a mechanism has more than one home.
+      - file: scripts/gen_adr_digest.py
+        section: "(full) module docstring, main"
+        read_type: reference
+        extract: >-
+          The generated-artifact pattern to follow: --check mode, a repo-only
+          marker on the output, and a header naming the regeneration command.
+      - file: sdd/AUTHORING.md
+        section: "Decision procedure, Classification markers"
+        read_type: gate
+        extract: >-
+          Pure internal tooling declares repo-only, which settles the marker on the
+          generated inventory without a docs-site nav ripple.
+
+  - id: implement
+    name: "Generator, declarations, wiring"
+    steps:
+      - file: scripts/gen_gate_inventory.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Parse the Drift-gate block from each module docstring; derive homes and
+          enforcement from pyproject plus workflows so no authored field can claim
+          where it runs. Authority answered per column, not per table.
+      - file: scripts/check_dafny_twin_parity.py
+        section: "module docstring (unknown-is-a-failure)"
+        read_type: reference
+        extract: >-
+          Precedent for the backstop: a class the gate does not know is a failure,
+          not a skip. Applied to a wired check_*/gen_*/drift_*/report_* script that
+          carries no declaration.
+
+  - id: verify
+    name: "Run it, not type-check it"
+    steps:
+      - file: scripts/gen_gate_inventory.py
+        section: "--check"
+        read_type: verify
+        extract: >-
+          Mutated a declaration and confirmed exit 1; deleted a block and confirmed
+          the backstop fired naming the file; restored and confirmed exit 0. The
+          first run reported the failure without naming the mechanism, which is a
+          DRIFT-RULES Rule 2 breach — added _differing_rows so it localizes.
+        outcome: ok
+      - file: scripts/gen_gate_inventory.py
+        section: "module docstring, format example"
+        read_type: verify
+        extract: >-
+          Own miss, caught by running rather than reading: the docstring's example
+          of the block format parsed as a real declaration, giving the file two
+          undifferentiated blocks and silently dropping the generator's own row.
+          The count read 31 where it should have read 32 and nothing failed. Fixed
+          by dropping the header line from the example, and by making two blocks
+          without entrypoints a hard error rather than a silent skip.
+        outcome: ok
+      - file: sdd/research/research-inconsistency-detection-multi-artifact.md
+        section: "4b"
+        read_type: verify
+        extract: >-
+          Checked the generated inventory against all eleven rows. Ten are covered;
+          the eleventh (backend i to backend j) is the conformance suite, which is
+          pytest collection rather than a script invocation and is stated as a
+          bound. The snapshot's "None in CI" row was also overtaken by
+          check_dafny_twin_parity.py, which the generated file shows and the
+          snapshot does not.
+        outcome: misleading

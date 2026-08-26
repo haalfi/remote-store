@@ -16,6 +16,13 @@ Four independent gates:
    / ``$LEGACY_SFTP_PASS`` sourced from ``infra/.env``.
 
 Wired into ``hatch run lint`` and the lint job in ``.github/workflows/ci.yml``.
+
+Drift-gate::
+
+    kind:       pair
+    compares: infra/.env ↔ infra/_settings.py, the compose file and the port and credential
+        references in CI workflows
+    domain:     process
 """
 
 from __future__ import annotations

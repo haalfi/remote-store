@@ -44,6 +44,13 @@ above never sees:
   fails that offline instead.
 
 Exit 0 = clean.  Exit 1 = broken links found.
+
+Drift-gate::
+
+    kind:       pair
+    compares: every Markdown link and context7 manifest entry ↔ the on-disk files and built
+        docs-site pages they name
+    domain:     explanation
 """
 
 from __future__ import annotations

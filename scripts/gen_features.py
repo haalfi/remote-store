@@ -7,6 +7,13 @@ Run with:  hatch run gen-features
 
 Backend rows and install-extras entries are sorted alphabetically by type
 string / extra name (ID-169).
+
+Drift-gate::
+
+    kind:       pair
+    compares: docs-src/_data/graph/graph.json and pyproject.toml's extras ↔ the generated sections
+        of FEATURES.md
+    domain:     realization ↔ explanation
 """
 
 from __future__ import annotations

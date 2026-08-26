@@ -60,6 +60,13 @@ Exit codes
 * ``0`` -- every enumeration is in canonical order.
 * ``1`` -- one or more enumerations are out of order (printed to stderr
   with ``file:line`` and the offending sequence).
+
+Drift-gate::
+
+    kind:       pair
+    compares: the canonical backend order pinned in CONTRIBUTING.md ↔ every backend enumeration in
+        README.md, docs-src/, context7.json and the conda recipe
+    domain:     cross-surface
 """
 
 from __future__ import annotations

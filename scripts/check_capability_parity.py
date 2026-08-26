@@ -30,6 +30,13 @@ package import and no Dafny toolchain. It runs in the ``hatch run lint`` and
 
 Exit code 0 = parity; 1 = a mismatch, or a parse that found no capabilities
 in one of the three sources (a sign the source shape moved).
+
+Drift-gate::
+
+    kind:       pair
+    compares: the Capability enum in src/remote_store/_capabilities.py ↔ the Capability datatype and
+        CapabilityName arms in sdd/formal/BackendContract.dfy
+    domain:     realization ↔ intent-formalized
 """
 
 from __future__ import annotations

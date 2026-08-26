@@ -1,6 +1,12 @@
 """Generate docs-src/_data/graph/graph.json from source.
 
 Run with:  hatch run python scripts/gen_graph.py
+
+Drift-gate::
+
+    kind:       pair
+    compares:   the source tree under src/remote_store/ ↔ docs-src/_data/graph/graph.json
+    domain:     realization
 """
 
 from __future__ import annotations

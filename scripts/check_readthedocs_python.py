@@ -5,6 +5,12 @@ RTD's ``build.tools.python`` must be a literal (it has no
 ``.python-version``. This gate keeps the copy honest by comparing major.minor.
 Wired into ``hatch run lint``. A malformed config raises here, which is itself
 a lint failure — no defensive parsing needed.
+
+Drift-gate::
+
+    kind:       pair
+    compares:   .python-version ↔ .readthedocs.yaml's build.tools.python
+    domain:     process
 """
 
 from __future__ import annotations

@@ -68,6 +68,13 @@ Exit codes
   section, same order.
 * ``1`` -- a trigger was omitted, reordered, or an expansion is unanchored;
   one line per violation to stderr, plus remediation.
+
+Drift-gate::
+
+    kind:       pair
+    compares: the ripple-check Pre-work index ↔ the Detailed checklist, both in
+        sdd/CLAUDE-REFERENCE.md
+    domain:     process
 """
 
 from __future__ import annotations

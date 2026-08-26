@@ -9,6 +9,12 @@ Wired into ``hatch run lint`` and the ``no-rst-roles`` pre-commit hook.
 Usage:
     python scripts/check_rst_roles.py [dir ...]
     Defaults to src/, tests/, scripts/, and examples/ when no arguments are given.
+
+Drift-gate::
+
+    kind:       rule
+    rule:       no Python file uses RST inline-role syntax in a Google-style docstring
+    domain:     explanation
 """
 
 import re

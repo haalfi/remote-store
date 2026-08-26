@@ -44,6 +44,12 @@ the edge detail panel; 1.3 ``abc``/``facade`` roles, ``contains`` edges, and
 1.4 ungated facade method nodes (``gated: False``) render as ordinary method
 nodes and surface ``gated`` in the detail panel. The rendering degrades
 gracefully when any of these are absent.
+
+Drift-gate::
+
+    kind:       pair
+    compares:   docs-src/_data/graph/graph.json ↔ docs-src/explanation/graph_viz.html
+    domain:     explanation
 """
 
 from __future__ import annotations

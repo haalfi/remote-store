@@ -4,6 +4,12 @@
 CI enforcement for Testing Rule 4 (see sdd/TESTING.md).
 create_autospec() is always OK.
 Exit code 0 = no violations; 1 = violations found.
+
+Drift-gate::
+
+    kind:       rule
+    rule:       every MagicMock or Mock call passes spec= or spec_set= (TESTING.md Rule 4)
+    domain:     verification
 """
 
 from __future__ import annotations

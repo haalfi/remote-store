@@ -183,6 +183,13 @@ Exit codes
 * ``2`` — argparse usage error: an unusable ``--traces-dir`` or
   ``--repo-root``, or a negative ``--top`` / ``--min-count``. These are
   wrong invocations, not findings.
+
+Drift-gate::
+
+    kind:       rule
+    rule: aggregates trace outcome tags per referenced document and ranks the documents that failed
+        their readers
+    domain:     process
 """
 
 from __future__ import annotations

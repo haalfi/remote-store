@@ -11,6 +11,13 @@ Logic:
   → create-or-update the issue.
 * All extras clear → comment "drift cleared" on the open issue (if any)
   and close it; no-op if no issue is open.
+
+Drift-gate::
+
+    kind:       rule
+    rule: the rolling dependency-drift issue reflects the current per-extra drift reports: open
+        while any extra drifts, closed once all clear
+    domain:     process
 """
 
 from __future__ import annotations

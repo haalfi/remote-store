@@ -50,6 +50,12 @@ Advisory stream (both modes):
     summary, in both normal and ``--check`` mode. Thresholds are configurable via
     ``--max-decision-words`` / ``--max-decision-depth``. This stream never changes
     the exit status — it is advisory only, not a gate (ID-232 research §8).
+
+Drift-gate::
+
+    kind:       pair
+    compares:   the Status tables and Decision sections of sdd/adrs/*.md ↔ sdd/adrs/DIGEST.md
+    domain:     intent
 """
 
 from __future__ import annotations
