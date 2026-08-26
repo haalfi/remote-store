@@ -347,6 +347,31 @@ if evidence changes; these are retired.
   to the guard even when the version drift itself is reported. That is why this
   reached PRs as a red `typecheck` job instead of a triaged rolling-issue row.
 
+- [x] **BK-354 — SFTP has no way to bound a read that stalls on an open channel**
+  spec: SFTP-030, SFTP-005, SFTP-010 · effort: S · audience: user.api, user.api_docs
+  Reported as [issue #970](https://github.com/haalfi/remote-store/issues/970) by a
+  consumer pulling vendor deliveries over a slow link, where a 214 MB file takes
+  ~20 min and a 2 GiB file ~70 min — a 3x spread that makes elapsed time useless
+  for telling "slow" from "stalled", leaving a byte-level bound as the only
+  precise instrument. `_connect` passed the single `timeout` to `ssh.connect()` as
+  `timeout` / `banner_timeout` / `auth_timeout` / `channel_timeout`, all of which
+  expire during the connect phase; paramiko documents the last as the wait for
+  *opening* a channel and initialises `Channel.timeout` to `None`, and nothing
+  called `settimeout()`. So a peer that completed the handshake and then went
+  quiet blocked forever, holding its pool slot and emitting no signal.
+  The recovery path for exactly that fault was already present and correct:
+  `_is_connection_dead` matches `TimeoutError` — its docstring already named the
+  channel timeout as the most realistic trigger — and `_map_exception` maps it to
+  `BackendUnavailable` and clears the cached client so the next operation
+  reconnects. It simply had no trigger. Shipped as `io_timeout` (SFTP-030),
+  applied in `_connect`, which is what makes it survive a transparent reconnect;
+  a caller applying `settimeout()` through `unwrap` loses it with the channel,
+  precisely after a recovered drop. Default `None`, so no behaviour change, and
+  deliberately outside the connect `RetryPolicy` so a partially consumed stream is
+  never silently restarted. `keepalive_interval`, the reporter's clearly
+  lower-priority second ask, was left out of scope and is not tracked — no
+  observed pain here yet, and a silent drop already surfaces through the same
+  `BackendUnavailable` path once `io_timeout` is set.
 - [x] **BUG-248 — BE-021's absent-container rule and GR-031's drive-identity escalation contradict each other**
   spec: BE-021, GR-031, PING-011 · effort: M · audience: user.api
   Two deliberate clauses giving opposite answers for the same call, neither

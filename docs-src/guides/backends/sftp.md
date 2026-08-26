@@ -70,8 +70,41 @@ pkey = SFTPUtils.load_private_key(pem_string)
 | `known_host_keys` | `str` | `None` | Known-hosts string (code-level override) |
 | `host_keys_path` | `str` | `~/.ssh/known_hosts` | Path to known_hosts file |
 | `config` | `dict` | `None` | Config dict (may contain `known_host_keys`) |
-| `timeout` | `int` | `10` | SSH connection timeout in seconds |
+| `timeout` | `int` | `10` | Connect-phase timeout in seconds (connect, banner, auth, channel open) |
+| `io_timeout` | `float` | `None` | Seconds a blocking read or write on the open channel may stall before failing; `None` means no bound |
 | `connect_kwargs` | `dict` | `None` | Extra kwargs passed to `SSHClient.connect()` |
+
+### Bounding a stalled transfer
+
+`timeout` covers only the connect phase. Once the channel is open, paramiko
+places no bound on reads, so a peer that completes the handshake and then stops
+sending mid-transfer blocks indefinitely — holding whatever pool slot or worker
+the transfer was running on, with no error to act on.
+
+`io_timeout` bounds the silence *between* bytes rather than the transfer as a
+whole, which is what makes it usable on slow links: a multi-gigabyte fetch that
+takes an hour is unaffected, while a flow that goes quiet for longer than the
+bound raises [`BackendUnavailable`][remote_store.BackendUnavailable].
+
+```python
+store = Store.from_backend(
+    SFTPBackend(host="sftp.example.com", username="svc", io_timeout=120)
+)
+```
+
+The bound is re-applied on every reconnect, including the transparent ones the
+backend performs after a dropped connection. Setting it through the
+[escape hatch](#escape-hatch) instead does not survive those reconnects, because
+each one opens a fresh channel.
+
+A stall is reported, not retried: the connect-phase `RetryPolicy` does not cover
+it, so a partially consumed stream is never silently restarted underneath you.
+The backend does drop the dead client, so the next operation reconnects.
+
+!!! tip "Choosing a value"
+    Size it against the longest legitimate pause your server can produce — an
+    antivirus or dedup appliance may go quiet for a while on `open()` of a large
+    file — not against total transfer time.
 
 ## Preflight host-key discovery
 
@@ -222,7 +255,8 @@ layer (e.g. `requirements.txt` line `paramiko>=3.0,<5`).
 
 - **Lazy connect** — no network call happens during construction. The SSH/SFTP connection is established on the first operation.
 - **Auto-reconnect** — if the connection goes stale between operations, the backend reconnects transparently.
-- **Retry** — transient SSH errors (`SSHException`, `OSError`, `EOFError`) are retried up to 3 times with exponential backoff (2 s min, 10 s max).
+- **Retry** — transient SSH errors (`SSHException`, `OSError`, `EOFError`) are retried up to 3 times with exponential backoff (2 s min, 10 s max). Retry covers connecting only; a failure part-way through a transfer is reported to the caller rather than restarted.
+- **Stall detection** — off by default; set [`io_timeout`](#bounding-a-stalled-transfer) to bound a read or write that stops making progress on an open channel.
 - **Single connection, not thread-safe** — each `SFTPBackend` instance holds one paramiko `SFTPClient`. Calling it from multiple threads simultaneously (e.g. via `SyncBackendAdapter` + `asyncio.gather`) races on the shared socket. Create one `SFTPBackend` per thread for parallel workloads.
 
 ## Capabilities

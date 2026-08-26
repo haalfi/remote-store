@@ -35,7 +35,8 @@ SFTPBackend(
     known_host_keys: str | None = None,
     host_keys_path: str | None = None,  # defaults to ~/.ssh/known_hosts
     config: dict | None = None,         # may contain "known_host_keys"
-    timeout: int = 10,
+    timeout: int = 10,                  # connect phase only (see SFTP-030)
+    io_timeout: float | None = None,    # bound on a stalled open channel
     connect_kwargs: dict | None = None, # extra SSHClient.connect() kwargs
 )
 ```
@@ -84,7 +85,10 @@ on staleness is also supported (see SFTP-010).
 ### SFTP-005: Construction Validation
 
 **Invariant:** `host` must be a non-empty string. Passing an empty or whitespace-only
-host raises `ValueError` at construction time.
+host raises `ValueError` at construction time. `io_timeout`, when not `None`, must
+be a positive number of seconds; `0` and negatives raise `ValueError` — paramiko
+reads `0` as non-blocking, which would fail every read immediately rather than
+bound it.
 **Postconditions:** No network validation of host reachability at construction time.
 
 ---
@@ -153,8 +157,11 @@ across the full dead-connection signal set (`EOFError`, `OSError('Socket is
 closed')`, the socket-teardown errnos, `socket.timeout`, and the paramiko
 `SFTPError` / `SSHException` / `ChannelException` families — see SFTP-023).
 Anchoring recovery to that conclusion rather than an enumerated list is what
-keeps a signal the list forgot (e.g. a `socket.timeout` from the channel
-timeout) from wedging the long-lived backend. Operations outside the default
+keeps a signal the list forgot (e.g. a `socket.timeout` raised by the
+`io_timeout` bound of SFTP-030) from wedging the long-lived backend. Note that
+this tier only *handles* such a timeout; nothing here causes one. A read that
+stalls on an open channel raises nothing at all unless `io_timeout` arms the
+bound, so with the default `None` this path is unreachable for a silent peer. Operations outside the default
 `_errors()` scope must still route through this mapping for the guarantee to
 hold: the listing operations route their failure through `_map_exception`, and
 `open_atomic`'s streamed-write phase — which yields the handle outside
@@ -363,3 +370,44 @@ and `docs-src/guides/async.md`.
 **See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md)
 (BE-028), [029-async-store-backend-api.md](029-async-store-backend-api.md)
 (ASYNC-094).
+
+---
+
+## Timeouts
+
+### SFTP-030: Channel I/O Timeout
+
+**Invariant:** `timeout` bounds the connect phase only. It is passed to
+`ssh.connect()` as `timeout`, `banner_timeout`, `auth_timeout` and
+`channel_timeout`; the last bounds how long the client waits for a channel to
+*open*, not traffic on an opened one. Blocking I/O on the open channel is
+governed by `Channel.timeout`, which paramiko initialises to `None`.
+
+`io_timeout` (default `None`, meaning unbounded — no behaviour change for
+callers that do not set it) is applied via `Channel.settimeout()` in `_connect`,
+immediately after `open_sftp()`. Because it is applied there rather than at
+construction, **every** reconnect re-arms it on its new channel.
+
+**Semantics:** the bound is on a single blocking operation making no progress,
+not on the duration of a transfer. A large file over a slow link is unaffected
+however long it takes; a peer that goes silent for longer than `io_timeout`
+raises `socket.timeout`. Since it is `settimeout()`, the bound covers writes as
+well as reads.
+
+**Postconditions:** A stalled operation raises `BackendUnavailable`, via the
+existing `_is_connection_dead` / `_map_exception` path (SFTP-023), which also
+clears the cached client so the next operation reconnects (SFTP-010 tier 2).
+
+**Excluded from retry:** `RetryPolicy` governs `_connect` only (SFTP-009), so a
+stall reaches the caller rather than being retried. Retrying it transparently
+would restart a partially consumed stream underneath a caller that had already
+read from it.
+
+**Rationale:** Without this, a silent peer blocks forever while holding whatever
+pooled resource the operation runs on, and emits no signal — while the recovery
+machinery for exactly that fault already exists and merely lacks a trigger.
+`unwrap(SFTPClient).get_channel().settimeout()` is not a substitute: a
+transparent reconnect builds a fresh channel with `timeout=None`, so a
+caller-applied bound evaporates precisely after a recovered drop. Keeping the
+knob distinct from `timeout` matters because that name already carries four
+connect-phase meanings.

@@ -560,7 +560,21 @@ class SFTPBackend(Backend):
         known_host_keys: Known hosts string (code-level override).
         host_keys_path: Path to known_hosts file (default: ``~/.ssh/known_hosts``).
         config: Optional config dict (may contain ``known_host_keys``).
-        timeout: SSH connection timeout in seconds.
+        timeout: SSH connection timeout in seconds. Bounds the *connect* phase
+            only — it is passed as paramiko's ``timeout`` / ``banner_timeout`` /
+            ``auth_timeout`` / ``channel_timeout``, the last of which bounds
+            channel *open*, not traffic on an opened channel.
+        io_timeout: Seconds a single blocking read or write on the open SFTP
+            channel may go without progress before it fails, or ``None``
+            (default) for no bound. Applied with ``Channel.settimeout()`` after
+            connect *and after every reconnect*, so a transparently re-established
+            connection stays bounded. This is silence between bytes, not a
+            deadline for the whole transfer: a large file over a slow link is
+            unaffected, while a peer that stops sending mid-transfer raises
+            ``BackendUnavailable`` instead of blocking forever. Must be
+            positive when set. The stall is reported, not retried: the
+            ``retry`` policy governs connecting only, so a partially consumed
+            stream is never silently restarted.
         connect_kwargs: Extra kwargs passed to ``SSHClient.connect()``.
     """
 
@@ -580,11 +594,17 @@ class SFTPBackend(Backend):
         host_keys_path: str | None = None,
         config: dict[str, Any] | None = None,
         timeout: int = 10,
+        io_timeout: float | None = None,
         connect_kwargs: dict[str, Any] | None = None,
         retry: RetryPolicy | None = None,
     ) -> None:
         if not host or not host.strip():
             raise ValueError("host must be a non-empty string")
+        if io_timeout is not None and io_timeout <= 0:
+            # paramiko reads 0 as non-blocking, which would fail every read
+            # immediately rather than bounding it. Reject it here instead of
+            # letting it surface as an unexplained storm of BackendUnavailable.
+            raise ValueError("io_timeout must be a positive number of seconds, or None")
         if isinstance(host_key_policy, str):
             host_key_policy = HostKeyPolicy(host_key_policy)
         self._host = host
@@ -596,6 +616,7 @@ class SFTPBackend(Backend):
         self._host_key_policy = host_key_policy
         self._host_keys_path = host_keys_path
         self._timeout = timeout
+        self._io_timeout = io_timeout
         self._connect_kwargs = connect_kwargs or {}
         self._retry = retry
         self._resolved_host_keys = self._resolve_host_keys(known_host_keys, config)
@@ -1631,7 +1652,33 @@ class SFTPBackend(Backend):
             raise
         self._ssh_client = ssh
         self._sftp_client = ssh.open_sftp()
+        self._arm_io_timeout()
         log.info("SFTP connection established.", extra={"op": "connect", "backend": "sftp"})
+
+    def _arm_io_timeout(self) -> None:
+        """Bound blocking I/O on the freshly opened SFTP channel.
+
+        The four timeouts handed to ``ssh.connect()`` all expire during the
+        connect phase; ``channel_timeout`` included, which paramiko documents as
+        the wait for *opening* a channel. Traffic on an opened channel is
+        governed by ``Channel.timeout``, which paramiko initialises to ``None``.
+        Without this call a peer that completes the handshake and then stops
+        sending blocks forever, and ``_is_connection_dead`` — which already
+        matches ``TimeoutError``, and whose docstring already names the channel
+        timeout as its most realistic trigger — is never reached.
+
+        This runs on every ``_connect``, so a transparent reconnect re-arms the
+        bound on its new channel. That is the part a caller cannot do from
+        outside: a ``settimeout()`` applied to an unwrapped client is lost with
+        the channel it was set on, precisely when a recovered drop makes it
+        matter most.
+        """
+        if self._io_timeout is None:
+            return
+        channel = self._sftp_client.get_channel()
+        if channel is None:  # pragma: no cover — paramiko always attaches one here
+            return
+        channel.settimeout(self._io_timeout)
 
     def _create_ssh_client(self) -> Any:
         """Create and configure an SSHClient with host key policy."""

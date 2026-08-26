@@ -1,0 +1,161 @@
+id: BK-354
+title: "SFTP io_timeout: bound a read that stalls on an open channel"
+trigger: >-
+  Issue #970 reported that an SFTP peer which completes the handshake and then
+  stops sending mid-transfer blocks forever: the single `timeout` constructor
+  arg reaches only connect-phase paramiko timeouts, and nothing calls
+  settimeout() on the opened channel.
+source_items:
+  - BK-354
+audience:
+  - user.api
+  - user.api_docs
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+  - docs-src/guides/backends/sftp.md
+# No review rounds yet — this trace ships with the first push of the branch.
+# Counted from `git log --oneline origin/master..HEAD`, which holds a single
+# implementation commit and no review-driven follow-up.
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient on the report
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_connect (ssh.connect kwargs)"
+        read_type: verify
+        extract: >-
+          Confirm all four timeouts passed to ssh.connect() are connect-phase.
+          Verified against paramiko 5.0.0 in the hatch env rather than from the
+          issue's citation: Transport.channel_timeout defaults to 60*60 and
+          bounds channel open, Channel.timeout initialises to None.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_connection_dead, _map_exception"
+        read_type: reference
+        extract: >-
+          Confirm the recovery path already matches TimeoutError, returns
+          BackendUnavailable and clears the cached client — so the work is
+          arming an existing mechanism, not building one
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_connected"
+        read_type: verify
+        extract: >-
+          Check that clearing _sftp_client actually causes a reconnect; it
+          returns False on a None client, so the loop closes
+        outcome: ok
+  - id: spec
+    name: Spec the bound
+    steps:
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-010"
+        read_type: gate
+        extract: >-
+          Staleness/reconnect contract. Its rationale cites "a socket.timeout
+          from the channel timeout" as a signal this tier keeps from wedging the
+          backend — which presumes a bound that did not exist for reads. Amended
+          to say the tier handles such a timeout but never causes one.
+        outcome: misleading
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-001, SFTP-005, SFTP-023"
+        read_type: gate
+        extract: >-
+          Constructor signature, construction validation and the
+          BackendUnavailable signal set, all of which the new kwarg extends
+        outcome: ok
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: tests/backends/sftp/_helpers.py
+        section: "start_sftp_server, StubServer"
+        read_type: reference
+        extract: >-
+          In-process paramiko SFTP server available session-scoped, so a stall
+          can be exercised end-to-end without Docker
+        outcome: ok
+      - file: tests/backends/sftp/test_ping.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Conventions for spec marks, the backend-closing autouse fixture, and
+          the "internal:" comment form for Rule 3 exceptions
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Ran before implementing: 4 failed on the missing kwarg, 1 passed (the
+          default-None guard, vacuously true). A relay that goes silent
+          server->client after the handshake is what makes the stall real rather
+          than mocked. First green run then failed on a sixth test, which was my
+          own bug, not the fix's — both stall tests wrote the same filename into
+          a session-scoped server root; fixed with per-test uuid names.
+        outcome: ok
+  - id: implement
+    name: Arm the channel
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_connect, _arm_io_timeout, __init__"
+        read_type: reference
+        extract: >-
+          Apply settimeout() after open_sftp() inside _connect so every
+          reconnect re-arms it; reject non-positive values, since paramiko reads
+          0 as non-blocking
+        outcome: ok
+  - id: docs
+    name: Document the distinction
+    steps:
+      - file: docs-src/guides/backends/sftp.md
+        section: "Options, Connection Behaviour"
+        read_type: reference
+        extract: >-
+          The options table described `timeout` as "SSH connection timeout"
+          without saying it stops at connect; corrected, and a section added on
+          why the bound is on silence between bytes rather than transfer time
+        outcome: ok
+  - id: verify
+    name: Ripple check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Public method signature"
+        read_type: verify
+        extract: "Docstring Args, examples calling it, guides referencing it"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / New test file"
+        read_type: verify
+        extract: >-
+          Considered os_sensitive and declined: the marker scopes to paths,
+          atomic writes and local filesystem behaviour, while this file
+          exercises sockets and threads
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Spec section, Backlog item touched"
+        read_type: verify
+        extract: "Spec-tagged tests, BACKLOG-DONE entry, live trace, CHANGELOG stub"
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Rules 3, 7, 8"
+        read_type: gate
+        extract: >-
+          Read at the /pr qualitative-review gate, and it caught my own miss:
+          three tests asserted on _sftp_client behind a Rule 3 exception
+          comment, and one forced a reconnect by clearing that attribute by
+          hand. Rule 3 permits the exception, but Rule 8 does not — a rename
+          would have broken them — and unwrap(SFTPClient) is a public accessor
+          (SFTP-026) that made the exception unnecessary. Reworked to drive the
+          reconnect from a real stall and read through unwrap; Rule 7 then
+          folded the recovery and re-arm tests into one, since the flow was
+          identical. The exception comment had made the weakness look
+          adjudicated rather than unexamined.
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Reviewed the guide section and spec prose for longevity; the
+          tracker-ID leak this rule set governs had already been caught
+          mechanically by check_no_tracker_refs during the first gate run
+        outcome: ok
