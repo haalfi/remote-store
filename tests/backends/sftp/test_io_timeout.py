@@ -671,8 +671,9 @@ def test_stalled_upload_request_raises_backend_unavailable(stall_relay: _StallRe
 
 
 @pytest.mark.spec("SFTP-030")
-def test_write_stalling_mid_stream_costs_one_bound(stall_relay: _StallRelay) -> None:
-    """``write()`` from a stream that stalls part-way pays the bound once.
+@pytest.mark.parametrize("op", ["write", "write_atomic"])
+def test_write_stalling_mid_stream_costs_one_bound(stall_relay: _StallRelay, op: str) -> None:
+    """A stream that stalls part-way through a write pays the bound once.
 
     The other upload test stalls *before* the call, so it fails on the first
     round-trip and never reaches ``SFTPFile.write``. This one reaches it: the
@@ -681,13 +682,17 @@ def test_write_stalling_mid_stream_costs_one_bound(stall_relay: _StallRelay) -> 
     open and bytes already sent. Deterministic — the timing is controlled by the
     caller's own stream rather than by racing a thread against the transfer.
 
-    What it pins is the close, not the write. ``write()`` holds the handle in a
-    ``with`` block, so the failure runs ``SFTPFile.close()`` on the way out —
+    What it pins is the close, not the write. Both operations hold the handle in
+    a ``with`` block, so the failure runs ``SFTPFile.close()`` on the way out —
     a flush plus a synchronous ``CMD_CLOSE`` whose reply never comes, with
-    paramiko swallowing the timeout. Unguarded that is a second, invisible
-    bound. The same shape exists in ``write_atomic``, ``copy`` and ``move``'s
-    fallback, which is why the guard lives in one helper rather than at the site
-    an earlier round happened to measure.
+    paramiko swallowing the timeout. Unguarded that is a second, invisible bound.
+
+    ``write_atomic`` is parametrised in rather than trusted to the shared helper.
+    It was the last ``_handle`` call site with no test that would notice the
+    guard being removed: its own tests exit the handle cleanly and fail at the
+    promote, so they never run the close on a stalled channel. That is the gap
+    shape which let ``copy`` ship unguarded a round earlier — a site covered by
+    being listed rather than by being run.
     """
     io_timeout = 2.0
     backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
@@ -711,11 +716,11 @@ def test_write_stalling_mid_stream_costs_one_bound(stall_relay: _StallRelay) -> 
             return b""
 
     with pytest.raises(BackendUnavailable):
-        backend.write(name, _StallsAfterFirstChunk())
+        getattr(backend, op)(name, _StallsAfterFirstChunk())
     elapsed = time.monotonic() - stalled_at[0]
 
     assert elapsed < io_timeout * 1.75, (
-        f"stalled mid-stream write took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "
+        f"stalled mid-stream {op} took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "
         "the handle close is re-entering the stalled channel"
     )
 

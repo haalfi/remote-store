@@ -1994,8 +1994,12 @@ class SFTPBackend(Backend):
 
         This is the same guard ``open_atomic`` applies to its own handle;
         centralising it is what stops the next streaming call site rediscovering
-        the doubling. Measured on a streamed write at a 2 s bound: 4.04 s before
-        the guard, 2.04 s after.
+        the doubling. Measured at a 2 s bound on the two call sites that hold a
+        handle across a stall: a ``write`` from a stream that goes quiet
+        mid-transfer, 4.00 s before the guard and 2.00 s after; and a ``copy``,
+        which holds two handles, 6.9 s before and 2.0 s after. (``open_atomic``'s
+        own figure is 4.04 / 2.04, measured on its inline guard rather than on
+        this helper — kept separate because they are different code.)
         """
         try:
             yield handle
@@ -2246,8 +2250,7 @@ class SFTPBackend(Backend):
         ``EPIPE`` / ``ECONNABORTED`` / ``ETIMEDOUT`` / ``ESHUTDOWN`` /
         ``ENOTCONN`` / ``EBADF``); a ``socket.timeout`` / ``TimeoutError`` (an
         ``OSError`` whose half-open instance usually carries no matching errno,
-        so it is matched by type — the most realistic trigger, since a slow op
-        hits the channel timeout); and a ``paramiko.SFTPError`` (an SFTP-protocol
+        so it is matched by type); and a ``paramiko.SFTPError`` (an SFTP-protocol
         failure that subclasses neither ``OSError`` nor ``SSHException``). All
         are matched here so ``_map_exception`` maps them to ``BackendUnavailable``
         *and* invalidates the cached client so the next operation reconnects.
@@ -2259,6 +2262,14 @@ class SFTPBackend(Backend):
         enumeration is therefore not exhaustive by design — the invariant that a
         dead connection reconnects is upheld by ``_map_exception`` clearing the
         client on *every* ``BackendUnavailable`` it returns, not by this list.
+
+        On the ``TimeoutError`` arm: this docstring used to call it "the most
+        realistic trigger, since a slow op hits the channel timeout", which
+        presumed a bound on the open channel that did not exist. Whether it is
+        reached at all is now a configuration question — ``io_timeout`` is what
+        arms such a bound, and its default is ``None``. The arm predates that
+        option and is kept for the other shapes of half-open socket that surface
+        as a timeout, so it is neither the likeliest signal nor dead code.
         """
         import paramiko
 

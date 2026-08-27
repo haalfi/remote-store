@@ -18,23 +18,25 @@ expected_ripples:
   - CHANGELOG.md
   - docs-src/guides/backends/sftp.md
 # Counted from `git log --oneline origin/master..HEAD` at the head this trace
-# ships on, which holds nine commits. The field's description counts *commits*
+# ships on, which holds ten commits. The field's description counts *commits*
 # that exist because review feedback was incorporated, not review rounds, and
-# says a `BK-NNN:`-convention commit counts too — so eight of the nine do:
+# says a `BK-NNN:`-convention commit counts too — so nine of the ten do:
 # 2876dfb (round 1, 16 findings), f5227b3 (round 2, 6 findings), 0b1c752 (round
 # 2's third multiplier, filed as BK-355 rather than widened into the PR),
 # 4863ad9 and 8dd2f0a (round 3, 8 findings, two commits because the round's own
 # replacement claim then needed characterising), 51d90c2 and 866dc4b (round 4,
-# the unprimed exit gate, 5 findings, the second commit being a re-derivation of
-# this very field), and the commit this line ships in (round 5, the second exit
-# gate, 6 findings). Only bdf775b, which implements the item, does not count.
-# Value is 8.
+# the first unprimed exit gate, 5 findings, the second commit being a
+# re-derivation of this very field), bc561fb (round 5, the second exit gate, 6
+# findings), and the commit this line ships in (round 6, the third exit gate, 3
+# findings). Only bdf775b, which implements the item, does not count. Value is 9.
 #
-# The PR body counts *rounds* — five — and does not contradict this: rounds and
-# review-driven commits are different units, and the field is the second. Two
-# earlier values here were wrong for the same reason — each read the field name
-# instead of its description, then counted `fix:` prefixes. A third was wrong
-# for a duller one: it was written before the round's second commit existed.
+# The PR body counts *rounds* — six — and does not contradict this: rounds and
+# review-driven commits are different units, and the field is the second. Three
+# earlier values here were wrong, in three distinct ways, which is why the
+# derivation is spelled out rather than summarised: two read the field name
+# instead of its description and counted `fix:` prefixes; one was written before
+# the round's second commit existed; and the reconciliation sentence above once
+# quoted the PR body's round count from memory rather than from the body.
 #
 # Two ways the derivation itself has been wrong, both now closed. Round 2 left
 # it half-named — one SHA plus "the round-2 fix commit" — because the later
@@ -45,7 +47,7 @@ expected_ripples:
 # uncheckable. A SHA list is a derivation only while the history under it holds;
 # re-run the command whenever the branch moves under this file, rebases
 # included.
-review_rounds: 8
+review_rounds: 9
 phases:
   - id: orient
     name: Orient on the report
@@ -442,6 +444,55 @@ phases:
           the coarse reading, which is the one SFTP-030's retry-exclusion clause
           now depends on being precise. Corrected to name the ssh.connect() call
           and to say what that leaves unretried.
+        outcome: ok
+  - id: fix6
+    name: Round 6 review (third unprimed exit gate)
+    steps:
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "test_write_stalling_mid_stream_costs_one_bound"
+        read_type: verify
+        extract: >-
+          Round 5 named the rule — the file tests sites that were reasoned about
+          and trusts sites that were enumerated — and round 6 found one still
+          untrusted: write_atomic was the last _handle call site no test would
+          notice losing, because its own tests exit the handle cleanly and fail
+          at the promote, never running the close on a stalled channel.
+          Parametrised into the mid-stream test rather than given a twin; without
+          the guard it fails at 4.0s (2.0x the bound). Five sites, five
+          measurements now.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_connection_dead docstring"
+        read_type: verify
+        extract: >-
+          A premise this PR removed from SFTP-010 and left standing three
+          hundred lines away: the TimeoutError arm was called "the most
+          realistic trigger, since a slow op hits the channel timeout", which
+          presumes the bound the item exists to add. I read this docstring in
+          the orient phase and quoted it approvingly in the BACKLOG-DONE entry,
+          which is how it survived — reading it for what it gave me, not for
+          what the change would falsify.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_handle docstring figures"
+        read_type: verify
+        extract: >-
+          The helper's docstring carried 4.04/2.04, which is open_atomic's
+          inline-guard measurement for a guard open_atomic does not use; the
+          _handle-guarded write figure is 4.00/2.00. Both SFTP-030 and the PR
+          body kept them apart and only this docstring conflated them — a figure
+          migrating to the nearest plausible home rather than being re-derived.
+        outcome: ok
+      - file: sdd/traces/bk-354-sftp-io-timeout.yml
+        section: "(PR body cross-reference)"
+        read_type: verify
+        extract: >-
+          Round 6 also caught a claim I had generalised from a mock: "without
+          the guard a move on a dead channel reports success" is true of the
+          mocked test only. On a real stalled channel _move_fallback's own arm
+          catches the fallback rename and the drop surfaces, at four more bounds
+          rather than a false success. The trace scoped it correctly and the PR
+          body did not, so the correction is to the body.
         outcome: ok
   - id: docs
     name: Document the distinction

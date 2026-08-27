@@ -463,9 +463,13 @@ re-entries differently:
    `read_bytes`, `write`, `write_atomic`, `copy` and `move`'s copy fallback all
    hold a handle the same way, and `open_atomic` applies the same rule inline
    (its clean-exit close must sit inside `_errors` so a flush failure still
-   maps). Measured at a 2 s bound: 4.00 s before the guard and 2.00 s after on a
-   `write` from a stream that goes quiet mid-transfer, and 6.9 s before and
-   2.0 s after on a `copy`, which holds two handles rather than one.
+   maps). Measured at a 2 s bound, on a stream that goes quiet mid-transfer:
+   4.00 s before the guard and 2.00 s after for both `write` and `write_atomic`,
+   and 6.9 s before and 2.0 s after for `copy`, which holds two handles rather
+   than one. Each call site is measured rather than inferred from the helper
+   being shared — `copy` shipped unguarded for a round while five artifacts
+   named it covered, because the helper's call-site list was read as evidence
+   that the list had been exercised.
 
    The helper bounds what the caller waits inline; it does not promise the
    round-trip is never made. `SFTPFile.__del__` calls `_close(async_=True)`
