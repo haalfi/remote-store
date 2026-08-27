@@ -120,6 +120,46 @@ identify which list the server narrowed.
   `connect_kwargs={"disabled_algorithms": ...}`; the
   `enable_ssh_rsa_compat()` helper does not address these.
 
+## SFTP transfer hangs with no error
+
+**Symptom:** an SFTP read or write stops making progress and never returns.
+No exception, no log line — the call simply does not come back, and whatever
+worker or pool slot it was running on stays occupied.
+
+**Cause.** `SFTPBackend`'s `timeout` bounds the *connect* phase only. It is
+passed to paramiko as `timeout` / `banner_timeout` / `auth_timeout` /
+`channel_timeout`, and the last of those bounds how long the client waits for a
+channel to *open*, not traffic on an opened one. Once the channel is up,
+paramiko applies no bound at all, so a peer that completes the handshake and
+then stops sending blocks indefinitely. This is a silent peer, not a dropped
+connection: a drop raises and is recovered from, whereas silence looks exactly
+like a very slow transfer.
+
+**Fix.** Set [`io_timeout`](backends/sftp.md#bounding-a-stalled-transfer):
+
+```python
+from remote_store.backends import SFTPBackend
+
+backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=120)
+```
+
+A stall then raises `BackendUnavailable`, and the backend reconnects on the
+next operation.
+
+**If it still hangs with `io_timeout` set,** one wait is not covered: a server
+that opens the SSH channel and then never answers the `sftp` subsystem request.
+Paramiko waits for that reply on an untimed event, so no channel timeout
+reaches it. That needs a wedged SSH daemon rather than a wedged SFTP
+subsystem — rarer than the stall above, but it is the shape to suspect when the
+bound appears to do nothing.
+
+**Choosing a value.** `io_timeout` bounds the silence *between* bytes, not the
+transfer as a whole — a multi-gigabyte fetch that legitimately takes an hour is
+unaffected. Size it against the longest legitimate pause your server can
+produce (an antivirus or dedup appliance may go quiet on `open()` of a large
+file), not against total transfer time. `0` does not mean "no bound": it is
+rejected at construction. Use `None`, the default, for no bound.
+
 ## Azure: HNS vs flat namespace
 
 **Symptom:** `move()` or `copy()` fails on Azure with unexpected errors.

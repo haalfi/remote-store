@@ -97,6 +97,70 @@ class TestSFTPParamikoVersionSurface:
         params = inspect.signature(paramiko.SSHClient.connect).parameters
         assert "channel_timeout" in params
 
+    @pytest.mark.spec("SFTP-030")
+    def test_open_session_accepts_timeout(self) -> None:
+        """``_open_sftp_bounded`` calls ``open_session(timeout=...)``.
+
+        Same shape as the guard above, for the second kwarg the backend now
+        relies on. ``pyproject.toml`` pins ``paramiko>=3.0`` with, in its own
+        words, "Deliberately NO upper bound", so each relied-on API earns a
+        surface assertion that fails at test time rather than at a customer's
+        runtime.
+        """
+        import inspect
+
+        params = inspect.signature(paramiko.Transport.open_session).parameters
+        assert "timeout" in params
+
+    @pytest.mark.spec("SFTP-030")
+    def test_from_transport_still_matches_the_inlined_steps(self) -> None:
+        """``_open_sftp_bounded`` inlines ``SFTPClient.from_transport``'s body.
+
+        It has to: the whole point is to get a ``settimeout()`` in between
+        ``open_session`` and the version exchange that ``SFTPClient.__init__``
+        runs, and ``from_transport`` exposes no seam for that. The cost is a copy
+        of an upstream method body, on a dependency with no upper bound — if a
+        future paramiko adds a step there (window sizing, a negotiated option),
+        the copy diverges *silently*: no import error, no failure, just an SFTP
+        client built differently from everyone else's.
+
+        So this asserts the shape the copy assumes — open a session, guard the
+        None return, invoke the ``sftp`` subsystem, construct from the channel,
+        and nothing else that looks like a round-trip. It reads the body as an
+        AST rather than as text so that an *added* step fails it: a substring
+        check only catches removal and renaming, and silent divergence is the
+        failure mode this guards. Crude by design: it is a tripwire on the
+        upstream body, not a proof of equivalence, and a deliberate upstream
+        change should land here as a visible failure to re-read the copy.
+
+        Argument shape is deliberately not pinned beyond the subsystem name.
+        ``window_size`` / ``max_packet_size`` are tuning knobs the inlined copy
+        does not pass, so upstream re-spelling them is not divergence this copy
+        needs to hear about; an added *call* is.
+        """
+        import ast
+        import inspect
+        import textwrap
+
+        module = ast.parse(textwrap.dedent(inspect.getsource(paramiko.SFTPClient.from_transport)))
+        func = module.body[0]
+        assert isinstance(func, ast.FunctionDef)
+        body = func.body[1:]  # index 0 is the docstring
+
+        assert [type(node).__name__ for node in body] == [
+            "Assign",
+            "If",
+            "Expr",
+            "Return",
+        ]
+        assert ast.unparse(body[0].value.func) == "t.open_session"
+        assert ast.unparse(body[2]) == "chan.invoke_subsystem('sftp')"
+        assert ast.unparse(body[3]) == "return cls(chan)"
+        # The count is what makes "nothing else" checkable: a round-trip added
+        # anywhere in the body, nested inside the None guard included, moves it.
+        calls = [node for node in ast.walk(func) if isinstance(node, ast.Call)]
+        assert len(calls) == 3
+
 
 # endregion
 
@@ -2681,6 +2745,111 @@ class TestSFTPLowSeverityCorrectnessEdges:
             sftp_backend.write_atomic("wa_dead.txt", b"payload", overwrite=True)
         remove_spy.assert_not_called()
         assert sftp_backend._sftp_client is None  # dead signal mapped + invalidated
+
+    @pytest.mark.spec("SFTP-030")
+    def test_promote_timeout_skips_classification_and_fallback(self, sftp_backend: Backend) -> None:
+        """A timed-out ``posix_rename`` classifies no further and skips the fallback.
+
+        The companion above injects ``EOFError``, which — as its own docstring
+        says — bypasses ``_promote``'s ``except OSError`` and propagates raw. So
+        it routes *around* the ``io_timeout`` guard rather than through it. A
+        ``TimeoutError`` is an ``OSError``, so it enters that arm and exercises
+        the branch: without the guard, ``_raise_if_dir``'s stat and then the
+        fallback's ``remove`` + ``rename`` would each re-enter the dead channel
+        and re-pay the bound — the "up to three further bounds out of one failed
+        promote" SFTP-030 quotes, and the largest multiple in that clause.
+
+        Asserts on the round-trips rather than on elapsed time: these are mocks,
+        so there is no real stall to measure, and the count is the thing the
+        guard changes.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("warmup_t.txt", b"x")
+
+        with (
+            patch.object(sftp_backend._sftp_client, "posix_rename", side_effect=TimeoutError("timed out")),
+            patch.object(sftp_backend._sftp_client, "stat") as stat_spy,
+            patch.object(sftp_backend._sftp_client, "remove") as remove_spy,
+            patch.object(sftp_backend._sftp_client, "rename") as rename_spy,
+            pytest.raises(BackendUnavailable),
+        ):
+            sftp_backend.write_atomic("wa_timeout.txt", b"payload", overwrite=True)
+        # internal: the skipped round-trips have no public observable (Rule 3).
+        stat_spy.assert_not_called()  # _raise_if_dir classification
+        remove_spy.assert_not_called()  # fallback + temp cleanup
+        rename_spy.assert_not_called()  # fallback
+        assert sftp_backend._sftp_client is None
+
+    @pytest.mark.spec("SFTP-030")
+    def test_move_timeout_skips_rename_and_copy_fallback(self, sftp_backend: Backend) -> None:
+        """``move``'s own ``posix_rename`` gets the guard ``_promote`` has.
+
+        The twin above covers ``write_atomic`` / ``open_atomic``, which promote
+        through ``_promote``. ``move`` does its own ``posix_rename`` and had no
+        such guard, so a timed-out rename fell into a fallback chain that
+        re-enters the dead channel four more times: a suppressed ``remove``
+        (silent), a ``rename``, then the copy fallback's two file opens.
+
+        The fallback carries ``# pragma: no cover -- fallback for servers
+        without posix_rename``, which is what hid this: the pragma described the
+        *fallback*, and the guard now sits outside it because a stalled channel
+        fails ``posix_rename`` on any server, extension or not.
+
+        Asserts on round-trips, not elapsed time — these are mocks, and the
+        count is what the guard changes.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("mv_src.txt", b"payload")
+
+        with (
+            patch.object(sftp_backend._sftp_client, "posix_rename", side_effect=TimeoutError("timed out")),
+            patch.object(sftp_backend._sftp_client, "remove") as remove_spy,
+            patch.object(sftp_backend._sftp_client, "rename") as rename_spy,
+            patch.object(sftp_backend._sftp_client, "file") as file_spy,
+            pytest.raises(BackendUnavailable),
+        ):
+            sftp_backend.move("mv_src.txt", "mv_dst.txt", overwrite=True)
+        # internal: the skipped round-trips have no public observable (Rule 3).
+        remove_spy.assert_not_called()  # fallback's suppressed remove
+        rename_spy.assert_not_called()  # fallback's rename
+        file_spy.assert_not_called()  # copy fallback's two opens
+        assert sftp_backend._sftp_client is None
+
+    @pytest.mark.spec("SFTP-030")
+    def test_move_fallback_rename_timeout_skips_the_copy(self, sftp_backend: Backend) -> None:
+        """A channel that dies *inside* the rename fallback skips the copy too.
+
+        The twin above enters ``_move_fallback`` never — its guard fires on
+        ``posix_rename``. This one enters it: ``posix_rename`` fails for a
+        non-dead reason, which is what a server lacking
+        ``posix-rename@openssh.com`` does on every call, and the channel then
+        dies on the plain ``rename``. Without the inner guard the two file opens
+        of the stream-copy last resort each pay the bound again.
+
+        Worth its own test rather than trusting the outer one, because the two
+        guards have different reachability: the outer needs only a stalled
+        channel, while this one needs a ``posix_rename`` that failed for some
+        *other* reason first. That is also why neither this method nor its guard
+        carries the ``no cover`` pragma that the stream-copy tail does.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("mvf_src.txt", b"payload")
+
+        with (
+            patch.object(sftp_backend._sftp_client, "posix_rename", side_effect=OSError("Failure")),
+            patch.object(sftp_backend._sftp_client, "rename", side_effect=TimeoutError("timed out")),
+            patch.object(sftp_backend._sftp_client, "file") as file_spy,
+        ):
+            # Keeps a *failing* run finite: with the guard removed the copy is
+            # entered, and an unconfigured mock read never returns empty, so
+            # ``copyfileobj`` would spin until the runner is killed rather than
+            # reporting the regression.
+            file_spy.return_value.read.return_value = b""
+            with pytest.raises(BackendUnavailable):
+                sftp_backend.move("mvf_src.txt", "mvf_dst.txt", overwrite=True)
+        # internal: the skipped round-trips have no public observable (Rule 3).
+        file_spy.assert_not_called()  # the stream-copy last resort
+        assert sftp_backend._sftp_client is None
 
     @pytest.mark.spec("SFTP-021")
     def test_raise_if_dir_permission_stat_maps_permission_denied(self, sftp_backend: Backend) -> None:

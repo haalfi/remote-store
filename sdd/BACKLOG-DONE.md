@@ -45,6 +45,20 @@ a decision *about* a diagnosis is still a decision and deleting both is how the
 same idea returns with the argument had from scratch. Re-file under a **new** ID
 if evidence changes; these are retired.
 
+- [x] **— SFTP `keepalive_interval`** *(refused at admission; never had an ID)*
+  The second of the two asks in [issue #970](https://github.com/haalfi/remote-store/issues/970),
+  which the reporter themself scoped as "secondary, and clearly lower priority"
+  than the read bound: a `transport.set_keepalive(...)` passthrough so a silently
+  dropped flow becomes visible rather than merely quiet. Refused on the admission
+  test — no observed pain here, and the diagnosis behind it is largely absorbed by
+  what BK-354 shipped: once `io_timeout` is set, a silent drop and a silent stall
+  are the same fault and reach the caller through the same `BackendUnavailable`.
+  Keepalive would add a *distinct* capability (detecting death while idle, with no
+  operation in flight), so this is a refusal of a real if narrower idea, not a
+  claim that BK-354 covers it. Registered here rather than left inside BK-354's
+  entry because BK-354's PR closes #970, retiring the reporter's own record of the
+  ask. Re-file under a new ID if an idle-connection death is ever observed.
+
 - [x] **— `ext.cache` stampede guard** *(refused at admission; never had an ID)*
   BK-290 left the stampede — concurrent identical misses each hitting the backend
   — as an out-of-scope follow-up and named ID-218 as its owner. That attribution
@@ -155,6 +169,47 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-354 — SFTP has no way to bound a read that stalls on an open channel**
+  spec: SFTP-030, SFTP-005, SFTP-009, SFTP-010 · effort: S · audience: user.api, user.api_docs, user.site
+  Reported as [issue #970](https://github.com/haalfi/remote-store/issues/970) by a
+  consumer pulling vendor deliveries over a slow link, where a 214 MB file takes
+  ~20 min and a 2 GiB file ~70 min — a 3x spread that makes elapsed time useless
+  for telling "slow" from "stalled", leaving a byte-level bound as the only
+  precise instrument. `_connect` passed the single `timeout` to `ssh.connect()` as
+  `timeout` / `banner_timeout` / `auth_timeout` / `channel_timeout`, all of which
+  expire during the connect phase; paramiko documents the last as the wait for
+  *opening* a channel and initialises `Channel.timeout` to `None`, and nothing
+  called `settimeout()`. So a peer that completed the handshake and then went
+  quiet blocked forever, holding its pool slot and emitting no signal.
+  The recovery path for exactly that fault was already present and correct:
+  `_is_connection_dead` matches `TimeoutError` — its docstring already named the
+  channel timeout as the most realistic trigger — and `_map_exception` maps it to
+  `BackendUnavailable` and clears the cached client so the next operation
+  reconnects. It simply had no trigger. Shipped as `io_timeout` (SFTP-030),
+  applied in `_connect`, which is what makes it survive a transparent reconnect;
+  a caller applying `settimeout()` through `unwrap` loses it with the channel,
+  precisely after a recovered drop. Default `None`, so no behaviour change, and
+  deliberately outside the connect `RetryPolicy` so a partially consumed stream is
+  never silently restarted.
+  Review round 1 found the first implementation armed the bound too late to
+  deliver its own headline guarantee: `ssh.open_sftp()` runs the SFTP version
+  exchange, a blocking read on a channel `open_session` returns with
+  `Channel.timeout` still `None`, so a peer that finished the SSH handshake and
+  then fell silent hung forever *with* `io_timeout` set — and every reconnect
+  re-entered that window. `_connect` now opens the channel, arms the bound, then
+  invokes the subsystem and builds the client. Confirmed load-bearing by
+  restoring the late-arming order, at which point the version-exchange test hangs
+  (`timeout 120 pytest -k version_exchange_is_bounded` exits 124).
+  The same round found the bound was multiplied for callers: the `read`,
+  `read_bytes` and `delete` error paths classify a failure by re-probing the
+  server, re-entering the stalled channel while `_map_exception` had not yet
+  cleared the client, so each probe paid `io_timeout` again. They now skip
+  classification once the exception concludes the connection is dead — the guard
+  `write_atomic` and `open_atomic` already applied to their cleanup round-trip.
+  `keepalive_interval`, the reporter's clearly lower-priority second ask, was
+  refused rather than deferred; the argument is registered under
+  [§ Decided against](#decided-against) so closing #970 does not retire it
+  silently.
 - [x] **BUG-247 — `LocalBackend` reports a deleted root as "Path escapes root directory"**
   spec: BE-004, BE-005, BE-012, BE-013, BE-021, BE-029, PING-002, PING-003 · effort: S · audience: user.api
   Delete a `LocalBackend`'s root out from under it and every operation but

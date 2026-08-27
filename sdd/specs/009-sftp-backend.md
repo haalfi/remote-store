@@ -35,7 +35,8 @@ SFTPBackend(
     known_host_keys: str | None = None,
     host_keys_path: str | None = None,  # defaults to ~/.ssh/known_hosts
     config: dict | None = None,         # may contain "known_host_keys"
-    timeout: int = 10,
+    timeout: int = 10,                  # connect phase only (see SFTP-030)
+    io_timeout: float | None = None,    # bound on a stalled open channel
     connect_kwargs: dict | None = None, # extra SSHClient.connect() kwargs
 )
 ```
@@ -84,7 +85,10 @@ on staleness is also supported (see SFTP-010).
 ### SFTP-005: Construction Validation
 
 **Invariant:** `host` must be a non-empty string. Passing an empty or whitespace-only
-host raises `ValueError` at construction time.
+host raises `ValueError` at construction time. `io_timeout`, when not `None`, must
+be a positive number of seconds; `0` and negatives raise `ValueError` — paramiko
+reads `0` as non-blocking, which would fail every read immediately rather than
+bound it.
 **Postconditions:** No network validation of host reachability at construction time.
 
 ---
@@ -127,7 +131,11 @@ the Base64 payload. Invalid PEM structures (not 5 parts) raise `ValueError`.
 
 ### SFTP-009: Tenacity Retry on Connect
 
-**Invariant:** The `_connect()` method retries on transient SSH errors using tenacity.
+**Invariant:** `_connect()` retries the `ssh.connect()` call on transient SSH
+errors using tenacity. The retried closure is that call alone, **not** the whole
+of `_connect`: the SFTP channel open and session setup that follow it run once,
+outside the retry, so a failure there is reported rather than retried (SFTP-030
+depends on this scope being stated precisely).
 When no `RetryPolicy` is provided, uses defaults: 3 attempts, exponential backoff
 (2s min, 10s max). When a `RetryPolicy` is provided via the `retry` constructor
 parameter, maps its fields to tenacity: `max_attempts` -> `stop_after_attempt`,
@@ -153,8 +161,14 @@ across the full dead-connection signal set (`EOFError`, `OSError('Socket is
 closed')`, the socket-teardown errnos, `socket.timeout`, and the paramiko
 `SFTPError` / `SSHException` / `ChannelException` families — see SFTP-023).
 Anchoring recovery to that conclusion rather than an enumerated list is what
-keeps a signal the list forgot (e.g. a `socket.timeout` from the channel
-timeout) from wedging the long-lived backend. Operations outside the default
+keeps a signal the list forgot from wedging the long-lived backend — the list
+above is evidence of the current signals, not the guarantee. No worked example
+is given deliberately: every signal named here is enumerated, mapped and
+tested, so any example drawn from the list would illustrate the opposite of the
+claim. Note also that this tier only *handles* a `socket.timeout`; nothing here
+causes one. A read that stalls on an open channel raises nothing at all unless
+SFTP-030's `io_timeout` arms the bound, so with its default of `None` this path
+is unreachable for a merely silent peer. Operations outside the default
 `_errors()` scope must still route through this mapping for the guarantee to
 hold: the listing operations route their failure through `_map_exception`, and
 `open_atomic`'s streamed-write phase — which yields the handle outside
@@ -363,3 +377,191 @@ and `docs-src/guides/async.md`.
 **See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md)
 (BE-028), [029-async-store-backend-api.md](029-async-store-backend-api.md)
 (ASYNC-094).
+
+---
+
+## Timeouts
+
+### SFTP-030: Channel I/O Timeout
+
+**Invariant:** `timeout` bounds the connect phase only. It is passed to
+`ssh.connect()` as `timeout`, `banner_timeout`, `auth_timeout` and
+`channel_timeout`; the last bounds how long the client waits for a channel to
+*open*, not traffic on an opened one. Blocking I/O on the open channel is
+governed by `Channel.timeout`, which paramiko initialises to `None`.
+
+`io_timeout` (default `None`, meaning unbounded — no behaviour change for
+callers that do not set it; `0` and negatives raise `ValueError`, see SFTP-005)
+is applied via `Channel.settimeout()` in `_connect`, and **every** reconnect
+re-arms it on its new channel because it is applied there rather than at
+construction.
+
+**It is armed before the SFTP session exists, not after.** `_connect` opens the
+channel, arms the bound, then invokes the `sftp` subsystem and constructs the
+`SFTPClient`. That order is load-bearing: `SFTPClient.__init__` performs the
+SFTP version exchange, which *blocks reading the server's reply* on a channel
+`Transport.open_session` hands back with `Channel.timeout` still `None`. Arming
+after `ssh.open_sftp()` returns would leave that exchange unbounded — a peer
+that completes the SSH handshake and then falls silent hangs there forever,
+which is the exact fault this clause exists to bound, reached before the bound
+is set. It is not a connect-only edge case: every reconnect re-enters that
+window, so the guarantee would be missing precisely for the half-alive peer
+that motivates it, and `RetryPolicy` cannot cover it because a hang raises
+nothing to retry.
+
+**Semantics:** the bound is on a single blocking operation making no progress,
+not on the duration of a transfer. A large file over a slow link is unaffected
+however long it takes; a peer that goes silent for longer than `io_timeout`
+raises `socket.timeout`. Since it is `settimeout()`, the bound covers writes as
+well as reads, and a stalled write reaches it on the receive side like a read
+does. The distinct fault it covers is a request that never reaches the server,
+as against a reply that never returns.
+
+Note which round-trip a stalled write fails on, because it depends on *when* the
+peer went silent, not on which method was called. A stall already in effect when
+the call starts never reaches the payload: `write()` issues an existence `stat`
+on `overwrite=False`, and the file open is a round-trip on `overwrite=True`, so
+the failure lands there. A stall that begins mid-transfer does reach
+`SFTPFile.write`, and `write`, `write_atomic` and `open_atomic` all get there —
+any handle that is open when the peer goes quiet will.
+
+The distinction is stated because both halves have been got wrong here. An early
+revision explained the pre-armed case by `SFTPFile.write` not being pipelined, an
+explanation no run behind it had reached. Its replacement then said reaching
+`SFTPFile.write` "requires a handle opened beforehand — `open_atomic`", which
+generalised a measurement of the pre-armed case (`SFTPFile.write` entered 0 times)
+to every route, and stood while two tests in the suite reached it through plain
+`write` and `write_atomic`.
+
+**Postconditions:** A stalled operation raises `BackendUnavailable`, via the
+existing `_is_connection_dead` / `_map_exception` path (SFTP-023), which also
+clears the cached client so the next operation reconnects (SFTP-010 tier 2).
+
+The caller-visible wall clock for a stalled operation is one bound, not
+several. A failed operation re-enters the channel two ways — to classify the
+failure (`_raise_if_dir`, `_has_file_ancestor`) and to release resources — and
+each re-entry would pay `io_timeout` again on a client `_map_exception` has not
+yet cleared. **Three** mechanisms prevent that, because callers arrive at those
+re-entries differently:
+
+1. **A passed cause.** A caller holding a failed operation's exception passes it
+   to `_raise_if_dir`, which skips the probe when that exception already
+   concludes the connection is dead.
+2. **A dead-stat re-raise.** `_raise_if_dir` and `_has_file_ancestor` each
+   re-raise a dead-connection error from their own stat rather than swallowing
+   it as unclassifiable. This is what covers `read`, whose is-dir check is eager
+   and so has no prior exception to pass, and it also fixes a correctness
+   residue in `_has_file_ancestor`: swallowing there returned `False`, the
+   caller's original error surfaced, and `_map_exception` classified it as a
+   generic `RemoteStoreError` — which does *not* clear the cached client, so
+   SFTP-010 tier 2 never fired on the operation that surfaced the drop.
+3. **Skipped teardown.** Every promote-or-rename path skips what follows a dead
+   rename: `_promote` skips the `rename` fallback, whose `remove` + `rename`
+   would each pay the bound again, and `move` skips its own fallback chain — a
+   suppressed `remove`, a `rename`, and the copy fallback's two file opens.
+   `write_atomic` and `open_atomic` skip their temp cleanup. And **every**
+   paramiko file handle held in a `with` block skips its close on a
+   dead-connection exit, since `SFTPFile.close()` flushes and then issues a
+   synchronous `CMD_CLOSE` whose reply never comes.
+
+   That last is the worst of the set when unguarded, because paramiko swallows
+   the timeout raised inside its own close, making it a wait with no error to
+   explain it. The guard is one helper (`_handle`) rather than a per-site
+   repeat, because the site that first exposed it was not the only one:
+   `read_bytes`, `write`, `write_atomic`, `copy` and `move`'s copy fallback all
+   hold a handle the same way, and `open_atomic` applies the same rule inline
+   (its clean-exit close must sit inside `_errors` so a flush failure still
+   maps). Measured at a 2 s bound, on a stream that goes quiet mid-transfer:
+   4.00 s before the guard and 2.00 s after for both `write` and `write_atomic`,
+   and 6.9 s before and 2.0 s after for `copy`, which holds two handles rather
+   than one.
+
+   Three of the five call sites are measured that way; the other two are named
+   here rather than counted as covered, because the helper being shared is not
+   evidence that a site was exercised. `read_bytes` prefetches, so a stall inside
+   its read fails in paramiko's prefetch machinery rather than on the close of a
+   partly-read handle, and a test there would pin something other than what it
+   claimed. `move`'s copy fallback (`_copy_and_delete`) is reached only when both
+   `posix_rename` and `rename` fail for non-dead reasons, which needs a server
+   refusing both, so it carries a `no cover` pragma.
+
+   The distinction is drawn because `copy` shipped unrouted for a round while
+   five artifacts named it covered — the call-site list was read as evidence that
+   the list had been run. The same reading is what put the pragma on too much
+   code twice: first over `move`'s dead-rename guard, then over `_move_fallback`'s
+   own, each of which is reachable well outside the case the pragma names. Each
+   split moved the pragma down to the method that genuinely needs it, and the two
+   guards now have a test apiece.
+
+   The helper bounds what the caller waits inline; it does not promise the
+   round-trip is never made. `SFTPFile.__del__` calls `_close(async_=True)`
+   unconditionally, and the `BufferedFile.close` inside it — which flushes —
+   sits outside `_close`'s own `try`, so a *write* handle still holding buffered
+   bytes can attempt one blocking write when it is collected, on whatever thread
+   collects it. A read handle cannot: its write buffer is empty and `_write_all`
+   returns without a round-trip.
+
+   The `move` guard is a case where a coverage pragma hid a gap: its fallback
+   carries `# pragma: no cover -- fallback for servers without posix_rename`,
+   which describes the fallback correctly, while the dead-connection guard above
+   it is reachable on *any* server, since a stalled channel fails `posix_rename`
+   like anything else. The fallback is therefore a separate method
+   (`_move_fallback`), so the pragma covers only what it names.
+
+**Bounded, with two stated exceptions.** Neither is fixed here:
+
+- **The `subsystem` request.** `Channel.invoke_subsystem` waits in
+  `Channel._wait_for_event`, a bare `threading.Event.wait()` with no timeout
+  argument, which never reads `Channel.timeout`. A peer that opens the session
+  channel and then never answers the request hangs regardless of `io_timeout`,
+  and every reconnect re-enters that window. Bounding it would mean inlining
+  `invoke_subsystem`'s own body — deeper into paramiko internals than the
+  `from_transport` copy this clause already accepts — so it is recorded rather
+  than taken. Narrower than the version-exchange window that *is* bounded: a
+  server that accepts a channel but never answers a channel request is a wedged
+  SSH daemon, not a wedged subsystem.
+  This exception is **characterised by a test**, not asserted: a server variant
+  that parks in its subsystem handler (so no `CHANNEL_SUCCESS` is ever sent)
+  leaves the client blocked well past the bound, with the handler's entry
+  observed so the block is pinned to the request rather than to an earlier
+  handshake step. If that test ever fails, the wait has become bounded and this
+  bullet should be deleted with it.
+- **Releasing a *streamed-read* handle.** `read` hands back an
+  `_ErrorMappingStream`, whose `close` closes the underlying paramiko file under
+  `contextlib.suppress`, so releasing a stream that has already failed blocks
+  once more. Measured at a 2 s bound, consuming part of a `read()` and then
+  stalling: 4.00 s for the failed reads plus the close. This is the one handle
+  the `_handle` guard above does not reach, because the wrapper — not this
+  backend — owns the close, and it serves the S3, Azure and HTTP backends too.
+  Tracked as BK-355; when it lands, this exception goes.
+
+For a **streamed** read (`read`), a stall after the caller has consumed bytes
+raises rather than returning short, so a truncated stream is never
+indistinguishable from a complete one. The bytes already delivered are a valid
+prefix and the handle is dead: the caller discards it rather than resuming.
+This is the premise the retry exclusion below is argued from, so it is stated
+here rather than left implied.
+
+**Excluded from retry:** `RetryPolicy` wraps the `ssh.connect()` call alone, not
+the whole of `_connect` (SFTP-009), so **no** stall bounded by `io_timeout` is
+retried — neither one on a caller's operation nor one in the session setup
+described above, which happens inside `_connect` but outside the retried
+closure. Every stall reaches the caller.
+
+For an operation-level stall the exclusion is deliberate: retrying
+transparently would restart a partially consumed stream underneath a caller
+that had already read from it. That rationale does **not** reach a
+version-exchange stall, where nothing has been consumed yet, so the exclusion
+there is a consequence of where the retry boundary sits rather than a decision
+argued on its merits. Recorded as an open question rather than presented as
+settled: a session-setup stall is arguably a connect failure and could be
+retried like one.
+
+**Rationale:** Without this, a silent peer blocks forever while holding whatever
+pooled resource the operation runs on, and emits no signal — while the recovery
+machinery for exactly that fault already exists and merely lacks a trigger.
+`unwrap(SFTPClient).get_channel().settimeout()` is not a substitute: a
+transparent reconnect builds a fresh channel with `timeout=None`, so a
+caller-applied bound evaporates precisely after a recovered drop. Keeping the
+knob distinct from `timeout` matters because that name already carries four
+connect-phase meanings.
