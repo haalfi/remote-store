@@ -915,7 +915,12 @@ class TestSFTPConnection:
         with pytest.raises(BackendUnavailable):
             stream.read()
         with contextlib.suppress(Exception):
-            stream.close()  # release the wrapped real handle
+            # Closes the wrapper only. ``EOFError`` is a dead-connection signal,
+            # so the futile-close guard skips the inner paramiko handle by
+            # design (BK-355) and this no longer releases it synchronously —
+            # collection does, via ``SFTPFile.__del__``. The fixture's backend
+            # teardown is what bounds the handle's life here.
+            stream.close()
         assert sftp_backend._sftp_client is None, "a read-path channel death must invalidate the client"
         assert sftp_backend.read_bytes("r.txt") == b"payload", "the next read must reconnect, not wedge"
 

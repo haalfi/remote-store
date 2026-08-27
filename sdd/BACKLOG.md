@@ -1049,7 +1049,7 @@ here as legitimately as "built".
   answered (issue #970: "'no bound at all' is a surprising default given
   `_is_connection_dead` already assumes one"). It stands unrebutted.
   **Why the default is wrong on the library's own terms, not just on taste.**
-  `HttpBackend` already defaults `timeout=30.0`, which reaches reads, so SFTP
+  `ReadOnlyHttpBackend` already defaults `timeout=30.0`, which reaches reads, so SFTP
   is the outlier rather than the pioneer — a user meets a bounded read on HTTP
   and an unbounded one on SFTP with no principle separating them. And the SFTP
   recovery path (`_is_connection_dead` → `_map_exception` → cleared client) was

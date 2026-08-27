@@ -74,8 +74,14 @@ chunk = stream.read(4096)
 
 ## SIO-010: Releasing a Stream Whose Failure Condemned the Connection
 
-**Invariant:** Releasing a stream returned by `Backend.read()` does not re-enter
-a connection that the stream's own failure has already established is unusable.
+**Invariant:** Where a backend supplies `_ErrorMappingStream` with an `is_fatal`
+predicate, releasing a stream returned by that backend's `Backend.read()` does
+not re-enter a connection the stream's own failure has already established is
+unusable. Backends that supply no predicate release unconditionally, and this
+clause makes no claim about them. Supplying one is optional by design, not an
+omission each backend is expected to correct: it is worth the parameter only
+where a close on a dead connection blocks, which is a property of the transport,
+not of every stream. `SFTPBackend` is the only backend that supplies one.
 
 **Postconditions:** A backend that can recognise such a failure supplies
 `_ErrorMappingStream` with an `is_fatal` predicate over the raised exception.
@@ -86,10 +92,10 @@ behaviour every backend had before this clause.
 
 **Why a predicate rather than the mapped error type.** The wrapper is shared, so
 a rule derived from the classification would bind backends the symptom was never
-measured on: `HttpBackend._map_stream_error` maps *every* stream exception to
-`BackendUnavailable`, and skipping the close there would trade a bounded wait for
-an unreleased response body. Deciding by predicate keeps each backend answering
-only for its own failures.
+measured on: `ReadOnlyHttpBackend._map_stream_error` maps *every* stream exception
+to `BackendUnavailable`, and skipping the close there would trade a bounded wait
+for an unreleased response body. Deciding by predicate keeps each backend
+answering only for its own failures.
 
 **What it buys.** On a connection whose bound is enforced by a timeout, a
 synchronous close is a second round-trip that cannot complete: paramiko's

@@ -429,7 +429,8 @@ def test_stall_recovers_and_rearms_the_bound(stall_relay: _StallRelay) -> None:
 def test_subsystem_request_is_not_bounded(unanswering_server: _MuteSubsystemServer) -> None:
     """Characterises a stated exception: the ``subsystem`` request is unbounded.
 
-    SFTP-030 records this as one of two waits ``io_timeout`` does not cover, and
+    SFTP-030 records this as the one wait ``io_timeout`` does not cover — it was
+    one of two until BK-355 bounded the release of a stalled stream handle — and
     a spec clause asserting a paramiko behaviour is exactly the kind of claim
     this item has got wrong three times by reading rather than running. So it is
     pinned here: with ``io_timeout`` set, a peer that opens the channel and never

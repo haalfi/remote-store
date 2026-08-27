@@ -190,13 +190,17 @@ if evidence changes; these are retired.
   makes the wrapper's guard the same rule as the backend's own `_handle` guard
   applied to the one handle `_handle` cannot reach. The rejected alternative was
   to derive futility from the mapper the wrapper already holds: the shared wrapper
-  serves S3, Azure and HTTP too, and `HttpBackend._map_stream_error` maps *every*
-  stream exception to `BackendUnavailable`, so any rule keyed on the mapped error
-  would have stopped HTTP closing response bodies on an ordinary read error —
+  serves S3, Azure and HTTP too, and `ReadOnlyHttpBackend._map_stream_error` maps
+  *every* stream exception to `BackendUnavailable`, so any rule keyed on the mapped
+  error would have stopped HTTP closing response bodies on an ordinary read error —
   trading a bounded wait for an unreleased connection on a backend the symptom was
-  never measured on. Those four backends pass no predicate and their close is
-  unchanged; a unit test pins that, so the guard cannot become a default on their
-  behalf by accident.
+  never measured on. The other five backend classes that construct the wrapper —
+  `S3Backend`, `S3Boto3Backend`, `S3PyArrowBackend`, `AzureBackend` and
+  `ReadOnlyHttpBackend`, six construction sites, `AzureBackend` holding two —
+  pass no predicate and their close is unchanged. The unit test pins the
+  *wrapper's* default rather than what those sites pass: it proves a failure with
+  no predicate never skips the close, so the guard cannot become a default on
+  their behalf; that the sites pass no predicate is read off the call sites.
   Recorded in SIO-010 rather than only in SFTP-030 because the wrapper is shared:
   the invariant belongs to the streaming contract, and SFTP is its first adopter.
   Unblocks BK-356, which flips `io_timeout` to a real default — the sequencing

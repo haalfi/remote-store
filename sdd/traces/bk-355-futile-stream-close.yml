@@ -18,6 +18,18 @@ expected_ripples:
   - CHANGELOG.md
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
+surprising_ripples:
+  # Round 1. Nothing in the ripple-check table asks "which existing tests inject
+  # an exception the new predicate matches?", and no grep for BK-355 or for the
+  # changed symbols reaches this one: it names neither. Its injected EOFError is
+  # a dead-connection signal, so its `stream.close()` — commented "release the
+  # wrapped real handle" — silently stopped releasing it. The behaviour was
+  # correct under the new clause and the comment was not.
+  - tests/backends/sftp/test_config.py
+  # Round 1. `HttpBackend` is not a class; the backend is `ReadOnlyHttpBackend`.
+  # The wrong name was carried into four artifacts of this PR from BK-356's item
+  # body, which had it wrong already — so the sweep repaired the source too.
+  - sdd/BACKLOG.md
 phases:
   - id: orient
     name: Orient
@@ -73,7 +85,7 @@ phases:
         section: "_map_stream_error"
         read_type: reference
         extract: >-
-          The read that decided the open question. HttpBackend maps *every*
+          The read that decided the open question. ReadOnlyHttpBackend maps *every*
           stream exception to BackendUnavailable, so any rule deriving futility
           from the mapped error would have stopped HTTP closing response bodies
           on an ordinary read error — a leak on a backend the symptom was never

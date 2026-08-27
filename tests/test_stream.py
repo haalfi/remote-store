@@ -426,6 +426,25 @@ class TestFutileCloseGuard:
         assert inner.close_calls == 1
 
     @pytest.mark.spec("SIO-010")
+    def test_a_raising_predicate_propagates(self) -> None:
+        """A classifier that raises is a programming error, not a mapped failure.
+
+        The wrapper's contract is that programming errors propagate, and a
+        predicate is pure inspection — so a raising one is a bug in the backend.
+        Suppressing it would substitute silence for the real failure and leave
+        the guard's verdict unset with nothing to say so.
+        """
+        inner = _CloseTrackingStream(OSError("read failed"))
+
+        def _broken(exc: Exception) -> bool:
+            raise AttributeError("predicate is broken")
+
+        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt", is_fatal=_broken)
+
+        with pytest.raises(AttributeError, match="predicate is broken"):
+            stream.read()
+
+    @pytest.mark.spec("SIO-010")
     def test_the_guard_survives_the_buffered_layer(self) -> None:
         """SFTP hands back ``BufferedReader(_ErrorMappingStream(...))``.
 
