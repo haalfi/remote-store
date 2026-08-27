@@ -71,3 +71,40 @@ chunk = stream.read(4096)
 
 **Invariant:** `Capability.LAZY_READ` indicates that `Backend.read()` fetches data lazily on demand from the native source. Backends that load the full file contents into memory before returning a stream do **not** declare this capability.
 **Postconditions:** When `Capability.LAZY_READ` is declared, the stream is connected to the native source and data is pulled as the caller reads. Reading only a small prefix of a large file is expected to avoid loading the full file, though the exact savings depend on backend-level buffering (e.g. s3fs read-ahead, TCP receive buffers). Callers can use `store.supports(Capability.LAZY_READ)` to decide whether partial reads are likely efficient. Backends without `LAZY_READ` (e.g. in-memory, SQL blob) still return a valid `BinaryIO` stream — it just wraps pre-loaded data.
+
+## SIO-010: Releasing a Stream Whose Failure Condemned the Connection
+
+**Invariant:** Releasing a stream returned by `Backend.read()` does not re-enter
+a connection that the stream's own failure has already established is unusable.
+
+**Postconditions:** A backend that can recognise such a failure supplies
+`_ErrorMappingStream` with an `is_fatal` predicate over the raised exception.
+Once it answers `True` for a mapped failure, the wrapper's `close()` skips the
+inner close and marks itself closed; the caller sees an ordinary `close()`. A
+backend that supplies no predicate closes unconditionally, which is the
+behaviour every backend had before this clause.
+
+**Why a predicate rather than the mapped error type.** The wrapper is shared, so
+a rule derived from the classification would bind backends the symptom was never
+measured on: `HttpBackend._map_stream_error` maps *every* stream exception to
+`BackendUnavailable`, and skipping the close there would trade a bounded wait for
+an unreleased response body. Deciding by predicate keeps each backend answering
+only for its own failures.
+
+**What it buys.** On a connection whose bound is enforced by a timeout, a
+synchronous close is a second round-trip that cannot complete: paramiko's
+`SFTPFile.close()` issues `CMD_CLOSE` and waits for a reply that never comes, so
+without this clause a caller consuming a stalled stream pays the bound twice and
+sees nothing explaining the second wait — paramiko swallows the timeout raised
+inside its own close, and the wrapper suppresses what reaches it. Measured on
+`SFTPBackend` at a 2 s `io_timeout`, consuming part of a `read()` and then
+stalling: 4.00 s before the guard and 2.00 s after.
+
+**The handle is not leaked, but it is not released synchronously either.** It is
+freed by the peer's own teardown of the dead connection, or at collection —
+paramiko's `SFTPFile.__del__` calls `_close(async_=True)`, which sends
+`CMD_CLOSE` without waiting for a reply. The clause trades a synchronous release
+that cannot succeed for an asynchronous one that costs the caller nothing.
+
+**See also:** SFTP-030 in [009-sftp-backend.md](009-sftp-backend.md), the bound
+this clause completes.

@@ -508,7 +508,7 @@ re-entries differently:
    like anything else. The fallback is therefore a separate method
    (`_move_fallback`), so the pragma covers only what it names.
 
-**Bounded, with two stated exceptions.** Neither is fixed here:
+**Bounded, with one stated exception:**
 
 - **The `subsystem` request.** `Channel.invoke_subsystem` waits in
   `Channel._wait_for_event`, a bare `threading.Event.wait()` with no timeout
@@ -526,14 +526,17 @@ re-entries differently:
   observed so the block is pinned to the request rather than to an earlier
   handshake step. If that test ever fails, the wait has become bounded and this
   bullet should be deleted with it.
-- **Releasing a *streamed-read* handle.** `read` hands back an
-  `_ErrorMappingStream`, whose `close` closes the underlying paramiko file under
-  `contextlib.suppress`, so releasing a stream that has already failed blocks
-  once more. Measured at a 2 s bound, consuming part of a `read()` and then
-  stalling: 4.00 s for the failed reads plus the close. This is the one handle
-  the `_handle` guard above does not reach, because the wrapper — not this
-  backend — owns the close, and it serves the S3, Azure and HTTP backends too.
-  Tracked as BK-355; when it lands, this exception goes.
+
+**Releasing a *streamed-read* handle is bounded by the wrapper, not by
+`_handle`.** `read` hands back an `_ErrorMappingStream`, and that wrapper — not
+this backend — owns the close, so the guard above cannot reach it; it serves the
+S3, Azure and HTTP backends too. The wrapper takes `_is_connection_dead` as its
+`is_fatal` predicate and skips a close its own failure has condemned
+([SIO-010](006-streaming-io.md)), which is what makes the bound above hold for a
+stream as well as for the handles `_handle` covers. Measured at a 2 s bound,
+consuming part of a `read()` and then stalling: 4.00 s for the failed reads plus
+the close before the guard, 2.00 s after
+(`test_releasing_a_stalled_stream_costs_one_bound`).
 
 For a **streamed** read (`read`), a stall after the caller has consumed bytes
 raises rather than returning short, so a truncated stream is never

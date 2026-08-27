@@ -814,7 +814,11 @@ class SFTPBackend(Backend):
                     raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
                 raise
             try:
-                raw = _ErrorMappingStream(f, self._map_exception, path)
+                # ``is_fatal`` is ``_handle``'s guard, applied to the one handle
+                # ``_handle`` cannot reach: the wrapper owns this close, so a
+                # stall would otherwise pay ``io_timeout`` again on the way out
+                # (SIO-010, SFTP-030).
+                raw = _ErrorMappingStream(f, self._map_exception, path, is_fatal=self._is_connection_dead)
                 return io.BufferedReader(cast(io.RawIOBase, raw))  # noqa: TC006
             except Exception:
                 f.close()

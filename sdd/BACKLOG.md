@@ -867,8 +867,7 @@ or paying for our shortcut.
 the backend can actually do (ID-140, ID-217); no capability a user cannot
 cheaply build themselves is left unbuilt without a recorded decision (ID-121,
 ID-217); no security tradeoff is scoped wider than the backend that needs it
-(ID-181); and no cost we know how to remove is left on the caller (BK-242,
-BK-355).
+(ID-181); and no cost we know how to remove is left on the caller (BK-242).
 
 Each item here is something a user currently works around or eats. They are
 grouped because the decision in each is the same: build it, or say plainly and
@@ -1042,37 +1041,6 @@ here as legitimately as "built".
     retire it. Keep it in view when designing here — identity-derived keys are
     the wide fix for it, and this is where that scheme gets decided.
 
-- [ ] **BK-355 — Closing a failed stream re-enters the dead connection, so the caller pays a second, silent timeout**
-  spec: SFTP-030 · effort: S · audience: user.api
-  `_ErrorMappingStream.close` (`src/remote_store/_stream.py`) calls
-  `self._inner.close()` under `contextlib.suppress(Exception)`. When the stream
-  has already failed because the connection stalled, that close re-enters the
-  same dead connection: paramiko's `SFTPFile.close()` issues a synchronous
-  `CMD_CLOSE` and waits for the reply, so exiting the `with` block of a failed
-  stream blocks for a further `io_timeout` — and the suppression means the
-  caller sees no error explaining the wait, only the delay.
-  Found reviewing BK-354, which bounded a stalled SFTP channel and then had to
-  state this as an exception in SFTP-030 rather than deliver the bound
-  unqualified. That clause is the thing this item removes.
-  **Not SFTP-specific, which is why it is filed here and not folded into
-  BK-354.** `_stream.py` is shared: `_ErrorMappingStream` wraps reads on the S3,
-  Azure and HTTP backends too, and any of them can hand back a stream whose
-  close re-enters a connection the failure already condemned. The fix surface is
-  one shared wrapper and the regression surface is every backend that uses it —
-  a different shape from a single backend's timeout option.
-  **Open question the fix has to answer:** how the wrapper decides a close is
-  futile. The mapper it already holds classifies the *failure*, so one route is
-  to record that a mapped failure occurred and skip the inner close after one;
-  another is to let each backend supply the predicate (SFTP has
-  `_is_connection_dead`). The first keeps the knowledge in one place; the second
-  avoids the wrapper guessing on behalf of backends whose streams fail for
-  reasons a close would survive. Undecided.
-  **Sequencing:** land this *before* BK-356. While `io_timeout` defaults to
-  `None` this item costs a user nothing — there is no bound to pay twice. A
-  real default makes it live for every SFTP caller, so flipping the default
-  first would ship the doubling to everyone and force the migration entry to
-  warn about it.
-
 - [ ] **BK-356 — `io_timeout` should default to a real bound, not `None`**
   spec: SFTP-030, SFTP-005 · effort: S · audience: user.api
   BK-354 shipped `io_timeout` defaulting to `None`, so the stall it exists to
@@ -1106,7 +1074,8 @@ here as legitimately as "built".
   it is exactly the one with a legitimately slow or quiet server. Note `0` is
   not the opt-out: it raises `ValueError` (SFTP-005), since paramiko reads it
   as non-blocking.
-  **Blocked on BK-355** — see its sequencing note.
+  **No longer blocked.** BK-355 landed first, so releasing a stalled stream
+  costs one bound rather than two and the flip does not ship a doubling with it.
 
 ---
 

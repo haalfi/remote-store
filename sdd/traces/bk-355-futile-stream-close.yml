@@ -1,0 +1,167 @@
+id: BK-355
+title: "Closing a failed stream re-enters the dead connection, so the caller pays a second, silent timeout"
+trigger: >-
+  BK-354 bounded every stalled SFTP path it could reach and then had to write
+  one up as a stated exception in SFTP-030: releasing a streamed-read handle.
+  The close belongs to the shared _ErrorMappingStream wrapper rather than to the
+  backend, so the backend's own _handle guard could not reach it, and paramiko's
+  SFTPFile.close() waits for a CMD_CLOSE reply that a stalled channel never
+  sends. The caller paid io_timeout twice and saw nothing explaining the second
+  wait.
+source_items:
+  - BK-355
+  - BK-354
+audience:
+  - user.api
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-355 (item)"
+        read_type: gate
+        extract: >-
+          The symptom, and the one open question the item refuses to settle: how
+          the wrapper decides a close is futile. Two routes named — record any
+          mapped failure, or let each backend supply the predicate — and
+          explicitly undecided, so this was an interview question rather than an
+          author's call.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "BK-356 (item)"
+        read_type: reference
+        extract: >-
+          Why the sequencing matters: while io_timeout defaults to None the
+          doubling costs nobody anything, so this had to land before the default
+          flip rather than after it.
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030"
+        read_type: gate
+        extract: >-
+          The exception bullet this item exists to delete, and the 4.00 s figure
+          it was measured at. Also the _handle guard the wrapper's guard turns
+          out to be a copy of — the spec states plainly that the wrapper owns
+          the one close _handle cannot reach, which is what made the fix shape
+          obvious.
+        outcome: ok
+      - file: src/remote_store/_stream.py
+        section: "_ErrorMappingStream.close, _safe_wrap"
+        read_type: reference
+        extract: >-
+          close() suppresses and closes unconditionally; every mapping path
+          raises self._mapper(...) inline, so there was no single place a
+          verdict could be recorded until _fail was extracted.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Pre-work index"
+        read_type: gate
+        extract: >-
+          Triggered rows: Spec section (new SIO-010 needs @pytest.mark.spec
+          tests), Bug fix (BACKLOG, CHANGELOG, failing test first), Backlog item
+          touched (this trace).
+        outcome: ok
+  - id: design
+    name: Decide the futility predicate
+    steps:
+      - file: src/remote_store/backends/_http.py
+        section: "_map_stream_error"
+        read_type: reference
+        extract: >-
+          The read that decided the open question. HttpBackend maps *every*
+          stream exception to BackendUnavailable, so any rule deriving futility
+          from the mapped error would have stopped HTTP closing response bodies
+          on an ordinary read error — a leak on a backend the symptom was never
+          measured on. That killed the "keep the knowledge in one place" route
+          the item leaned toward, and the backend-supplied predicate was put to
+          the user and confirmed.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_handle, _is_connection_dead, read"
+        read_type: reference
+        extract: >-
+          _is_connection_dead is a static, no-round-trip inspection of the
+          exception shape, so it is safe to call from the wrapper on the raise
+          path. _handle is the sibling guard the new one mirrors.
+        outcome: ok
+      - file: src/remote_store/backends/_s3.py
+        section: "read"
+        read_type: verify
+        extract: >-
+          Checked every _ErrorMappingStream construction site (s3, s3_boto3,
+          s3_pyarrow, azure, http, sftp) to confirm a keyword-only parameter
+          with a None default leaves five of the six byte-identical.
+        outcome: ok
+  - id: tests
+    name: Reproduce before fixing
+    steps:
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "test_streaming_read_raises_rather_than_truncating"
+        read_type: reference
+        extract: >-
+          The existing test exits the failed stream's `with` block on exactly
+          this fault and does not time the exit, so the second bound was
+          invisible to it. The new test puts the clock around the failed drain
+          *and* the close. Reused the stall_relay fixture, which runs against an
+          in-process paramiko server — no Docker, so the gate executes it.
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "test_stall_costs_one_bound_not_several"
+        read_type: reference
+        extract: >-
+          Took the 1.75x band from here rather than the 3x used elsewhere in the
+          file: at 3x the assertion would admit the exact doubling it exists to
+          catch. Measured 4.00 s (2.0x) before the fix and 2.00 s (1.0x) after,
+          at a 2 s bound.
+        outcome: ok
+      - file: tests/test_stream.py
+        section: "TestErrorMappingStream, helper streams"
+        read_type: reference
+        extract: >-
+          Needed a close-counting inner stream; the existing _TrackingStream
+          does not fail and the existing failing streams do not count closes, so
+          a combined _CloseTrackingStream was added. Counted rather than
+          flagged because BufferedReader closes its raw and a caller may close
+          again.
+        outcome: ok
+  - id: verify
+    name: Ripple-check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Detailed checklist"
+        read_type: verify
+        extract: "Bug fix, Spec section, Backlog item touched, CHANGELOG entry"
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: >-
+          The ripple the ID grep alone would not have flagged as *stale*: the
+          BK-354 entry states two waits remain unbounded and names BK-355 as
+          tracking one of them. Both entries ship in the same unreleased
+          version, so that sentence had to be rewritten rather than left as a
+          resolved cross-reference.
+        outcome: ok
+      - file: sdd/formal/ResourceSafety.dfy
+        section: "§1.3 Safe wrapping"
+        read_type: verify
+        extract: >-
+          Checked whether the formal model constrains close. It models
+          _safe_wrap only — its Closed state describes the wrap-failure cleanup
+          path, where no mapped failure has occurred and the guard is inert. No
+          invariant mentions _ErrorMappingStream.close, so nothing to amend.
+        outcome: ok
+      - file: docs-src/guides/backends/sftp.md
+        section: "Bounding a stalled transfer"
+        read_type: verify
+        extract: >-
+          Verified the guide never claimed the doubling, so no user-facing page
+          carried a statement this falsifies. Its "discard the handle and start
+          again" advice is now cheaper to follow but not made wrong by the
+          change, so it stands.
+        outcome: ok

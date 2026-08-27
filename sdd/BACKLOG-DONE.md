@@ -169,6 +169,39 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-355 — Closing a failed stream re-enters the dead connection, so the caller pays a second, silent timeout**
+  spec: SIO-010, SFTP-030 · effort: S · audience: user.api
+  `_ErrorMappingStream.close` closed `self._inner` under
+  `contextlib.suppress(Exception)` unconditionally. When the stream had already
+  failed because the connection stalled, that close re-entered the same dead
+  connection: paramiko's `SFTPFile.close()` issues a synchronous `CMD_CLOSE` and
+  waits for the reply, so exiting the `with` block of a failed stream blocked for
+  a further `io_timeout` — and the suppression meant the caller saw no error
+  explaining the wait, only the delay. Measured at a 2 s bound, consuming part of
+  a `read()` and then stalling: 4.00 s before, 2.00 s after.
+  Found reviewing BK-354, which bounded a stalled SFTP channel and then had to
+  state this as an exception in SFTP-030 rather than deliver the bound
+  unqualified. That clause is gone; SFTP-030 now records the wrapper as the thing
+  that bounds a streamed-read handle, and the `subsystem` request is its one
+  remaining exception.
+  **The open question — how the wrapper decides a close is futile — was answered
+  in favour of a backend-supplied predicate.** `_ErrorMappingStream` takes an
+  optional `is_fatal`, and SFTP passes its existing `_is_connection_dead`, which
+  makes the wrapper's guard the same rule as the backend's own `_handle` guard
+  applied to the one handle `_handle` cannot reach. The rejected alternative was
+  to derive futility from the mapper the wrapper already holds: the shared wrapper
+  serves S3, Azure and HTTP too, and `HttpBackend._map_stream_error` maps *every*
+  stream exception to `BackendUnavailable`, so any rule keyed on the mapped error
+  would have stopped HTTP closing response bodies on an ordinary read error —
+  trading a bounded wait for an unreleased connection on a backend the symptom was
+  never measured on. Those four backends pass no predicate and their close is
+  unchanged; a unit test pins that, so the guard cannot become a default on their
+  behalf by accident.
+  Recorded in SIO-010 rather than only in SFTP-030 because the wrapper is shared:
+  the invariant belongs to the streaming contract, and SFTP is its first adopter.
+  Unblocks BK-356, which flips `io_timeout` to a real default — the sequencing
+  existed so that flip would not ship the doubling to every SFTP caller at once.
+
 - [x] **BK-354 — SFTP has no way to bound a read that stalls on an open channel**
   spec: SFTP-030, SFTP-005, SFTP-009, SFTP-010 · effort: S · audience: user.api, user.api_docs, user.site
   Reported as [issue #970](https://github.com/haalfi/remote-store/issues/970) by a

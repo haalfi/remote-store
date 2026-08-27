@@ -850,3 +850,48 @@ def test_streaming_read_raises_rather_than_truncating(stall_relay: _StallRelay) 
 
     # What arrived before the stall is a valid prefix, not corrupt or reordered.
     assert payload.startswith(first)
+
+
+@pytest.mark.spec("SFTP-030")
+def test_releasing_a_stalled_stream_costs_one_bound(stall_relay: _StallRelay) -> None:
+    """Discarding a stream that failed on a stalled channel pays the bound once.
+
+    The sibling above exits its ``with`` block on the same fault and does not
+    time the exit, so the second bound was invisible to it. This one puts the
+    clock around both halves: the reads that fail, and the close that follows.
+
+    ``read`` hands back ``BufferedReader(_ErrorMappingStream(handle))``, and the
+    wrapper — not this backend — owns that close, which is why the ``_handle``
+    guard covering every other paramiko handle does not reach it. Without the
+    guard in the wrapper, ``SFTPFile.close()`` issues its synchronous
+    ``CMD_CLOSE`` into the channel the read failure just condemned and waits for
+    a reply that never comes, so the caller waits ``io_timeout`` twice and sees
+    nothing explaining the second wait: paramiko swallows the timeout raised
+    inside its own close, and the wrapper suppresses what is left.
+
+    The band matches ``test_stall_costs_one_bound_not_several`` rather than the
+    3x used where only a hang is being excluded: at 3x this admits the exact
+    doubling it exists to catch.
+    """
+    io_timeout = 2.0
+    backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
+    name = f"release_{uuid.uuid4().hex[:8]}.bin"
+    backend.write(name, bytes(range(256)) * 4096)  # 1 MiB
+
+    stream = backend.read(name)
+    try:
+        assert stream.read(64 * 1024), "expected the stream to deliver bytes before the stall"
+        stall_relay.stall_download()
+
+        start = time.monotonic()
+        with pytest.raises(BackendUnavailable):
+            _drain(stream)
+    finally:
+        # What a ``with`` block does on the way out, and the half being measured.
+        stream.close()
+    elapsed = time.monotonic() - start
+
+    assert elapsed < io_timeout * 1.75, (
+        f"failed read plus release took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "
+        "the stream close is re-entering the stalled channel"
+    )
