@@ -15,7 +15,13 @@ caller doing ``unwrap(SFTPClient).get_channel().settimeout(n)`` loses the
 setting on the first transparent reconnect, which is precisely when a flaky
 link needs it.
 
-Three faults are covered, because they fail by different mechanisms and none
+This file pins both halves of SFTP-030: what ``io_timeout`` covers, and what it
+does not. The second half is not an afterthought — SFTP-030 states two
+exceptions, and a clause asserting a paramiko behaviour is the kind of claim
+this work has got wrong by reading rather than running, so each exception is
+*characterised by a test* rather than asserted.
+
+**Four faults it covers**, because they fail by different mechanisms and none
 implies the others:
 
 - **A silent peer** (server→client), driven through a TCP relay that stops
@@ -31,6 +37,22 @@ implies the others:
   before any caller-visible operation and is re-entered on every reconnect, so
   a bound armed after it would leave the headline guarantee unarmed exactly
   when a half-alive peer needs it.
+- **Releasing a handle into a channel its own failure condemned**, which the
+  bound would otherwise be paid for twice — once by the failed operation and
+  once, silently, by the close.
+
+**Two faults it does not cover**, each pinned so that a test failure means the
+gap has closed and the SFTP-030 exception can go with it:
+
+- **A peer that never answers the `sftp` subsystem request**, which paramiko
+  waits for on an untimed event that no channel timeout reaches. The file's only
+  genuinely *unbounded* case.
+- **A `SEEK_END` seek on a stalled channel**, which paramiko's ``_get_size``
+  swallows — so it answers ``0`` rather than failing, arms nothing, and leaves
+  the close to pay a second bound. Bounded, but wrong.
+
+"Stated exception" and "unbounded wait" are therefore not the same set, which is
+a distinction two artifacts in this repo have collapsed at least once each.
 """
 
 from __future__ import annotations

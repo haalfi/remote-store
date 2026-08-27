@@ -41,10 +41,21 @@ class _ErrorMappingStream(io.RawIOBase):
 
     When the caller reads from a stream returned by ``Backend.read()``, the
     backend's ``_errors()`` context manager has already exited.  Any native
-    ``OSError`` -- or ``EOFError``, which paramiko raises (and which is *not* an
-    ``OSError``) when an SFTP channel dies mid-read -- would otherwise leak
-    unmapped.  This wrapper intercepts I/O methods and passes both through the
-    backend's error classifier so callers see ``RemoteStoreError`` subtypes.
+    ``OSError`` -- or ``EOFError``, which is *not* an ``OSError`` and which
+    paramiko raises from a failed send -- would otherwise leak unmapped.  This
+    wrapper intercepts I/O methods and passes both through the backend's error
+    classifier so callers see ``RemoteStoreError`` subtypes.
+
+    **The caught tuple is the real bound on this wrapper, and it is narrower
+    than the backends it serves.**  Only ``(OSError, EOFError)`` are
+    intercepted, so an exception outside that pair propagates unmapped -- and
+    paramiko's mid-read *drop* is outside it: ``SFTPClient._read_response``
+    converts the underlying ``EOFError`` into ``SSHException("Server connection
+    dropped")``, and a garbage packet raises ``SFTPError``.  Neither derives
+    from ``OSError``, so on that path a caller sees the raw paramiko exception
+    rather than a ``RemoteStoreError``.  Stated because the paragraph above
+    previously attributed the ``EOFError`` arm to that drop, which is the one
+    case it does not cover.
 
     Programming errors (``TypeError``, ``ValueError``, ``AttributeError``, etc.)
     are **not** caught -- they propagate normally.  That includes anything

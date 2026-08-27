@@ -439,13 +439,18 @@ also clears the cached client so the next operation reconnects (SFTP-010 tier 2)
 
 **The qualifier is load-bearing, and names the one operation that does not
 fail.** Every mechanism below — the classification guards, the handle guard, the
-stream wrapper's futile-close guard, and the client invalidation this paragraph
-promises — is triggered by an exception. A stalled operation whose failure
-paramiko *discards* raises nothing, so it reaches none of them: it neither
-reports nor clears the cached client, and the next operation therefore re-enters
-the same dead channel and pays the bound again. `SEEK_END` is that operation, and
-it is the second stated exception below. Read this paragraph as scoped to the
-failures that surface; the exception list is not a footnote to it.
+stream wrapper's futile-close guard, and the client invalidation the
+Postconditions above promise — is triggered by an exception. A stalled operation
+whose failure paramiko *discards* raises nothing, so it reaches none of them: it
+neither reports nor clears the cached client, and the next operation therefore
+re-enters the same dead channel and pays the bound again. Both halves are
+measured, not reasoned:
+`test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds` asserts the cached
+client survives the stalled seek, and the following operation was measured
+re-entering that same client object and paying the bound before failing.
+`SEEK_END` is that operation, and it is the second stated exception below. Read
+the Postconditions as scoped to the failures that surface; the exception list is
+not a footnote to them.
 
 The caller-visible wall clock for a stalled operation is one bound, not
 several. A failed operation re-enters the channel two ways — to classify the

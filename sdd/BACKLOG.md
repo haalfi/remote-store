@@ -1042,6 +1042,71 @@ here as legitimately as "built".
     retire it. Keep it in view when designing here — identity-derived keys are
     the wide fix for it, and this is where that scheme gets decided.
 
+- [ ] **BK-357 — A `SEEK_END` seek hides its own stall, so the futile-close guard cannot arm**
+  spec: SFTP-030, SIO-010 · effort: M · audience: user.api
+  BK-355's guard learns a connection is dead from an exception travelling through
+  `_ErrorMappingStream`'s mapping paths. `SFTPFile.seek(offset, SEEK_END)` calls
+  `_get_size()`, whose body is `try: return self.stat().st_size` under a bare
+  `except: return 0`. On a stalled channel that `stat` blocks for `io_timeout`
+  and is then swallowed, so the seek returns a bogus size of `0` and raises
+  nothing: the guard stays unarmed and the close pays the bound a second time.
+  Measured at a 2 s bound: 4.00 s
+  (`test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds`), against 2.00 s
+  for the read path BK-355 fixed (`test_releasing_a_stalled_stream_costs_one_bound`).
+  **Two defects, and the second is the worse one.** The doubled wait is the
+  visible cost, but the seek also *succeeds* with a size of `0` on a dead
+  channel, so a caller sizing a file by seeking to its end reads zero and cannot
+  tell that from an empty file. That is a wrong answer, not just a slow one, and
+  it is the half that argues for fixing this rather than living with it.
+  **Fix surface:** the wrapper issuing its own size probe for `SEEK_END` instead
+  of delegating to paramiko's, so the failure surfaces where the mapper can see
+  it. That is a change to the seek path of every backend `_ErrorMappingStream`
+  serves, not just SFTP's, which is why it is `M` rather than `S` and why it was
+  filed rather than widened into BK-355.
+  **Open question:** whether the probe belongs in the wrapper (one place, but it
+  round-trips on behalf of backends whose `seek` currently does not) or behind
+  the same opt-in predicate mechanism BK-355 added, which keeps the cost with the
+  backend that needs it. Undecided.
+  Found by BK-355's round-2 measuring review, which ran the seek path rather than
+  reading it — the reading rounds had all concluded the stream surface was bounded.
+  **Placed above BK-356 deliberately**, per this file's ordering rule: BK-356's
+  body argues this should land first, since flipping the default converts this
+  case from a hang into a silent wrong answer.
+
+- [ ] **BK-358 — Two paramiko exception shapes escape `_ErrorMappingStream` unmapped**
+  spec: SIO-001, SIO-010 · effort: M · audience: user.api
+  `_ErrorMappingStream`'s mapping paths catch `(OSError, EOFError)`. Neither
+  `paramiko.SSHException` nor `paramiko.SFTPError` derives from either, so both
+  propagate out of the wrapper **unmapped**: the caller gets a raw paramiko
+  exception where SIO-001 says the wrapper exists precisely so native exceptions
+  do not leak once `_errors()` has exited.
+  **This is the ordinary mid-read drop, not an exotic shape.**
+  `SFTPClient._read_response` converts the underlying `EOFError` into
+  `SSHException("Server connection dropped: ...")`, and `_read_packet` raises
+  `SFTPError("Garbage packet received")`. Measured through the wrapper with a
+  backend predicate supplied: both propagate as themselves, `_connection_lost`
+  stays `False`, and the inner close still runs — so BK-355's guard is inert on
+  exactly the shape a dropped connection takes. `SFTPError` is the sharper case,
+  because `_is_connection_dead` *does* match it: the backend's predicate
+  recognises a failure the wrapper can never hand it.
+  **Pre-existing, and not narrowed by BK-355** — the tuple has been
+  `(OSError, EOFError)` since AF-006. It surfaced during BK-355's closing review
+  because that PR's new clauses describe what the guard reaches, and describing
+  it exposed what it does not.
+  **Fix surface is why this is filed rather than folded in.** The wrapper serves
+  S3, S3-boto3, S3-PyArrow, Azure and HTTP as well as SFTP, and widening the
+  caught tuple changes what every one of them maps. Whether the widening is a
+  paramiko-specific tuple on the SFTP construction site, a second opt-in
+  parameter beside `is_fatal`, or a base-`Exception` catch with the mapper
+  deciding, is undecided — the last is the tempting one and is also the one that
+  would start mapping programming errors, which the wrapper deliberately lets
+  propagate.
+  **Needs a failing test first** (bug-fix protocol): a real dropped connection
+  mid-read, not an injected `EOFError`. The existing SFTP test that covers this
+  ground (`test_read_stream_eoferror_maps_and_reconnects`) injects `EOFError`
+  from a fake handle and so bypasses `_read_response`, which is why the gap has
+  never been caught.
+
 - [ ] **BK-356 — `io_timeout` should default to a real bound, not `None`**
   spec: SFTP-030, SFTP-005 · effort: S · audience: user.api
   BK-354 shipped `io_timeout` defaulting to `None`, so the stall it exists to
@@ -1084,33 +1149,6 @@ here as legitimately as "built".
   of its two defects. That is an argument for ordering BK-357 before this item,
   not merely for noting it here.
 
-- [ ] **BK-357 — A `SEEK_END` seek hides its own stall, so the futile-close guard cannot arm**
-  spec: SFTP-030, SIO-010 · effort: M · audience: user.api
-  BK-355's guard learns a connection is dead from an exception travelling through
-  `_ErrorMappingStream`'s mapping paths. `SFTPFile.seek(offset, SEEK_END)` calls
-  `_get_size()`, whose body is `try: return self.stat().st_size` under a bare
-  `except: return 0`. On a stalled channel that `stat` blocks for `io_timeout`
-  and is then swallowed, so the seek returns a bogus size of `0` and raises
-  nothing: the guard stays unarmed and the close pays the bound a second time.
-  Measured at a 2 s bound: 4.00 s
-  (`test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds`), against 2.00 s
-  for the read path BK-355 fixed (`test_releasing_a_stalled_stream_costs_one_bound`).
-  **Two defects, and the second is the worse one.** The doubled wait is the
-  visible cost, but the seek also *succeeds* with a size of `0` on a dead
-  channel, so a caller sizing a file by seeking to its end reads zero and cannot
-  tell that from an empty file. That is a wrong answer, not just a slow one, and
-  it is the half that argues for fixing this rather than living with it.
-  **Fix surface:** the wrapper issuing its own size probe for `SEEK_END` instead
-  of delegating to paramiko's, so the failure surfaces where the mapper can see
-  it. That is a change to the seek path of every backend `_ErrorMappingStream`
-  serves, not just SFTP's, which is why it is `M` rather than `S` and why it was
-  filed rather than widened into BK-355.
-  **Open question:** whether the probe belongs in the wrapper (one place, but it
-  round-trips on behalf of backends whose `seek` currently does not) or behind
-  the same opt-in predicate mechanism BK-355 added, which keeps the cost with the
-  backend that needs it. Undecided.
-  Found by BK-355's round-2 measuring review, which ran the seek path rather than
-  reading it — the reading rounds had all concluded the stream surface was bounded.
 
 ---
 

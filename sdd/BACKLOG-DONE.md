@@ -170,7 +170,7 @@ if evidence changes; these are retired.
 ## Unreleased
 
 - [x] **BK-355 — Closing a failed stream re-enters the dead connection, so the caller pays a second, silent timeout**
-  spec: SIO-010, SFTP-030 · effort: S · audience: user.api
+  spec: SIO-010, SFTP-030 · effort: S · audience: user.api, user.api_docs, user.site
   `_ErrorMappingStream.close` closed `self._inner` under
   `contextlib.suppress(Exception)` unconditionally. When the stream had already
   failed because the connection stalled, that close re-entered the same dead

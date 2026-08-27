@@ -17,6 +17,7 @@ audience:
   - user.site
 discovery_followups:
   - BK-357
+  - BK-358
 # Counted over `git log --oneline origin/master..HEAD`, run before this line was
 # written. a9779b1 is the implementation and does not count. Four review-driven
 # commits do: 525ce32 (round 1, 5 findings), b90dba8 (three sub-points raised
@@ -92,6 +93,20 @@ phases:
           out to be a copy of — the spec states plainly that the wrapper owns
           the one close _handle cannot reach, which is what made the fix shape
           obvious.
+        outcome: ok
+      - file: sdd/specs/006-streaming-io.md
+        section: "SIO-001, SIO-008, SIO-009"
+        read_type: gate
+        extract: >-
+          Where the new clause had to go, and in what shape. Read for placement
+          after SIO-009, the file's Invariant/Postconditions style, and whether
+          an existing clause already covered the ground — SIO-001's
+          acquire-then-wrap invariant is the closest and is about construction,
+          not release, so a new clause was owed rather than an amendment.
+          Retrospective: this file was the whole reason the fix is recorded as a
+          streaming-contract invariant rather than an SFTP one, and the trace
+          omitted the read entirely until the closing round pointed out that
+          009 was cited twice and 006 not at all.
         outcome: ok
       - file: src/remote_store/_stream.py
         section: "_ErrorMappingStream.close, _safe_wrap"

@@ -126,9 +126,14 @@ each one opens a fresh channel.
     reports a size of `0`, so the seek returns `0` for a file of any size and
     raises nothing — indistinguishable from a genuinely empty file. Nothing
     reports the stall and the dead connection is not dropped, so the next
-    operation waits again. If you size files this way over SFTP, check
-    `get_file_info(path).size` instead, which fails properly on a stalled
-    connection.
+    operation waits again. Size files with `get_file_info(path).size` instead,
+    which raises `BackendUnavailable` on a stalled connection and drops the
+    dead client.
+
+    **You may not be the one writing the seek.** `read_seekable()` exists to
+    hand a stream to analytical readers such as PyArrow, and a reader that
+    sizes a file internally reaches this without any seek appearing in your
+    code. Over SFTP that is the likelier route to it than a hand-written seek.
 
 A stall is reported, not retried: the connect-phase `RetryPolicy` does not cover
 it, so a partially consumed stream is never silently restarted underneath you.
