@@ -612,7 +612,18 @@ container before this clause, and keeps it: `get_folder_info`, `read`,
 `NotFound` row; `list_files` and `list_folders` return an empty listing, since an
 absent container holds nothing; `exists()`, `is_file()` and `is_folder()` MUST
 answer `False`, which BE-004 / BE-005 and this section's own rule already forbid
-them from breaching.
+them from breaching. `write` is the one operation *on the roster* that no clause
+of this spec decides, and this one does not decide it either — which leaves it
+the one roster operation a backend spec may decide, as
+[GR-031](044-graph-backend.md#gr-031-404-discrimination-item-vs-drive) does for
+`GraphBackend` ([ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md)).
+That is a gap being filled, not a divergence: a backend answering `write` its own
+way contradicts nothing here. Anything *off* the roster — a health probe, a
+credential or container-identity lookup — is not an operation this section
+reaches at all, so it needs no such permission and is not counted against this
+one. All of these obligations are pre-existing — this
+clause neither creates nor relaxes them, and that is why those operations are
+absent from the roster above rather than exempt from it.
 
 **The empty listing is an answer about a container that was absent when the
 listing began.** A listing that has already received a page has been told the

@@ -210,7 +210,8 @@ registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
 [ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md) — the
 never-leak invariant holds on the S3 listing path, closed by BUG-249 with
 BUG-246, and the last adapter answers the contract against an absent container,
-closed by BUG-247. **One cross-section dependency remains**, per[§ How this file works](#how-this-file-works): BK-345 waits on **ID-244** in
+closed by BUG-247. **One cross-section dependency remains**, per
+[§ How this file works](#how-this-file-works): BK-345 waits on **ID-244** in
 section 2 for the seeding hook, stated inside the item that carries it, so this
 section cannot close on its own items alone. BUG-249's denied half carried a
 second such dependency on **ID-242**; it shipped with the denied path asserted by
@@ -251,6 +252,7 @@ backend. Graph is on both sides of this paragraph and that is not a bookkeeping
 error: it meets the rows it was brought to and misses the bound that arrived
 after, which is what a clause growing a new sentence does to a backend that was
 compliant the day before.
+
 - [ ] **BUG-254 — Five backend classes breach BE-029's root row against an absent container**
   spec: BE-004, BE-021, BE-029 · effort: S · audience: user.api
   BE-029 already decides this and is not qualified by whether the container

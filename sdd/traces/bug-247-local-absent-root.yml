@@ -357,6 +357,33 @@ phases:
           the SFTP item renumbered to BUG-259. Counts re-derived from the merged
           lists: three disagreeing classes, two live divergence bullets.
         outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 § Reach"
+        read_type: verify
+        extract: >-
+          The merge resolution deleted 864 characters more than intended. My
+          duplicate root paragraph was removed by cutting from its heading to
+          the next blank line — but it had been inserted mid-block in round 2,
+          so the cut swallowed master's `write` clause with it: the sentence
+          ADR-0038, spec 044, two paragraphs of this same file and one of this
+          PR's own test docstrings all cite. Nothing failed. Every gate passed,
+          because a spec paragraph has no test and the artifacts citing it name
+          it in prose. Found by the closing gate's unprimed pass, which grepped
+          the citations rather than reading the diff. A text-range deletion
+          whose bound is "the next blank line" is unsafe against a block someone
+          else has since written into.
+        outcome: ok
+      - file: tests/backends/local/test_absent_root.py
+        section: "TestWriteRecreatesTheRoot"
+        read_type: verify
+        extract: >-
+          The check_health exists() -> is_dir() fix shipped unfenced for a full
+          round. Every existing cell passes with it reverted, because they all
+          use an absent root where exists() is False too; the state the change
+          exists for — a root replaced by a regular file — was measured, written
+          into BACKLOG-DONE, and never pinned. Recorded is not tested. Fenced
+          now: reverting is_dir() fails that cell and only that cell.
+        outcome: ok
       - file: .github/workflows/ci.yml
         section: "test-primary-sftp"
         read_type: verify

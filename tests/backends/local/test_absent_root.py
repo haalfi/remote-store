@@ -555,6 +555,35 @@ class TestWriteRecreatesTheRoot:
         assert root_dir.is_dir(), f"{op_name} must leave the root a directory"
         assert instance.read_bytes("keep.txt") == b"payload"
 
+    @pytest.mark.spec("PING-002", "PING-003", "BE-029")
+    def test_check_health_reports_a_root_path_that_is_not_a_directory(self, tmp_path: Path) -> None:
+        """The state only ``check_health`` can see, and the reason it tests ``is_dir()``.
+
+        The BE-029 short-circuits answer the root from the key, so once they
+        landed no operation observed what is actually *at* the root path. With
+        ``check_health`` testing mere existence, a root replaced by a regular
+        **file** reported a healthy, empty store from every probe on the backend
+        — the one state where the definitional answers become a lie rather than
+        a convention.
+
+        This cell is what makes the `exists()` → `is_dir()` change falsifiable:
+        the absent-root cell below cannot, because `exists()` is `False` there
+        too and passes either way. Asserting the probes alongside is deliberate
+        — they are *expected* to keep answering by definition, so the pair
+        states which operation is allowed to be optimistic and which is not.
+        """
+        root = tmp_path / "store"
+        root.mkdir()
+        instance = LocalBackend(str(root))
+        shutil.rmtree(root)
+        root.write_bytes(b"not a directory")
+
+        with pytest.raises(NotFound, match="Root directory not found"):
+            instance.check_health()
+        assert instance.exists("") is True
+        assert instance.is_folder("") is True
+        assert instance.is_file("") is False
+
     @pytest.mark.spec("PING-002", "PING-003")
     def test_check_health_still_reports_the_absent_root(self, backend: LocalBackend) -> None:
         """The one operation whose job is to notice, and it still does.

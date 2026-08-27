@@ -194,9 +194,13 @@ if evidence changes; these are retired.
   short-circuits `SFTPBackend` has carried for the same reason (`base_path` is
   created lazily there) plus the shared `_reject_root_as_file` pre-check every
   other backend already calls — Local was the only one relying on a stat to
-  learn that its root is a folder. BE-021 § Reach now says outright that the
-  root's own spellings are BE-029's to decide and not the absent-container
-  clause's; the two read as though they met, and nothing had said which won.
+  learn that its root is a folder. The two clauses read as though they met and
+  nothing said which won, so this work wrote the rule into BE-021 § Reach — and
+  then dropped it: BUG-246 landed the same rule, more thoroughly argued, while
+  this item was in review, and two paragraphs stating one rule is the
+  second-description drift [DRIFT-RULES](DRIFT-RULES.md#rules) forbids. The
+  clause that ships is master's ("The root is decided by BE-029, not here, and
+  BE-029 wins"); the convergence is the evidence the gap was real.
   `write` recreates the root and succeeds, which BE-021 § Reach explicitly
   leaves to the backend and which matches `__init__`; `check_health` remains the
   operation that reports an absent root, and is what keeps the BE-029 answers
