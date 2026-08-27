@@ -216,12 +216,23 @@ if evidence changes; these are retired.
   `AzureBackend` and `AsyncAzureBackend` surfaced the SDK's own wording
   unclassified. None of the five could occupy its container, because the SDK
   refuses a zero-length key; all five breached the paragraphs at the head of
-  BE-029 regardless. Partitioning the thirteen `CAPABILITIES`-declaring classes:
-  two lack `WRITE`, five already complied, six were fixed.
+  BE-029 regardless. Partitioning the thirteen `CAPABILITIES`-declaring classes
+  **on the writers half**: two lack `WRITE`, five already complied
+  definitionally, six were fixed.
+  **The destination half partitions differently, and that is the finding rather
+  than a footnote.** There, three complied definitionally, two (`LocalBackend`,
+  `SFTPBackend`) refused by observation, and six did not refuse at all —
+  `GraphBackend` among them, which the writers row puts in the compliant column.
+  Eight concrete classes take code changes in this PR, not six: the six named
+  plus Graph (destination guard and closed-guard ordering) and Local
+  (destination guard). Only `MemoryBackend`, `AsyncMemoryBackend` and
+  `SQLBlobBackend` are untouched. Compliance on one half of a clause turned out
+  not to be evidence about the other, which is the whole reason the spec's table
+  now has a row per half.
   **Fenced by mutation, re-derived against the final tree** — the figures moved
   twice as review widened the change, so they are stated from the last run and
-  not from the first. Neutering the shared guard fails **80 of 8776** executed
-  cells: 34 in the SFTP module, 18 in Local's, 17 in conformance, 11 in
+  not from the first. Neutering the shared guard fails **93 of 8858** executed
+  cells: 34 in the SFTP module, 26 in conformance, 22 in Local's, 11 in
   `test_flat_ns`. Neutering only `SFTPBackend`'s own wrapper fails **34**, all in
   the SFTP module and **none** in conformance — with `base_path` present SFTP
   already refused the root, so the conformance cell does not fence this backend's
@@ -264,11 +275,10 @@ if evidence changes; these are retired.
   write to the drive root" where BE-020 requires "backend is closed". This item
   had classified Graph as already compliant, and on the root rule it was; the
   ordering rule the same clause carries is what it missed.
-  **Coverage bound, stated.** The conformance cells added here collect **182**
-  and execute **130**; the **52** skips are 26 for unrecorded replay cassettes
-  (Azure sync, Azure async, Graph), 14 for backends not declaring the capability
-  under test, and 12 for the PyArrow lane, which needs the MinIO fixture on
-  current PyArrow. Every backend behind those skips was measured directly
+  **Coverage bound, stated.** The conformance cells added here collect **266**
+  and execute **188**; the **78** skips are unrecorded replay cassettes (Azure
+  sync, Azure async, Graph), backends not declaring the capability under test,
+  and the PyArrow lane, which needs the MinIO fixture on current PyArrow. Every backend behind those skips was measured directly
   instead — `S3PyArrowBackend`, `AzureBackend` and `GraphBackend` against an
   unreachable endpoint, where an `InvalidPath` naming the root proves the guard
   ran ahead of the transport, and `AsyncAzureBackend` with the guard stubbed out

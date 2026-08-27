@@ -264,12 +264,24 @@ returns the stream as-is.
 - **`src == dst` is a data-preserving no-op** — never a delete-after-write on
   the same key. Place the no-op return *after* the source check so a missing
   source still raises `NotFound`. (Contract rule.)
-- **Precondition order matters:** a missing source raises `NotFound` before
-  the destination is checked for `AlreadyExists`. (Contract rule.)
-- Empty source or destination paths raise `InvalidPath` — today a
-  `Store`-enforced convention that shipped backends (and this tutorial)
-  also guard defensively; promoting it to a formal backend-contract clause
-  is tracked spec work.
+- **The store root is refused at both ends, from the key, before any request.**
+  A source that names the root is a file-shaped operation on a folder; a
+  destination that names it is a write to the root. Both raise `InvalidPath`.
+  (Contract rule — this is the first precondition, ahead of the source-existence
+  check below.) It used to be a `Store`-enforced convention that backends also
+  guarded defensively; it is now a requirement the conformance suite holds you
+  to, so a backend that leaves it to the layer above will fail.
+- **Decide "is this the root" on the normalised key, not on `is_root`.** Fold
+  backslashes, drop empty and `"."` segments, and refuse when nothing is left —
+  `remote_store.backends._flat_ns._addressable_segments` does exactly that.
+  `is_root` recognises only `""` and `"."`, so a guard written against it lets
+  `"./"` through, and `"./"` addresses the same node. That is not a hypothetical:
+  it is how a shipped backend came to leave its own container as a regular file.
+- **Precondition order matters:** after the root check, a missing source raises
+  `NotFound` before the destination is checked for `AlreadyExists`. (Contract
+  rule.) Note the root check outranks both — a root *destination* is refused even
+  when the source does not exist, so the caller hears about the destination
+  rather than about a source they may not have expected to find.
 
 The conformance suite verifies the no-op rule for backends that declare
 `self_op_supported` (a registration fact covered later in this guide).
@@ -291,6 +303,15 @@ One declarative flag rides along with `close()`: the
 meaning the backend stays usable after `close()`). Declare `True` when
 use-after-close must fail — the close-posture conformance lane tests
 whichever posture you declare, so an undeclared terminal backend fails it.
+
+**If you declare `True`, the closed check must run ahead of your root checks.**
+A closed backend raises `BackendUnavailable` even when the path is also
+invalid — the closed state is the more fundamental error, and a cheap
+string-test root guard is exactly the kind that naturally gets written first.
+Both root pre-checks are affected, the file-shaped one and the write one, and
+they need separate attention: a backend can order the read guard correctly and
+still get the write guard wrong, which is how the ordering was last found broken
+here. The conformance lane has a cell for each.
 
 ---
 

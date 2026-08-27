@@ -92,11 +92,26 @@ async def test_close_posture_outranks_root_rejection(async_backend: AsyncBackend
 async def test_close_posture_outranks_root_write_rejection(async_backend: AsyncBackend, root: str) -> None:
     """Async twin of the sync cell of the same name, on the write path.
 
-    ``AsyncAzureBackend`` carries a second root guard on ``write`` /
-    ``write_atomic``, worded for a write rather than a wrong-typed read, and it
-    runs ``_raise_if_closed()`` ahead of that one too. The read-shaped sibling
-    above cannot reach it: ``read_bytes`` never touches the write guard, so the
-    ordering there was asserted in a docstring and pinned by nothing.
+    Two terminal async backends carry a second root guard on ``write`` /
+    ``write_atomic``, worded for a write rather than a wrong-typed read, and the
+    read-shaped sibling above cannot reach either: ``read_bytes`` never touches a
+    write guard, so the ordering was asserted in docstrings and pinned by
+    nothing.
+
+    Where the terminal branch runs, since the sibling above spends a paragraph
+    on the same point for the same reason: ``azure_replay_async`` and
+    ``graph_replay``. Both guards short-circuit before any request, so both
+    execute with no cassette recorded — and since ID-241 the missing-cassette
+    skip fires on the unplayable request rather than the test name, which is
+    what lets a cassette-less cell run on a replay lane at all.
+
+    **``graph_replay`` is the one that caught something.** ``GraphBackend``
+    reaches its closed guard through the lazy ``_client`` property, and
+    ``_require_writable_key`` ran *ahead* of the first touch of it, so a closed
+    store answered "cannot write to the drive root" where BE-020 requires
+    "backend is closed". This cell is the only conformance pin for the
+    ``if self._closed:`` check that fixed it; delete that check and this is where
+    it fails.
     """
     _require(async_backend, Capability.WRITE)
     await async_backend.aclose()

@@ -230,6 +230,60 @@ class TestAddressing:
         with pytest.raises(InvalidPath, match="drive root"):
             _make()._require_writable_key(root)
 
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-008")
+    @pytest.mark.parametrize("root", ["", "/", ".", "./", "/./"], ids=range(5))
+    @pytest.mark.parametrize("op", ["move", "copy"], ids=["move", "copy"])
+    async def test_root_as_move_or_copy_destination_is_refused(self, root: str, op: str) -> None:
+        """The destination half, exercised through ``move``/``copy`` themselves.
+
+        The sibling above calls ``_require_writable_key`` directly, so it pins
+        the helper and not either call site — it passes with both destination
+        guards deleted. This drives the real methods, which is what makes it a
+        fence rather than a measurement.
+
+        No ``respx.mock``: the guard is a pure string test that runs before any
+        request, so an ``InvalidPath`` here *is* the proof it precedes the
+        transport. A call that reached the network would fail this cell with a
+        connection error instead, which is the discrimination it needs.
+
+        Conformance cannot supply this. Its destination cell seeds through
+        ``write``, so the Graph lane skips it for want of a cassette — measured,
+        the whole Graph suite passed with the destination guard reverted.
+        """
+        backend = _make()
+        with pytest.raises(InvalidPath, match="drive root") as exc_info:
+            await getattr(backend, op)("a.txt", root)
+        assert exc_info.value.path == root
+        assert exc_info.value.backend == "graph"
+        await backend.aclose()
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-008")
+    @pytest.mark.parametrize("root", ["", "/", ".", "./", "/./"], ids=range(5))
+    @pytest.mark.parametrize("op", ["move", "copy"], ids=["move", "copy"])
+    async def test_root_as_move_or_copy_source_is_refused_from_the_key(self, root: str, op: str) -> None:
+        """The source half, and the assertion is about *when* rather than what.
+
+        Graph reaches every other file-shaped root verdict by observation — it
+        fetches the item and inspects the response — which satisfies the error
+        class and not the precondition order BE-008 step (0) now binds. Before
+        the guard, a root source cost a round trip and answered from the
+        response; measured against an unreachable endpoint it raised
+        ``BackendUnavailable``, not ``InvalidPath``.
+
+        So this cell is written with no mock and no reachable endpoint on
+        purpose: reverting the guard turns the raise into a connection failure,
+        which is exactly the property under test. Asserting the class alone
+        against a live drive would pass either way.
+        """
+        backend = _make()
+        with pytest.raises(InvalidPath, match="folder, not a file") as exc_info:
+            await getattr(backend, op)(root, "z.txt")
+        assert exc_info.value.path == root
+        assert exc_info.value.backend == "graph"
+        await backend.aclose()
+
     @pytest.mark.spec("GR-009")
     def test_resolve_carries_drive_id(self) -> None:
         plan = _make().resolve("a.txt")

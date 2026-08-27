@@ -282,17 +282,30 @@ def _reject_root_as_write_target(path: str, backend: str) -> None:
 def _addressable_segments(path: str) -> list[str]:
     """Split *path* into the segments that actually address something.
 
-    Drops empty and ``"."`` segments, matching ``RemotePath``'s normalisation.
-    Every spelling of the store root therefore yields ``[]``: ``""``, ``"."``,
-    ``"./"``, ``".//"``, ``"./."`` and ``"/"`` alike.
+    Folds backslashes to ``/`` and then drops empty and ``"."`` segments, in that
+    order, which is exactly what ``RemotePath._normalize`` does before it decides
+    a path is empty. Every spelling of the store root therefore yields ``[]``:
+    ``""``, ``"."``, ``"./"``, ``".//"``, ``"./."``, ``"/"`` — and the backslash
+    family ``"\\\\"``, ``".\\\\"``, ``"\\\\."``, which ``RemotePath`` also calls the
+    root and an earlier draft of this helper let through.
+
+    The fold only widens what is *refused*; it never rewrites the key an
+    operation uses. A backslash inside an ordinary key still addresses something
+    — ``"a\\\\b"`` splits to two segments and writes unchanged — so the cost of
+    matching ``RemotePath`` here is confined to strings that name nothing.
 
     Deliberately not a public root predicate. It answers "does this key name
     anything below the container", which is the question the write guard needs;
     ``is_root`` answers "is this one of the two canonical root spellings", which
     is the question addressing and round-tripping need. Merging them would put
     the write path's tolerance into ``to_key``'s inverse.
+
+    ``GraphBackend._key_segments`` answers the same question for the same reason
+    and imports this function rather than restating it: the amended root clause
+    is one rule, and two identical predicates in two modules are one widening
+    away from disagreeing about what the root is.
     """
-    return [s for s in path.split("/") if s and s != "."]
+    return [s for s in path.replace("\\", "/").split("/") if s and s != "."]
 
 
 def _wrong_type_if_folder(path: str, *, has_children: Callable[[str], bool], backend: str) -> None:

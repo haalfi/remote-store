@@ -708,13 +708,20 @@ resting on it rather than a pending one.
 
 - [ ] **ID-247 — Record the Graph root-path cassettes**
   spec: BE-029 · effort: S · audience: infra.test
-  22 `TestBackendRootPath` cells still skip on `graph_replay` for want of a
+  **30** `TestBackendRootPath` cells still skip on `graph_replay` for want of a
   recording — the "pinned nowhere" column of spec 003's BE-029 table. Graph is
   the only HTTP family with **no emulator tier** (`graph_live` Stage 3 and
   `graph_replay` Stage 1, nothing between), so those contracts are unexercised
   against `GraphBackend` at every stage below a live account; Azure's equivalent
-  skips are covered by `azurite` at Stage 2. 14 of the 22 are Graph-only —
-  Azure passes them with no cassette at all (ID-241).
+  skips are covered by `azurite` at Stage 2.
+  The 30 is re-derived by `pytest -k TestBackendRootPath -rs`, summing the skip
+  reasons naming `cassettes/graph`; it was 22 before BUG-259 added the write and
+  `move`/`copy`-destination rosters, whose eight new cells seed through `write`
+  and so skip on the same terms. **The old "14 of the 22 are Graph-only" split is
+  not re-derived here** — the new cells skip on the Azure replay lanes too, so
+  the split did not simply move with the total, and separating it needs a
+  per-node comparison of the graph and azure lanes rather than a count of skip
+  reasons. Left for this item's own work rather than guessed at.
   `python scripts/record_cassettes.py --backend graph` needs `RS_TEST_LIVE_GRAPH=1`
   plus `GRAPH_CLIENT_ID` / `GRAPH_TENANT_ID` / `GRAPH_DRIVE_ID` (device-code, so
   interactive). Prefer `--node` per cell: a full run re-records all 119 existing

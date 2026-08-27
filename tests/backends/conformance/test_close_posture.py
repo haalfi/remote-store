@@ -101,9 +101,10 @@ def test_close_posture_outranks_root_write_rejection(backend: Backend, root: str
     guard" is the half that silently depends on which line the implementer typed
     first, which is exactly what BE-020's paragraph says must not decide it.
 
-    Nothing pinned that on this path: four backends assert the ordering in a
-    docstring and the read-shaped cell above cannot reach it, because
-    ``read_bytes`` never touches the write guard.
+    Nothing pinned that on this path: the ordering is asserted in five
+    write-guard docstrings, covering six classes (``_s3_base`` serves both S3
+    lanes), and the read-shaped cell above cannot reach any of them, because
+    ``read_bytes`` never touches a write guard.
     """
     _require(backend, Capability.WRITE)
     backend.close()

@@ -96,9 +96,9 @@ _ROOT_FILE_OP_CALLS = {
 defers its verdict to first byte is not credited with a lazy handle."""
 
 
-def _open_atomic_write(backend: Backend, path: str) -> None:
+def _open_atomic_write(backend: Backend, path: str, *, overwrite: bool = False) -> None:
     """Drive ``open_atomic`` to completion — it refuses on ``__enter__``, not at the call."""
-    with backend.open_atomic(path) as handle:
+    with backend.open_atomic(path, overwrite=overwrite) as handle:
         handle.write(b"x")
 
 
@@ -124,10 +124,23 @@ precisely why it would have gone unnoticed.
 """
 
 _ROOT_WRITE_OP_CALLS = {
-    "write": lambda b, p: b.write(p, b"x"),
-    "write_atomic": lambda b, p: b.write_atomic(p, b"x"),
-    "open_atomic": _open_atomic_write,
+    "write": lambda b, p, ow: b.write(p, b"x", overwrite=ow),
+    "write_atomic": lambda b, p, ow: b.write_atomic(p, b"x", overwrite=ow),
+    "open_atomic": lambda b, p, ow: _open_atomic_write(b, p, overwrite=ow),
 }
+
+_OVERWRITE_MODES = [pytest.param(False, id="no_overwrite"), pytest.param(True, id="overwrite")]
+"""Both modes, because the clause binds both and they take different routes.
+
+``write`` and ``write_atomic`` skip their existence probe entirely when
+``overwrite=True`` — a guard placed on the ``overwrite=False`` branch alone would
+leave half the surface unguarded, which is not hypothetical: the reproduction
+that scoped BUG-259 found the ``overwrite=True`` cells corrupting on their own.
+Until this parameter existed the only cells covering the mode were one backend's,
+so a normative "in both overwrite modes" was falsifiable on one of eleven bound
+classes. The guard is a pre-check, so the cost of the second mode is collection
+count and no round trips.
+"""
 
 _ROOT_WRITE_DST_OPS = [
     pytest.param("move", Capability.MOVE, id="move_dst"),
@@ -272,9 +285,10 @@ class TestBackendRootPath:
     @pytest.mark.spec("BE-029")
     @pytest.mark.spec("BE-008")
     @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("overwrite", _OVERWRITE_MODES)
     @pytest.mark.parametrize(("op", "cap"), _ROOT_WRITE_OPS)
     def test_write_to_root_is_refused_and_the_store_survives(
-        self, backend: Backend, root: str, op: str, cap: Capability
+        self, backend: Backend, root: str, overwrite: bool, op: str, cap: Capability
     ) -> None:
         """A write *to* the root is refused, and the store is intact afterwards.
 
@@ -295,11 +309,14 @@ class TestBackendRootPath:
         (BK-345 owns that gap). So a backend whose container can go absent also
         pins this against that state in its own per-backend home, where both the
         fixture and the server-side assertion are available.
+
+        **Both overwrite modes**, because they reach the write by different
+        routes and the clause binds both — see ``_OVERWRITE_MODES``.
         """
         _require(backend, cap, Capability.WRITE, Capability.READ)
         backend.write("rootwrite/a.txt", b"seed")
         with pytest.raises(InvalidPath) as exc:
-            _ROOT_WRITE_OP_CALLS[op](backend, root)
+            _ROOT_WRITE_OP_CALLS[op](backend, root, overwrite)
         assert is_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
         assert backend.read_bytes("rootwrite/a.txt") == b"seed"
         assert backend.is_folder(root) is True

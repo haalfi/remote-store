@@ -1385,9 +1385,12 @@ unchanged — ``write_atomic`` is gated on ``ATOMIC_WRITE``, not ``WRITE``.
 """
 
 _ASYNC_ROOT_WRITE_OP_CALLS = {
-    "write": lambda b, p: b.write(p, b"x"),
-    "write_atomic": lambda b, p: b.write_atomic(p, b"x"),
+    "write": lambda b, p, ow: b.write(p, b"x", overwrite=ow),
+    "write_atomic": lambda b, p, ow: b.write_atomic(p, b"x", overwrite=ow),
 }
+
+_ASYNC_OVERWRITE_MODES = [pytest.param(False, id="no_overwrite"), pytest.param(True, id="overwrite")]
+"""Async mirror of ``test_io.py``'s ``_OVERWRITE_MODES``; that docstring has the reason."""
 
 _ASYNC_ROOT_WRITE_DST_OPS = [
     pytest.param("move", Capability.MOVE, id="move_dst"),
@@ -1491,9 +1494,10 @@ class TestBackendRootPath:
     @pytest.mark.spec("BE-029")
     @pytest.mark.spec("BE-008")
     @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("overwrite", _ASYNC_OVERWRITE_MODES)
     @pytest.mark.parametrize(("op", "cap"), _ASYNC_ROOT_WRITE_OPS)
     async def test_write_to_root_is_refused_and_the_store_survives(
-        self, async_backend: AsyncBackend, root: str, op: str, cap: Capability
+        self, async_backend: AsyncBackend, root: str, overwrite: bool, op: str, cap: Capability
     ) -> None:
         """Async mirror of ``test_io.py``: a write to the root is refused, store intact.
 
@@ -1504,7 +1508,7 @@ class TestBackendRootPath:
         _require(async_backend, cap, Capability.LIST, Capability.WRITE, Capability.READ)
         await async_backend.write("rootwrite/a.txt", b"seed")
         with pytest.raises(InvalidPath) as exc:
-            await _ASYNC_ROOT_WRITE_OP_CALLS[op](async_backend, root)
+            await _ASYNC_ROOT_WRITE_OP_CALLS[op](async_backend, root, overwrite)
         assert is_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
         assert await async_backend.read_bytes("rootwrite/a.txt") == b"seed"
         assert await async_backend.is_folder(root) is True

@@ -55,7 +55,11 @@ from remote_store.aio.backends._graph.transfer import (
     stream_range,
     upload_session,
 )
-from remote_store.backends._flat_ns import _acheck_no_file_ancestor
+from remote_store.backends._flat_ns import (
+    _acheck_no_file_ancestor,
+    _addressable_segments,
+    _folder_not_file,
+)
 
 if TYPE_CHECKING:
     from collections.abc import AsyncIterator, Awaitable, Callable, Mapping
@@ -162,12 +166,18 @@ def _split_parent(path: str) -> tuple[str, str]:
 def _key_segments(path: str) -> list[str]:
     """Split a backend key into addressable Graph path segments.
 
-    Drops empty and ``"."`` segments, matching ``RemotePath``'s own
-    normalisation. Both spellings of the store root therefore yield ``[]`` —
-    which is what makes ``native_path("")`` and ``native_path(".")`` the same
-    address, and what makes the drive root unwritable under every spelling.
+    Delegates to the shared ``_flat_ns._addressable_segments``, which normalises
+    the way ``RemotePath`` does: fold backslashes, then drop empty and ``"."``
+    segments. Every spelling of the store root therefore yields ``[]`` — which is
+    what makes ``native_path("")`` and ``native_path(".")`` the same address, and
+    what makes the drive root unwritable under every spelling.
+
+    This was an identical private copy until the root clause became one shared
+    rule. Two predicates answering "does this key name anything" in two modules
+    are one widening away from disagreeing about what the root is, and the
+    clause's own argument leans on them agreeing.
     """
-    return [s for s in path.split("/") if s and s != "."]
+    return _addressable_segments(path)
 
 
 class GraphBackend(AsyncBackend):
@@ -969,6 +979,27 @@ class GraphBackend(AsyncBackend):
         if not _key_segments(path):
             raise InvalidPath(f"Cannot write to the drive root: {path!r}", path=path, backend=self.name)
 
+    def _reject_root_as_source(self, path: str) -> None:
+        """Reject the drive root as a file-shaped operand, from the key.
+
+        The ``move``/``copy`` **source**. Graph reaches every other file-shaped
+        root verdict by observation — it fetches the item and inspects
+        ``folder`` on the response — which is enough while the rule is only
+        about the error *class*, and is not enough now that the precondition
+        order is normative: a root source cost a round trip before this, and
+        answered from the response rather than from the key.
+
+        Uses ``_key_segments`` rather than ``is_root``, so the source and the
+        write target agree about which spellings name the root on this backend.
+        The wording is the shared "folder, not a file" one, because that is what
+        a file-shaped operation handed a folder owes — the destination gets the
+        write wording instead, from ``_require_writable_key``.
+        """
+        if self._closed:
+            raise BackendUnavailable("Graph backend is closed", backend=self.name)
+        if not _key_segments(path):
+            raise _folder_not_file(path, self.name)
+
     async def write(
         self,
         path: str,
@@ -1320,6 +1351,7 @@ class GraphBackend(AsyncBackend):
         # configured drive). BE-008 409 discrimination applies to the destination.
         # conflictBehavior is a QUERY parameter on the copy action (live-verified:
         # a body field is ignored, so overwrite=True 409'd until moved here).
+        self._reject_root_as_source(src)
         self._require_writable_key(dst)
         if await self._short_circuit_self_op(src, dst):
             return
@@ -1361,6 +1393,7 @@ class GraphBackend(AsyncBackend):
         """
         # GR-027 (PATCH -> sync 200 or 202 monitor), GR-044 (self-move),
         # GR-056 (cross-drive vacuous). BE-008 409 discrimination on the dest.
+        self._reject_root_as_source(src)
         self._require_writable_key(dst)
         if await self._short_circuit_self_op(src, dst):
             return
