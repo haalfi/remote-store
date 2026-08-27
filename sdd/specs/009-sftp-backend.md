@@ -468,6 +468,12 @@ re-entries differently:
   than taken. Narrower than the version-exchange window that *is* bounded: a
   server that accepts a channel but never answers a channel request is a wedged
   SSH daemon, not a wedged subsystem.
+  This exception is **characterised by a test**, not asserted: a server variant
+  that parks in its subsystem handler (so no `CHANNEL_SUCCESS` is ever sent)
+  leaves the client blocked well past the bound, with the handler's entry
+  observed so the block is pinned to the request rather than to an earlier
+  handshake step. If that test ever fails, the wait has become bounded and this
+  bullet should be deleted with it.
 - **Releasing a stream handle.** `_ErrorMappingStream.close` closes the
   underlying paramiko file under `contextlib.suppress`, so exiting the `with`
   block of a stream that has already failed may block once more. The fix belongs

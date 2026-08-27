@@ -211,21 +211,35 @@ class _StallRelay:
 class _MuteSubsystemServer:
     """SSH server that accepts everything and then never speaks SFTP.
 
-    Auth succeeds, the session channel opens, and the ``sftp`` subsystem request
-    is accepted — but no subsystem handler is registered, so the server never
-    sends its SFTP ``VERSION``. The client's version exchange, which runs inside
-    ``SFTPClient.__init__``, waits on a reply that never comes.
+    Auth succeeds and the session channel opens. What happens to the ``sftp``
+    subsystem request depends on *mode*, and the two are worth separating
+    because ``io_timeout`` bounds one and not the other:
+
+    - ``"accept"`` (default) — the request is accepted, but no subsystem handler
+      is registered, so the server never sends its SFTP ``VERSION``. The
+      client's version exchange, inside ``SFTPClient.__init__``, waits on a
+      reply that never comes. That is a ``recv``, so ``Channel.timeout``
+      bounds it.
+    - ``"never_answer"`` — the handler blocks, so paramiko's server side never
+      sends ``CHANNEL_SUCCESS`` or ``CHANNEL_FAILURE`` at all. The client waits
+      in ``Channel._wait_for_event``, a bare ``threading.Event.wait()`` that
+      never reads ``Channel.timeout``, so nothing bounds it.
 
     This is the fault the relay cannot stage: it happens while the client is
     being constructed, before any caller-visible operation, so there is no
-    moment in the test to flip a switch. Accepting-then-going-mute is a real
-    server posture (a subsystem that dies on spawn looks exactly like this),
-    not a contrivance to reach the code path.
+    moment in the test to flip a switch. Both postures are real — a subsystem
+    that dies on spawn looks like the first, a wedged SSH daemon like the
+    second — not contrivances to reach the code path.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, mode: str = "accept") -> None:
         import paramiko
 
+        self._mode = mode
+        self._never_answer = threading.Event()  # never set: the handler parks here
+        # Set when the subsystem handler is entered, so a test can tell "blocked
+        # at the request" from "blocked somewhere earlier in the handshake".
+        self.reached_subsystem_request = threading.Event()
         self._paramiko = paramiko
         self._host_key = paramiko.RSAKey.generate(2048)
         self._stop = threading.Event()
@@ -241,6 +255,9 @@ class _MuteSubsystemServer:
 
     def _interface(self) -> Any:
         paramiko = self._paramiko
+        mode = self._mode
+        parked = self._never_answer
+        reached = self.reached_subsystem_request
 
         class _Mute(paramiko.ServerInterface):
             def check_auth_password(self, username: str, password: str) -> int:
@@ -256,6 +273,12 @@ class _MuteSubsystemServer:
                 return paramiko.OPEN_SUCCEEDED
 
             def check_channel_subsystem_request(self, channel: Any, name: str) -> bool:
+                reached.set()
+                if mode == "never_answer":
+                    # Block instead of returning: paramiko's server side sends
+                    # CHANNEL_SUCCESS / CHANNEL_FAILURE from this call's return
+                    # value, so parking here means no reply is ever sent.
+                    parked.wait()
                 # Accept, and register no handler: the channel is open and the
                 # server is mute from here on.
                 return True
@@ -290,6 +313,14 @@ class _MuteSubsystemServer:
 @pytest.fixture
 def mute_server() -> Iterator[_MuteSubsystemServer]:
     server = _MuteSubsystemServer()
+    server.start()
+    yield server
+    server.stop()
+
+
+@pytest.fixture
+def unanswering_server() -> Iterator[_MuteSubsystemServer]:
+    server = _MuteSubsystemServer(mode="never_answer")
     server.start()
     yield server
     server.stop()
@@ -365,6 +396,47 @@ def test_stall_recovers_and_rearms_the_bound(stall_relay: _StallRelay) -> None:
     second = _channel(backend)
     assert second is not first, "expected a fresh channel after the reconnect"
     assert second.gettimeout() == pytest.approx(io_timeout)
+
+
+@pytest.mark.spec("SFTP-030")
+def test_subsystem_request_is_not_bounded(unanswering_server: _MuteSubsystemServer) -> None:
+    """Characterises a stated exception: the ``subsystem`` request is unbounded.
+
+    SFTP-030 records this as one of two waits ``io_timeout`` does not cover, and
+    a spec clause asserting a paramiko behaviour is exactly the kind of claim
+    this item has got wrong three times by reading rather than running. So it is
+    pinned here: with ``io_timeout`` set, a peer that opens the channel and never
+    answers the request is *still* blocked well past the bound.
+
+    The mechanism, for the reader who finds this test failing: ``invoke_subsystem``
+    waits in ``Channel._wait_for_event``, a bare ``threading.Event.wait()`` that
+    never reads ``Channel.timeout``. Only a ``recv`` consults it.
+
+    **A failure here is good news, not a regression.** It means the wait became
+    bounded — paramiko grew a timeout, or we inlined the request to add one — and
+    the SFTP-030 exception should be deleted along with this test. That is why it
+    asserts on being blocked rather than on a duration: it is a tripwire on a
+    documented gap, not a guarantee anyone wants to keep.
+    """
+    backend = _make_backend(unanswering_server.port, io_timeout=1.0)
+    done = threading.Event()
+
+    def _probe() -> None:
+        with contextlib.suppress(Exception):
+            backend.check_health()
+        done.set()
+
+    threading.Thread(target=_probe, daemon=True).start()
+
+    # Pin *where* it is blocked. Without this, a handshake that never got as far
+    # as the request would satisfy the assertion below and prove nothing.
+    assert unanswering_server.reached_subsystem_request.wait(timeout=10.0), (
+        "the client never reached the subsystem request; this test is not exercising what it claims"
+    )
+    assert not done.wait(timeout=6.0), (
+        "the subsystem request completed or failed within 6s at a 1s io_timeout — "
+        "if it is now bounded, delete this test and SFTP-030's stated exception"
+    )
 
 
 @pytest.mark.spec("SFTP-030")

@@ -207,6 +207,20 @@ phases:
           closure, at which point SFTP-030's retry-exclusion clause read as
           saying the version-exchange stall is retried. Both clauses corrected.
         outcome: misleading
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "test_subsystem_request_is_not_bounded"
+        read_type: verify
+        extract: >-
+          Round 3 named the fix and I took it, but left the *replacement* claim
+          — that invoke_subsystem is unbounded — derived from reading source
+          rather than running it. Same shape as the three defects this item kept
+          hitting, one level up: I had corrected an unverified claim with another
+          unverified claim. The reviewer's own suggestion (park the mute server
+          in its subsystem handler and see whether io_timeout fires) closes it,
+          so the stated exception is characterised rather than asserted. The test
+          also observes the handler being entered, so "still blocked" is pinned
+          to the request rather than to an earlier handshake step.
+        outcome: ok
       - file: src/remote_store/backends/_sftp.py
         section: "_open_sftp_bounded settimeout comment"
         read_type: verify
