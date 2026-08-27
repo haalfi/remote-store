@@ -261,17 +261,19 @@ to pin, which is why its "pinned nowhere" cell is empty rather than listing them
 
 **The write row is a second roster and deliberately not folded into that one.**
 `_ROOT_WRITE_OPS` is `write`, `write_atomic` and `open_atomic` (two in the async
-mirror, which declares no `open_atomic`, as it declares no `read_seekable`).
-Separate because it is a separate rule: the seven above are the type-mismatch
-row, each gated on its own capability, and what they owe is an error class; these
-are one rule under `Capability.WRITE`, and what they owe is an error class **and
-the absence of a side effect**. Its conformance cell seeds a file and reads it
-back afterwards, which is the strongest form the "before anything is
-transferred" clause takes from outside a backend — the container's own state is
-not observable through the `Backend` API, and the absent-container case no
-fixture arranges (BK-345). A backend whose container can go absent pins that half
-in its per-backend home. Neither roster reaches `SQLQueryBackend`, which is
-read-only.
+mirror, which declares no `open_atomic`, as it declares no `read_seekable`), plus
+a companion roster for the `move`/`copy` **destination**. Separate because it is
+a separate *rule*, not because its members share a gate: like the seven above,
+each is paired with its own capability — `write` under `WRITE`, `write_atomic`
+and `open_atomic` under `ATOMIC_WRITE`, the destination pair under `MOVE` and
+`COPY`. What distinguishes the rows is what they owe. The type-mismatch row owes
+an error class; these owe an error class **and the absence of a side effect**.
+Their conformance cells seed a file and read it back afterwards, which is the
+strongest form the "before anything is transferred" clause takes from outside a
+backend — the container's own state is not observable through the `Backend` API,
+and the absent-container case no fixture arranges (BK-345). A backend whose
+container can go absent pins that half in its per-backend home. No roster here
+reaches `SQLQueryBackend`, which is read-only.
 
 A clause that binds every LIST-capable backend needs its coverage checked per
 backend, not per source site — both defects this clause was written from
@@ -745,26 +747,47 @@ pointer is here so a reader does not read that list as meaning the root is
 settled.
 
 **The write-to-root rule is a different count and every class now meets it.**
-Of the same thirteen: **two** have no `WRITE` capability and are not bound
-(`ReadOnlyHttpBackend`, `SQLQueryBackend`); **five** already met it
-(`LocalBackend`, `MemoryBackend`, `AsyncMemoryBackend`, `SQLBlobBackend`,
-`GraphBackend`); and **six** were brought to it by BUG-259 — `SFTPBackend`,
-`S3Backend`, `S3PyArrowBackend`, `S3Boto3Backend`, `AzureBackend` and
-`AsyncAzureBackend`. Only the first of those six could corrupt anything; the
-other five reached the SDK and answered with the wrong class, which is a breach
-of the paragraphs at the head of this clause rather than of this row. Counted by
-partitioning the thirteen, not by tallying the fix.
+Of the same thirteen, **two** have no `WRITE` capability and are not bound
+(`ReadOnlyHttpBackend`, `SQLQueryBackend`). The other eleven split by *which
+half* they already met, and the split differs between the two halves — which is
+itself the finding, since a class compliant on the writers was not thereby
+compliant on the destination:
 
-Coverage is **not** uniform, and the shortfall is fixtures rather than rule.
-Running the new cells alone collects 84 and executes 58; the 26 skips are
-`sqlquery` (no `WRITE`), `s3_pyarrow_moto` (its lane needs the MinIO fixture on
-current PyArrow), and the Azure sync, Azure async and Graph replay lanes, whose
-cassettes for these test ids have not been recorded. The four backends those
-skips cover were each measured directly instead — `S3PyArrowBackend` and
-`AzureBackend` against an unreachable endpoint, where an `InvalidPath` naming
-the root proves the guard ran before the transport; `AsyncAzureBackend` with the
-guard stubbed out, to establish what it did before; and `GraphBackend`'s
-refusal is pinned in its own home under both spellings.
+| | Refused it definitionally already | Refused it, but by observation | Did not refuse it |
+|---|---|---|---|
+| **The three writers** | `MemoryBackend`, `AsyncMemoryBackend`, `SQLBlobBackend`, `GraphBackend` — 4 | `LocalBackend` — 1 | `SFTPBackend`, `S3Backend`, `S3PyArrowBackend`, `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` — 6 |
+| **The `move`/`copy` destination** | `MemoryBackend`, `AsyncMemoryBackend`, `SQLBlobBackend` — 3 | `LocalBackend`, `SFTPBackend` — 2 | `S3Backend`, `S3PyArrowBackend`, `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend`, `GraphBackend` — 6 |
+
+The middle column is why the fix is not smaller. Those classes answered
+correctly, and answered by looking — an is-a-directory probe on a container that
+was present. Neither of the two states this clause is about (an absent container;
+a flat namespace with nothing to observe) leaves that probe anything to see, and
+`LocalBackend` on the writers is the case already measured leaving its own root a
+regular file. All eleven now decide it from the key.
+
+Only two classes could destroy anything: `SFTPBackend` on the writers, and
+`S3Boto3Backend` on the destination — the latter answered a `move` to the root
+destination by returning cleanly and **deleting the source**. The rest reached
+their SDK and answered with the wrong class, which breaches the paragraphs at the
+head of this clause rather than this row.
+
+`GraphBackend` is the instructive row: it decided the writers definitionally,
+under more spellings than anything else here, and was still in the last column
+for the destination — and its root check ran ahead of its own closed-backend
+guard, so a closed store answered "cannot write to the drive root" instead of
+"backend is closed". Compliance on one half of a clause is not evidence about the
+other.
+
+Coverage is **not** uniform, and the shortfall is fixtures rather than rule. The
+cells this clause added collect **182** and execute **130**; the **52** skips are
+26 for unrecorded replay cassettes (the Azure sync, Azure async and Graph lanes),
+14 for backends that do not declare the capability under test, and 12 for the
+PyArrow lane, which needs the MinIO fixture on current PyArrow. The backends
+those skips cover were each measured directly instead — `S3PyArrowBackend` and
+`AzureBackend` against an unreachable endpoint, where an `InvalidPath` naming the
+root proves the guard ran before the transport; `AsyncAzureBackend` with the
+guard stubbed out, to establish what it did before; and `GraphBackend` against
+an unreachable endpoint for both halves.
 
 **§ Reach's roster is twelve operations, and its siblings are not silently
 included.** The twelve are the two tolerant deletes plus the ten this paragraph

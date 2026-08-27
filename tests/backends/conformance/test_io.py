@@ -129,6 +129,19 @@ _ROOT_WRITE_OP_CALLS = {
     "open_atomic": _open_atomic_write,
 }
 
+_ROOT_WRITE_DST_OPS = [
+    pytest.param("move", Capability.MOVE, id="move_dst"),
+    pytest.param("copy", Capability.COPY, id="copy_dst"),
+]
+"""The other two ways to write, keyed on the destination.
+
+Ids are explicit for the same reason ``_ROOT_FILE_OPS`` spells its ``move_src`` /
+``copy_src`` out: without them pytest derives the id from the ``Capability``
+member and the enum repr lands in the test id — which is also the cassette
+filename for every replay lane, so an id that changes with an unrelated enum edit
+orphans recorded cassettes.
+"""
+
 
 @pytest.mark.parametrize("backend", fixture_params(Capability.LIST), indirect=True)
 class TestBackendRootPath:
@@ -294,7 +307,7 @@ class TestBackendRootPath:
     @pytest.mark.spec("BE-029")
     @pytest.mark.spec("BE-008")
     @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
-    @pytest.mark.parametrize(("op", "cap"), [("move", Capability.MOVE), ("copy", Capability.COPY)])
+    @pytest.mark.parametrize(("op", "cap"), _ROOT_WRITE_DST_OPS)
     def test_root_as_move_or_copy_destination_is_refused(
         self, backend: Backend, root: str, op: str, cap: Capability
     ) -> None:

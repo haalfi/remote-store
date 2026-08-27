@@ -493,7 +493,7 @@ class TestWriteRecreatesTheRoot:
         assert backend.exists(written), f"{op_name} reported success but {written} is not readable"
         assert backend.read_bytes(written) == b"x"
 
-    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("root", ["", ".", "./"], ids=["empty", "dot", "dot-slash"])
     @pytest.mark.parametrize(
         ("op_name", "call"),
         [
@@ -524,13 +524,18 @@ class TestWriteRecreatesTheRoot:
         deliberately not ``backend.is_file(root)``: that answers ``False`` from
         the BE-029 short-circuit without looking at the disk, so it would pass
         on exactly the corruption this cell exists to catch.
+
+        **The third spelling is not decoration.** ``is_root`` is exactly
+        ``{"", "."}``, so a guard written against it let ``"./"`` through and the
+        corruption survived on this exact cell's other two params. The write
+        guard normalises instead, and this param is what holds it there.
         """
         on_disk = Path(backend.native_path(root))
         with pytest.raises(InvalidPath):
             call(backend, root)
         assert not on_disk.is_file(), f"{op_name} left a regular file at the store root"
 
-    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("root", ["", ".", "./"], ids=["empty", "dot", "dot-slash"])
     def test_open_atomic_on_the_root_is_refused_on_enter(self, backend: LocalBackend, root: str) -> None:
         """The third writer, which the sibling above cannot reach.
 
@@ -539,6 +544,11 @@ class TestWriteRecreatesTheRoot:
         call. A copy of the sibling's ``pytest.raises(...): call(...)`` shape
         would pass without ever entering the block, and would still pass with the
         guard deleted.
+
+        This is also where the ``"./"`` spelling did its worst: the other two
+        writers at least raised (from above the backend, after the bytes), while
+        ``open_atomic("./")`` returned **cleanly** having left the root a regular
+        file.
         """
         on_disk = Path(backend.native_path(root))
         with pytest.raises(InvalidPath), backend.open_atomic(root) as stream:

@@ -1305,8 +1305,9 @@ class GraphBackend(AsyncBackend):
 
         Raises:
             NotFound: If ``src`` does not exist.
-            InvalidPath: If ``src`` names a folder, or ``dst`` names an existing
-                folder or descends through a file ancestor.
+            InvalidPath: If ``src`` or ``dst`` is the drive root, or ``src`` names a
+                folder, or ``dst`` names an existing folder or descends through a
+                file ancestor.
             AlreadyExists: If ``dst`` exists, ``src != dst``, and ``overwrite`` is
                 ``False``.
             PermissionDenied: If the token is rejected or lacks access to the
@@ -1319,6 +1320,7 @@ class GraphBackend(AsyncBackend):
         # configured drive). BE-008 409 discrimination applies to the destination.
         # conflictBehavior is a QUERY parameter on the copy action (live-verified:
         # a body field is ignored, so overwrite=True 409'd until moved here).
+        self._require_writable_key(dst)
         if await self._short_circuit_self_op(src, dst):
             return
         behavior = "replace" if overwrite else "fail"
@@ -1347,8 +1349,9 @@ class GraphBackend(AsyncBackend):
 
         Raises:
             NotFound: If ``src`` does not exist.
-            InvalidPath: If ``src`` names a folder, or ``dst`` names an existing
-                folder or descends through a file ancestor.
+            InvalidPath: If ``src`` or ``dst`` is the drive root, or ``src`` names a
+                folder, or ``dst`` names an existing folder or descends through a
+                file ancestor.
             AlreadyExists: If ``dst`` exists, ``src != dst``, and ``overwrite`` is
                 ``False``.
             PermissionDenied: If the token is rejected or lacks access to the
@@ -1358,6 +1361,7 @@ class GraphBackend(AsyncBackend):
         """
         # GR-027 (PATCH -> sync 200 or 202 monitor), GR-044 (self-move),
         # GR-056 (cross-drive vacuous). BE-008 409 discrimination on the dest.
+        self._require_writable_key(dst)
         if await self._short_circuit_self_op(src, dst):
             return
         behavior = "replace" if overwrite else "fail"

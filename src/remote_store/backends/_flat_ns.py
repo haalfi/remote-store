@@ -245,18 +245,54 @@ def _reject_root_as_write_target(path: str, backend: str) -> None:
     that is the backend's documented behaviour — only the root key itself is
     refused.
 
+    **Root-ness is decided on the normalised key, not by ``is_root``**, and this
+    is the one guard in the codebase that draws the line there. ``is_root`` is
+    exactly ``{"", "."}`` — the two spellings a backend key and a ``RemotePath``
+    use — and a caller holding a ``Backend`` directly can write ``"./"``, which
+    addresses the same node and is neither. Measured against a ``LocalBackend``
+    whose root had been deleted: ``write("./")`` and ``write_atomic("./")`` left
+    the root a regular file and raised from the path layer *above* the backend
+    (so the error carried no ``backend``), and ``open_atomic("./")`` returned
+    cleanly having done it — the whole defect this guard exists for, one
+    character away. Dropping empty and ``"."`` segments and testing what is left
+    covers every spelling that addresses the root, and matches how
+    ``GraphBackend`` has always decided the same question.
+
+    ``is_root`` itself is deliberately not widened. It has 54 call sites across
+    13 files, including ``native_path`` / ``to_key`` — where the addressing
+    round-trip is defined in terms of the two canonical spellings — and the
+    prefix construction every flat-namespace listing uses. On the read side an
+    unrecognised root spelling costs a wrong error class; here it costs the
+    container. The asymmetry in the fix follows the asymmetry in the damage.
+
     Distinct from ``_reject_root_as_file`` on purpose. That helper is explicitly
     not a mutation guard and its wording ("a folder, not a file") describes a
     *read* of the wrong type; this one says what is actually wrong with writing
     here, and says the same thing whether or not the container is currently
     there.
     """
-    if is_root(path):
+    if not _addressable_segments(path):
         raise InvalidPath(
             f"Cannot write — '{path}' is the store root, which is a folder",
             path=path,
             backend=backend,
         )
+
+
+def _addressable_segments(path: str) -> list[str]:
+    """Split *path* into the segments that actually address something.
+
+    Drops empty and ``"."`` segments, matching ``RemotePath``'s normalisation.
+    Every spelling of the store root therefore yields ``[]``: ``""``, ``"."``,
+    ``"./"``, ``".//"``, ``"./."`` and ``"/"`` alike.
+
+    Deliberately not a public root predicate. It answers "does this key name
+    anything below the container", which is the question the write guard needs;
+    ``is_root`` answers "is this one of the two canonical root spellings", which
+    is the question addressing and round-tripping need. Merging them would put
+    the write path's tolerance into ``to_key``'s inverse.
+    """
+    return [s for s in path.split("/") if s and s != "."]
 
 
 def _wrong_type_if_folder(path: str, *, has_children: Callable[[str], bool], backend: str) -> None:

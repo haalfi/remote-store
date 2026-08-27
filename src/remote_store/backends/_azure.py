@@ -765,9 +765,9 @@ class AzureBackend(Backend):
 
         Raises:
             AlreadyExists: If the blob exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or (with the
-                ``reject_write_under_file_ancestor`` opt-in, or natively on HNS)
-                an ancestor exists as a file.
+            InvalidPath: If *path* is the store root, or names a directory, or
+                (with the ``reject_write_under_file_ancestor`` opt-in, or natively
+                on HNS) an ancestor exists as a file.
             PermissionDenied: If credentials are rejected or lack access (401/403).
             BackendUnavailable: On throttling (429), 5xx, or transport failure.
         """

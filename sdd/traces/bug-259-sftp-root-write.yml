@@ -45,6 +45,7 @@ surprising_ripples:
   - tests/backends/conformance/test_close_posture.py
   - tests/backends/conformance/aio/test_close_posture.py
   - tests/backends/test_flat_ns.py
+  - tests/backends/local/test_absent_root.py
   - scripts/check_docstring_parity.py
   - sdd/specs/003-backend-adapter-contract.md
 
@@ -52,11 +53,25 @@ discovery_followups: []
 
 # Counted from `git log --oneline origin/master..HEAD`, applying the schema's
 # test — "exists specifically because review feedback was incorporated":
-#   062a2f5  implements the fix                            — no
-#   (this)   round 1, all nine findings                    — yes
-# One qualifies. The field counts commits rather than rounds; here the loop has
-# run one review round and produced one review-driven commit.
-review_rounds: 1
+#   ec35e00  implements the fix                            — no
+#   557db2f  round 1, all nine findings                    — yes
+#   dc53c79  round 1 residue: the async Azure Raises blocks
+#            the sweep's own pattern had missed, found by
+#            re-deriving a figure for a review reply        — yes
+#   (this)   round 2, all seven findings                   — yes
+#
+# The last entry is "(this)" rather than a SHA on purpose: a commit cannot name
+# its own hash, and writing the tip's SHA here made the file stale the moment it
+# was amended into that very commit. The sibling trace uses the same form.
+# Three qualify. The field counts commits rather than rounds; the loop has run
+# two review rounds and produced three review-driven commits, because round 1's
+# reply-writing surfaced a gap of its own.
+#
+# These SHAs are post-rebase. The branch was rebased onto master after BK-354
+# landed, which rewrote all four — a figure naming commits is invalidated by any
+# history rewrite, not only by new work, and re-reading it would not have shown
+# that. Re-derived from the command above after the rebase.
+review_rounds: 3
 
 phases:
   - id: orient
@@ -373,6 +388,128 @@ phases:
           root rule and not with the ordering rule the same clause carries —
           which the read-shaped cell could not see, because read_bytes reaches
           _client before any root verdict exists.
+
+  - id: fix_round_2
+    name: Round-2 fix pass (measuring round)
+    steps:
+      - file: src/remote_store/_path.py
+        section: "is_root"
+        read_type: verify
+        extract: >-
+          The round's most severe finding, and it is the fix's own hole rather
+          than a pre-existing one made visible: is_root is exactly {"", "."},
+          and "./" addresses the same node. Measured with the first fix in
+          place, against a LocalBackend whose root was deleted — write("./") and
+          write_atomic("./") left the root a regular file, open_atomic("./")
+          returned cleanly. Round 1 had gone the other way on a similar
+          question (drop the carve-out, guard everything) and this round found
+          the same lesson one layer down: a guard keyed on an enumeration of
+          spellings is a guard that misses the spelling nobody enumerated.
+          Fixed by normalising inside the write guard only; widening is_root
+          itself would move 54 call sites including native_path/to_key and every
+          listing prefix, for a read-side defect that costs an error class
+          rather than the container.
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "move, copy"
+        read_type: verify
+        extract: >-
+          The destination sweep of round 1 keyed on backends carrying
+          _reject_root_as_file(src), and Graph uses its own
+          _require_writable_key, so the sweep passed straight over it. A sweep
+          defined by the shape of the code it is patching rather than by the
+          operations it is meant to cover will miss the one implemented
+          differently — and Graph is exactly the backend a reader would assume
+          safe, having been the most careful about root spellings all along.
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "write, and LocalBackend's three writers"
+        read_type: verify
+        extract: >-
+          Four Raises: blocks the round-1 sweep did not reach, on top of the
+          four async Azure ones re-derivation had already caught. Same cause
+          both times: the sweep matched literal docstring wording, and these
+          blocks phrase the same precondition differently. Two independent
+          misses of one target set is the signal that the method was wrong, not
+          the effort — the count was right each time and the set was short.
+        outcome: ok
+      - file: tests/backends/conformance/test_io.py
+        section: "_ROOT_WRITE_DST_OPS"
+        read_type: reference
+        extract: >-
+          The destination roster shipped without explicit param ids, so pytest
+          derived them from the Capability member and the enum repr landed in
+          the test id — which is also the cassette filename on every replay
+          lane. _ROOT_FILE_OPS spells its move_src/copy_src ids out and the
+          reason was there to copy.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "The write row is a second roster"
+        read_type: verify
+        extract: >-
+          The paragraph still said the three writers are "one rule under
+          Capability.WRITE" — the exact claim round 1 had already refuted in the
+          test roster's own docstring, left standing in the spec that the
+          docstring points at. A fix applied to one of two co-located
+          descriptions is the drift the repo's rules exist to stop, committed
+          inside a PR that amends those rules.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) BUG-259, fence and coverage figures"
+        read_type: verify
+        extract: >-
+          Both figures were stale, and the record asserted they had been
+          re-derived against the final tree — true when written, false two
+          rounds later. Re-run: the guard fence is 80 of 8749 (34 SFTP / 18
+          Local / 17 conformance / 11 test_flat_ns) at the time of this round,
+          not 47 of 8643; the
+          conformance cells collect 182 and execute 130, not 84 and 58. A figure
+          about a review loop is invalidated by the loop that reads it, which is
+          the third time this pair of items has recorded that.
+        outcome: ok
+
+  - id: rebase
+    name: Integrate master
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "write, write_atomic, open_atomic, move, copy"
+        read_type: verify
+        extract: >-
+          Rebased onto master after BK-354 landed, which adds io_timeout to the
+          same backend this item changes most — 315 changed lines in _sftp.py on
+          one side, five guard call sites on the other. Git auto-merged that file
+          on every one of the four commits and the conflicts were all in the
+          record files (CHANGELOG twice, BACKLOG-DONE, backlogid.json), which is
+          the shape to expect when two changes touch one module at different
+          depths: BK-354 works on the transport and connection lifecycle, this
+          works on key validation before the transport exists. Verified rather
+          than trusted: all five call sites present after the rebase, guard
+          counts per backend unchanged (5/5/5/4/4/5/4), suite green at 8776.
+        outcome: ok
+      - file: sdd/backlogid.json
+        section: "(generated)"
+        read_type: verify
+        extract: >-
+          The one conflict with a wrong-looking obvious resolution: master had
+          BK 354 / BUG 258, this branch had BK 353 / BUG 259. Neither side is
+          correct alone and taking either wholesale loses the other's item. The
+          file records the max allocated ID per prefix, so the resolution is the
+          per-prefix maximum — confirmed by gen_backlogid.py --check passing,
+          which is what would have caught taking one side.
+        outcome: ok
+      - file: sdd/traces/bug-259-sftp-root-write.yml
+        section: "review_rounds"
+        read_type: verify
+        extract: >-
+          The rebase invalidated this file's own derivation: review_rounds names
+          four commit SHAs and all four were rewritten. A figure is invalidated
+          by a history rewrite as surely as by new work, and re-reading the
+          sentence cannot show it — the SHAs still look like SHAs. Re-derived
+          from git log. The fence figure needed the same treatment for a
+          different reason: its numerator held at 80 across the rebase but the
+          denominator moved from 8749 to 8776 with BK-354's cells, so the
+          re-run was not optional even though the interesting half was stable.
+        outcome: ok
 
   - id: verify
     name: Verify

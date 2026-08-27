@@ -157,7 +157,7 @@ class TestWritingToTheRootNeverOccupiesTheContainer:
     (BUG-247), found by that work's measuring pass rather than by reading.
     """
 
-    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("root", ["", ".", "./"], ids=["empty", "dot", "dot-slash"])
     @pytest.mark.parametrize("call", _ROOT_WRITES)
     def test_write_to_the_root_leaves_no_file_at_base_path(
         self,
@@ -178,7 +178,7 @@ class TestWritingToTheRootNeverOccupiesTheContainer:
         assert not on_disk.is_file(), "the write left a regular file at base_path"
         assert exc_info.value.backend == "sftp", "the refusal came from above the backend, not from it"
 
-    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("root", ["", ".", "./"], ids=["empty", "dot", "dot-slash"])
     @pytest.mark.parametrize("call", _ROOT_WRITES)
     def test_write_to_the_root_does_not_create_the_container(
         self,

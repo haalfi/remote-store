@@ -261,8 +261,8 @@ class LocalBackend(Backend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or an ancestor of *path*
-                exists as a regular file.
+            InvalidPath: If *path* is the store root, or names a directory, or
+                an ancestor of *path* exists as a regular file.
             PermissionDenied: If the OS denies write access.
         """
         self._reject_root_as_write_target(path)
@@ -328,8 +328,8 @@ class LocalBackend(Backend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or an ancestor of *path*
-                exists as a regular file.
+            InvalidPath: If *path* is the store root, or names a directory, or
+                an ancestor of *path* exists as a regular file.
             PermissionDenied: If the OS denies write access.
         """
         self._reject_root_as_write_target(path)
@@ -388,8 +388,8 @@ class LocalBackend(Backend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or an ancestor of *path*
-                exists as a regular file.
+            InvalidPath: If *path* is the store root, or names a directory, or
+                an ancestor of *path* exists as a regular file.
             PermissionDenied: If the OS denies write access.
         """
         self._reject_root_as_write_target(path)

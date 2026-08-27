@@ -1389,6 +1389,12 @@ _ASYNC_ROOT_WRITE_OP_CALLS = {
     "write_atomic": lambda b, p: b.write_atomic(p, b"x"),
 }
 
+_ASYNC_ROOT_WRITE_DST_OPS = [
+    pytest.param("move", Capability.MOVE, id="move_dst"),
+    pytest.param("copy", Capability.COPY, id="copy_dst"),
+]
+"""Async mirror. Explicit ids, for the reason the sync roster's docstring gives."""
+
 
 class TestBackendRootPath:
     """BE-029 (async mirror of ``test_io.py::TestBackendRootPath``).
@@ -1506,7 +1512,7 @@ class TestBackendRootPath:
     @pytest.mark.spec("BE-029")
     @pytest.mark.spec("BE-008")
     @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
-    @pytest.mark.parametrize(("op", "cap"), [("move", Capability.MOVE), ("copy", Capability.COPY)])
+    @pytest.mark.parametrize(("op", "cap"), _ASYNC_ROOT_WRITE_DST_OPS)
     async def test_root_as_move_or_copy_destination_is_refused(
         self, async_backend: AsyncBackend, root: str, op: str, cap: Capability
     ) -> None:

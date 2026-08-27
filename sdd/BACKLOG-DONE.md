@@ -218,15 +218,15 @@ if evidence changes; these are retired.
   refuses a zero-length key; all five breached the paragraphs at the head of
   BE-029 regardless. Partitioning the thirteen `CAPABILITIES`-declaring classes:
   two lack `WRITE`, five already complied, six were fixed.
-  **Fenced by mutation, re-run against the final tree.** Neutering the shared
-  guard fails **47 of 8643** executed cells — 24 in the SFTP module, 14 in
-  Local's (matching the 14/74 BUG-247 recorded for its own write guard, which is
-  the cross-check that the extraction preserved it), 9 in conformance. Removing
-  only SFTP's three call sites fails **24**, all in the SFTP module and **none**
-  in conformance: with `base_path` present SFTP already refused the root, so the
-  conformance cell does not fence this fix and the per-backend absent-container
-  module is what does. That asymmetry is the reason the cell is not treated as
-  covering the item.
+  **Fenced by mutation, re-derived against the final tree** — the figures moved
+  twice as review widened the change, so they are stated from the last run and
+  not from the first. Neutering the shared guard fails **80 of 8776** executed
+  cells: 34 in the SFTP module, 18 in Local's, 17 in conformance, 11 in
+  `test_flat_ns`. Neutering only `SFTPBackend`'s own wrapper fails **34**, all in
+  the SFTP module and **none** in conformance — with `base_path` present SFTP
+  already refused the root, so the conformance cell does not fence this backend's
+  fix and the per-backend absent-container module is what does. That asymmetry is
+  the reason the conformance cell is not treated as covering the item.
   **BE-029 amended, not merely satisfied.** Its § Out of scope placed writes to
   the root outside the clause on the grounds that they are "rejected by path
   validation" — true, and rejected *after* the bytes. The clause now binds the
@@ -234,6 +234,26 @@ if evidence changes; these are retired.
   precondition list gains that as step (0), numbered rather than folded into
   path validity because it is the one step the flat-namespace exemption does not
   release.
+  **The guard normalises rather than consulting `is_root`, and that was round
+  2's finding.** `is_root` is exactly `{"", "."}`; `"./"` addresses the same node
+  and is neither. Measured against a `LocalBackend` whose root had been deleted,
+  with the first fix in place: `write("./")` and `write_atomic("./")` left the
+  root a regular **file** and raised from the path layer above the backend, and
+  `open_atomic("./")` returned **cleanly** having done it — the whole defect,
+  surviving one character from the spelling that was caught. The write guard now
+  drops empty and `"."` segments and tests what is left, which covers `"./"`,
+  `".//"`, `"./."` and `"/"` alike, and is how `GraphBackend` had always decided
+  the same question. `is_root` is deliberately not widened: 54 call sites across
+  13 files, `native_path` / `to_key` and every flat-namespace listing prefix
+  among them. On the read side an unrecognised spelling costs an error class; on
+  the write side it cost the container, and the asymmetry in the fix follows the
+  asymmetry in the damage.
+  **`GraphBackend` needed the destination guard too**, which the first
+  destination sweep missed because it keyed on backends carrying
+  `_reject_root_as_file(src)` and Graph uses its own `_require_writable_key`.
+  Measured against an unreachable endpoint: `write` refused from the key while
+  `move(src, "")` reached the transport. Both halves now refuse, under all five
+  spellings measured.
   **One ordering breach found by the cell written to close another finding.**
   Round 1 noted that four new docstrings assert the closed-backend guard
   outranks the root write check while the conformance cell for that ordering
@@ -244,11 +264,15 @@ if evidence changes; these are retired.
   write to the drive root" where BE-020 requires "backend is closed". This item
   had classified Graph as already compliant, and on the root rule it was; the
   ordering rule the same clause carries is what it missed.
-  **Coverage bound, stated.** The new cells collect 84 and execute 58. The 26
-  skips are `sqlquery` (no `WRITE`), `s3_pyarrow_moto` (needs the MinIO fixture
-  on current PyArrow) and the Azure sync, Azure async and Graph replay lanes,
-  whose cassettes for these ids are unrecorded. Those four backends were
-  measured directly instead rather than assumed.
+  **Coverage bound, stated.** The conformance cells added here collect **182**
+  and execute **130**; the **52** skips are 26 for unrecorded replay cassettes
+  (Azure sync, Azure async, Graph), 14 for backends not declaring the capability
+  under test, and 12 for the PyArrow lane, which needs the MinIO fixture on
+  current PyArrow. Every backend behind those skips was measured directly
+  instead — `S3PyArrowBackend`, `AzureBackend` and `GraphBackend` against an
+  unreachable endpoint, where an `InvalidPath` naming the root proves the guard
+  ran ahead of the transport, and `AsyncAzureBackend` with the guard stubbed out
+  to establish what it did before.
 
 - [x] **BK-355 — Closing a failed stream re-enters the dead connection, so the caller pays a second, silent timeout**
   spec: SIO-010, SFTP-030 · effort: S · audience: user.api, user.api_docs, user.site

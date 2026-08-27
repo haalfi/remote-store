@@ -21,6 +21,7 @@ from __future__ import annotations
 import pytest
 
 from remote_store._errors import InvalidPath
+from remote_store._path import is_root
 from remote_store.backends._flat_ns import (
     _acheck_no_file_ancestor,
     _achildren_or_absent_container,
@@ -383,6 +384,44 @@ class TestRejectRootAsWriteTarget:
 
         assert exc_info.value.path == root
         assert exc_info.value.backend == "stub"
+
+    @pytest.mark.parametrize(
+        "root",
+        ["./", ".//", "./.", "/", "//", "/.", "././"],
+        ids=["dot-slash", "dot-slash-slash", "dot-dot", "slash", "slash-slash", "slash-dot", "dot-dot-slash"],
+    )
+    def test_non_canonical_root_spellings_also_raise(self, root: str) -> None:
+        """The spellings ``is_root`` does not recognise, which is why this guard normalises.
+
+        ``is_root`` is exactly ``{"", "."}``. Every string here addresses the
+        same node and none of them is in that set, so a guard written as
+        ``if is_root(path)`` lets all seven through. Measured before the fix
+        against a ``LocalBackend`` whose root had been deleted: ``write("./")``
+        left the root a regular **file** and raised from above the backend, and
+        ``open_atomic("./")`` returned cleanly having done it — the whole defect
+        the guard exists for, one character from the spelling it caught.
+
+        The error still echoes the caller's own spelling in ``path`` rather than
+        a canonicalised one, so a caller sees the string they passed.
+        """
+        with pytest.raises(InvalidPath, match="is the store root") as exc_info:
+            _reject_root_as_write_target(root, "stub")
+
+        assert exc_info.value.path == root
+        assert exc_info.value.backend == "stub"
+
+    def test_the_guard_does_not_defer_to_is_root(self) -> None:
+        """Fences the normalisation against a revert to the obvious one-liner.
+
+        Every other cell here would pass with the body rewritten as
+        ``if is_root(path)`` **except** the non-canonical class above, and that
+        class is easy to read as pedantry about strings nobody types. This cell
+        states the dependency outright: the two predicates disagree, and the
+        guard is required to follow the wider one.
+        """
+        assert is_root("./") is False, "is_root recognises './' — this cell's premise is gone"
+        with pytest.raises(InvalidPath):
+            _reject_root_as_write_target("./", "stub")
 
     @pytest.mark.parametrize(
         "path",
