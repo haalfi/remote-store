@@ -61,16 +61,24 @@ class LocalBackend(Backend):
     # region: public methods
 
     def check_health(self) -> None:
-        """Confirm the root directory exists and is readable.
+        """Confirm the root directory exists, is a directory, and is readable.
 
-        A lightweight two-syscall probe (``exists`` then ``os.access``) that
+        A lightweight two-syscall probe (``is_dir`` then ``os.access``) that
         touches no file content and is safe to call repeatedly.
 
+        The type half is load-bearing rather than pedantic. ``exists()`` and
+        ``is_folder()`` answer the store root by definition — they say the root
+        is a folder without looking — so this is the only operation that
+        observes what is actually at the root path. Testing mere existence would
+        let a root replaced by a regular *file* report a healthy, empty store
+        from every probe on the backend.
+
         Raises:
-            NotFound: If the root directory does not exist.
+            NotFound: If the root directory does not exist, or something that is
+                not a directory occupies its path.
             PermissionDenied: If the root directory exists but is not readable.
         """
-        if not self._root.exists():
+        if not self._root.is_dir():
             raise NotFound(
                 f"Root directory not found: {self._root}",
                 path=str(self._root),
@@ -127,33 +135,51 @@ class LocalBackend(Backend):
         """Return ``True`` if a file or folder exists at *path*; never ``NotFound``.
 
         Returns ``False`` when a path component is itself a file, since the
-        directory descent cannot proceed.
+        directory descent cannot proceed. The store root (``""`` or ``"."``) is
+        the one path that answers ``True`` without being looked for: it is a
+        folder by definition, so it reads as present even on a store whose root
+        directory has been removed.
 
         Raises:
             InvalidPath: If *path* escapes the backend root.
         """
+        if is_root(path):
+            # The store root is a folder by definition, not by observation
+            # (BE-029). ``__init__`` creates it, so a stat agrees on every
+            # ordinary store — but a root deleted underneath the backend would
+            # otherwise report the store as having no root, a distinction no
+            # other backend draws. ``check_health`` is the operation that does
+            # report it.
+            return True
         return self._resolve(path).exists()
 
     def is_file(self, path: str) -> bool:
         """Return ``True`` if *path* is an existing regular file.
 
         ``False`` if *path* is absent, names a directory, or has a file as an
-        ancestor component.
+        ancestor component — and ``False`` for the store root (``""`` or
+        ``"."``), which is a folder, never a regular file.
 
         Raises:
             InvalidPath: If *path* escapes the backend root.
         """
+        if is_root(path):
+            return False  # the root is a folder, never a regular file
         return self._resolve(path).is_file()
 
     def is_folder(self, path: str) -> bool:
         """Return ``True`` if *path* is an existing directory.
 
         ``False`` if *path* is absent, names a file, or has a file as an ancestor
-        component.
+        component. The store root (``""`` or ``"."``) is the exception to the
+        absent case: it is a folder by definition, so it answers ``True`` even
+        on a store whose root directory has been removed.
 
         Raises:
             InvalidPath: If *path* escapes the backend root.
         """
+        if is_root(path):
+            return True  # see exists(): the root is a folder by definition
         return self._resolve(path).is_dir()
 
     def read(self, path: str) -> BinaryIO:
@@ -168,6 +194,7 @@ class LocalBackend(Backend):
             InvalidPath: If *path* names a directory.
             PermissionDenied: If the OS denies read access to the file.
         """
+        self._reject_root_as_file(path)
         full = self._resolve(path)
         try:
             return open(str(full), "rb")  # noqa: SIM115
@@ -201,6 +228,7 @@ class LocalBackend(Backend):
             InvalidPath: If *path* names a directory.
             PermissionDenied: If the OS denies read access to the file.
         """
+        self._reject_root_as_file(path)
         full = self._resolve(path)
         try:
             return full.read_bytes()
@@ -237,6 +265,7 @@ class LocalBackend(Backend):
                 exists as a regular file.
             PermissionDenied: If the OS denies write access.
         """
+        self._reject_root_as_write_target(path)
         full = self._resolve(path)
         if full.is_dir():
             raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name)
@@ -303,6 +332,7 @@ class LocalBackend(Backend):
                 exists as a regular file.
             PermissionDenied: If the OS denies write access.
         """
+        self._reject_root_as_write_target(path)
         full = self._resolve(path)
         if full.is_dir():
             raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name)
@@ -362,6 +392,7 @@ class LocalBackend(Backend):
                 exists as a regular file.
             PermissionDenied: If the OS denies write access.
         """
+        self._reject_root_as_write_target(path)
         full = self._resolve(path)
         if full.is_dir():
             raise InvalidPath(f"Cannot write — '{path}' exists as a directory", path=path, backend=self.name)
@@ -414,6 +445,7 @@ class LocalBackend(Backend):
                 ``missing_ok`` does not silence (use ``delete_folder``).
             PermissionDenied: If the OS denies the unlink.
         """
+        self._reject_root_as_file(path)
         full = self._resolve(path)
         try:
             full.unlink()
@@ -441,6 +473,15 @@ class LocalBackend(Backend):
         (``shutil.rmtree``); this is not atomic — an error partway through can
         leave the tree partially deleted. ``recursive=False`` removes only an
         empty folder (``rmdir``).
+
+        Unlike ``exists``, ``is_folder`` and ``get_folder_info``, this method
+        answers the store root from the filesystem rather than by definition: on
+        a store whose root directory has been removed, ``delete_folder(root)``
+        raises ``NotFound`` while ``exists(root)`` still reports the root
+        present. That is deliberate — the root rule does not reach a folder
+        *delete*, and ``SFTPBackend`` answers this cell the same way — and
+        ``Store`` refuses a root delete before it reaches a backend, so a caller
+        going through the facade never sees the disagreement.
 
         Raises:
             NotFound: If the folder does not exist and ``missing_ok`` is ``False``.
@@ -571,6 +612,7 @@ class LocalBackend(Backend):
             NotFound: If the file does not exist.
             InvalidPath: If *path* names a directory, not a file.
         """
+        self._reject_root_as_file(path)
         full = self._resolve(path)
         if full.is_dir():
             raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name)
@@ -585,15 +627,23 @@ class LocalBackend(Backend):
         walking the entire subtree and ``stat``-ing every file, so cost is
         O(files-in-subtree) — not a constant-time lookup.
 
+        The store root (``""`` or ``"."``) always answers, never raising: it is
+        a folder by definition, so a store whose root directory is missing
+        aggregates to zero rather than reporting itself absent.
+
         Raises:
             NotFound: If the folder does not exist.
             InvalidPath: If *path* names a file, not a folder.
         """
         full = self._resolve(path)
-        if full.is_file():
-            raise InvalidPath(f"Not a folder: {path}", path=path, backend=self.name)
-        if not full.is_dir():
-            raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
+        if not is_root(path):
+            # The root is a folder by definition (BE-029), so it is never a
+            # file and never missing: an absent root aggregates to zero rather
+            # than reporting itself gone. Every other path answers from a stat.
+            if full.is_file():
+                raise InvalidPath(f"Not a folder: {path}", path=path, backend=self.name)
+            if not full.is_dir():
+                raise NotFound(f"Folder not found: {path}", path=path, backend=self.name)
         file_count = 0
         total_size = 0
         latest_mtime: float | None = None
@@ -629,6 +679,7 @@ class LocalBackend(Backend):
                 ``False``.
             PermissionDenied: If the OS denies the operation.
         """
+        self._reject_root_as_file(src)
         src_full = self._resolve(src)
         dst_full = self._resolve(dst)
         if not src_full.exists():
@@ -675,6 +726,7 @@ class LocalBackend(Backend):
                 ``False``.
             PermissionDenied: If the OS denies the operation.
         """
+        self._reject_root_as_file(src)
         src_full = self._resolve(src)
         dst_full = self._resolve(dst)
         if not src_full.exists():
@@ -714,6 +766,62 @@ class LocalBackend(Backend):
     # endregion
 
     # region: private helpers
+
+    def _reject_root_as_write_target(self, path: str) -> None:
+        """Reject the store root as a write destination, before touching the disk.
+
+        The three writers already reject it by observation — the root is a real
+        directory, so ``full.is_dir()`` fires. That check answers ``False`` once
+        the root has been deleted underneath the backend, and what follows is
+        worse than a wrong error: ``parent.mkdir`` recreates the tree, the bytes
+        land at the root path, and only then does building the ``WriteResult``
+        reject the empty key. The store root is left as a regular *file*, and
+        every later call answers about a store that cannot exist.
+
+        So the rejection has to be definitional rather than observed, like the
+        root's other answers. Deliberately not ``_reject_root_as_file``: that
+        helper is explicitly not a mutation guard, and its wording ("a folder,
+        not a file") describes a *read* of the wrong type. This says what is
+        actually wrong with writing here, and says the same thing whether or not
+        the directory is currently on disk.
+
+        A write *under* the root is unaffected and still recreates it — only
+        the root key itself is refused.
+
+        Three call sites, not five: ``move`` and ``copy`` also write, but their
+        *destination* cannot reach the corruption above, so they are guarded on
+        the source side only. Measured both ways. With the root present,
+        ``dst_full.is_dir()`` fires and the answer is
+        ``"Destination is a directory"``. With the root gone, nothing can exist
+        beneath it, so the source check fails first with ``"Source not found"``
+        and the destination is never examined. There is no state in which the
+        root is both a legal source and an unguarded destination, and the root
+        is left a regular file in neither.
+        """
+        if is_root(path):
+            raise InvalidPath(
+                f"Cannot write — '{path}' is the store root, which is a folder",
+                path=path,
+                backend=self.name,
+            )
+
+    def _reject_root_as_file(self, path: str) -> None:
+        """Pre-check: the store root is a folder, so a file op on it is a type error.
+
+        Local usually reaches this verdict for free by stat-ing the path — the
+        root is a real directory, so the operation fails with
+        ``IsADirectoryError`` and maps to ``InvalidPath``. It cannot rely on
+        that once the root has been deleted underneath the backend: the stat
+        then reports ENOENT and the operation would answer *missing* rather
+        than wrong-typed, when the root is a folder whether or not it is
+        currently there. The string check is definitional and costs no syscall.
+
+        Not applied to ``delete_folder`` or ``get_folder_info``, which are
+        folder-shaped and legitimately accept the root.
+        """
+        from remote_store.backends._flat_ns import _reject_root_as_file
+
+        _reject_root_as_file(path, self.name)
 
     def _resolve(self, path: str) -> Path:
         """Resolve a relative path to an absolute path within root.
@@ -766,12 +874,32 @@ class LocalBackend(Backend):
         The depth-2 regression test deliberately makes ``anchor`` a
         sibling-created long-named directory and is 24/24 green: the evidence
         that resolving the deepest *existing* anchor does not itself flicker.
+
+        **The walk stops at ``self._root``, so an absent root is absence rather
+        than escape.** This is a property of the walk that feeds the two axes,
+        not a third axis of its own. Without the stop the walk climbs *past* a
+        deleted root and the resolved anchor is no longer ``relative_to`` it, so
+        a store whose root was removed reported every path as escaping — the
+        worst of the plausible answers, since it tells the caller their path is
+        malformed when the path is fine and the store is simply gone. A deleted
+        root is the absent-container case, and the operations answer it as
+        absence: the tolerant deletes return, the rest report the path missing.
+
+        The stop is inert whenever the root exists: an existing root is itself
+        an existing ancestor of every lexically-contained target, so the walk
+        already halts at or below it. Nor can it loosen an escape, because a
+        lexically escaping target does not have the root on its ancestor chain
+        for the stop to fire on, and ``target.relative_to`` rejects it either
+        way. It costs no syscall — a path comparison inside a loop whose body
+        runs only for components that do not exist.
         """
         # Walk up to the deepest lexically-existing ancestor for the symlink
         # check. ``lexists`` (not ``exists``) so a broken symlink stops the walk
         # at the link itself and is resolved, instead of being stepped over.
         anchor = target
         while not os.path.lexists(anchor):
+            if anchor == self._root:  # BUG-247: a deleted root is not an escape
+                break
             parent = anchor.parent
             if parent == anchor:  # reached the filesystem root
                 break

@@ -136,6 +136,26 @@ the bare prefix back as a zero-length object and *succeeds*. Root-ness is
 decidable from the string with no round trip, so neither outcome has to be
 risked to learn it.
 
+**The MAY above is narrower than "the root is an addressable node", and BUG-247
+is why.** Reading the verdict off the SDK is sound only while the node is
+*there*. A filesystem directory — the first example this clause offers — can be
+removed underneath a live backend, and then the OS answers ENOENT rather than
+`IsADirectoryError`: the verdict is not late, it is **wrong**, and every answer
+in the table above flips. `LocalBackend` took the MAY, satisfied this clause for
+years by observation, and breached it the moment its root was deleted. So the
+MAY holds for a node whose absence the backend has already ruled out, and a
+backend whose root can vanish under it decides root-ness from the key like any
+flat namespace. `SFTPBackend` was already there for the neighbouring reason: its
+`base_path` is created lazily, so the node is absent on an untouched store.
+
+**One operation must still observe the root**, or the definitional answers
+become unfalsifiable. If every probe answers from the key, nothing reports a
+root that exists but is the wrong *type* — a regular file where the store root
+belongs — and the store reports itself healthy while holding nothing. That
+observation belongs in the health probe, which is off BE-021's roster and free
+to make it: `LocalBackend.check_health` tests `is_dir()`, not mere existence,
+for exactly this reason.
+
 **Conformance pins the outcome, not the order** — and does not need to pin
 both: a backend that gets the order wrong is observable as exactly the wrong
 error class or a spurious success, which is what the cells below assert.
@@ -642,21 +662,32 @@ Stated here because this is where a reader looking for per-operation answers
 lands, and following it alone yields the wrong answer for one path in every
 operation it names.
 
-**Most backends do not meet the root row yet, and the list below does not record
-it.** § Known divergences holds three bullets, and none of them is
-root-specific: `LocalBackend`'s breach is whole-backend, and the other two are
-of the first-page bound. The root breaches are measured and
-tracked as **BUG-254**: `exists("")` and `is_folder("")` answer `False` on
-`S3Backend` and `S3PyArrowBackend`, and `get_folder_info("")` raises `NotFound`
-on `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend` — five classes,
-seven class-cells (two operations on two classes, plus one on three), in two
-opposite directions. `SQLBlobBackend` is the one of the six flat-namespace
-classes BUG-254 measured that complies. The scope matters: `LocalBackend` misses
-the root row too, by the first bullet below — once its root directory is gone it
-answers *every* operation with `InvalidPath`, which includes all three root
-cells — and `GraphBackend`, `ReadOnlyHttpBackend` and `SQLQueryBackend` are
-simply unmeasured for the root.
-They are absent from the list below because that list is organised by the
+**Five of the thirteen concrete backends do not meet the root row against an
+absent container, and the list below does not record it.** Conformance's
+`TestBackendRootPath` runs the row against every backend with the container
+*present*, and all of them pass; the breaches are all in the absent state,
+which no conformance fixture reaches (BK-345 owns that gap). § Known
+divergences holds two live bullets, and neither is root-specific: both are of
+the first-page bound.
+
+The root breaches are measured and tracked as **BUG-254**: `exists("")` and
+`is_folder("")` answer `False` on `S3Backend` and `S3PyArrowBackend`, and
+`get_folder_info("")` raises `NotFound` on `S3Boto3Backend`, `AzureBackend` and
+`AsyncAzureBackend` — five classes, seven class-cells (two operations on two
+classes, plus one on three), in two opposite directions. `SQLBlobBackend` is
+the one of the six flat-namespace classes BUG-254 measured that complies.
+
+`LocalBackend`'s breach was whole-backend and included all three root cells:
+once its root directory was gone it answered *every* operation with
+`InvalidPath`. It has left the list below (BUG-247) and now meets the row,
+deciding the root from the key rather than from a stat. That leaves
+`GraphBackend`, `ReadOnlyHttpBackend` and `SQLQueryBackend` unmeasured for the
+root, and `SFTPBackend`, `MemoryBackend` and `AsyncMemoryBackend` meeting it
+alongside Local and `SQLBlobBackend` — five breaching, five meeting, three
+unmeasured, of the thirteen classes that declare `CAPABILITIES`, excluding the
+two abstract bases and the sync adapter.
+
+These are absent from the list below because that list is organised by the
 absent-container *clause* and these are breaches of BE-029's root row; the
 pointer is here so a reader does not read that list as meaning the root is
 settled.
@@ -691,14 +722,6 @@ operations keep obligations this clause did not write, and a divergence from one
 of *those* is no less real for having been written down elsewhere. Listing them
 here is what makes the container case answerable from one place.
 
-- `LocalBackend` answers **every** operation with
-  `InvalidPath("Path escapes root directory")` once its root directory is
-  deleted, including both tolerant deletes. The containment check walks up to
-  the deepest existing ancestor, which is above the root once the root is gone,
-  so absence is misreported as an escape. This is the furthest from the clause
-  any backend currently sits, and the only one where the error type actively
-  misleads.
-
 - `S3Backend` and `S3PyArrowBackend` breach the **first-page bound** rather than
   the empty-listing answer: a bucket deleted between pages of a listing ends the
   iteration cleanly, so a truncated listing reads as a complete one. They answer
@@ -717,10 +740,21 @@ here is what makes the container case answerable from one place.
   whole breadth-first walk and a 404 on any sub-prefix propagates — that is the
   shape a fix takes.
 
-Three bullets have left this list and are recorded rather than deleted, because
+Four bullets have left this list and are recorded rather than deleted, because
 each was a *measured* divergence and the measurement is what a later reader
 needs in order to trust the entries that remain:
 
+- `LocalBackend` answered **every** operation with
+  `InvalidPath("Path escapes root directory")` once its root directory was
+  deleted, including both tolerant deletes: the containment check walked up to
+  the deepest existing ancestor, which is above the root once the root is gone,
+  so absence was misreported as an escape. It was the furthest from the clause
+  any backend sat, and the only one where the error type actively misled. The
+  walk now stops at the root, which brings the whole surface to the clause at
+  once — the tolerant deletes return, the strict ones and the reads raise
+  `NotFound`, the probes answer `False`, the listings are empty. The store root
+  itself is decided by BE-029 rather than by this clause, and now meets that
+  row too (BUG-247).
 - `exists()` and `is_folder()` raised `NotFound` against an absent container on
   `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend`, where the strict
   prefix probe was reached after the tolerant HEAD came back empty. All three now
@@ -758,12 +792,16 @@ needs in order to trust the entries that remain:
 `GraphBackend` was a bullet too, adjudicated by
 [ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md). Counting
 bullets rather than backend classes — one of the two frames `sdd/BACKLOG.md` § 1
-uses, and the one it counts this list in — this list held five, three left, and
-one of the two survivors is `LocalBackend`. It holds three today because it has
-since gained two: the first-page bound BUG-246 wrote into § Reach made
-`S3Backend`/`S3PyArrowBackend` and `GraphBackend` breaches of a clause they were
-outside of before. A list of divergences grows when its clause does, not only
-when a backend regresses.
+uses, and the one it counts this list in — **this list holds two live bullets
+today**, both of the first-page bound: `S3Backend`/`S3PyArrowBackend` and
+`GraphBackend`. Four are recorded above as having left, the most recent
+being `LocalBackend` (BUG-247) — first in that list by position, last by date,
+and the last of the original entries still standing. The two that remain are
+both *newer* than the list they joined: the
+first-page bound BUG-246 wrote into § Reach made them breaches of a clause they
+were outside of before. A list of divergences grows when its clause does, not
+only when a backend regresses — and this one has now turned over completely,
+every original entry closed and every live entry created by a clause that grew.
 [GR-031](044-graph-backend.md#gr-031-404-discrimination-item-vs-drive) mapped
 `404 resourceNotFound` to `BackendUnavailable` for every error-raising
 operation, deliberately, on the grounds that a deleted drive is a backend
@@ -796,12 +834,14 @@ run, which is the argument for the rule being stated as an obligation rather
 than inferred from what backends happened to do.
 
 The first was that the hierarchical backends had already settled it, because on
-Local an absent store root is just an absent path. With its root deleted,
-`LocalBackend` raises `InvalidPath("Path escapes root directory")` from the
-containment check, before either delete's `missing_ok` branch is reached. It is
-a divergence from this clause, not evidence for it, and it went unnoticed
-because both deletes look correct in isolation — the guard that fires is two
-lines upstream in `_resolve`.
+Local an absent store root is just an absent path. It was not: with its root
+deleted, `LocalBackend` raised `InvalidPath("Path escapes root directory")` from
+the containment check, before either delete's `missing_ok` branch was reached. It
+was a divergence from this clause, not evidence for it, and it went unnoticed
+because both deletes look correct in isolation — the guard that fired was two
+lines upstream in `_resolve`. BUG-247 has since made the premise true, which does
+not make the reasoning sound: it was asserted from a reading, and what settled it
+either way was running it.
 
 The second was that the rule merely ratified what `delete` already did on every
 flat-namespace backend, correcting only its sibling. That holds for the S3 and
@@ -812,8 +852,8 @@ measured raising `BackendUnavailable` against a dropped table before this
 change, exactly as its sibling did — that is the state *before BUG-243*, which
 is the change this paragraph is about, and not the state the departed bullet
 above describes, which is after it. The rule therefore changes `delete` on one
-backend rather than ratifying it everywhere. Both are recorded above — Local as
-one of this list's three bullets, SQLBlob among the three that have left it; the
+backend rather than ratifying it everywhere. Both are recorded above, among the
+four bullets that have left this list; the
 premise survived six review rounds because "the S3 family" and "the
 flat-namespace backends" were used interchangeably by a clause whose whole
 purpose is to bind the second set.

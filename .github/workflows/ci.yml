@@ -351,7 +351,12 @@ jobs:
         with:
           cache-suffix: ci-test-primary-sftp
       - run: uv pip install -e ".[dev]"
-      - run: pytest -p no:benchmark --cov=remote_store --cov-report= --ignore=tests/scripts -k sftp_docker tests/backends/conformance/
+      # --stage=2 explicitly, for the same reason test-primary passes it: without
+      # it the stage is auto-detected by a `docker info` probe that falls back to
+      # Stage 1 on a loaded runner, and Stage 1 excludes the sftp_docker fixture.
+      # This job then selects zero tests and pytest exits 5 — a red check that
+      # says "no tests ran", not "tests failed". Observed on PR #971.
+      - run: pytest --stage=2 -p no:benchmark --cov=remote_store --cov-report= --ignore=tests/scripts -k sftp_docker tests/backends/conformance/
       - run: |
           coverage combine 2>/dev/null || true
           mv .coverage coverage.primary-sftp

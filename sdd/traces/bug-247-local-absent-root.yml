@@ -1,0 +1,503 @@
+id: BUG-247
+title: "LocalBackend reports a deleted root as 'Path escapes root directory'"
+trigger: >-
+  Every LocalBackend operation but glob and check_health raised
+  InvalidPath("Path escapes root directory") once the root directory was deleted
+  underneath the backend, including the two tolerant deletes BE-021's
+  absent-container rule requires to return cleanly and the three probes BE-004 /
+  BE-005 forbid from raising at all.
+source_items:
+  - BUG-247
+  - BUG-243
+  - BUG-248
+audience:
+  - user.api
+  - contributor.process
+# Both lists are files this work actually touched, per the schema. Checked
+# against `git diff --name-only origin/master...HEAD`. Two entries were dropped
+# in the closing gate because they named files this branch does not change:
+# sdd/backlogid.json, which `scripts/gen_backlogid.py --check` passes unchanged
+# because BUG-247 was already allocated; and src/remote_store/ext/dagster.py,
+# whose narrowing the merge dropped outright once master landed it as BUG-258.
+expected_ripples:
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+surprising_ripples:
+  - src/remote_store/_store.py
+  - src/remote_store/aio/_async_store.py
+  - src/remote_store/_backend.py
+  - src/remote_store/aio/_async_backend.py
+  - CHANGELOG.md
+  - .github/workflows/ci.yml
+  - sdd/specs/026-health-check.md
+  - sdd/specs/029-async-store-backend-api.md
+
+discovery_followups:
+  - BUG-259
+
+# Re-counted from `git log --oneline origin/master..HEAD`, which returns eleven
+# commits with this one — the previous comment named seven and was stale by four.
+# Oldest first, and the schema's test is "exists specifically because review
+# feedback was incorporated":
+#   b2674d9  implements the fix                              — no
+#   376624c  dagster narrowing, found by a blocked push      — no
+#   2215525  divergence-bullet ordinals, self-caught by      — no
+#            re-deriving, before the first review round
+#   b2392be  round 1                                         — yes
+#   3c2e82f  round 1, the dagster point taken separately     — yes
+#   4bd6e84  round 2 (measuring)                             — yes
+#   9135017  CI fix, driven by a red check, not a reviewer   — no
+#   1f98c12  round 3 (panel)                                 — yes
+#   1ea8f15  merge of origin/master                          — no
+#   74cb51c  closing gate, unprimed pass                     — yes
+#   (this)   closing gate, whole-file + measuring passes     — yes
+# Six qualify. The previous value of 5 counted 2215525, which no reviewer asked
+# for, and predated the last two rounds. Note the field counts commits, not
+# rounds: b2392be and 3c2e82f are one round split across two commits, so the
+# loop ran five review rounds and produced six review-driven commits.
+review_rounds: 6
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-247"
+        read_type: gate
+        extract: >-
+          The diagnosis (the ancestor walk climbs past a deleted root) held
+          exactly. The prescription did not: it names four cells and proposes a
+          root-existence stat "measure before adopting it". Measured, the walk
+          stop costs nothing and the affected surface is 40 cells, not 4.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-004, BE-005, BE-012, BE-013, BE-021"
+        read_type: gate
+        extract: >-
+          What an absent container owes per operation. BE-021 § Reach is the
+          load-bearing part: it decides the two tolerant deletes and says every
+          other operation keeps a pre-existing answer, which is what makes this
+          a whole-surface fix rather than a two-cell one.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029"
+        read_type: gate
+        extract: >-
+          Reached only because the fix turns _resolve from raising into
+          returning, which puts the root's own cells in play. BE-029 is
+          unconditional and BE-021 § Reach says an absent container answers
+          False; neither says which governs the root spelling when the container
+          is the root. The gap is real, not a misreading.
+        outcome: unclear
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Pre-work index"
+        read_type: gate
+        extract: >-
+          Triggered rows: Bug fix, Spec section, Error type, Backlog item
+          touched, CHANGELOG entry, Public method signature.
+        outcome: ok
+
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: tests/backends/local/test_absent_root.py
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          The reproduction was already pinned, xfail(strict=True), so the
+          failing test predates the work. Running the fix flipped both cells to
+          XPASS and broke the suite, which is the prompt the module was written
+          to give.
+        outcome: ok
+      - file: src/remote_store/backends/_local.py
+        section: "_within_root, _resolve"
+        read_type: reference
+        extract: >-
+          Enumerated the whole operation surface against a deleted root rather
+          than reading the four cells the item named. 27 of 29 probe rows raised
+          the escape error; glob (which never calls _resolve) and check_health
+          were already correct. That table is what scoped the work. The "40
+          operation cells" figure elsewhere in this record counts the same probe
+          after review added the BE-029 root rows to it — 29 rows at this phase,
+          40 at the end; they are the same enumeration at two points, not two
+          measurements of one thing.
+        outcome: ok
+
+  - id: design
+    name: Design
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "exists, is_file, is_folder, get_folder_info, _reject_root_as_file"
+        read_type: reference
+        extract: >-
+          The hierarchical sibling had already solved the root half, for the
+          same reason in a different guise: base_path is created lazily, so SFTP
+          could never answer BE-029 from a stat. Local answered from a stat and
+          got away with it only because __init__ mkdirs the root.
+        outcome: ok
+      - file: src/remote_store/backends/_sqlalchemy.py
+        section: "SQLBlobBackend root handling"
+        read_type: verify
+        extract: >-
+          Measured rather than read, against a dropped table: the root probes
+          still answer True/True/False. Two backends agreeing settled the root
+          question without an adjudication record.
+        outcome: ok
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "_reject_root_as_file"
+        read_type: reference
+        extract: >-
+          The shared pre-check every backend but Local and Memory already calls.
+          Reused rather than reimplemented.
+        outcome: ok
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_local.py
+        section: "_within_root, exists, is_file, is_folder, get_folder_info, _reject_root_as_file"
+        read_type: reference
+        extract: >-
+          Two changes, not one: stop the ancestor walk at the root, and give
+          Local the BE-029 short-circuits it had been doing without. Fenced
+          separately — reverting the stop failed 24 of the 46 cells that existed
+          at this point, reverting the pre-check failed the root type-error
+          cell. Both figures are point-in-time and were superseded once review
+          grew the module; see the fix_measuring phase for the re-derivation
+          against the final module, which is the one to trust.
+        outcome: ok
+      - file: tests/backends/local/test_absent_root.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Rewritten from two xfail cells plus a divergence-pinning class into an
+          enumeration of the surface. The class pinning today's wrong answer was
+          deleted: it existed to catch the divergence changing into some third
+          behaviour, and there is no divergence left for it to watch.
+        outcome: ok
+      - file: src/remote_store/backends/_local.py
+        section: "write, write_atomic, open_atomic"
+        read_type: verify
+        extract: >-
+          The fix's own hole, found by reading the diff against the write paths
+          rather than by any gate. Once _resolve stops raising, write("") reaches
+          the filesystem, and the writers' root check is full.is_dir() — False
+          with the root gone. The bytes landed at the root path and only the
+          WriteResult's empty-key check objected, leaving the store root a
+          regular file. My first pin for it asserted is_file(root), which the
+          BE-029 short-circuit answers False without a syscall: the assertion
+          passed on the corruption it was written to catch. Re-pinned against
+          the filesystem.
+        outcome: ok
+
+  - id: fix
+    name: Round-1 fix pass
+    steps:
+      - file: src/remote_store/backends/_local.py
+        section: "exists, is_file, is_folder docstrings"
+        read_type: reference
+        extract: >-
+          Round 1 caught the probe docstrings still stating the negation of the
+          new root behaviour — is_folder promised False for an absent path, and
+          the root now answers True. get_folder_info's had been updated in the
+          same commit and these three had not, which is the shape a whole-file
+          read finds and a diff read does not.
+        outcome: ok
+      - file: tests/backends/local/test_absent_root.py
+        section: "TestWriteRecreatesTheRoot, TestAbsentRootStillAnswersAsTheRoot"
+        read_type: reference
+        extract: >-
+          Two gaps. open_atomic took the write guard but had no cell, and its
+          @contextmanager shape means a copy of the sibling's assertion would
+          have passed with the guard deleted — fenced by removing the guard and
+          watching both cells fail. And delete_folder(root, missing_ok=False)
+          answers NotFound while exists(root) reports the root present; measured
+          SFTPBackend answering that cell identically from its own stat, so it is
+          pinned with its bound rather than reconciled.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 § Known divergences"
+        read_type: verify
+        extract: >-
+          Deleting the Local bullet took its trailing blank line with it, so the
+          paragraph after the list rendered as a lazy continuation inside the
+          SQLBlob bullet. Invisible in the source diff and in the rendered spec
+          alike unless read as Markdown.
+        outcome: ok
+
+  - id: fix_measuring
+    name: Round-2 fix pass (measuring round)
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 § Reach, § Known divergences"
+        read_type: verify
+        extract: >-
+          I wrote "check_health is the operation that reports an absent
+          container" as a general claim, generalised from Local without running
+          it anywhere else. SQLBlobBackend's check_health is a SELECT 1 and was
+          measured returning cleanly against a dropped table, so the sentence was
+          false on a backend this same section lists as divergent. Scoped to the
+          backend it was measured on. This is the false-premise class the clause
+          two paragraphs down already warns about, committed inside the edit that
+          quotes the warning.
+        outcome: ok
+      - file: tests/backends/local/test_absent_root.py
+        section: "module docstring, TestAbsentRootReadsRaiseNotFound, TestTheContainmentGuardStillGuards"
+        read_type: reference
+        extract: >-
+          Three holes a reading round had passed over twice. The module docstring
+          attributed the original false premise to _flat_ns's docstring, which
+          git log -S shows never carried it — inherited from the version on
+          master and repeated unchecked. read_seekable was absent from both root
+          enumerations in a module whose whole claim is that it enumerates rather
+          than samples; it is not overridden, so the ABC default is exactly the
+          inherited path TESTING.md Rule 13 warns about. And the symlink-escape
+          cell ran only with the root present — the one state in which the new
+          break is unreachable — so it pinned the guard but not the guard under
+          the change.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) BUG-247"
+        read_type: verify
+        extract: >-
+          The fence figure said 24 of 46 and the module had grown to 62 cells in
+          the round-1 fix pass. Re-ran all three fences against the module as it
+          now stands (29/62 walk stop, 16/62 read pre-check, 8/62 write guard)
+          rather than adjusting the number. A figure written once and re-read
+          afterwards is the failure principle 9 exists for, and this one drifted
+          inside the same PR that cites the principle.
+        outcome: ok
+
+  - id: fix_panel
+    name: Round-3 fix pass (three-member panel)
+    steps:
+      - file: src/remote_store/backends/_local.py
+        section: "check_health"
+        read_type: verify
+        extract: >-
+          The round's one behavioural finding, and it was a regression this work
+          introduced. The BE-029 short-circuits answer the root from the key, so
+          after them no operation observed what is actually at the root path —
+          and check_health tested exists(), which a regular *file* satisfies.
+          Reproduced: a store whose root was replaced by a file reported
+          exists("")=True, is_folder("")=True and a clean check_health. Now
+          tests is_dir(). The lesson generalises and went into BE-029: when the
+          probes stop observing, one operation must keep doing it.
+        outcome: ok
+      - file: tests/backends/local/test_absent_root.py
+        section: "TestTheContainmentGuardStillGuards"
+        read_type: verify
+        extract: >-
+          The round-2 symlink cell did not reach the state its own docstring
+          claimed. Instrumented os.path.lexists inside _within_root: against the
+          existing leaf the loop condition is true immediately, the body never
+          runs (1 call) and the new break is unreachable — the cell passed for
+          the pre-existing reason, exactly the weakness round 2 filed it to fix.
+          An absent leaf runs the body (2 calls) and reaches the stop. A fix pass
+          answering a finding in form rather than in substance is the failure
+          mode here, and only execution separated the two.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029 § Where a backend has to decide it"
+        read_type: verify
+        extract: >-
+          Round 2 scoped one false sentence and left the neighbouring clause
+          standing — BE-029 still licensed reading the root verdict off the SDK
+          for "a filesystem directory", which is the implementation this whole
+          item replaced. Amended with the bound BUG-247 establishes: the MAY
+          holds only while the node's absence is ruled out.
+        outcome: misleading
+      - file: src/remote_store/backends/_sftp.py
+        section: "write, write_atomic, open_atomic"
+        read_type: verify
+        extract: >-
+          Filed as BUG-259, not fixed. The panel's measuring member found the
+          same write-to-root corruption this item fixed on Local, live on SFTP:
+          the bytes land at base_path, open_atomic returns cleanly having done
+          it. The design phase above read SFTP's read-side root handling and
+          borrowed it; the write side was never in that read, which is precisely
+          where this item later found its own hole. Reading a sibling for the
+          half you are copying does not cover the half you are not.
+        outcome: ok
+
+  - id: docs
+    name: Docs and record
+    steps:
+      - file: src/remote_store/_backend.py
+        section: "delete, delete_folder"
+        read_type: verify
+        extract: >-
+          Eight docstring sites across four files named Local as the backend
+          that "still raises InvalidPath when its root directory is gone" —
+          both Backend ABCs and both Store facades. They render into the public
+          API reference. The ripple-check's "Public method signature" row points
+          at docstrings but nothing points at a docstring asserting another
+          backend's defect, which is how BUG-248 hit the identical set.
+        outcome: misleading
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 § Known divergences, § Reach"
+        read_type: reference
+        extract: >-
+          Removed Local's bullet, re-derived the bullet count from the survivors
+          rather than decrementing, moved the false-premise paragraph to past
+          tense, and gave BE-021 § Reach the sentence that says the root
+          spelling is BE-029's to decide.
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: >-
+          BUG-243's own entry asserted that Local still diverged. Not a
+          ripple-check row: an unreleased entry describing a defect a later
+          unreleased entry fixes.
+        outcome: ok
+
+  - id: rebase
+    name: Integrate master
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 § Reach, § Known divergences"
+        read_type: verify
+        extract: >-
+          Master shipped BUG-246/BUG-249 mid-review and independently wrote the
+          rule this work had added to § Reach — "The root is decided by BE-029,
+          not here, and BE-029 wins" — more thoroughly. Mine was dropped rather
+          than merged: two paragraphs stating one rule is the second-description
+          drift DRIFT-RULES forbids. Master's new text also asserted that Local
+          misses BE-029's root row, which this work falsifies, so three claims
+          across the file were re-derived rather than re-applied.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "§ 1 Closes when, count paragraph"
+        read_type: verify
+        extract: >-
+          Master reallocated BUG-254 through BUG-258 to real items while this
+          branch held two of those numbers. The dagster fix was dropped outright
+          (master's BUG-258 is byte-identical, found by an independent PR), and
+          the SFTP item renumbered to BUG-259. Counts re-derived from the merged
+          lists: three disagreeing classes, two live divergence bullets.
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "test-primary-sftp"
+        read_type: verify
+        extract: >-
+          The merge is also what unblocks CI. A conflicted PR has no
+          refs/pull/N/merge for pull_request workflows to check out, so GitHub
+          scheduled no run at all — silently, with no queued job and no
+          notification — from the moment master diverged. Two pushes produced
+          zero runs before the cause was found, which is a failure mode worth
+          knowing: a red check is visible, an absent one is not.
+        outcome: ok
+
+  - id: gate_unprimed
+    name: Closing gate, pass 1 (unprimed)
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 § Reach"
+        read_type: verify
+        extract: >-
+          The merge resolution deleted 864 characters more than intended. My
+          duplicate root paragraph was removed by cutting from its heading to
+          the next blank line — but it had been inserted mid-block in round 2,
+          so the cut swallowed master's `write` clause with it: the sentence
+          ADR-0038, spec 044, two paragraphs of this same file and one of this
+          PR's own test docstrings all cite. Nothing failed. Every gate passed,
+          because a spec paragraph has no test and the artifacts citing it name
+          it in prose. Found by the closing gate's unprimed pass, which grepped
+          the citations rather than reading the diff. A text-range deletion
+          whose bound is "the next blank line" is unsafe against a block someone
+          else has since written into.
+        outcome: ok
+      - file: tests/backends/local/test_absent_root.py
+        section: "TestWriteRecreatesTheRoot"
+        read_type: verify
+        extract: >-
+          The check_health exists() -> is_dir() fix shipped unfenced for a full
+          round. Every existing cell passes with it reverted, because they all
+          use an absent root where exists() is False too; the state the change
+          exists for — a root replaced by a regular file — was measured, written
+          into BACKLOG-DONE, and never pinned. Recorded is not tested. Fenced
+          now: reverting is_dir() fails that cell and only that cell.
+        outcome: ok
+
+  - id: gate_wholefile_measuring
+    name: Closing gate, passes 2 and 3 (whole-file, measuring)
+    steps:
+      - file: sdd/specs/026-health-check.md
+        section: "PING-003: LocalBackend"
+        read_type: gate
+        extract: >-
+          PING-003 pinned `if not self._root.exists()` in a code block while
+          this work changed the method to `is_dir()`, so two specs gave opposite
+          accounts of one method and the new test cell carried a PING-003 tag
+          asserting what PING-003 forbade. Five rounds missed it because every
+          one of them read the diff, and spec 026 is not in the diff. The
+          ripple-check has no row from a backend method body to the per-backend
+          strategy block that quotes it; the quote is what makes 026 a second
+          description of the code rather than a reference to it.
+        outcome: misleading
+      - file: tests/backends/local/test_absent_root.py
+        section: "test_root_replaced_by_a_symlink_is_an_escape"
+        read_type: verify
+        extract: >-
+          Third recurrence of one defect. Round 2 found the symlink cell ran
+          only with the root present, the state where the new break is
+          unreachable. The round-3 cell written to close it reproduces the
+          defect: self._root is resolved in __init__, so after rmdir +
+          symlink_to the root still lexists as a symlink, the while condition
+          goes false at the root, and the break is never reached. Measured with
+          a sys.settrace line counter over _within_root.__code__ — clamp `if`
+          evaluated once, `break` taken 0 times, against 1 for a plainly
+          deleted root. The round-3 docstring's own evidence is what let it
+          through: an os.path.lexists call count cannot distinguish "the body
+          ran" from "the break fired", which is the discrimination it was cited
+          for. Claim withdrawn rather than another cell added — the hazard it
+          imagined is not constructible, because when the clamp fires every
+          component from target to root is absent and no symlink remains for
+          the walk to follow.
+        outcome: ok
+      - file: tests/backends/local/test_absent_root.py
+        section: "TestAbsentRootListingsAreEmpty, TestAbsentRootStillAnswersAsTheRoot"
+        read_type: verify
+        extract: >-
+          Two more rationales that named a guard the cell does not reach. glob
+          makes 0 calls into _within_root with the root absent (the listing is
+          empty, so the filter loop never runs) and deleting that filter leaves
+          all 70 cells green — it is fenced by test_concurrency.py's
+          TestLocalGlobSymlinkEscape, the single cell the deletion does fail.
+          is_file("") in test_root_is_still_a_folder holds whether or not the
+          BE-029 short-circuit exists, because the observed answer is False on
+          an absent root too; only the regular-file check_health cell parts the
+          two. Same class as the vacuous assertion round 3 already fixed one
+          cell over. A docstring asserting coverage is not coverage, and this
+          module had three such claims to one real gap.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "expected_ripples, surprising_ripples, review_rounds"
+        read_type: gate
+        extract: >-
+          Three figures in this PR's own record-keeping were stale, all in the
+          same way: they describe the review loop, and every round of the loop
+          invalidates them. review_rounds named seven commits from a command
+          that returns eleven, and counted one commit no reviewer asked for;
+          both ripple lists named files the branch does not touch. Re-derived
+          against `git log --oneline origin/master..HEAD` and `git diff
+          --name-only origin/master...HEAD` rather than re-read.
+        outcome: ok
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Detailed checklist"
+        read_type: verify
+        extract: "Full pass over the triggered rows once the diff was complete"
+      - file: tests/backends/conformance/test_io.py
+        section: "BE-029 root cells"
+        read_type: verify
+        extract: >-
+          Confirmed the root cells assert error type and is_root(path), never
+          the message, so Local's root InvalidPath text changing to the shared
+          wording breaks nothing. Local's own message-matching tests all use
+          non-root paths.
+        outcome: ok

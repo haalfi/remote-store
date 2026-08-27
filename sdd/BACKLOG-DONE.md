@@ -155,6 +155,104 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-247 — `LocalBackend` reports a deleted root as "Path escapes root directory"**
+  spec: BE-004, BE-005, BE-012, BE-013, BE-021, BE-029, PING-002, PING-003 · effort: S · audience: user.api
+  Delete a `LocalBackend`'s root out from under it and every operation but
+  `glob` and `check_health` raised `InvalidPath("Path escapes root directory")`
+  — including `delete(missing_ok=True)` and `delete_folder(missing_ok=True)`,
+  which BE-021's absent-container rule requires to return cleanly, and
+  `exists()`, which BE-004 forbids from raising at all. Nothing was escaping:
+  `_within_root` walks up to the deepest *lexically existing* ancestor for its
+  symlink-escape check, and once the root is gone that walk climbs past the
+  root, so `anchor.resolve().relative_to(self._root)` raises `ValueError` and
+  absence is reported as an escape. `InvalidPath` was the worst of the plausible
+  answers: it tells the caller their path is malformed when the path is fine and
+  the store is simply absent.
+  **Fixed by stopping the walk at the root**, not by the root-existence `stat`
+  the item proposed. The item asked for that shape to be measured before
+  adopting; measured, the stop costs no syscall at all (a path comparison inside
+  a loop whose body runs only for components that do not exist) and is provably
+  inert while the root exists, since an existing root is already an existing
+  ancestor of every contained target. A lexically escaping path never has the
+  root on its ancestor chain for the stop to fire on, so the symlink-escape
+  guard the item flagged as at risk is untouched. Each of the change's four
+  parts is fenced separately by mutation, re-run against the module as it
+  finally stands rather than as it stood when the part landed: **30/74** for the
+  walk stop, **16/74** for the file-shaped root pre-check, **14/74** for the
+  write guard, and **5/74** for the BE-029 probe short-circuits, whose four
+  members fence 2, 1, 3 and 2 cells individually. `check_health`'s `exists()` →
+  `is_dir()` change is fenced by exactly one cell, in both the module and
+  `tests/backends/local tests/test_ping.py`.
+  **Four earlier versions of this sentence were wrong** — 24 of 46, then 29 of
+  62, then 30 of 69, then 30 of 70 — each left behind as a later round added
+  cells. That is the failure mode [principle 9](../CLAUDE.md#principles) names:
+  the figure was re-read rather than re-run. The pattern is worth more than the
+  number. This sentence describes the test module, the review loop keeps
+  changing the test module, and so *every round invalidates it* — including the
+  round that fixed it, twice over: the third version slipped in the very commit
+  that added the seventieth cell, and the fourth in the closing-gate commit that
+  corrected the third and then added four more cells. A figure whose subject the
+  work keeps moving has to be re-derived last, after the final edit, not when
+  the sentence is written. Round 3's measuring member independently reproduced
+  the middle set exactly, and the closing gate's measuring pass reproduced all
+  four, which is how a figure earns trust.
+  **Two subjects the item did not name.** The fix turns `_resolve` from raising
+  into returning, which exposes what each operation does next — so the work was
+  the whole surface, not the four cells the item listed: 40 operation cells were
+  measured before and after. And it put the **store root** in play, which the
+  item never mentions: BE-029 makes `""` / `"."` a folder by definition, and
+  Local satisfied that only by observation, because `__init__` mkdirs the root.
+  With the root gone, observation disagreed. Local gained the root
+  short-circuits `SFTPBackend` has carried for the same reason (`base_path` is
+  created lazily there) plus the shared `_reject_root_as_file` pre-check every
+  other backend that addresses the root through a stat or an SDK key already
+  calls — `_sftp.py`, `_s3.py`, `_s3_pyarrow.py` and both Azure lanes, six call
+  sites each (`_azure.py` and `_s3_boto3.py` seven). The flat and in-memory
+  families do not call it at all: `_sqlalchemy.py` reaches the same verdict
+  through fourteen `is_root()` tests of its own, and the memory and HTTP
+  backends never stat anything. Local was the only stat-addressed backend
+  relying on that stat to learn its root is a folder. The two clauses read as though they met and
+  nothing said which won, so this work wrote the rule into BE-021 § Reach — and
+  then dropped it: BUG-246 landed the same rule, more thoroughly argued, while
+  this item was in review, and two paragraphs stating one rule is the
+  second-description drift [DRIFT-RULES](DRIFT-RULES.md#rules) forbids. The
+  clause that ships is master's ("The root is decided by BE-029, not here, and
+  BE-029 wins"); the convergence is the evidence the gap was real.
+  `write` recreates the root and succeeds, which BE-021 § Reach explicitly
+  leaves to the backend and which matches `__init__`; `check_health` remains the
+  operation that reports an absent root, and is what keeps the BE-029 answers
+  from being a lie about store health.
+  **The fix opened one hole of its own, found by reviewing the diff against the
+  write paths.** Turning `_resolve` from raising into returning means `write("")`
+  no longer stops there, and the writers' own root check is `full.is_dir()` —
+  which answers `False` once the root is gone. The write then ran to completion:
+  `parent.mkdir` recreated the tree, the bytes landed at the root path, and only
+  building the `WriteResult` rejected the empty key, leaving the store root as a
+  regular **file**. All three writers now refuse the root key definitionally,
+  before touching the disk. Writes *under* the root are unaffected. Caught by
+  measuring the filesystem rather than the exception — the first version of that
+  cell asserted `is_file(root)`, which the new BE-029 short-circuit answers
+  `False` without looking at the disk, so it passed on the corruption it existed
+  to catch.
+  **The BE-029 short-circuits blinded the one operation that still looked.** Once
+  `exists`, `is_file`, `is_folder` and `get_folder_info` answer the root from the
+  key, nothing observes what is actually at the root path — and `check_health`
+  tested `exists()`, which a regular *file* satisfies. Measured: a store whose
+  root was replaced by a file reported `exists("")` True, `is_folder("")` True
+  and a clean `check_health()`, i.e. a healthy empty store that cannot exist.
+  `check_health` now tests `is_dir()`, which its own docstring already promised
+  ("Confirm the root **directory** exists"). Found by round 3's unprimed member;
+  the generalisation — when the probes stop observing, one operation must keep
+  doing it — went into BE-029 rather than staying a Local detail.
+  **One root cell is left answering by observation, with its bound stated.**
+  `delete_folder(root, missing_ok=False)` raises `NotFound` on an absent root
+  while `exists(root)` reports the root present. Not reconciled: BE-029 § Out of
+  scope excludes `delete_folder("")` from the root rule, STORE-002 refuses a root
+  delete before it reaches a backend, and `SFTPBackend` was measured answering
+  that cell identically from its own stat — so making it definitional would put
+  Local alone among the backends on a call no spec decides. Pinned by a test
+  instead, which is what turns it from an unexamined answer into a recorded one.
+
 - [x] **BUG-246 — An absent container raises where the contract says `False`, `NotFound`, or an empty listing**
   spec: BE-004, BE-005, BE-021 · effort: M · audience: user.api
   Four backends raised against a container that does not exist, where BE-004 and

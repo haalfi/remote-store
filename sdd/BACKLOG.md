@@ -198,18 +198,19 @@ be edited to point elsewhere.
 **Promise:** a caller catches one exception type, and an absent or denied
 store answers the same way on every backend.
 
-**Closes when:** the last adapter answers the contract against an absent
-container (BUG-247); the root of an absent container meets BE-029 on every
-backend (BUG-254); a listing does not truncate silently when its container is
+**Closes when:** the root of an absent container meets BE-029 on every
+backend (BUG-254) and a write to that root does not occupy it with a regular
+file (BUG-259); a listing does not truncate silently when its container is
 deleted mid-scan (BUG-255) or when a folder vanishes part-way through a
 recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 (BUG-256); a constructor does not leak its driver's exception
 (BUG-245); one operation does not answer by payload size (BUG-253); and a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
 (BK-345). The spec contradiction is adjudicated — BUG-248, closed by
-[ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md) — and the
+[ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md) — the
 never-leak invariant holds on the S3 listing path, closed by BUG-249 with
-BUG-246. **One cross-section dependency remains**, per
+BUG-246, and the last adapter answers the contract against an absent container,
+closed by BUG-247. **One cross-section dependency remains**, per
 [§ How this file works](#how-this-file-works): BK-345 waits on **ID-244** in
 section 2 for the seeding hook, stated inside the item that carries it, so this
 section cannot close on its own items alone. BUG-249's denied half carried a
@@ -217,39 +218,40 @@ second such dependency on **ID-242**; it shipped with the denied path asserted b
 the hand-written 403 probe that item names and by nothing in conformance, which
 is why ID-242 is still open and still worth doing.
 
-**Four backend classes** now disagree with **the absent-container clause** —
-`LocalBackend` (BUG-247), `S3Backend` and `S3PyArrowBackend` (BUG-255), and
-`GraphBackend` (BUG-257) — counted from BE-021's § Known divergences list, which
-this section tracks bullet for bullet and which holds three bullets, the second
-naming two classes. BUG-255 and BUG-257 joined that list rather than the "further
-disagreements" below it when BUG-246 gave § Reach an explicit first-page bound:
-before that the clause said only what an absent container answers, so a container
-that vanished *during* a listing was outside it; now the bound is part of the
-clause and missing it is a breach of it. Writing a rule into a clause enlarges
-what the clause governs, and the two items that changed side are the evidence —
-neither was a new defect, and both were pre-existing behaviour that a new
-sentence made answerable.
-**Four** further disagreements sit in this section and none of them is with the
+**Three backend classes** now disagree with **the absent-container clause** —
+`S3Backend` and `S3PyArrowBackend` (BUG-255), and `GraphBackend` (BUG-257) —
+counted from BE-021's § Known divergences list, which this section tracks bullet
+for bullet and which holds two bullets, the first naming two classes. BUG-255 and
+BUG-257 joined that list rather than the "further disagreements" below it when
+BUG-246 gave § Reach an explicit first-page bound: before that the clause said
+only what an absent container answers, so a container that vanished *during* a
+listing was outside it; now the bound is part of the clause and missing it is a
+breach of it. Writing a rule into a clause enlarges what the clause governs, and
+the two items that changed side are the evidence — neither was a new defect, and
+both were pre-existing behaviour that a new sentence made answerable.
+**Five** further disagreements sit in this section and none of them is with the
 absent-container clause, which is why they are not in that count: BUG-253 is
 between two halves of one Graph operation; BUG-245 is a constructor leak, which
 BE-021 scopes to operations and so does not reach; BUG-254 is with **BE-029's
 root row**, which BE-021 § Reach now defers to rather than deciding, so the
 breach is of the row § Reach points at and not of the clause this count is about;
-and BUG-256 is about a health probe, which is off the roster BE-021 governs.
-**Five classes** have left the list on the *empty-listing and NotFound* rows —
+BUG-256 is about a health probe, which is off the roster BE-021 governs; and
+BUG-259 is a write to the store root leaving an absent container occupied by a
+regular file, which is BE-029's root row again on the write path.
+**Six classes** have left the list on the *empty-listing and NotFound* rows —
 counted as classes, which is the frame this paragraph opens in and not the bullet
 frame the sentence above it uses. `GraphBackend` went first — BUG-248 adjudicated
 the spec contradiction behind it and brought the backend to the contract in the
 same change, which is why BK-345's exemption list, blocked on that adjudication,
 can now be written. `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` and
-`SQLBlobBackend` followed with BUG-246 and BUG-249. Graph is on both sides of
-this paragraph and that is not a bookkeeping error: it meets the rows it was
-brought to and misses the bound that arrived after, which is what a clause
-growing a new sentence does to a backend that was compliant the day before.
-What is left is the one the clause misreports rather than merely mistypes: on
-Local an absent store is reported as a *malformed path*, and until that goes,
-portable error handling is still impossible on the most-used backend, which is
-the whole promise.
+`SQLBlobBackend` followed with BUG-246 and BUG-249. `LocalBackend` is the sixth
+and the last: BUG-247 stopped its containment check reporting an absent root as
+a path escape, which was the one case where the clause *misreported* rather than
+merely mistyped — an absent store answered as a malformed path, on the most-used
+backend. Graph is on both sides of this paragraph and that is not a bookkeeping
+error: it meets the rows it was brought to and misses the bound that arrived
+after, which is what a clause growing a new sentence does to a backend that was
+compliant the day before.
 
 - [ ] **BUG-254 — Five backend classes breach BE-029's root row against an absent container**
   spec: BE-004, BE-021, BE-029 · effort: S · audience: user.api
@@ -415,31 +417,37 @@ the whole promise.
   ([ADR-0025](adrs/0025-async-to-sync-backend-adapter.md)), not a second copy of
   the walk. Only the *cells* need a sync lane.
 
-- [ ] **BUG-247 — `LocalBackend` reports a deleted root as "Path escapes root directory"**
-  spec: BE-004, BE-012, BE-013, BE-021 · effort: S · audience: user.api
-  Delete a `LocalBackend`'s root directory out from under it and **every** operation
-  raises `InvalidPath("Path escapes root directory")` — including
-  `delete(missing_ok=True)` and `delete_folder(missing_ok=True)`, which BE-021's
-  absent-container rule requires to return cleanly, and `exists()`, which BE-004
-  forbids from raising at all.
-  Nothing is escaping. `_within_root` walks up from the target to the deepest
-  *lexically existing* ancestor for its symlink-escape check; once the root is
-  gone that walk climbs past the root, so
-  `anchor.resolve().relative_to(self._root)` raises `ValueError` and containment
-  is reported as an escape. `InvalidPath` is the worst of the plausible answers:
-  it tells the caller their path is malformed when the path is fine and the store
-  is simply absent.
-  Reproduction and the current behaviour are pinned in
-  `tests/backends/local/test_absent_root.py` — the contract cells are
-  `xfail(strict=True)`, so fixing this flips them to XPASS and fails the suite
-  until the markers come off.
-  **Care required:** `_within_root` is the symlink-escape guard, so a fix must
-  distinguish "anchor escaped because the root is gone" from "anchor escaped
-  because the path really does point outside" without weakening the second. A
-  root-existence check before the walk is the obvious shape, at the cost of a
-  `stat` per call — measure before adopting it.
-  Local is the most-used backend, so this reaches more callers than any other
-  item in this section.
+- [ ] **BUG-259 — `SFTPBackend` writes leave an absent `base_path` occupied by a regular file**
+  spec: BE-029, BE-021 · effort: S · audience: user.api
+  Write to the store root of an SFTP store whose `base_path` does not exist and
+  the bytes land at the container path itself, leaving the store's container a
+  regular **file**. `open_atomic("")` does not even raise — it returns cleanly
+  having done it. Measured against the Stage-1 in-process paramiko server, with
+  `base_path` absent, checking the server-side filesystem after each call:
+
+  | Call | Server-side result | Raised |
+  | --- | --- | --- |
+  | `write("")` / `write(".")` | `base_path` is a file, size 1 | `InvalidPath("Path is empty after normalization")` |
+  | `write_atomic("")` / `write_atomic(".")` | `base_path` is a file, size 1 | `InvalidPath("Path is empty after normalization")` |
+  | `open_atomic("")` / `open_atomic(".")` | `base_path` is a file, size 1 | — **returns cleanly** |
+  | `write("")`, `base_path` present | unchanged directory | `InvalidPath("Not a file: ")` |
+
+  Note the error on the absent-`base_path` rows carries no `backend=` attribute:
+  it arrives from the `RemotePath` / `WriteResult` layer *after* the write, not
+  from the backend before it. The backend's own root guard is the observational
+  `is_dir()`-shaped check, which answers `False` when the container is gone.
+  Afterwards `is_folder("")` still answers `True` from SFTP's root
+  short-circuit, so BE-029's "a folder that always exists" becomes a claim about
+  a regular file and every later call answers about a store that cannot exist.
+  **This is BUG-247's defect on the other hierarchical backend**, found by that
+  work's round-3 measuring pass rather than by reading: BUG-247 borrowed SFTP's
+  *read*-side root short-circuits, which are correct, and did not look at its
+  write paths. The fix has the same shape — refuse the root key definitionally,
+  before the transport is touched — but the surfaces only *overlap*
+  ([§ Granularity](#how-this-file-works)), so it is a separate item.
+  **Not co-shipped with BUG-247 deliberately:** that item's scope is Local, and
+  widening it to a second backend mid-review would have put an untested SFTP
+  change into a PR whose SFTP claims are otherwise measurement-only.
 
 - [ ] **BUG-245 — `SQLBlobBackend(create_table=False)` leaks `NoSuchTableError` from its constructor**
   spec: BE-021, SQL-BLOB-012 · effort: S · audience: user.api

@@ -73,13 +73,21 @@ def check_health(self) -> None: ...
 
 ### PING-003: LocalBackend
 
-**Strategy:** Verify root directory exists and is readable.
+**Strategy:** Verify the root path holds a readable directory.
 ```python
-if not self._root.exists():
+if not self._root.is_dir():
     raise NotFound(...)
 if not os.access(self._root, os.R_OK):
     raise PermissionDenied(...)
 ```
+The type test is `is_dir()` rather than `exists()`, and the difference is
+load-bearing. Under
+[BE-029](003-backend-adapter-contract.md#be-029-root-path)
+`LocalBackend` answers `exists("")` and `is_folder("")` for the store root
+definitionally, without a stat, so `check_health` is the only operation on the
+backend that observes what actually occupies the root path. Testing mere
+existence would let a root replaced by a regular *file* report a healthy, empty
+store from every probe (BUG-247).
 
 ### PING-004: S3Backend
 

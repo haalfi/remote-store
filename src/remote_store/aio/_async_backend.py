@@ -195,8 +195,9 @@ class AsyncBackend(abc.ABC):
 
         An absent container — a missing bucket, container or table — counts as
         an absent file, so *missing_ok* tolerates it on the same terms. This is
-        required of implementations rather than guaranteed by them: the local
-        backend still raises ``InvalidPath`` when its root directory is gone.
+        required of implementations rather than guaranteed by them; a backend
+        that does not comply is a defect, tracked in the backend contract's own
+        list of known divergences.
 
         Args:
             path: Backend-relative key.
@@ -214,8 +215,9 @@ class AsyncBackend(abc.ABC):
 
         An absent container — a missing bucket, container or table — counts as
         an absent folder, so *missing_ok* tolerates it on the same terms. This is
-        required of implementations rather than guaranteed by them: the local
-        backend still raises ``InvalidPath`` when its root directory is gone.
+        required of implementations rather than guaranteed by them; a backend
+        that does not comply is a defect, tracked in the backend contract's own
+        list of known divergences.
 
         Args:
             path: Backend-relative key.
@@ -353,7 +355,9 @@ class AsyncBackend(abc.ABC):
 
         Raises:
             PermissionDenied: If credentials are invalid.
-            NotFound: If the bucket, container, or root path does not exist.
+            NotFound: If the bucket, container, or root path does not hold
+                the container it names — it is absent, or something of
+                another type occupies it.
             BackendUnavailable: If the backend cannot be reached.
         """
 
