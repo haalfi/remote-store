@@ -18,19 +18,20 @@ expected_ripples:
   - CHANGELOG.md
   - docs-src/guides/backends/sftp.md
 # Counted from `git log --oneline origin/master..HEAD` at the head this trace
-# ships on, which holds ten commits. The field's description counts *commits*
+# ships on, which holds eleven commits. The field's description counts *commits*
 # that exist because review feedback was incorporated, not review rounds, and
-# says a `BK-NNN:`-convention commit counts too — so nine of the ten do:
+# says a `BK-NNN:`-convention commit counts too — so ten of the eleven do:
 # 2876dfb (round 1, 16 findings), f5227b3 (round 2, 6 findings), 0b1c752 (round
 # 2's third multiplier, filed as BK-355 rather than widened into the PR),
 # 4863ad9 and 8dd2f0a (round 3, 8 findings, two commits because the round's own
 # replacement claim then needed characterising), 51d90c2 and 866dc4b (round 4,
 # the first unprimed exit gate, 5 findings, the second commit being a
 # re-derivation of this very field), bc561fb (round 5, the second exit gate, 6
-# findings), and the commit this line ships in (round 6, the third exit gate, 3
-# findings). Only bdf775b, which implements the item, does not count. Value is 9.
+# findings), 475da2c (round 6, the third exit gate, 3 findings), and the commit
+# this line ships in (round 7, the fourth exit gate, 4 findings). Only bdf775b,
+# which implements the item, does not count. Value is 10.
 #
-# The PR body counts *rounds* — six — and does not contradict this: rounds and
+# The PR body counts *rounds* — seven — and does not contradict this: rounds and
 # review-driven commits are different units, and the field is the second. Three
 # earlier values here were wrong, in three distinct ways, which is why the
 # derivation is spelled out rather than summarised: two read the field name
@@ -47,7 +48,7 @@ expected_ripples:
 # uncheckable. A SHA list is a derivation only while the history under it holds;
 # re-run the command whenever the branch moves under this file, rebases
 # included.
-review_rounds: 9
+review_rounds: 10
 phases:
   - id: orient
     name: Orient on the report
@@ -458,8 +459,11 @@ phases:
           notice losing, because its own tests exit the handle cleanly and fail
           at the promote, never running the close on a stalled channel.
           Parametrised into the mid-stream test rather than given a twin; without
-          the guard it fails at 4.0s (2.0x the bound). Five sites, five
-          measurements now.
+          the guard it fails at 4.0s (2.0x the bound). I then wrote "five sites,
+          five measurements now", which round 7 falsified in the next breath:
+          three are measured, and read_bytes (prefetching read) and move's copy
+          fallback (pragma'd) are not. The sentence closing a gap asserted the
+          class was closed — the same move the gap came from.
         outcome: ok
       - file: src/remote_store/backends/_sftp.py
         section: "_is_connection_dead docstring"
@@ -493,6 +497,46 @@ phases:
           catches the fallback rename and the drop surfaces, at four more bounds
           rather than a false success. The trace scoped it correctly and the PR
           body did not, so the correction is to the body.
+        outcome: ok
+  - id: fix7
+    name: Round 7 review (fourth unprimed exit gate)
+    steps:
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030 (stalled-write round-trip)"
+        read_type: verify
+        extract: >-
+          One class, four instances: round 6's own change falsified claims round
+          6 did not revisit. The largest was SFTP-030's "reaching SFTPFile.write
+          with a stall armed requires a handle opened beforehand — open_atomic",
+          which had generalised the pre-armed measurement (entered 0 times) to
+          every route, and which two tests in the suite already contradicted —
+          one of them added in round 4, the other in round 6. Rewritten around
+          *when* the peer went silent rather than which method was called, since
+          that is the variable that actually decides it.
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "test_stall_during_streamed_write_costs_one_bound"
+        read_type: verify
+        extract: >-
+          Same claim one file over, and the derivation was the tell: "verified by
+          spying on it" was run before the mid-stream tests existed and never
+          re-run after. A docstring saying "the only case in this file" is a
+          claim about the file, so it expires whenever the file changes. Rewritten
+          to say what is actually unique about the test — it is the only one
+          exercising open_atomic's inline guard, which cannot use _handle because
+          its clean-exit close must sit inside _errors.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_handle docstring, SFTP-030 mechanism 3"
+        read_type: verify
+        extract: >-
+          Round 6 fixed this docstring's figures and left "the two call sites"
+          beside them, so adding write_atomic's measurement made the count wrong
+          in the same sentence that made it right. And the spec's "each call site
+          is measured" was never true: read_bytes prefetches, so a stall in its
+          read fails in paramiko's prefetch machinery rather than on the close,
+          and move's copy fallback is pragma'd. Both now name the two unmeasured
+          sites rather than counting them.
         outcome: ok
   - id: docs
     name: Document the distinction

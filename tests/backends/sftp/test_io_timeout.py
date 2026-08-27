@@ -771,12 +771,18 @@ def test_copy_stalling_mid_stream_costs_one_bound(stall_relay: _StallRelay) -> N
 def test_stall_during_streamed_write_costs_one_bound(stall_relay: _StallRelay) -> None:
     """A stall part-way through a streamed write is bounded, once.
 
-    This is the write-side counterpart of the streamed-read test, and the only
-    case in this file that actually enters ``SFTPFile.write`` with the stall
-    armed (verified by spying on it: entered twice, the seed write and the one
-    that fails). Reaching it needs the handle opened *before* the stall, which
-    ``open_atomic`` gives us; every route through ``write()`` fails on an
-    earlier round-trip instead.
+    This is the write-side counterpart of the streamed-read test, and what makes
+    it distinct is the *guard*, not the moment. It is the only test here that
+    exercises ``open_atomic``'s **inline** dead-connection guard: that handle is
+    yielded to the caller and its clean-exit close has to sit inside ``_errors``,
+    so it cannot route through ``_handle`` like the other five sites do.
+
+    An earlier version of this docstring claimed it was the only case in the file
+    reaching ``SFTPFile.write`` with the stall armed, and that "every route
+    through ``write()`` fails on an earlier round-trip". That was measured
+    against a stall armed *before* the call, and was already false when written:
+    ``test_write_stalling_mid_stream_costs_one_bound`` reaches it through plain
+    ``write`` and ``write_atomic``, by stalling from inside the content stream.
 
     The single-bound half is what makes it worth its runtime. ``open_atomic``
     closes the handle best-effort on an abnormal exit, and paramiko's

@@ -417,13 +417,21 @@ well as reads, and a stalled write reaches it on the receive side like a read
 does. The distinct fault it covers is a request that never reaches the server,
 as against a reply that never returns.
 
-Note which round-trip a stalled write actually fails on, because it is not the
-payload: `write()` issues an existence `stat` on `overwrite=False`, and the file
-open is a round-trip on `overwrite=True`, so a client→server stall always fails
-before any payload byte is sent. Reaching `SFTPFile.write` with a stall armed
-requires a handle opened beforehand — `open_atomic`. Stated because an earlier
-revision of this clause explained the write case by `SFTPFile.write` not being
-pipelined, an explanation no run behind it had reached.
+Note which round-trip a stalled write fails on, because it depends on *when* the
+peer went silent, not on which method was called. A stall already in effect when
+the call starts never reaches the payload: `write()` issues an existence `stat`
+on `overwrite=False`, and the file open is a round-trip on `overwrite=True`, so
+the failure lands there. A stall that begins mid-transfer does reach
+`SFTPFile.write`, and `write`, `write_atomic` and `open_atomic` all get there —
+any handle that is open when the peer goes quiet will.
+
+The distinction is stated because both halves have been got wrong here. An early
+revision explained the pre-armed case by `SFTPFile.write` not being pipelined, an
+explanation no run behind it had reached. Its replacement then said reaching
+`SFTPFile.write` "requires a handle opened beforehand — `open_atomic`", which
+generalised a measurement of the pre-armed case (`SFTPFile.write` entered 0 times)
+to every route, and stood while two tests in the suite reached it through plain
+`write` and `write_atomic`.
 
 **Postconditions:** A stalled operation raises `BackendUnavailable`, via the
 existing `_is_connection_dead` / `_map_exception` path (SFTP-023), which also
@@ -466,10 +474,18 @@ re-entries differently:
    maps). Measured at a 2 s bound, on a stream that goes quiet mid-transfer:
    4.00 s before the guard and 2.00 s after for both `write` and `write_atomic`,
    and 6.9 s before and 2.0 s after for `copy`, which holds two handles rather
-   than one. Each call site is measured rather than inferred from the helper
-   being shared — `copy` shipped unguarded for a round while five artifacts
-   named it covered, because the helper's call-site list was read as evidence
-   that the list had been exercised.
+   than one.
+
+   Three of the five call sites are measured that way; the other two are named
+   here rather than counted as covered, because the helper being shared is not
+   evidence that a site was exercised. `read_bytes` prefetches, so a stall inside
+   its read fails in paramiko's prefetch machinery rather than on the close of a
+   partly-read handle, and a test there would pin something other than what it
+   claimed. `move`'s copy fallback needs a server lacking
+   `posix-rename@openssh.com`, and carries a `no cover` pragma for that reason.
+   The distinction is drawn because `copy` shipped unrouted for a round while
+   five artifacts named it covered — the call-site list was read as evidence that
+   the list had been run.
 
    The helper bounds what the caller waits inline; it does not promise the
    round-trip is never made. `SFTPFile.__del__` calls `_close(async_=True)`

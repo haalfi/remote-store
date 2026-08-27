@@ -1994,12 +1994,20 @@ class SFTPBackend(Backend):
 
         This is the same guard ``open_atomic`` applies to its own handle;
         centralising it is what stops the next streaming call site rediscovering
-        the doubling. Measured at a 2 s bound on the two call sites that hold a
-        handle across a stall: a ``write`` from a stream that goes quiet
-        mid-transfer, 4.00 s before the guard and 2.00 s after; and a ``copy``,
+        the doubling. Measured at a 2 s bound, per site rather than per class:
+        ``write`` and ``write_atomic``, each fed by a stream that goes quiet
+        mid-transfer, 4.00 s before the guard and 2.00 s after; and ``copy``,
         which holds two handles, 6.9 s before and 2.0 s after. (``open_atomic``'s
         own figure is 4.04 / 2.04, measured on its inline guard rather than on
         this helper — kept separate because they are different code.)
+
+        Two of the five call sites are not measured, and are named rather than
+        counted as covered. ``read_bytes`` prefetches, so a stall inside its read
+        fails in paramiko's prefetch machinery rather than on the close of a
+        partly-read handle; ``move``'s copy fallback needs a server without
+        ``posix-rename@openssh.com`` and carries a ``no cover`` pragma for that
+        reason. Both are covered by sharing this helper, which is the weaker
+        claim that let a site ship unrouted once already.
         """
         try:
             yield handle
