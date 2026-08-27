@@ -1067,6 +1067,46 @@ here as legitimately as "built".
   `_is_connection_dead`). The first keeps the knowledge in one place; the second
   avoids the wrapper guessing on behalf of backends whose streams fail for
   reasons a close would survive. Undecided.
+  **Sequencing:** land this *before* BK-356. While `io_timeout` defaults to
+  `None` this item costs a user nothing — there is no bound to pay twice. A
+  real default makes it live for every SFTP caller, so flipping the default
+  first would ship the doubling to everyone and force the migration entry to
+  warn about it.
+
+- [ ] **BK-356 — `io_timeout` should default to a real bound, not `None`**
+  spec: SFTP-030, SFTP-005 · effort: S · audience: user.api
+  BK-354 shipped `io_timeout` defaulting to `None`, so the stall it exists to
+  bound is still unbounded unless a caller opts in. The default was chosen for
+  compatibility and the reporter's objection to it was recorded rather than
+  answered (issue #970: "'no bound at all' is a surprising default given
+  `_is_connection_dead` already assumes one"). It stands unrebutted.
+  **Why the default is wrong on the library's own terms, not just on taste.**
+  `HttpBackend` already defaults `timeout=30.0`, which reaches reads, so SFTP
+  is the outlier rather than the pioneer — a user meets a bounded read on HTTP
+  and an unbounded one on SFTP with no principle separating them. And the SFTP
+  recovery path (`_is_connection_dead` → `_map_exception` → cleared client) was
+  written presuming a bound exists; shipping the machinery without its trigger
+  is an internal contradiction that BK-354 documented instead of closing.
+  **Decided: `120.0`.** It is the value the SFTP guide and troubleshooting page
+  already use in their worked examples, so the docs and the default stop
+  disagreeing. Against the longest transfer #970 reports (2.0 GiB, ~70 min) a
+  120 s silence bound is 2.8% of runtime — a stall is caught inside two minutes
+  while leaving room for a server that legitimately goes quiet, e.g. an
+  antivirus or dedup appliance scanning a large file on `open()`.
+  The asymmetry is what picks the value: too high costs detection latency,
+  which is cheap because the bound is on silence *between* bytes and a slow
+  link is unaffected at any value; too low converts a healthy-but-quiet server
+  into intermittent `BackendUnavailable`, which reads as network flakiness and
+  is harder to diagnose than the hang it replaces.
+  **Breaking, and shipped as such.** Pre-1.0 (`0.30.0`, Development Status ::
+  4 - Beta) with an established `docs-src/reference/migration.md` — v0.29.0
+  made Azure's `hns` a *required* argument, a harder break than changing a
+  default that keeps an opt-out. The migration entry must lead with the opt-out
+  (`io_timeout=None` restores the old behaviour), because the reader who needs
+  it is exactly the one with a legitimately slow or quiet server. Note `0` is
+  not the opt-out: it raises `ValueError` (SFTP-005), since paramiko reads it
+  as non-blocking.
+  **Blocked on BK-355** — see its sequencing note.
 
 ---
 
