@@ -649,14 +649,20 @@ def test_stalled_upload_request_raises_backend_unavailable(stall_relay: _StallRe
     There the server replies and the relay discards the reply; here the request
     never arrives, so no reply is ever generated. Both end in a receive timeout.
 
-    What this does *not* reach is ``SFTPFile.write``. ``write()`` issues an
+    What *this* case does not reach is ``SFTPFile.write``. ``write()`` issues an
     existence ``stat`` first on ``overwrite=False``, and on ``overwrite=True``
-    the file open is still a round-trip, so a stalled upload always fails before
-    any payload byte is sent — measured: ``SFTPFile.write`` entered 0 times
-    either way. The write half proper is covered by the next test, which opens
-    the handle before stalling. An earlier revision of this test claimed both a
-    ``Channel.sendall`` window-exhaustion route and the ``SFTPFile.write``
-    non-pipelining explanation; neither was reached by the run that asserted it.
+    the file open is still a round-trip, so an upload stalled **before the call**
+    fails before any payload byte is sent — measured: ``SFTPFile.write`` entered
+    0 times either way.
+
+    That is a fact about *when* the peer went silent, not about ``write()``. A
+    stall that begins mid-body does reach ``SFTPFile.write`` through plain
+    ``write``, which the mid-stream test below covers. Stated carefully because
+    this docstring has twice been wrong in the other direction: an early revision
+    claimed a ``Channel.sendall`` window-exhaustion route and the
+    ``SFTPFile.write`` non-pipelining explanation, neither reached by the run
+    that asserted them; its replacement then generalised "entered 0 times" from
+    this pre-armed case to every route through ``write()``.
     """
     io_timeout = 2.0
     backend = _make_backend(stall_relay.port, io_timeout=io_timeout)

@@ -2815,6 +2815,42 @@ class TestSFTPLowSeverityCorrectnessEdges:
         file_spy.assert_not_called()  # copy fallback's two opens
         assert sftp_backend._sftp_client is None
 
+    @pytest.mark.spec("SFTP-030")
+    def test_move_fallback_rename_timeout_skips_the_copy(self, sftp_backend: Backend) -> None:
+        """A channel that dies *inside* the rename fallback skips the copy too.
+
+        The twin above enters ``_move_fallback`` never — its guard fires on
+        ``posix_rename``. This one enters it: ``posix_rename`` fails for a
+        non-dead reason, which is what a server lacking
+        ``posix-rename@openssh.com`` does on every call, and the channel then
+        dies on the plain ``rename``. Without the inner guard the two file opens
+        of the stream-copy last resort each pay the bound again.
+
+        Worth its own test rather than trusting the outer one, because the two
+        guards have different reachability: the outer needs only a stalled
+        channel, while this one needs a ``posix_rename`` that failed for some
+        *other* reason first. That is also why neither this method nor its guard
+        carries the ``no cover`` pragma that the stream-copy tail does.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("mvf_src.txt", b"payload")
+
+        with (
+            patch.object(sftp_backend._sftp_client, "posix_rename", side_effect=OSError("Failure")),
+            patch.object(sftp_backend._sftp_client, "rename", side_effect=TimeoutError("timed out")),
+            patch.object(sftp_backend._sftp_client, "file") as file_spy,
+        ):
+            # Keeps a *failing* run finite: with the guard removed the copy is
+            # entered, and an unconfigured mock read never returns empty, so
+            # ``copyfileobj`` would spin until the runner is killed rather than
+            # reporting the regression.
+            file_spy.return_value.read.return_value = b""
+            with pytest.raises(BackendUnavailable):
+                sftp_backend.move("mvf_src.txt", "mvf_dst.txt", overwrite=True)
+        # internal: the skipped round-trips have no public observable (Rule 3).
+        file_spy.assert_not_called()  # the stream-copy last resort
+        assert sftp_backend._sftp_client is None
+
     @pytest.mark.spec("SFTP-021")
     def test_raise_if_dir_permission_stat_maps_permission_denied(self, sftp_backend: Backend) -> None:
         """L1: a classification stat that fails with ``EACCES`` surfaces ``PermissionDenied``.

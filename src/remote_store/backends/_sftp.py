@@ -2004,10 +2004,10 @@ class SFTPBackend(Backend):
         Two of the five call sites are not measured, and are named rather than
         counted as covered. ``read_bytes`` prefetches, so a stall inside its read
         fails in paramiko's prefetch machinery rather than on the close of a
-        partly-read handle; ``move``'s copy fallback needs a server without
-        ``posix-rename@openssh.com`` and carries a ``no cover`` pragma for that
-        reason. Both are covered by sharing this helper, which is the weaker
-        claim that let a site ship unrouted once already.
+        partly-read handle; ``_copy_and_delete`` is reached only when both
+        ``posix_rename`` and ``rename`` fail for non-dead reasons, and carries a
+        ``no cover`` pragma for that reason. Both rest on sharing this helper,
+        which is the weaker claim that let a site ship unrouted once already.
         """
         try:
             yield handle
@@ -2074,17 +2074,21 @@ class SFTPBackend(Backend):
                 self._sftp.remove(sftp_path)
         self._sftp.rename(tmp_path, sftp_path)
 
-    def _move_fallback(  # pragma: no cover -- fallback for servers without posix_rename
-        self, src_sftp: str, dst_sftp: str, *, overwrite: bool
-    ) -> None:
+    def _move_fallback(self, src_sftp: str, dst_sftp: str, *, overwrite: bool) -> None:
         """Move *src_sftp* onto *dst_sftp* by ``rename``, else stream copy + delete.
 
-        Split out of ``move`` so that method's dead-connection guard is not
-        swept under this ``no cover`` pragma. The guard is reachable on *any*
-        server — a stalled channel fails ``posix_rename`` like anything else —
-        while everything here needs a server lacking
-        ``posix-rename@openssh.com``. Keeping them in one block made the guard
-        look as narrow as the fallback, which is how it came to be missing.
+        Split out of ``move`` so that method's dead-connection guard is not swept
+        under a ``no cover`` pragma. That guard is reachable on *any* server — a
+        stalled channel fails ``posix_rename`` like anything else — and keeping
+        them in one block made it look as narrow as the fallback, which is how it
+        came to be missing.
+
+        This method is not pragma'd either, for the same reason one level down:
+        ``posix_rename`` can fail for a non-dead reason on any server (a
+        permission error, a directory target), so the ``rename`` below and its
+        own dead-connection guard are reachable without needing a server that
+        lacks ``posix-rename@openssh.com``. Only ``_copy_and_delete`` genuinely
+        requires one.
         """
         try:
             if overwrite:
@@ -2094,13 +2098,26 @@ class SFTPBackend(Backend):
         except OSError as exc:
             if self._is_connection_dead(exc):
                 raise  # the copy below cannot succeed either, and pays two more bounds
-            # Fallback: stream copy + delete
-            with (
-                self._handle(self._sftp.file(src_sftp, "r")) as src_f,
-                self._handle(self._sftp.file(dst_sftp, "w")) as dst_f,
-            ):
-                shutil.copyfileobj(src_f, dst_f, _CHUNK_SIZE)
-            self._sftp.remove(src_sftp)
+            self._copy_and_delete(src_sftp, dst_sftp)
+
+    def _copy_and_delete(  # pragma: no cover -- last-resort move for servers without rename
+        self, src_sftp: str, dst_sftp: str
+    ) -> None:
+        """Move by streaming the bytes through the client, then deleting the source.
+
+        The last resort, reached only when both ``posix_rename`` and ``rename``
+        fail for non-dead reasons. Its two handles route through ``_handle`` like
+        every other ``with``-held handle; unlike the others they are not measured
+        against a real stall, because getting here needs a server that refuses
+        both renames. Named as unmeasured in the spec rather than counted as
+        covered.
+        """
+        with (
+            self._handle(self._sftp.file(src_sftp, "r")) as src_f,
+            self._handle(self._sftp.file(dst_sftp, "w")) as dst_f,
+        ):
+            shutil.copyfileobj(src_f, dst_f, _CHUNK_SIZE)
+        self._sftp.remove(src_sftp)
 
     def _base_relative_ancestor_dirs(self, sftp_path: str) -> Iterator[str]:
         """Yield each ancestor directory of *sftp_path*, from ``self._base_path``

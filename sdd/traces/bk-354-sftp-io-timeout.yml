@@ -18,18 +18,19 @@ expected_ripples:
   - CHANGELOG.md
   - docs-src/guides/backends/sftp.md
 # Counted from `git log --oneline origin/master..HEAD` at the head this trace
-# ships on, which holds eleven commits. The field's description counts *commits*
+# ships on, which holds twelve commits. The field's description counts *commits*
 # that exist because review feedback was incorporated, not review rounds, and
-# says a `BK-NNN:`-convention commit counts too — so ten of the eleven do:
+# says a `BK-NNN:`-convention commit counts too — so eleven of the twelve do:
 # 2876dfb (round 1, 16 findings), f5227b3 (round 2, 6 findings), 0b1c752 (round
 # 2's third multiplier, filed as BK-355 rather than widened into the PR),
 # 4863ad9 and 8dd2f0a (round 3, 8 findings, two commits because the round's own
 # replacement claim then needed characterising), 51d90c2 and 866dc4b (round 4,
 # the first unprimed exit gate, 5 findings, the second commit being a
 # re-derivation of this very field), bc561fb (round 5, the second exit gate, 6
-# findings), 475da2c (round 6, the third exit gate, 3 findings), and the commit
-# this line ships in (round 7, the fourth exit gate, 4 findings). Only bdf775b,
-# which implements the item, does not count. Value is 10.
+# findings), 475da2c (round 6, the third exit gate, 3 findings), and a8f1da6
+# plus the commit this line ships in (round 7, the fourth exit gate, 4 findings,
+# the second commit closing the two the first left open). Only bdf775b, which
+# implements the item, does not count. Value is 11.
 #
 # The PR body counts *rounds* — seven — and does not contradict this: rounds and
 # review-driven commits are different units, and the field is the second. Three
@@ -48,7 +49,7 @@ expected_ripples:
 # uncheckable. A SHA list is a derivation only while the history under it holds;
 # re-run the command whenever the branch moves under this file, rebases
 # included.
-review_rounds: 10
+review_rounds: 11
 phases:
   - id: orient
     name: Orient on the report
@@ -537,6 +538,21 @@ phases:
           read fails in paramiko's prefetch machinery rather than on the close,
           and move's copy fallback is pragma'd. Both now name the two unmeasured
           sites rather than counting them.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_move_fallback, _copy_and_delete"
+        read_type: verify
+        extract: >-
+          Second instance of the pragma-covers-too-much defect, one level down
+          from the first: round 5 hoisted move's dead-rename guard out from under
+          "# pragma: no cover -- fallback for servers without posix_rename", and
+          put the identical guard inside _move_fallback, under the pragma that
+          had just moved there. Reachable without such a server — posix_rename
+          fails for permission or directory-target reasons on any server — so the
+          copy tail is now its own method and carries the pragma alone. Both
+          guards have a test; the inner one fails DID NOT RAISE when disabled,
+          having silently completed the move. Writing the fix for a defect is
+          apparently the most reliable way I reproduce it.
         outcome: ok
   - id: docs
     name: Document the distinction

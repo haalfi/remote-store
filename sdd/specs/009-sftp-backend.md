@@ -481,11 +481,17 @@ re-entries differently:
    evidence that a site was exercised. `read_bytes` prefetches, so a stall inside
    its read fails in paramiko's prefetch machinery rather than on the close of a
    partly-read handle, and a test there would pin something other than what it
-   claimed. `move`'s copy fallback needs a server lacking
-   `posix-rename@openssh.com`, and carries a `no cover` pragma for that reason.
+   claimed. `move`'s copy fallback (`_copy_and_delete`) is reached only when both
+   `posix_rename` and `rename` fail for non-dead reasons, which needs a server
+   refusing both, so it carries a `no cover` pragma.
+
    The distinction is drawn because `copy` shipped unrouted for a round while
    five artifacts named it covered — the call-site list was read as evidence that
-   the list had been run.
+   the list had been run. The same reading is what put the pragma on too much
+   code twice: first over `move`'s dead-rename guard, then over `_move_fallback`'s
+   own, each of which is reachable well outside the case the pragma names. Each
+   split moved the pragma down to the method that genuinely needs it, and the two
+   guards now have a test apiece.
 
    The helper bounds what the caller waits inline; it does not promise the
    round-trip is never made. `SFTPFile.__del__` calls `_close(async_=True)`
