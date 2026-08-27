@@ -13,6 +13,8 @@ source_items:
   - BK-354
 audience:
   - user.api
+discovery_followups:
+  - BK-357
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
@@ -130,6 +132,26 @@ phases:
           file: at 3x the assertion would admit the exact doubling it exists to
           catch. Measured 4.00 s (2.0x) before the fix and 2.00 s (1.0x) after,
           at a 2 s bound.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "read, _ErrorMappingStream construction"
+        read_type: verify
+        extract: >-
+          Round 2 (measuring) found the gap the three reading passes had all
+          concluded away: the guard is armed by an exception, so a stream
+          operation whose failure the transport *swallows* leaves it unarmed.
+          `SFTPFile.seek(offset, SEEK_END)` is that case — `_get_size()` wraps
+          its `stat` in a bare `except: return 0`. Measured on a stalled
+          channel at a 2 s bound: the seek blocks 2.00 s, returns 0 for a
+          1 MiB file, leaves `_connection_lost` False, and the close then pays
+          2.00 s more. So the PR's "SFTP-030 now has one exception" claim was
+          false and had to be withdrawn in the spec, the CHANGELOG and the
+          register. Filed as BK-357 rather than widened in: the fix is a
+          wrapper-owned size probe on every backend's seek path.
+          Retrospective on my own miss: I had checked every *construction* site
+          and every mapping path, and never asked which operations reach the
+          wire without raising. The subject list said "read paths, executed" and
+          nothing in it named seek-to-end as a distinct subject.
         outcome: ok
       - file: tests/test_stream.py
         section: "TestErrorMappingStream, helper streams"

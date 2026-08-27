@@ -508,7 +508,7 @@ re-entries differently:
    like anything else. The fallback is therefore a separate method
    (`_move_fallback`), so the pragma covers only what it names.
 
-**Bounded, with one stated exception:**
+**Bounded, with two stated exceptions.** Neither is fixed here:
 
 - **The `subsystem` request.** `Channel.invoke_subsystem` waits in
   `Channel._wait_for_event`, a bare `threading.Event.wait()` with no timeout
@@ -526,6 +526,21 @@ re-entries differently:
   observed so the block is pinned to the request rather than to an earlier
   handshake step. If that test ever fails, the wait has become bounded and this
   bullet should be deleted with it.
+- **A `SEEK_END` seek on a stalled channel.** `SFTPFile.seek(offset, SEEK_END)`
+  calls `_get_size()`, whose body is `try: return self.stat().st_size` under a
+  bare `except: return 0`. On a stalled channel that `stat` blocks for the bound
+  and is then swallowed, so the seek returns a bogus size of `0` and raises
+  nothing. Nothing reaches the wrapper's mapping path, so the futile-close guard
+  below never arms and the close pays the bound a second time. Measured at a 2 s
+  bound: 4.00 s (`test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds`).
+  **This is the limit of what the guard can reach, and it is a general one:** the
+  guard learns a connection is dead from an exception passing through the
+  wrapper, so a failure the transport library swallows is invisible to it. Fixing
+  it means the wrapper issuing its own size probe for `SEEK_END` rather than
+  delegating to paramiko's — a change to every backend's seek path, so it is
+  filed as BK-357 rather than taken here.
+  Like the bullet above, this exception is **characterised by a test**, not
+  asserted; if that test fails the swallow is gone and this bullet goes with it.
 
 **Releasing a *streamed-read* handle is bounded by the wrapper, not by
 `_handle`.** `read` hands back an `_ErrorMappingStream`, and that wrapper — not
@@ -537,6 +552,17 @@ stream as well as for the handles `_handle` covers. Measured at a 2 s bound,
 consuming part of a `read()` and then stalling: 4.00 s for the failed reads plus
 the close before the guard, 2.00 s after
 (`test_releasing_a_stalled_stream_costs_one_bound`).
+
+**Bounded only where the stall raises**, which is the `SEEK_END` exception above
+rather than a caveat on this paragraph: the guard is armed by an exception
+travelling through the wrapper, so a stream operation whose failure paramiko
+discards leaves the connection uncondemned and the close pays the bound again.
+Sorted by what each path actually does on a stalled channel: `read`, `readinto`
+and `readline` round-trip and raise, so they arm the guard and are bounded;
+`tell` and a `SEEK_SET` / `SEEK_CUR` seek are local reads of `_realpos` that
+never round-trip, so they neither block nor arm it; and `SEEK_END` alone
+round-trips *and* swallows, which is what makes it the exception rather than one
+case among three.
 
 For a **streamed** read (`read`), a stall after the caller has consumed bytes
 raises rather than returning short, so a truncated stream is never

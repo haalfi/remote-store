@@ -896,3 +896,56 @@ def test_releasing_a_stalled_stream_costs_one_bound(stall_relay: _StallRelay) ->
         f"failed read plus release took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "
         "the stream close is re-entering the stalled channel"
     )
+
+
+@pytest.mark.spec("SFTP-030")
+def test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds(stall_relay: _StallRelay) -> None:
+    """Characterises a stated exception: a ``SEEK_END`` seek leaves the channel uncondemned.
+
+    The futile-close guard can only skip a close it knows is futile, and it
+    learns that from an exception passing through the wrapper's mapping paths.
+    ``SFTPFile.seek(offset, SEEK_END)`` calls ``_get_size()``, which is
+    ``try: return self.stat().st_size / except: return 0`` — a bare ``except``
+    that swallows the stalled ``stat``. So the seek blocks for the bound, returns
+    a bogus size of 0, and raises nothing: no exception reaches ``_fail``, the
+    guard stays unarmed, and the close then pays the bound a second time.
+
+    That is why SFTP-030 states this as an exception rather than claiming the
+    stream path is bounded outright, and why it is pinned here rather than
+    asserted: the claim is about paramiko's behaviour, which this item has got
+    wrong by reading rather than running before.
+
+    **A failure here is good news.** It means the swallow is gone — paramiko
+    stopped discarding the error, or the wrapper grew its own ``SEEK_END`` size
+    probe (BK-357) — and the SFTP-030 exception should be deleted with this test.
+    """
+    io_timeout = 2.0
+    backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
+    name = f"seekend_{uuid.uuid4().hex[:8]}.bin"
+    payload = bytes(range(256)) * 4096  # 1 MiB
+    backend.write(name, payload)
+
+    stream = backend.read(name)
+    try:
+        assert stream.read(64 * 1024), "expected the stream to deliver bytes before the stall"
+        stall_relay.stall_download()
+
+        start = time.monotonic()
+        # Raises nothing: paramiko swallows the stalled stat inside _get_size.
+        position = stream.seek(0, 2)
+    finally:
+        stream.close()
+    elapsed = time.monotonic() - start
+
+    # The worse half, and the one a caller can act on wrongly: the seek does not
+    # merely block, it *answers*, and the answer is 0 on a 1 MiB file. A caller
+    # sizing a file this way cannot tell a dead channel from an empty file.
+    assert position == 0, (
+        f"seek-to-end returned {position} rather than the swallowed 0; "
+        f"the real size is {len(payload)}, so if this now returns either the true "
+        "size or an error, BK-357 has landed and this test should go"
+    )
+    assert elapsed > io_timeout * 1.75, (
+        f"seek-to-end plus release took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "
+        "if this is now one bound the swallow is gone and SFTP-030's exception should go with it"
+    )

@@ -182,8 +182,17 @@ if evidence changes; these are retired.
   Found reviewing BK-354, which bounded a stalled SFTP channel and then had to
   state this as an exception in SFTP-030 rather than deliver the bound
   unqualified. That clause is gone; SFTP-030 now records the wrapper as the thing
-  that bounds a streamed-read handle, and the `subsystem` request is its one
-  remaining exception.
+  that bounds a streamed-read handle.
+  **The guard reaches only failures that raise, and review round 2 measured where
+  that bites.** `SFTPFile.seek(offset, SEEK_END)` calls `_get_size()`, whose bare
+  `except: return 0` swallows the stalled `stat`, so the seek blocks for the
+  bound, returns `0`, and raises nothing — the guard never arms and the close
+  pays a second bound (4.00 s at a 2 s bound). SFTP-030 states that as an
+  exception alongside the `subsystem` request and characterises it with a test;
+  the fix, a wrapper-owned size probe for `SEEK_END`, changes every backend's
+  seek path and is filed as BK-357. Worth recording as the shape of the whole
+  mechanism rather than one backend's quirk: a guard armed by exceptions is blind
+  to a transport that discards them.
   **The open question — how the wrapper decides a close is futile — was answered
   in favour of a backend-supplied predicate.** `_ErrorMappingStream` takes an
   optional `is_fatal`, and SFTP passes its existing `_is_connection_dead`, which

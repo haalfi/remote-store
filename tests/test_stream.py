@@ -364,10 +364,21 @@ class TestFutileCloseGuard:
     def test_a_fatal_failure_skips_the_inner_close(self, action) -> None:
         """Every mapping path arms the guard, not just the two a read goes through.
 
-        Parametrised because the guard is per-path: a ``seek`` or ``tell`` that
-        meets the dead channel condemns it exactly as a ``read`` does, and an
-        implementation that records only in ``read``/``readinto`` would leave
-        those two paying the second bound.
+        Parametrised because the guard is per-path: an implementation recording
+        the verdict in ``read``/``readinto`` only would leave the others unarmed,
+        and this is the level at which that is a wrapper property.
+
+        **What this does not claim.** These are wrapper-level cases against an
+        inner stream that raises on demand; they do not say a real backend
+        handle raises from all five. Against paramiko it does not: ``tell`` and a
+        ``SEEK_SET`` / ``SEEK_CUR`` seek read ``_realpos`` locally and never
+        round-trip, so a stalled channel neither blocks nor fails them, and
+        ``SEEK_END`` round-trips but swallows the failure inside ``_get_size``
+        (SFTP-030 states that as an exception;
+        ``test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds`` pins
+        it). The guard is written per-path because the *wrapper* serves several
+        backends whose inner streams differ, not because every path is reachable
+        on any one of them.
         """
         inner = _CloseTrackingStream(_ChannelDeath("channel stalled"))
         stream = _ErrorMappingStream(inner, _test_mapper, "f.txt", is_fatal=_fatal)
@@ -443,6 +454,14 @@ class TestFutileCloseGuard:
 
         with pytest.raises(AttributeError, match="predicate is broken"):
             stream.read()
+
+        # The other half of the docstring, and the half a mutation reaches: a
+        # predicate that raised returned no verdict, so the guard must stay
+        # unarmed and the close must still release the handle. An
+        # implementation that re-raised but set the flag would leak here while
+        # the assertion above still passed.
+        stream.close()
+        assert inner.close_calls == 1, "a predicate that raised must not arm the guard"
 
     @pytest.mark.spec("SIO-010")
     def test_the_guard_survives_the_buffered_layer(self) -> None:
