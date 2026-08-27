@@ -13012,7 +13012,7 @@ Amended with research round 2 §2.4 items and Phase 2 spec.</p>
 <strong>See also:</strong> <a href="../043-resolution-plan/">043-resolution-plan.md</a> (RES-010, RES-025).</p>
 <h3 id="async-052e-ping">ASYNC-052e: ping()<a class="headerlink" href="#async-052e-ping" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>async def ping()</code> verifies backend connectivity. Delegates to <code>await backend.check_health()</code>. The threading concern is handled by the backend layer: <code>SyncBackendAdapter.check_health()</code> uses <code>asyncio.to_thread()</code> (ASYNC-037); native async backends execute directly.
-<strong>Raises:</strong> <code>PermissionDenied</code> if credentials are invalid. <code>NotFound</code> if the bucket, container, or root path does not exist. <code>BackendUnavailable</code> if the backend cannot be reached.
+<strong>Raises:</strong> <code>PermissionDenied</code> if credentials are invalid. <code>NotFound</code> if the bucket, container, or root path does not hold the container it names — it is absent, or something of another type occupies it. <code>BackendUnavailable</code> if the backend cannot be reached.
 <strong>See also:</strong> <a href="../026-health-check/">026-health-check.md</a>.</p>
 <h3 id="async-052f-head">ASYNC-052f: head()<a class="headerlink" href="#async-052f-head" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>async def head(path) -&gt; WriteResult</code> returns a sidecar

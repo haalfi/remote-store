@@ -12257,8 +12257,9 @@ declare this capability.</p>
         <p>Delete a file.</p>
 <p>An absent container — a missing bucket, container or table — counts as
 an absent file, so <em>missing_ok</em> tolerates it on the same terms. This is
-required of implementations rather than guaranteed by them: the local
-backend still raises <code>InvalidPath</code> when its root directory is gone.</p>
+required of implementations rather than guaranteed by them; a backend
+that does not comply is a defect, tracked in the backend contract's own
+list of known divergences.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -12334,8 +12335,9 @@ backend still raises <code>InvalidPath</code> when its root directory is gone.</
         <p>Delete a folder.</p>
 <p>An absent container — a missing bucket, container or table — counts as
 an absent folder, so <em>missing_ok</em> tolerates it on the same terms. This is
-required of implementations rather than guaranteed by them: the local
-backend still raises <code>InvalidPath</code> when its root directory is gone.</p>
+required of implementations rather than guaranteed by them; a backend
+that does not comply is a defect, tracked in the backend contract's own
+list of known divergences.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -13128,7 +13130,9 @@ check using the cheapest possible read-only operation.</p>
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
-            <p>If the bucket, container, or root path does not exist.</p>
+            <p>If the bucket, container, or root path does not hold
+the container it names — it is absent, or something of
+another type occupies it.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">

@@ -11044,12 +11044,20 @@ lightweight connectivity check.
 <hr />
 <h2 id="per-backend-health-checks">Per-Backend Health Checks<a class="headerlink" href="#per-backend-health-checks" title="Permanent link">&para;</a></h2>
 <h3 id="ping-003-localbackend">PING-003: LocalBackend<a class="headerlink" href="#ping-003-localbackend" title="Permanent link">&para;</a></h3>
-<p><strong>Strategy:</strong> Verify root directory exists and is readable.
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+<p><strong>Strategy:</strong> Verify the root path holds a readable directory.
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="o">.</span><span class="n">is_dir</span><span class="p">():</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="k">raise</span> <span class="n">NotFound</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">access</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_root</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">R_OK</span><span class="p">):</span>
 <a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="k">raise</span> <span class="n">PermissionDenied</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
-</code></pre></div></p>
+</code></pre></div>
+The type test is <code>is_dir()</code> rather than <code>exists()</code>, and the difference is
+load-bearing. Under
+<a href="../003-backend-adapter-contract/#be-029-root-path">BE-029</a>
+<code>LocalBackend</code> answers <code>exists("")</code> and <code>is_folder("")</code> for the store root
+definitionally, without a stat, so <code>check_health</code> is the only operation on the
+backend that observes what actually occupies the root path. Testing mere
+existence would let a root replaced by a regular <em>file</em> report a healthy, empty
+store from every probe (BUG-247).</p>
 <h3 id="ping-004-s3backend">PING-004: S3Backend<a class="headerlink" href="#ping-004-s3backend" title="Permanent link">&para;</a></h3>
 <p><strong>Strategy:</strong> <code>head_bucket</code> via s3fs's synchronous <code>call_s3</code> wrapper, inside <code>_s3fs_errors()</code>.
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_s3fs_errors</span><span class="p">():</span>

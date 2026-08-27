@@ -12542,10 +12542,9 @@ declare this capability.</p>
 
         <p>Delete a single file.</p>
 <p>A store whose backing container is gone — a deleted bucket, container or
-table — holds no file either, so <em>missing_ok</em> tolerates that too on the
-S3, Azure and SQL backends, and on Graph when its drive is gone. One does
-not yet: a local store whose root directory was deleted raises
-<code>InvalidPath</code>.</p>
+table — holds no file either, so <em>missing_ok</em> tolerates that too: on the
+S3, Azure and SQL backends, on Graph when its drive is gone, and on a
+local store whose root directory was deleted.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -12617,10 +12616,9 @@ does not exist.</p>
 
         <p>Delete a folder.</p>
 <p>A store whose backing container is gone — a deleted bucket, container or
-table — holds no folder either, so <em>missing_ok</em> tolerates that too on the
-S3, Azure and SQL backends, and on Graph when its drive is gone. One does
-not yet: a local store whose root directory was deleted raises
-<code>InvalidPath</code>.</p>
+table — holds no folder either, so <em>missing_ok</em> tolerates that too: on the
+S3, Azure and SQL backends, on Graph when its drive is gone, and on a
+local store whose root directory was deleted.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -13753,7 +13751,8 @@ location.</p>
             –
           <div class="doc-md-description">
             <p>If the bucket, container, or root path does not
-exist.</p>
+hold the container it names — it is absent, or something
+of another type occupies it.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">

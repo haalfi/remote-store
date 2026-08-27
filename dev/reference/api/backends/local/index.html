@@ -11128,9 +11128,15 @@ declared because within-root moves are always same-filesystem.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Confirm the root directory exists and is readable.</p>
-<p>A lightweight two-syscall probe (<code>exists</code> then <code>os.access</code>) that
+        <p>Confirm the root directory exists, is a directory, and is readable.</p>
+<p>A lightweight two-syscall probe (<code>is_dir</code> then <code>os.access</code>) that
 touches no file content and is safe to call repeatedly.</p>
+<p>The type half is load-bearing rather than pedantic. <code>exists()</code> and
+<code>is_folder()</code> answer the store root by definition — they say the root
+is a folder without looking — so this is the only operation that
+observes what is actually at the root path. Testing mere existence would
+let a root replaced by a regular <em>file</em> report a healthy, empty store
+from every probe on the backend.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11139,7 +11145,8 @@ touches no file content and is safe to call repeatedly.</p>
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
-            <p>If the root directory does not exist.</p>
+            <p>If the root directory does not exist, or something that is
+not a directory occupies its path.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -11238,7 +11245,10 @@ touches no file content and is safe to call repeatedly.</p>
 
         <p>Return <code>True</code> if a file or folder exists at <em>path</em>; never <code>NotFound</code>.</p>
 <p>Returns <code>False</code> when a path component is itself a file, since the
-directory descent cannot proceed.</p>
+directory descent cannot proceed. The store root (<code>""</code> or <code>"."</code>) is
+the one path that answers <code>True</code> without being looked for: it is a
+folder by definition, so it reads as present even on a store whose root
+directory has been removed.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11272,7 +11282,8 @@ directory descent cannot proceed.</p>
 
         <p>Return <code>True</code> if <em>path</em> is an existing regular file.</p>
 <p><code>False</code> if <em>path</em> is absent, names a directory, or has a file as an
-ancestor component.</p>
+ancestor component — and <code>False</code> for the store root (<code>""</code> or
+<code>"."</code>), which is a folder, never a regular file.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11306,7 +11317,9 @@ ancestor component.</p>
 
         <p>Return <code>True</code> if <em>path</em> is an existing directory.</p>
 <p><code>False</code> if <em>path</em> is absent, names a file, or has a file as an ancestor
-component.</p>
+component. The store root (<code>""</code> or <code>"."</code>) is the exception to the
+absent case: it is a folder by definition, so it answers <code>True</code> even
+on a store whose root directory has been removed.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11670,6 +11683,14 @@ file) and <code>missing_ok</code> is <code>False</code>.</p>
 (<code>shutil.rmtree</code>); this is not atomic — an error partway through can
 leave the tree partially deleted. <code>recursive=False</code> removes only an
 empty folder (<code>rmdir</code>).</p>
+<p>Unlike <code>exists</code>, <code>is_folder</code> and <code>get_folder_info</code>, this method
+answers the store root from the filesystem rather than by definition: on
+a store whose root directory has been removed, <code>delete_folder(root)</code>
+raises <code>NotFound</code> while <code>exists(root)</code> still reports the root
+present. That is deliberate — the root rule does not reach a folder
+<em>delete</em>, and <code>SFTPBackend</code> answers this cell the same way — and
+<code>Store</code> refuses a root delete before it reaches a backend, so a caller
+going through the facade never sees the disagreement.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -11901,6 +11922,9 @@ nothing.</p>
 <p>File count, total size, and latest modification time are computed by
 walking the entire subtree and <code>stat</code>-ing every file, so cost is
 O(files-in-subtree) — not a constant-time lookup.</p>
+<p>The store root (<code>""</code> or <code>"."</code>) always answers, never raising: it is
+a folder by definition, so a store whose root directory is missing
+aggregates to zero rather than reporting itself absent.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>

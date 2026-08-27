@@ -22,13 +22,15 @@ Parameters:
 check_health() -> None
 ```
 
-Confirm the root directory exists and is readable.
+Confirm the root directory exists, is a directory, and is readable.
 
-A lightweight two-syscall probe (`exists` then `os.access`) that touches no file content and is safe to call repeatedly.
+A lightweight two-syscall probe (`is_dir` then `os.access`) that touches no file content and is safe to call repeatedly.
+
+The type half is load-bearing rather than pedantic. `exists()` and `is_folder()` answer the store root by definition — they say the root is a folder without looking — so this is the only operation that observes what is actually at the root path. Testing mere existence would let a root replaced by a regular *file* report a healthy, empty store from every probe on the backend.
 
 Raises:
 
-- `NotFound` – If the root directory does not exist.
+- `NotFound` – If the root directory does not exist, or something that is not a directory occupies its path.
 - `PermissionDenied` – If the root directory exists but is not readable.
 
 ### resolve
@@ -56,7 +58,7 @@ exists(path: str) -> bool
 
 Return `True` if a file or folder exists at *path*; never `NotFound`.
 
-Returns `False` when a path component is itself a file, since the directory descent cannot proceed.
+Returns `False` when a path component is itself a file, since the directory descent cannot proceed. The store root (`""` or `"."`) is the one path that answers `True` without being looked for: it is a folder by definition, so it reads as present even on a store whose root directory has been removed.
 
 Raises:
 
@@ -70,7 +72,7 @@ is_file(path: str) -> bool
 
 Return `True` if *path* is an existing regular file.
 
-`False` if *path* is absent, names a directory, or has a file as an ancestor component.
+`False` if *path* is absent, names a directory, or has a file as an ancestor component — and `False` for the store root (`""` or `"."`), which is a folder, never a regular file.
 
 Raises:
 
@@ -84,7 +86,7 @@ is_folder(path: str) -> bool
 
 Return `True` if *path* is an existing directory.
 
-`False` if *path* is absent, names a file, or has a file as an ancestor component.
+`False` if *path* is absent, names a file, or has a file as an ancestor component. The store root (`""` or `"."`) is the exception to the absent case: it is a folder by definition, so it answers `True` even on a store whose root directory has been removed.
 
 Raises:
 
@@ -213,6 +215,8 @@ Delete the folder at *path*.
 
 `recursive=True` removes the folder and its whole subtree (`shutil.rmtree`); this is not atomic — an error partway through can leave the tree partially deleted. `recursive=False` removes only an empty folder (`rmdir`).
 
+Unlike `exists`, `is_folder` and `get_folder_info`, this method answers the store root from the filesystem rather than by definition: on a store whose root directory has been removed, `delete_folder(root)` raises `NotFound` while `exists(root)` still reports the root present. That is deliberate — the root rule does not reach a folder *delete*, and `SFTPBackend` answers this cell the same way — and `Store` refuses a root delete before it reaches a backend, so a caller going through the facade never sees the disagreement.
+
 Raises:
 
 - `NotFound` – If the folder does not exist and missing_ok is False.
@@ -289,6 +293,8 @@ get_folder_info(path: str) -> FolderInfo
 Return aggregate metadata for the folder at *path*.
 
 File count, total size, and latest modification time are computed by walking the entire subtree and `stat`-ing every file, so cost is O(files-in-subtree) — not a constant-time lookup.
+
+The store root (`""` or `"."`) always answers, never raising: it is a folder by definition, so a store whose root directory is missing aggregates to zero rather than reporting itself absent.
 
 Raises:
 
