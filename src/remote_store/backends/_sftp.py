@@ -909,12 +909,13 @@ class SFTPBackend(Backend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or an ancestor of *path*
-                exists as a regular file.
+            InvalidPath: If *path* is the store root, or names a directory, or
+                an ancestor of *path* exists as a regular file.
             PermissionDenied: If the server denies access (``EACCES``).
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails mid-write.
         """
+        self._reject_root_as_write_target(path)
         with self._errors(path):
             sftp_path = self._sftp_path(path)
             if not overwrite:
@@ -972,12 +973,13 @@ class SFTPBackend(Backend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or an ancestor of *path*
-                exists as a regular file.
+            InvalidPath: If *path* is the store root, or names a directory, or
+                an ancestor of *path* exists as a regular file.
             PermissionDenied: If the server denies access (``EACCES``).
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails.
         """
+        self._reject_root_as_write_target(path)
         with self._errors(path):
             sftp_path = self._sftp_path(path)
             if not overwrite:
@@ -1050,12 +1052,13 @@ class SFTPBackend(Backend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or an ancestor of *path*
-                exists as a regular file.
+            InvalidPath: If *path* is the store root, or names a directory, or
+                an ancestor of *path* exists as a regular file.
             PermissionDenied: If the server denies access (``EACCES``).
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails.
         """
+        self._reject_root_as_write_target(path)
         # Setup phase: existence check + parent dirs (within error mapping)
         with self._errors(path):
             sftp_path = self._sftp_path(path)
@@ -1859,6 +1862,24 @@ class SFTPBackend(Backend):
         from remote_store.backends._flat_ns import _reject_root_as_file
 
         _reject_root_as_file(path, self.name)
+
+    def _reject_root_as_write_target(self, path: str) -> None:
+        """Reject the store root as a write destination, before the transport is touched.
+
+        SFTP's route into the shared guard, whose docstring carries the rule and
+        the reason it must be definitional. What defeats observation here needs
+        no mishap to arrange: ``base_path`` is created lazily by the first
+        write, so on an untouched store the target stat returns ENOENT,
+        ``_classify_existing_target`` has nothing to classify, and the write
+        runs to completion against the container path itself.
+
+        The three writers call this; ``move`` and ``copy`` are guarded on the
+        source side by ``_reject_root_as_file`` only, for the reason the shared
+        helper measures.
+        """
+        from remote_store.backends._flat_ns import _reject_root_as_write_target
+
+        _reject_root_as_write_target(path, self.name)
 
     def _sftp_path(self, path: str) -> str:
         """Convert a relative remote_store path to an absolute SFTP path.

@@ -202,12 +202,54 @@ def _reject_root_as_file(path: str, backend: str) -> None:
     surfaces as a transport-shaped error — a retryable classification for a
     permanently wrong request.
 
-    Not a mutation guard: deleting or writing *the root itself* is a
-    ``Store``-layer concern, and this says nothing about ``delete_folder`` or
-    ``get_folder_info``, which are folder-shaped and legitimately accept it.
+    Not the write guard: a write *to* the root is
+    ``_reject_root_as_write_target`` below, which says what is wrong with
+    writing rather than with reading the wrong type. This says nothing about
+    ``delete_folder`` or ``get_folder_info`` either, which are folder-shaped and
+    legitimately accept the root.
     """
     if is_root(path):
         raise _folder_not_file(path, backend)
+
+
+def _reject_root_as_write_target(path: str, backend: str) -> None:
+    """Raise ``InvalidPath`` when ``write``/``write_atomic``/``open_atomic`` is handed the root.
+
+    A backend whose container can be absent must refuse this **definitionally**,
+    before the transport is touched. Observation is not enough, and the failure
+    is worse than a wrong error class: the container's absence is exactly the
+    state in which an observational is-a-directory check answers ``False``, so
+    the write proceeds, the parent tree is created, the bytes land at the
+    container path, and the store's container is left a regular **file**. Every
+    later call then answers about a store that cannot exist — the root probes
+    answer from the key by definition, so they keep reporting a folder.
+
+    Both hierarchical backends reached that state by their own route and both
+    are fixed by this one check. ``LocalBackend`` creates its root in
+    ``__init__`` and so got away with an observational check until the
+    directory was deleted underneath it; ``SFTPBackend`` creates ``base_path``
+    lazily on first write, so an untouched store is already in it.
+
+    **Three call sites per backend, not five.** ``move`` and ``copy`` also
+    write, but their *destination* cannot reach this: with the container absent
+    nothing can exist beneath it, so the source check fails first with
+    ``NotFound``; with it present the destination probe reports a directory.
+    Measured both ways on both backends. A write *under* the root is untouched
+    and still creates the container where that is the backend's documented
+    behaviour — only the root key itself is refused.
+
+    Distinct from ``_reject_root_as_file`` on purpose. That helper is explicitly
+    not a mutation guard and its wording ("a folder, not a file") describes a
+    *read* of the wrong type; this one says what is actually wrong with writing
+    here, and says the same thing whether or not the container is currently
+    there.
+    """
+    if is_root(path):
+        raise InvalidPath(
+            f"Cannot write — '{path}' is the store root, which is a folder",
+            path=path,
+            backend=backend,
+        )
 
 
 def _wrong_type_if_folder(path: str, *, has_children: Callable[[str], bool], backend: str) -> None:

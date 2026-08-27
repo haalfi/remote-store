@@ -1,0 +1,290 @@
+id: BUG-259
+title: "SFTPBackend writes leave an absent base_path occupied by a regular file"
+trigger: >-
+  A write to the store root of an SFTP store whose base_path did not exist ran
+  to completion against the container path itself, leaving the store's own
+  container a regular file; open_atomic returned cleanly having done it, and the
+  two writers that did raise raised from the path layer above the backend, after
+  the bytes.
+source_items:
+  - BUG-259
+  - BUG-247
+audience:
+  - user.api
+  - contributor.process
+
+# Files this work actually touched, checked against
+# `git diff --name-only origin/master...HEAD`. The expected list is what the
+# item's own words picked out before any code was read: one backend and its
+# per-backend test module. Everything else is in surprising_ripples, and the
+# gap between the two lists is the point of this record — the item was scoped to
+# one backend and the change reached six.
+expected_ripples:
+  - src/remote_store/backends/_sftp.py
+  - tests/backends/sftp/test_absent_base_path.py
+surprising_ripples:
+  - src/remote_store/backends/_flat_ns.py
+  - src/remote_store/backends/_local.py
+  - src/remote_store/backends/_s3.py
+  - src/remote_store/backends/_s3_base.py
+  - src/remote_store/backends/_s3_boto3.py
+  - src/remote_store/backends/_s3_pyarrow.py
+  - src/remote_store/backends/_azure.py
+  - src/remote_store/aio/backends/_azure.py
+  - tests/backends/conformance/test_io.py
+  - tests/backends/conformance/test_async_extended.py
+  - scripts/check_docstring_parity.py
+  - sdd/specs/003-backend-adapter-contract.md
+  - CHANGELOG.md
+
+discovery_followups: []
+
+review_rounds: 0
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-259"
+        read_type: gate
+        extract: >-
+          The diagnosis held exactly and the prescription ("refuse the root key
+          definitionally, before the transport is touched") was the fix taken.
+          The item's measured table was a subset: it recorded three calls under
+          one spelling, and the enumeration below found three writers x two
+          spellings x two overwrite modes all corrupting.
+        outcome: ok
+      - file: sdd/traces/bug-247-local-absent-root.yml
+        section: "fix_panel, implement"
+        read_type: reference
+        extract: >-
+          The sibling's record, which is where this item came from. Two things
+          it supplied that the backlog item did not: the exact guard shape
+          Local took (_reject_root_as_write_target, deliberately not
+          _reject_root_as_file), and the reason its move/copy destinations need
+          no guard — both re-measured here for SFTP rather than assumed.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Pre-work index"
+        read_type: gate
+        extract: >-
+          Triggered rows: Bug fix, Spec section, Backlog item touched, CHANGELOG
+          entry, Public method signature. Two of the ripples this work actually
+          hit have no row — see the verify phase.
+        outcome: ok
+
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: tests/backends/sftp/_helpers.py
+        section: "StubSFTPServer.ROOT, _realpath"
+        read_type: reference
+        extract: >-
+          The server-side filesystem has to be readable from the test, because
+          every root probe answers definitionally: is_file("") returns False
+          from the BE-029 short-circuit without a syscall, so an assertion
+          phrased against the backend passes on the exact corruption it is
+          written to catch. StubSFTPServer.ROOT is the only handle on the real
+          tree and no existing test used it.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "write, write_atomic, open_atomic, move, copy"
+        read_type: verify
+        extract: >-
+          Enumerated the whole write surface rather than the item's three rows.
+          All twelve write cells corrupt; the four move/copy destination cells
+          do not, and fail on the source with NotFound before the destination is
+          examined, which is what makes three call sites right and five wrong.
+          The overwrite=True rows are the ones the item's table missed and they
+          matter on their own: write and write_atomic skip their existence stat
+          entirely in that mode.
+        outcome: ok
+
+  - id: design
+    name: Design
+    steps:
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "_reject_root_as_file"
+        read_type: reference
+        extract: >-
+          Its docstring said "Not a mutation guard: deleting or writing *the
+          root itself* is a Store-layer concern" — false as of BUG-247, which
+          had already put a write guard in LocalBackend, and falsified again
+          here. A sentence about a neighbour's responsibility went stale when
+          the neighbour changed and nothing pointed at it.
+        outcome: misleading
+      - file: src/remote_store/backends/_local.py
+        section: "_reject_root_as_write_target"
+        read_type: reference
+        extract: >-
+          Extracted to _flat_ns rather than copied. The two backends would have
+          carried the same message string in two places, which is the
+          second-description drift DRIFT-RULES forbids; the general rationale
+          moved to the shared helper and each backend kept only the sentence
+          about what defeats observation on it.
+        outcome: ok
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: tests/backends/conformance/test_io.py
+        section: "_ROOT_FILE_OPS, TestBackendRootPath"
+        read_type: reference
+        extract: >-
+          The roster held reads, delete and move/copy source — no write-shaped
+          op, on any backend. Added as a separate roster rather than folded in:
+          the seven are the type-mismatch row, each gated on its own capability
+          and owing an error class, while these three are one rule under WRITE
+          owing an error class *and* the absence of a side effect.
+        outcome: ok
+      - file: src/remote_store/backends/_s3.py
+        section: "write, open_atomic"
+        read_type: verify
+        extract: >-
+          The new conformance cell failed on S3 and S3-Boto3 on its first run,
+          which is how five more breaching classes were found. Measured: s3fs
+          read the bucket back as an existing object and raised AlreadyExists
+          without overwrite, then leaked a raw parameter-validation error with
+          it; s3-boto3 raised BackendUnavailable for "" while "." took a
+          different route and raised from above the backend, so the two
+          spellings disagreed. Neither could occupy its container — the SDK
+          refuses the empty key — so the breach is of error class, not data.
+        outcome: ok
+      - file: src/remote_store/backends/_s3_base.py
+        section: "_reject_root_as_file"
+        read_type: reference
+        extract: >-
+          The ordering constraint the sibling encodes and the write guard has to
+          copy: the closed-backend guard runs first, because BE-020 states its
+          guarantee without exception and a cheap root pre-check naturally wants
+          to run ahead of it. Read off the existing method rather than the spec.
+        outcome: ok
+
+  - id: gates
+    name: Gates
+    steps:
+      - file: scripts/check_docstring_parity.py
+        section: "AzureBackend/AsyncAzureBackend identical set"
+        read_type: gate
+        extract: >-
+          Caught a new method carrying a docstring on both Azure classes and
+          being unclassified. Registering it as `identical` meant the shared
+          sentence had to be true of both, so AsyncAzureBackend was measured
+          with the guard stubbed out rather than being assumed to match its
+          sync twin. It did — same SDK message, both spellings, both overwrite
+          modes. No ripple-check row points at this registry.
+        outcome: ok
+      - file: scripts/check_no_tracker_refs.py
+        section: "(gate output)"
+        read_type: gate
+        extract: >-
+          Eleven tracker coordinates (BE-020, BE-029, BUG-247, BUG-259) written
+          into the new docstrings, which render into the public API reference.
+          Rewritten as prose. Worth noting the existing sibling docstrings
+          state the same ordering rule without naming BE-020 — the convention
+          was visible in the code being copied and still not copied.
+        outcome: ok
+      - file: tests/backends/fixtures/test_registry.py
+        section: "TestLayoutBoundary"
+        read_type: gate
+        extract: >-
+          The new conformance docstring named SFTPBackend and LocalBackend to
+          say where the per-backend pins live. TEST-010 forbids a concrete
+          backend name anywhere under conformance/, and is right to: the
+          pointer was rewritten as the structural reason (the corruption is
+          visible only from the storage system's side, and needs an absent
+          container no fixture arranges), which is more useful than the two
+          paths were.
+        outcome: ok
+
+  - id: fence
+    name: Fence
+    steps:
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "_reject_root_as_write_target"
+        read_type: verify
+        extract: >-
+          Mutation-fenced against the final tree, not against the tree as it
+          stood when each part landed. Neutering the shared guard fails 47 of
+          8643 executed cells: 24 SFTP, 14 Local, 9 conformance. The 14 matches
+          the figure BUG-247 recorded for its own write guard, which is the
+          cross-check that extracting it preserved Local's behaviour.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "write, write_atomic, open_atomic"
+        read_type: verify
+        extract: >-
+          Removing only SFTP's three call sites fails 24 cells, all in the
+          per-backend module and NONE in conformance — with base_path present
+          SFTP already refused the root, so the conformance cell does not fence
+          this item's own fix. A cell that passes before and after a fix is not
+          coverage of it, and the two would have been easy to conflate given
+          the cell was added in the same change.
+        outcome: ok
+      - file: tests/backends/conformance/test_io.py
+        section: "(new cells, collection)"
+        read_type: verify
+        extract: >-
+          Coverage derived rather than assumed: the new cells collect 84 and
+          execute 58. The 26 skips are sqlquery (no WRITE), s3_pyarrow_moto
+          (needs the MinIO fixture on current PyArrow), and the Azure sync,
+          Azure async and Graph replay lanes, whose cassettes for these ids are
+          unrecorded. Four backends therefore have a conformance cell that never
+          runs; each was measured directly instead — S3PyArrow and Azure against
+          an unreachable endpoint, where an InvalidPath naming the root proves
+          the guard ran before the transport.
+        outcome: ok
+
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029 § Out of scope"
+        read_type: gate
+        extract: >-
+          The clause placed writes to the root outside itself, on the grounds
+          that the root "is a malformed file path, rejected by path validation".
+          Both halves true, and the conjunction wrong: validation downstream of
+          the write still rejects it, after the bytes have gone. What the clause
+          had to bind was the order, not the outcome. Amended rather than
+          worked around — a conformance cell asserting a rule its own spec
+          declines to make is the failure mode here.
+        outcome: misleading
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-008 § Precondition evaluation order"
+        read_type: verify
+        extract: >-
+          The ordered list started at path validity, from which the
+          flat-namespace exemption immediately releases the S3 and Azure
+          backends — the five that reached their SDK with the root key. The root
+          refusal is added as step (0) and numbered rather than folded in,
+          precisely because it is the one step that exemption must not release.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 § Reach, coverage note"
+        read_type: verify
+        extract: >-
+          Two figures in the file describe rosters this change alters. The
+          seven-operation claim about _ROOT_FILE_OPS survives untouched, which
+          is a consequence of the separate-roster decision rather than luck; the
+          write roster is stated beside it with its own count and its own
+          reason. The write-rule status is a partition of the same thirteen
+          classes (two unbound, five compliant, six fixed), derived by
+          partitioning rather than by tallying the fix.
+        outcome: ok
+
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Detailed checklist"
+        read_type: verify
+        extract: >-
+          Full pass over the triggered rows once the diff was complete. Two
+          ripples this work hit have no row: the sync/async docstring parity
+          registry (a new method on both Azure classes must be classified), and
+          the conformance layout boundary (a docstring under conformance/ naming
+          a concrete backend). Both were caught by their own gates rather than
+          by the checklist, which is the argument for leaving them to the gates.
+        outcome: ok

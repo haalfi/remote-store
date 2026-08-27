@@ -770,40 +770,19 @@ class LocalBackend(Backend):
     def _reject_root_as_write_target(self, path: str) -> None:
         """Reject the store root as a write destination, before touching the disk.
 
-        The three writers already reject it by observation — the root is a real
-        directory, so ``full.is_dir()`` fires. That check answers ``False`` once
-        the root has been deleted underneath the backend, and what follows is
-        worse than a wrong error: ``parent.mkdir`` recreates the tree, the bytes
-        land at the root path, and only then does building the ``WriteResult``
-        reject the empty key. The store root is left as a regular *file*, and
-        every later call answers about a store that cannot exist.
+        Local's own route into the shared guard, whose docstring carries the
+        rule and the reason it must be definitional rather than observed. The
+        state that defeats observation here is a root *deleted underneath a live
+        backend*: ``__init__`` mkdirs the root, so ``full.is_dir()`` is a correct
+        check right up until it is not. ``SFTPBackend`` reaches the same guard
+        from an untouched store instead.
 
-        So the rejection has to be definitional rather than observed, like the
-        root's other answers. Deliberately not ``_reject_root_as_file``: that
-        helper is explicitly not a mutation guard, and its wording ("a folder,
-        not a file") describes a *read* of the wrong type. This says what is
-        actually wrong with writing here, and says the same thing whether or not
-        the directory is currently on disk.
-
-        A write *under* the root is unaffected and still recreates it — only
-        the root key itself is refused.
-
-        Three call sites, not five: ``move`` and ``copy`` also write, but their
-        *destination* cannot reach the corruption above, so they are guarded on
-        the source side only. Measured both ways. With the root present,
-        ``dst_full.is_dir()`` fires and the answer is
-        ``"Destination is a directory"``. With the root gone, nothing can exist
-        beneath it, so the source check fails first with ``"Source not found"``
-        and the destination is never examined. There is no state in which the
-        root is both a legal source and an unguarded destination, and the root
-        is left a regular file in neither.
+        The three writers call this; ``move`` and ``copy`` are guarded on the
+        source side only, for the reason the shared helper measures.
         """
-        if is_root(path):
-            raise InvalidPath(
-                f"Cannot write — '{path}' is the store root, which is a folder",
-                path=path,
-                backend=self.name,
-            )
+        from remote_store.backends._flat_ns import _reject_root_as_write_target
+
+        _reject_root_as_write_target(path, self.name)
 
     def _reject_root_as_file(self, path: str) -> None:
         """Pre-check: the store root is a folder, so a file op on it is a type error.

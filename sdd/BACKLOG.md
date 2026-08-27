@@ -199,8 +199,7 @@ be edited to point elsewhere.
 store answers the same way on every backend.
 
 **Closes when:** the root of an absent container meets BE-029 on every
-backend (BUG-254) and a write to that root does not occupy it with a regular
-file (BUG-259); a listing does not truncate silently when its container is
+backend (BUG-254); a listing does not truncate silently when its container is
 deleted mid-scan (BUG-255) or when a folder vanishes part-way through a
 recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 (BUG-256); a constructor does not leak its driver's exception
@@ -210,8 +209,11 @@ registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
 (BK-345). The spec contradiction is adjudicated — BUG-248, closed by
 [ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md) — the
 never-leak invariant holds on the S3 listing path, closed by BUG-249 with
-BUG-246, and the last adapter answers the contract against an absent container,
-closed by BUG-247. **One cross-section dependency remains**, per
+BUG-246, the last adapter answers the contract against an absent container,
+closed by BUG-247, and a write to the store root no longer occupies that root
+with a regular file, closed by BUG-259 — which also brought the five
+flat-namespace classes that reached their SDK with the root key to the same
+rule. **One cross-section dependency remains**, per
 [§ How this file works](#how-this-file-works): BK-345 waits on **ID-244** in
 section 2 for the seeding hook, stated inside the item that carries it, so this
 section cannot close on its own items alone. BUG-249's denied half carried a
@@ -230,7 +232,7 @@ listing was outside it; now the bound is part of the clause and missing it is a
 breach of it. Writing a rule into a clause enlarges what the clause governs, and
 the two items that changed side are the evidence — neither was a new defect, and
 both were pre-existing behaviour that a new sentence made answerable.
-**Six** further disagreements sit in this section and none of them is with the
+**Five** further disagreements sit in this section and none of them is with the
 absent-container clause, which is why they are not in that count: BUG-253 is
 between two halves of one Graph operation; BUG-245 is a constructor leak, which
 BE-021 scopes to operations and so does not reach, and BK-358 is the same
@@ -238,9 +240,9 @@ never-leak breach reached through the shared stream wrapper on the operation
 path rather than at construction; BUG-254 is with **BE-029's
 root row**, which BE-021 § Reach now defers to rather than deciding, so the
 breach is of the row § Reach points at and not of the clause this count is about;
-BUG-256 is about a health probe, which is off the roster BE-021 governs; and
-BUG-259 is a write to the store root leaving an absent container occupied by a
-regular file, which is BE-029's root row again on the write path.
+and BUG-256 is about a health probe, which is off the roster BE-021 governs.
+BUG-259 was a sixth of this kind — BE-029's root row on the write path — and has
+closed; it is named in § Closes when above rather than counted here.
 **Six classes** have left the list on the *empty-listing and NotFound* rows —
 counted as classes, which is the frame this paragraph opens in and not the bullet
 frame the sentence above it uses. `GraphBackend` went first — BUG-248 adjudicated
@@ -419,38 +421,6 @@ compliant the day before.
   a single class and sync access goes through `AsyncBackendSyncAdapter`
   ([ADR-0025](adrs/0025-async-to-sync-backend-adapter.md)), not a second copy of
   the walk. Only the *cells* need a sync lane.
-
-- [ ] **BUG-259 — `SFTPBackend` writes leave an absent `base_path` occupied by a regular file**
-  spec: BE-029, BE-021 · effort: S · audience: user.api
-  Write to the store root of an SFTP store whose `base_path` does not exist and
-  the bytes land at the container path itself, leaving the store's container a
-  regular **file**. `open_atomic("")` does not even raise — it returns cleanly
-  having done it. Measured against the Stage-1 in-process paramiko server, with
-  `base_path` absent, checking the server-side filesystem after each call:
-
-  | Call | Server-side result | Raised |
-  | --- | --- | --- |
-  | `write("")` / `write(".")` | `base_path` is a file, size 1 | `InvalidPath("Path is empty after normalization")` |
-  | `write_atomic("")` / `write_atomic(".")` | `base_path` is a file, size 1 | `InvalidPath("Path is empty after normalization")` |
-  | `open_atomic("")` / `open_atomic(".")` | `base_path` is a file, size 1 | — **returns cleanly** |
-  | `write("")`, `base_path` present | unchanged directory | `InvalidPath("Not a file: ")` |
-
-  Note the error on the absent-`base_path` rows carries no `backend=` attribute:
-  it arrives from the `RemotePath` / `WriteResult` layer *after* the write, not
-  from the backend before it. The backend's own root guard is the observational
-  `is_dir()`-shaped check, which answers `False` when the container is gone.
-  Afterwards `is_folder("")` still answers `True` from SFTP's root
-  short-circuit, so BE-029's "a folder that always exists" becomes a claim about
-  a regular file and every later call answers about a store that cannot exist.
-  **This is BUG-247's defect on the other hierarchical backend**, found by that
-  work's round-3 measuring pass rather than by reading: BUG-247 borrowed SFTP's
-  *read*-side root short-circuits, which are correct, and did not look at its
-  write paths. The fix has the same shape — refuse the root key definitionally,
-  before the transport is touched — but the surfaces only *overlap*
-  ([§ Granularity](#how-this-file-works)), so it is a separate item.
-  **Not co-shipped with BUG-247 deliberately:** that item's scope is Local, and
-  widening it to a second backend mid-review would have put an untested SFTP
-  change into a PR whose SFTP claims are otherwise measurement-only.
 
 - [ ] **BUG-245 — `SQLBlobBackend(create_table=False)` leaks `NoSuchTableError` from its constructor**
   spec: BE-021, SQL-BLOB-012 · effort: S · audience: user.api

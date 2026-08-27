@@ -453,6 +453,7 @@ class S3Boto3Backend(Backend):
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
+        self._reject_root_as_write_target(path)
         self._maybe_check_no_file_ancestor(path)
         sdk_metadata = dict(metadata) if metadata else None
         extra: dict[str, Any] = {"Metadata": sdk_metadata} if sdk_metadata is not None else {}
@@ -527,6 +528,7 @@ class S3Boto3Backend(Backend):
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
+        self._reject_root_as_write_target(path)
         self._maybe_check_no_file_ancestor(path)
         with self._boto_errors(path):
             if not overwrite and self._head_or_none(path) is not None:
@@ -1099,6 +1101,25 @@ class S3Boto3Backend(Backend):
 
         self._raise_if_closed()
         _reject_root_as_file(path, self.name)
+
+    def _reject_root_as_write_target(self, path: str) -> None:
+        """Pre-check: the store root is a folder, so writing *to* it is a type error.
+
+        The sibling above keeps the root out of the SDK for reads, for exactly
+        the reason that applies here: a zero-length ``Key`` is rejected at
+        parameter validation, and it reached the caller as
+        ``BackendUnavailable`` — a retryable class for a permanently wrong
+        request — under both overwrite modes. The dot spelling took a different
+        route again, raising from the layer *above* the backend with no
+        ``backend=`` attribute, so the two spellings disagreed on a call this
+        clause requires to answer alike.
+
+        The closed-backend guard outranks this check and so runs first.
+        """
+        from remote_store.backends._flat_ns import _reject_root_as_write_target
+
+        self._raise_if_closed()
+        _reject_root_as_write_target(path, self.name)
 
     def _reject_folder(self, path: str) -> None:
         """Error path: raise ``InvalidPath`` if *path* is a virtual folder.

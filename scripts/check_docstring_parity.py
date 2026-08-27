@@ -197,6 +197,7 @@ TWINS: tuple[Twin, ...] = (
                 "_reject_file",
                 "_reject_folder",
                 "_reject_root_as_file",
+                "_reject_root_as_write_target",
                 "_src_props",
                 "check_health",
                 "delete_folder",

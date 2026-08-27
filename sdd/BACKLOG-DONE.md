@@ -169,6 +169,62 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-259 — `SFTPBackend` writes leave an absent `base_path` occupied by a regular file**
+  spec: BE-008, BE-021, BE-029 · effort: S · audience: user.api
+  Write to the store root of an SFTP store whose `base_path` did not exist and
+  the bytes landed at the container path itself, leaving the store's container a
+  regular **file**; `open_atomic("")` returned cleanly having done it. The
+  backend's own guard was the observational stat that
+  `_classify_existing_target` reads, and an absent container is exactly the
+  state in which it finds nothing to classify, so the write proceeded:
+  `_ensure_parent_dirs` created the tree and the open landed on `base_path`.
+  The `InvalidPath` the other two writers did raise came from the `RemotePath`
+  layer *after* the write and carried no `backend=` attribute — the tell that it
+  was not the backend refusing.
+  **Measured beyond the item's table.** The item recorded three calls under one
+  spelling; the reproduction enumerated three writers × two spellings × two
+  overwrite modes and found all twelve corrupt the container. `overwrite=True`
+  matters on its own: `write` and `write_atomic` skip their existence stat
+  entirely in that mode, so a guard on the `overwrite=False` branch would have
+  left half the surface corrupting.
+  **Fixed by refusing the root key definitionally**, in a shared
+  `_flat_ns._reject_root_as_write_target` that `LocalBackend` (BUG-247) now
+  calls too — its private copy was extracted rather than duplicated, since the
+  two would have carried the same message string.
+  **Six classes were brought to the rule, one of which could corrupt.** The
+  conformance cell added here (`_ROOT_WRITE_OPS`) found the other five on its
+  first run: `S3Backend` answered `AlreadyExists` for a root write without
+  `overwrite` and leaked a raw parameter-validation error with it;
+  `S3Boto3Backend` answered `BackendUnavailable` — retryable, for a permanently
+  wrong request — for `""` while `"."` took a different route and raised from
+  above the backend, so the two spellings disagreed; `S3PyArrowBackend`,
+  `AzureBackend` and `AsyncAzureBackend` surfaced the SDK's own wording
+  unclassified. None of the five could occupy its container, because the SDK
+  refuses a zero-length key; all five breached the paragraphs at the head of
+  BE-029 regardless. Partitioning the thirteen `CAPABILITIES`-declaring classes:
+  two lack `WRITE`, five already complied, six were fixed.
+  **Fenced by mutation, re-run against the final tree.** Neutering the shared
+  guard fails **47 of 8643** executed cells — 24 in the SFTP module, 14 in
+  Local's (matching the 14/74 BUG-247 recorded for its own write guard, which is
+  the cross-check that the extraction preserved it), 9 in conformance. Removing
+  only SFTP's three call sites fails **24**, all in the SFTP module and **none**
+  in conformance: with `base_path` present SFTP already refused the root, so the
+  conformance cell does not fence this fix and the per-backend absent-container
+  module is what does. That asymmetry is the reason the cell is not treated as
+  covering the item.
+  **BE-029 amended, not merely satisfied.** Its § Out of scope placed writes to
+  the root outside the clause on the grounds that they are "rejected by path
+  validation" — true, and rejected *after* the bytes. The clause now binds the
+  order: refused from the key, before any request is issued. BE-008's
+  precondition list gains that as step (0), numbered rather than folded into
+  path validity because it is the one step the flat-namespace exemption does not
+  release.
+  **Coverage bound, stated.** The new cells collect 84 and execute 58. The 26
+  skips are `sqlquery` (no `WRITE`), `s3_pyarrow_moto` (needs the MinIO fixture
+  on current PyArrow) and the Azure sync, Azure async and Graph replay lanes,
+  whose cassettes for these ids are unrecorded. Those four backends were
+  measured directly instead rather than assumed.
+
 - [x] **BK-355 — Closing a failed stream re-enters the dead connection, so the caller pays a second, silent timeout**
   spec: SIO-010, SFTP-030 · effort: S · audience: user.api, user.api_docs, user.site
   `_ErrorMappingStream.close` closed `self._inner` under

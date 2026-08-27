@@ -27,13 +27,34 @@ import pytest
 
 pytest.importorskip("paramiko", reason="paramiko not installed")
 
-from remote_store._errors import NotFound  # noqa: E402
+from pathlib import Path  # noqa: E402
+
+from remote_store._errors import InvalidPath, NotFound  # noqa: E402
 from tests.backends.fixtures._state import INFRA  # noqa: E402
+from tests.backends.sftp._helpers import StubSFTPServer  # noqa: E402
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
+    from collections.abc import Callable, Iterator
 
     from remote_store.backends._sftp import SFTPBackend
+
+
+def _server_side(backend: SFTPBackend) -> Path:
+    """The real filesystem path the in-process server serves as ``base_path``.
+
+    The container's state has to be read from the server's own filesystem, not
+    through the backend: every root probe answers definitionally (BE-029), so
+    ``is_folder("")`` reports ``True`` for a ``base_path`` that is a regular
+    file — the precise corruption these cells exist to catch would pass an
+    assertion phrased against the backend.
+    """
+    return Path(StubSFTPServer.ROOT) / backend.native_path("").lstrip("/")
+
+
+def _open_atomic_write(backend: SFTPBackend, path: str, *, overwrite: bool = False) -> None:
+    """Drive ``open_atomic`` to completion; it refuses on ``__enter__``, not at the call."""
+    with backend.open_atomic(path, overwrite=overwrite) as handle:
+        handle.write(b"x")
 
 
 @pytest.fixture
@@ -96,3 +117,136 @@ class TestAbsentBasePathReadsAsAbsentPath:
         with pytest.raises(NotFound) as exc_info:
             call(absent_base_path_backend)
         assert exc_info.value.backend == "sftp"
+
+
+_ROOT_WRITES: list = [
+    pytest.param(lambda b, p: b.write(p, b"x"), id="write"),
+    pytest.param(lambda b, p: b.write(p, b"x", overwrite=True), id="write_overwrite"),
+    pytest.param(lambda b, p: b.write_atomic(p, b"x"), id="write_atomic"),
+    pytest.param(lambda b, p: b.write_atomic(p, b"x", overwrite=True), id="write_atomic_overwrite"),
+    pytest.param(lambda b, p: _open_atomic_write(b, p), id="open_atomic"),
+    pytest.param(lambda b, p: _open_atomic_write(b, p, overwrite=True), id="open_atomic_overwrite"),
+]
+"""Every write-shaped entry point, in both overwrite modes.
+
+Both modes, because they take different routes to the same open: ``write`` and
+``write_atomic`` skip their existence stat entirely when ``overwrite=True``, so
+a guard placed on the ``overwrite=False`` branch alone would leave half the
+surface corrupting. ``open_atomic`` stats eagerly in both modes and is here for
+the opposite reason — it is the one that returned *cleanly* while doing it.
+"""
+
+
+@pytest.mark.spec("BE-029", "BE-021")
+class TestWritingToTheRootNeverOccupiesTheContainer:
+    """A write *to* the store root is refused before the transport is touched.
+
+    BUG-259. With ``base_path`` absent, every writer ran to completion against
+    the container path itself: ``_ensure_parent_dirs`` created the tree, the
+    bytes landed at ``base_path``, and the store's container was left a regular
+    **file**. ``write`` / ``write_atomic`` did raise afterwards, but from the
+    ``RemotePath`` layer *after* the write and with no ``backend=`` attribute;
+    ``open_atomic`` returned cleanly having done it.
+
+    The backend's own guard was the observational ``stat`` — the container is a
+    directory, so ``_classify_existing_target`` fires — and that check answers
+    "absent" once the container is gone, which is the state in which it has to
+    hold. So the rejection is definitional, like every other root answer.
+
+    This is ``LocalBackend``'s defect on the other hierarchical backend
+    (BUG-247), found by that work's measuring pass rather than by reading.
+    """
+
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("call", _ROOT_WRITES)
+    def test_write_to_the_root_leaves_no_file_at_base_path(
+        self,
+        absent_base_path_backend: SFTPBackend,
+        root: str,
+        call: Callable[[SFTPBackend, str], object],
+    ) -> None:
+        """The assertion is on the server's filesystem, not on the error class.
+
+        An error was already raised on four of these six cells before the fix
+        and the container was corrupt anyway, so asserting the raise alone
+        reproduces nothing. ``_server_side`` says why the backend cannot be
+        asked instead.
+        """
+        on_disk = _server_side(absent_base_path_backend)
+        with pytest.raises(InvalidPath) as exc_info:
+            call(absent_base_path_backend, root)
+        assert not on_disk.is_file(), "the write left a regular file at base_path"
+        assert exc_info.value.backend == "sftp", "the refusal came from above the backend, not from it"
+
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("call", _ROOT_WRITES)
+    def test_write_to_the_root_does_not_create_the_container(
+        self,
+        absent_base_path_backend: SFTPBackend,
+        root: str,
+        call: Callable[[SFTPBackend, str], object],
+    ) -> None:
+        """Refused *before* the transport, so not even the parent tree is made.
+
+        Separate from the sibling because "no file there" and "nothing there"
+        are different claims, and only the second one fences the guard's
+        position: a guard placed after ``_ensure_parent_dirs`` would satisfy the
+        sibling while still creating the container as a side effect of a call
+        that failed.
+        """
+        on_disk = _server_side(absent_base_path_backend)
+        with pytest.raises(InvalidPath):
+            call(absent_base_path_backend, root)
+        assert not on_disk.exists(), "a refused root write still created base_path"
+
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_write_under_the_root_still_creates_the_container(
+        self, absent_base_path_backend: SFTPBackend, root: str
+    ) -> None:
+        """The guard refuses the root key, never a key beneath it.
+
+        SFTP creates ``base_path`` lazily on first write and that is the
+        documented behaviour, so this is the control: a guard that refused by
+        matching a prefix, or that ran on the resolved native path rather than
+        the key, would break the ordinary write and this cell is what parts the
+        two. Parametrised over both spellings because the key under test is
+        built from *root*, so a guard keyed on ``""`` alone would let the dot
+        spelling through here as it did in the cells above.
+        """
+        key = f"{root}/nested/file.txt" if root == "." else "nested/file.txt"
+        result = absent_base_path_backend.write(key, b"x")
+        assert result.size == 1
+        assert _server_side(absent_base_path_backend).is_dir(), "the container was not created"
+        assert absent_base_path_backend.read_bytes("nested/file.txt") == b"x"
+
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize(
+        ("op_name", "call"),
+        [
+            ("move", lambda b, p: b.move("a.txt", p)),
+            ("copy", lambda b, p: b.copy("a.txt", p)),
+        ],
+        ids=["move", "copy"],
+    )
+    def test_move_and_copy_destination_cannot_reach_the_corruption(
+        self,
+        absent_base_path_backend: SFTPBackend,
+        root: str,
+        op_name: str,
+        call: Callable[[SFTPBackend, str], object],
+    ) -> None:
+        """Why the guard has three call sites and not five, measured rather than argued.
+
+        ``move`` and ``copy`` also write, and their *source* is guarded by
+        ``_reject_root_as_file`` already. Their destination is not, and does not
+        need to be: with ``base_path`` absent nothing can exist beneath it, so
+        the source check fails first with ``NotFound`` and the destination is
+        never opened. With ``base_path`` present the destination stat reports a
+        directory and the answer is ``InvalidPath``. There is no state in which
+        the root is an unguarded destination.
+        """
+        on_disk = _server_side(absent_base_path_backend)
+        with pytest.raises(NotFound) as exc_info:
+            call(absent_base_path_backend, root)
+        assert exc_info.value.path == "a.txt", f"{op_name} failed on the destination, not the source"
+        assert not on_disk.exists(), f"{op_name} created base_path before failing"

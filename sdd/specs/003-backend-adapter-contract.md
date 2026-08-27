@@ -204,11 +204,34 @@ key: `to_key(native_path("."))` is `""`, not `"."`. The identity holds verbatim
 for every other key. This is forced, not a concession — an inverse cannot
 return two spellings from one input.
 
-**Out of scope:** `delete_folder("")` and writes *to* the root. `delete_folder`
-on the root is governed at the `Store` layer (STORE-002); backend behaviour for
-it is undefined by this clause. Writing to the root path is a malformed file
-path, rejected by path validation. Note `delete("")` is **not** out of scope —
-it is a file-shaped operation on a folder, and the row above governs it.
+**A write *to* the root is refused before anything is transferred.**
+`write`, `write_atomic` and `open_atomic` MUST raise `InvalidPath` naming the
+root, under both spellings, in both overwrite modes, and **before** the request
+reaches the storage system. This clause used to place writes out of scope on the
+grounds that the root is a malformed file path "rejected by path validation" —
+true, and not sufficient. Validation downstream of the write still rejects it,
+*after* the bytes have gone: on the two hierarchical backends the write ran to
+completion against the container path itself, leaving the store's container a
+regular file while every probe above kept answering "folder" from the key. What
+the clause has to bind is therefore the *order*, not merely the outcome.
+
+The rejection is definitional, like the root's other answers, and for the same
+reason: an observational is-a-directory check answers `False` in exactly the
+state — an absent container — where the guard has to hold. Where the container
+cannot be occupied because the SDK refuses a zero-length key, the requirement
+still bites: reaching the SDK produced a retryable class for a permanent
+condition on one backend and a bare SDK message on another, both of which the
+clause's opening paragraphs already forbid.
+
+`move`/`copy` **destination** is not covered, and does not need to be: with the
+container absent nothing exists beneath it, so the source check fails first;
+with it present the destination probe reports a folder. Measured both ways on
+every backend that has a destination probe.
+
+**Out of scope:** `delete_folder("")`, which is governed at the `Store` layer
+(STORE-002) — backend behaviour for it is undefined by this clause. Note
+`delete("")` is **not** out of scope — it is a file-shaped operation on a folder,
+and the row above governs it.
 
 **Conformance:** `tests/backends/conformance/test_io.py::TestBackendRootPath`
 and its async sibling in `test_async_extended.py`, both gated on
@@ -228,6 +251,20 @@ The file-shaped-operation row is seven operations (`_ROOT_FILE_OPS`): the four
 reads above plus `delete`, `move` and `copy`. `SQLQueryBackend` declares no
 capability for those three, so they are gated out rather than missed — nothing
 to pin, which is why its "pinned nowhere" cell is empty rather than listing them.
+
+**The write row is a second roster and deliberately not folded into that one.**
+`_ROOT_WRITE_OPS` is `write`, `write_atomic` and `open_atomic` (two in the async
+mirror, which declares no `open_atomic`, as it declares no `read_seekable`).
+Separate because it is a separate rule: the seven above are the type-mismatch
+row, each gated on its own capability, and what they owe is an error class; these
+are one rule under `Capability.WRITE`, and what they owe is an error class **and
+the absence of a side effect**. Its conformance cell seeds a file and reads it
+back afterwards, which is the strongest form the "before anything is
+transferred" clause takes from outside a backend — the container's own state is
+not observable through the `Backend` API, and the absent-container case no
+fixture arranges (BK-345). A backend whose container can go absent pins that half
+in its per-backend home. Neither roster reaches `SQLQueryBackend`, which is
+read-only.
 
 A clause that binds every LIST-capable backend needs its coverage checked per
 backend, not per source site — both defects this clause was written from
@@ -260,12 +297,20 @@ cannot reach any cell that seeds through `write` (ID-244).
 **Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `InvalidPath` if an ancestor of `path` exists as a regular file (file-as-directory-component — see ID-209). `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out — `metadata=None` and `metadata={}` are both no-ops with respect to this gate).
 **See also:** [045-write-result.md](045-write-result.md) (WR-001 through WR-005, WR-010 through WR-012).
 **Precondition evaluation order:** Backends MUST evaluate preconditions in this
-order: (1) path validity — if `path` names an existing *directory* OR any
-slash-aligned ancestor of `path` is a regular file (file-as-directory-component,
-ID-209), raises `InvalidPath`; (2) overwrite conflict — if the file exists and
-`overwrite=False`, raises `AlreadyExists`; (3) I/O. No later check may mask an
-earlier one. This order applies to `write()`, `write_atomic()`, `move()`, and
-`copy()` wherever analogous preconditions exist.
+order: (0) the root — if `path` is the store root under either spelling, raises
+`InvalidPath`, decided from the key and before any request is issued
+([BE-029](#be-029-root-path)); (1) path validity — if `path` names an
+existing *directory* OR any slash-aligned ancestor of `path` is a regular file
+(file-as-directory-component, ID-209), raises `InvalidPath`; (2) overwrite
+conflict — if the file exists and `overwrite=False`, raises `AlreadyExists`;
+(3) I/O. No later check may mask an earlier one. This order applies to `write()`,
+`write_atomic()`, `move()`, and `copy()` wherever analogous preconditions exist.
+For `move`/`copy`, step (0) binds the **source** only — as the file-shaped
+operation it is — and BE-029 says why the destination needs no guard of its own.
+Step (0) is numbered rather than folded into (1) because it is the one step no
+backend is exempt from: the flat-namespace exemption below releases (1), and a
+backend taking it still owes the root refusal, which needs no round trip and no
+namespace concept to decide.
 **Flat-namespace exemption:** Backends where the underlying storage has no
 native directory concept (e.g. S3, Azure non-HNS, SQL) are exempt from step
 (1): they cannot distinguish "path names a directory" from "path does not
@@ -691,6 +736,28 @@ These are absent from the list below because that list is organised by the
 absent-container *clause* and these are breaches of BE-029's root row; the
 pointer is here so a reader does not read that list as meaning the root is
 settled.
+
+**The write-to-root rule is a different count and every class now meets it.**
+Of the same thirteen: **two** have no `WRITE` capability and are not bound
+(`ReadOnlyHttpBackend`, `SQLQueryBackend`); **five** already met it
+(`LocalBackend`, `MemoryBackend`, `AsyncMemoryBackend`, `SQLBlobBackend`,
+`GraphBackend`); and **six** were brought to it by BUG-259 — `SFTPBackend`,
+`S3Backend`, `S3PyArrowBackend`, `S3Boto3Backend`, `AzureBackend` and
+`AsyncAzureBackend`. Only the first of those six could corrupt anything; the
+other five reached the SDK and answered with the wrong class, which is a breach
+of the paragraphs at the head of this clause rather than of this row. Counted by
+partitioning the thirteen, not by tallying the fix.
+
+Coverage is **not** uniform, and the shortfall is fixtures rather than rule.
+Running the new cells alone collects 84 and executes 58; the 26 skips are
+`sqlquery` (no `WRITE`), `s3_pyarrow_moto` (its lane needs the MinIO fixture on
+current PyArrow), and the Azure sync, Azure async and Graph replay lanes, whose
+cassettes for these test ids have not been recorded. The four backends those
+skips cover were each measured directly instead — `S3PyArrowBackend` and
+`AzureBackend` against an unreachable endpoint, where an `InvalidPath` naming
+the root proves the guard ran before the transport; `AsyncAzureBackend` with the
+guard stubbed out, to establish what it did before; and `GraphBackend`'s
+refusal is pinned in its own home under both spellings.
 
 **§ Reach's roster is twelve operations, and its siblings are not silently
 included.** The twelve are the two tolerant deletes plus the ten this paragraph

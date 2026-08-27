@@ -96,6 +96,33 @@ _ROOT_FILE_OP_CALLS = {
 defers its verdict to first byte is not credited with a lazy handle."""
 
 
+def _open_atomic_write(backend: Backend, path: str) -> None:
+    """Drive ``open_atomic`` to completion — it refuses on ``__enter__``, not at the call."""
+    with backend.open_atomic(path) as handle:
+        handle.write(b"x")
+
+
+_ROOT_WRITE_OPS = [
+    pytest.param("write", id="write"),
+    pytest.param("write_atomic", id="write_atomic"),
+    pytest.param("open_atomic", id="open_atomic"),
+]
+"""The write-shaped surface, kept apart from ``_ROOT_FILE_OPS`` above.
+
+A separate roster because it is a separate rule. ``_ROOT_FILE_OPS`` is BE-021's
+type-mismatch row — a *read*-shaped operation handed a folder — and every one of
+its members is gated on its own capability. These three are one rule under
+``Capability.WRITE``, and what they owe is not merely an error class but the
+absence of a side effect, which no member of the other roster asserts.
+"""
+
+_ROOT_WRITE_OP_CALLS = {
+    "write": lambda b, p: b.write(p, b"x"),
+    "write_atomic": lambda b, p: b.write_atomic(p, b"x"),
+    "open_atomic": _open_atomic_write,
+}
+
+
 @pytest.mark.parametrize("backend", fixture_params(Capability.LIST), indirect=True)
 class TestBackendRootPath:
     """BE-029: the store root is a folder, under both spellings.
@@ -221,6 +248,39 @@ class TestBackendRootPath:
             backend.delete(root, missing_ok=True)
         assert is_root(exc.value.path)
         assert backend.exists("rootmok/a.txt") is True
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-008")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("op", _ROOT_WRITE_OPS)
+    def test_write_to_root_is_refused_and_the_store_survives(self, backend: Backend, root: str, op: str) -> None:
+        """A write *to* the root is refused, and the store is intact afterwards.
+
+        The error class is the cheap half. The half that matters is the second
+        assertion: BUG-259 was a backend that raised ``InvalidPath`` on four of
+        its six write cells and had *already occupied its own container* with a
+        regular file by the time it did — the refusal arrived from the layer
+        above the backend, after the bytes. A cell asserting only the raise
+        passes on that.
+
+        So this seeds a file first and reads it back after. It is the strongest
+        claim conformance can make from outside a backend: whatever the write
+        did, the store still answers as a store.
+
+        Two bounds, both structural. The corruption itself is visible only from
+        the storage system's own side, which this suite has no handle on; and it
+        needs an **absent container**, which no conformance fixture arranges
+        (BK-345 owns that gap). So a backend whose container can go absent also
+        pins this against that state in its own per-backend home, where both the
+        fixture and the server-side assertion are available.
+        """
+        _require(backend, Capability.WRITE, Capability.READ)
+        backend.write("rootwrite/a.txt", b"seed")
+        with pytest.raises(InvalidPath) as exc:
+            _ROOT_WRITE_OP_CALLS[op](backend, root)
+        assert is_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
+        assert backend.read_bytes("rootwrite/a.txt") == b"seed"
+        assert backend.is_folder(root) is True
 
 
 @pytest.mark.parametrize("backend", fixture_params(Capability.WRITE), indirect=True)

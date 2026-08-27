@@ -1372,6 +1372,22 @@ _ASYNC_ROOT_FILE_OP_CALLS = {
     "copy": lambda b, p: b.copy(p, "rootop_dst.txt"),
 }
 
+_ASYNC_ROOT_WRITE_OPS = [
+    pytest.param("write", id="write"),
+    pytest.param("write_atomic", id="write_atomic"),
+]
+"""Async mirror of ``test_io.py``'s ``_ROOT_WRITE_OPS``, minus ``open_atomic``.
+
+Two rather than three for the same reason ``_ASYNC_ROOT_FILE_OPS`` carries no
+``read_seekable``: the ``AsyncBackend`` surface does not declare the method, so
+there is nothing to hold to the rule.
+"""
+
+_ASYNC_ROOT_WRITE_OP_CALLS = {
+    "write": lambda b, p: b.write(p, b"x"),
+    "write_atomic": lambda b, p: b.write_atomic(p, b"x"),
+}
+
 
 class TestBackendRootPath:
     """BE-029 (async mirror of ``test_io.py::TestBackendRootPath``).
@@ -1464,6 +1480,27 @@ class TestBackendRootPath:
             await async_backend.delete(root, missing_ok=True)
         assert is_root(exc.value.path)
         assert await async_backend.exists("rootmok/a.txt") is True
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-008")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("op", _ASYNC_ROOT_WRITE_OPS)
+    async def test_write_to_root_is_refused_and_the_store_survives(
+        self, async_backend: AsyncBackend, root: str, op: str
+    ) -> None:
+        """Async mirror of ``test_io.py``: a write to the root is refused, store intact.
+
+        The sync twin's docstring carries the reason the second assertion is the
+        load-bearing one — a raise alone passes on a backend that has already
+        occupied its own container by the time it raises.
+        """
+        _require(async_backend, Capability.LIST, Capability.WRITE, Capability.READ)
+        await async_backend.write("rootwrite/a.txt", b"seed")
+        with pytest.raises(InvalidPath) as exc:
+            await _ASYNC_ROOT_WRITE_OP_CALLS[op](async_backend, root)
+        assert is_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
+        assert await async_backend.read_bytes("rootwrite/a.txt") == b"seed"
+        assert await async_backend.is_folder(root) is True
 
 
 class TestAsyncBackendNativePath:

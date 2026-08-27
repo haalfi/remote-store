@@ -267,6 +267,22 @@ class AsyncAzureBackend(AsyncBackend):
         self._raise_if_closed()
         _reject_root_as_file(path, self.name)
 
+    def _reject_root_as_write_target(self, path: str) -> None:
+        """Pre-check: the store root is a folder, so writing *to* it is a type error.
+
+        Runs on HNS accounts too, for the reason the sibling above gives: the
+        alternative is handing an empty blob name to the SDK, which answered
+        ``"Please specify a container name and blob name."`` as a bare
+        ``RemoteStoreError`` under both spellings and both overwrite modes —
+        the SDK's own wording, reaching the caller unclassified.
+
+        The closed-backend guard outranks this check and so runs first.
+        """
+        from remote_store.backends._flat_ns import _reject_root_as_write_target
+
+        self._raise_if_closed()
+        _reject_root_as_write_target(path, self.name)
+
     async def _reject_folder(self, path: str) -> None:
         """Error path: raise ``InvalidPath`` if *path* is a virtual folder.
 
@@ -648,6 +664,7 @@ class AsyncAzureBackend(AsyncBackend):
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
             InvalidPath: If ``path`` names a directory.
         """
+        self._reject_root_as_write_target(path)
         await self._maybe_check_no_file_ancestor(path)
         async with self._errors(path):
             bc = self._blob_client(path)
@@ -735,6 +752,7 @@ class AsyncAzureBackend(AsyncBackend):
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
             InvalidPath: If ``path`` names a directory.
         """
+        self._reject_root_as_write_target(path)
         if not self._hns:
             # non-HNS: direct upload is atomic (PUT semantics)
             return await self.write(path, content, overwrite=overwrite, metadata=metadata)

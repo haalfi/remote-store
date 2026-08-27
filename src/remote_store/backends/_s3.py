@@ -231,6 +231,7 @@ class S3Backend(_S3Base):
             PermissionDenied: If the credentials lack access.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
+        self._reject_root_as_write_target(path)
         self._maybe_check_no_file_ancestor(path)
         sdk_metadata = dict(metadata) if metadata else None
         meta_kw = {"Metadata": sdk_metadata} if sdk_metadata is not None else {}
@@ -332,6 +333,7 @@ class S3Backend(_S3Base):
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
         # S3 PUT is inherently atomic -- buffer then upload (SAW-010)
+        self._reject_root_as_write_target(path)
         self._maybe_check_no_file_ancestor(path)
         with self._s3fs_errors(path):
             if not overwrite and self._fs.exists(self._s3_path(path)):

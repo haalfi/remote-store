@@ -265,6 +265,7 @@ class S3PyArrowBackend(_S3Base):
             PermissionDenied: If the credentials lack access.
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
+        self._reject_root_as_write_target(path)
         self._maybe_check_no_file_ancestor(path)
         with self._s3fs_errors(path):
             if not overwrite and self._s3fs.exists(self._s3_path(path)):
@@ -332,6 +333,10 @@ class S3PyArrowBackend(_S3Base):
         # they delegate directly. Plain ``write`` stays a true stream (it is
         # non-atomic per AW-007 and may leave a partial object on failure, same
         # as the local backend). Mirrors the buffer-then-write ``open_atomic``.
+        # Guarded here as well as in ``write``: the streaming arm below drains
+        # the caller's content into a spool file *before* delegating, so relying
+        # on ``write``'s guard would consume the stream and then refuse.
+        self._reject_root_as_write_target(path)
         if isinstance(content, bytes):
             return self.write(path, content, overwrite=overwrite, metadata=metadata)
         self._maybe_check_no_file_ancestor(path)
@@ -367,6 +372,7 @@ class S3PyArrowBackend(_S3Base):
             BackendUnavailable: On a transport or service failure, or after ``close()``.
         """
         # S3 PUT is inherently atomic -- buffer then upload (SAW-010)
+        self._reject_root_as_write_target(path)
         self._maybe_check_no_file_ancestor(path)
         with self._s3fs_errors(path):
             if not overwrite and self._s3fs.exists(self._s3_path(path)):
