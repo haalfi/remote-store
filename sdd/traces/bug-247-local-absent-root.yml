@@ -13,8 +13,13 @@ source_items:
 audience:
   - user.api
   - contributor.process
+# Both lists are files this work actually touched, per the schema. Checked
+# against `git diff --name-only origin/master...HEAD`. Two entries were dropped
+# in the closing gate because they named files this branch does not change:
+# sdd/backlogid.json, which `scripts/gen_backlogid.py --check` passes unchanged
+# because BUG-247 was already allocated; and src/remote_store/ext/dagster.py,
+# whose narrowing the merge dropped outright once master landed it as BUG-258.
 expected_ripples:
-  - sdd/backlogid.json
   - docs-src/_data/graph/graph.json
   - docs-src/explanation/graph_viz.html
 surprising_ripples:
@@ -23,19 +28,34 @@ surprising_ripples:
   - src/remote_store/_backend.py
   - src/remote_store/aio/_async_backend.py
   - CHANGELOG.md
-  - src/remote_store/ext/dagster.py
   - .github/workflows/ci.yml
+  - sdd/specs/026-health-check.md
+  - sdd/specs/029-async-store-backend-api.md
 
 discovery_followups:
   - BUG-259
 
-# Counted from `git log --oneline origin/master..HEAD`, seven commits:
-# b2674d9 implements and does not count; 376624c is the dagster narrowing, found
-# by a blocked push rather than by review, and does not count; 2215525, b2392be,
-# 3c2e82f and 4bd6e84 are the four review-driven fix commits; 9135017 is the CI
-# fix, driven by a red check this loop read rather than by a reviewer, and does
-# not count. Value is 4, plus the round-3 pass this trace ships with.
-review_rounds: 5
+# Re-counted from `git log --oneline origin/master..HEAD`, which returns eleven
+# commits with this one — the previous comment named seven and was stale by four.
+# Oldest first, and the schema's test is "exists specifically because review
+# feedback was incorporated":
+#   b2674d9  implements the fix                              — no
+#   376624c  dagster narrowing, found by a blocked push      — no
+#   2215525  divergence-bullet ordinals, self-caught by      — no
+#            re-deriving, before the first review round
+#   b2392be  round 1                                         — yes
+#   3c2e82f  round 1, the dagster point taken separately     — yes
+#   4bd6e84  round 2 (measuring)                             — yes
+#   9135017  CI fix, driven by a red check, not a reviewer   — no
+#   1f98c12  round 3 (panel)                                 — yes
+#   1ea8f15  merge of origin/master                          — no
+#   74cb51c  closing gate, unprimed pass                     — yes
+#   (this)   closing gate, whole-file + measuring passes     — yes
+# Six qualify. The previous value of 5 counted 2215525, which no reviewer asked
+# for, and predated the last two rounds. Note the field counts commits, not
+# rounds: b2392be and 3c2e82f are one round split across two commits, so the
+# loop ran five review rounds and produced six review-driven commits.
+review_rounds: 6
 
 phases:
   - id: orient
@@ -357,6 +377,21 @@ phases:
           the SFTP item renumbered to BUG-259. Counts re-derived from the merged
           lists: three disagreeing classes, two live divergence bullets.
         outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "test-primary-sftp"
+        read_type: verify
+        extract: >-
+          The merge is also what unblocks CI. A conflicted PR has no
+          refs/pull/N/merge for pull_request workflows to check out, so GitHub
+          scheduled no run at all — silently, with no queued job and no
+          notification — from the moment master diverged. Two pushes produced
+          zero runs before the cause was found, which is a failure mode worth
+          knowing: a red check is visible, an absent one is not.
+        outcome: ok
+
+  - id: gate_unprimed
+    name: Closing gate, pass 1 (unprimed)
+    steps:
       - file: sdd/specs/003-backend-adapter-contract.md
         section: "BE-021 § Reach"
         read_type: verify
@@ -384,16 +419,70 @@ phases:
           into BACKLOG-DONE, and never pinned. Recorded is not tested. Fenced
           now: reverting is_dir() fails that cell and only that cell.
         outcome: ok
-      - file: .github/workflows/ci.yml
-        section: "test-primary-sftp"
+
+  - id: gate_wholefile_measuring
+    name: Closing gate, passes 2 and 3 (whole-file, measuring)
+    steps:
+      - file: sdd/specs/026-health-check.md
+        section: "PING-003: LocalBackend"
+        read_type: gate
+        extract: >-
+          PING-003 pinned `if not self._root.exists()` in a code block while
+          this work changed the method to `is_dir()`, so two specs gave opposite
+          accounts of one method and the new test cell carried a PING-003 tag
+          asserting what PING-003 forbade. Five rounds missed it because every
+          one of them read the diff, and spec 026 is not in the diff. The
+          ripple-check has no row from a backend method body to the per-backend
+          strategy block that quotes it; the quote is what makes 026 a second
+          description of the code rather than a reference to it.
+        outcome: misleading
+      - file: tests/backends/local/test_absent_root.py
+        section: "test_root_replaced_by_a_symlink_is_an_escape"
         read_type: verify
         extract: >-
-          The merge is also what unblocks CI. A conflicted PR has no
-          refs/pull/N/merge for pull_request workflows to check out, so GitHub
-          scheduled no run at all — silently, with no queued job and no
-          notification — from the moment master diverged. Two pushes produced
-          zero runs before the cause was found, which is a failure mode worth
-          knowing: a red check is visible, an absent one is not.
+          Third recurrence of one defect. Round 2 found the symlink cell ran
+          only with the root present, the state where the new break is
+          unreachable. The round-3 cell written to close it reproduces the
+          defect: self._root is resolved in __init__, so after rmdir +
+          symlink_to the root still lexists as a symlink, the while condition
+          goes false at the root, and the break is never reached. Measured with
+          a sys.settrace line counter over _within_root.__code__ — clamp `if`
+          evaluated once, `break` taken 0 times, against 1 for a plainly
+          deleted root. The round-3 docstring's own evidence is what let it
+          through: an os.path.lexists call count cannot distinguish "the body
+          ran" from "the break fired", which is the discrimination it was cited
+          for. Claim withdrawn rather than another cell added — the hazard it
+          imagined is not constructible, because when the clamp fires every
+          component from target to root is absent and no symlink remains for
+          the walk to follow.
+        outcome: ok
+      - file: tests/backends/local/test_absent_root.py
+        section: "TestAbsentRootListingsAreEmpty, TestAbsentRootStillAnswersAsTheRoot"
+        read_type: verify
+        extract: >-
+          Two more rationales that named a guard the cell does not reach. glob
+          makes 0 calls into _within_root with the root absent (the listing is
+          empty, so the filter loop never runs) and deleting that filter leaves
+          all 70 cells green — it is fenced by test_concurrency.py's
+          TestLocalGlobSymlinkEscape, the single cell the deletion does fail.
+          is_file("") in test_root_is_still_a_folder holds whether or not the
+          BE-029 short-circuit exists, because the observed answer is False on
+          an absent root too; only the regular-file check_health cell parts the
+          two. Same class as the vacuous assertion round 3 already fixed one
+          cell over. A docstring asserting coverage is not coverage, and this
+          module had three such claims to one real gap.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "expected_ripples, surprising_ripples, review_rounds"
+        read_type: gate
+        extract: >-
+          Three figures in this PR's own record-keeping were stale, all in the
+          same way: they describe the review loop, and every round of the loop
+          invalidates them. review_rounds named seven commits from a command
+          that returns eleven, and counted one commit no reviewer asked for;
+          both ripple lists named files the branch does not touch. Re-derived
+          against `git log --oneline origin/master..HEAD` and `git diff
+          --name-only origin/master...HEAD` rather than re-read.
         outcome: ok
 
   - id: verify

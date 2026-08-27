@@ -196,11 +196,18 @@ class TestAbsentRootReadsRaiseNotFound:
 class TestAbsentRootListingsAreEmpty:
     """An absent container holds nothing, so every listing is empty rather than an error.
 
-    ``glob`` is in the table because it is the *other* ``_within_root`` caller.
-    It never went through ``_resolve``, so it answered correctly throughout the
-    divergence — which is exactly why it belongs here: it is the one listing
-    whose correctness this fix did not have to produce, and a regression in it
-    would otherwise be invisible.
+    ``glob`` is in the table for parity, not for coverage of its containment
+    check. It never went through ``_resolve``, so it answered correctly
+    throughout the divergence, and this cell holds it to that answer.
+
+    It does **not** reach ``glob``'s own ``_within_root`` call: with the root
+    absent ``self._root.glob(pattern)`` yields nothing, so the loop body that
+    filters each item never runs. Measured with a ``sys.settrace`` line counter
+    over ``_within_root.__code__`` — 0 calls from this cell — and confirmed by
+    deleting the filter outright, which leaves all 70 cells in this module
+    green. That check is fenced instead by
+    ``test_concurrency.py::TestLocalGlobSymlinkEscape``, the one cell in the
+    suite the same deletion does fail.
     """
 
     @pytest.mark.parametrize(
@@ -242,6 +249,13 @@ class TestAbsentRootStillAnswersAsTheRoot:
     def test_root_is_still_a_folder(self, backend: LocalBackend, root: str) -> None:
         assert backend.exists(root) is True
         assert backend.is_folder(root) is True
+        # Records the full trio, but only the first two lines fence a
+        # short-circuit here: with the root absent the observed ``is_file``
+        # answer is ``False`` too, so the third line holds either way.
+        # Removing the ``is_file`` short-circuit fails no cell in this class —
+        # it is fenced by ``test_check_health_reports_a_root_path_that_is_not_
+        # a_directory``, the one cell where the root is a regular file and the
+        # definitional and observed answers part company.
         assert backend.is_file(root) is False
 
     @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
@@ -382,26 +396,34 @@ class TestTheContainmentGuardStillGuards:
         reason="symlink creation requires SeCreateSymbolicLinkPrivilege on Windows",
     )
     def test_root_replaced_by_a_symlink_is_an_escape(self, tmp_path: Path) -> None:
-        """The state the sibling above cannot reach: the walk stop actually executes.
+        """A root swapped for a symlink is still an escape, not an absence.
 
-        With the root present, the ancestor walk halts at an existing component
-        before it ever reaches ``self._root``, so the ``break`` this fix adds is
-        dead code in that cell — it pins the guard, but not the guard *under the
-        change*. Here the root is deleted and replaced by a symlink pointing
-        outside, so the walk runs to the root, the stop fires, and the resolve
-        that follows is the thing that has to still reject it.
+        This cell pins the ``anchor.resolve().relative_to(self._root)`` leg of
+        the guard: with the root replaced by a symlink out of the tree, the
+        answer must stay ``InvalidPath``, not become the absent-root answer the
+        rest of this module asserts. Neutralising that resolve leg alone fails
+        this cell and its sibling above, and no others in the module.
 
-        The leaf is deliberately one that does **not** exist. Measured by
-        counting ``os.path.lexists`` calls inside ``_within_root``: against an
-        existing leaf the loop condition is true immediately, the body never
-        runs (1 call) and the ``break`` is unreachable — such a cell passes for
-        the same pre-existing reason as the sibling above. Against an absent
-        leaf the body runs (2 calls), the walk reaches ``self._root`` and the
-        stop fires.
+        **It does not exercise the walk stop, and an earlier version of this
+        docstring wrongly claimed it did.** ``self._root`` is resolved once in
+        ``__init__``, so after ``rmdir`` + ``symlink_to`` the root path still
+        *lexists* — as a symlink. The walk climbs ``missing.txt`` to the root,
+        the ``while not os.path.lexists(anchor)`` condition then goes false
+        *at* the root, and the loop exits before the body's ``break`` is
+        reached. Measured with a ``sys.settrace`` line counter over
+        ``_within_root.__code__``: the clamp ``if`` is evaluated once and the
+        ``break`` is taken **0** times here, against 1 for the plain-deleted
+        root. The earlier claim rested on an ``os.path.lexists`` call count,
+        which cannot tell "the body ran" from "the break fired" — the very
+        discrimination it was cited for.
 
-        This is the case where a fix that reached for "root missing → contained"
-        instead of "stop the walk, then resolve" would silently hand back a path
-        outside the root.
+        The clamp is fenced instead by the 30 cells that fail when the ``break``
+        is deleted; the same 30 are exactly the cells the line counter shows
+        executing it. No cell is needed for the hazard the earlier docstring
+        imagined — a fix answering "root missing → contained" without resolving
+        — because when the clamp fires every component from target to root is
+        absent, so there is no symlink left for the walk to follow and
+        ``relative_to`` alone decides.
 
         ``exists`` is in the list and is expected to *raise* here rather than
         answer ``False``. That is not a breach of BE-004's never-raise rule: the
@@ -439,8 +461,16 @@ class TestWriteRecreatesTheRoot:
     than left implicit: it is consistent with ``__init__``, which mkdirs the
     root on construction, and with ``SFTPBackend``, whose ``base_path`` is
     created by the first write. A caller who needs "is my store still there?"
-    asks ``check_health``, which the cell below holds to the opposite answer in
-    the same state.
+    asks ``check_health``, which the last cell of this class holds to the
+    opposite answer in the same absent-root state.
+
+    The class also carries the write-refusal cells (including ``open_atomic``,
+    which refuses on ``__enter__`` rather than at the call), the ``move``/``copy``
+    destination cells, and a second ``check_health`` cell for a root occupied by
+    a regular *file*. That last one builds its own store instead of using the
+    absent-root fixture, because a root holding the wrong kind of thing is the
+    one state the fixture cannot express — and it is the only cell in the module
+    that fences the ``is_file`` short-circuit.
     """
 
     @pytest.mark.parametrize(
@@ -555,6 +585,48 @@ class TestWriteRecreatesTheRoot:
         assert root_dir.is_dir(), f"{op_name} must leave the root a directory"
         assert instance.read_bytes("keep.txt") == b"payload"
 
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize(
+        ("op_name", "call"),
+        [
+            ("move", lambda b, p: b.move("keep.txt", p)),
+            ("copy", lambda b, p: b.copy("keep.txt", p)),
+        ],
+        ids=["move", "copy"],
+    )
+    def test_the_root_as_a_move_or_copy_destination_never_becomes_a_file(
+        self,
+        backend: LocalBackend,
+        root: str,
+        op_name: str,
+        call: Callable[[LocalBackend, str], object],
+    ) -> None:
+        """The two writers that did *not* get the definitional guard, pinned anyway.
+
+        ``_reject_root_as_write_target`` has three call sites, not five: ``move``
+        and ``copy`` write too, but only their *source* is guarded. The reason is
+        that their destination cannot reach the corruption the guard exists to
+        prevent, and that reason is worth a cell rather than only a docstring.
+        With the root gone nothing can exist beneath it, so the source check
+        fails first and the destination is never examined; with the root present
+        ``dst_full.is_dir()`` fires. Either way the answer is an error and the
+        root is not left a regular file — which is the assertion that matters,
+        as the sibling cells above establish.
+
+        Stated plainly, because this module has thrice shipped a docstring
+        claiming coverage it did not have: **this cell fences no guard.** It
+        passes with every part of the BUG-247 change reverted, because the
+        checks that save it are older than the change. It is a characterisation
+        test — it pins an outcome that currently holds for a reason recorded in
+        ``_reject_root_as_write_target``, so that adding a ``parent.mkdir`` on
+        the destination path, or guarding the source differently, fails here
+        instead of silently reintroducing the corruption.
+        """
+        on_disk = Path(backend.native_path(root))
+        with pytest.raises((NotFound, InvalidPath)):
+            call(backend, root)
+        assert not on_disk.is_file(), f"{op_name} left a regular file at the store root"
+
     @pytest.mark.spec("PING-002", "PING-003", "BE-029")
     def test_check_health_reports_a_root_path_that_is_not_a_directory(self, tmp_path: Path) -> None:
         """The state only ``check_health`` can see, and the reason it tests ``is_dir()``.
@@ -566,11 +638,19 @@ class TestWriteRecreatesTheRoot:
         — the one state where the definitional answers become a lie rather than
         a convention.
 
-        This cell is what makes the `exists()` → `is_dir()` change falsifiable:
-        the absent-root cell below cannot, because `exists()` is `False` there
-        too and passes either way. Asserting the probes alongside is deliberate
-        — they are *expected* to keep answering by definition, so the pair
-        states which operation is allowed to be optimistic and which is not.
+        This cell is what makes the ``exists()`` → ``is_dir()`` change
+        falsifiable: the absent-root cell below cannot, because ``exists()`` is
+        ``False`` there too and passes either way. Asserting the probes
+        alongside is deliberate — they are *expected* to keep answering by
+        definition, so the trio states which operation is allowed to be
+        optimistic and which is not.
+
+        Only two of the three probe lines fence a short-circuit. This is the one
+        state where the root path holds something, so ``exists("")`` observes
+        ``True`` as well and its line holds either way; it is recorded for the
+        contrast, not for coverage. ``is_folder`` and ``is_file`` do carry
+        signal here, and this is the only cell in the module that fences the
+        ``is_file`` short-circuit at all.
         """
         root = tmp_path / "store"
         root.mkdir()

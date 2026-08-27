@@ -424,12 +424,14 @@ compliant the day before.
   regular **file**. `open_atomic("")` does not even raise — it returns cleanly
   having done it. Measured against the Stage-1 in-process paramiko server, with
   `base_path` absent, checking the server-side filesystem after each call:
+
   | Call | Server-side result | Raised |
   | --- | --- | --- |
   | `write("")` / `write(".")` | `base_path` is a file, size 1 | `InvalidPath("Path is empty after normalization")` |
   | `write_atomic("")` / `write_atomic(".")` | `base_path` is a file, size 1 | `InvalidPath("Path is empty after normalization")` |
   | `open_atomic("")` / `open_atomic(".")` | `base_path` is a file, size 1 | — **returns cleanly** |
   | `write("")`, `base_path` present | unchanged directory | `InvalidPath("Not a file: ")` |
+
   Note the error on the absent-`base_path` rows carries no `backend=` attribute:
   it arrives from the `RemotePath` / `WriteResult` layer *after* the write, not
   from the backend before it. The backend's own root guard is the observational

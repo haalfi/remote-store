@@ -146,7 +146,7 @@ class LocalBackend(Backend):
         if is_root(path):
             # The store root is a folder by definition, not by observation
             # (BE-029). ``__init__`` creates it, so a stat agrees on every
-            # ordinary store -- but a root deleted underneath the backend would
+            # ordinary store — but a root deleted underneath the backend would
             # otherwise report the store as having no root, a distinction no
             # other backend draws. ``check_health`` is the operation that does
             # report it.
@@ -770,7 +770,7 @@ class LocalBackend(Backend):
     def _reject_root_as_write_target(self, path: str) -> None:
         """Reject the store root as a write destination, before touching the disk.
 
-        The three writers already reject it by observation -- the root is a real
+        The three writers already reject it by observation — the root is a real
         directory, so ``full.is_dir()`` fires. That check answers ``False`` once
         the root has been deleted underneath the backend, and what follows is
         worse than a wrong error: ``parent.mkdir`` recreates the tree, the bytes
@@ -785,8 +785,18 @@ class LocalBackend(Backend):
         actually wrong with writing here, and says the same thing whether or not
         the directory is currently on disk.
 
-        A write *under* the root is unaffected and still recreates it -- only
+        A write *under* the root is unaffected and still recreates it — only
         the root key itself is refused.
+
+        Three call sites, not five: ``move`` and ``copy`` also write, but their
+        *destination* cannot reach the corruption above, so they are guarded on
+        the source side only. Measured both ways. With the root present,
+        ``dst_full.is_dir()`` fires and the answer is
+        ``"Destination is a directory"``. With the root gone, nothing can exist
+        beneath it, so the source check fails first with ``"Source not found"``
+        and the destination is never examined. There is no state in which the
+        root is both a legal source and an unguarded destination, and the root
+        is left a regular file in neither.
         """
         if is_root(path):
             raise InvalidPath(
@@ -798,7 +808,7 @@ class LocalBackend(Backend):
     def _reject_root_as_file(self, path: str) -> None:
         """Pre-check: the store root is a folder, so a file op on it is a type error.
 
-        Local usually reaches this verdict for free by stat-ing the path -- the
+        Local usually reaches this verdict for free by stat-ing the path — the
         root is a real directory, so the operation fails with
         ``IsADirectoryError`` and maps to ``InvalidPath``. It cannot rely on
         that once the root has been deleted underneath the backend: the stat
@@ -869,7 +879,7 @@ class LocalBackend(Backend):
         than escape.** This is a property of the walk that feeds the two axes,
         not a third axis of its own. Without the stop the walk climbs *past* a
         deleted root and the resolved anchor is no longer ``relative_to`` it, so
-        a store whose root was removed reported every path as escaping -- the
+        a store whose root was removed reported every path as escaping — the
         worst of the plausible answers, since it tells the caller their path is
         malformed when the path is fine and the store is simply gone. A deleted
         root is the absent-container case, and the operations answer it as
@@ -880,7 +890,7 @@ class LocalBackend(Backend):
         already halts at or below it. Nor can it loosen an escape, because a
         lexically escaping target does not have the root on its ancestor chain
         for the stop to fire on, and ``target.relative_to`` rejects it either
-        way. It costs no syscall -- a path comparison inside a loop whose body
+        way. It costs no syscall — a path comparison inside a loop whose body
         runs only for components that do not exist.
         """
         # Walk up to the deepest lexically-existing ancestor for the symlink

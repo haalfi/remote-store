@@ -355,7 +355,9 @@ class AsyncBackend(abc.ABC):
 
         Raises:
             PermissionDenied: If credentials are invalid.
-            NotFound: If the bucket, container, or root path does not exist.
+            NotFound: If the bucket, container, or root path does not hold
+                the container it names — it is absent, or something of
+                another type occupies it.
             BackendUnavailable: If the backend cannot be reached.
         """
 

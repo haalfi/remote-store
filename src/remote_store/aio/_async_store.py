@@ -803,7 +803,8 @@ class AsyncStore:
         Raises:
             PermissionDenied: If credentials are invalid.
             NotFound: If the bucket, container, or root path does not
-                exist.
+                hold the container it names — it is absent, or something
+                of another type occupies it.
             BackendUnavailable: If the backend cannot be reached.
         """
         _bk = self._backend.name

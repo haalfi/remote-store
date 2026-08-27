@@ -2537,7 +2537,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 846,
+      "line": 847,
       "summary": "child"
     },
     {
@@ -2547,7 +2547,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 838,
+      "line": 839,
       "summary": "close"
     },
     {
@@ -2686,7 +2686,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 913,
+      "line": 914,
       "summary": "native_path"
     },
     {
@@ -2751,7 +2751,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 896,
+      "line": 897,
       "summary": "resolve"
     },
     {
@@ -2761,7 +2761,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 943,
+      "line": 944,
       "summary": "supports"
     },
     {
@@ -2771,7 +2771,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 926,
+      "line": 927,
       "summary": "to_key"
     },
     {
@@ -2781,7 +2781,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 876,
+      "line": 877,
       "summary": "unwrap"
     },
     {
@@ -2862,7 +2862,7 @@
       "is_abstract": false,
       "is_async": true,
       "kind": "method",
-      "line": 362,
+      "line": 364,
       "summary": "glob"
     },
     {
@@ -2871,7 +2871,7 @@
       "is_abstract": false,
       "is_async": true,
       "kind": "method",
-      "line": 384,
+      "line": 386,
       "summary": "iter_children"
     },
     {
@@ -2944,7 +2944,7 @@
       "is_abstract": false,
       "is_async": true,
       "kind": "method",
-      "line": 814,
+      "line": 815,
       "summary": "aclose"
     },
     {
@@ -2954,7 +2954,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 822,
+      "line": 823,
       "summary": "child"
     },
     {
@@ -3093,7 +3093,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 890,
+      "line": 891,
       "summary": "native_path"
     },
     {
@@ -3140,7 +3140,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 873,
+      "line": 874,
       "summary": "resolve"
     },
     {
@@ -3150,7 +3150,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 920,
+      "line": 921,
       "summary": "supports"
     },
     {
@@ -3160,7 +3160,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 903,
+      "line": 904,
       "summary": "to_key"
     },
     {
@@ -3170,7 +3170,7 @@
       "is_abstract": false,
       "is_async": false,
       "kind": "method",
-      "line": 853,
+      "line": 854,
       "summary": "unwrap"
     },
     {

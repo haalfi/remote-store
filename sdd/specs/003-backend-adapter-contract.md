@@ -662,22 +662,32 @@ Stated here because this is where a reader looking for per-operation answers
 lands, and following it alone yields the wrong answer for one path in every
 operation it names.
 
-**Most backends do not meet the root row yet, and the list below does not record
-it.** § Known divergences holds two live bullets, and neither is
-root-specific: both are of the first-page bound. `LocalBackend`'s breach was
-whole-backend and included all three root cells; it has left that list (BUG-247)
-and Local now meets the root row. The root breaches are measured and
-tracked as **BUG-254**: `exists("")` and `is_folder("")` answer `False` on
-`S3Backend` and `S3PyArrowBackend`, and `get_folder_info("")` raises `NotFound`
-on `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend` — five classes,
-seven class-cells (two operations on two classes, plus one on three), in two
-opposite directions. `SQLBlobBackend` is the one of the six flat-namespace
-classes BUG-254 measured that complies. The scope matters: `LocalBackend` missed the root row too — once its root
-directory was gone it answered *every* operation with `InvalidPath`, which
-includes all three root cells — and now meets it, deciding the root from the key
-rather than from a stat (BUG-247); `GraphBackend`, `ReadOnlyHttpBackend` and
-`SQLQueryBackend` are simply unmeasured for the root.
-They are absent from the list below because that list is organised by the
+**Five of the thirteen concrete backends do not meet the root row against an
+absent container, and the list below does not record it.** Conformance's
+`TestBackendRootPath` runs the row against every backend with the container
+*present*, and all of them pass; the breaches are all in the absent state,
+which no conformance fixture reaches (BK-345 owns that gap). § Known
+divergences holds two live bullets, and neither is root-specific: both are of
+the first-page bound.
+
+The root breaches are measured and tracked as **BUG-254**: `exists("")` and
+`is_folder("")` answer `False` on `S3Backend` and `S3PyArrowBackend`, and
+`get_folder_info("")` raises `NotFound` on `S3Boto3Backend`, `AzureBackend` and
+`AsyncAzureBackend` — five classes, seven class-cells (two operations on two
+classes, plus one on three), in two opposite directions. `SQLBlobBackend` is
+the one of the six flat-namespace classes BUG-254 measured that complies.
+
+`LocalBackend`'s breach was whole-backend and included all three root cells:
+once its root directory was gone it answered *every* operation with
+`InvalidPath`. It has left the list below (BUG-247) and now meets the row,
+deciding the root from the key rather than from a stat. That leaves
+`GraphBackend`, `ReadOnlyHttpBackend` and `SQLQueryBackend` unmeasured for the
+root, and `SFTPBackend`, `MemoryBackend` and `AsyncMemoryBackend` meeting it
+alongside Local and `SQLBlobBackend` — five breaching, five meeting, three
+unmeasured, of the thirteen classes that declare `CAPABILITIES`, excluding the
+two abstract bases and the sync adapter.
+
+These are absent from the list below because that list is organised by the
 absent-container *clause* and these are breaches of BE-029's root row; the
 pointer is here so a reader does not read that list as meaning the root is
 settled.
@@ -784,9 +794,10 @@ needs in order to trust the entries that remain:
 bullets rather than backend classes — one of the two frames `sdd/BACKLOG.md` § 1
 uses, and the one it counts this list in — **this list holds two live bullets
 today**, both of the first-page bound: `S3Backend`/`S3PyArrowBackend` and
-`GraphBackend`. Four are recorded above as having left, the fourth being
-`LocalBackend` (BUG-247), which was the last of the original entries still
-standing. The two that remain are both *newer* than the list they joined: the
+`GraphBackend`. Four are recorded above as having left, the most recent
+being `LocalBackend` (BUG-247) — first in that list by position, last by date,
+and the last of the original entries still standing. The two that remain are
+both *newer* than the list they joined: the
 first-page bound BUG-246 wrote into § Reach made them breaches of a clause they
 were outside of before. A list of divergences grows when its clause does, not
 only when a backend regresses — and this one has now turned over completely,
@@ -841,7 +852,8 @@ measured raising `BackendUnavailable` against a dropped table before this
 change, exactly as its sibling did — that is the state *before BUG-243*, which
 is the change this paragraph is about, and not the state the departed bullet
 above describes, which is after it. The rule therefore changes `delete` on one
-backend rather than ratifying it everywhere. Both are recorded above, among the four bullets that have left this list; the
+backend rather than ratifying it everywhere. Both are recorded above, among the
+four bullets that have left this list; the
 premise survived six review rounds because "the S3 family" and "the
 flat-namespace backends" were used interchangeably by a clause whose whole
 purpose is to bind the second set.
