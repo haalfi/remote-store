@@ -18,22 +18,32 @@ expected_ripples:
   - CHANGELOG.md
   - docs-src/guides/backends/sftp.md
 # Counted from `git log --oneline origin/master..HEAD` at the head this trace
-# ships on, which holds seven commits. Two do not count: bdf775b implements the
-# item, 0b1c752 files BK-355. The remaining five carry four review rounds —
-# 2876dfb (round 1, 16 findings), f5227b3 (round 2, 6 findings), 4863ad9 plus
-# 8dd2f0a (round 3, 8 findings, split across two commits because the round's own
-# replacement claim needed characterising), and the commit this line ships in
-# (round 4, the unprimed exit gate, 5 findings). Value is 4.
+# ships on, which holds eight commits. The field's description counts *commits*
+# that exist because review feedback was incorporated, not review rounds, and
+# says a `BK-NNN:`-convention commit counts too — so seven of the eight do:
+# 2876dfb (round 1, 16 findings), f5227b3 (round 2, 6 findings), 0b1c752 (round
+# 2's third multiplier, filed as BK-355 rather than widened into the PR),
+# 4863ad9 and 8dd2f0a (round 3, 8 findings, two commits because the round's own
+# replacement claim then needed characterising), and 51d90c2 plus the commit
+# this line ships in (round 4, the unprimed exit gate, 5 findings, the second
+# commit being this re-derivation). Only bdf775b, which implements the item,
+# does not count. Value is 7.
 #
-# Two ways this line has been wrong before, both now closed. Round 2 left it
-# half-named — one SHA plus "the round-2 fix commit" — because the later commit
-# did not exist when the comment was written and the comment was not revisited
-# when it did. Round 4 found the SHAs stale outright: the branch was rebased
-# twice after they were written, so a514166 / 61e4e22 / 630ff2e named nothing on
-# the branch and the comment read as checkable while being uncheckable. A SHA
-# list is a derivation only while the history under it holds; re-run the command
-# whenever the branch moves under this file, rebases included.
-review_rounds: 4
+# The PR body says "four rounds" and does not contradict this: rounds and
+# review-driven commits are different units, and the field is the second. Two
+# earlier values here were wrong for the same reason — each read the field name
+# instead of its description, then counted `fix:` prefixes.
+#
+# Two ways the derivation itself has been wrong, both now closed. Round 2 left
+# it half-named — one SHA plus "the round-2 fix commit" — because the later
+# commit did not exist when the comment was written and the comment was not
+# revisited when it did. Round 4 found the SHAs stale outright: the branch was
+# rebased twice after they were written, so a514166 / 61e4e22 / 630ff2e named
+# nothing on the branch, and the comment read as checkable while being
+# uncheckable. A SHA list is a derivation only while the history under it holds;
+# re-run the command whenever the branch moves under this file, rebases
+# included.
+review_rounds: 7
 phases:
   - id: orient
     name: Orient on the report
@@ -327,9 +337,28 @@ phases:
           branch: it was written before two rebases and not re-run after either.
           A derivation that decays with the history under it is the failure mode
           principle 9 does not by itself catch, since the sentence stays true-
-          looking while becoming uncheckable. Re-run and re-counted; the field
-          was also short, having missed that round 3 landed as two commits.
+          looking while becoming uncheckable. Re-run and re-counted, and the
+          value moved 3 -> 7: re-reading the field's own description showed it
+          counts review-driven *commits*, `BK-NNN:`-convention ones included,
+          while every previous value here had counted `fix:` prefixes because
+          the field is *named* review_rounds. The reviewer raised 0b1c752 as
+          "arguably a fifth"; under the description it is not arguable.
         outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "review_rounds"
+        read_type: gate
+        extract: >-
+          Read to settle the count and found the field's name and its
+          description count different units: it is called review_rounds, and
+          defines itself as "commits that exist specifically because review
+          feedback was incorporated", explicitly including a commit that follows
+          the BK-NNN convention. Three successive values in this trace were
+          derived from the name, mine included, and the clause that would have
+          caught it is in the same paragraph. Tagged unclear rather than
+          misleading: nothing here is wrong, but the field is read far more often
+          than its description is, and a name that answers the question wrongly
+          is where the reader stops.
+        outcome: unclear
       - file: docs-src/guides/troubleshooting.md
         section: "SFTP transfer hangs with no error"
         read_type: reference

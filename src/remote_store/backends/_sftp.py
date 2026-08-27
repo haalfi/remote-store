@@ -1727,7 +1727,9 @@ class SFTPBackend(Backend):
 
         Upstream to track: this is ``SFTPClient.from_transport``'s body, split
         open. If a future paramiko adds a step there, this copy diverges
-        silently — ``TestSFTPParamikoVersionSurface`` guards the shape.
+        silently — ``TestSFTPParamikoVersionSurface`` guards the shape, reading
+        the upstream body as an AST so an *added* step fails it and not only a
+        removed or renamed one.
         """
         import paramiko
 
