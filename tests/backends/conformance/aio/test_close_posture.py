@@ -84,3 +84,29 @@ async def test_close_posture_outranks_root_rejection(async_backend: AsyncBackend
         except Exception as exc:  # noqa: BLE001 -- any typed error is acceptable here
             error = exc
         assert "is closed" not in str(error)
+
+
+@pytest.mark.spec("BE-020")
+@pytest.mark.spec("BE-029")
+@pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+async def test_close_posture_outranks_root_write_rejection(async_backend: AsyncBackend, root: str) -> None:
+    """Async twin of the sync cell of the same name, on the write path.
+
+    ``AsyncAzureBackend`` carries a second root guard on ``write`` /
+    ``write_atomic``, worded for a write rather than a wrong-typed read, and it
+    runs ``_raise_if_closed()`` ahead of that one too. The read-shaped sibling
+    above cannot reach it: ``read_bytes`` never touches the write guard, so the
+    ordering there was asserted in a docstring and pinned by nothing.
+    """
+    _require(async_backend, Capability.WRITE)
+    await async_backend.aclose()
+    if async_backend.close_is_terminal:
+        with pytest.raises(BackendUnavailable, match="is closed"):
+            await async_backend.write(root, b"x")
+    else:
+        error: Exception | None = None
+        try:
+            await async_backend.write(root, b"x")
+        except Exception as exc:  # noqa: BLE001 -- any typed error is acceptable here
+            error = exc
+        assert "is closed" not in str(error)

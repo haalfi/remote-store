@@ -191,6 +191,21 @@ if evidence changes; these are retired.
   `_flat_ns._reject_root_as_write_target` that `LocalBackend` (BUG-247) now
   calls too — its private copy was extracted rather than duplicated, since the
   two would have carried the same message string.
+  **The `move`/`copy` destination is guarded on the same terms, and the reason
+  it is worth recording is that it was first left out.** BUG-247 reasoned the
+  destination unreachable — container present, the destination probe reports a
+  directory; container absent, the source check fails first — this item
+  re-measured that on SFTP, found it held, and carried it into the spec as a
+  general claim. Round 1 objected to the *scope* of the claim, not to any code.
+  Measuring the generalisation rather than narrowing the sentence found
+  `S3Boto3Backend.move(src, ".")` **returning cleanly and deleting the source**,
+  and `S3Backend` answering `AlreadyExists` for a destination that does not
+  exist. So the carve-out was dropped rather than argued a second time: five
+  call sites per backend, not three. On the hierarchical backends the guard now
+  changes the message rather than the verdict, which is the whole cost. The
+  ordering it produces is the contract's: a root destination is refused at
+  precondition step (0), before the round trip that would otherwise report the
+  source missing.
   **Six classes were brought to the rule, one of which could corrupt.** The
   conformance cell added here (`_ROOT_WRITE_OPS`) found the other five on its
   first run: `S3Backend` answered `AlreadyExists` for a root write without
@@ -219,6 +234,16 @@ if evidence changes; these are retired.
   precondition list gains that as step (0), numbered rather than folded into
   path validity because it is the one step the flat-namespace exemption does not
   release.
+  **One ordering breach found by the cell written to close another finding.**
+  Round 1 noted that four new docstrings assert the closed-backend guard
+  outranks the root write check while the conformance cell for that ordering
+  exercises `read_bytes` only, which never touches a write guard. The cell added
+  to close it failed on `GraphBackend` — terminal on close, reaching its closed
+  guard through the lazy `_client` property, with `_require_writable_key`
+  running ahead of the first touch of it. A closed Graph store answered "cannot
+  write to the drive root" where BE-020 requires "backend is closed". This item
+  had classified Graph as already compliant, and on the root rule it was; the
+  ordering rule the same clause carries is what it missed.
   **Coverage bound, stated.** The new cells collect 84 and execute 58. The 26
   skips are `sqlquery` (no `WRITE`), `s3_pyarrow_moto` (needs the MinIO fixture
   on current PyArrow) and the Azure sync, Azure async and Graph replay lanes,

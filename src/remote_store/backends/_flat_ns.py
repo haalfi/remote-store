@@ -230,13 +230,20 @@ def _reject_root_as_write_target(path: str, backend: str) -> None:
     directory was deleted underneath it; ``SFTPBackend`` creates ``base_path``
     lazily on first write, so an untouched store is already in it.
 
-    **Three call sites per backend, not five.** ``move`` and ``copy`` also
-    write, but their *destination* cannot reach this: with the container absent
-    nothing can exist beneath it, so the source check fails first with
-    ``NotFound``; with it present the destination probe reports a directory.
-    Measured both ways on both backends. A write *under* the root is untouched
-    and still creates the container where that is the backend's documented
-    behaviour — only the root key itself is refused.
+    **Five call sites per backend**: the three writers, plus the ``move`` and
+    ``copy`` *destination*. The destination was at first guarded on the
+    hierarchical backends' reasoning — container absent, so nothing exists
+    beneath it and the source check fails first; container present, so the
+    destination probe reports a directory — which is true there and measured
+    both ways, and false elsewhere. Measured on the flat namespaces:
+    ``move(src, ".")`` on the direct-boto3 lane **returned cleanly and deleted
+    the source**, and the s3fs lane answered ``AlreadyExists`` for a destination
+    that does not exist. A carve-out resting on one namespace's reachability
+    argument is worth less than the check it saves, so there is no carve-out.
+
+    A write *under* the root is untouched and still creates the container where
+    that is the backend's documented behaviour — only the root key itself is
+    refused.
 
     Distinct from ``_reject_root_as_file`` on purpose. That helper is explicitly
     not a mutation guard and its wording ("a folder, not a file") describes a
@@ -394,6 +401,7 @@ __all__ = [
     "_file_not_folder",
     "_folder_not_file",
     "_reject_root_as_file",
+    "_reject_root_as_write_target",
     "_wrong_type_if_file",
     "_wrong_type_if_folder",
 ]

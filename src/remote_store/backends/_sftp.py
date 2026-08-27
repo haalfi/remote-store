@@ -1447,8 +1447,8 @@ class SFTPBackend(Backend):
 
         Raises:
             NotFound: If *src* does not exist.
-            InvalidPath: If *src* or *dst* names a directory, or an ancestor of
-                *dst* exists as a regular file.
+            InvalidPath: If *src* or *dst* is the store root, or names a
+                directory, or an ancestor of *dst* exists as a regular file.
             AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is
                 ``False``.
             PermissionDenied: If the server denies access (``EACCES``).
@@ -1456,6 +1456,7 @@ class SFTPBackend(Backend):
                 or fails.
         """
         self._reject_root_as_file(src)
+        self._reject_root_as_write_target(dst)
         with self._errors(src):
             src_sftp = self._sftp_path(src)
             dst_sftp = self._sftp_path(dst)
@@ -1511,8 +1512,8 @@ class SFTPBackend(Backend):
 
         Raises:
             NotFound: If *src* does not exist.
-            InvalidPath: If *src* or *dst* names a directory, or an ancestor of
-                *dst* exists as a regular file.
+            InvalidPath: If *src* or *dst* is the store root, or names a
+                directory, or an ancestor of *dst* exists as a regular file.
             AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is
                 ``False``.
             PermissionDenied: If the server denies access (``EACCES``).
@@ -1520,6 +1521,7 @@ class SFTPBackend(Backend):
                 or fails.
         """
         self._reject_root_as_file(src)
+        self._reject_root_as_write_target(dst)
         with self._errors(src):
             src_sftp = self._sftp_path(src)
             dst_sftp = self._sftp_path(dst)
@@ -1873,9 +1875,12 @@ class SFTPBackend(Backend):
         ``_classify_existing_target`` has nothing to classify, and the write
         runs to completion against the container path itself.
 
-        The three writers call this; ``move`` and ``copy`` are guarded on the
-        source side by ``_reject_root_as_file`` only, for the reason the shared
-        helper measures.
+        Five call sites: the three writers, plus the ``move``/``copy``
+        destination, whose source side is ``_reject_root_as_file``. As on the
+        other hierarchical backend the destination was already refused by
+        observation, so the guard changes the message rather than the verdict
+        there; the shared helper's docstring records why that is not a reason to
+        leave it out.
         """
         from remote_store.backends._flat_ns import _reject_root_as_write_target
 

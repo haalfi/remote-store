@@ -1336,6 +1336,7 @@ class AsyncAzureBackend(AsyncBackend):
         # azure_path collapses them; without normalising, the copy+delete
         # branch below would delete the sole copy (AZ-017 data-loss edge).
         self._reject_root_as_file(src)
+        self._reject_root_as_write_target(dst)
         if _azure_path_fn(src) == _azure_path_fn(dst):
             async with self._errors(src):
                 src_bc = self._blob_client(src)
@@ -1420,6 +1421,7 @@ class AsyncAzureBackend(AsyncBackend):
         # non-canonical paths ("a//b" vs "a/b") that name the same blob once
         # azure_path collapses them (AZ-018 self-op edge).
         self._reject_root_as_file(src)
+        self._reject_root_as_write_target(dst)
         if _azure_path_fn(src) == _azure_path_fn(dst):
             async with self._errors(src):
                 src_bc = self._blob_client(src)

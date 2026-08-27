@@ -836,8 +836,8 @@ class AzureBackend(Backend):
 
         Raises:
             AlreadyExists: If the blob exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or an ancestor exists as a
-                file.
+            InvalidPath: If *path* is the store root, or names a directory, or an
+                ancestor exists as a file.
             PermissionDenied: If credentials are rejected or lack access (401/403).
             BackendUnavailable: On throttling (429), 5xx, or transport failure.
         """
@@ -953,8 +953,8 @@ class AzureBackend(Backend):
 
         Raises:
             AlreadyExists: If the blob exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or an ancestor exists as a
-                file.
+            InvalidPath: If *path* is the store root, or names a directory, or an
+                ancestor exists as a file.
             PermissionDenied: If credentials are rejected or lack access (401/403).
             BackendUnavailable: On throttling (429), 5xx, or transport failure.
         """
@@ -1440,8 +1440,8 @@ class AzureBackend(Backend):
 
         Raises:
             NotFound: If *src* does not exist.
-            InvalidPath: If *src* or *dst* names a directory, or an ancestor of
-                *dst* exists as a file.
+            InvalidPath: If *src* or *dst* is the store root, or names a
+                directory, or an ancestor of *dst* exists as a file.
             AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is
                 ``False``.
             PermissionDenied: If credentials are rejected or lack access (401/403).
@@ -1455,6 +1455,7 @@ class AzureBackend(Backend):
         # azure_path collapses them; without normalising, the copy+delete
         # branch below would delete the sole copy (AZ-017 data-loss edge).
         self._reject_root_as_file(src)
+        self._reject_root_as_write_target(dst)
         if self._azure_path(src) == self._azure_path(dst):
             with self._errors(src):
                 src_bc = self._blob_client(src)
@@ -1527,8 +1528,8 @@ class AzureBackend(Backend):
 
         Raises:
             NotFound: If *src* does not exist.
-            InvalidPath: If *src* or *dst* names a directory, or an ancestor of
-                *dst* exists as a file.
+            InvalidPath: If *src* or *dst* is the store root, or names a
+                directory, or an ancestor of *dst* exists as a file.
             AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is
                 ``False``.
             PermissionDenied: If credentials are rejected or lack access (401/403).
@@ -1541,6 +1542,7 @@ class AzureBackend(Backend):
         # non-canonical paths ("a//b" vs "a/b") that name the same blob once
         # azure_path collapses them (AZ-018 self-op edge).
         self._reject_root_as_file(src)
+        self._reject_root_as_write_target(dst)
         if self._azure_path(src) == self._azure_path(dst):
             with self._errors(src):
                 src_bc = self._blob_client(src)

@@ -29,6 +29,7 @@ from remote_store.backends._flat_ns import (
     _check_no_file_ancestor,
     _children_or_absent_container,
     _reject_root_as_file,
+    _reject_root_as_write_target,
     _wrong_type_if_file,
     _wrong_type_if_folder,
 )
@@ -360,6 +361,58 @@ class TestRejectRootAsFile:
         here would reject ordinary keys before any I/O.
         """
         assert _reject_root_as_file(path, "stub") is None
+
+
+@pytest.mark.spec("BE-029", "BE-008")
+class TestRejectRootAsWriteTarget:
+    """The pre-check that keeps the root out of write-shaped operations.
+
+    The sibling above answers a *read* of the wrong type; this answers a write,
+    and the two are deliberately separate helpers with separate wordings. Both
+    halves are pinned here rather than only through the backends, because the
+    over-matching half is the one a backend suite cannot reach cheaply: every
+    ordinary key on every backend runs through this guard, so a predicate that
+    matched one character too many would fail everywhere at once and be
+    diagnosed as anything but a root check.
+    """
+
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_both_spellings_raise_invalid_path(self, root: str) -> None:
+        with pytest.raises(InvalidPath, match="is the store root") as exc_info:
+            _reject_root_as_write_target(root, "stub")
+
+        assert exc_info.value.path == root
+        assert exc_info.value.backend == "stub"
+
+    @pytest.mark.parametrize(
+        "path",
+        ["a.txt", "a/b.txt", "dot.txt", "a/./b", "./a.txt", "..txt", ".hidden"],
+        ids=range(7),
+    )
+    def test_non_root_paths_pass_through(self, path: str) -> None:
+        """Ordinary keys are untouched, including the ones that start with a dot.
+
+        ``".hidden"`` and ``"..txt"`` are here because they are what a
+        ``startswith(".")`` or a ``strip(".")`` spelling of this predicate would
+        swallow — the exact shape that once let ``"."`` through the Graph
+        backend's own root check in the opposite direction.
+        """
+        assert _reject_root_as_write_target(path, "stub") is None
+
+    def test_wording_differs_from_the_read_guard(self) -> None:
+        """The two guards must not converge on one message.
+
+        Their separation is the whole reason there are two helpers: a caller
+        told "not a file" about a write learns the wrong thing. A future edit
+        that unified the wording would pass every backend test, because those
+        assert the class and the path, never the sentence.
+        """
+        with pytest.raises(InvalidPath) as write_exc:
+            _reject_root_as_write_target("", "stub")
+        with pytest.raises(InvalidPath) as read_exc:
+            _reject_root_as_file("", "stub")
+        assert str(write_exc.value) != str(read_exc.value)
+        assert "Cannot write" in str(write_exc.value)
 
 
 class _Sentinel(Exception):

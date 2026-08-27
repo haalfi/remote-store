@@ -206,12 +206,17 @@ class TestWritingToTheRootNeverOccupiesTheContainer:
         """The guard refuses the root key, never a key beneath it.
 
         SFTP creates ``base_path`` lazily on first write and that is the
-        documented behaviour, so this is the control: a guard that refused by
-        matching a prefix, or that ran on the resolved native path rather than
-        the key, would break the ordinary write and this cell is what parts the
-        two. Parametrised over both spellings because the key under test is
-        built from *root*, so a guard keyed on ``""`` alone would let the dot
-        spelling through here as it did in the cells above.
+        documented behaviour, so this is the control for the refusal cells
+        above: a guard that over-matched — by prefix, or by running on the
+        resolved native path rather than the key — would break the ordinary
+        write, and this is the only cell that would notice.
+
+        Both spellings are exercised because ``"./nested/file.txt"`` and
+        ``"nested/file.txt"`` reach the guard as different strings and both must
+        pass it. Under-matching is **not** what this cell catches: a guard that
+        let the dot spelling through would make a success-asserting cell succeed.
+        That direction is the refusal cells' job, and they are parametrised over
+        both spellings for it.
         """
         key = f"{root}/nested/file.txt" if root == "." else "nested/file.txt"
         result = absent_base_path_backend.write(key, b"x")
@@ -235,18 +240,24 @@ class TestWritingToTheRootNeverOccupiesTheContainer:
         op_name: str,
         call: Callable[[SFTPBackend, str], object],
     ) -> None:
-        """Why the guard has three call sites and not five, measured rather than argued.
+        """The root destination is refused before the source is looked for.
 
-        ``move`` and ``copy`` also write, and their *source* is guarded by
-        ``_reject_root_as_file`` already. Their destination is not, and does not
-        need to be: with ``base_path`` absent nothing can exist beneath it, so
-        the source check fails first with ``NotFound`` and the destination is
-        never opened. With ``base_path`` present the destination stat reports a
-        directory and the answer is ``InvalidPath``. There is no state in which
-        the root is an unguarded destination.
+        This cell used to assert ``NotFound`` on the source, and read that as
+        proof the destination needed no guard of its own: with ``base_path``
+        absent nothing can exist beneath it, so the source stat fails first.
+        The premise was true and the conclusion did not travel — measured on a
+        flat namespace, the same shape returned cleanly and deleted the source.
+
+        With the destination guarded the order inverts, and the new order is the
+        one the contract asks for: the root destination is a permanent, key-
+        decidable error, so it is refused at precondition step (0), before the
+        round trip that would report the source missing. A caller who names the
+        root as a destination hears about *that*, whether or not their source
+        happens to exist.
         """
         on_disk = _server_side(absent_base_path_backend)
-        with pytest.raises(NotFound) as exc_info:
+        with pytest.raises(InvalidPath) as exc_info:
             call(absent_base_path_backend, root)
-        assert exc_info.value.path == "a.txt", f"{op_name} failed on the destination, not the source"
+        assert exc_info.value.path == root, f"{op_name} named {exc_info.value.path!r}, not the destination"
+        assert exc_info.value.backend == "sftp"
         assert not on_disk.exists(), f"{op_name} created base_path before failing"

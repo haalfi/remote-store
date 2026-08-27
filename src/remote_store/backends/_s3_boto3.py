@@ -448,8 +448,9 @@ class S3Boto3Backend(Backend):
 
         Raises:
             AlreadyExists: If the object exists and ``overwrite`` is ``False``.
-            InvalidPath: With the ``reject_write_under_file_ancestor`` opt-in, if
-                an ancestor of *path* exists as an object.
+            InvalidPath: If *path* is the store root; or, with the
+                ``reject_write_under_file_ancestor`` opt-in, if an ancestor of
+                *path* exists as an object.
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
@@ -504,7 +505,8 @@ class S3Boto3Backend(Backend):
 
         Raises:
             AlreadyExists: If the object exists and ``overwrite`` is ``False``.
-            InvalidPath: With the opt-in, if an ancestor of *path* exists as an object.
+            InvalidPath: If *path* is the store root; or, with the opt-in, if an
+                ancestor of *path* exists as an object.
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
@@ -524,7 +526,8 @@ class S3Boto3Backend(Backend):
 
         Raises:
             AlreadyExists: If the object exists and ``overwrite`` is ``False``.
-            InvalidPath: With the opt-in, if an ancestor of *path* exists as an object.
+            InvalidPath: If *path* is the store root; or, with the opt-in, if an
+                ancestor of *path* exists as an object.
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
@@ -781,11 +784,13 @@ class S3Boto3Backend(Backend):
         Raises:
             NotFound: If *src* does not exist.
             AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is ``False``.
-            InvalidPath: With the opt-in, if an ancestor of *dst* exists as an object.
+            InvalidPath: If *src* or *dst* is the store root; or, with the opt-in,
+                if an ancestor of *dst* exists as an object.
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
         self._reject_root_as_file(src)
+        self._reject_root_as_write_target(dst)
         with self._boto_errors(src):
             if self._head_or_none(src) is None:
                 self._reject_folder(src)
@@ -812,11 +817,13 @@ class S3Boto3Backend(Backend):
         Raises:
             NotFound: If *src* does not exist.
             AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is ``False``.
-            InvalidPath: With the opt-in, if an ancestor of *dst* exists as an object.
+            InvalidPath: If *src* or *dst* is the store root; or, with the opt-in,
+                if an ancestor of *dst* exists as an object.
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
         self._reject_root_as_file(src)
+        self._reject_root_as_write_target(dst)
         with self._boto_errors(src):
             if self._head_or_none(src) is None:
                 self._reject_folder(src)

@@ -223,10 +223,17 @@ still bites: reaching the SDK produced a retryable class for a permanent
 condition on one backend and a bare SDK message on another, both of which the
 clause's opening paragraphs already forbid.
 
-`move`/`copy` **destination** is not covered, and does not need to be: with the
-container absent nothing exists beneath it, so the source check fails first;
-with it present the destination probe reports a folder. Measured both ways on
-every backend that has a destination probe.
+**The `move`/`copy` destination is covered too**, and the rule is the same one:
+a destination that is the root is a write to the root, refused before the
+transport. It is stated rather than left to follow, because the argument that it
+follows is exactly what failed. On the hierarchical backends the destination is
+*already* refused by observation — with the container present the destination
+probe reports a directory, with it absent the source check fails first — and
+that reasoning does not survive the move to a flat namespace, where nothing is
+observed: measured, `move(src, ".")` on the direct-boto3 lane **returned cleanly
+and deleted the source**, and the s3fs lane answered `AlreadyExists` for a
+destination that does not exist. A clause whose scope depends on a per-namespace
+reachability argument is a clause that is wrong on the namespace nobody checked.
 
 **Out of scope:** `delete_folder("")`, which is governed at the `Store` layer
 (STORE-002) — backend behaviour for it is undefined by this clause. Note
@@ -305,8 +312,8 @@ existing *directory* OR any slash-aligned ancestor of `path` is a regular file
 conflict — if the file exists and `overwrite=False`, raises `AlreadyExists`;
 (3) I/O. No later check may mask an earlier one. This order applies to `write()`,
 `write_atomic()`, `move()`, and `copy()` wherever analogous preconditions exist.
-For `move`/`copy`, step (0) binds the **source** only — as the file-shaped
-operation it is — and BE-029 says why the destination needs no guard of its own.
+For `move`/`copy`, step (0) binds **both** ends: the source as the file-shaped
+operation it is, and the destination as the write it is.
 Step (0) is numbered rather than folded into (1) because it is the one step no
 backend is exempt from: the flat-namespace exemption below releases (1), and a
 backend taking it still owes the root refusal, which needs no round trip and no

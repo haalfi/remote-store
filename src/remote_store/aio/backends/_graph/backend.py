@@ -954,7 +954,18 @@ class GraphBackend(AsyncBackend):
         Uses the same segment split as ``native_path``, so every spelling that
         addresses the root is rejected. A ``strip("/")`` test accepted ``"."``,
         which then wrote an item literally named ``.`` at the drive root.
+
+        The closed-backend guard runs first. This backend is terminal on close
+        and reaches that guard through the lazy ``_client`` property, which every
+        data-plane op touches — but this check runs *ahead* of the first such
+        touch, so on a closed backend a root write answered "cannot write to the
+        drive root" rather than "backend is closed". A cheap root pre-check
+        naturally wants to run first; the contract says the closed state is the
+        more fundamental error, or the answer depends on which guard was written
+        first.
         """
+        if self._closed:
+            raise BackendUnavailable("Graph backend is closed", backend=self.name)
         if not _key_segments(path):
             raise InvalidPath(f"Cannot write to the drive root: {path!r}", path=path, backend=self.name)
 

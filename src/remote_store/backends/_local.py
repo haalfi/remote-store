@@ -673,13 +673,14 @@ class LocalBackend(Backend):
 
         Raises:
             NotFound: If *src* does not exist.
-            InvalidPath: If *src* or *dst* names a directory, or an ancestor of
-                *dst* exists as a regular file.
+            InvalidPath: If *src* or *dst* is the store root, or names a
+                directory, or an ancestor of *dst* exists as a regular file.
             AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is
                 ``False``.
             PermissionDenied: If the OS denies the operation.
         """
         self._reject_root_as_file(src)
+        self._reject_root_as_write_target(dst)
         src_full = self._resolve(src)
         dst_full = self._resolve(dst)
         if not src_full.exists():
@@ -720,13 +721,14 @@ class LocalBackend(Backend):
 
         Raises:
             NotFound: If *src* does not exist.
-            InvalidPath: If *src* or *dst* names a directory, or an ancestor of
-                *dst* exists as a regular file.
+            InvalidPath: If *src* or *dst* is the store root, or names a
+                directory, or an ancestor of *dst* exists as a regular file.
             AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is
                 ``False``.
             PermissionDenied: If the OS denies the operation.
         """
         self._reject_root_as_file(src)
+        self._reject_root_as_write_target(dst)
         src_full = self._resolve(src)
         dst_full = self._resolve(dst)
         if not src_full.exists():
@@ -777,8 +779,13 @@ class LocalBackend(Backend):
         check right up until it is not. ``SFTPBackend`` reaches the same guard
         from an untouched store instead.
 
-        The three writers call this; ``move`` and ``copy`` are guarded on the
-        source side only, for the reason the shared helper measures.
+        Five call sites: the three writers, plus the ``move``/``copy``
+        destination. Local's destination was already refused by observation
+        (``dst_full.is_dir()`` fires on a present root, and with the root gone
+        the source check fails first), so here the guard changes the message
+        rather than the verdict — it is called anyway, because the shared
+        helper's docstring records what relying on that argument cost on
+        another namespace.
         """
         from remote_store.backends._flat_ns import _reject_root_as_write_target
 

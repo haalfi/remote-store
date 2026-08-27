@@ -86,3 +86,34 @@ def test_close_posture_outranks_root_rejection(backend: Backend, root: str) -> N
         except Exception as exc:  # noqa: BLE001 -- any typed error is acceptable here
             error = exc
         assert "is closed" not in str(error)
+
+
+@pytest.mark.spec("BE-020")
+@pytest.mark.spec("BE-029")
+@pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+def test_close_posture_outranks_root_write_rejection(backend: Backend, root: str) -> None:
+    """The same ordering on the *write* path, which has its own root pre-check.
+
+    The sibling above covers the read-shaped pre-check. A backend that writes to
+    the root carries a second, differently-worded root guard, and it is added to
+    each backend in the same place — ahead of the work, after the closed guard.
+    "Ahead of the work" is the easy half to get right and "after the closed
+    guard" is the half that silently depends on which line the implementer typed
+    first, which is exactly what BE-020's paragraph says must not decide it.
+
+    Nothing pinned that on this path: four backends assert the ordering in a
+    docstring and the read-shaped cell above cannot reach it, because
+    ``read_bytes`` never touches the write guard.
+    """
+    _require(backend, Capability.WRITE)
+    backend.close()
+    if backend.close_is_terminal:
+        with pytest.raises(BackendUnavailable, match="is closed"):
+            backend.write(root, b"x")
+    else:
+        error: Exception | None = None
+        try:
+            backend.write(root, b"x")
+        except Exception as exc:  # noqa: BLE001 -- any typed error is acceptable here
+            error = exc
+        assert "is closed" not in str(error)
