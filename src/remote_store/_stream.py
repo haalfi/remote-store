@@ -75,7 +75,10 @@ class _ErrorMappingStream(io.RawIOBase):
         is_fatal: Optional ``(Exception) -> bool`` predicate deciding whether a
             failure leaves the underlying connection unusable.  Omitted by
             backends whose streams fail for reasons a close survives, and for
-            them the close stays unconditional.
+            them the close stays unconditional.  It **must be pure inspection
+            of the exception** -- no I/O, no round-trip: it is called on the
+            failure path of a connection that may already be dead, so a probe
+            inside it would pay the very wait this guard exists to remove.
     """
 
     def __init__(

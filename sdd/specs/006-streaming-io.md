@@ -82,7 +82,6 @@ clause makes no claim about them. Supplying one is optional by design, not an
 omission each backend is expected to correct: it is worth the parameter only
 where a close on a dead connection blocks, which is a property of the transport,
 not of every stream. `SFTPBackend` is the only backend that supplies one.
-
 **Postconditions:** A backend that can recognise such a failure supplies
 `_ErrorMappingStream` with an `is_fatal` predicate over the raised exception.
 Once it answers `True` for a mapped failure, the wrapper's `close()` skips the

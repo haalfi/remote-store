@@ -6,7 +6,6 @@ All tests are skipped if dependencies are not installed.
 
 from __future__ import annotations
 
-import contextlib
 import errno
 import io
 import os
@@ -914,13 +913,15 @@ class TestSFTPConnection:
         stream = sftp_backend.read("r.txt")
         with pytest.raises(BackendUnavailable):
             stream.read()
-        with contextlib.suppress(Exception):
-            # Closes the wrapper only. ``EOFError`` is a dead-connection signal,
-            # so the futile-close guard skips the inner paramiko handle by
-            # design (BK-355) and this no longer releases it synchronously —
-            # collection does, via ``SFTPFile.__del__``. The fixture's backend
-            # teardown is what bounds the handle's life here.
-            stream.close()
+        # Closes the wrapper only. ``EOFError`` is a dead-connection signal, so
+        # the futile-close guard skips the inner paramiko handle by design
+        # (BK-355) and this no longer releases it synchronously — collection
+        # does, via ``SFTPFile.__del__``. The fixture's backend teardown is what
+        # bounds the handle's life here.
+        # Unsuppressed on purpose: the only exception this could raise came from
+        # the inner close, so the guard makes it unreachable. Letting it fail
+        # the test is how a regression in the guard surfaces at this site.
+        stream.close()
         assert sftp_backend._sftp_client is None, "a read-path channel death must invalidate the client"
         assert sftp_backend.read_bytes("r.txt") == b"payload", "the next read must reconnect, not wedge"
 
