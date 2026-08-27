@@ -106,10 +106,18 @@ BackendConfig(
 ```
 
 The bound is re-applied on every reconnect, including the transparent ones the
-backend performs after a dropped connection, and it covers the SFTP session
-setup as well as later transfers. Setting it through the
+backend performs after a dropped connection, and it covers most of the SFTP
+session setup as well as later transfers. Setting it through the
 [escape hatch](#escape-hatch) instead does not survive those reconnects, because
 each one opens a fresh channel.
+
+!!! warning "One wait it does not cover"
+    A server that opens the SSH channel and then never answers the `sftp`
+    subsystem request still hangs, regardless of `io_timeout`: paramiko waits
+    for that reply on an untimed event, so no channel timeout applies. Every
+    reconnect re-enters that window. It needs a wedged SSH daemon rather than a
+    wedged SFTP subsystem, so it is rarer than the stall this option does cover
+    — but if a peer hangs with `io_timeout` set, this is the shape to suspect.
 
 A stall is reported, not retried: the connect-phase `RetryPolicy` does not cover
 it, so a partially consumed stream is never silently restarted underneath you.

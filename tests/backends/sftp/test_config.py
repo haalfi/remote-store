@@ -124,18 +124,42 @@ class TestSFTPParamikoVersionSurface:
         the copy diverges *silently*: no import error, no failure, just an SFTP
         client built differently from everyone else's.
 
-        So this asserts the shape the copy assumes — open a session, invoke the
-        ``sftp`` subsystem, construct from the channel, and nothing else that
-        looks like a round-trip. Crude by design: it is a tripwire on the
+        So this asserts the shape the copy assumes — open a session, guard the
+        None return, invoke the ``sftp`` subsystem, construct from the channel,
+        and nothing else that looks like a round-trip. It reads the body as an
+        AST rather than as text so that an *added* step fails it: a substring
+        check only catches removal and renaming, and silent divergence is the
+        failure mode this guards. Crude by design: it is a tripwire on the
         upstream body, not a proof of equivalence, and a deliberate upstream
         change should land here as a visible failure to re-read the copy.
-        """
-        import inspect
 
-        src = inspect.getsource(paramiko.SFTPClient.from_transport)
-        assert "open_session(" in src
-        assert 'invoke_subsystem("sftp")' in src
-        assert "return cls(chan)" in src
+        Argument shape is deliberately not pinned beyond the subsystem name.
+        ``window_size`` / ``max_packet_size`` are tuning knobs the inlined copy
+        does not pass, so upstream re-spelling them is not divergence this copy
+        needs to hear about; an added *call* is.
+        """
+        import ast
+        import inspect
+        import textwrap
+
+        module = ast.parse(textwrap.dedent(inspect.getsource(paramiko.SFTPClient.from_transport)))
+        func = module.body[0]
+        assert isinstance(func, ast.FunctionDef)
+        body = func.body[1:]  # index 0 is the docstring
+
+        assert [type(node).__name__ for node in body] == [
+            "Assign",
+            "If",
+            "Expr",
+            "Return",
+        ]
+        assert ast.unparse(body[0].value.func) == "t.open_session"
+        assert ast.unparse(body[2]) == "chan.invoke_subsystem('sftp')"
+        assert ast.unparse(body[3]) == "return cls(chan)"
+        # The count is what makes "nothing else" checkable: a round-trip added
+        # anywhere in the body, nested inside the None guard included, moves it.
+        calls = [node for node in ast.walk(func) if isinstance(node, ast.Call)]
+        assert len(calls) == 3
 
 
 # endregion

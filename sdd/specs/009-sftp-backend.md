@@ -449,12 +449,18 @@ re-entries differently:
    SFTP-010 tier 2 never fired on the operation that surfaced the drop.
 3. **Skipped teardown.** `_promote` skips the `rename` fallback, whose `remove`
    + `rename` would each pay the bound again; `write_atomic` and `open_atomic`
-   skip their temp cleanup; and `open_atomic` skips the best-effort
-   `handle.close()` on an abnormal exit, since paramiko's `SFTPFile.close()`
-   issues a synchronous `CMD_CLOSE`. That last one is the worst of the set when
-   unguarded, because `contextlib.suppress` makes it a wait with no error to
-   explain it. Measured on a streamed write at a 2 s bound: 4.04 s before the
-   guard, 2.04 s after.
+   skip their temp cleanup; and **every** paramiko file handle held in a `with`
+   block skips its close on a dead-connection exit, since `SFTPFile.close()`
+   flushes and then issues a synchronous `CMD_CLOSE` whose reply never comes.
+   That last is the worst of the set when unguarded, because paramiko swallows
+   the timeout raised inside its own close, making it a wait with no error to
+   explain it. The guard is one helper (`_handle`) rather than a per-site
+   repeat, because the site that first exposed it was not the only one: `write`,
+   `write_atomic`, `read_bytes`, `copy` and `move`'s copy fallback all hold a
+   handle the same way, and `open_atomic` applies the same rule inline (its
+   clean-exit close must sit inside `_errors` so a flush failure still maps).
+   Measured at a 2 s bound, on a `write` from a stream that goes quiet
+   mid-transfer: 4.00 s before the guard, 2.00 s after.
 
 **Bounded, with two stated exceptions.** Neither is fixed here:
 
@@ -474,12 +480,14 @@ re-entries differently:
   observed so the block is pinned to the request rather than to an earlier
   handshake step. If that test ever fails, the wait has become bounded and this
   bullet should be deleted with it.
-- **Releasing a stream handle.** `_ErrorMappingStream.close` closes the
-  underlying paramiko file under `contextlib.suppress`, so exiting the `with`
-  block of a stream that has already failed may block once more. The fix belongs
-  to the shared stream wrapper rather than to this backend — it serves the S3,
-  Azure and HTTP backends too — so it is tracked as BK-355. When BK-355 lands,
-  this exception goes.
+- **Releasing a *streamed-read* handle.** `read` hands back an
+  `_ErrorMappingStream`, whose `close` closes the underlying paramiko file under
+  `contextlib.suppress`, so releasing a stream that has already failed blocks
+  once more. Measured at a 2 s bound, consuming part of a `read()` and then
+  stalling: 4.00 s for the failed reads plus the close. This is the one handle
+  the `_handle` guard above does not reach, because the wrapper — not this
+  backend — owns the close, and it serves the S3, Azure and HTTP backends too.
+  Tracked as BK-355; when it lands, this exception goes.
 
 For a **streamed** read (`read`), a stall after the caller has consumed bytes
 raises rather than returning short, so a truncated stream is never

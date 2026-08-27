@@ -18,16 +18,22 @@ expected_ripples:
   - CHANGELOG.md
   - docs-src/guides/backends/sftp.md
 # Counted from `git log --oneline origin/master..HEAD` at the head this trace
-# ships on, which holds four commits. a514166 implements and does not count.
-# Three are review-incorporating and are the counted list: 61e4e22 (round 1, 16
-# findings), 630ff2e (round 2, 6 findings), and the round-3 commit this line
-# ships in (8 findings). Value is 3.
+# ships on, which holds seven commits. Two do not count: bdf775b implements the
+# item, 0b1c752 files BK-355. The remaining five carry four review rounds —
+# 2876dfb (round 1, 16 findings), f5227b3 (round 2, 6 findings), 4863ad9 plus
+# 8dd2f0a (round 3, 8 findings, split across two commits because the round's own
+# replacement claim needed characterising), and the commit this line ships in
+# (round 4, the unprimed exit gate, 5 findings). Value is 4.
 #
-# Round 2 left this half-named — one SHA plus "the round-2 fix commit" — because
-# the later commit did not exist when the comment was written and the comment
-# was not revisited when it did. Half a list is half-checkable, which is the
-# thing the schema's clause exists to prevent.
-review_rounds: 3
+# Two ways this line has been wrong before, both now closed. Round 2 left it
+# half-named — one SHA plus "the round-2 fix commit" — because the later commit
+# did not exist when the comment was written and the comment was not revisited
+# when it did. Round 4 found the SHAs stale outright: the branch was rebased
+# twice after they were written, so a514166 / 61e4e22 / 630ff2e named nothing on
+# the branch and the comment read as checkable while being uncheckable. A SHA
+# list is a derivation only while the history under it holds; re-run the command
+# whenever the branch moves under this file, rebases included.
+review_rounds: 4
 phases:
   - id: orient
     name: Orient on the report
@@ -259,6 +265,81 @@ phases:
           wrapper and the regression surface is every backend using it — filed
           as BK-355 and named as a stated exception in SFTP-030 rather than
           widened into this PR.
+        outcome: ok
+  - id: fix3
+    name: Round 4 review (unprimed exit gate)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_handle"
+        read_type: verify
+        extract: >-
+          The round-4 must-fix, and the one finding in this item nobody reached
+          by reading the diff's subject: I had fixed the suppressed-close
+          multiplier at one site (the open_atomic probe in round 3) and filed the
+          shared-wrapper case as BK-355, which left the PR's own five `with`
+          blocks — read_bytes, write, write_atomic, move's rename fallback, copy
+          — each still closing a handle into a channel their own failure had just
+          condemned. Fixing one instance and filing another made the class look
+          swept. Extracted the shape into a _handle contextmanager that skips the
+          best-effort close when the escaping exception is a dead connection, and
+          routed all five through it; open_atomic keeps its inline guard because
+          its clean-exit close has to sit inside _errors. Load-bearing check:
+          removing the write-site routing fails
+          test_write_stalling_mid_stream_costs_one_bound at "4.0s (2.0x the
+          bound)" against a 2 s bound.
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "test_from_transport_still_matches_the_inlined_steps"
+        read_type: verify
+        extract: >-
+          A test whose docstring claimed more than its assertions did: it said it
+          pinned "nothing else that looks like a round-trip", and was three
+          substring checks, which catch a removed or renamed step and cannot
+          catch an added one — the precise divergence an unpinned upstream
+          produces silently. Rewritten to read the body as an AST: statement-kind
+          sequence, the three identities, and a total Call count so a round-trip
+          added anywhere, inside the None guard included, moves it. Ran the new
+          assertions against six hand-written variants of the upstream body in a
+          throwaway script (not kept): upstream and a re-spelled tuning kwarg
+          pass; added top-level step, added nested call, renamed subsystem and
+          removed step all fire.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_has_file_ancestor"
+        read_type: verify
+        extract: >-
+          Round 2 added this re-raise and round 4 found nothing exercised it. The
+          stall tests all arrive with an already-dead caller error, which the
+          call-site guard short-circuits before the walk; the state that reaches
+          the walk's own raise is split — opaque SSH_FX_FAILURE from the caller,
+          channel dying on a later probe — and a relay cannot produce that split
+          on demand. Added a two-case test that injects the split onto the live
+          client and asserts the consequence rather than the raise (drop
+          reported, cached client invalidated), with the non-dead walk failure as
+          the control. Non-vacuity confirmed by disabling the re-raise: the drop
+          case then surfaces RemoteStoreError('Failure') and keeps the client.
+        outcome: ok
+      - file: sdd/traces/bk-354-sftp-io-timeout.yml
+        section: "review_rounds"
+        read_type: verify
+        extract: >-
+          The derivation comment named three SHAs, none of which was on the
+          branch: it was written before two rebases and not re-run after either.
+          A derivation that decays with the history under it is the failure mode
+          principle 9 does not by itself catch, since the sentence stays true-
+          looking while becoming uncheckable. Re-run and re-counted; the field
+          was also short, having missed that round 3 landed as two commits.
+        outcome: ok
+      - file: docs-src/guides/troubleshooting.md
+        section: "SFTP transfer hangs with no error"
+        read_type: reference
+        extract: >-
+          The unbounded subsystem request was recorded as a stated exception in
+          SFTP-030 and characterised by a test, but nowhere a user would look: a
+          reader who sets io_timeout and still hangs was left with the guide
+          saying the bound covers this. Added the "if it still hangs" branch here
+          and the matching warning in the SFTP guide, so the exception reaches
+          the audience that meets it.
         outcome: ok
   - id: docs
     name: Document the distinction

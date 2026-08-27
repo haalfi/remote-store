@@ -36,6 +36,7 @@ implies the others:
 from __future__ import annotations
 
 import contextlib
+import errno
 import socket
 import threading
 import time
@@ -549,6 +550,72 @@ def test_stall_costs_one_bound_not_several(stall_relay: _StallRelay, op: str) ->
 
 
 @pytest.mark.spec("SFTP-030")
+@pytest.mark.parametrize(
+    ("walk_error", "expect_drop"),
+    [(TimeoutError("timed out"), True), (OSError("Failure"), False)],
+    ids=["channel-dies-during-walk", "opaque-walk-error"],
+)
+def test_ancestor_walk_meeting_a_dead_channel_reports_the_drop(
+    sftp_server: tuple[int, str] | None,
+    monkeypatch: pytest.MonkeyPatch,
+    walk_error: Exception,
+    expect_drop: bool,
+) -> None:
+    """A channel that dies *during* the file-ancestor walk still reconnects.
+
+    The stall tests all reach ``_has_file_ancestor`` with a caller error that is
+    already dead, which the call-site guard short-circuits — so the re-raise
+    inside the walk itself is never exercised by them. The state that reaches it
+    is split: the caller's failure is an errno-less ``SSH_FX_FAILURE`` (opaque,
+    not dead, so classification proceeds) and the channel dies afterwards, on a
+    probe. A relay cannot produce that split on demand, so the two halves are
+    injected onto the live client instead.
+
+    What is asserted is the consequence, not the ``raise``. Swallowing the dead
+    stat returns ``False``, the caller's opaque error surfaces, and
+    ``_map_exception`` maps it to a plain ``RemoteStoreError`` — which does not
+    clear the cached client, so the next operation reuses a channel that is
+    gone. The ``opaque-walk-error`` case is the control: same shape, a walk
+    failure that is *not* a drop, and there the original error must still stand
+    and the client must survive.
+    """
+    if sftp_server is None:
+        pytest.skip("paramiko not installed")
+
+    import paramiko
+
+    from remote_store._errors import RemoteStoreError
+
+    backend = _make_backend(sftp_server[0], io_timeout=2.0)
+    leaf = f"ancestor_{uuid.uuid4().hex[:8]}.bin"
+    name = f"deep_{uuid.uuid4().hex[:8]}/sub/{leaf}"
+    client = backend.unwrap(paramiko.SFTPClient)
+
+    def _fail_open(*_args: Any, **_kwargs: Any) -> Any:
+        # paramiko's shape for SSH_FX_FAILURE: an OSError carrying no errno.
+        raise OSError("Failure")
+
+    def _stat(remote: str, *_args: Any, **_kwargs: Any) -> Any:
+        if remote.endswith(leaf):
+            # The is-dir classification stat: target is gone, not a directory,
+            # so the caller's original failure stands and the walk is reached.
+            raise FileNotFoundError(errno.ENOENT, "No such file")
+        raise walk_error
+
+    monkeypatch.setattr(client, "file", _fail_open)
+    monkeypatch.setattr(client, "stat", _stat)
+
+    with pytest.raises(RemoteStoreError) as caught:
+        backend.read_bytes(name)
+
+    assert isinstance(caught.value, BackendUnavailable) is expect_drop
+    reconnected = backend.unwrap(paramiko.SFTPClient) is not client
+    assert reconnected is expect_drop, (
+        "a drop must invalidate the cached client so the next operation reconnects; a non-drop must leave it in place"
+    )
+
+
+@pytest.mark.spec("SFTP-030")
 def test_stalled_upload_request_raises_backend_unavailable(stall_relay: _StallRelay) -> None:
     """A client→server stall is bounded: the request never reaches the server.
 
@@ -575,6 +642,56 @@ def test_stalled_upload_request_raises_backend_unavailable(stall_relay: _StallRe
         backend.write(f"upload_{uuid.uuid4().hex[:8]}.bin", b"w" * 4096)
     elapsed = time.monotonic() - start
     assert elapsed < io_timeout * 3, f"write took {elapsed:.1f}s; expected ~{io_timeout}s"
+
+
+@pytest.mark.spec("SFTP-030")
+def test_write_stalling_mid_stream_costs_one_bound(stall_relay: _StallRelay) -> None:
+    """``write()`` from a stream that stalls part-way pays the bound once.
+
+    The other upload test stalls *before* the call, so it fails on the first
+    round-trip and never reaches ``SFTPFile.write``. This one reaches it: the
+    content object stalls the relay from inside its own ``read()``, after the
+    first chunk has already been written, so the peer goes quiet with the handle
+    open and bytes already sent. Deterministic — the timing is controlled by the
+    caller's own stream rather than by racing a thread against the transfer.
+
+    What it pins is the close, not the write. ``write()`` holds the handle in a
+    ``with`` block, so the failure runs ``SFTPFile.close()`` on the way out —
+    a flush plus a synchronous ``CMD_CLOSE`` whose reply never comes, with
+    paramiko swallowing the timeout. Unguarded that is a second, invisible
+    bound. The same shape exists in ``write_atomic``, ``copy`` and ``move``'s
+    fallback, which is why the guard lives in one helper rather than at the site
+    an earlier round happened to measure.
+    """
+    io_timeout = 2.0
+    backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
+    name = f"midwrite_{uuid.uuid4().hex[:8]}.bin"
+    stalled_at: list[float] = []
+
+    class _StallsAfterFirstChunk:
+        """A content stream that goes quiet on the wire once writing is underway."""
+
+        def __init__(self) -> None:
+            self._chunks = 0
+
+        def read(self, size: int = -1) -> bytes:
+            self._chunks += 1
+            if self._chunks == 1:
+                return b"a" * (256 * 1024)  # written while the link is healthy
+            if self._chunks == 2:
+                stall_relay.stall_upload()
+                stalled_at.append(time.monotonic())
+                return b"b" * (256 * 1024)  # this one meets a silent peer
+            return b""
+
+    with pytest.raises(BackendUnavailable):
+        backend.write(name, _StallsAfterFirstChunk())
+    elapsed = time.monotonic() - stalled_at[0]
+
+    assert elapsed < io_timeout * 1.75, (
+        f"stalled mid-stream write took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "
+        "the handle close is re-entering the stalled channel"
+    )
 
 
 @pytest.mark.spec("SFTP-030")

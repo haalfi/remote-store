@@ -146,6 +146,13 @@ backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=12
 A stall then raises `BackendUnavailable`, and the backend reconnects on the
 next operation.
 
+**If it still hangs with `io_timeout` set,** one wait is not covered: a server
+that opens the SSH channel and then never answers the `sftp` subsystem request.
+Paramiko waits for that reply on an untimed event, so no channel timeout
+reaches it. That needs a wedged SSH daemon rather than a wedged SFTP
+subsystem — rarer than the stall above, but it is the shape to suspect when the
+bound appears to do nothing.
+
 **Choosing a value.** `io_timeout` bounds the silence *between* bytes, not the
 transfer as a whole — a multi-gigabyte fetch that legitimately takes an hour is
 unaffected. Size it against the longest legitimate pause your server can

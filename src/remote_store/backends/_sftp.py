@@ -847,7 +847,7 @@ class SFTPBackend(Backend):
         with self._errors(path):
             sftp_path = self._sftp_path(path)
             try:
-                with self._sftp.file(sftp_path, "r") as f:
+                with self._handle(self._sftp.file(sftp_path, "r")) as f:
                     f.prefetch()
                     return bytes(f.read())
             except OSError as exc:
@@ -919,7 +919,7 @@ class SFTPBackend(Backend):
                     self._classify_existing_target(st, path)
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
             self._ensure_parent_dirs(sftp_path)
-            with self._open_write(sftp_path, path) as f:
+            with self._handle(self._open_write(sftp_path, path)) as f:
                 if isinstance(content, bytes):
                     f.write(content)
                     size = len(content)
@@ -988,7 +988,7 @@ class SFTPBackend(Backend):
             tmp_name = f".~tmp.{name}.{uuid.uuid4().hex[:8]}"
             tmp_path = f"{parent}/{tmp_name}"
             try:
-                with self._sftp.file(tmp_path, "w") as f:
+                with self._handle(self._sftp.file(tmp_path, "w")) as f:
                     if isinstance(content, bytes):
                         f.write(content)
                         size = len(content)
@@ -1092,8 +1092,12 @@ class SFTPBackend(Backend):
                 # waits for a reply that will never come, so the caller pays a
                 # second ``io_timeout`` — and ``suppress`` makes it invisible,
                 # a wait with no error to explain it. Measured at a 2 s bound:
-                # 4.04 s before this guard, 2.02 s after. Same reasoning as the
+                # 4.04 s before this guard, 2.04 s after. Same reasoning as the
                 # ``connection_lost`` skip on the temp cleanup below.
+                #
+                # This is ``_handle``'s guard, written out rather than reused:
+                # the clean-exit close below must happen *inside* ``_errors`` so
+                # a flush failure maps, and ``_handle`` closes outside it.
                 if not (isinstance(exc, Exception) and self._is_connection_dead(exc)):
                     with contextlib.suppress(Exception):
                         handle.close()
@@ -1479,7 +1483,10 @@ class SFTPBackend(Backend):
                     self._sftp.rename(src_sftp, dst_sftp)
                 except OSError:
                     # Fallback: stream copy + delete
-                    with self._sftp.file(src_sftp, "r") as src_f, self._sftp.file(dst_sftp, "w") as dst_f:
+                    with (
+                        self._handle(self._sftp.file(src_sftp, "r")) as src_f,
+                        self._handle(self._sftp.file(dst_sftp, "w")) as dst_f,
+                    ):
                         shutil.copyfileobj(src_f, dst_f, _CHUNK_SIZE)
                     self._sftp.remove(src_sftp)
 
@@ -1950,6 +1957,37 @@ class SFTPBackend(Backend):
         """
         if st is not None and (st.st_mode is None or stat.S_ISDIR(st.st_mode)):
             raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name)
+
+    @contextmanager
+    def _handle(self, handle: Any) -> Iterator[Any]:
+        """Hold a paramiko file handle, skipping the close when the channel is dead.
+
+        A plain ``with sftp.file(...) as f`` closes on exit whatever happened,
+        and paramiko's ``SFTPFile.close()`` flushes and then issues a
+        synchronous ``CMD_CLOSE``. On a channel that has already stalled, that
+        reply never comes: the caller pays ``io_timeout`` a second time, and
+        pays it *silently*, because paramiko swallows the timeout raised inside
+        its own close. The bound the caller was promised becomes two.
+
+        So on the way out with a dead-connection error, the close is skipped —
+        the handle is unusable and the server will reap it when the channel
+        goes. Any other exception still closes best-effort (a caller error, a
+        permission failure), and a clean exit closes normally so a flush failure
+        still surfaces and maps.
+
+        This is the same guard ``open_atomic`` applies to its own handle;
+        centralising it is what stops the next streaming call site rediscovering
+        the doubling. Measured on a streamed write at a 2 s bound: 4.04 s before
+        the guard, 2.04 s after.
+        """
+        try:
+            yield handle
+        except BaseException as exc:
+            if not (isinstance(exc, Exception) and self._is_connection_dead(exc)):
+                with contextlib.suppress(Exception):
+                    handle.close()
+            raise
+        handle.close()
 
     def _open_write(self, sftp_path: str, path: str) -> BinaryIO:
         """Open *sftp_path* for writing, classifying a directory target lazily.
