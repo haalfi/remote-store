@@ -18,6 +18,7 @@ SFTPBackend(
     host_keys_path: str | None = None,
     config: dict[str, Any] | None = None,
     timeout: int = 10,
+    io_timeout: float | None = None,
     connect_kwargs: dict[str, Any] | None = None,
     retry: RetryPolicy | None = None,
 )
@@ -43,7 +44,8 @@ Parameters:
 - **`known_host_keys`** (`str | None`, default: `None` ) – Known hosts string (code-level override).
 - **`host_keys_path`** (`str | None`, default: `None` ) – Path to known_hosts file (default: ~/.ssh/known_hosts).
 - **`config`** (`dict[str, Any] | None`, default: `None` ) – Optional config dict (may contain known_host_keys).
-- **`timeout`** (`int`, default: `10` ) – SSH connection timeout in seconds.
+- **`timeout`** (`int`, default: `10` ) – SSH connection timeout in seconds. Bounds the connect phase only — it is passed as paramiko's timeout / banner_timeout / auth_timeout / channel_timeout, the last of which bounds channel open, not traffic on an opened channel.
+- **`io_timeout`** (`float | None`, default: `None` ) – Seconds a single blocking read or write on the open SFTP channel may go without progress before it fails, or None (default) for no bound. Applied with Channel.settimeout() on every connect and every reconnect, and armed before the SFTP session setup, so a peer that completes the SSH handshake and then falls silent is bounded there too. This is silence between bytes, not a deadline for the whole transfer: a large file over a slow link is unaffected however long it takes, while a peer that stops sending mid-transfer raises BackendUnavailable instead of blocking forever. Must be positive when set; 0 is rejected because paramiko reads it as non-blocking. A streamed read raises rather than returning short, so a truncated transfer is never mistaken for a complete one. Every stall is reported, never retried: the retry policy wraps the SSH connect call alone, so a partially consumed stream is never silently restarted — and a stall during session setup is reported too, rather than retried as a connect failure would be.
 - **`connect_kwargs`** (`dict[str, Any] | None`, default: `None` ) – Extra kwargs passed to SSHClient.connect().
 
 ### check_health

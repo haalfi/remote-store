@@ -3032,6 +3032,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#sftp-transfer-hangs-with-no-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SFTP transfer hangs with no error
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#azure-hns-vs-flat-namespace" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10711,6 +10722,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#sftp-transfer-hangs-with-no-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SFTP transfer hangs with no error
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#azure-hns-vs-flat-namespace" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10886,6 +10908,37 @@ identify which list the server narrowed.</p>
   <code>connect_kwargs={"disabled_algorithms": ...}</code>; the
   <code>enable_ssh_rsa_compat()</code> helper does not address these.</li>
 </ul>
+<h2 id="sftp-transfer-hangs-with-no-error">SFTP transfer hangs with no error<a class="headerlink" href="#sftp-transfer-hangs-with-no-error" title="Permanent link">&para;</a></h2>
+<p><strong>Symptom:</strong> an SFTP read or write stops making progress and never returns.
+No exception, no log line — the call simply does not come back, and whatever
+worker or pool slot it was running on stays occupied.</p>
+<p><strong>Cause.</strong> <code>SFTPBackend</code>'s <code>timeout</code> bounds the <em>connect</em> phase only. It is
+passed to paramiko as <code>timeout</code> / <code>banner_timeout</code> / <code>auth_timeout</code> /
+<code>channel_timeout</code>, and the last of those bounds how long the client waits for a
+channel to <em>open</em>, not traffic on an opened one. Once the channel is up,
+paramiko applies no bound at all, so a peer that completes the handshake and
+then stops sending blocks indefinitely. This is a silent peer, not a dropped
+connection: a drop raises and is recovered from, whereas silence looks exactly
+like a very slow transfer.</p>
+<p><strong>Fix.</strong> Set <a href="../backends/sftp/#bounding-a-stalled-transfer"><code>io_timeout</code></a>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">SFTPBackend</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">SFTPBackend</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">"files.example.com"</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="s2">"deploy"</span><span class="p">,</span> <span class="n">io_timeout</span><span class="o">=</span><span class="mi">120</span><span class="p">)</span>
+</code></pre></div>
+<p>A stall then raises <code>BackendUnavailable</code>, and the backend reconnects on the
+next operation.</p>
+<p><strong>If it still hangs with <code>io_timeout</code> set,</strong> one wait is not covered: a server
+that opens the SSH channel and then never answers the <code>sftp</code> subsystem request.
+Paramiko waits for that reply on an untimed event, so no channel timeout
+reaches it. That needs a wedged SSH daemon rather than a wedged SFTP
+subsystem — rarer than the stall above, but it is the shape to suspect when the
+bound appears to do nothing.</p>
+<p><strong>Choosing a value.</strong> <code>io_timeout</code> bounds the silence <em>between</em> bytes, not the
+transfer as a whole — a multi-gigabyte fetch that legitimately takes an hour is
+unaffected. Size it against the longest legitimate pause your server can
+produce (an antivirus or dedup appliance may go quiet on <code>open()</code> of a large
+file), not against total transfer time. <code>0</code> does not mean "no bound": it is
+rejected at construction. Use <code>None</code>, the default, for no bound.</p>
 <h2 id="azure-hns-vs-flat-namespace">Azure: HNS vs flat namespace<a class="headerlink" href="#azure-hns-vs-flat-namespace" title="Permanent link">&para;</a></h2>
 <p><strong>Symptom:</strong> <code>move()</code> or <code>copy()</code> fails on Azure with unexpected errors.</p>
 <p><strong>Cause:</strong> Azure Blob Storage has two modes: flat namespace (default) and
@@ -10902,30 +10955,30 @@ them, and HNS is recommended for data lake workloads.</p>
 <p><strong>Cause:</strong> The default S3 endpoint points to AWS. Local services need an
 explicit endpoint URL.</p>
 <p><strong>Fix:</strong></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="s2">"backends"</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>        <span class="s2">"minio"</span><span class="p">:</span> <span class="p">{</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"s3"</span><span class="p">,</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>            <span class="s2">"bucket"</span><span class="p">:</span> <span class="s2">"my-bucket"</span><span class="p">,</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>            <span class="s2">"endpoint_url"</span><span class="p">:</span> <span class="s2">"http://localhost:9000"</span><span class="p">,</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>            <span class="s2">"key"</span><span class="p">:</span> <span class="s2">"minioadmin"</span><span class="p">,</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>            <span class="s2">"secret"</span><span class="p">:</span> <span class="s2">"minioadmin"</span><span class="p">,</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>        <span class="p">}</span>
-<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="p">},</span>
-<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="s2">"stores"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"default"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"backend"</span><span class="p">:</span> <span class="s2">"minio"</span><span class="p">}},</span>
-<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="p">}</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="s2">"backends"</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>        <span class="s2">"minio"</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>            <span class="s2">"type"</span><span class="p">:</span> <span class="s2">"s3"</span><span class="p">,</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>            <span class="s2">"bucket"</span><span class="p">:</span> <span class="s2">"my-bucket"</span><span class="p">,</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>            <span class="s2">"endpoint_url"</span><span class="p">:</span> <span class="s2">"http://localhost:9000"</span><span class="p">,</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>            <span class="s2">"key"</span><span class="p">:</span> <span class="s2">"minioadmin"</span><span class="p">,</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>            <span class="s2">"secret"</span><span class="p">:</span> <span class="s2">"minioadmin"</span><span class="p">,</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>        <span class="p">}</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    <span class="p">},</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="s2">"stores"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"default"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"backend"</span><span class="p">:</span> <span class="s2">"minio"</span><span class="p">}},</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="p">}</span>
 </code></pre></div>
 <h2 id="capabilitynotsupported-error">CapabilityNotSupported error<a class="headerlink" href="#capabilitynotsupported-error" title="Permanent link">&para;</a></h2>
 <p><strong>Symptom:</strong> <code>CapabilityNotSupported: Backend 'memory' does not support GLOB</code></p>
 <p><strong>Cause:</strong> Not all backends support every operation. Memory and SFTP lack
 native glob.</p>
 <p><strong>Fix:</strong> Check capabilities before calling, or use the portable fallback:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Capability</span><span class="p">,</span> <span class="n">glob_files</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">if</span> <span class="n">Capability</span><span class="o">.</span><span class="n">GLOB</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">capabilities</span><span class="p">():</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">results</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">"**/*.csv"</span><span class="p">)</span>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">else</span><span class="p">:</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">results</span> <span class="o">=</span> <span class="n">glob_files</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">"**/*.csv"</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Capability</span><span class="p">,</span> <span class="n">glob_files</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="k">if</span> <span class="n">Capability</span><span class="o">.</span><span class="n">GLOB</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">capabilities</span><span class="p">():</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">results</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="s2">"**/*.csv"</span><span class="p">)</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">results</span> <span class="o">=</span> <span class="n">glob_files</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="s2">"**/*.csv"</span><span class="p">)</span>
 </code></pre></div>
 <p>See the <a href="../../reference/capabilities-matrix/">Capabilities Matrix</a> for the full
 backend x capability table.</p>

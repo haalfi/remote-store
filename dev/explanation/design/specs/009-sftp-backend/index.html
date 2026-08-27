@@ -9781,6 +9781,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#timeouts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Timeouts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Timeouts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sftp-030-channel-io-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SFTP-030: Channel I/O Timeout
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -11436,6 +11464,34 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#timeouts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Timeouts
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Timeouts">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#sftp-030-channel-io-timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SFTP-030: Channel I/O Timeout
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -11481,9 +11537,10 @@ connection/authentication parameters.
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">known_host_keys</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">host_keys_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># defaults to ~/.ssh/known_hosts</span>
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>         <span class="c1"># may contain "known_host_keys"</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">connect_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="c1"># extra SSHClient.connect() kwargs</span>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="p">)</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>                  <span class="c1"># connect phase only (see SFTP-030)</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">io_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>    <span class="c1"># bound on a stalled open channel</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="n">connect_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="c1"># extra SSHClient.connect() kwargs</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="p">)</span>
 </code></pre></div>
 <strong>Postconditions:</strong> The backend stores configuration but does not connect during
 construction (see SFTP-004).</p>
@@ -11522,7 +11579,10 @@ during application wiring before the network is available. Automatic reconnectio
 on staleness is also supported (see SFTP-010).</p>
 <h3 id="sftp-005-construction-validation">SFTP-005: Construction Validation<a class="headerlink" href="#sftp-005-construction-validation" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>host</code> must be a non-empty string. Passing an empty or whitespace-only
-host raises <code>ValueError</code> at construction time.
+host raises <code>ValueError</code> at construction time. <code>io_timeout</code>, when not <code>None</code>, must
+be a positive number of seconds; <code>0</code> and negatives raise <code>ValueError</code> — paramiko
+reads <code>0</code> as non-blocking, which would fail every read immediately rather than
+bound it.
 <strong>Postconditions:</strong> No network validation of host reachability at construction time.</p>
 <hr />
 <h2 id="connection">Connection<a class="headerlink" href="#connection" title="Permanent link">&para;</a></h2>
@@ -11553,7 +11613,11 @@ Key Vault quirk where newlines may be replaced with spaces or other characters.
 <strong>Postconditions:</strong> The sanitized PEM string has standard <code>\n</code> line separators within
 the Base64 payload. Invalid PEM structures (not 5 parts) raise <code>ValueError</code>.</p>
 <h3 id="sftp-009-tenacity-retry-on-connect">SFTP-009: Tenacity Retry on Connect<a class="headerlink" href="#sftp-009-tenacity-retry-on-connect" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> The <code>_connect()</code> method retries on transient SSH errors using tenacity.
+<p><strong>Invariant:</strong> <code>_connect()</code> retries the <code>ssh.connect()</code> call on transient SSH
+errors using tenacity. The retried closure is that call alone, <strong>not</strong> the whole
+of <code>_connect</code>: the SFTP channel open and session setup that follow it run once,
+outside the retry, so a failure there is reported rather than retried (SFTP-030
+depends on this scope being stated precisely).
 When no <code>RetryPolicy</code> is provided, uses defaults: 3 attempts, exponential backoff
 (2s min, 10s max). When a <code>RetryPolicy</code> is provided via the <code>retry</code> constructor
 parameter, maps its fields to tenacity: <code>max_attempts</code> -&gt; <code>stop_after_attempt</code>,
@@ -11577,8 +11641,14 @@ across the full dead-connection signal set (<code>EOFError</code>, <code>OSError
 closed')</code>, the socket-teardown errnos, <code>socket.timeout</code>, and the paramiko
 <code>SFTPError</code> / <code>SSHException</code> / <code>ChannelException</code> families — see SFTP-023).
 Anchoring recovery to that conclusion rather than an enumerated list is what
-keeps a signal the list forgot (e.g. a <code>socket.timeout</code> from the channel
-timeout) from wedging the long-lived backend. Operations outside the default
+keeps a signal the list forgot from wedging the long-lived backend — the list
+above is evidence of the current signals, not the guarantee. No worked example
+is given deliberately: every signal named here is enumerated, mapped and
+tested, so any example drawn from the list would illustrate the opposite of the
+claim. Note also that this tier only <em>handles</em> a <code>socket.timeout</code>; nothing here
+causes one. A read that stalls on an open channel raises nothing at all unless
+SFTP-030's <code>io_timeout</code> arms the bound, so with its default of <code>None</code> this path
+is unreachable for a merely silent peer. Operations outside the default
 <code>_errors()</code> scope must still route through this mapping for the guarantee to
 hold: the listing operations route their failure through <code>_map_exception</code>, and
 <code>open_atomic</code>'s streamed-write phase — which yields the handle outside
@@ -11738,6 +11808,175 @@ and <code>docs-src/guides/async.md</code>.</p>
 <p><strong>See also:</strong> <a href="../003-backend-adapter-contract/">003-backend-adapter-contract.md</a>
 (BE-028), <a href="../029-async-store-backend-api/">029-async-store-backend-api.md</a>
 (ASYNC-094).</p>
+<hr />
+<h2 id="timeouts">Timeouts<a class="headerlink" href="#timeouts" title="Permanent link">&para;</a></h2>
+<h3 id="sftp-030-channel-io-timeout">SFTP-030: Channel I/O Timeout<a class="headerlink" href="#sftp-030-channel-io-timeout" title="Permanent link">&para;</a></h3>
+<p><strong>Invariant:</strong> <code>timeout</code> bounds the connect phase only. It is passed to
+<code>ssh.connect()</code> as <code>timeout</code>, <code>banner_timeout</code>, <code>auth_timeout</code> and
+<code>channel_timeout</code>; the last bounds how long the client waits for a channel to
+<em>open</em>, not traffic on an opened one. Blocking I/O on the open channel is
+governed by <code>Channel.timeout</code>, which paramiko initialises to <code>None</code>.</p>
+<p><code>io_timeout</code> (default <code>None</code>, meaning unbounded — no behaviour change for
+callers that do not set it; <code>0</code> and negatives raise <code>ValueError</code>, see SFTP-005)
+is applied via <code>Channel.settimeout()</code> in <code>_connect</code>, and <strong>every</strong> reconnect
+re-arms it on its new channel because it is applied there rather than at
+construction.</p>
+<p><strong>It is armed before the SFTP session exists, not after.</strong> <code>_connect</code> opens the
+channel, arms the bound, then invokes the <code>sftp</code> subsystem and constructs the
+<code>SFTPClient</code>. That order is load-bearing: <code>SFTPClient.__init__</code> performs the
+SFTP version exchange, which <em>blocks reading the server's reply</em> on a channel
+<code>Transport.open_session</code> hands back with <code>Channel.timeout</code> still <code>None</code>. Arming
+after <code>ssh.open_sftp()</code> returns would leave that exchange unbounded — a peer
+that completes the SSH handshake and then falls silent hangs there forever,
+which is the exact fault this clause exists to bound, reached before the bound
+is set. It is not a connect-only edge case: every reconnect re-enters that
+window, so the guarantee would be missing precisely for the half-alive peer
+that motivates it, and <code>RetryPolicy</code> cannot cover it because a hang raises
+nothing to retry.</p>
+<p><strong>Semantics:</strong> the bound is on a single blocking operation making no progress,
+not on the duration of a transfer. A large file over a slow link is unaffected
+however long it takes; a peer that goes silent for longer than <code>io_timeout</code>
+raises <code>socket.timeout</code>. Since it is <code>settimeout()</code>, the bound covers writes as
+well as reads, and a stalled write reaches it on the receive side like a read
+does. The distinct fault it covers is a request that never reaches the server,
+as against a reply that never returns.</p>
+<p>Note which round-trip a stalled write fails on, because it depends on <em>when</em> the
+peer went silent, not on which method was called. A stall already in effect when
+the call starts never reaches the payload: <code>write()</code> issues an existence <code>stat</code>
+on <code>overwrite=False</code>, and the file open is a round-trip on <code>overwrite=True</code>, so
+the failure lands there. A stall that begins mid-transfer does reach
+<code>SFTPFile.write</code>, and <code>write</code>, <code>write_atomic</code> and <code>open_atomic</code> all get there —
+any handle that is open when the peer goes quiet will.</p>
+<p>The distinction is stated because both halves have been got wrong here. An early
+revision explained the pre-armed case by <code>SFTPFile.write</code> not being pipelined, an
+explanation no run behind it had reached. Its replacement then said reaching
+<code>SFTPFile.write</code> "requires a handle opened beforehand — <code>open_atomic</code>", which
+generalised a measurement of the pre-armed case (<code>SFTPFile.write</code> entered 0 times)
+to every route, and stood while two tests in the suite reached it through plain
+<code>write</code> and <code>write_atomic</code>.</p>
+<p><strong>Postconditions:</strong> A stalled operation raises <code>BackendUnavailable</code>, via the
+existing <code>_is_connection_dead</code> / <code>_map_exception</code> path (SFTP-023), which also
+clears the cached client so the next operation reconnects (SFTP-010 tier 2).</p>
+<p>The caller-visible wall clock for a stalled operation is one bound, not
+several. A failed operation re-enters the channel two ways — to classify the
+failure (<code>_raise_if_dir</code>, <code>_has_file_ancestor</code>) and to release resources — and
+each re-entry would pay <code>io_timeout</code> again on a client <code>_map_exception</code> has not
+yet cleared. <strong>Three</strong> mechanisms prevent that, because callers arrive at those
+re-entries differently:</p>
+<ol>
+<li><strong>A passed cause.</strong> A caller holding a failed operation's exception passes it
+   to <code>_raise_if_dir</code>, which skips the probe when that exception already
+   concludes the connection is dead.</li>
+<li><strong>A dead-stat re-raise.</strong> <code>_raise_if_dir</code> and <code>_has_file_ancestor</code> each
+   re-raise a dead-connection error from their own stat rather than swallowing
+   it as unclassifiable. This is what covers <code>read</code>, whose is-dir check is eager
+   and so has no prior exception to pass, and it also fixes a correctness
+   residue in <code>_has_file_ancestor</code>: swallowing there returned <code>False</code>, the
+   caller's original error surfaced, and <code>_map_exception</code> classified it as a
+   generic <code>RemoteStoreError</code> — which does <em>not</em> clear the cached client, so
+   SFTP-010 tier 2 never fired on the operation that surfaced the drop.</li>
+<li><strong>Skipped teardown.</strong> Every promote-or-rename path skips what follows a dead
+   rename: <code>_promote</code> skips the <code>rename</code> fallback, whose <code>remove</code> + <code>rename</code>
+   would each pay the bound again, and <code>move</code> skips its own fallback chain — a
+   suppressed <code>remove</code>, a <code>rename</code>, and the copy fallback's two file opens.
+   <code>write_atomic</code> and <code>open_atomic</code> skip their temp cleanup. And <strong>every</strong>
+   paramiko file handle held in a <code>with</code> block skips its close on a
+   dead-connection exit, since <code>SFTPFile.close()</code> flushes and then issues a
+   synchronous <code>CMD_CLOSE</code> whose reply never comes.</li>
+</ol>
+<p>That last is the worst of the set when unguarded, because paramiko swallows
+   the timeout raised inside its own close, making it a wait with no error to
+   explain it. The guard is one helper (<code>_handle</code>) rather than a per-site
+   repeat, because the site that first exposed it was not the only one:
+   <code>read_bytes</code>, <code>write</code>, <code>write_atomic</code>, <code>copy</code> and <code>move</code>'s copy fallback all
+   hold a handle the same way, and <code>open_atomic</code> applies the same rule inline
+   (its clean-exit close must sit inside <code>_errors</code> so a flush failure still
+   maps). Measured at a 2 s bound, on a stream that goes quiet mid-transfer:
+   4.00 s before the guard and 2.00 s after for both <code>write</code> and <code>write_atomic</code>,
+   and 6.9 s before and 2.0 s after for <code>copy</code>, which holds two handles rather
+   than one.</p>
+<p>Three of the five call sites are measured that way; the other two are named
+   here rather than counted as covered, because the helper being shared is not
+   evidence that a site was exercised. <code>read_bytes</code> prefetches, so a stall inside
+   its read fails in paramiko's prefetch machinery rather than on the close of a
+   partly-read handle, and a test there would pin something other than what it
+   claimed. <code>move</code>'s copy fallback (<code>_copy_and_delete</code>) is reached only when both
+   <code>posix_rename</code> and <code>rename</code> fail for non-dead reasons, which needs a server
+   refusing both, so it carries a <code>no cover</code> pragma.</p>
+<p>The distinction is drawn because <code>copy</code> shipped unrouted for a round while
+   five artifacts named it covered — the call-site list was read as evidence that
+   the list had been run. The same reading is what put the pragma on too much
+   code twice: first over <code>move</code>'s dead-rename guard, then over <code>_move_fallback</code>'s
+   own, each of which is reachable well outside the case the pragma names. Each
+   split moved the pragma down to the method that genuinely needs it, and the two
+   guards now have a test apiece.</p>
+<p>The helper bounds what the caller waits inline; it does not promise the
+   round-trip is never made. <code>SFTPFile.__del__</code> calls <code>_close(async_=True)</code>
+   unconditionally, and the <code>BufferedFile.close</code> inside it — which flushes —
+   sits outside <code>_close</code>'s own <code>try</code>, so a <em>write</em> handle still holding buffered
+   bytes can attempt one blocking write when it is collected, on whatever thread
+   collects it. A read handle cannot: its write buffer is empty and <code>_write_all</code>
+   returns without a round-trip.</p>
+<p>The <code>move</code> guard is a case where a coverage pragma hid a gap: its fallback
+   carries <code># pragma: no cover -- fallback for servers without posix_rename</code>,
+   which describes the fallback correctly, while the dead-connection guard above
+   it is reachable on <em>any</em> server, since a stalled channel fails <code>posix_rename</code>
+   like anything else. The fallback is therefore a separate method
+   (<code>_move_fallback</code>), so the pragma covers only what it names.</p>
+<p><strong>Bounded, with two stated exceptions.</strong> Neither is fixed here:</p>
+<ul>
+<li><strong>The <code>subsystem</code> request.</strong> <code>Channel.invoke_subsystem</code> waits in
+  <code>Channel._wait_for_event</code>, a bare <code>threading.Event.wait()</code> with no timeout
+  argument, which never reads <code>Channel.timeout</code>. A peer that opens the session
+  channel and then never answers the request hangs regardless of <code>io_timeout</code>,
+  and every reconnect re-enters that window. Bounding it would mean inlining
+  <code>invoke_subsystem</code>'s own body — deeper into paramiko internals than the
+  <code>from_transport</code> copy this clause already accepts — so it is recorded rather
+  than taken. Narrower than the version-exchange window that <em>is</em> bounded: a
+  server that accepts a channel but never answers a channel request is a wedged
+  SSH daemon, not a wedged subsystem.
+  This exception is <strong>characterised by a test</strong>, not asserted: a server variant
+  that parks in its subsystem handler (so no <code>CHANNEL_SUCCESS</code> is ever sent)
+  leaves the client blocked well past the bound, with the handler's entry
+  observed so the block is pinned to the request rather than to an earlier
+  handshake step. If that test ever fails, the wait has become bounded and this
+  bullet should be deleted with it.</li>
+<li><strong>Releasing a <em>streamed-read</em> handle.</strong> <code>read</code> hands back an
+  <code>_ErrorMappingStream</code>, whose <code>close</code> closes the underlying paramiko file under
+  <code>contextlib.suppress</code>, so releasing a stream that has already failed blocks
+  once more. Measured at a 2 s bound, consuming part of a <code>read()</code> and then
+  stalling: 4.00 s for the failed reads plus the close. This is the one handle
+  the <code>_handle</code> guard above does not reach, because the wrapper — not this
+  backend — owns the close, and it serves the S3, Azure and HTTP backends too.
+  Tracked as BK-355; when it lands, this exception goes.</li>
+</ul>
+<p>For a <strong>streamed</strong> read (<code>read</code>), a stall after the caller has consumed bytes
+raises rather than returning short, so a truncated stream is never
+indistinguishable from a complete one. The bytes already delivered are a valid
+prefix and the handle is dead: the caller discards it rather than resuming.
+This is the premise the retry exclusion below is argued from, so it is stated
+here rather than left implied.</p>
+<p><strong>Excluded from retry:</strong> <code>RetryPolicy</code> wraps the <code>ssh.connect()</code> call alone, not
+the whole of <code>_connect</code> (SFTP-009), so <strong>no</strong> stall bounded by <code>io_timeout</code> is
+retried — neither one on a caller's operation nor one in the session setup
+described above, which happens inside <code>_connect</code> but outside the retried
+closure. Every stall reaches the caller.</p>
+<p>For an operation-level stall the exclusion is deliberate: retrying
+transparently would restart a partially consumed stream underneath a caller
+that had already read from it. That rationale does <strong>not</strong> reach a
+version-exchange stall, where nothing has been consumed yet, so the exclusion
+there is a consequence of where the retry boundary sits rather than a decision
+argued on its merits. Recorded as an open question rather than presented as
+settled: a session-setup stall is arguably a connect failure and could be
+retried like one.</p>
+<p><strong>Rationale:</strong> Without this, a silent peer blocks forever while holding whatever
+pooled resource the operation runs on, and emits no signal — while the recovery
+machinery for exactly that fault already exists and merely lacks a trigger.
+<code>unwrap(SFTPClient).get_channel().settimeout()</code> is not a substitute: a
+transparent reconnect builds a fresh channel with <code>timeout=None</code>, so a
+caller-applied bound evaporates precisely after a recovered drop. Keeping the
+knob distinct from <code>timeout</code> matters because that name already carries four
+connect-phase meanings.</p>
 
 
 

@@ -106,7 +106,7 @@ Full mapping via tenacity:
 | `jitter`          | `+ wait_random(0, N)`     |
 | `timeout`         | `\| stop_after_delay(N)`  |
 
-Retry scope: **connection only** (not per-operation).
+Retry scope: **the `SSHClient.connect()` call only** — not per-operation, and not the whole of connect. Everything the backend does after that call returns is reported rather than retried, including the SFTP session setup and any stall bounded by [`io_timeout`](https://docs.remotestore.dev/stable/guides/backends/sftp/#bounding-a-stalled-transfer). The distinction matters for a stalled transfer: retrying one would restart a stream the caller may already have read from, so it is deliberately not retried.
 
 ### S3
 
