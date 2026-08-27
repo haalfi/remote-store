@@ -28,6 +28,25 @@ def ping(self) -> None: ...
 - Not capability-gated (all backends support health checks).
 - Logs `DEBUG` on entry, `INFO` on success.
 
+**Known divergence: three backends do not raise for a missing container.**
+Measured against an absent container, `S3PyArrowBackend`, `SQLBlobBackend` and
+`SQLQueryBackend` return cleanly where the `NotFound` row above requires them to
+raise. Both SQL backends inherit the same `SELECT 1`, which verifies connectivity
+and never touches the table or the queried relation. `S3Backend`,
+`S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` and `LocalBackend` raise
+`NotFound` as stated.
+
+Recorded here rather than left implicit because a caller reading this clause
+would use `ping()` to answer "is my store there?", and on those three it answers
+"yes" for a store that is not. Tracked as **BUG-256**, which also carries a
+fourth, narrower case this sentence deliberately excludes:
+`ReadOnlyHttpBackend` *does* raise, but `BackendUnavailable` rather than
+`NotFound` — a wrong type rather than a missing raise, which is why folding it
+into the headline above would make that headline false.
+
+The obligation itself is unchanged, and the surrounding prose and the
+health-check guide state it.
+
 ---
 
 ## Backend API

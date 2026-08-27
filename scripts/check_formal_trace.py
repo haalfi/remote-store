@@ -73,6 +73,13 @@ violation list is the worklist for the (T)-backfill items (ID-184 /
 ID-185 / ID-188).
 
 CI enforcement. Exit code 0 = ok; 1 = violations found.
+
+Drift-gate::
+
+    kind:       pair
+    compares: spec IDs declared in sdd/specs/ ↔ Dafny @spec tags in sdd/formal/ and conformance
+        pytest.mark.spec markers
+    domain:     intent ↔ intent-formalized ↔ verification
 """
 
 from __future__ import annotations

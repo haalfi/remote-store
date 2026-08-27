@@ -53,6 +53,12 @@ Run with::
                                     # skips (CODE_PAT) even though such a
                                     # change is what adds a trace
     python scripts/check_traces.py
+
+Drift-gate::
+
+    kind:       pair
+    compares:   every trace under sdd/traces/ ↔ the schema in sdd/traces/_schema.yml
+    domain:     process
 """
 
 from __future__ import annotations

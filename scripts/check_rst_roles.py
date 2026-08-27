@@ -4,11 +4,20 @@ RST cross-reference syntax (colon-word-colon-single-backtick) is incompatible wi
 the Google-style docstrings used in this project.  Double-backtick literals like
 ``:class:``​`` `` are not flagged — those are inline code, not roles.
 
-Wired into ``hatch run lint`` and the ``no-rst-roles`` pre-commit hook.
+Wired into ``hatch run lint``. The ``no-rst-roles`` pre-commit hook enforces the
+same rule independently, as a ``language: pygrep`` pattern -- it does not invoke
+this script, so the two are separate mechanisms that happen to agree.
 
 Usage:
     python scripts/check_rst_roles.py [dir ...]
     Defaults to src/, tests/, scripts/, and examples/ when no arguments are given.
+
+Drift-gate::
+
+    kind:       rule
+    rule: no line of any Python file under src/, tests/, scripts/ or examples/ uses RST inline-role
+        syntax, which is incompatible with this project's Google-style docstrings
+    domain:     explanation
 """
 
 import re

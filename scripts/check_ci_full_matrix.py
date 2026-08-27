@@ -8,6 +8,12 @@ misses ci-full.yml, the full-matrix backstop silently narrows with no signal.
 This gate keeps the copies honest by comparing the two sets. Wired into
 ``hatch run lint``. A malformed workflow raises here, which is itself a lint
 failure. (BK-319)
+
+Drift-gate::
+
+    kind:       pair
+    compares:   ci.yml's ALL_PYTHONS interpreter list ↔ ci-full.yml's test-full matrix
+    domain:     process
 """
 
 from __future__ import annotations

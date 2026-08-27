@@ -33,6 +33,12 @@ banned. Each ``tests/ext/test_<x>.py`` must have a matching
 namespace-wide ``__all__`` / private-import contract).
 
 CI enforcement. Exit code 0 = ok; 1 = violations found.
+
+Drift-gate::
+
+    kind:       rule
+    rule:       every test file sits in the subpackage TESTING.md and spec 048 place it in
+    domain:     verification
 """
 
 from __future__ import annotations

@@ -155,23 +155,6 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
-- [x] **BUG-254 — `DagsterComputeLogManager.get_log_keys_for_log_key_prefix` annotates a return type wider than its supertype**
-  spec: — · effort: S · audience: user.api_docs
-  The repo pins `dagster>=1.9`, and resolutions from that range declare
-  `ComputeLogManager.get_log_keys_for_log_key_prefix` as `Sequence[list[str]]`.
-  The override annotated `Sequence[Sequence[str]]`, which mypy rejects as an
-  incompatible override — the pre-push typecheck gate failed on a clean tree.
-  Narrowed to `Sequence[list[str]]`, the narrowest annotation valid under every
-  supported dagster: the body already built `list[list[str]]`, so this states
-  what was being returned all along, and a narrower return is a legal override
-  against the wider supertype too. No behaviour change; callers annotating the
-  wider type are unaffected.
-  **Filed after the fact rather than before**, which the admission test would
-  normally refuse: it was found and done in the same breath, while it blocked an
-  unrelated branch. The ID exists because the CHANGELOG entry needs one — every
-  other line in that file carries one, and a stub with no item cannot be paired
-  at release time.
-
 - [x] **BUG-247 — `LocalBackend` reports a deleted root as "Path escapes root directory"**
   spec: BE-004, BE-005, BE-012, BE-013, BE-021, BE-029 · effort: S · audience: user.api
   Delete a `LocalBackend`'s root out from under it and every operation but
@@ -249,6 +232,99 @@ if evidence changes; these are retired.
   Local alone among the backends on a call no spec decides. Pinned by a test
   instead, which is what turns it from an unexamined answer into a recorded one.
 
+- [x] **BUG-246 — An absent container raises where the contract says `False`, `NotFound`, or an empty listing**
+  spec: BE-004, BE-005, BE-021 · effort: M · audience: user.api
+  Four backends raised against a container that does not exist, where BE-004 and
+  BE-005 say the probes never raise and BE-021 § Reach decides the rest. Fixed on
+  all four, co-shipped with BUG-249 per [§ Granularity](BACKLOG.md#how-this-file-works).
+  Two root causes, as the item predicted, and the existing machinery covered both:
+  on `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend` the tolerant HEAD
+  already absorbed the 404 and only the prefix-listing-backed probes did not, so
+  `exists` and `is_folder` moved onto the same absent-container determinant
+  `delete_folder` already used (`_children_or_absent_bucket` /
+  `_flat_children_or_absent_container`, both over `_flat_ns`). On `SQLBlobBackend`
+  the reclassification BUG-243 built for the two deletes was generalised from a
+  `missing_ok` axis to a `raises` one and applied at the remaining call sites.
+  **Filed as twelve operations wide on SQLBlob, measured at fourteen.** The item's
+  table omitted `iter_children` and `glob`. Run against a dropped SQLite table
+  before the fix, fourteen operations raised `BackendUnavailable`; thirteen owed a
+  different answer and now give it, and `write` keeps the escalation because
+  BE-021 § Reach declines to decide it. Both figures count `move` and `copy`
+  separately; the item's own prose used the *owing* frame — eleven, twelve minus
+  `write` — which pairs with thirteen, not fourteen, and stating one against the
+  other makes the gap look like three. That is the second time in this section an
+  item's own operation count was low against a run — BUG-248 was filed at two and
+  measured at eleven **of the operations BE-021 § Reach names**, its total being
+  thirteen once `read_bytes` and `iter_children` are added — and both were found
+  by executing the list rather than reading it.
+  Closes three of the five § Known divergences bullets BE-021 held when this
+  item was filed. `LocalBackend` (BUG-247) is the survivor of those five; the
+  list holds three today, having gained `S3Backend`/`S3PyArrowBackend` (BUG-255)
+  and `GraphBackend` (BUG-257) when this same change wrote the first-page bound
+  into § Reach and enlarged what the clause governs.
+
+- [x] **BUG-249 — Three `S3Boto3Backend` listings leak a raw `botocore.ClientError`**
+  spec: BE-021 · effort: S · audience: user.api
+  `list_files`, `list_folders` and `iter_children` were the only methods on the
+  class calling the wire without `_boto_errors` around it, against fifteen
+  methods that do wrap, so the paginator's exception reached the caller untouched and an
+  `except RemoteStoreError` clause caught every backend but this one. All three
+  now enter a `_listing_errors` context **inside the generator body** — the item's
+  warning was right, and a wrapper around the call that returns the generator
+  would not have run until the first `next()`. `glob` reaches the wire only
+  through `list_files` and inherited the fix. The same context also reads the
+  bucket's own 404 as an empty listing, which is BE-021 § Reach's answer for a
+  listing against an absent container and what the two s3fs lanes already did.
+  **Shipped without ID-242**, which the item named as a cross-section dependency:
+  the denied path is still asserted by the hand-written 403 probe in
+  `tests/backends/s3/test_denied_probe.py` and by nothing in conformance. Stated
+  rather than quietly dropped — ID-242 now has a shipped clause resting on it.
+
+- [x] **BUG-258 — `RemoteStoreComputeLogManager` no longer conforms to Dagster's compute-log-manager signature**
+  spec: — · effort: S · audience: user.api, contributor.tooling
+  `mypy` fails on `src/remote_store/ext/dagster.py:773` with
+  `Return type "Sequence[Sequence[str]]" of "get_log_keys_for_log_key_prefix"
+  incompatible with return type "Sequence[list[str]]" in supertype
+  "ComputeLogManager"`. Nothing in this repository changed: `dagster` is declared
+  as `dagster>=1.9` with no upper bound, so CI resolves whatever is current, and a
+  release after 2026-08-17 narrowed the supertype's return from
+  `Sequence[Sequence[str]]` to `Sequence[list[str]]`. Our override still declared
+  the old, now-wider type, which is illegal for a covariant return.
+  Measured rather than assumed: the installed `dagster` here is **1.13.17**, whose
+  `ComputeLogManager.get_log_keys_for_log_key_prefix` still returns
+  `Sequence[Sequence[str]]` (`inspect.getsource`), which is why a local
+  `hatch run typecheck` passed while CI failed. Master's last CI run was
+  2026-08-17, before the release, so master was untested rather than green.
+  The override's body already builds `results: list[list[str]]`, so the fix is the
+  annotation alone: `-> Sequence[list[str]]`. That satisfies **both** versions —
+  `Sequence` is covariant and `list[str]` is a subtype of `Sequence[str]`, so
+  `Sequence[list[str]]` is a valid override return under the old supertype too.
+  Verified against the local 1.13.17 (`hatch run typecheck` clean) and against the
+  new supertype by the CI error text naming exactly that expected type.
+  **No runtime behaviour change and therefore no new test**: the annotation is
+  erased at runtime, the returned object is unchanged, and the gate that catches
+  this is `mypy` in the `typecheck` job, which is the failing check this closes.
+  **ID note:** filed as BUG-258 rather than BUG-254 (the next free ID on `master`)
+  because BUG-254 through BUG-257 are filed on the open BUG-246 branch and would
+  collide once both merge. `gen_backlogid.py` cannot see an unmerged branch.
+  **`user.api` because this is a public signature**, not just tooling:
+  `RemoteStoreComputeLogManager` is exported in `__all__`, and a downstream
+  subclass overriding `get_log_keys_for_log_key_prefix` with the old, wider
+  `Sequence[Sequence[str]]` now fails `mypy` against remote-store where it
+  previously passed. That is what makes the CHANGELOG entry required rather than
+  optional, per the `audience` rule in `sdd/traces/_schema.yml`.
+  **Recurrence is narrower than it first looked, and is filed as ID-250.** Two of
+  the three mitigations an earlier draft of this entry called undecided already
+  ship: `.github/workflows/drift-guard.yml` (ID-182) is the scheduled latest-deps
+  job — Monday 07:00 UTC, re-resolves every extra with `--upgrade --pre`, opens a
+  rolling `[drift-guard]` issue and never reds a PR — and
+  `infra/drift-locks/dagster.txt` is the lockfile, pinning `dagster==1.13.17`,
+  which is the very version this diagnosis rests on. The residual gap is one
+  thing, not a choice among three: **drift-guard's smoke runs pytest targets and
+  an import smoke, never `mypy`** (`rg 'mypy' .github/workflows/drift-guard.yml`
+  returns nothing), so a purely type-level narrowing in a dependency is invisible
+  to the guard even when the version drift itself is reported. That is why this
+  reached PRs as a red `typecheck` job instead of a triaged rolling-issue row.
 - [x] **BUG-248 — BE-021's absent-container rule and GR-031's drive-identity escalation contradict each other**
   spec: BE-021, GR-031, PING-011 · effort: M · audience: user.api
   Two deliberate clauses giving opposite answers for the same call, neither

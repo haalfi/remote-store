@@ -52,6 +52,13 @@ not a bare-``python`` sandbox.
 Run with:
   hatch run gen-api-check
   python scripts/check_api_docs.py
+
+Drift-gate::
+
+    kind:       pair
+    compares: the graph IR in docs-src/_data/graph/graph.json ↔ the API reference pages under
+        docs-src/reference/api/
+    domain:     realization ↔ explanation
 """
 
 from __future__ import annotations

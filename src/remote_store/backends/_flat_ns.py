@@ -148,6 +148,29 @@ async def _acheck_no_file_ancestor(
             )
 
 
+class _ListingCursor:
+    """Has the container answered yet? Bounds an absent-container tolerance to the first page.
+
+    "An absent container holds nothing" holds only until a page comes back; after
+    that a container 404 means it was deleted mid-scan, and swallowing it returns
+    a short listing that looks complete.
+
+    **Set on a page, never on a yield.** Every listing here discards part of a
+    page — ``list_files`` drops prefixes, markers and anything past ``max_depth``;
+    ``list_folders`` drops keys; ``glob`` drops non-matches — so an item-keyed
+    bound goes blind on the page shapes those filters empty, which are ordinary
+    shapes rather than corner cases.
+
+    Mutable because the tolerance lives in a context manager around the generator
+    body, which cannot see what the body received.
+    """
+
+    __slots__ = ("saw_page",)
+
+    def __init__(self) -> None:
+        self.saw_page = False
+
+
 def _folder_not_file(path: str, backend: str) -> InvalidPath:
     """Build the "wrong type: folder where a file was expected" error.
 
@@ -239,10 +262,18 @@ def _children_or_absent_container(
 ) -> bool:
     """Run the folder-existence probe, reading an absent container as "no children".
 
-    A tolerant delete treats an absent *container* — the bucket, the Azure
-    container — exactly as it treats an absent path, because a container that
-    does not exist holds no path either. Deciding that at the contract is what
-    stops the wire shape from deciding it per backend:
+    Callers that route through *this helper* treat an absent *container* — the
+    bucket, the Azure container — exactly as they treat an absent path, because a
+    container that does not exist holds no path either. That is not every folder
+    probe in the codebase and must not be read as one: ``get_folder_info`` keeps
+    the strict probe on the S3 lanes, deliberately, because it has no
+    ``missing_ok`` and an absent bucket is a plain ``NotFound`` for it either way.
+    The tolerant deletes were the first callers and are why the wire-shape
+    argument below is put in their terms; ``exists`` and ``is_folder`` reach this
+    helper for the same reason, and answer ``False`` where they would otherwise
+    have seen a 404 escape from a probe that must never raise for a missing path.
+    Deciding this at the contract is what stops the wire shape from deciding it
+    per backend:
 
     * ``HeadObject`` answers a bodyless 404, so the file-shaped probe cannot
       distinguish a missing bucket from a missing key even in principle, and
@@ -258,10 +289,11 @@ def _children_or_absent_container(
     one probe per miss — and it would have changed the behaviour that was already
     there rather than the one that disagreed with it.
 
-    Returning ``False`` is not the same as tolerating the call: the caller still
-    runs its wrong-type probe and still raises ``NotFound`` when ``missing_ok``
-    is ``False``. The absent container is reported as a missing path, which is
-    what it is.
+    Returning ``False`` is not the same as tolerating the call: it hands the
+    caller "no children", and what the caller does with that is the caller's
+    contract. A tolerant delete returns cleanly, a strict one still raises
+    ``NotFound`` after its wrong-type probe, and a probe answers ``False``. The
+    absent container is reported as a missing path, which is what it is.
 
     ``absent_container`` narrows the catch to the one wire shape that means
     "the container is not there" — ``FileNotFoundError`` from ``s3fs``, a

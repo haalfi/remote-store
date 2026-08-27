@@ -43,6 +43,13 @@ Wired into ``hatch run lint`` and ``hatch run docs-gate``.
 Usage:
     python scripts/check_custom_backend_guide.py [guide-path]
     Defaults to docs-src/guides/custom-backend-guide.md.
+
+Drift-gate::
+
+    kind:       pair
+    compares: docs-src/guides/custom-backend-guide.md ↔ Backend.__abstractmethods__, the conformance
+        suite files and the fixture loader's closed vocabularies
+    domain:     explanation ↔ realization
 """
 
 from __future__ import annotations

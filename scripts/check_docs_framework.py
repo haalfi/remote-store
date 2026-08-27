@@ -8,6 +8,13 @@ printed to stderr, sorted by path for stable diffs.
 Run with:
     hatch run docs-check
     python scripts/check_docs_framework.py
+
+Drift-gate::
+
+    kind:       rule
+    rule: every Markdown file resolves to exactly one documentation class and obeys the framework's
+        placement, nav and bridge rules (G-01 through G-07)
+    domain:     explanation
 """
 
 from __future__ import annotations

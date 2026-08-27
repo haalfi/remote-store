@@ -293,21 +293,44 @@ Backend-native exceptions must never leak.
 a missing table that way, for instance. The parenthetical in the row says so
 explicitly because the narrower reading is the natural one and it is wrong.
 
-**Absent table:** `delete` and `delete_folder` do **not** reach this table when
-the table is not there — BE-021's absent-container rule reclassifies the
-driver's complaint as a missing path first, so `missing_ok=True` returns cleanly
-and `missing_ok=False` raises `NotFound`. Every other operation still maps
-through the rows above, which is a known divergence from the canonical
-`NotFound` row and is recorded in BE-021.
+**Absent table: only `write` reaches this table.** The table is this backend's
+container, so BE-021's absent-container rule reclassifies the driver's complaint
+as a missing path before the rows above see it, and § Reach decides what each
+operation then answers: `delete` / `delete_folder` return cleanly under
+`missing_ok=True` and raise `NotFound` without it; `exists`, `is_file` and
+`is_folder` answer `False`; `read`, `read_bytes`, `get_file_info`,
+`get_folder_info` (below the root — see the root paragraph further down) and the
+`move`/`copy` source raise `NotFound`; `list_files`, `list_folders`,
+`iter_children` and `glob` come back empty. § Reach itself names twelve
+operations and not `read_bytes`, `iter_children` or `glob`; those three take the
+answer their named sibling takes, which is a reading this backend applies rather
+than a row it is handed.
+
+`write` is the exception, and a deliberate one: BE-021 § Reach declines to decide
+what a write owes an absent container, so it maps through the `OperationalError`
+row above and reports `BackendUnavailable`. A vanished table is a configuration
+failure from a writer's point of view, and no clause of the contract says
+otherwise.
 
 The reclassification asks only whether the table is reachable, and does not ask
 *why* it is not. A dropped table and a disposed in-memory engine — the one case
 where disposal destroys the database rather than releasing a connection to it —
-both answer "absent", and both deletes therefore return. Excluding the second
-case would make the deletes answer what `read` and `exists` answer for the same
-dead store, but no test for it can be written that does not depend on how the
-in-memory URL was spelled, and the asymmetry it would hide is a divergence
-tracked in BE-021 rather than one this table should paper over.
+both answer "absent", so the two are indistinguishable to every operation above.
+That uniformity is what makes the case testable at all: an exclusion for the
+disposed engine would have to be keyed on how the in-memory URL was spelled,
+which is a property of the caller rather than of the store.
+
+**The root is the one place an absent store and an empty one agree.**
+`get_folder_info("")` returns `FolderInfo(file_count=0)` against both, because
+[BE-029](003-backend-adapter-contract.md#be-029-root-path) makes the root a
+folder that always exists and forbids `get_folder_info` on it from raising
+`NotFound` — a rule it states without qualifying it by whether the container is
+there. That outranks the canonical row BE-021 § Reach gives `get_folder_info`,
+which is why the tolerance below the root and the tolerance at it differ. Every
+other path answers `NotFound` as § Reach requires.
+
+Other backends do not all meet BE-029's root row against an absent container;
+that divergence is **BUG-254** and is not this backend's.
 
 ---
 

@@ -27,8 +27,7 @@ surprising_ripples:
   - .github/workflows/ci.yml
 
 discovery_followups:
-  - BUG-254
-  - BUG-255
+  - BUG-259
 
 # Counted from `git log --oneline origin/master..HEAD`, seven commits:
 # b2674d9 implements and does not count; 376624c is the dagster narrowing, found
@@ -292,7 +291,7 @@ phases:
         section: "write, write_atomic, open_atomic"
         read_type: verify
         extract: >-
-          Filed as BUG-255, not fixed. The panel's measuring member found the
+          Filed as BUG-259, not fixed. The panel's measuring member found the
           same write-to-root corruption this item fixed on Local, live on SFTP:
           the bytes land at base_path, open_atomic returns cleanly having done
           it. The design phase above read SFTP's read-side root handling and
@@ -331,6 +330,43 @@ phases:
           BUG-243's own entry asserted that Local still diverged. Not a
           ripple-check row: an unreleased entry describing a defect a later
           unreleased entry fixes.
+        outcome: ok
+
+  - id: rebase
+    name: Integrate master
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 § Reach, § Known divergences"
+        read_type: verify
+        extract: >-
+          Master shipped BUG-246/BUG-249 mid-review and independently wrote the
+          rule this work had added to § Reach — "The root is decided by BE-029,
+          not here, and BE-029 wins" — more thoroughly. Mine was dropped rather
+          than merged: two paragraphs stating one rule is the second-description
+          drift DRIFT-RULES forbids. Master's new text also asserted that Local
+          misses BE-029's root row, which this work falsifies, so three claims
+          across the file were re-derived rather than re-applied.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "§ 1 Closes when, count paragraph"
+        read_type: verify
+        extract: >-
+          Master reallocated BUG-254 through BUG-258 to real items while this
+          branch held two of those numbers. The dagster fix was dropped outright
+          (master's BUG-258 is byte-identical, found by an independent PR), and
+          the SFTP item renumbered to BUG-259. Counts re-derived from the merged
+          lists: three disagreeing classes, two live divergence bullets.
+        outcome: ok
+      - file: .github/workflows/ci.yml
+        section: "test-primary-sftp"
+        read_type: verify
+        extract: >-
+          The merge is also what unblocks CI. A conflicted PR has no
+          refs/pull/N/merge for pull_request workflows to check out, so GitHub
+          scheduled no run at all — silently, with no queued job and no
+          notification — from the moment master diverged. Two pushes produced
+          zero runs before the cause was found, which is a failure mode worth
+          knowing: a red check is visible, an absent one is not.
         outcome: ok
 
   - id: verify

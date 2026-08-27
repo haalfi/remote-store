@@ -449,6 +449,9 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         ``path + "/"``. The root (``""``) always exists. Costs one or two
         ``SELECT``s.
 
+        A dropped table is an absent container, and an absent container holds no
+        path either, so this answers ``False`` rather than raising.
+
         Raises:
             InvalidPath: If *path* is absolute or contains a ``..`` segment.
             BackendUnavailable: If the database is unreachable.
@@ -456,19 +459,28 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         segs = self._validate_path(path, allow_empty=True)
         if not segs:
             return True  # root always exists
-        with self._map_errors(path), self._engine.connect() as conn:
+        found = False
+        with (
+            self._map_errors(path),
+            self._absent_table_is_absent_path(path, raises=False, what="File"),
+            self._engine.connect() as conn,
+        ):
             t = self._table
             # Check file
             row = conn.execute(sa.select(sa.literal(1)).where(t.c.key == path)).first()
-            if row is not None:
-                return True
-            # Check folder (any key with prefix)
-            prefix = path + "/"
-            row = conn.execute(sa.select(sa.literal(1)).where(t.c.key.like(prefix + "%")).limit(1)).first()
-            return row is not None
+            if row is None:
+                # Check folder (any key with prefix)
+                prefix = path + "/"
+                row = conn.execute(sa.select(sa.literal(1)).where(t.c.key.like(prefix + "%")).limit(1)).first()
+            found = row is not None
+        # Keeps the seeded ``False`` when the table is gone and the block above
+        # is abandoned — the shape every probe and listing here uses.
+        return found
 
     def is_file(self, path: str) -> bool:
         """Return ``True`` if an exact key exists at *path* (one ``SELECT``).
+
+        A dropped table answers ``False``, on the same terms as ``exists``.
 
         Raises:
             InvalidPath: If *path* is absolute or contains a ``..`` segment.
@@ -477,15 +489,23 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         segs = self._validate_path(path, allow_empty=True)
         if not segs:
             return False
-        with self._map_errors(path), self._engine.connect() as conn:
+        found = False
+        with (
+            self._map_errors(path),
+            self._absent_table_is_absent_path(path, raises=False, what="File"),
+            self._engine.connect() as conn,
+        ):
             t = self._table
             row = conn.execute(sa.select(sa.literal(1)).where(t.c.key == path)).first()
-            return row is not None
+            found = row is not None
+        # ``found`` keeps its seeded value when the table is gone.
+        return found
 
     def is_folder(self, path: str) -> bool:
         """Return ``True`` if any key begins with ``path + "/"`` (a virtual folder).
 
-        The root is always a folder. Costs one ``SELECT``.
+        The root is always a folder. Costs one ``SELECT``. A dropped table
+        answers ``False``, on the same terms as ``exists``.
 
         Raises:
             InvalidPath: If *path* is absolute or contains a ``..`` segment.
@@ -494,11 +514,18 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         segs = self._validate_path(path, allow_empty=True)
         if not segs:
             return True  # root is a folder
-        with self._map_errors(path), self._engine.connect() as conn:
+        found = False
+        with (
+            self._map_errors(path),
+            self._absent_table_is_absent_path(path, raises=False, what="Folder"),
+            self._engine.connect() as conn,
+        ):
             t = self._table
             prefix = path + "/"
             row = conn.execute(sa.select(sa.literal(1)).where(t.c.key.like(prefix + "%")).limit(1)).first()
-            return row is not None
+            found = row is not None
+        # ``found`` keeps its seeded value when the table is gone.
+        return found
 
     # endregion
 
@@ -513,12 +540,17 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         blob-storage backend (S3, Local, Azure).
 
         Raises:
-            NotFound: If no key exists at *path*.
+            NotFound: If no key exists at *path*, including when the backing
+                table is absent.
             InvalidPath: If *path* is empty, absolute, or malformed.
             BackendUnavailable: If the database is unreachable.
         """
         self._validate_path(path)
-        with self._map_errors(path), self._engine.connect() as conn:
+        with (
+            self._map_errors(path),
+            self._absent_table_is_absent_path(path, raises=True, what="File"),
+            self._engine.connect() as conn,
+        ):
             t = self._table
             row = conn.execute(sa.select(t.c.data).where(t.c.key == path)).first()
             if row is None:
@@ -533,12 +565,17 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         Like ``read``, materialises the whole object in memory.
 
         Raises:
-            NotFound: If no key exists at *path*.
+            NotFound: If no key exists at *path*, including when the backing
+                table is absent.
             InvalidPath: If *path* is empty, absolute, or malformed.
             BackendUnavailable: If the database is unreachable.
         """
         self._validate_path(path)
-        with self._map_errors(path), self._engine.connect() as conn:
+        with (
+            self._map_errors(path),
+            self._absent_table_is_absent_path(path, raises=True, what="File"),
+            self._engine.connect() as conn,
+        ):
             t = self._table
             row = conn.execute(sa.select(t.c.data).where(t.c.key == path)).first()
             if row is None:
@@ -680,27 +717,19 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         an error it already holds, so a failed inspection leaves that original
         error standing rather than replacing it with a guess.
 
-        **A discarded in-memory store is not special-cased**, and that is a
-        decision rather than an oversight. Disposing an in-memory SQLite engine
-        throws the data away, so the next statement opens a *different, empty*
-        database and the inspector truthfully reports no table — whereupon the
-        deletes tolerate while ``read`` raises ``BackendUnavailable``, because
-        only the deletes carry this reclassification.
+        **A discarded in-memory store is not special-cased**, deliberately.
+        Disposing an in-memory SQLite engine throws the data away, so the next
+        statement opens a different, empty database and the inspector truthfully
+        reports no table — and every operation then answers as it would for any
+        other absent container, so a discarded store reads as an empty one.
 
-        Guarding against it is not possible from here, and the reason is worth
-        keeping so nobody re-derives the attempt. The condition is "was the store
-        discarded", which is not decidable from this object's state: a *borrowed*
-        engine can be disposed by its owner without any call on this backend, and
-        a ``close()``-based test therefore cannot see it, while an in-memory URL
-        test cannot see the URI-form spellings (``file::memory:``,
-        ``mode=memory``) and so makes behaviour depend on how the store was
-        addressed rather than on the store.
-
-        The asymmetry a guard would hide is a defect in its own right, already
-        filed: ``read`` and ``exists`` answer ``BackendUnavailable`` for an
-        absent table where the contract says ``NotFound`` and ``False``. Fix
-        that and a discarded store reads as an empty store from every
-        operation, consistently, with no special case here to get wrong.
+        A guard is not possible from here anyway, and the reason is worth keeping
+        so nobody re-derives the attempt: "was the store discarded" is not
+        decidable from this object's state. A *borrowed* engine can be disposed
+        by its owner with no call on this backend, so a ``close()``-based test
+        cannot see it; an in-memory URL test misses the URI spellings
+        (``file::memory:``, ``mode=memory``) and makes behaviour depend on how
+        the store was addressed rather than on the store.
         """
         try:
             return not sa.inspect(self._engine).has_table(self._table.name, schema=self._table.schema)
@@ -708,41 +737,45 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             return False
 
     @contextlib.contextmanager
-    def _absent_table_is_absent_path(self, path: str, *, missing_ok: bool, what: str) -> Iterator[None]:
+    def _absent_table_is_absent_path(self, path: str, *, raises: bool, what: str) -> Iterator[None]:
         """A dropped table is a missing path, not a failed statement.
 
-        The table is this backend's container, so an absent one owes the same
-        answer an absent bucket owes on S3 — ``missing_ok=True`` returns cleanly,
-        ``missing_ok=False`` raises ``NotFound``. Without this, a dropped table
-        surfaced as whatever ``_map_errors`` made of the driver's complaint
-        (``BackendUnavailable`` from ``OperationalError`` on SQLite, the base
-        error from ``ProgrammingError`` on PostgreSQL and MySQL), so a tolerant
-        cleanup loop got an exception from *both* deletes where the S3 and Azure
-        family returned from one and raised from the other. This backend needed
-        the fix on both, not just on the sibling.
+        The table is this backend's container, so an absent one owes whatever an
+        absent bucket owes on S3 — per operation, on one axis:
 
-        **Placement is the whole cost story.** This catches
-        ``SQLAlchemyError`` — a *driver* failure — and nothing else, so the
-        inspector call is charged only to a statement that already failed. An
-        ordinary miss raises this module's own ``NotFound`` from a query that
-        succeeded, which is not a ``SQLAlchemyError`` and passes straight
-        through: the common path pays nothing, and the contract's
-        "no extra round trip to tell an absent container from an absent path"
-        budget is kept. Sitting inside ``_map_errors`` rather than outside it is
-        what preserves that, since by the time ``_map_errors`` has run the
-        driver's exception type is gone.
+        * ``raises=False`` abandons the block and resumes *after* the ``with``,
+          so the answer is whatever the caller seeded beforehand: ``False`` for a
+          probe, empty ``rows`` for a listing, an empty ``FolderInfo`` for
+          ``get_folder_info`` at the root. A tolerant delete seeds nothing and
+          returns.
+        * ``raises=True`` gives ``NotFound`` — the file-shaped operations,
+          ``get_folder_info`` below the root, and a strict delete.
 
-        A ``SQLAlchemyError`` raised while the table is still there re-raises
-        untouched, so a genuine connection or syntax failure keeps its mapping.
+        Without it a dropped table surfaced as whatever ``_map_errors`` made of
+        the driver's complaint, so a store that is *gone* was reported as one
+        that is *broken* — a retryable classification for a permanent condition.
+        ``write`` is deliberately left out: no clause decides what a write owes
+        an absent container.
+
+        **Placement is the whole cost story.** It catches ``SQLAlchemyError`` —
+        a *driver* failure — and nothing else, so the inspector call is charged
+        only to a statement that already failed; an ordinary miss raises this
+        module's own ``NotFound`` from a query that succeeded and passes straight
+        through. That keeps the contract's "no extra round trip to tell an absent
+        container from an absent path" budget. It must sit *inside*
+        ``_map_errors``, which has already discarded the driver's exception type
+        by the time it returns. A ``SQLAlchemyError`` raised while the table is
+        still there re-raises untouched.
         """
-        # Contract: 003-backend-adapter-contract BE-012 / BE-013, and the shared
-        # rule under BE-021 ("An absent container reads as an absent path").
+        # Contract: 003-backend-adapter-contract BE-004 / BE-005 / BE-012 /
+        # BE-013, and the shared rule under BE-021 ("An absent container reads as
+        # an absent path") with its § Reach per-operation split.
         try:
             yield
         except sa.exc.SQLAlchemyError:
             if not self._table_is_absent():
                 raise
-            if not missing_ok:
+            if raises:
                 raise NotFound(f"{what} not found: {path}", path=path, backend=self.name) from None
 
     def delete(self, path: str, *, missing_ok: bool = False) -> None:
@@ -761,7 +794,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         self._validate_path(path)
         with (
             self._map_errors(path),
-            self._absent_table_is_absent_path(path, missing_ok=missing_ok, what="File"),
+            self._absent_table_is_absent_path(path, raises=not missing_ok, what="File"),
             self._engine.begin() as conn,
         ):
             t = self._table
@@ -796,7 +829,7 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         prefix = path + "/"
         with (
             self._map_errors(path),
-            self._absent_table_is_absent_path(path, missing_ok=missing_ok, what="Folder"),
+            self._absent_table_is_absent_path(path, raises=not missing_ok, what="Folder"),
             self._engine.begin() as conn,
         ):
             t = self._table
@@ -831,7 +864,8 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
         One ``SELECT`` fetches every key under the prefix; folder structure is
         derived from ``/`` in the key suffix, and ``recursive`` / ``max_depth``
-        filter client-side. A missing prefix yields nothing.
+        filter client-side. A missing prefix yields nothing, and so does an
+        absent backing table — a table that is not there holds nothing either.
 
         Raises:
             BackendUnavailable: If the database operation fails, surfaced during
@@ -841,7 +875,12 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         prefix = "" if is_root(path) else path + "/"
 
         cols = self._select_info_columns()
-        with self._map_errors(path), self._engine.connect() as conn:
+        rows: Sequence[Any] = []
+        with (
+            self._map_errors(path),
+            self._absent_table_is_absent_path(path, raises=False, what="Folder"),
+            self._engine.connect() as conn,
+        ):
             t = self._table
             query = sa.select(*cols).where(t.c.key.like(prefix + "%")) if prefix else sa.select(*cols)
             rows = conn.execute(query).fetchall()
@@ -869,7 +908,8 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         """Yield immediate virtual subfolders of *path* as ``FolderEntry`` records.
 
         One ``SELECT`` over keys under the prefix; folder names are the distinct
-        first segments of the key suffixes. A missing prefix yields nothing.
+        first segments of the key suffixes. A missing prefix yields nothing, and
+        so does an absent backing table.
 
         Raises:
             BackendUnavailable: If the database operation fails, surfaced during
@@ -878,7 +918,12 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         self._validate_path(path, allow_empty=True)
         prefix = "" if is_root(path) else path + "/"
 
-        with self._map_errors(path), self._engine.connect() as conn:
+        rows: Sequence[Any] = []
+        with (
+            self._map_errors(path),
+            self._absent_table_is_absent_path(path, raises=False, what="Folder"),
+            self._engine.connect() as conn,
+        ):
             t = self._table
             query = sa.select(t.c.key).where(t.c.key.like(prefix + "%")) if prefix else sa.select(t.c.key)
             rows = conn.execute(query).fetchall()
@@ -900,7 +945,8 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
         Overrides the base two-pass default: a single query over the prefix
         yields ``FileInfo`` for direct-child keys and ``FolderEntry`` for the
-        distinct first suffix segments. A missing prefix yields nothing.
+        distinct first suffix segments. A missing prefix yields nothing, and so
+        does an absent backing table.
 
         Raises:
             BackendUnavailable: If the database operation fails, surfaced during
@@ -910,7 +956,12 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         prefix = "" if is_root(path) else path + "/"
 
         cols = self._select_info_columns()
-        with self._map_errors(path), self._engine.connect() as conn:
+        rows: Sequence[Any] = []
+        with (
+            self._map_errors(path),
+            self._absent_table_is_absent_path(path, raises=False, what="Folder"),
+            self._engine.connect() as conn,
+        ):
             t = self._table
             query = sa.select(*cols).where(t.c.key.like(prefix + "%")) if prefix else sa.select(*cols)
             rows = conn.execute(query).fetchall()
@@ -938,13 +989,18 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         """Return metadata for the file at *path* from one ``SELECT``.
 
         Raises:
-            NotFound: If no key exists at *path*.
+            NotFound: If no key exists at *path*, including when the backing
+                table is absent.
             InvalidPath: If *path* is empty, absolute, or malformed.
             BackendUnavailable: If the database is unreachable.
         """
         self._validate_path(path)
         cols = self._select_info_columns()
-        with self._map_errors(path), self._engine.connect() as conn:
+        with (
+            self._map_errors(path),
+            self._absent_table_is_absent_path(path, raises=True, what="File"),
+            self._engine.connect() as conn,
+        ):
             t = self._table
             row = conn.execute(sa.select(*cols).where(t.c.key == path)).first()
             if row is None:
@@ -959,15 +1015,28 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         aggregate ``SELECT`` (``COUNT``/``SUM``/``MAX``) over keys under the
         prefix — no per-file round-trips.
 
+        **The root never raises**, absent table included: it is a folder that
+        always exists, so a gone store aggregates to an empty one. That is why
+        the tolerance below is keyed on the root rather than on every path.
+
         Raises:
-            NotFound: If no key exists under *path*.
+            NotFound: If no key exists under *path*, including when the backing
+                table is absent. Not raised for the store root.
             InvalidPath: If *path* is absolute or malformed.
             BackendUnavailable: If the database is unreachable.
         """
         self._validate_path(path, allow_empty=True)
         prefix = "" if is_root(path) else path + "/"
+        # Stays ``None`` only when the block is abandoned — the root of an absent
+        # table. Seeding a ``FolderInfo`` here would build one on every call and
+        # discard it.
+        info: FolderInfo | None = None
 
-        with self._map_errors(path), self._engine.connect() as conn:
+        with (
+            self._map_errors(path),
+            self._absent_table_is_absent_path(path, raises=not is_root(path), what="Folder"),
+            self._engine.connect() as conn,
+        ):
             t = self._table
 
             agg_cols: list[sa.ColumnElement[Any]] = [sa.func.count()]
@@ -1001,12 +1070,21 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             if max_modified is not None:
                 modified_at = datetime.fromtimestamp(max_modified, tz=timezone.utc)
 
-            return FolderInfo(
+            info = FolderInfo(
                 path=RemotePath.from_backend_path(path),
                 file_count=file_count,
                 total_size=total_size,
                 modified_at=modified_at,
             )
+        if info is None:
+            # Table gone, and this is the root: an empty store, not a miss.
+            return FolderInfo(
+                path=RemotePath.from_backend_path(path),
+                file_count=0,
+                total_size=0,
+                modified_at=None,
+            )
+        return info
 
     # endregion
 
@@ -1022,7 +1100,8 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         a no-op.
 
         Raises:
-            NotFound: If *src* does not exist.
+            NotFound: If *src* does not exist, including when the backing table
+                is absent.
             AlreadyExists: If *dst* exists and ``overwrite`` is ``False``.
             InvalidPath: If *src* or *dst* is malformed, or (opt-in) an ancestor
                 of *dst* exists as a file.
@@ -1033,14 +1112,22 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
         if src == dst:
             # Verify source exists, then no-op
-            with self._map_errors(src), self._engine.connect() as conn:
+            with (
+                self._map_errors(src),
+                self._absent_table_is_absent_path(src, raises=True, what="Source"),
+                self._engine.connect() as conn,
+            ):
                 t = self._table
                 if conn.execute(sa.select(sa.literal(1)).where(t.c.key == src)).first() is None:
                     self._reject_folder(conn, src)
                     raise NotFound(f"Source not found: {src}", path=src, backend=self.name)
             return
 
-        with self._map_errors(src), self._engine.begin() as conn:
+        with (
+            self._map_errors(src),
+            self._absent_table_is_absent_path(src, raises=True, what="Source"),
+            self._engine.begin() as conn,
+        ):
             t = self._table
             # Verify source exists
             if conn.execute(sa.select(sa.literal(1)).where(t.c.key == src)).first() is None:
@@ -1067,7 +1154,8 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         verifies the source exists and is otherwise a no-op.
 
         Raises:
-            NotFound: If *src* does not exist.
+            NotFound: If *src* does not exist, including when the backing table
+                is absent.
             AlreadyExists: If *dst* exists and ``overwrite`` is ``False``.
             InvalidPath: If *src* or *dst* is malformed, or (opt-in) an ancestor
                 of *dst* exists as a file.
@@ -1077,7 +1165,11 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         self._validate_path(dst)
 
         if src == dst:
-            with self._map_errors(src), self._engine.connect() as conn:
+            with (
+                self._map_errors(src),
+                self._absent_table_is_absent_path(src, raises=True, what="Source"),
+                self._engine.connect() as conn,
+            ):
                 t = self._table
                 if conn.execute(sa.select(sa.literal(1)).where(t.c.key == src)).first() is None:
                     self._reject_folder(conn, src)
@@ -1086,7 +1178,11 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
 
         now = datetime.now(timezone.utc).timestamp()
 
-        with self._map_errors(src), self._engine.begin() as conn:
+        with (
+            self._map_errors(src),
+            self._absent_table_is_absent_path(src, raises=True, what="Source"),
+            self._engine.begin() as conn,
+        ):
             t = self._table
 
             # Check source exists
@@ -1143,7 +1239,8 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         Narrows SQL-side with a prefix ``LIKE`` where the pattern allows (on
         every dialect — SQLite's native ``GLOB`` is deliberately avoided because
         it mishandles ``**``), then applies the full glob regex to each row.
-        Costs one ``SELECT``.
+        Costs one ``SELECT``. An absent backing table yields nothing, on the same
+        terms as the other listings.
 
         Raises:
             BackendUnavailable: If the database operation fails, surfaced during
@@ -1151,7 +1248,11 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
         """
         cols = self._select_info_columns()
         rx = pattern_to_regex(pattern)
-        with self._map_errors(), self._engine.connect() as conn:
+        with (
+            self._map_errors(),
+            self._absent_table_is_absent_path("", raises=False, what="Folder"),
+            self._engine.connect() as conn,
+        ):
             t = self._table
             query = sa.select(*cols)
 

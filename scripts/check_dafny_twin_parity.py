@@ -109,6 +109,12 @@ Run with:
   hatch run check-dafny-twin-parity
   python scripts/check_dafny_twin_parity.py
   python scripts/check_dafny_twin_parity.py --print-pins   # paste-ready re-pin
+
+Drift-gate::
+
+    kind:       pair
+    compares:   the MemoryBackend and MemoryBackendMinimal twin classes in sdd/formal/
+    domain:     intent-formalized
 """
 
 from __future__ import annotations

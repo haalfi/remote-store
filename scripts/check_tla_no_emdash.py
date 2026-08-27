@@ -3,6 +3,12 @@
 TLC rejects non-ASCII characters in string literals with a lexical error.
 Running this check before TLC gives a clearer error message and catches
 em dashes in comments too, preventing silent accumulation.
+
+Drift-gate::
+
+    kind:       rule
+    rule:       no TLA+ module under sdd/formal/tla/ contains an em dash, which TLC rejects
+    domain:     intent-formalized
 """
 
 import sys

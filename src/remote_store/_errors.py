@@ -127,7 +127,24 @@ class BackendUnavailable(RemoteStoreError):
 
     Raised during backend construction or first operation when the
     storage service is unreachable (e.g., network error, invalid
-    endpoint, missing container).
+    endpoint, bad credentials).
+
+    **Mostly not raised because the bucket, container or table is
+    absent.** A container that does not exist holds no path either, so the
+    operations the contract decides answer for a missing path instead
+    (``False``, ``NotFound``, or an empty listing). ``write`` is the
+    exception — no clause decides it — and ``SQLBlobBackend`` still
+    reports a dropped table this way.
+
+    **There is no portable way to ask "is my store there?"**
+    ``check_health()`` probes the service rather than the container on
+    some backends and returns cleanly against one that is gone. A trial
+    ``write()`` distinguishes the cases where writes are permitted at all,
+    but it leaves an object behind and raises for reasons unrelated to the
+    container — ``CapabilityNotSupported`` on read-only backends,
+    ``AlreadyExists`` without ``overwrite=True``, ``PermissionDenied`` on
+    a present but unwritable store. Pick a probe that fits your backend
+    and test it against a container you have really deleted.
     """
 
 

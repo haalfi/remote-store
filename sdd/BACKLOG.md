@@ -45,7 +45,8 @@ depending section's `Closes when`**, because nothing about position will show it
 **Granularity.** Two tests fold work into one item: its fix surface
 *coincides* with the host's, **or** one pending decision resolves both. Surfaces
 that merely *overlap* stay separate, with each side naming the other and the
-co-ship recorded in the trace — BUG-249 and BUG-246 are that case. The decision
+co-ship recorded in the trace — BUG-249 and BUG-246, both now in
+[BACKLOG-DONE.md](BACKLOG-DONE.md), are that case. The decision
 test is why ID-218 sits inside ID-217 and ID-123 inside ID-121: those pairs touch
 disjoint paths and would be misfiled on the surface test alone.
 A sub-bullet is not itself tracked and does not get an ID **for the work it
@@ -197,127 +198,224 @@ be edited to point elsewhere.
 **Promise:** a caller catches one exception type, and an absent or denied
 store answers the same way on every backend.
 
-**Closes when:** the four remaining adapters answer the contract against an
-absent container — `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` and
-`SQLBlobBackend`, the same four the count below enumerates
-(BUG-246, BUG-249, BUG-245); no native exception escapes on
-either the absent or the **denied** path (BUG-249); one operation does not answer
-by payload size (BUG-253); a write to the store root cannot leave the container a
-regular file (BUG-255); and a newly registered backend cannot pass CI without
-meeting BE-004, BE-005 and BE-021 (BK-345). The spec contradiction is
-adjudicated — BUG-248, closed by
-[ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md).
-**Two cross-section dependencies**, per
-[§ How this file works](#how-this-file-works): BK-345 waits on **ID-244** in
-section 2 for the seeding hook, and BUG-249's denied half waits on **ID-242** in
-section 2, the only item whose subject is that path's coverage. Both are stated
-inside the items that carry them, as the rule requires; this section cannot
-close on its own items alone.
+**Closes when:** the root of an absent container meets BE-029 on every
+backend (BUG-254) and a write to that root does not occupy it with a regular
+file (BUG-259); a listing does not truncate silently when its container is
+deleted mid-scan (BUG-255) or when a folder vanishes part-way through a
+recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
+(BUG-256); a constructor does not leak its driver's exception
+(BUG-245); one operation does not answer by payload size (BUG-253); and a newly
+registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
+(BK-345). The spec contradiction is adjudicated — BUG-248, closed by
+[ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md) — the
+never-leak invariant holds on the S3 listing path, closed by BUG-249 with
+BUG-246, and the last adapter answers the contract against an absent container,
+closed by BUG-247. **One cross-section dependency remains**, per[§ How this file works](#how-this-file-works): BK-345 waits on **ID-244** in
+section 2 for the seeding hook, stated inside the item that carries it, so this
+section cannot close on its own items alone. BUG-249's denied half carried a
+second such dependency on **ID-242**; it shipped with the denied path asserted by
+the hand-written 403 probe that item names and by nothing in conformance, which
+is why ID-242 is still open and still worth doing.
 
-**Four backend classes** still disagree with **the absent-container clause**,
-counted from the items below. Two further items in this section are
-disagreements of *other* kinds and are deliberately outside that count: BUG-253,
-between two halves of one Graph operation, and BUG-255, where an SFTP write to
-the store root leaves an absent container occupied by a regular file — a
-BE-029 breach on the write path rather than a wrong answer about absence. The
-four are: `S3Boto3Backend`, `AzureBackend` and
-`AsyncAzureBackend` (BUG-246, which collapses the two Azure adapters into one row
-because they answer identically and take one fix) and `SQLBlobBackend` (BUG-246
-and BUG-245). **Two classes have left this count**, both by shipping rather than
-by exemption. `GraphBackend` is done **for that clause** — it still carries
-BUG-253: BUG-248 adjudicated the spec contradiction behind it and brought the
-backend to the contract in the same change, which is why BK-345's exemption list
-— blocked on that adjudication — can now be written. `LocalBackend` is done
-outright (BUG-247): its containment check reported a deleted root as an escape,
-and stopping the ancestor walk at the root brought every operation to the clause
-at once. The remaining group ships together or
-not at all: any one left behind leaves portable error handling impossible, which
-is the whole promise.
-
-- [ ] **BUG-246 — An absent container raises where the contract says `False`, `NotFound`, or an empty listing**
-  spec: BE-004, BE-005, BE-021 · effort: M · audience: user.api
-  BE-004 and BE-005 say these never raise, and BE-021 repeats it: the three
-  return `False` on any traversal error rather than raising. Against a container
-  that does not exist, four backends raise instead. Measured on the
-  `pytest-httpserver` stubs BUG-243 added (real `NoSuchBucket` /
-  `ContainerNotFound` 404s, Stage 1, no Docker) and on a dropped SQLite table:
-  | Backend | `exists(file)` | `is_file(file)` | `is_folder(folder)` |
+**Three backend classes** now disagree with **the absent-container clause** —
+`S3Backend` and `S3PyArrowBackend` (BUG-255), and `GraphBackend` (BUG-257) —
+counted from BE-021's § Known divergences list, which this section tracks bullet
+for bullet and which holds two bullets, the first naming two classes. BUG-255 and
+BUG-257 joined that list rather than the "further disagreements" below it when
+BUG-246 gave § Reach an explicit first-page bound: before that the clause said
+only what an absent container answers, so a container that vanished *during* a
+listing was outside it; now the bound is part of the clause and missing it is a
+breach of it. Writing a rule into a clause enlarges what the clause governs, and
+the two items that changed side are the evidence — neither was a new defect, and
+both were pre-existing behaviour that a new sentence made answerable.
+**Five** further disagreements sit in this section and none of them is with the
+absent-container clause, which is why they are not in that count: BUG-253 is
+between two halves of one Graph operation; BUG-245 is a constructor leak, which
+BE-021 scopes to operations and so does not reach; BUG-254 is with **BE-029's
+root row**, which BE-021 § Reach now defers to rather than deciding, so the
+breach is of the row § Reach points at and not of the clause this count is about;
+BUG-256 is about a health probe, which is off the roster BE-021 governs; and
+BUG-259 is a write to the store root leaving an absent container occupied by a
+regular file, which is BE-029's root row again on the write path.
+**Six classes** have left the list on the *empty-listing and NotFound* rows —
+counted as classes, which is the frame this paragraph opens in and not the bullet
+frame the sentence above it uses. `GraphBackend` went first — BUG-248 adjudicated
+the spec contradiction behind it and brought the backend to the contract in the
+same change, which is why BK-345's exemption list, blocked on that adjudication,
+can now be written. `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` and
+`SQLBlobBackend` followed with BUG-246 and BUG-249. `LocalBackend` is the sixth
+and the last: BUG-247 stopped its containment check reporting an absent root as
+a path escape, which was the one case where the clause *misreported* rather than
+merely mistyped — an absent store answered as a malformed path, on the most-used
+backend. Graph is on both sides of this paragraph and that is not a bookkeeping
+error: it meets the rows it was brought to and misses the bound that arrived
+after, which is what a clause growing a new sentence does to a backend that was
+compliant the day before.
+- [ ] **BUG-254 — Five backend classes breach BE-029's root row against an absent container**
+  spec: BE-004, BE-021, BE-029 · effort: S · audience: user.api
+  BE-029 already decides this and is not qualified by whether the container
+  exists: the root is "a folder that always exists", `exists(root)` is `True`, and
+  `get_folder_info(root)` "aggregates the whole store (never `NotFound`)".
+  Measured against the absent-container stubs BUG-243 added and a dropped SQLite
+  table. **Bold cells breach that row; the others are what it requires** — the
+  table records both so the fix has its control:
+  | Backend | `get_folder_info("")` | `exists("")` | `is_folder("")` |
   | --- | --- | --- | --- |
-  | S3, S3-PyArrow | `False` | `False` | `False` |
-  | S3-Boto3 | raises `NotFound` | `False` | raises `NotFound` |
-  | Azure non-HNS (sync and async) | raises `NotFound` | `False` | raises `NotFound` |
-  | SQLBlob | raises `BackendUnavailable` | raises `BackendUnavailable` | raises `BackendUnavailable` |
-  `AzureBackend` and `AsyncAzureBackend` share a row because they answer
-  identically and need the same fix.
-  Two different root causes, so budget for two fixes. On S3-Boto3 and Azure the
-  `is_file` column shows it is local: the HEAD-backed probe already absorbs the
-  404 and only the prefix-listing-backed ones do not. On SQLBlob all three run
-  their `SELECT` inside a bare `_map_errors`, so the driver's complaint maps
-  straight through — the same gap BUG-243 closed for the two deletes only, and
-  the fix shape is the one it used (`_absent_table_is_absent_path`, minus the
-  `missing_ok` branch, answering `False` instead).
-  `AzureBackend.exists`'s own docstring already says it never raises, so the
-  code contradicts its documentation.
-  **On SQLBlob the three probes are a third of it.** BE-021's divergence list
-  says "every operation except the two deletes", and that is measured, not
-  inferred — against a dropped SQLite table every one of these raises
-  `BackendUnavailable`:
-  | Operation | Canonical row (BE-021) | Measured |
-  | --- | --- | --- |
-  | `read`, `read_bytes`, `get_file_info`, `get_folder_info` | `NotFound` | `BackendUnavailable` |
-  | `move` / `copy` source | `NotFound` | `BackendUnavailable` |
-  | `list_files`, `list_folders` | empty listing | `BackendUnavailable` |
-  | `exists`, `is_file`, `is_folder` | `False` | `BackendUnavailable` |
-  | `write` | — | `BackendUnavailable` |
-  Only `write` is arguably right: no clause says what a write owes against an
-  absent container, so leaving it as a backend-identity failure is defensible
-  and this item does not propose changing it. The other eleven owe a different
-  answer, and the fix is one shape applied at three call sites, not eleven —
-  they all run their statement inside a bare `_map_errors`.
-  **The same split reaches a disposed in-memory engine.** Disposing one destroys
-  the database rather than releasing a connection, so the table is genuinely
-  absent and the two deletes return while everything else raises. Fixing the
-  rows above fixes this with them; there is nothing separate to decide.
-  Pre-existing — BUG-243 neither introduced nor touched it, having decided only
-  what `missing_ok` owes on the two deletes.
+  | S3, S3-PyArrow | `FolderInfo(file_count=0)` | **`False`** | **`False`** |
+  | S3-Boto3, Azure (sync and async) | **raises `NotFound`** | `True` | `True` |
+  | SQLBlob | `FolderInfo(file_count=0)` | `True` | `True` |
+  SQLBlob's row is what compliance looks like; BUG-246 brought it there.
+  **Seven class-cells breach**, across three columns and five classes — counted
+  by expanding each grouped row over its classes: the first row's two bold
+  columns across two classes is four, the second row's one bold column across
+  three classes is three.
+  Five classes because the two Azure adapters carry their own copies and each
+  needs its own fix, which is the frame BUG-246 and the CHANGELOG both use.
+  The breaches run in two opposite directions, which is why one fix will not cover both:
+  the s3fs lanes go to the wire for `exists("")` and report a missing bucket as
+  "the root is not there", while S3-Boto3 and Azure short-circuit `exists` but let
+  `get_folder_info` reach a listing whose 404 they do not tolerate at the root.
+  A caller cannot ask "is my store there?" portably: `exists("")` answers `True`
+  on three backends whose container is gone and `False` on two.
+  **Pre-existing.** BUG-246 changed neither the root short-circuits nor
+  `get_folder_info`'s root handling on any backend but SQLBlob, and did not touch
+  the s3fs lanes at all (`git diff origin/master...HEAD` over `_s3.py`,
+  `_s3_pyarrow.py`, and `_s3_boto3.py`'s `get_folder_info`). SQLBlob's row is the
+  one exception, and it is compliant rather than breaching: that change did
+  briefly introduce the `NotFound` breach there and then fixed it in the same PR,
+  with `tests/backends/sqlblob/test_absent_table.py` pinning both spellings of
+  the root. Re-measured on this branch against a dropped table
+  (`tmp/measure_254_sqlblob.py`): `get_folder_info` returns
+  `FolderInfo(file_count=0, total_size=0, modified_at=None)` and both probes
+  answer `True`, for `""` and `"."` alike.
+  No spec decision is needed first — BE-029 states the answer. What the fix owes
+  is the *reason* each backend misses it, since the two directions have different
+  causes, plus a conformance cell so a sixth backend cannot inherit either.
+  **Filed on a wrong premise and corrected in the same PR:** the first version of
+  this item said nothing decided the question and asked for a spec decision. That
+  was read off BE-021 § Reach alone, which decides operations and is silent about
+  the root; BE-029's table decides it and was not consulted. Recorded because the
+  same miss is available to the next reader of § Reach.
 
-- [ ] **BUG-249 — Three `S3Boto3Backend` listings leak a raw `botocore.ClientError`**
-  spec: BE-021 · effort: S · audience: user.api
-  BE-021's first invariant: "Backend-native exceptions never leak. All
-  exceptions are mapped to `remote_store` error types." `list_files`,
-  `list_folders` and `iter_children` are the only methods on the class that call
-  the wire without `_boto_errors` around it — every other method wraps, at
-  fourteen sites. So the paginator's exception reaches the caller untouched.
-  Measured against the missing-bucket stub, and against a 403 stub to show the
-  cause is local rather than contractual:
-  | Backend | `list_files` on an absent bucket | on a denied bucket |
-  | --- | --- | --- |
-  | S3, S3-PyArrow | empty listing | `PermissionDenied` |
-  | S3-Boto3 | raises `botocore.exceptions.ClientError` | raises `botocore` `AccessDenied` |
-  Two backends answer correctly against the identical wire response, so this is
-  an omission in one adapter, not an unstated contract question. The escaping
-  type is the worst part: a caller catching `except RemoteStoreError` catches
-  every backend but this one, and `ClientError` comes from a library they may
-  never have imported.
-  Pinned by `tests/backends/s3/test_denied_probe.py::TestS3Boto3ListingsLeakTheirNativeError`,
-  which asserts both that the error *is* a `ClientError` and that it is *not* a
-  `RemoteStoreError` — so the fix breaks the cell rather than making it vacuous.
-  The fix is one `with self._boto_errors(path):` per method, but note all three
-  are generators: the wrapper must be inside the generator body, not around the
-  call that returns it, or it will not be entered until the first `next()`.
-  **Co-ship with BUG-246's S3-Boto3 row** — same adapter, same idiom, and
-  BUG-246's diagnosis puts its S3-Boto3 failures on the prefix-listing paths
-  this item wraps. Separate items rather than one, because the surfaces
-  *overlap* rather than coincide: BUG-246 spans four backends and this is one
-  adapter, which is the distinction
-  [§ Granularity](#how-this-file-works) draws. Record the co-ship in the trace.
-  **Cross-section dependency:** the denied-bucket column above is measured on a
-  stub, and the only item that puts it behind a fixture the suite runs is
-  **ID-242** in section 2 — four `moto doesn't raise PermissionError` pragmas
-  that are coverage holes. Closing this item without ID-242 leaves the denied
-  path asserted by one hand-written probe and by nothing in conformance.
+- [ ] **BUG-256 — `ping()` reports a healthy store on three backends whose container is gone**
+  spec: PING-001 · effort: S · audience: user.api
+  PING-001's postconditions give `ping()` a `NotFound` for a "missing
+  bucket/container/path". Measured against an absent container:
+  | Backend | `check_health()` |
+  | --- | --- |
+  | S3, S3-Boto3, Azure (sync and async), Local | raises `NotFound` |
+  | S3-PyArrow, SQLBlob, **SQLQuery** | returns cleanly |
+  | ReadOnlyHttp | raises `BackendUnavailable` — wrong type, not a missing raise |
+  Both SQL backends inherit the same bare `SELECT 1` on
+  `_SQLAlchemyBaseBackend`: it verifies connectivity and never looks at the table
+  or the queried relation, so a dropped table and a discarded in-memory store both
+  read as healthy. `SQLQueryBackend` overrides nothing, which is why naming only
+  `SQLBlobBackend` understates it. The `S3PyArrowBackend` probe misses it for the
+  same reason one layer out. `ReadOnlyHttpBackend` is a fourth case of a different
+  kind and is listed so a fix does not stop at the three.
+  **Five documentation surfaces promise the behaviour** and are part of this item
+  rather than of BUG-246, which measured the divergence but did not create it:
+  `Backend.check_health` and `AsyncBackend.check_health` docstrings,
+  `Store.ping()`, `AsyncStore.ping()`, and `docs-src/guides/health-check.md`.
+  The caller this hurts is the one doing the obvious thing — using `ping()` at
+  startup to check the store is really there — and getting "yes" for a store that
+  is not. It is also the operation an absent-container caller is *sent* to by the
+  error-model docs, which is how this was found.
+  **Pre-existing**, and out of BE-021's reach: a health probe is off the roster
+  that clause governs, which is why the divergence lives under PING-001 rather
+  than in BE-021's list. Discovered while measuring BUG-246's migration advice,
+  which is why that advice sends callers to `write()` instead.
 
-- [ ] **BUG-255 — `SFTPBackend` writes leave an absent `base_path` occupied by a regular file**
+- [ ] **BUG-255 — A container deleted mid-listing truncates the listing silently on the two s3fs lanes**
+  spec: BE-021 · effort: M · audience: user.api
+  `ListObjectsV2` answers an absent prefix with `200 KeyCount=0`, so the only 404
+  a listing can raise is the container's — which is why reading that 404 as "the
+  container is absent, so it holds nothing" is safe on the *first* page. It is not
+  safe on the second: by then the listing has already yielded items, so the
+  container demonstrably existed, and a 404 means it was deleted underneath the
+  scan. Measured with a stub serving a valid first page carrying a
+  `NextContinuationToken` and `NoSuchBucket` on the second:
+  | Backend | `list_files("", recursive=True)` |
+  | --- | --- |
+  | S3, S3-PyArrow | yields 0 items, then returns cleanly |
+  | S3-Boto3, Azure, Async Azure | raises `NotFound` after the first page — fixed by BUG-246 |
+  Measured for `list_files` on a page of keys; re-measured for all five listings
+  on both page shapes (keys-only and prefixes-only) once the bound moved onto the
+  page, which is the parametrisation
+  `TestTheAbsentBucketToleranceIsBoundedToTheFirstPage` and its two Azure twins
+  now carry.
+  The two s3fs lanes report a *complete* listing that is not complete — the other
+  three rows are the control, and are what the fix looks like. The caller most hurt
+  is the one doing list-then-delete or list-then-sync: it sees a short list, treats
+  the absent entries as absent, and deletes or fails to copy data that was there.
+  **Pre-existing on the two s3fs lanes**, which is what makes this an item rather
+  than a BUG-249 residue: they truncated this way before that change and still do.
+  **The two s3fs lanes are what this item is left holding.** BUG-246
+  and BUG-249 briefly put `S3Boto3Backend` and both Azure adapters onto this
+  truncation — the boto3 lane by replacing a leaked `ClientError` with a
+  swallowed 404, the Azure adapters by adding a swallow where the flat lane
+  previously raised — and then bounded the tolerance to the first page on all
+  three. The bound is keyed on a **page** having come back, which is the second
+  thing that PR got wrong and had to re-measure: keyed on a yielded *item*, as it
+  first shipped, every listing stayed blind on the page shapes its own filter
+  empties, so a folders-only first page still truncated `list_files` and a
+  keys-only one still truncated `list_folders`. **Four** of the five listings per
+  lane were blind — `list_files`, `list_files-recursive`, `list_folders` and
+  `glob`, measured by putting the item-keyed source back under the current tests
+  and counting failures (12, across the three lanes); `iter_children` yields both
+  kinds and so has no blind page shape, which is why it is the control. The Azure
+  HNS branches carry the bound too, and are executed: an ADLS Gen2 `List Path`
+  wire stub reaches all ten of them without Docker, which retired the claim that
+  only the Docker-gated fixture could. SQLBlob is not affected (one `SELECT`, no
+  pages).
+  **A correction worth keeping**, because it cost a round: that PR first recorded
+  the Azure rows as pre-existing, on the strength of a base-versus-head
+  measurement that was broken — the base run set `PYTHONPATH` to a worktree root,
+  and this package lives under `src/`, so the import silently fell back to the
+  editable install and measured *head* twice. Re-run with `PYTHONPATH` pointing
+  at `<worktree>/src` and the module's `__file__` printed, the base revision
+  raises. The lesson is the repo's own: a verification that can fail silently is
+  worse than none.
+  The fix shape is settled and already implemented on the other three lanes: a
+  first-page bound — tolerate the container 404 only while nothing has been
+  yielded, and let a later one propagate. `_flat_ns._ListingCursor` is the shared
+  piece; `S3Boto3Backend._listing_errors` is the worked example. What remains is
+  applying it to `_S3Base`'s s3fs-backed listings and pinning it per lane, which
+  closes the divergence rather than opening one. Take the bound from the worked
+  example rather than from this paragraph's first sentence: it is keyed on a page
+  having come back, not on an item having been yielded.
+
+- [ ] **BUG-257 — `GraphBackend` restarts the first-page bound at every folder of a recursive walk**
+  spec: BE-021 · effort: M · audience: user.api
+  BE-021 § Reach requires a container 404 arriving after a listing has received a
+  page to propagate rather than end the iteration. `GraphBackend` keys that bound
+  per **HTTP request** — `_iter_child_items` in
+  `src/remote_store/aio/backends/_graph/backend.py` sets its `started` flag
+  inside one request — while `_walk_files` issues one request per folder, so
+  every subfolder listing starts the bound over at `False`.
+  Measured with `respx` against the real backend: `list_files("", recursive=True)`
+  where the root `/children` returns `[a.txt, sub/]` and `sub`'s `/children`
+  returns 404 **returns `["a.txt"]` cleanly** — a truncated listing that reads as
+  complete. Reproduced with both `itemNotFound` and `resourceNotFound` bodies,
+  which matters because listings run at item scope where `graph_error_for` maps
+  any 404 to `NotFound`, so a genuinely deleted drive produces this.
+  The control passes: page 1 followed by a 404 on the `@odata.nextLink` **does**
+  raise `NotFound`, so the single-listing bound is correct and only the walk is
+  not.
+  **Pre-existing, and surfaced by a spec edit rather than by a code change.**
+  BUG-246 wrote the first-page bound into § Reach; before that no clause decided
+  the mid-scan case and this was undecided behaviour rather than a breach.
+  BUG-248 had brought Graph to the clause's other rows in the same section, which
+  is why it appears on both sides of § 1's paragraph.
+  The fix shape is `S3Boto3Backend.list_files`, where one `_listing_errors`
+  cursor wraps the whole breadth-first walk so a 404 on any sub-prefix
+  propagates: hoist the flag out of `_iter_child_items` and thread it through
+  `_walk_files`. **The fix lands once**, unlike the Azure case: `GraphBackend` is
+  a single class and sync access goes through `AsyncBackendSyncAdapter`
+  ([ADR-0025](adrs/0025-async-to-sync-backend-adapter.md)), not a second copy of
+  the walk. Only the *cells* need a sync lane.
+
+- [ ] **BUG-259 — `SFTPBackend` writes leave an absent `base_path` occupied by a regular file**
   spec: BE-029, BE-021 · effort: S · audience: user.api
   Write to the store root of an SFTP store whose `base_path` does not exist and
   the bytes land at the container path itself, leaving the store's container a
@@ -449,10 +547,13 @@ structure exists to remove.
 
 A corrected clause nobody tests is the same defect one layer up, which is why
 the wrong-answer defects and the coverage holes are one promise. The wrong-answer
-defects come first because a user can hit them today. **Two items here are
-depended on from section 1**: BK-345 waits on ID-244's per-fixture seeding
-decision, and BUG-249's denied path waits on ID-242's coverage, so section 1
-cannot close before both land even though they sit here.
+defects come first because a user can hit them today. **One item here is depended
+on from section 1**: BK-345 waits on ID-244's per-fixture seeding decision, so
+section 1 cannot close before it lands even though it sits here. ID-242 was a
+second such dependency, from BUG-249's denied path; that item shipped without it,
+leaving the denied listing asserted by one hand-written 403 probe and by nothing
+in conformance — the exact hole ID-242 exists to fill, now with a shipped clause
+resting on it rather than a pending one.
 
 - [ ] **BUG-251 — A shared `cache_backend=` serves one store's bytes for another's**
   spec: RES-100 · effort: S/M · audience: user.api
@@ -945,7 +1046,8 @@ here as legitimately as "built".
 
 **Closes when:** every checker a diff can invalidate is reachable from a gate
 that diff actually triggers (BK-333); every extra's drift smoke exercises the
-packages it pins (BUG-250); **every install channel we intend to offer is
+packages it pins (BUG-250) and catches the drift that is visible only to a type
+checker (ID-250); **every install channel we intend to offer is
 published and working** (ID-018); and every upstream that can break us on its
 own schedule has a standing watch (ID-229, ID-225).
 
@@ -956,6 +1058,40 @@ narrower wording would be vacuously true while the item stays open.
 conda-forge reviewer, so no work in this repo can close section 5 — a real
 property of the section, not a defect in it, and stated so nobody reads the
 open item as neglect.
+
+- [ ] **ID-250 — The drift smoke never type-checks, so a signature-only narrowing reaches PRs as a red gate**
+  spec: — · effort: M · audience: infra.ci
+  `.github/workflows/drift-guard.yml` resolves every extra with
+  `--upgrade --pre`, diffs against the committed baselines and runs the smoke —
+  which is a pytest target or an `--import-only` module import, per
+  `scripts/drift_smoke_map.py`. It never runs `mypy`: `rg 'mypy'
+  .github/workflows/drift-guard.yml` returns nothing. So a dependency change that
+  is invisible at runtime and visible only to a type checker passes the smoke,
+  the rolling `[drift-guard]` issue reports the version bump with a green
+  verdict, and the first person to learn that it breaks us is whoever opens the
+  next PR.
+  **Measured, in BUG-258.** Dagster narrowed
+  `ComputeLogManager.get_log_keys_for_log_key_prefix` from
+  `Sequence[Sequence[str]]` to `Sequence[list[str]]`. Nothing raised, nothing
+  failed to import, no test changed behaviour — and every open PR's
+  `typecheck (3.13)` job went red against code no commit had touched. The version
+  drift itself was inside drift-guard's remit; the consequence was outside its
+  instrument.
+  This is the sibling of BUG-250 one layer up: that item is about the smoke
+  reaching the *packages* an extra pins, this one about the smoke reaching the
+  *properties* of them that we actually depend on. Both are the same failure —
+  a green verdict from an instrument that never looked.
+  Fix shape is open, and the cheap option may not be the right one. Adding
+  `mypy` to the smoke leg is small but types the whole tree against one drifted
+  extra, so a failure will not say which; typing only the extra's own module is
+  narrower but needs a map from extra to source path, which is
+  `drift_smoke_map.py`'s existing shape. Either way the verdict must be
+  *advisory* like the rest of drift-guard — the point is a triaged rolling-issue
+  row before the PR, not a second gate that blocks one.
+  **Not** about pinning `dagster`, which BUG-258 considered and rejected:
+  `infra/drift-locks/dagster.txt` already freezes the extra, and the annotation
+  fix it shipped is valid against both supertype versions, so no upper bound was
+  needed.
 
 - [ ] **BUG-250 — `[graph]`'s drift smoke reaches one of the extra's four declared dependencies**
   spec: — · effort: S · audience: infra.ci
@@ -1100,8 +1236,9 @@ ripple-check, the revisit pins, the generated inventories — say what is
 actually true.
 
 **Closes when:** the backlog files are structurally linted (ID-235); the
-ripple-check's six measured blind spots are answered (BK-346); the three
-hand-maintained inventories are generated (ID-245); `check_formal_trace` proves
+ripple-check's six measured blind spots are answered (BK-346); the
+hand-maintained inventories ID-245 names are generated — four bullets, of which
+the checker inventory has shipped; `check_formal_trace` proves
 assertion rather than citation (ID-207); and both open revisit pins have fired
 and named successors (ID-150, ID-249).
 **Bounded to those five deliberately.** "No artifact asserts what no mechanism
@@ -1314,7 +1451,8 @@ the commit that writes it lands, so cite the generator instead.
 
 - [ ] **ID-245 — Derived inventories replacing hand-maintained ones**
   spec: — · effort: M · audience: infra.test, contributor.tooling
-  Three generated surfaces, one shared design decision, and the same
+  Four generated surfaces — three of them sharing one design decision, the
+  fourth independent — and the same
   [`DRIFT-RULES.md`](DRIFT-RULES.md#rules) obligations on each: Rule 3 (the claim
   space must be *derived*, and its granularity stated), Rule 4 (which of document
   and generator governs), Rule 5 (gating or advisory, and why).
@@ -1339,21 +1477,108 @@ the commit that writes it lands, so cite the generator instead.
     marker, Dafny tag, TLA+ invariant), its status — so "what was verified, and
     by what" is answerable historically rather than only at HEAD. Its shape
     changes under ID-207, so cost is unknown until that lands.
-  - **The cross-artifact checker inventory** (was ID-237, absorbed here),
-    research § 9 step 8.
-    The research doc's own inventory of which artifact pairs are checked was
-    assembled by hand, and says of itself: "The table will drift, and nothing
-    will notice." Derive it from the `check_*.py` docstrings. Two complications
-    belong in the scope rather than in the implementation surprise: a substantial
-    minority of gates are single-artifact rule checks whose docstrings state a
-    *rule*, not a pair (assertion presence, mock discipline, forbidden RST roles,
-    em dashes in TLA+), so the deliverable needs an explicit "rule check, no
-    pair" classification; and the `scripts/check_*.py` glob under-reaches —
-    `scripts/docs/check_links.py` is a genuine cross-artifact gate outside it.
-  **The shared open question:** both complications push toward either a docstring
-  convention or a curated mapping, and a curated mapping is precisely the
-  parallel-artifact-that-drifts problem these exist to close. That decision is
-  unmade and it is one decision, not three.
+  - [x] **The cross-artifact checker inventory** (was ID-237, absorbed here),
+    research § 9 step 8. **Shipped.** [`GATE-INVENTORY.md`](GATE-INVENTORY.md),
+    derived by `scripts/gen_gate_inventory.py` and gating via `--check` in both
+    `lint` and `docs-gate` (two homes because CODE_PAT skips `lint` for an
+    `sdd/`-only edit, which is exactly an edit to the generated file). Both
+    named complications were answered as scoped: single-artifact rule checks
+    carry `kind: rule` and render in their own section, alongside a third
+    `kind: report` for the mechanisms that measure rather than assert; read the
+    per-kind split off that file's section headings rather than from here, since
+    it moves whenever a mechanism is declared. The claim space is the wiring in
+    `pyproject.toml`, `.pre-commit-config.yaml`
+    plus `.github/workflows/` rather than a glob, which is what reaches
+    `scripts/docs/check_links.py`. Research § 4b's eleven-row table is annotated
+    as a dated measurement naming the generated file as its successor. Two
+    bounds worth carrying forward: a mechanism that is not a script invocation
+    is out of range (the conformance suite, § 4b's one row with no successor
+    entry), and the declarations' *content* is unverified — a gate rewritten to
+    compare something else, with its block left alone, renders a truthful-looking
+    wrong row. The full bound list is the generated file's last section.
+    **One measured lesson worth carrying to the remaining bullets**, since they
+    build the same shape: across six review passes the *code* converged after two
+    (the last four execution-based passes found no bug between them), while the
+    *narrative* around it — the generator's docstring, this entry, the research
+    annotation, the trace — kept producing defects at roughly the rate the fix
+    passes edited it. Every recurrence was a sentence describing code that a later
+    commit changed. Two remedies worked and are worth reusing rather than
+    rediscovering: name a thing once in code and render it (`_WIRING_SOURCES`,
+    `_BOUNDS`), and point at the derived artifact for any figure that moves rather
+    than restating it. One did not: correcting the prose in place, which is what
+    the first four passes did.
+  - **BE-021's divergence counts, and the artifacts that re-count against them.**
+    The absent-container divergence set is stated as a bullet list in BE-021, as
+    a class count in `sdd/BACKLOG.md` § 1, and again in the CHANGELOG, spec 040
+    and BUG-254 — in **four incompatible frames**: bullets, backend classes,
+    operations, and helper call sites. Nothing derives any of them, and each
+    frame is explained in prose that is itself a claim that can go stale.
+    Measured cost: BUG-246 ran four numbered review rounds plus the closing
+    gates, and **11 of its round-4 findings were figures or scope sentences in
+    this set**, including one fixed by appending the right number beside the
+    wrong one and one corrected in the same commit that falsified it by adding an
+    item to the section being counted. Each fix pass added figures and produced a
+    fresh defect, and the closing audit found three more after round 4 had
+    declared the set clean: a `ping()` divergence titled "two backends" over a
+    table naming three, a root-breach cell count stated as six in two artifacts
+    where expanding the grouped rows gives seven, and a truncation item saying
+    "all three" of a set the same item had just reduced to two. Fix shape: one
+    authoritative divergence table that the other artifacts link to rather than
+    re-count against, and delete the meta-prose explaining which frame each
+    sentence uses — that prose was two of the eleven findings on its own.
+    **Position: independent of the other three**, and the only one of the four
+    with a measured defect rate behind it.
+    **Four qualifications from the session that closed BUG-246**, each amending
+    the fix shape above rather than restating it:
+    1. **The four frames are four different questions, so one flat table serves
+       none of them.** Bullets answer how many divergence entries exist; classes,
+       how many backends disagree; operations, how wide the breach is on one
+       backend; call sites, how much code implements the rule. The shape that
+       works is one row per (backend × operation) carrying the clause it
+       breaches, with every count derived by filtering it — never a second table.
+    2. **"Delete the meta-prose" is too blunt, and following it literally will
+       create a defect.** BE-021 counts move/copy as one operation in the roster
+       paragraph and as two in the SQLBlob divergence bullet, seventy lines
+       apart; the sentence saying so is the only thing stopping a future reader
+       "fixing" fourteen or twelve to match the other. Delete prose that explains
+       which frame a sentence uses; keep prose that explains why two frames
+       legitimately differ.
+    3. **A generator cannot produce the whole table.** "Pre-existing", "outside
+       the clause until BUG-246 wrote the bound", "the error type actively
+       misleads" are judgements. Realistic shape: generated columns for what each
+       backend answers, curated annotations for why — which means
+       [`DRIFT-RULES.md` Rule 4](DRIFT-RULES.md#authority) is answered **per
+       column, not per table**. Bullet 3 shipped that pattern; its per-column
+       authority table is the worked example. It also settles this bullet's
+       [Rule 5](DRIFT-RULES.md#mandatory-path) side: **advisory, not gating** —
+       a gate over a table containing judgements produces false failures, where
+       bullet 3 gates precisely because no column of it carries one.
+    4. **The set changes when the clause changes, not only when code changes** —
+       and this is the blocker. BUG-255 and BUG-257 entered § Known divergences
+       with no behaviour changing at all: writing the first-page bound into
+       § Reach enlarged what the clause governs. A generator keyed on backend
+       behaviour alone would have missed both. The input is code-behaviour ×
+       clause-text, and the clause-text half has no machine-readable form today.
+    **The surface to re-point**, counted at `959814e` with a case-sensitive
+    match on `absent container|absent-container`, one count per file, `sdd/` and
+    docs prose only: `sdd/specs/003` 15, `sdd/BACKLOG.md` 15,
+    `sdd/BACKLOG-DONE.md` 9, `sdd/specs/044` 5, `sdd/specs/040` 3,
+    `sdd/specs/029` 2, `sdd/specs/026` 2, `sdd/adrs/0038` 2,
+    `docs-src/guides/custom-backend-guide.md` 2, `CHANGELOG.md` 1. Traces and
+    the `src/`/`tests/` hits are excluded as records and as the behaviour itself.
+    Read the custom-backend guide first: it is the one artifact in that set that
+    never drifted, so it shows what a correctly placed statement of this clause
+    looks like.
+  **The shared question, now answered once by bullet 3:** a docstring
+  convention, not a curated mapping — a curated mapping is precisely the
+  parallel-artifact-that-drifts problem these exist to close. It shipped as the
+  `Drift-gate::` block that [`DRIFT-RULES.md` Rule 7](DRIFT-RULES.md#miss-rate)
+  now requires of every wired mechanism. The two unbuilt inventory bullets
+  inherit that decision rather than re-make it. The fourth bullet never shared
+  it: its answer is one table rather than a better-maintained several, and what
+  it takes from bullet 3 instead is the per-column authority pattern, since the
+  convention governs generated columns only and its curated ones need their
+  authority stated per column.
 
 - [ ] **ID-150 — Revisit informational `verify-tla` CI status (2026-10-19)**
   spec: — · effort: S · audience: library.maintainer
