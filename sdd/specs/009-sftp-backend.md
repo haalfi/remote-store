@@ -433,9 +433,19 @@ generalised a measurement of the pre-armed case (`SFTPFile.write` entered 0 time
 to every route, and stood while two tests in the suite reached it through plain
 `write` and `write_atomic`.
 
-**Postconditions:** A stalled operation raises `BackendUnavailable`, via the
-existing `_is_connection_dead` / `_map_exception` path (SFTP-023), which also
-clears the cached client so the next operation reconnects (SFTP-010 tier 2).
+**Postconditions:** A stalled operation *that fails* raises `BackendUnavailable`,
+via the existing `_is_connection_dead` / `_map_exception` path (SFTP-023), which
+also clears the cached client so the next operation reconnects (SFTP-010 tier 2).
+
+**The qualifier is load-bearing, and names the one operation that does not
+fail.** Every mechanism below — the classification guards, the handle guard, the
+stream wrapper's futile-close guard, and the client invalidation this paragraph
+promises — is triggered by an exception. A stalled operation whose failure
+paramiko *discards* raises nothing, so it reaches none of them: it neither
+reports nor clears the cached client, and the next operation therefore re-enters
+the same dead channel and pays the bound again. `SEEK_END` is that operation, and
+it is the second stated exception below. Read this paragraph as scoped to the
+failures that surface; the exception list is not a footnote to it.
 
 The caller-visible wall clock for a stalled operation is one bound, not
 several. A failed operation re-enters the channel two ways — to classify the

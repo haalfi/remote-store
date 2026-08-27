@@ -13,11 +13,31 @@ source_items:
   - BK-354
 audience:
   - user.api
+  - user.api_docs
+  - user.site
 discovery_followups:
   - BK-357
+# Counted over `git log --oneline origin/master..HEAD`, run before this line was
+# written. a9779b1 is the implementation and does not count. Four review-driven
+# commits do: 525ce32 (round 1, 5 findings), b90dba8 (three sub-points raised
+# inside round 1's findings that the first fix pass had left undone), 615691e
+# (round 2, 3 findings, one of which withdrew a spec claim this PR had made),
+# and the round-3 commit carrying this line (a panel of three, 12 findings after
+# dedup). b90dba8 is counted separately rather than folded into 525ce32 because
+# it exists for review feedback the round-1 pass did not act on, which is the
+# schema's test — "commits that exist specifically because review feedback was
+# incorporated" — not one-commit-per-round.
+review_rounds: 4
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
+  # Anticipated as a path, but the *edit* was not: round 1 found `HttpBackend`
+  # is not a class at all (the backend is `ReadOnlyHttpBackend`). The wrong name
+  # had been carried into four artifacts of this PR from BK-356's item body,
+  # which had it wrong already, so the sweep repaired the source too. Recorded
+  # here rather than under surprising_ripples: the schema splits the two fields
+  # by whether the *path* was anticipated, and the ripple-check's "Bug fix" and
+  # "Backlog item touched" rows both name this one.
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
 surprising_ripples:
@@ -28,10 +48,19 @@ surprising_ripples:
   # wrapped real handle" — silently stopped releasing it. The behaviour was
   # correct under the new clause and the comment was not.
   - tests/backends/sftp/test_config.py
-  # Round 1. `HttpBackend` is not a class; the backend is `ReadOnlyHttpBackend`.
-  # The wrong name was carried into four artifacts of this PR from BK-356's item
-  # body, which had it wrong already — so the sweep repaired the source too.
-  - sdd/BACKLOG.md
+  # Round 3. The round-2 discovery (a SEEK_END seek answers 0 on a dead channel)
+  # made this a user-facing wrong answer, not just an sdd/ fact — and this page
+  # promised the opposite ten lines below its io_timeout admonition: "a streamed
+  # read raises rather than returning short, so a truncated transfer is never
+  # mistaken for a complete one". True of read, false of seek-to-end. The
+  # round-1 docs verification had asked only whether the page claimed the
+  # *doubling* and was never re-run after round 2.
+  - docs-src/guides/backends/sftp.md
+  # Round 3. Carries the same "one wait is not covered" count, and its
+  # diagnostic is keyed on "still hangs" — which this case does not do. Absent
+  # from the trace entirely until round 3, because the round-1 verification
+  # checked one page and the ripple is a claim, not a filename.
+  - docs-src/guides/troubleshooting.md
 phases:
   - id: orient
     name: Orient
@@ -194,8 +223,16 @@ phases:
         section: "Bounding a stalled transfer"
         read_type: verify
         extract: >-
-          Verified the guide never claimed the doubling, so no user-facing page
-          carried a statement this falsifies. Its "discard the handle and start
-          again" advice is now cheaper to follow but not made wrong by the
-          change, so it stands.
+          Round 1: verified the guide never claimed the doubling, so no
+          user-facing page carried a statement the *fix* falsifies.
+          Retrospective, from round 3: the check was right and the question was
+          wrong. I asked whether the page claimed the thing being fixed, not
+          what the page claims that the work might newly break — and after round
+          2 found the SEEK_END case, this page's "a streamed read raises rather
+          than returning short, so a truncated transfer is never mistaken for a
+          complete one" became false for seek-to-end, while its admonition still
+          counted one uncovered wait. Neither was re-verified, because the
+          verification was treated as done rather than as scoped to what was
+          known at round 1. The sibling page carrying the same count
+          (troubleshooting.md) was never in the trace at all.
         outcome: ok

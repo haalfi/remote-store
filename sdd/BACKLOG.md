@@ -1077,9 +1077,12 @@ here as legitimately as "built".
   as non-blocking.
   **No longer blocked.** BK-355 landed first, so releasing a stalled stream
   costs one bound rather than two and the flip does not ship a doubling with it.
-  One doubling it does still ship is BK-357's `SEEK_END` case, which BK-355's
-  guard cannot reach; weigh that when setting the default, since a real bound is
-  what makes it cost anything.
+  BK-357's `SEEK_END` case is what the flip does still ship, and it is worth
+  weighing as more than a doubled wait: with `io_timeout=None` the `stat` inside
+  `_get_size` blocks forever, so today that case is a hang. A real bound converts
+  the hang into a **silently wrong size of `0`**, which BK-357 argues is the worse
+  of its two defects. That is an argument for ordering BK-357 before this item,
+  not merely for noting it here.
 
 - [ ] **BK-357 — A `SEEK_END` seek hides its own stall, so the futile-close guard cannot arm**
   spec: SFTP-030, SIO-010 · effort: M · audience: user.api
@@ -1089,8 +1092,9 @@ here as legitimately as "built".
   `except: return 0`. On a stalled channel that `stat` blocks for `io_timeout`
   and is then swallowed, so the seek returns a bogus size of `0` and raises
   nothing: the guard stays unarmed and the close pays the bound a second time.
-  Measured at a 2 s bound: 4.00 s, against 2.00 s for the read path BK-355 fixed
-  (`test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds`).
+  Measured at a 2 s bound: 4.00 s
+  (`test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds`), against 2.00 s
+  for the read path BK-355 fixed (`test_releasing_a_stalled_stream_costs_one_bound`).
   **Two defects, and the second is the worse one.** The doubled wait is the
   visible cost, but the seek also *succeeds* with a size of `0` on a dead
   channel, so a caller sizing a file by seeking to its end reads zero and cannot

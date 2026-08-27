@@ -573,7 +573,13 @@ class SFTPBackend(Backend):
             not a deadline for the whole transfer: a large file over a slow
             link is unaffected however long it takes, while a peer that stops
             sending mid-transfer raises ``BackendUnavailable`` instead of
-            blocking forever. Must be positive when set; ``0`` is rejected
+            blocking forever. One operation answers rather than raising:
+            seeking to the end of a stream (``seek(0, SEEK_END)``) asks the
+            server for the file size, and paramiko discards a stalled reply
+            and reports ``0`` — so it returns ``0`` for a file of any size,
+            reports nothing, and leaves the dead connection in place. Use
+            ``get_file_info(path).size`` where a stall must surface.
+            Must be positive when set; ``0`` is rejected
             because paramiko reads it as non-blocking. A streamed ``read``
             raises rather than returning short, so a truncated transfer is
             never mistaken for a complete one. Every stall is reported, never

@@ -429,9 +429,12 @@ def test_stall_recovers_and_rearms_the_bound(stall_relay: _StallRelay) -> None:
 def test_subsystem_request_is_not_bounded(unanswering_server: _MuteSubsystemServer) -> None:
     """Characterises a stated exception: the ``subsystem`` request is unbounded.
 
-    SFTP-030 records this as the one wait ``io_timeout`` does not cover — it was
-    one of two until BK-355 bounded the release of a stalled stream handle — and
-    a spec clause asserting a paramiko behaviour is exactly the kind of claim
+    SFTP-030 states two exceptions, and this is the one that is *unbounded*: the
+    other, a ``SEEK_END`` seek, is bounded but paid twice and answered wrongly
+    (``test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds``, below).
+    Keeping the two categories apart matters — "stated exception" and "unbounded
+    wait" are not the same set, and this docstring has conflated them once. A
+    spec clause asserting a paramiko behaviour is exactly the kind of claim
     this item has got wrong three times by reading rather than running. So it is
     pinned here: with ``io_timeout`` set, a peer that opens the channel and never
     answers the request is *still* blocked well past the bound.
@@ -854,6 +857,7 @@ def test_streaming_read_raises_rather_than_truncating(stall_relay: _StallRelay) 
 
 
 @pytest.mark.spec("SFTP-030")
+@pytest.mark.spec("SIO-010")
 def test_releasing_a_stalled_stream_costs_one_bound(stall_relay: _StallRelay) -> None:
     """Discarding a stream that failed on a stalled channel pays the bound once.
 
@@ -899,6 +903,7 @@ def test_releasing_a_stalled_stream_costs_one_bound(stall_relay: _StallRelay) ->
 
 
 @pytest.mark.spec("SFTP-030")
+@pytest.mark.spec("SIO-010")
 def test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds(stall_relay: _StallRelay) -> None:
     """Characterises a stated exception: a ``SEEK_END`` seek leaves the channel uncondemned.
 
@@ -945,7 +950,20 @@ def test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds(stall_relay: _S
         f"the real size is {len(payload)}, so if this now returns either the true "
         "size or an error, BK-357 has landed and this test should go"
     )
-    assert elapsed > io_timeout * 1.75, (
+    # SFTP-030's Postconditions are scoped to a stall that *fails*, and this is
+    # why: no exception reaches ``_map_exception``, so the dead client is still
+    # cached and the next operation re-enters the same channel. Asserted rather
+    # than reasoned — it is the half of the exception that outlives the call.
+    assert backend._sftp_client is not None, (
+        "the stalled seek left no failure to clear the cached client; if this is "
+        "now None the swallow is gone and SFTP-030's Postconditions can drop their qualifier"
+    )
+    # Two-sided, unlike a lower bound alone: `> 1.75x` passes at ten bounds and
+    # at an indefinite hang, and no pytest-timeout is configured, so a regression
+    # to a genuinely unbounded wait would hang the suite rather than fail here.
+    assert io_timeout * 1.75 < elapsed < io_timeout * 3, (
         f"seek-to-end plus release took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "
-        "if this is now one bound the swallow is gone and SFTP-030's exception should go with it"
+        "expected ~2x — one bound swallowed inside the seek and one paid by the close. "
+        "Below the band, the swallow is gone and SFTP-030's exception should go with it; "
+        "above it, the cost has grown a third round-trip and SFTP-030's figure is stale"
     )

@@ -111,20 +111,33 @@ session setup as well as later transfers. Setting it through the
 [escape hatch](#escape-hatch) instead does not survive those reconnects, because
 each one opens a fresh channel.
 
-!!! warning "One wait it does not cover"
-    A server that opens the SSH channel and then never answers the `sftp`
-    subsystem request still hangs, regardless of `io_timeout`: paramiko waits
-    for that reply on an untimed event, so no channel timeout applies. Every
-    reconnect re-enters that window. It needs a wedged SSH daemon rather than a
-    wedged SFTP subsystem, so it is rarer than the stall this option does cover
-    — but if a peer hangs with `io_timeout` set, this is the shape to suspect.
+!!! warning "Two cases it does not cover"
+    **A wedged SSH daemon.** A server that opens the SSH channel and then never
+    answers the `sftp` subsystem request still hangs, regardless of
+    `io_timeout`: paramiko waits for that reply on an untimed event, so no
+    channel timeout applies, and every reconnect re-enters that window. It needs
+    a wedged SSH daemon rather than a wedged SFTP subsystem, so it is rarer than
+    the stall this option does cover — but if a peer hangs with `io_timeout`
+    set, this is the shape to suspect.
+
+    **Seeking to the end of a stalled stream, which answers wrongly rather than
+    failing.** `stream.seek(0, os.SEEK_END)` asks the server for the file's
+    size. On a stalled connection paramiko discards that failure internally and
+    reports a size of `0`, so the seek returns `0` for a file of any size and
+    raises nothing — indistinguishable from a genuinely empty file. Nothing
+    reports the stall and the dead connection is not dropped, so the next
+    operation waits again. If you size files this way over SFTP, check
+    `get_file_info(path).size` instead, which fails properly on a stalled
+    connection.
 
 A stall is reported, not retried: the connect-phase `RetryPolicy` does not cover
 it, so a partially consumed stream is never silently restarted underneath you.
-A streamed read raises rather than returning short, so a truncated transfer is
-never mistaken for a complete one — discard the handle and start again, since
+A streamed **read** raises rather than returning short, so a truncated transfer
+is never mistaken for a complete one — discard the handle and start again, since
 the bytes already delivered are a valid prefix but the handle is dead. The
-backend drops the dead client, so the next operation reconnects.
+backend drops the dead client, so the next operation reconnects. Both of those
+hold for reading; neither holds for the seek-to-end case above, which is why it
+is called out rather than left to the general rule.
 
 !!! tip "Choosing a value"
     Size it against the longest legitimate pause your server can produce — an

@@ -153,6 +153,16 @@ reaches it. That needs a wedged SSH daemon rather than a wedged SFTP
 subsystem — rarer than the stall above, but it is the shape to suspect when the
 bound appears to do nothing.
 
+**If it does not hang but reports a file as empty,** suspect a seek to the end
+of a stalled stream. `stream.seek(0, os.SEEK_END)` asks the server for the
+file's size, and on a stalled connection paramiko discards that failure and
+reports `0` — so the seek returns `0` for a file of any size, raises nothing,
+and looks exactly like a genuinely empty file. It is the one stall that answers
+instead of failing, which is why it does not present as a hang. Nothing reports
+it and the dead connection is not dropped, so the following operation waits
+again. Size files with `get_file_info(path).size`, which raises
+`BackendUnavailable` on a stalled connection and drops the dead client.
+
 **Choosing a value.** `io_timeout` bounds the silence *between* bytes, not the
 transfer as a whole — a multi-gigabyte fetch that legitimately takes an hour is
 unaffected. Size it against the longest legitimate pause your server can
