@@ -662,7 +662,7 @@ class AsyncAzureBackend(AsyncBackend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If ``path`` names a directory.
+            InvalidPath: If ``path`` is the store root, or names a directory.
         """
         self._reject_root_as_write_target(path)
         await self._maybe_check_no_file_ancestor(path)
@@ -750,7 +750,7 @@ class AsyncAzureBackend(AsyncBackend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If ``path`` names a directory.
+            InvalidPath: If ``path`` is the store root, or names a directory.
         """
         self._reject_root_as_write_target(path)
         if not self._hns:
@@ -1325,7 +1325,8 @@ class AsyncAzureBackend(AsyncBackend):
 
         Raises:
             NotFound: If ``src`` does not exist.
-            InvalidPath: If ``src`` or ``dst`` names a directory (HNS only).
+            InvalidPath: If ``src`` or ``dst`` is the store root, or names a
+                directory (HNS only).
             AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
         # BE-018 / ASYNC-018: self-move is a no-op (src == dst → Ok), but only
@@ -1411,7 +1412,8 @@ class AsyncAzureBackend(AsyncBackend):
 
         Raises:
             NotFound: If ``src`` does not exist.
-            InvalidPath: If ``src`` or ``dst`` names a directory (HNS only).
+            InvalidPath: If ``src`` or ``dst`` is the store root, or names a
+                directory (HNS only).
             AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
         # BE-019 / ASYNC-019: self-copy is a no-op (src == dst → Ok), but only
