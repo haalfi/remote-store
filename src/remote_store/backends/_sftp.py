@@ -1080,14 +1080,23 @@ class SFTPBackend(Backend):
         try:
             try:
                 yield handle
-            except BaseException:
+            except BaseException as exc:
                 # Abnormal exit (the caller's own exception, a backend death
                 # during their writes, GeneratorExit): close the handle
                 # best-effort and re-raise; the target is left untouched. The
                 # outer handler classifies a backend death; a caller exception
                 # falls through it unchanged.
-                with contextlib.suppress(Exception):
-                    handle.close()
+                #
+                # Skip the close when this exception already says the channel is
+                # dead: paramiko's ``SFTPFile.close()`` issues ``CMD_CLOSE`` and
+                # waits for a reply that will never come, so the caller pays a
+                # second ``io_timeout`` — and ``suppress`` makes it invisible,
+                # a wait with no error to explain it. Measured at a 2 s bound:
+                # 4.04 s before this guard, 2.02 s after. Same reasoning as the
+                # ``connection_lost`` skip on the temp cleanup below.
+                if not (isinstance(exc, Exception) and self._is_connection_dead(exc)):
+                    with contextlib.suppress(Exception):
+                        handle.close()
                 raise
             # Normal completion: the flush at close and the promote are backend
             # ops — wrap them in _errors() so a failure there maps like
@@ -1705,6 +1714,13 @@ class SFTPBackend(Backend):
         expire during the connect phase — ``channel_timeout`` included, which
         paramiko documents as the wait for *opening* a channel, and which does
         bound ``open_session`` below.
+
+        One window here stays unbounded: the ``subsystem`` request itself. See
+        the comment at the ``settimeout`` call.
+
+        Upstream to track: this is ``SFTPClient.from_transport``'s body, split
+        open. If a future paramiko adds a step there, this copy diverges
+        silently — ``TestSFTPParamikoVersionSurface`` guards the shape.
         """
         import paramiko
 
@@ -1712,8 +1728,13 @@ class SFTPBackend(Backend):
         chan = transport.open_session(timeout=self._timeout)
         if chan is None:  # pragma: no cover — paramiko raises rather than returning None
             raise BackendUnavailable("SSH transport refused an SFTP session channel", backend=self.name)
-        # Before invoke_subsystem, not just before SFTPClient: both wait on the
-        # already-open channel, so both belong inside the bound.
+        # Armed here because the next *recv* on this channel is the version
+        # exchange inside ``SFTPClient``. It is deliberately not claimed to
+        # bound ``invoke_subsystem``: that waits in ``Channel._wait_for_event``,
+        # a bare ``threading.Event.wait()`` with no timeout argument, which never
+        # reads ``Channel.timeout``. A peer that opens the channel and then never
+        # answers the subsystem request is therefore still unbounded — recorded
+        # as a stated exception in the spec, not silently assumed away.
         if self._io_timeout is not None:
             chan.settimeout(self._io_timeout)
         chan.invoke_subsystem("sftp")
@@ -2050,6 +2071,16 @@ class SFTPBackend(Backend):
             except OSError as exc:
                 if getattr(exc, "errno", None) == errno.ENOENT:
                     return False  # ancestor missing, not a file
+                if self._is_connection_dead(exc):
+                    # A dead channel is not an opaque classification failure.
+                    # Swallowing it returns ``False``, the caller's original
+                    # (non-dead) error surfaces, and ``_map_exception`` maps that
+                    # to a generic ``RemoteStoreError`` — which does **not** clear
+                    # the cached client, so SFTP-010 tier 2 never fires on the
+                    # operation that actually surfaced the drop. Reachable when
+                    # the channel dies between the caller's failure and this walk.
+                    # Same reasoning as ``_raise_if_dir``.
+                    raise
                 # Opaque error walking the chain (below the base) — be
                 # conservative and let the caller's original failure
                 # surface as-is. BK-316 (L6) reconsidered widening this to

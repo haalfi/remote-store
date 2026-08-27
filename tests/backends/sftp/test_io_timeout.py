@@ -477,22 +477,21 @@ def test_stall_costs_one_bound_not_several(stall_relay: _StallRelay, op: str) ->
 
 
 @pytest.mark.spec("SFTP-030")
-def test_stalled_upload_raises_backend_unavailable(stall_relay: _StallRelay) -> None:
-    """A write against a peer that stops receiving fails within the bound.
+def test_stalled_upload_request_raises_backend_unavailable(stall_relay: _StallRelay) -> None:
+    """A client→server stall is bounded: the request never reaches the server.
 
-    This is a distinct fault from the read stalls above, though it is worth
-    being precise about *how*. Here the client's requests never reach the
-    server, so no reply is ever generated; in the download stalls the server
-    replies and the reply is discarded. Both surface as a receive timeout on
-    the channel, because paramiko's ``SFTPFile.write`` is not pipelined by
-    default and waits for each chunk's response before sending the next — so
-    the receive bound always fires before the SSH out-window drains.
+    Distinct from the download stalls in mechanism, if not in where it lands.
+    There the server replies and the relay discards the reply; here the request
+    never arrives, so no reply is ever generated. Both end in a receive timeout.
 
-    An earlier version of this test asserted the failure came from window
-    exhaustion in ``Channel.sendall``. Measured, it does not: the write fails on
-    a blocked receive after ~1x the bound, with ``sendall`` never reached. The
-    claim is corrected here and in SFTP-030 rather than left as an unverified
-    mechanism.
+    What this does *not* reach is ``SFTPFile.write``. ``write()`` issues an
+    existence ``stat`` first on ``overwrite=False``, and on ``overwrite=True``
+    the file open is still a round-trip, so a stalled upload always fails before
+    any payload byte is sent — measured: ``SFTPFile.write`` entered 0 times
+    either way. The write half proper is covered by the next test, which opens
+    the handle before stalling. An earlier revision of this test claimed both a
+    ``Channel.sendall`` window-exhaustion route and the ``SFTPFile.write``
+    non-pipelining explanation; neither was reached by the run that asserted it.
     """
     io_timeout = 2.0
     backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
@@ -501,9 +500,50 @@ def test_stalled_upload_raises_backend_unavailable(stall_relay: _StallRelay) -> 
     stall_relay.stall_upload()
     start = time.monotonic()
     with pytest.raises(BackendUnavailable):
-        backend.write(f"upload_{uuid.uuid4().hex[:8]}.bin", b"w" * (8 * 1024 * 1024))
+        backend.write(f"upload_{uuid.uuid4().hex[:8]}.bin", b"w" * 4096)
     elapsed = time.monotonic() - start
     assert elapsed < io_timeout * 3, f"write took {elapsed:.1f}s; expected ~{io_timeout}s"
+
+
+@pytest.mark.spec("SFTP-030")
+def test_stall_during_streamed_write_costs_one_bound(stall_relay: _StallRelay) -> None:
+    """A stall part-way through a streamed write is bounded, once.
+
+    This is the write-side counterpart of the streamed-read test, and the only
+    case in this file that actually enters ``SFTPFile.write`` with the stall
+    armed (verified by spying on it: entered twice, the seed write and the one
+    that fails). Reaching it needs the handle opened *before* the stall, which
+    ``open_atomic`` gives us; every route through ``write()`` fails on an
+    earlier round-trip instead.
+
+    The single-bound half is what makes it worth its runtime. ``open_atomic``
+    closes the handle best-effort on an abnormal exit, and paramiko's
+    ``SFTPFile.close()`` issues ``CMD_CLOSE`` and waits — so on a dead channel
+    the caller paid the bound twice, the second time invisibly, because the
+    close is wrapped in ``contextlib.suppress``. Measured at this bound: 4.04 s
+    before the guard, 2.04 s after. The 1.75x band fails the regression.
+    """
+    io_timeout = 2.0
+    backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
+    name = f"streamwrite_{uuid.uuid4().hex[:8]}.bin"
+
+    stalled_at: list[float] = []
+
+    def _write_until_stalled() -> None:
+        with backend.open_atomic(name) as handle:
+            handle.write(b"seed")  # a real write, before anything is stalled
+            stall_relay.stall_upload()
+            stalled_at.append(time.monotonic())
+            handle.write(b"w" * (8 * 1024 * 1024))
+
+    with pytest.raises(BackendUnavailable):
+        _write_until_stalled()
+    elapsed = time.monotonic() - stalled_at[0]
+
+    assert elapsed < io_timeout * 1.75, (
+        f"streamed write took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "
+        "the handle close is re-entering the stalled channel"
+    )
 
 
 @pytest.mark.spec("SFTP-030")

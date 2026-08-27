@@ -17,10 +17,17 @@ expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
   - docs-src/guides/backends/sftp.md
-# Counted from `git log --oneline origin/master..HEAD`: b5e3d22 implements and
-# does not count; 66e2d2c incorporates the 16-finding round-1 review on PR #973,
-# and the round-2 fix commit incorporates its 6-finding follow-up. Value is 2.
-review_rounds: 2
+# Counted from `git log --oneline origin/master..HEAD` at the head this trace
+# ships on, which holds four commits. a514166 implements and does not count.
+# Three are review-incorporating and are the counted list: 61e4e22 (round 1, 16
+# findings), 630ff2e (round 2, 6 findings), and the round-3 commit this line
+# ships in (8 findings). Value is 3.
+#
+# Round 2 left this half-named — one SHA plus "the round-2 fix commit" — because
+# the later commit did not exist when the comment was written and the comment
+# was not revisited when it did. Half a list is half-checkable, which is the
+# thing the schema's clause exists to prevent.
+review_rounds: 3
 phases:
   - id: orient
     name: Orient on the report
@@ -200,6 +207,33 @@ phases:
           closure, at which point SFTP-030's retry-exclusion clause read as
           saying the version-exchange stall is retried. Both clauses corrected.
         outcome: misleading
+      - file: src/remote_store/backends/_sftp.py
+        section: "_open_sftp_bounded settimeout comment"
+        read_type: verify
+        extract: >-
+          Third time in this item I asserted a paramiko mechanism without running
+          the path. Round 2's fix comment claimed the arm placement also bounded
+          invoke_subsystem; Channel._wait_for_event is a bare event.wait() with
+          no timeout and never reads Channel.timeout, so it bounds nothing there
+          and a real unbounded window remains. Read the source this time before
+          rewriting the comment. The pattern across all three: each claim was
+          about paramiko internals, each sounded mechanical enough to state
+          confidently, and none cost more than one inspect.getsource to check.
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "stalled upload"
+        read_type: verify
+        extract: >-
+          Review said overwrite=False stalls on the pre-write stat so the test
+          never enters SFTPFile.write. Probed both modes with a spy: entered 0
+          times either way — overwrite=True fails on the open instead, so the
+          reviewer's suggested fix would not have reached it either. Only a
+          handle opened before the stall (open_atomic) gets there. Probing that
+          surfaced a defect nobody had named: the best-effort handle.close() on
+          abnormal exit re-enters the dead channel under contextlib.suppress,
+          costing a second bound with no error to explain it (4.04s -> 2.04s at
+          a 2s bound). Guarded, and the new test pins it.
+        outcome: ok
       - file: src/remote_store/_stream.py
         section: "_ErrorMappingStream.close"
         read_type: reference

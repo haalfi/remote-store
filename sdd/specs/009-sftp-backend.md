@@ -413,39 +413,67 @@ nothing to retry.
 not on the duration of a transfer. A large file over a slow link is unaffected
 however long it takes; a peer that goes silent for longer than `io_timeout`
 raises `socket.timeout`. Since it is `settimeout()`, the bound covers writes as
-well as reads. Measured, a stalled write reaches it on the receive side like a
-read does: paramiko's `SFTPFile.write` is not pipelined by default, so it waits
-for each chunk's response before sending the next, and the receive bound fires
-before the SSH out-window can drain. The distinct fault it covers is a request
-that never reaches the server, as against a reply that never returns.
+well as reads, and a stalled write reaches it on the receive side like a read
+does. The distinct fault it covers is a request that never reaches the server,
+as against a reply that never returns.
+
+Note which round-trip a stalled write actually fails on, because it is not the
+payload: `write()` issues an existence `stat` on `overwrite=False`, and the file
+open is a round-trip on `overwrite=True`, so a client→server stall always fails
+before any payload byte is sent. Reaching `SFTPFile.write` with a stall armed
+requires a handle opened beforehand — `open_atomic`. Stated because an earlier
+revision of this clause explained the write case by `SFTPFile.write` not being
+pipelined, an explanation no run behind it had reached.
 
 **Postconditions:** A stalled operation raises `BackendUnavailable`, via the
 existing `_is_connection_dead` / `_map_exception` path (SFTP-023), which also
 clears the cached client so the next operation reconnects (SFTP-010 tier 2).
 
 The caller-visible wall clock for a stalled operation is one bound, not
-several. Classification re-probes the server (`_raise_if_dir`,
-`_has_file_ancestor`), and each probe would re-enter the stalled channel and
-pay `io_timeout` again on a client `_map_exception` has not yet cleared. Two
-rules prevent that, because callers reach the probe two different ways:
-a caller that already holds a failed operation's exception passes it, and the
-probe is skipped when that exception concludes the connection is dead; and
-`_raise_if_dir`'s own stat re-raises a dead-connection error rather than
-swallowing it as "cannot classify", which is what covers `read`, whose is-dir
-check is eager and so has no prior exception to pass. `_promote` additionally
-skips the `rename` fallback, whose `remove` + `rename` would each pay the bound
-again. This generalises the guard `write_atomic` and `open_atomic` already
-apply to their cleanup round-trip.
+several. A failed operation re-enters the channel two ways — to classify the
+failure (`_raise_if_dir`, `_has_file_ancestor`) and to release resources — and
+each re-entry would pay `io_timeout` again on a client `_map_exception` has not
+yet cleared. **Three** mechanisms prevent that, because callers arrive at those
+re-entries differently:
 
-**Bounded, with one stated exception:** releasing a stalled handle can pay one
-further bound. `_ErrorMappingStream.close` closes the underlying paramiko file
-under `contextlib.suppress`, and that `CMD_CLOSE` is synchronous, so exiting
-the `with` block of a stream that has already failed may block once more before
-being discarded. It is silent rather than surfaced, since the close is
-suppressed. The fix belongs to the shared stream wrapper rather than to this
-backend — `_ErrorMappingStream` serves the S3, Azure and HTTP backends too — so
-it is tracked as BK-355 rather than fixed here. Stated so the guarantee above
-is not read wider than it holds; when BK-355 lands, this exception goes.
+1. **A passed cause.** A caller holding a failed operation's exception passes it
+   to `_raise_if_dir`, which skips the probe when that exception already
+   concludes the connection is dead.
+2. **A dead-stat re-raise.** `_raise_if_dir` and `_has_file_ancestor` each
+   re-raise a dead-connection error from their own stat rather than swallowing
+   it as unclassifiable. This is what covers `read`, whose is-dir check is eager
+   and so has no prior exception to pass, and it also fixes a correctness
+   residue in `_has_file_ancestor`: swallowing there returned `False`, the
+   caller's original error surfaced, and `_map_exception` classified it as a
+   generic `RemoteStoreError` — which does *not* clear the cached client, so
+   SFTP-010 tier 2 never fired on the operation that surfaced the drop.
+3. **Skipped teardown.** `_promote` skips the `rename` fallback, whose `remove`
+   + `rename` would each pay the bound again; `write_atomic` and `open_atomic`
+   skip their temp cleanup; and `open_atomic` skips the best-effort
+   `handle.close()` on an abnormal exit, since paramiko's `SFTPFile.close()`
+   issues a synchronous `CMD_CLOSE`. That last one is the worst of the set when
+   unguarded, because `contextlib.suppress` makes it a wait with no error to
+   explain it. Measured on a streamed write at a 2 s bound: 4.04 s before the
+   guard, 2.04 s after.
+
+**Bounded, with two stated exceptions.** Neither is fixed here:
+
+- **The `subsystem` request.** `Channel.invoke_subsystem` waits in
+  `Channel._wait_for_event`, a bare `threading.Event.wait()` with no timeout
+  argument, which never reads `Channel.timeout`. A peer that opens the session
+  channel and then never answers the request hangs regardless of `io_timeout`,
+  and every reconnect re-enters that window. Bounding it would mean inlining
+  `invoke_subsystem`'s own body — deeper into paramiko internals than the
+  `from_transport` copy this clause already accepts — so it is recorded rather
+  than taken. Narrower than the version-exchange window that *is* bounded: a
+  server that accepts a channel but never answers a channel request is a wedged
+  SSH daemon, not a wedged subsystem.
+- **Releasing a stream handle.** `_ErrorMappingStream.close` closes the
+  underlying paramiko file under `contextlib.suppress`, so exiting the `with`
+  block of a stream that has already failed may block once more. The fix belongs
+  to the shared stream wrapper rather than to this backend — it serves the S3,
+  Azure and HTTP backends too — so it is tracked as BK-355. When BK-355 lands,
+  this exception goes.
 
 For a **streamed** read (`read`), a stall after the caller has consumed bytes
 raises rather than returning short, so a truncated stream is never
