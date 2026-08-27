@@ -18,21 +18,23 @@ expected_ripples:
   - CHANGELOG.md
   - docs-src/guides/backends/sftp.md
 # Counted from `git log --oneline origin/master..HEAD` at the head this trace
-# ships on, which holds eight commits. The field's description counts *commits*
+# ships on, which holds nine commits. The field's description counts *commits*
 # that exist because review feedback was incorporated, not review rounds, and
-# says a `BK-NNN:`-convention commit counts too — so seven of the eight do:
+# says a `BK-NNN:`-convention commit counts too — so eight of the nine do:
 # 2876dfb (round 1, 16 findings), f5227b3 (round 2, 6 findings), 0b1c752 (round
 # 2's third multiplier, filed as BK-355 rather than widened into the PR),
 # 4863ad9 and 8dd2f0a (round 3, 8 findings, two commits because the round's own
-# replacement claim then needed characterising), and 51d90c2 plus the commit
-# this line ships in (round 4, the unprimed exit gate, 5 findings, the second
-# commit being this re-derivation). Only bdf775b, which implements the item,
-# does not count. Value is 7.
+# replacement claim then needed characterising), 51d90c2 and 866dc4b (round 4,
+# the unprimed exit gate, 5 findings, the second commit being a re-derivation of
+# this very field), and the commit this line ships in (round 5, the second exit
+# gate, 6 findings). Only bdf775b, which implements the item, does not count.
+# Value is 8.
 #
-# The PR body says "four rounds" and does not contradict this: rounds and
+# The PR body counts *rounds* — five — and does not contradict this: rounds and
 # review-driven commits are different units, and the field is the second. Two
 # earlier values here were wrong for the same reason — each read the field name
-# instead of its description, then counted `fix:` prefixes.
+# instead of its description, then counted `fix:` prefixes. A third was wrong
+# for a duller one: it was written before the round's second commit existed.
 #
 # Two ways the derivation itself has been wrong, both now closed. Round 2 left
 # it half-named — one SHA plus "the round-2 fix commit" — because the later
@@ -43,7 +45,7 @@ expected_ripples:
 # uncheckable. A SHA list is a derivation only while the history under it holds;
 # re-run the command whenever the branch moves under this file, rebases
 # included.
-review_rounds: 7
+review_rounds: 8
 phases:
   - id: orient
     name: Orient on the report
@@ -223,6 +225,21 @@ phases:
           closure, at which point SFTP-030's retry-exclusion clause read as
           saying the version-exchange stall is retried. Both clauses corrected.
         outcome: misleading
+      - file: src/remote_store/_stream.py
+        section: "_ErrorMappingStream.close"
+        read_type: reference
+        extract: >-
+          Third multiplier the review found, and the one not fixed here: the
+          suppressed inner close re-enters a connection the failure already
+          condemned, so releasing a stalled handle pays a further silent bound.
+          Shared by the S3, Azure and HTTP backends, so the fix surface is one
+          wrapper and the regression surface is every backend using it — filed
+          as BK-355 and named as a stated exception in SFTP-030 rather than
+          widened into this PR.
+        outcome: ok
+  - id: fix3
+    name: Round 3 review
+    steps:
       - file: tests/backends/sftp/test_io_timeout.py
         section: "test_subsystem_request_is_not_bounded"
         read_type: verify
@@ -264,19 +281,7 @@ phases:
           costing a second bound with no error to explain it (4.04s -> 2.04s at
           a 2s bound). Guarded, and the new test pins it.
         outcome: ok
-      - file: src/remote_store/_stream.py
-        section: "_ErrorMappingStream.close"
-        read_type: reference
-        extract: >-
-          Third multiplier the review found, and the one not fixed here: the
-          suppressed inner close re-enters a connection the failure already
-          condemned, so releasing a stalled handle pays a further silent bound.
-          Shared by the S3, Azure and HTTP backends, so the fix surface is one
-          wrapper and the regression surface is every backend using it — filed
-          as BK-355 and named as a stated exception in SFTP-030 rather than
-          widened into this PR.
-        outcome: ok
-  - id: fix3
+  - id: fix4
     name: Round 4 review (unprimed exit gate)
     steps:
       - file: src/remote_store/backends/_sftp.py
@@ -338,7 +343,7 @@ phases:
           A derivation that decays with the history under it is the failure mode
           principle 9 does not by itself catch, since the sentence stays true-
           looking while becoming uncheckable. Re-run and re-counted, and the
-          value moved 3 -> 7: re-reading the field's own description showed it
+          value moved 3 -> 7 here (8 by round 5): re-reading the description showed it
           counts review-driven *commits*, `BK-NNN:`-convention ones included,
           while every previous value here had counted `fix:` prefixes because
           the field is *named* review_rounds. The reviewer raised 0b1c752 as
@@ -369,6 +374,74 @@ phases:
           saying the bound covers this. Added the "if it still hangs" branch here
           and the matching warning in the SFTP guide, so the exception reaches
           the audience that meets it.
+        outcome: ok
+  - id: fix5
+    name: Round 5 review (second unprimed exit gate)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "copy"
+        read_type: verify
+        extract: >-
+          The round-4 fix claimed five _handle call sites and shipped four:
+          copy's two handles were never routed, while the spec, the commit
+          message, the PR body, my reply on the finding and a sibling test
+          docstring all named copy as covered. I had counted move's two handles
+          as "copy and move" and never re-read the file. Worse than the original
+          bug, because five artifacts then asserted it fixed. Fixed, and measured
+          this time rather than enumerated: 6.9s (3.4x) unguarded, 2.0s guarded
+          at a 2s bound — the largest multiple in the item, since copy is the
+          only operation holding two handles at once.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "move, _move_fallback"
+        read_type: verify
+        extract: >-
+          Second must-fix of the round and the one a pragma hid: move does its
+          own posix_rename rather than going through _promote, so round 2's
+          guard never reached it, and the whole block sat under "# pragma: no
+          cover -- fallback for servers without posix_rename". The pragma
+          described the fallback correctly and made the missing guard look
+          equally narrow, when a stalled channel fails posix_rename on any
+          server. Split the fallback into _move_fallback so the pragma covers
+          only what it names. Non-vacuity is the interesting part: without the
+          guard the mocked test does not merely run slow, it *succeeds* — the
+          drop never surfaces because the fallback rename answers.
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "_StallRelay, test_stall_costs_one_bound_not_several"
+        read_type: verify
+        extract: >-
+          The review's diagnosis of why both bugs survived, which is the part
+          worth keeping: every operation in this file with an elapsed-time band
+          is one that some earlier round measured at its own call site. Sites
+          swept only by inheriting the shared helper had no test at all, so the
+          helper's coverage was assumed from its call sites being listed rather
+          than from any of them being run. Added a byte-count stall trigger to
+          the relay (stall_download_after) so "goes quiet mid-transfer" is
+          deterministic rather than timed, and a copy test on top of it.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_handle docstring"
+        read_type: verify
+        extract: >-
+          "The server will reap it" was true but incomplete: SFTPFile.__del__
+          calls _close(async_=True) unconditionally, and BufferedFile.close --
+          which flushes via _write_all -- sits outside _close's own try. Read
+          both in the pinned paramiko before rewriting. A write handle with
+          buffered bytes can still make one blocking write when collected; a
+          read handle cannot, since _write_all returns immediately on an empty
+          buffer. The docstring now claims only what is owed and measured: the
+          bound is not paid twice inline, on the caller's thread.
+        outcome: ok
+      - file: docs-src/guides/retry.md
+        section: "SFTP"
+        read_type: verify
+        extract: >-
+          Ripple the round-2 SFTP-009 correction missed. The spec was fixed at
+          source but this table's "Retry scope: connection only" still carried
+          the coarse reading, which is the one SFTP-030's retry-exclusion clause
+          now depends on being precise. Corrected to name the ssh.connect() call
+          and to say what that leaves unretried.
         outcome: ok
   - id: docs
     name: Document the distinction

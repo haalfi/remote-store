@@ -2780,6 +2780,41 @@ class TestSFTPLowSeverityCorrectnessEdges:
         rename_spy.assert_not_called()  # fallback
         assert sftp_backend._sftp_client is None
 
+    @pytest.mark.spec("SFTP-030")
+    def test_move_timeout_skips_rename_and_copy_fallback(self, sftp_backend: Backend) -> None:
+        """``move``'s own ``posix_rename`` gets the guard ``_promote`` has.
+
+        The twin above covers ``write_atomic`` / ``open_atomic``, which promote
+        through ``_promote``. ``move`` does its own ``posix_rename`` and had no
+        such guard, so a timed-out rename fell into a fallback chain that
+        re-enters the dead channel four more times: a suppressed ``remove``
+        (silent), a ``rename``, then the copy fallback's two file opens.
+
+        The fallback carries ``# pragma: no cover -- fallback for servers
+        without posix_rename``, which is what hid this: the pragma described the
+        *fallback*, and the guard now sits outside it because a stalled channel
+        fails ``posix_rename`` on any server, extension or not.
+
+        Asserts on round-trips, not elapsed time — these are mocks, and the
+        count is what the guard changes.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("mv_src.txt", b"payload")
+
+        with (
+            patch.object(sftp_backend._sftp_client, "posix_rename", side_effect=TimeoutError("timed out")),
+            patch.object(sftp_backend._sftp_client, "remove") as remove_spy,
+            patch.object(sftp_backend._sftp_client, "rename") as rename_spy,
+            patch.object(sftp_backend._sftp_client, "file") as file_spy,
+            pytest.raises(BackendUnavailable),
+        ):
+            sftp_backend.move("mv_src.txt", "mv_dst.txt", overwrite=True)
+        # internal: the skipped round-trips have no public observable (Rule 3).
+        remove_spy.assert_not_called()  # fallback's suppressed remove
+        rename_spy.assert_not_called()  # fallback's rename
+        file_spy.assert_not_called()  # copy fallback's two opens
+        assert sftp_backend._sftp_client is None
+
     @pytest.mark.spec("SFTP-021")
     def test_raise_if_dir_permission_stat_maps_permission_denied(self, sftp_backend: Backend) -> None:
         """L1: a classification stat that fails with ``EACCES`` surfaces ``PermissionDenied``.

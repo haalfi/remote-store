@@ -447,20 +447,40 @@ re-entries differently:
    caller's original error surfaced, and `_map_exception` classified it as a
    generic `RemoteStoreError` — which does *not* clear the cached client, so
    SFTP-010 tier 2 never fired on the operation that surfaced the drop.
-3. **Skipped teardown.** `_promote` skips the `rename` fallback, whose `remove`
-   + `rename` would each pay the bound again; `write_atomic` and `open_atomic`
-   skip their temp cleanup; and **every** paramiko file handle held in a `with`
-   block skips its close on a dead-connection exit, since `SFTPFile.close()`
-   flushes and then issues a synchronous `CMD_CLOSE` whose reply never comes.
+3. **Skipped teardown.** Every promote-or-rename path skips what follows a dead
+   rename: `_promote` skips the `rename` fallback, whose `remove` + `rename`
+   would each pay the bound again, and `move` skips its own fallback chain — a
+   suppressed `remove`, a `rename`, and the copy fallback's two file opens.
+   `write_atomic` and `open_atomic` skip their temp cleanup. And **every**
+   paramiko file handle held in a `with` block skips its close on a
+   dead-connection exit, since `SFTPFile.close()` flushes and then issues a
+   synchronous `CMD_CLOSE` whose reply never comes.
+
    That last is the worst of the set when unguarded, because paramiko swallows
    the timeout raised inside its own close, making it a wait with no error to
    explain it. The guard is one helper (`_handle`) rather than a per-site
-   repeat, because the site that first exposed it was not the only one: `write`,
-   `write_atomic`, `read_bytes`, `copy` and `move`'s copy fallback all hold a
-   handle the same way, and `open_atomic` applies the same rule inline (its
-   clean-exit close must sit inside `_errors` so a flush failure still maps).
-   Measured at a 2 s bound, on a `write` from a stream that goes quiet
-   mid-transfer: 4.00 s before the guard, 2.00 s after.
+   repeat, because the site that first exposed it was not the only one:
+   `read_bytes`, `write`, `write_atomic`, `copy` and `move`'s copy fallback all
+   hold a handle the same way, and `open_atomic` applies the same rule inline
+   (its clean-exit close must sit inside `_errors` so a flush failure still
+   maps). Measured at a 2 s bound: 4.00 s before the guard and 2.00 s after on a
+   `write` from a stream that goes quiet mid-transfer, and 6.9 s before and
+   2.0 s after on a `copy`, which holds two handles rather than one.
+
+   The helper bounds what the caller waits inline; it does not promise the
+   round-trip is never made. `SFTPFile.__del__` calls `_close(async_=True)`
+   unconditionally, and the `BufferedFile.close` inside it — which flushes —
+   sits outside `_close`'s own `try`, so a *write* handle still holding buffered
+   bytes can attempt one blocking write when it is collected, on whatever thread
+   collects it. A read handle cannot: its write buffer is empty and `_write_all`
+   returns without a round-trip.
+
+   The `move` guard is a case where a coverage pragma hid a gap: its fallback
+   carries `# pragma: no cover -- fallback for servers without posix_rename`,
+   which describes the fallback correctly, while the dead-connection guard above
+   it is reachable on *any* server, since a stalled channel fails `posix_rename`
+   like anything else. The fallback is therefore a separate method
+   (`_move_fallback`), so the pragma covers only what it names.
 
 **Bounded, with two stated exceptions.** Neither is fixed here:
 

@@ -135,6 +135,8 @@ class _StallRelay:
         self._target_port = target_port
         self._stall_down = threading.Event()
         self._stall_up = threading.Event()
+        # Single-element holder so the pump thread sees updates; None = no budget.
+        self._down_budget: list[int | None] = [None]
         self._stop = threading.Event()
         self._listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -158,10 +160,22 @@ class _StallRelay:
     def stall_upload(self) -> None:
         self._stall_up.set()
 
+    def stall_download_after(self, nbytes: int) -> None:
+        """Deliver roughly *nbytes* more server→client bytes, then go silent.
+
+        The trigger is a byte count rather than a timer, so "stall mid-transfer"
+        is deterministic: it lands after the transfer is genuinely under way and
+        does not race a loaded runner. It is approximate by one relay chunk —
+        the budget is checked before forwarding, so the chunk that crosses zero
+        is still delivered.
+        """
+        self._down_budget[0] = nbytes
+
     def resume(self) -> None:
         """Deliver again, so a reconnect through this relay can succeed."""
         self._stall_down.clear()
         self._stall_up.clear()
+        self._down_budget[0] = None
 
     def _accept_loop(self) -> None:
         while not self._stop.is_set():
@@ -175,15 +189,21 @@ class _StallRelay:
                 client.close()
                 continue
             self._socks.extend((client, upstream))
-            for src, dst, gate in (
-                (client, upstream, self._stall_up),
-                (upstream, client, self._stall_down),
+            for src, dst, gate, budget in (
+                (client, upstream, self._stall_up, [None]),
+                (upstream, client, self._stall_down, self._down_budget),
             ):
-                thread = threading.Thread(target=self._pump, args=(src, dst, gate), daemon=True)
+                thread = threading.Thread(target=self._pump, args=(src, dst, gate, budget), daemon=True)
                 thread.start()
                 self._threads.append(thread)
 
-    def _pump(self, src: socket.socket, dst: socket.socket, gate: threading.Event) -> None:
+    def _pump(
+        self,
+        src: socket.socket,
+        dst: socket.socket,
+        gate: threading.Event,
+        budget: list[int | None],
+    ) -> None:
         while not self._stop.is_set():
             try:
                 chunk = src.recv(65536)
@@ -191,6 +211,12 @@ class _StallRelay:
                 return
             if not chunk:
                 return
+            remaining = budget[0]
+            if remaining is not None:
+                if remaining <= 0:
+                    gate.set()
+                else:
+                    budget[0] = remaining - len(chunk)
             if gate.is_set():
                 # Keep draining the source so it never blocks on a full socket
                 # buffer, but deliver nothing: the far side simply goes quiet.
@@ -691,6 +717,48 @@ def test_write_stalling_mid_stream_costs_one_bound(stall_relay: _StallRelay) -> 
     assert elapsed < io_timeout * 1.75, (
         f"stalled mid-stream write took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "
         "the handle close is re-entering the stalled channel"
+    )
+
+
+@pytest.mark.spec("SFTP-030")
+def test_copy_stalling_mid_stream_costs_one_bound(stall_relay: _StallRelay) -> None:
+    """``copy()`` holds *two* handles, so an unguarded exit pays two extra bounds.
+
+    The only operation here with more than one open handle, which is why it is
+    worth its own test rather than trusting the shared helper: ``copy`` opens the
+    source for reading and the destination for writing inside one ``with``, and a
+    stall part-way through the transfer condemns both. Measured at this bound:
+    6.9 s (3.4x) unguarded, 2.0 s guarded — and two of those three bounds are
+    silent, because paramiko's ``SFTPFile._close`` swallows the ``socket.error``
+    its own ``CMD_CLOSE`` raises.
+
+    Reaching that moment needs the peer to fall silent *during* the copy, not
+    before it: a stall armed up front fails on the source ``stat``, well ahead of
+    either handle. ``stall_download_after`` gives a byte-count trigger, so the
+    stall lands mid-transfer deterministically rather than on a timer.
+
+    Review found this site missing from the ``_handle`` sweep while the spec,
+    the PR body and a sibling test docstring all named ``copy`` as covered. The
+    tests that existed were the ones a prior round had measured at their own
+    call site; nothing bound the sites swept only by inheriting the helper.
+    """
+    io_timeout = 2.0
+    backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
+    src = f"copysrc_{uuid.uuid4().hex[:8]}.bin"
+    dst = f"copydst_{uuid.uuid4().hex[:8]}.bin"
+    backend.write(src, b"c" * (8 * 1024 * 1024))
+
+    # Enough to clear the two stats and get the transfer genuinely under way.
+    stall_relay.stall_download_after(512 * 1024)
+
+    start = time.monotonic()
+    with pytest.raises(BackendUnavailable):
+        backend.copy(src, dst)
+    elapsed = time.monotonic() - start
+
+    assert elapsed < io_timeout * 1.75, (
+        f"copy took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "
+        "one of the two handle closes is re-entering the stalled channel"
     )
 
 

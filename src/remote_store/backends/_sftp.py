@@ -1475,20 +1475,16 @@ class SFTPBackend(Backend):
             # Try posix_rename (atomic), then rename, then copy+delete
             try:
                 self._sftp.posix_rename(src_sftp, dst_sftp)
-            except OSError:  # pragma: no cover -- fallback for servers without posix_rename
-                try:
-                    if overwrite:
-                        with contextlib.suppress(OSError):
-                            self._sftp.remove(dst_sftp)
-                    self._sftp.rename(src_sftp, dst_sftp)
-                except OSError:
-                    # Fallback: stream copy + delete
-                    with (
-                        self._handle(self._sftp.file(src_sftp, "r")) as src_f,
-                        self._handle(self._sftp.file(dst_sftp, "w")) as dst_f,
-                    ):
-                        shutil.copyfileobj(src_f, dst_f, _CHUNK_SIZE)
-                    self._sftp.remove(src_sftp)
+            except OSError as exc:
+                if self._is_connection_dead(exc):
+                    # Same reasoning as ``_promote``, and reached on *every*
+                    # server rather than only those without the extension: a
+                    # stalled channel fails ``posix_rename`` too, and the
+                    # fallback below would then pay the bound on a suppressed
+                    # ``remove``, a ``rename``, and two file opens. Report the
+                    # drop (SFTP-030).
+                    raise
+                self._move_fallback(src_sftp, dst_sftp, overwrite=overwrite)
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         """Copy the file *src* to *dst* by streaming through the client.
@@ -1540,8 +1536,13 @@ class SFTPBackend(Backend):
 
             self._ensure_parent_dirs(dst_sftp)
 
-            # Stream source to destination (no server-side copy in SFTP)
-            with self._sftp.file(src_sftp, "r") as src_f, self._sftp.file(dst_sftp, "w") as dst_f:
+            # Stream source to destination (no server-side copy in SFTP).
+            # Both handles go through ``_handle``: two of them, so an unguarded
+            # abnormal exit pays the bound twice over on top of the failure.
+            with (
+                self._handle(self._sftp.file(src_sftp, "r")) as src_f,
+                self._handle(self._sftp.file(dst_sftp, "w")) as dst_f,
+            ):
                 shutil.copyfileobj(src_f, dst_f, _CHUNK_SIZE)
 
     def close(self) -> None:
@@ -1972,10 +1973,24 @@ class SFTPBackend(Backend):
         its own close. The bound the caller was promised becomes two.
 
         So on the way out with a dead-connection error, the close is skipped —
-        the handle is unusable and the server will reap it when the channel
-        goes. Any other exception still closes best-effort (a caller error, a
+        the handle is unusable and the server reaps it when the channel goes.
+        Any other exception still closes best-effort (a caller error, a
         permission failure), and a clean exit closes normally so a flush failure
         still surfaces and maps.
+
+        What this does **not** claim is that the round-trip is never paid.
+        ``SFTPFile.__del__`` calls ``_close(async_=True)`` unconditionally, and
+        while the ``CMD_CLOSE`` there is fire-and-forget, the ``BufferedFile.close``
+        ahead of it — which flushes via ``_write_all`` — sits *outside*
+        ``_close``'s own ``try``. A write handle still holding buffered bytes
+        can therefore attempt one blocking write when it is collected, on
+        whatever thread runs the collection. A read handle cannot: its write
+        buffer is empty and ``_write_all`` returns without a round-trip.
+
+        The guarantee is narrower and is the one the caller is owed: the bound
+        is not paid a second time *inline*, inside the failing operation, on the
+        caller's thread. That is where it was measured, and where it turns one
+        bound into two.
 
         This is the same guard ``open_atomic`` applies to its own handle;
         centralising it is what stops the next streaming call site rediscovering
@@ -2046,6 +2061,34 @@ class SFTPBackend(Backend):
             with contextlib.suppress(OSError):
                 self._sftp.remove(sftp_path)
         self._sftp.rename(tmp_path, sftp_path)
+
+    def _move_fallback(  # pragma: no cover -- fallback for servers without posix_rename
+        self, src_sftp: str, dst_sftp: str, *, overwrite: bool
+    ) -> None:
+        """Move *src_sftp* onto *dst_sftp* by ``rename``, else stream copy + delete.
+
+        Split out of ``move`` so that method's dead-connection guard is not
+        swept under this ``no cover`` pragma. The guard is reachable on *any*
+        server — a stalled channel fails ``posix_rename`` like anything else —
+        while everything here needs a server lacking
+        ``posix-rename@openssh.com``. Keeping them in one block made the guard
+        look as narrow as the fallback, which is how it came to be missing.
+        """
+        try:
+            if overwrite:
+                with contextlib.suppress(OSError):
+                    self._sftp.remove(dst_sftp)
+            self._sftp.rename(src_sftp, dst_sftp)
+        except OSError as exc:
+            if self._is_connection_dead(exc):
+                raise  # the copy below cannot succeed either, and pays two more bounds
+            # Fallback: stream copy + delete
+            with (
+                self._handle(self._sftp.file(src_sftp, "r")) as src_f,
+                self._handle(self._sftp.file(dst_sftp, "w")) as dst_f,
+            ):
+                shutil.copyfileobj(src_f, dst_f, _CHUNK_SIZE)
+            self._sftp.remove(src_sftp)
 
     def _base_relative_ancestor_dirs(self, sftp_path: str) -> Iterator[str]:
         """Yield each ancestor directory of *sftp_path*, from ``self._base_path``
