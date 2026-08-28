@@ -123,10 +123,11 @@ each one opens a fresh channel.
     **Releasing a handle that never failed is bounded but silent.** Closing a
     stream you have not read to a failure on a stalled connection waits one
     `io_timeout` and then returns normally: paramiko catches that timeout inside
-    its own close, so nothing is raised, nothing is logged, and the dead
-    connection stays cached for the next operation to wait on again. You see the
-    delay, not the cause. A stream whose read *did* fail costs nothing extra —
-    that close is skipped.
+    its own close, so nothing is raised, `remote-store` logs nothing, and the
+    dead connection stays cached for the next operation to wait on again. You
+    see the delay, not the cause — paramiko's own DEBUG logging shows the close
+    going out, but nothing there names the stall either. A stream whose read
+    *did* fail costs nothing extra: that close is skipped.
 
 A stall that surfaces is reported, and no stall is retried: the connect-phase
 `RetryPolicy` does not cover one, so a partially consumed stream is never

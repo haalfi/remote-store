@@ -489,7 +489,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] Specs vs code: spot-check shipped features match their specs (`pytest -m spec` as proxy)
 - [ ] Examples: `hatch run examples` passes; manually review notebooks if API surface changed
 - [ ] Guides: new/changed backend guides are accurate
-- [ ] `docs-src/reference/migration.md`: add a `## vPREV to vX.Y.Z` section for every `[Unreleased]` entry marked **Breaking**, and for any entry whose behaviour change a caller must act on. Written here rather than in the PR that makes the break, because the version pair does not exist until Phase 2 names it — a page that headings an unreleased version has been a filed defect before
+- [ ] `docs-src/reference/migration.md`: every `[Unreleased]` entry marked **Breaking**, and any entry whose behaviour change a caller must act on, has a `## vPREV to vX.Y.Z` section. A PR making the break may write its own section ahead of the release and several have — the bump table above fixes the version pair for a pre-1.0 breaking change, so it is knowable before Phase 2 stamps it. This line is the backstop for the ones that did not, and the place to correct a pair a PR guessed wrong
 - [ ] DEVELOPMENT_STORY.md: add a section for this release (pre-1.0 only)
 
 <a id="phase-2"></a>

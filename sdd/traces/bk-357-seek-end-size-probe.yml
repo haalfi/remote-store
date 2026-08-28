@@ -27,6 +27,7 @@ expected_ripples:
   - docs-src/guides/backends/sftp.md
   - docs-src/guides/troubleshooting.md
   - docs-src/guides/retry.md
+  - docs-src/reference/migration.md
   # The three the schema names verbatim as this field's canonical examples, and
   # the three I left out: backlogid.json after any BACKLOG/BACKLOG-DONE edit
   # (BK 355 -> 357), and both graph artifacts after a public-API docstring
@@ -44,12 +45,21 @@ surprising_ripples:
   # them contradict the third.
   - CHANGELOG.md
   # CONTRIBUTING § Release Phase 1 names CHANGELOG, BACKLOG-DONE, FEATURES,
-  # README, guides and DEVELOPMENT_STORY, and does not name migration.md —
-  # while `git log -- docs-src/reference/migration.md` shows its only content
-  # commit is the v0.30.0 release commit. So the upgrade note for a breaking
-  # change has no owner: not the PR (the version pair does not exist yet, which
-  # is what AF-040 was filed for) and not the checklist. Found by asking where
-  # to put this change's note, not by any row.
+  # README, guides and DEVELOPMENT_STORY, and does not name migration.md, so
+  # the upgrade note for a breaking change had no owner in the checklist. Found
+  # by asking where to put this change's note, not by any row.
+  #
+  # **The reason first given for it was false, and the way it was false is the
+  # point.** I argued a PR *cannot* own a migration entry because the version
+  # pair does not exist until Phase 2 names it, deriving that from `git log --
+  # docs-src/reference/migration.md` returning two commits. This checkout is a
+  # shallow clone (`git rev-parse --is-shallow-repository` -> true; the apparent
+  # root 21d2329 is a graft), so that log is truncated: against full history the
+  # path has 11 commits, and 6f5cfff (BK-302, a feature PR making a breaking
+  # change) added its own `## v0.28.0 to v0.29.0` section four days before
+  # v0.29.0 shipped. Round 5's measuring member caught it. A `git log` in a
+  # shallow clone answers a different question than the one it looks like it
+  # answers, and nothing in the ripple-check or the gates flags that.
   - CONTRIBUTING.md
   # Deleting SFTP-030's SEEK_END exception deleted the only test asserting the
   # "that fails" qualifier on its Postconditions. The qualifier stayed true —
@@ -245,7 +255,13 @@ phases:
       - file: docs-src/guides/backends/sftp.md
         section: "Bounding a stalled transfer"
         read_type: reference
-        extract: "Warning admonition drops from two cases to one; the seek moves to body prose"
+        extract: >-
+          The warning admonition keeps two cases but swaps the second: the
+          SEEK_END seek's bullet goes, the silent close takes its place, and the
+          seek moves to body prose. Retrospective: this step said "drops from
+          two cases to one" and was true for three commits, until round 4 put a
+          second bullet back and edited this file in the same commit without
+          revisiting the step.
         outcome: ok
       - file: docs-src/guides/troubleshooting.md
         section: "SFTP reports a file as empty"

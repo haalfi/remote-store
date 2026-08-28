@@ -66,7 +66,9 @@ from __future__ import annotations
 import contextlib
 import errno
 import logging
+import shutil
 import socket
+import tempfile
 import threading
 import time
 import uuid
@@ -77,7 +79,7 @@ import pytest
 # Guard: skip entire module if dependencies are missing
 pytest.importorskip("paramiko", reason="paramiko not installed")
 
-from remote_store._errors import BackendUnavailable  # noqa: E402
+from remote_store._errors import BackendUnavailable, NotFound, RemoteStoreError  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -1010,11 +1012,15 @@ def test_releasing_a_stalled_handle_after_no_failure_is_silent(
 def test_get_file_info_surfaces_a_stall(stall_relay: _StallRelay) -> None:
     """Sizing a file by path surfaces a stall, and costs one bound doing it.
 
-    ``get_file_info`` reaches the wire through a ``stat``, which is the same
-    call the ``SEEK_END`` probe makes on the handle — so this pins that
-    ``SFTPClient.stat`` has no swallowing sibling of paramiko's ``_get_size``.
-    That is a paramiko-behaviour claim of exactly the kind this file exists to
-    run rather than read.
+    ``get_file_info`` reaches the wire through a ``stat`` — the same *kind* of
+    call the ``SEEK_END`` probe makes, though ``SFTPClient.stat`` against a path
+    rather than the ``SFTPFile.stat`` the probe issues against an open handle.
+    So what this pins is that ``SFTPClient.stat`` has no swallowing sibling of
+    paramiko's ``_get_size``, and nothing about the probe: that is
+    ``test_seek_to_end_on_a_stalled_channel_costs_one_bound``'s job. Both are
+    paramiko-behaviour claims of exactly the kind this file exists to run rather
+    than read, which is why they get a test each rather than one standing in for
+    the other.
 
     Both halves of the promise are asserted, because a user acting on it needs
     both: the stall *surfaces*, and the dead client is dropped so the next
@@ -1137,3 +1143,86 @@ def test_seek_to_end_on_a_healthy_channel_answers_the_true_size(
         # handle's own position bookkeeping.
         assert stream.seek(0) == 0
         assert stream.read(4) == payload[:4]
+
+
+@pytest.mark.spec("SIO-011")
+def test_seek_to_end_raises_when_the_server_refuses_to_size_the_handle() -> None:
+    """A server that refuses ``CMD_FSTAT`` gets an error, where it used to get ``0``.
+
+    This is the only case where SIO-011 changes behaviour on a connection that
+    is not stalled, which is why it is asserted apart from the stall. FSTAT is
+    optional in the SFTP protocol: a minimal or embedded server may serve
+    streamed reads while answering ``SSH_FX_OP_UNSUPPORTED`` to a stat on the
+    open handle. paramiko's ``_get_size`` swallowed that refusal under its bare
+    ``except`` and returned ``0``, so the seek answered ``0`` on a readable file
+    — the same wrong answer as the stalled case, reached with nothing stalled.
+
+    Both directions are asserted against the same server, because "now raises"
+    means little beside an unstated alternative: the raw paramiko handle, which
+    is what the wrapper used to delegate to, still swallows the refusal here and
+    answers ``0`` on a 16-byte file. That is the pre-clause behaviour reproduced
+    rather than described, and if paramiko ever drops the bare ``except`` this
+    half fails and takes the contrast with it.
+
+    **Such a server is not otherwise healthy, and the surrounding assertions say
+    where the line falls.** Path-based ``stat`` is left working, so
+    ``get_file_info`` sizes the file and ``exists`` answers; the streamed
+    ``read`` and a ``SEEK_SET`` seek work, because neither needs the handle's
+    size. ``read_bytes`` does *not* — paramiko's prefetch stats the handle — and
+    it raised on this server before this change as much as after, which is worth
+    pinning here so the failure is not misread as one SIO-011 introduced.
+    """
+    from tests.backends.sftp._helpers import (
+        NoFstatStubSFTPServer,
+        start_sftp_server,
+        stop_sftp_server,
+    )
+
+    tmpdir = tempfile.mkdtemp(prefix="sftp_nofstat_")
+    thread, port, _host_key, stop_event, sock = start_sftp_server(
+        root=tmpdir, host="127.0.0.1", server_class=NoFstatStubSFTPServer
+    )
+    try:
+        backend = _make_backend(port)
+        name = f"nofstat_{uuid.uuid4().hex[:8]}.bin"
+        payload = b"0123456789abcdef"
+        backend.write(name, payload)
+
+        # Where the line falls: everything that does not need the handle's size.
+        assert backend.get_file_info(name).size == len(payload)
+        assert backend.exists(name) is True
+
+        with backend.read(name) as stream:
+            assert stream.read(4) == payload[:4], "a streamed read needs no handle stat"
+
+            with pytest.raises(RemoteStoreError) as caught:
+                stream.seek(0, 2)
+            assert not isinstance(caught.value, NotFound), (
+                "a refused FSTAT is not a missing file; it must not be mapped to NotFound"
+            )
+
+            assert stream.seek(2) == 2, "a SEEK_SET seek is local and must still work"
+            assert stream.read(3) == payload[2:5]
+
+        # Pre-existing, and pinned so it is not read as this clause's doing:
+        # paramiko's prefetch stats the handle, so the buffered read already
+        # failed on such a server before SIO-011 existed.
+        with pytest.raises(RemoteStoreError):
+            backend.read_bytes(name)
+
+        # The pre-clause behaviour, on the same server: the raw handle the
+        # wrapper used to delegate to swallows the refusal and answers 0.
+        raw = backend._sftp.file(backend._sftp_path(name), "r")
+        try:
+            raw.seek(0, 2)
+            assert raw.tell() == 0, (
+                "expected paramiko's _get_size to swallow the refusal and answer 0; "
+                "if this is now the real size or an error, the bare except is gone "
+                "and this test's contrast has lost its subject"
+            )
+        finally:
+            with contextlib.suppress(Exception):
+                raw.close()
+    finally:
+        stop_sftp_server(thread, stop_event, sock)
+        shutil.rmtree(tmpdir, ignore_errors=True)
