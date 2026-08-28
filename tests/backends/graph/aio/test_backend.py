@@ -367,6 +367,35 @@ class TestBasePath:
         assert backend._parent_ref_path(parent) == f"/drives/{_DRIVE}/root:"
         assert backend.native_path(dst) == backend.native_path("x.txt")
 
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("GR-027")
+    @pytest.mark.parametrize(
+        "dst",
+        ["x.txt", "dir/x.txt", "./x.txt", "a/.", "a/./", "x.txt/.", "a/./b", "dir/./x.txt", "/x.txt"],
+        ids=range(9),
+    )
+    def test_move_destination_and_write_address_the_same_node(self, dst: str) -> None:
+        """The whole destination address, name half included, agrees with ``write``.
+
+        The sibling above fences the *parent* half and passes with the name half
+        still broken, because every spelling it carries has an ordinary
+        basename. ``_split_parent`` took its name from ``rpartition("/")`` over
+        the stripped key, which keeps a trailing ``"."`` where every other
+        predicate here drops it — so ``move(src, "a/.")`` addressed an item
+        literally named ``.`` inside ``a`` while ``write("a/.")`` wrote to ``a``.
+        Three of these nine spellings disagreed.
+
+        Reconstructing the address from ``parentReference.path`` + ``name`` and
+        comparing it to ``native_path`` is the assertion, rather than a literal
+        per row: the property is that one key names one node however this
+        backend is asked, and a literal would pin today's spelling of the answer
+        instead of the agreement.
+        """
+        backend = _make()
+        body = backend._move_copy_body(dst)
+        addressed = f"{body['parentReference']['path']}/{body['name']}"
+        assert addressed == backend.native_path(dst).removesuffix(":")
+
     @pytest.mark.spec("GR-058")
     def test_base_path_slashes_normalised(self) -> None:
         assert _make(base_path="/root/sub/").native_path("x") == f"/drives/{_DRIVE}/root:/root/sub/x:"

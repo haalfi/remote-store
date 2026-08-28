@@ -156,11 +156,22 @@ def _split_parent(path: str) -> tuple[str, str]:
     """Split a store path into ``(parent_key, basename)``.
 
     ``"a/b/c.txt"`` → ``("a/b", "c.txt")``; a top-level ``"c.txt"`` →
-    ``("", "c.txt")``. Leading/trailing slashes are stripped first.
+    ``("", "c.txt")``. The root, under any spelling, is ``("", "")``.
+
+    Both halves come from ``_key_segments``, the one predicate that decides what
+    a key addresses on this backend. A ``rpartition("/")`` over the stripped key
+    gets the *parent* right and the *name* wrong: it keeps a trailing ``"."``, so
+    ``move(src, "a/.")`` named an item literally called ``.`` inside ``a`` while
+    ``write("a/.")`` wrote to ``a`` itself — measured on 3 of 9 destination
+    spellings. Fixing ``_parent_ref_path`` alone left that half breached, which
+    is the reason this docstring names the whole rule rather than the parent
+    split: a key names one node, and every function here that decides *which*
+    has to reach that answer the same way.
     """
-    key = path.strip("/")
-    parent, _, name = key.rpartition("/")
-    return parent, name
+    segments = _key_segments(path)
+    if not segments:
+        return "", ""
+    return "/".join(segments[:-1]), segments[-1]
 
 
 def _key_segments(path: str) -> list[str]:
@@ -309,13 +320,19 @@ class GraphBackend(AsyncBackend):
     def _raise_if_closed(self) -> None:
         """Answer a use-after-close before any other precondition is consulted.
 
-        Every guard that can fire ahead of the first ``_client`` touch calls this
-        first, so a closed backend answers ``BackendUnavailable`` whatever else is
-        also wrong with the call. The rule is not "a cheap check may run first":
-        it is that a caller holding a closed backend cannot act on any other
-        diagnosis, so any other diagnosis is the wrong one to give them. Each
-        pre-check added ahead of the client is one more place this can regress,
-        and two of them already had.
+        The rule is not "a cheap check may run first": a caller holding a closed
+        backend cannot act on any other diagnosis, so any other diagnosis is the
+        wrong one to give them.
+
+        **Call this at the top of the method, not from each pre-check.** Two of
+        the guards below do call it, because ``move``/``copy`` reach them with
+        nothing above; but ``write`` runs ``_reject_user_metadata`` first and
+        that one does *not*, deliberately. Pushing the check into every guard is
+        the fix that was tried and left the metadata gate answering
+        ``CapabilityNotSupported`` on a closed store — a per-guard rule is wrong
+        the moment a pre-check is added that does not know about it. Any new
+        pre-check ahead of the first ``_client`` touch is covered by its
+        method's own call to this, and needs no line of its own.
         """
         if self._closed:
             raise BackendUnavailable("Graph backend is closed", backend=self.name)

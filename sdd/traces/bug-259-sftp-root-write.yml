@@ -70,13 +70,17 @@ discovery_followups: []
 #            the sweep's own pattern had missed, found by
 #            re-deriving a figure for a review reply        — yes
 #   ccfe97e  round 2, all seven findings                   — yes
-#   (this)   round 3, all sixteen panel findings            — yes
+#   fc2af3f  round 3, all sixteen panel findings           — yes
+#   (this)   round 4, the closing gate                     — yes
 #
 # The last entry is "(this)" rather than a SHA on purpose: a commit cannot name
 # its own hash, and writing the tip's SHA here made the file stale the moment it
-# was amended into that very commit. The sibling trace uses the same form.
-# Four qualify. The field counts commits rather than rounds; the loop has run
-# three review rounds and produced four review-driven commits, because round 1's
+# was amended into that very commit. The sibling trace uses the same form. Note
+# that the entry above it is a real SHA now and was "(this)" a commit ago: each
+# new round promotes the placeholder and adds a fresh one, and skipping that
+# promotion is how this list came to omit a round.
+# Five qualify. The field counts commits rather than rounds; the loop has run
+# four review rounds and produced five review-driven commits, because round 1's
 # reply-writing surfaced a gap of its own.
 #
 # These SHAs are post-rebase, and have now been rewritten twice — first by the
@@ -87,7 +91,7 @@ discovery_followups: []
 # entry rather than a fifth hash — the tip's own SHA cannot be written into the
 # commit that carries it, and the four below it move whenever the branch is
 # replayed.
-review_rounds: 4
+review_rounds: 5
 
 phases:
   - id: orient
@@ -264,13 +268,23 @@ phases:
           stood when each part landed — and re-run again at every round that
           moved the tree, because this figure's subject is the test suite the
           loop keeps changing. Final: neutering the shared guard fails 93 of
-          8867 executed cells — 34 in the SFTP module, 26 in conformance, 22 in
-          Local's, 11 in test_flat_ns. Four
-          earlier versions of this sentence were true when written: 47 of 8643,
-          62 of 8725, 80 of 8749, 80 of 8776. Not one was falsified by a defect
-          in the guard; every one was falsified by the review loop adding cells
-          around it, which is the same failure mode BUG-247's own record spent a
-          paragraph on and this trace then reproduced.
+          8876 executed cells — 34 in the SFTP module, 26 in conformance, 22 in
+          Local's, 11 in test_flat_ns; SFTP's own wrapper alone, 34. Round 5
+          re-ran both, as its own predecessor's note said it would have to: the
+          numerator held and the denominator moved with nine new Graph cells,
+          so a re-read would have shown nothing wrong.
+
+          This sentence itself held 47 of 8643 from the day it was written until
+          round 4, while the same measurement in BACKLOG-DONE.md was re-derived
+          three times over the same period (80 of 8749 at round 3, then 80 of
+          8776 after the rebase, then 93 of 8858). Two artifacts in one PR
+          disagreeing about one number, because each round corrected the record
+          it was reading and not the record it was writing in — and the trace's
+          later steps, which record those corrections as events, made the file
+          look current while its own figure was the stalest thing in it. Not one
+          version was falsified by a defect in the guard; every one was falsified
+          by the review loop adding cells around it, which is the failure mode
+          BUG-247's record spent a paragraph on and this trace then reproduced.
         outcome: ok
       - file: src/remote_store/backends/_sftp.py
         section: "write, write_atomic, open_atomic"
@@ -437,7 +451,7 @@ phases:
           the same lesson one layer down: a guard keyed on an enumeration of
           spellings is a guard that misses the spelling nobody enumerated.
           Fixed by normalising inside the write guard only; widening is_root
-          itself would move 54 call sites including native_path/to_key and every
+          itself would move 52 call sites including native_path/to_key and every
           listing prefix, for a read-side defect that costs an error class
           rather than the container.
         outcome: ok
@@ -711,9 +725,83 @@ phases:
           measurement, because later rounds corrected the record they were
           reading and not the record they were writing in. The steps recording
           the corrections were present and current; the step stating the figure
-          was not. Re-run and rewritten to name the whole sequence rather than a
-          point, since a figure whose subject is the test suite is invalidated by
-          every round that adds a cell.
+          was not. Re-run against this tree and rewritten to say which artifact
+          held what and when, rather than to state a point, since a figure whose
+          subject is the test suite is invalidated by every round that adds a
+          cell. Round 5 then caught the rewrite itself claiming four earlier
+          versions of a sentence that had only ever had one — the four belonged
+          to the sibling artifact. A note about a stale figure is as derivable,
+          and as easy to write from memory, as the figure.
+        outcome: ok
+
+  - id: fix_round_5
+    name: Round-5 fix pass (closing gate, three appended passes)
+    steps:
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_split_parent"
+        read_type: verify
+        extract: >-
+          The round-4 fix was half a fix, and the measuring pass found the other
+          half. _parent_ref_path was corrected to split on _key_segments; the
+          *name* still came from _split_parent's rpartition("/"), which keeps a
+          trailing ".". So move(src, "a/.") addressed an item literally named "."
+          inside "a" while write("a/.") wrote to "a" — 3 of 9 destination
+          spellings, measured. The round-4 cell could not see it because all five
+          of its params have an ordinary basename: a fence built from the
+          spellings that motivated the fix tests the half that was fixed. Both
+          halves now come from _key_segments. Round 4's own trace step says the
+          finding came from "asking what else in this file splits a key", and
+          _split_parent is in that file and splits a key — the question was right
+          and was asked of the call site rather than of the module.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-008 step (0); BE-025 Root spellings; BE-029 coverage note"
+        read_type: verify
+        extract: >-
+          Three claims in the amendment, each true of a narrower thing than it
+          says. Step (0) still read "under either spelling" — is_root's two —
+          three lines above the sentence widening the same step to both ends of
+          move/copy, so the ordered list an implementer implements licensed
+          exactly the guard BE-029 rules out in bold. BE-025's "every non-root
+          key round-trips verbatim" has a counterexample class this PR now leans
+          on the identity to justify a withdrawal: a/./b and a/b are one address,
+          so the identity is exact over canonical keys and lossy over what a
+          caller may hand native_path directly. And the coverage note called
+          Graph "the one class whose guards are pinned outside conformance",
+          contradicting this spec's own BE-020 paragraph 700 lines earlier — the
+          close-posture twin never seeds, so the Graph lane does execute it, and
+          it is the cell that caught the ordering breach. The split is per-cell,
+          not per-backend.
+        outcome: ok
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "module docstring, __all__, call-site count, is_root count"
+        read_type: verify
+        extract: >-
+          Four on one file, all from the whole-file and unprimed passes, none
+          visible in a hunk. The module opens "for flat-namespace backends" and
+          "Three contracts live here" while now owning a rule the spec numbers as
+          the one no backend is exempt from, called by both hierarchical
+          backends. _addressable_segments was the one function missing from
+          __all__ — the only one this PR added a cross-module import for, and the
+          one the published custom-backend guide names to third-party authors.
+          "Five call sites per backend" is four on three of seven: the two S3
+          lanes delegate write_atomic to write, and AsyncAzureBackend has no
+          open_atomic; both reasons are now written down, because a sweep reading
+          four as a missing guard is the predictable next event. And "54 call
+          sites" for is_root re-derives as 52 — this change is what removed two
+          of them.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "(item) ID-247"
+        read_type: verify
+        extract: >-
+          Two passes flagged the arithmetic and reached different totals, 30 and
+          34, from the same premise "22 before + the new rosters". Measured:
+          pytest -k TestBackendRootPath -rs gives 30 skips naming cassettes/graph
+          and the new rosters contribute 12, so the pre-existing count was 18 and
+          the item's 22 does not reproduce. The total was right and its stated
+          derivation was not, which is the harder case to catch — a figure that
+          checks out invites nobody to run the sentence beside it.
         outcome: ok
 
   - id: verify

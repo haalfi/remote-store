@@ -231,7 +231,7 @@ if evidence changes; these are retired.
   now has a row per half.
   **Fenced by mutation, re-derived against the final tree** — the figures moved
   twice as review widened the change, so they are stated from the last run and
-  not from the first. Neutering the shared guard fails **93 of 8867** executed
+  not from the first. Neutering the shared guard fails **93 of 8876** executed
   cells: 34 in the SFTP module, 26 in conformance, 22 in Local's, 11 in
   `test_flat_ns`. Neutering only `SFTPBackend`'s own wrapper fails **34**, all in
   the SFTP module and **none** in conformance — with `base_path` present SFTP
@@ -254,7 +254,7 @@ if evidence changes; these are retired.
   surviving one character from the spelling that was caught. The write guard now
   drops empty and `"."` segments and tests what is left, which covers `"./"`,
   `".//"`, `"./."` and `"/"` alike, and is how `GraphBackend` had always decided
-  the same question. `is_root` is deliberately not widened: 54 call sites across
+  the same question. `is_root` is deliberately not widened: 52 call sites across
   13 files, `native_path` / `to_key` and every flat-namespace listing prefix
   among them. On the read side an unrecognised spelling costs an error class; on
   the write side it cost the container, and the asymmetry in the fix follows the
@@ -303,7 +303,14 @@ if evidence changes; these are retired.
   `"."`-dropping one. So `move(src, "./x.txt")` passed the guard and then
   addressed `/drives/{id}/root:/%2E` — a folder literally named `.` — while
   `write("./x.txt")` wrote to the drive root: 4 of 7 destination spellings
-  disagreed. It now splits on the shared predicate. The general shape is the one
+  disagreed. It now splits on the shared predicate — and so does `_split_parent`,
+  whose *name* half the closing round caught still coming from `rpartition("/")`:
+  that keeps a trailing `"."`, so `move(src, "a/.")` addressed an item literally
+  named `.` inside `a` while `write("a/.")` wrote to `a`, on 3 of 9 spellings.
+  Fixing the parent half and not the name half is the shape to expect when the
+  fence is built from the spellings that motivated the fix — all five params of
+  the round-4 cell have an ordinary basename, so it passed with the name half
+  still breached. The general shape is the one
   the withdrawn backslash fold also demonstrates from the other direction: a
   predicate that decides *whether* a key names a node and one that decides
   *which* node have to be the same function, and this PR found both of the ways

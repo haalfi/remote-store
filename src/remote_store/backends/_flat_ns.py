@@ -1,9 +1,11 @@
-"""Shared path-type helpers for flat-namespace backends.
+"""Shared path-type helpers for backends, most of them flat-namespace-only.
 
-Three contracts live here. The first two are about the same blind spot: a
+Four contracts live here. The first three are about the same blind spot: a
 flat namespace stores keys, not nodes, so "this path is a directory" is
 never an answer the store gives back — it has to be inferred from a prefix
-listing.
+listing. The fourth is not about that blind spot and is not flat-namespace
+work at all, which is why the module's name is now narrower than its
+contents:
 
 * **File-ancestor pre-check** — an opt-in *pre*-check on the write path,
   documented immediately below.
@@ -12,6 +14,15 @@ listing.
 * **Absent container reads as absent path** — the folder-existence probe's
   answer when the bucket / container itself is gone, documented at
   ``_children_or_absent_container``.
+* **Root refusal, definitionally from the key** — ``_reject_root_as_file``
+  and ``_reject_root_as_write_target``, over the ``_addressable_segments``
+  predicate. This one binds *every* backend: the hierarchical ones call it
+  too (``LocalBackend``, ``SFTPBackend``), ``GraphBackend`` reaches the
+  predicate through its own ``_key_segments``, and the backend contract
+  numbers it as the one precondition the flat-namespace exemption does not
+  release. It lives here because the flat namespaces were where it was
+  found missing, not because it is theirs; the custom-backend guide points
+  third-party authors at ``_addressable_segments`` by name.
 
 Hierarchical backends (Local, SFTP, Memory) detect a file-ancestor path on
 ``write`` / ``move`` / ``copy`` for free because their native APIs cannot
@@ -230,8 +241,16 @@ def _reject_root_as_write_target(path: str, backend: str) -> None:
     directory was deleted underneath it; ``SFTPBackend`` creates ``base_path``
     lazily on first write, so an untouched store is already in it.
 
-    **Five call sites per backend**: the three writers, plus the ``move`` and
-    ``copy`` *destination*. The destination was at first guarded on the
+    **Called at every write-shaped entry point: the writers, plus the ``move``
+    and ``copy`` *destination*.** That is five sites on four of the seven
+    classes and four on the other three, and neither exception is an omission.
+    ``S3Backend.write_atomic`` and ``S3Boto3Backend.write_atomic`` open with a
+    bare ``return self.write(...)``, so delegation covers them —
+    ``S3PyArrowBackend.write_atomic`` spools before delegating and therefore
+    carries its own. ``AsyncAzureBackend`` has no ``open_atomic`` to guard,
+    because the async ``Backend`` surface does not declare one. A count stated
+    per class rather than per entry point invites exactly the sweep that reads
+    four as a missing guard. The destination was at first guarded on the
     hierarchical backends' reasoning — container absent, so nothing exists
     beneath it and the source check fails first; container present, so the
     destination probe reports a directory — which is true there and measured
@@ -258,7 +277,7 @@ def _reject_root_as_write_target(path: str, backend: str) -> None:
     covers every spelling that addresses the root, and matches how
     ``GraphBackend`` has always decided the same question.
 
-    ``is_root`` itself is deliberately not widened. It has 54 call sites across
+    ``is_root`` itself is deliberately not widened. It has 52 call sites across
     13 files, including ``native_path`` / ``to_key`` — where the addressing
     round-trip is defined in terms of the two canonical spellings — and the
     prefix construction every flat-namespace listing uses. On the read side an
@@ -453,6 +472,7 @@ async def _awrong_type_if_file(path: str, *, is_object: Callable[[str], Awaitabl
 __all__ = [
     "_acheck_no_file_ancestor",
     "_achildren_or_absent_container",
+    "_addressable_segments",
     "_awrong_type_if_file",
     "_awrong_type_if_folder",
     "_check_no_file_ancestor",

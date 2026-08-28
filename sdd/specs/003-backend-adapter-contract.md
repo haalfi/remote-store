@@ -250,7 +250,8 @@ implementation; `GraphBackend` reaches it through its own `_key_segments`.
 was withdrawn on measurement: the shared predicate is also how `GraphBackend`
 builds every item address, so folding made `native_path("a\b")` address `a/b`
 and broke the round-trip identity [BE-025](#be-025-native_path) and NPR-005
-require of every non-root key.
+require of every canonical non-root key — including keys a caller would never
+think of as unusual, since `a\b` is one segment on a POSIX namespace.
 
 So a backslash-only key is **not** refused by this clause. It is the milder
 failure of the two — on a POSIX namespace it lands a file named `\` inside the
@@ -368,9 +369,11 @@ cannot reach any cell that seeds through `write` (ID-244).
 **Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `InvalidPath` if an ancestor of `path` exists as a regular file (file-as-directory-component — see ID-209). `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out — `metadata=None` and `metadata={}` are both no-ops with respect to this gate).
 **See also:** [045-write-result.md](045-write-result.md) (WR-001 through WR-005, WR-010 through WR-012).
 **Precondition evaluation order:** Backends MUST evaluate preconditions in this
-order: (0) the root — if `path` is the store root under either spelling, raises
-`InvalidPath`, decided from the key and before any request is issued
-([BE-029](#be-029-root-path)); (1) path validity — if `path` names an
+order: (0) the root — if `path` addresses the store root under **any** spelling,
+raises `InvalidPath`, decided from the key and before any request is issued.
+"Any spelling" is wider than `is_root` and BE-029 carries the predicate: a guard
+written as `if is_root(path)` satisfies this list's wording read loosely and is
+not conformant ([BE-029](#be-029-root-path)); (1) path validity — if `path` names an
 existing *directory* OR any slash-aligned ancestor of `path` is a regular file
 (file-as-directory-component, ID-209), raises `InvalidPath`; (2) overwrite
 conflict — if the file exists and `overwrite=False`, raises `AlreadyExists`;
@@ -865,11 +868,15 @@ the guard ran before the transport; `AsyncAzureBackend` with the guard stubbed
 out, to establish what it did before; and `GraphBackend` against an unreachable
 endpoint for both halves.
 
-`GraphBackend` is also the one class whose guards are pinned outside conformance
-rather than within it: its lane skips both new rosters for want of cassettes, so
-the cells that fence its source, destination and closed-guard ordering live in
-`tests/backends/graph/aio/`, where they need no recording because every one of
-those guards refuses before a request exists to record.
+`GraphBackend` is the class where the two halves of that split are clearest, and
+the split is per-cell rather than per-backend. Its lane skips both new rosters,
+because those seed through `write` and so need a cassette — hence the cells
+fencing its source and destination guards live in `tests/backends/graph/aio/`,
+where they need no recording since those guards refuse before a request exists.
+Its **closed-guard ordering is pinned within conformance**, by the `aio/` twin of
+the close-posture cell: that one never seeds, so the Graph lane executes it, and
+it is the cell that caught the ordering breach in the first place. A cassette-less
+lane is not an unpinnable one; what it cannot host is a cell that seeds.
 
 **§ Reach's roster is twelve operations, and its siblings are not silently
 included.** The twelve are the two tolerant deletes plus the ten this paragraph
@@ -1105,7 +1112,7 @@ raising `InvalidPath`. All other operations MUST raise appropriate errors.
 ### BE-025: native_path()
 
 **Invariant:** `native_path(path)` converts a backend-relative key to the backend-native path. The inverse of `to_key()`: `backend.to_key(backend.native_path(key)) == key`. The default implementation is the identity function — backends with a native root **must** override.
-**Root spellings:** `native_path("")` and `native_path(".")` return the same value, the bare backend root (BE-029). The round-trip identity therefore returns the canonical root key — `to_key(native_path("."))` is `""` — since one native path cannot invert to two spellings. Every non-root key round-trips verbatim. The identity-default implementation normalises both spellings for the same reason.
+**Root spellings:** `native_path("")` and `native_path(".")` return the same value, the bare backend root (BE-029). The round-trip identity therefore returns the canonical root key — `to_key(native_path("."))` is `""` — since one native path cannot invert to two spellings. Every non-root key **in canonical form** round-trips verbatim; a key carrying a redundant `"."` segment does not, and for the same reason — `native_path("a/./b")` and `native_path("a/b")` are one address, which can only invert to one key. So the identity is exact over the keys `to_key` produces, and lossy over the wider set a caller may hand `native_path` directly (measured on `GraphBackend`: 9 of 10 probe keys verbatim, the exception being the dot-segment class). The identity-default implementation normalises both root spellings for the same reason.
 **Postconditions:** Pure, deterministic, total (never raises). The returned path is usable with the native handle from `unwrap()`.
 **Overrides:** `LocalBackend` (prepends root dir), `S3Backend` (prepends bucket), `S3PyArrowBackend` (prepends bucket), `SFTPBackend` (prepends base_path), `AzureBackend` (prepends container).
 **Example:** `S3PyArrowBackend(bucket="lake").native_path("data/file.parquet")` returns `"lake/data/file.parquet"`.
