@@ -582,6 +582,36 @@ compliant the day before.
   being a cost left on the caller): the defect here is that a caller does not
   catch one exception type, which is this section's promise verbatim.
 
+---
+
+<a id="correct-and-proven"></a>
+## 2. Answers are correct, and the contract is proven
+
+**Promise:** the same call returns the same right result on every backend, and
+no clause of the contract ships unexercised.
+
+**Closes when:** the six defects and holes enumerated below are closed — three
+wrong answers (BUG-241's unescaped `LIKE` metacharacters, BUG-240's `max_depth`
+contradiction, BUG-251's cross-store cache collision) and three coverage holes
+measured in cells (ID-244's WRITE-gated classes, ID-242's four pragmas,
+ID-247's 22 root-path cells).
+**Bounded deliberately.** "No clause ships unexercised" is the promise, not the
+closing condition: nothing derives the full set of unreachable clauses today,
+which is what ID-245's inventory in section 6 would supply. Until it does, this
+section closes on a counted list rather than on a claim nobody can check —
+saying otherwise would make the promise unfalsifiable, which is the failure this
+structure exists to remove.
+
+A corrected clause nobody tests is the same defect one layer up, which is why
+the wrong-answer defects and the coverage holes are one promise. The wrong-answer
+defects come first because a user can hit them today. **One item here is depended
+on from section 1**: BK-345 waits on ID-244's per-fixture seeding decision, so
+section 1 cannot close before it lands even though it sits here. ID-242 was a
+second such dependency, from BUG-249's denied path; that item shipped without it,
+leaving the denied listing asserted by one hand-written 403 probe and by nothing
+in conformance — the exact hole ID-242 exists to fill, now with a shipped clause
+resting on it rather than a pending one.
+
 - [ ] **BUG-251 — A shared `cache_backend=` serves one store's bytes for another's**
   spec: RES-100 · effort: S/M · audience: user.api
   `ext.cache` derives keys from `(operation, path)` with nothing identifying the
@@ -1137,36 +1167,6 @@ here as legitimately as "built".
   the hang into a **silently wrong size of `0`**, which BK-357 argues is the worse
   of its two defects. That is an argument for ordering BK-357 before this item,
   not merely for noting it here.
-
----
-
-<a id="correct-and-proven"></a>
-## 2. Answers are correct, and the contract is proven
-
-**Promise:** the same call returns the same right result on every backend, and
-no clause of the contract ships unexercised.
-
-**Closes when:** the six defects and holes enumerated below are closed — three
-wrong answers (BUG-241's unescaped `LIKE` metacharacters, BUG-240's `max_depth`
-contradiction, BUG-251's cross-store cache collision) and three coverage holes
-measured in cells (ID-244's WRITE-gated classes, ID-242's four pragmas,
-ID-247's 22 root-path cells).
-**Bounded deliberately.** "No clause ships unexercised" is the promise, not the
-closing condition: nothing derives the full set of unreachable clauses today,
-which is what ID-245's inventory in section 6 would supply. Until it does, this
-section closes on a counted list rather than on a claim nobody can check —
-saying otherwise would make the promise unfalsifiable, which is the failure this
-structure exists to remove.
-
-A corrected clause nobody tests is the same defect one layer up, which is why
-the wrong-answer defects and the coverage holes are one promise. The wrong-answer
-defects come first because a user can hit them today. **One item here is depended
-on from section 1**: BK-345 waits on ID-244's per-fixture seeding decision, so
-section 1 cannot close before it lands even though it sits here. ID-242 was a
-second such dependency, from BUG-249's denied path; that item shipped without it,
-leaving the denied listing asserted by one hand-written 403 probe and by nothing
-in conformance — the exact hole ID-242 exists to fill, now with a shipped clause
-resting on it rather than a pending one.
 
 ---
 

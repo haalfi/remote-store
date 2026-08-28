@@ -301,7 +301,7 @@ layer (e.g. `requirements.txt` line `paramiko>=3.0,<5`).
 
 - **Lazy connect** — no network call happens during construction. The SSH/SFTP connection is established on the first operation.
 - **Auto-reconnect** — if the connection goes stale between operations, the backend reconnects transparently.
-- **Retry** — transient SSH errors (`SSHException`, `OSError`, `EOFError`) are retried up to 3 times with exponential backoff (2 s min, 10 s max). Retry covers establishing the SSH connection only; anything after that, including a stall bounded by `io_timeout`, is reported to the caller rather than restarted.
+- **Retry** — transient SSH errors (`SSHException`, `OSError`, `EOFError`) are retried up to 3 times with exponential backoff (2 s min, 10 s max). Retry covers establishing the SSH connection only; nothing after that is restarted, and a stall bounded by `io_timeout` is reported to the caller unless it is one of the silent cases above.
 - **Stall detection** — off by default; set [`io_timeout`](#bounding-a-stalled-transfer) to bound a read or write that stops making progress on an open channel.
 - **Single connection, not thread-safe** — each `SFTPBackend` instance holds one paramiko `SFTPClient`. Calling it from multiple threads simultaneously (e.g. via `SyncBackendAdapter` + `asyncio.gather`) races on the shared socket. Create one `SFTPBackend` per thread for parallel workloads.
 
