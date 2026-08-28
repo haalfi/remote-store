@@ -71,20 +71,21 @@ discovery_followups:
 
 # Counted from `git log --oneline origin/master..HEAD`, applying the schema's
 # test — "exists specifically because review feedback was incorporated":
-#   a9c54f9  implements the fix                            — no
-#   2ba4cff  round 1, all nine findings                    — yes
-#   419883d  round 1 residue: the async Azure Raises blocks
+#   1d6f08c  implements the fix                            — no
+#   cefa6aa  round 1, all nine findings                    — yes
+#   f4e5395  round 1 residue: the async Azure Raises blocks
 #            the sweep's own pattern had missed, found by
 #            re-deriving a figure for a review reply        — yes
-#   ccfe97e  round 2, all seven findings                   — yes
-#   fc2af3f  round 3, all sixteen panel findings           — yes
-#   f5d0ff0  round 4, the backslash withdrawal and two
+#   2f1aea7  round 2, all seven findings                   — yes
+#   64d70bf  round 3, all sixteen panel findings           — yes
+#   aeee3f5  round 4, the backslash withdrawal and two
 #            Graph predicate breaches                      — yes
-#   f9c63d9  round 5, the destination name half and nine
+#   5de6a6c  round 5, the destination name half and nine
 #            falsified claims                              — yes
-#   003534b  round 6, the fourth key splitter and the
+#   80b170d  round 6, the fourth key splitter and the
 #            guide's own reference backend                 — yes
-#   (this)   round 7, the closing gate                     — yes
+#   96da764  round 7, the ABC sweep and GR-058             — yes
+#   (this)   the rebase onto BK-355                        — no
 #
 # The last entry is "(this)" rather than a SHA on purpose: a commit cannot name
 # its own hash, and writing the tip's SHA here made the file stale the moment it
@@ -102,8 +103,8 @@ discovery_followups:
 # six review rounds and produced seven review-driven commits, because round 1's
 # reply-writing surfaced a gap of its own.
 #
-# These SHAs are post-rebase, and have now been rewritten twice — first by the
-# rebase onto BK-354, then by the one onto BK-356. A figure naming commits is
+# These SHAs are post-rebase, and have now been rewritten three times — by the
+# rebases onto BK-354, BK-356 and BK-355. A figure naming commits is
 # invalidated by any history rewrite, not only by new work, and re-reading it
 # would never show that: the stale SHAs still look like SHAs. Re-derived from
 # the command above after each rebase. This is the argument for the "(this)"
@@ -287,12 +288,14 @@ phases:
           stood when each part landed — and re-run again at every round that
           moved the tree, because this figure's subject is the test suite the
           loop keeps changing. Final: neutering the shared guard fails 93 of
-          8887 executed cells — 34 in the SFTP module, 26 in conformance, 22 in
+          8900 executed cells — 34 in the SFTP module, 26 in conformance, 22 in
           Local's, 11 in test_flat_ns; SFTP's own wrapper alone, 34. Every closing
           round re-ran both fences rather than carrying them, and every time the
-          numerator held while the denominator moved with that round's own new
-          cells. A re-read would have shown nothing wrong on any of those
-          occasions, which is the whole argument for re-running.
+          numerator held while the denominator moved — with that round's own new
+          cells, and at the last rebase with BK-355's thirteen. A re-read would
+          have shown nothing wrong on any of those occasions, which is the whole
+          argument for re-running. The rebase case is the sharpest: the branch
+          did not change at all and the figure still went stale.
 
           This sentence itself held 47 of 8643 from the day it was written until
           round 4, while the same measurement in BACKLOG-DONE.md was re-derived
@@ -659,6 +662,22 @@ phases:
   - id: rebase
     name: Integrate master
     steps:
+      - file: sdd/BACKLOG.md
+        section: "section 2, 'further disagreements' count"
+        read_type: verify
+        extract: >-
+          Third rebase, onto BK-355, and the only conflict needing thought was a
+          count both sides had moved in opposite directions: master raised
+          "further disagreements" from five to six by adding BK-358, this branch
+          lowered it to four by closing BUG-259. Neither side's number is right
+          after the merge and taking either wholesale is wrong in a way that
+          reads fine. Re-derived by counting the enumeration the sentence
+          introduces — BUG-253, BUG-245, BK-358, BUG-254, BUG-256 — giving five,
+          and the neighbouring ordinal ("BUG-259 was a fifth of this kind")
+          moved to sixth for the same reason. A conflict in a figure is the one
+          case where "take theirs" and "take ours" are both silently wrong; the
+          resolution has to come from the thing the figure counts.
+        outcome: ok
       - file: src/remote_store/backends/_sftp.py
         section: "write, write_atomic, open_atomic, move, copy"
         read_type: verify

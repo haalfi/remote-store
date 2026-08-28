@@ -235,7 +235,7 @@ if evidence changes; these are retired.
   now has a row per half.
   **Fenced by mutation, re-derived against the final tree** — the figures moved
   twice as review widened the change, so they are stated from the last run and
-  not from the first. Neutering the shared guard fails **93 of 8887** executed
+  not from the first. Neutering the shared guard fails **93 of 8900** executed
   cells: 34 in the SFTP module, 26 in conformance, 22 in Local's, 11 in
   `test_flat_ns`. Neutering only `SFTPBackend`'s own wrapper fails **34**, all in
   the SFTP module and **none** in conformance — with `base_path` present SFTP
