@@ -40,19 +40,61 @@ class _ErrorMappingStream(io.RawIOBase):
     """Wraps a BinaryIO stream and maps I/O exceptions through a classifier.
 
     When the caller reads from a stream returned by ``Backend.read()``, the
-    backend's ``_errors()`` context manager has already exited.  Any native
-    ``OSError`` -- or ``EOFError``, which paramiko raises (and which is *not* an
-    ``OSError``) when an SFTP channel dies mid-read -- would otherwise leak
-    unmapped.  This wrapper intercepts I/O methods and passes both through the
-    backend's error classifier so callers see ``RemoteStoreError`` subtypes.
+    backend's ``_errors()`` context manager has already exited, so a native
+    ``OSError`` -- or an ``EOFError``, which is *not* an ``OSError`` -- would
+    otherwise leak unmapped.  This wrapper intercepts I/O methods and passes
+    both through the backend's error classifier so callers see
+    ``RemoteStoreError`` subtypes.
+
+    **The caught tuple is the real bound here, and it is narrower than the
+    backends this serves.**  Only ``(OSError, EOFError)`` are intercepted, so
+    anything outside that pair propagates unmapped.  On paramiko's SFTP read
+    path neither arm catches a dropped connection: the read side converts its
+    ``EOFError`` to ``SSHException``, and a send-side ``EOFError`` is swallowed
+    by ``BufferedFile.read`` into a short read before it reaches this wrapper
+    (both measured).  A stalled channel *is* caught, as ``socket.timeout`` is
+    an ``OSError``.  Which producer does reach the ``EOFError`` arm is
+    undetermined -- do not read it as covering a specific paramiko path, and do
+    not narrow the tuple on the strength of that.
 
     Programming errors (``TypeError``, ``ValueError``, ``AttributeError``, etc.)
-    are **not** caught -- they propagate normally.
+    are **not** caught -- they propagate normally.  That includes anything
+    *is_fatal* raises: a classifier is pure inspection, so one that raises is a
+    bug in the backend, and suppressing it would replace the real failure with
+    silence.
+
+    **Releasing a stream whose failure condemned the connection.**
+    ``close`` closes *inner* under ``contextlib.suppress``, and on a connection
+    the failure already killed that close is not free: paramiko's
+    ``SFTPFile.close()`` issues a synchronous ``CMD_CLOSE`` and waits for a reply
+    that never comes, so the caller pays ``io_timeout`` a second time with
+    nothing to explain the wait.  A backend that can recognise such a failure
+    passes *is_fatal*; once it returns ``True`` for a mapped exception, the inner
+    close is skipped.  The handle is then released by the peer's own teardown, or
+    at collection **of this wrapper** -- ``close`` does not drop ``_inner``, so
+    the handle stays reachable through it for as long as the closed stream
+    object itself is held.  For paramiko, that collection runs
+    ``SFTPFile.__del__`` -> ``_close(async_=True)``, which sends ``CMD_CLOSE``
+    without waiting.  A caller that retains closed streams therefore retains
+    the dead connection with them; the backend has already dropped its own
+    reference by then, so this wrapper is what keeps the transport alive.
+
+    The verdict is taken when the failure is mapped rather than at close time, so
+    the stream records a ``bool`` instead of holding the exception: keeping the
+    exception would keep its traceback, and the frames it references, alive for
+    as long as the stream is.
 
     Args:
         inner: The underlying stream to wrap.
         mapper: ``(Exception, str) -> RemoteStoreError`` callable.
         path: The logical path, forwarded to *mapper* for diagnostics.
+        is_fatal: Optional ``(Exception) -> bool`` predicate deciding whether a
+            failure leaves the underlying connection unusable.  Omitted by
+            backends whose streams fail for reasons a close survives, and for
+            them the close stays unconditional.  It **must be pure inspection
+            of the exception** -- no I/O, no round-trip: it is called on the
+            failure path of a connection that may already be dead, so a probe
+            inside it would pay the very wait this guard exists to remove.
     """
 
     def __init__(
@@ -60,10 +102,24 @@ class _ErrorMappingStream(io.RawIOBase):
         inner: Any,
         mapper: Callable[[Exception, str], RemoteStoreError],
         path: str,
+        *,
+        is_fatal: Callable[[Exception], bool] | None = None,
     ) -> None:
         self._inner = inner
         self._mapper = mapper
         self._path = path
+        self._is_fatal = is_fatal
+        self._connection_lost = False
+
+    def _fail(self, exc: Exception) -> RemoteStoreError:
+        """Map *exc*, recording whether it leaves the connection unusable.
+
+        Every mapping path goes through here, so ``seek`` and ``tell`` arm the
+        guard exactly as a read does.
+        """
+        if self._is_fatal is not None and self._is_fatal(exc):
+            self._connection_lost = True
+        return self._mapper(exc, self._path)
 
     # region: RawIOBase required
     def readable(self) -> bool:
@@ -73,7 +129,7 @@ class _ErrorMappingStream(io.RawIOBase):
         try:
             return cast(int, self._inner.readinto(b))  # noqa: TC006
         except (OSError, EOFError) as exc:
-            raise self._mapper(exc, self._path) from exc
+            raise self._fail(exc) from exc
 
     # endregion
 
@@ -83,14 +139,14 @@ class _ErrorMappingStream(io.RawIOBase):
             data = self._inner.read(size)
             return cast(bytes | None, data)  # noqa: TC006
         except (OSError, EOFError) as exc:
-            raise self._mapper(exc, self._path) from exc
+            raise self._fail(exc) from exc
 
     def readline(self, size: int = -1) -> bytes:  # type: ignore[override]
         try:
             data = self._inner.readline(size)
             return cast(bytes, data)  # noqa: TC006
         except (OSError, EOFError) as exc:
-            raise self._mapper(exc, self._path) from exc
+            raise self._fail(exc) from exc
 
     def seek(self, offset: int, whence: int = 0) -> int:
         try:
@@ -100,7 +156,7 @@ class _ErrorMappingStream(io.RawIOBase):
                 return self._inner.tell() or 0
             return int(result)
         except (OSError, EOFError) as exc:
-            raise self._mapper(exc, self._path) from exc
+            raise self._fail(exc) from exc
 
     def seekable(self) -> bool:
         return bool(getattr(self._inner, "seekable", lambda: False)())
@@ -111,12 +167,15 @@ class _ErrorMappingStream(io.RawIOBase):
             # paramiko SFTPFile.tell() should return int, but guard anyway
             return int(result) if result is not None else 0
         except (OSError, EOFError) as exc:
-            raise self._mapper(exc, self._path) from exc
+            raise self._fail(exc) from exc
 
     def close(self) -> None:
         if not self.closed:
-            with contextlib.suppress(Exception):
-                self._inner.close()
+            # SIO-010: skip a close that would re-enter a connection this
+            # stream's own failure condemned -- see the class docstring.
+            if not self._connection_lost:
+                with contextlib.suppress(Exception):
+                    self._inner.close()
             super().close()
 
     def __iter__(self) -> Iterator[bytes]:
@@ -131,6 +190,6 @@ class _ErrorMappingStream(io.RawIOBase):
         except StopIteration:
             raise
         except (OSError, EOFError) as exc:  # defensive: readline() already maps these  # pragma: no cover
-            raise self._mapper(exc, self._path) from exc
+            raise self._fail(exc) from exc
 
     # endregion

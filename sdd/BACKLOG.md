@@ -204,7 +204,8 @@ file (BUG-259); a listing does not truncate silently when its container is
 deleted mid-scan (BUG-255) or when a folder vanishes part-way through a
 recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 (BUG-256); a constructor does not leak its driver's exception
-(BUG-245); one operation does not answer by payload size (BUG-253); and a newly
+(BUG-245) and neither does a stream (BK-358); one operation does not answer by
+payload size (BUG-253); and a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
 (BK-345). The spec contradiction is adjudicated — BUG-248, closed by
 [ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md) — the
@@ -229,10 +230,12 @@ listing was outside it; now the bound is part of the clause and missing it is a
 breach of it. Writing a rule into a clause enlarges what the clause governs, and
 the two items that changed side are the evidence — neither was a new defect, and
 both were pre-existing behaviour that a new sentence made answerable.
-**Five** further disagreements sit in this section and none of them is with the
+**Six** further disagreements sit in this section and none of them is with the
 absent-container clause, which is why they are not in that count: BUG-253 is
 between two halves of one Graph operation; BUG-245 is a constructor leak, which
-BE-021 scopes to operations and so does not reach; BUG-254 is with **BE-029's
+BE-021 scopes to operations and so does not reach, and BK-358 is the same
+never-leak breach reached through the shared stream wrapper on the operation
+path rather than at construction; BUG-254 is with **BE-029's
 root row**, which BE-021 § Reach now defers to rather than deciding, so the
 breach is of the row § Reach points at and not of the clause this count is about;
 BUG-256 is about a health probe, which is off the roster BE-021 governs; and
@@ -528,6 +531,59 @@ compliant the day before.
   hand-written cassette would fabricate a response the tier has never produced.
   This is the item that makes the section's promise stay true for backend seven,
   which is why it sits here and not with the coverage work.
+
+- [ ] **BK-358 — Two paramiko exception shapes escape `_ErrorMappingStream` unmapped**
+  spec: BE-021, SIO-010 · effort: M · audience: user.api
+  `_ErrorMappingStream`'s mapping paths catch `(OSError, EOFError)`. Neither
+  `paramiko.SSHException` nor `paramiko.SFTPError` derives from either, so both
+  propagate out of the wrapper **unmapped**: the caller gets a raw paramiko
+  exception, where BE-021 requires that backend-native exceptions never leak and
+  SFTP-024 extends that to the caller-facing handle. This wrapper is the
+  mechanism those clauses rely on once `_errors()` has exited.
+  **This is the ordinary mid-read drop, not an exotic shape.**
+  `SFTPClient._read_response` converts the underlying `EOFError` into
+  `SSHException("Server connection dropped: ...")`, and `_read_packet` raises
+  `SFTPError("Garbage packet received")`. Measured through the wrapper with a
+  backend predicate supplied: both propagate as themselves, `_connection_lost`
+  stays `False`, and the inner close still runs — so BK-355's guard is inert on
+  exactly the shape a dropped connection takes. `SFTPError` is the sharper case,
+  because `_is_connection_dead` *does* match it: the backend's predicate
+  recognises a failure the wrapper can never hand it.
+  **Pre-existing, and not narrowed by BK-355** — the tuple has been
+  `(OSError, EOFError)` since AF-006. It surfaced during BK-355's closing review
+  because that PR's new clauses describe what the guard reaches, and describing
+  it exposed what it does not.
+  **Fix surface is why this is filed rather than folded in.** The wrapper serves
+  S3, S3-boto3, S3-PyArrow, Azure and HTTP as well as SFTP, and widening the
+  caught tuple changes what every one of them maps. Whether the widening is a
+  paramiko-specific tuple on the SFTP construction site, a second opt-in
+  parameter beside `is_fatal`, or a base-`Exception` catch with the mapper
+  deciding, is undecided — the last is the tempting one and is also the one that
+  would start mapping programming errors, which the wrapper deliberately lets
+  propagate.
+  **Needs a failing test first** (bug-fix protocol): a real dropped connection
+  mid-read, not an injected `EOFError`. The existing SFTP test that covers this
+  ground (`test_read_stream_eoferror_maps_and_reconnects`) injects `EOFError`
+  from a fake handle and so bypasses `_read_response`, which is why the gap has
+  never been caught.
+  **A related measurement, and possibly the worse half.** The `EOFError` arm of
+  the tuple has no reachable producer on the SFTP read path *either*: a
+  send-side `EOFError` from `BaseSFTP._write_all` is swallowed by
+  `BufferedFile.read` into a **short read** before it reaches the wrapper —
+  measured against `SFTPFile.read`, `readline` and `readinto`, all three of
+  which returned empty rather than raising. If that path is reachable
+  mid-transfer it contradicts SFTP-030's repeated claim that "a streamed read
+  raises rather than returning short, so a truncated transfer is never mistaken
+  for a complete one". That claim *is* characterised by a test
+  (`test_streaming_read_raises_rather_than_truncating`), but only against a
+  **stall** — a silent peer, which raises `socket.timeout`. No test covers the
+  drop, which is the fault this item is about.
+  Not measured against a real dropped socket, so it is recorded as an open
+  question rather than as a defect — but it is the first thing to establish
+  here, because it decides whether widening the tuple is sufficient.
+  **Filed in this section rather than beside BK-357** (which is section 4's,
+  being a cost left on the caller): the defect here is that a caller does not
+  catch one exception type, which is this section's promise verbatim.
 
 ---
 
@@ -868,7 +924,7 @@ the backend can actually do (ID-140, ID-217); no capability a user cannot
 cheaply build themselves is left unbuilt without a recorded decision (ID-121,
 ID-217); no security tradeoff is scoped wider than the backend that needs it
 (ID-181); and no cost we know how to remove is left on the caller (BK-242,
-BK-355).
+BK-357).
 
 Each item here is something a user currently works around or eats. They are
 grouped because the decision in each is the same: build it, or say plainly and
@@ -1042,36 +1098,36 @@ here as legitimately as "built".
     retire it. Keep it in view when designing here — identity-derived keys are
     the wide fix for it, and this is where that scheme gets decided.
 
-- [ ] **BK-355 — Closing a failed stream re-enters the dead connection, so the caller pays a second, silent timeout**
-  spec: SFTP-030 · effort: S · audience: user.api
-  `_ErrorMappingStream.close` (`src/remote_store/_stream.py`) calls
-  `self._inner.close()` under `contextlib.suppress(Exception)`. When the stream
-  has already failed because the connection stalled, that close re-enters the
-  same dead connection: paramiko's `SFTPFile.close()` issues a synchronous
-  `CMD_CLOSE` and waits for the reply, so exiting the `with` block of a failed
-  stream blocks for a further `io_timeout` — and the suppression means the
-  caller sees no error explaining the wait, only the delay.
-  Found reviewing BK-354, which bounded a stalled SFTP channel and then had to
-  state this as an exception in SFTP-030 rather than deliver the bound
-  unqualified. That clause is the thing this item removes.
-  **Not SFTP-specific, which is why it is filed here and not folded into
-  BK-354.** `_stream.py` is shared: `_ErrorMappingStream` wraps reads on the S3,
-  Azure and HTTP backends too, and any of them can hand back a stream whose
-  close re-enters a connection the failure already condemned. The fix surface is
-  one shared wrapper and the regression surface is every backend that uses it —
-  a different shape from a single backend's timeout option.
-  **Open question the fix has to answer:** how the wrapper decides a close is
-  futile. The mapper it already holds classifies the *failure*, so one route is
-  to record that a mapped failure occurred and skip the inner close after one;
-  another is to let each backend supply the predicate (SFTP has
-  `_is_connection_dead`). The first keeps the knowledge in one place; the second
-  avoids the wrapper guessing on behalf of backends whose streams fail for
-  reasons a close would survive. Undecided.
-  **Sequencing:** land this *before* BK-356. While `io_timeout` defaults to
-  `None` this item costs a user nothing — there is no bound to pay twice. A
-  real default makes it live for every SFTP caller, so flipping the default
-  first would ship the doubling to everyone and force the migration entry to
-  warn about it.
+- [ ] **BK-357 — A `SEEK_END` seek hides its own stall, so the futile-close guard cannot arm**
+  spec: SFTP-030, SIO-010 · effort: M · audience: user.api
+  BK-355's guard learns a connection is dead from an exception travelling through
+  `_ErrorMappingStream`'s mapping paths. `SFTPFile.seek(offset, SEEK_END)` calls
+  `_get_size()`, whose body is `try: return self.stat().st_size` under a bare
+  `except: return 0`. On a stalled channel that `stat` blocks for `io_timeout`
+  and is then swallowed, so the seek returns a bogus size of `0` and raises
+  nothing: the guard stays unarmed and the close pays the bound a second time.
+  Measured at a 2 s bound: 4.00 s
+  (`test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds`), against 2.00 s
+  for the read path BK-355 fixed (`test_releasing_a_stalled_stream_costs_one_bound`).
+  **Two defects, and the second is the worse one.** The doubled wait is the
+  visible cost, but the seek also *succeeds* with a size of `0` on a dead
+  channel, so a caller sizing a file by seeking to its end reads zero and cannot
+  tell that from an empty file. That is a wrong answer, not just a slow one, and
+  it is the half that argues for fixing this rather than living with it.
+  **Fix surface:** the wrapper issuing its own size probe for `SEEK_END` instead
+  of delegating to paramiko's, so the failure surfaces where the mapper can see
+  it. That is a change to the seek path of every backend `_ErrorMappingStream`
+  serves, not just SFTP's, which is why it is `M` rather than `S` and why it was
+  filed rather than widened into BK-355.
+  **Open question:** whether the probe belongs in the wrapper (one place, but it
+  round-trips on behalf of backends whose `seek` currently does not) or behind
+  the same opt-in predicate mechanism BK-355 added, which keeps the cost with the
+  backend that needs it. Undecided.
+  Found by BK-355's round-2 measuring review, which ran the seek path rather than
+  reading it — the reading rounds had all concluded the stream surface was bounded.
+  **Placed above BK-356 deliberately**, per this file's ordering rule: BK-356's
+  body argues this should land first, since flipping the default converts this
+  case from a hang into a silent wrong answer.
 
 - [ ] **BK-356 — `io_timeout` should default to a real bound, not `None`**
   spec: SFTP-030, SFTP-005 · effort: S · audience: user.api
@@ -1081,7 +1137,7 @@ here as legitimately as "built".
   answered (issue #970: "'no bound at all' is a surprising default given
   `_is_connection_dead` already assumes one"). It stands unrebutted.
   **Why the default is wrong on the library's own terms, not just on taste.**
-  `HttpBackend` already defaults `timeout=30.0`, which reaches reads, so SFTP
+  `ReadOnlyHttpBackend` already defaults `timeout=30.0`, which reaches reads, so SFTP
   is the outlier rather than the pioneer — a user meets a bounded read on HTTP
   and an unbounded one on SFTP with no principle separating them. And the SFTP
   recovery path (`_is_connection_dead` → `_map_exception` → cleared client) was
@@ -1106,7 +1162,14 @@ here as legitimately as "built".
   it is exactly the one with a legitimately slow or quiet server. Note `0` is
   not the opt-out: it raises `ValueError` (SFTP-005), since paramiko reads it
   as non-blocking.
-  **Blocked on BK-355** — see its sequencing note.
+  **No longer blocked.** BK-355 landed first, so releasing a stalled stream
+  costs one bound rather than two and the flip does not ship a doubling with it.
+  BK-357's `SEEK_END` case is what the flip does still ship, and it is worth
+  weighing as more than a doubled wait: with `io_timeout=None` the `stat` inside
+  `_get_size` blocks forever, so today that case is a hang. A real bound converts
+  the hang into a **silently wrong size of `0`**, which BK-357 argues is the worse
+  of its two defects. That is an argument for ordering BK-357 before this item,
+  not merely for noting it here.
 
 ---
 

@@ -576,11 +576,19 @@ class SFTPBackend(Backend):
             blocking forever. Must be positive when set; ``0`` is rejected
             because paramiko reads it as non-blocking. A streamed ``read``
             raises rather than returning short, so a truncated transfer is
-            never mistaken for a complete one. Every stall is reported, never
-            retried: the ``retry`` policy wraps the SSH connect call alone, so
-            a partially consumed stream is never silently restarted — and a
-            stall during session setup is reported too, rather than retried as
-            a connect failure would be.
+            never mistaken for a complete one. Every stall *that surfaces* is
+            reported, and none is retried: the ``retry`` policy wraps the SSH
+            connect call alone, so a partially consumed stream is never
+            silently restarted — and a stall during session setup is reported
+            too, rather than retried as a connect failure would be.
+            **One operation answers rather than raising, once this is set:**
+            seeking to the end of a stream (``seek(0, SEEK_END)``) asks the
+            server for the file size, and on a stalled connection paramiko
+            discards the failure and reports ``0`` — so the seek returns ``0``
+            for a file of any size, reports nothing, and leaves the dead
+            connection in place. Use ``get_file_info(path).size`` where a stall
+            must surface. See the SFTP guide for the same case from a caller's
+            side.
         connect_kwargs: Extra kwargs passed to ``SSHClient.connect()``.
     """
 
@@ -814,7 +822,11 @@ class SFTPBackend(Backend):
                     raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
                 raise
             try:
-                raw = _ErrorMappingStream(f, self._map_exception, path)
+                # ``is_fatal`` is ``_handle``'s guard, applied to the one handle
+                # ``_handle`` cannot reach: the wrapper owns this close, so a
+                # stall would otherwise pay ``io_timeout`` again on the way out
+                # (SIO-010, SFTP-030).
+                raw = _ErrorMappingStream(f, self._map_exception, path, is_fatal=self._is_connection_dead)
                 return io.BufferedReader(cast(io.RawIOBase, raw))  # noqa: TC006
             except Exception:
                 f.close()
