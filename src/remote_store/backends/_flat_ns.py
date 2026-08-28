@@ -282,30 +282,40 @@ def _reject_root_as_write_target(path: str, backend: str) -> None:
 def _addressable_segments(path: str) -> list[str]:
     """Split *path* into the segments that actually address something.
 
-    Folds backslashes to ``/`` and then drops empty and ``"."`` segments, in that
-    order, which is exactly what ``RemotePath._normalize`` does before it decides
-    a path is empty. Every spelling of the store root therefore yields ``[]``:
-    ``""``, ``"."``, ``"./"``, ``".//"``, ``"./."``, ``"/"`` — and the backslash
-    family ``"\\\\"``, ``".\\\\"``, ``"\\\\."``, which ``RemotePath`` also calls the
-    root and an earlier draft of this helper let through.
+    Drops empty and ``"."`` segments. The store root yields ``[]`` under every
+    slash-and-dot spelling — ``""``, ``"."``, ``"./"``, ``".//"``, ``"./."``,
+    ``"/"`` — which is what the write guard needs and what ``is_root``, limited
+    to the two canonical spellings, does not give it.
 
-    The fold only widens what is *refused*; it never rewrites the key an
-    operation uses. A backslash inside an ordinary key still addresses something
-    — ``"a\\\\b"`` splits to two segments and writes unchanged — so the cost of
-    matching ``RemotePath`` here is confined to strings that name nothing.
+    **Bounded to those spellings on purpose, and the bound is load-bearing.**
+    ``RemotePath._normalize`` folds ``\\\\`` to ``/`` before dropping segments, so
+    it calls ``"\\\\"`` the root too, and a draft of this helper folded to match.
+    That was withdrawn: this predicate is also how ``GraphBackend`` builds every
+    item address, so folding here silently rewrote ``"a\\\\b"`` to ``"a/b"`` and
+    broke the ``to_key(native_path(key)) == key`` identity the backend contract
+    requires of every non-root key — 4 of 7 measured keys failed it. A predicate
+    that decides *refusal* and
+    a predicate that decides *addressing* can be the same function only while
+    they agree on every input, and widening one of them is exactly what ends
+    that.
+
+    So the backslash family is **not** refused by this guard. On a POSIX
+    namespace ``write("\\\\")`` lands a file named ``\\`` inside the container
+    rather than occupying it, which is a milder failure than the one folding
+    caused; on SFTP with an absent ``base_path`` it also creates the container.
+    Stated rather than closed, because closing it here costs the addressing
+    contract.
 
     Deliberately not a public root predicate. It answers "does this key name
     anything below the container", which is the question the write guard needs;
     ``is_root`` answers "is this one of the two canonical root spellings", which
-    is the question addressing and round-tripping need. Merging them would put
-    the write path's tolerance into ``to_key``'s inverse.
+    is the question addressing and round-tripping need.
 
-    ``GraphBackend._key_segments`` answers the same question for the same reason
-    and imports this function rather than restating it: the amended root clause
-    is one rule, and two identical predicates in two modules are one widening
-    away from disagreeing about what the root is.
+    ``GraphBackend._key_segments`` answers the same question and imports this
+    function rather than restating it — one rule, one implementation, and the
+    reason the two must stay identical is written above.
     """
-    return [s for s in path.replace("\\", "/").split("/") if s and s != "."]
+    return [s for s in path.split("/") if s and s != "."]
 
 
 def _wrong_type_if_folder(path: str, *, has_children: Callable[[str], bool], backend: str) -> None:

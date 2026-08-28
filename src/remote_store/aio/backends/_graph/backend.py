@@ -166,16 +166,24 @@ def _split_parent(path: str) -> tuple[str, str]:
 def _key_segments(path: str) -> list[str]:
     """Split a backend key into addressable Graph path segments.
 
-    Delegates to the shared ``_flat_ns._addressable_segments``, which normalises
-    the way ``RemotePath`` does: fold backslashes, then drop empty and ``"."``
-    segments. Every spelling of the store root therefore yields ``[]`` — which is
-    what makes ``native_path("")`` and ``native_path(".")`` the same address, and
-    what makes the drive root unwritable under every spelling.
+    Delegates to the shared ``_flat_ns._addressable_segments``, which drops empty
+    and ``"."`` segments. Every slash-and-dot spelling of the store root
+    therefore yields ``[]`` — which is what makes ``native_path("")`` and
+    ``native_path(".")`` the same address, and what makes the drive root
+    unwritable under all of them.
 
     This was an identical private copy until the root clause became one shared
     rule. Two predicates answering "does this key name anything" in two modules
-    are one widening away from disagreeing about what the root is, and the
-    clause's own argument leans on them agreeing.
+    are one widening away from disagreeing about what the root is.
+
+    **The shared helper is bounded to those spellings because of this function.**
+    A draft folded ``\\\\`` to ``/`` there, to match ``RemotePath``'s own
+    normalisation — and since this splitter also builds every item address
+    below, the fold rewrote ``"a\\\\b"`` to ``"a/b"`` and broke the
+    ``to_key(native_path(key)) == key`` identity the backend contract requires.
+    The helper's docstring records the
+    measurement. Any future widening of it lands here first, so weigh it against
+    ``native_path`` before ``_require_writable_key``.
     """
     return _addressable_segments(path)
 
@@ -298,6 +306,20 @@ class GraphBackend(AsyncBackend):
         """The immutable target drive id."""
         return self._drive_id
 
+    def _raise_if_closed(self) -> None:
+        """Answer a use-after-close before any other precondition is consulted.
+
+        Every guard that can fire ahead of the first ``_client`` touch calls this
+        first, so a closed backend answers ``BackendUnavailable`` whatever else is
+        also wrong with the call. The rule is not "a cheap check may run first":
+        it is that a caller holding a closed backend cannot act on any other
+        diagnosis, so any other diagnosis is the wrong one to give them. Each
+        pre-check added ahead of the client is one more place this can regress,
+        and two of them already had.
+        """
+        if self._closed:
+            raise BackendUnavailable("Graph backend is closed", backend=self.name)
+
     @property
     def _client(self) -> httpx.AsyncClient:
         """Lazily-created (or caller-supplied) ``httpx.AsyncClient``.
@@ -307,8 +329,7 @@ class GraphBackend(AsyncBackend):
         a typed error instead of silently recreating the owned client (or
         returning a closed caller-supplied one).
         """
-        if self._closed:
-            raise BackendUnavailable("Graph backend is closed", backend=self.name)
+        self._raise_if_closed()
         if self._http_client is not None:
             return self._http_client
         if self._owned_client is None:
@@ -973,9 +994,15 @@ class GraphBackend(AsyncBackend):
         naturally wants to run first; the contract says the closed state is the
         more fundamental error, or the answer depends on which guard was written
         first.
+
+        ``write`` calls ``_raise_if_closed`` itself rather than leaning on this
+        one, because the user-metadata gate sits ahead of this call and had the
+        same defect: a closed backend handed ``metadata=`` answered
+        ``CapabilityNotSupported`` (measured, 2 of 4 closed-write shapes). Fixing
+        the ordering *at one guard* leaves it wrong at every other pre-check, so
+        the fix belongs at the top of the method, not here.
         """
-        if self._closed:
-            raise BackendUnavailable("Graph backend is closed", backend=self.name)
+        self._raise_if_closed()
         if not _key_segments(path):
             raise InvalidPath(f"Cannot write to the drive root: {path!r}", path=path, backend=self.name)
 
@@ -995,8 +1022,7 @@ class GraphBackend(AsyncBackend):
         a file-shaped operation handed a folder owes — the destination gets the
         write wording instead, from ``_require_writable_key``.
         """
-        if self._closed:
-            raise BackendUnavailable("Graph backend is closed", backend=self.name)
+        self._raise_if_closed()
         if not _key_segments(path):
             raise _folder_not_file(path, self.name)
 
@@ -1072,6 +1098,7 @@ class GraphBackend(AsyncBackend):
         """
         # GR-018 (small PUT) / GR-019 (upload session) / GR-039 (auto-mkdir);
         # native WriteResult per WR-004; 409 discrimination per BE-008 / ID-209.
+        self._raise_if_closed()
         self._reject_user_metadata(metadata)
         self._require_writable_key(path)
         reader, total = await spool_content(content, path=path)
@@ -1451,9 +1478,18 @@ class GraphBackend(AsyncBackend):
         ``/drives/{drive_id}/root:`` for the drive root, otherwise
         ``/drives/{drive_id}/root:/{encoded_parent}`` (no trailing colon — the
         ``parentReference`` path form, unlike the item-address form).
+
+        Splits on ``_key_segments``, which is also what ``native_path`` and the
+        destination guard use. It had its own ``if s`` split, which kept ``"."``
+        as a segment: ``move(src, "./x.txt")`` passed the guard (that predicate
+        drops ``"."``), then addressed ``/drives/{id}/root:/%2E`` — a folder
+        literally named ``.`` — while ``write("./x.txt")`` wrote to the drive
+        root. Measured, 4 of 7 destination spellings disagreed. A key names one
+        node, so the predicate that decides *whether* it names one and the
+        predicate that decides *which* have to be the same one.
         """
         root = f"/drives/{self._drive_id}/root:"
-        segments = self._base_segments + [s for s in parent_key.split("/") if s]
+        segments = self._base_segments + _key_segments(parent_key)
         if not segments:
             return root
         encoded = "/".join(_encode_segment(s) for s in segments)

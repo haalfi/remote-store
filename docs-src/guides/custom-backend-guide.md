@@ -271,12 +271,22 @@ returns the stream as-is.
   check below.) It used to be a `Store`-enforced convention that backends also
   guarded defensively; it is now a requirement the conformance suite holds you
   to, so a backend that leaves it to the layer above will fail.
-- **Decide "is this the root" on the normalised key, not on `is_root`.** Fold
-  backslashes, drop empty and `"."` segments, and refuse when nothing is left —
+- **Decide "is this the root" on the key's addressable segments, not on
+  `is_root`.** Drop empty and `"."` segments and refuse when nothing is left —
   `remote_store.backends._flat_ns._addressable_segments` does exactly that.
   `is_root` recognises only `""` and `"."`, so a guard written against it lets
   `"./"` through, and `"./"` addresses the same node. That is not a hypothetical:
   it is how a shipped backend came to leave its own container as a regular file.
+  Do **not** extend that predicate to fold backslashes to match `RemotePath`,
+  tempting as the symmetry looks: if your backend also builds its native paths
+  from it, the fold rewrites ordinary keys and breaks the `to_key(native_path(k))
+  == k` identity. That has been tried and measured.
+- **Use that one predicate everywhere the key is split, addressing included.**
+  A backend that guards with the tolerant predicate and addresses with a
+  stricter one accepts `"./x"` at the guard and then names a folder literally
+  called `.` on the wire, while its own `write("./x")` goes to the root. Whether
+  a key names a node and *which* node it names have to be decided the same way.
+  Measured on a shipped backend, on four of seven destination spellings.
 - **Precondition order matters:** after the root check, a missing source raises
   `NotFound` before the destination is checked for `AlreadyExists`. (Contract
   rule.) Note the root check outranks both — a root *destination* is refused even

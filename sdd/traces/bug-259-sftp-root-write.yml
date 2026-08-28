@@ -261,17 +261,23 @@ phases:
         read_type: verify
         extract: >-
           Mutation-fenced against the final tree, not against the tree as it
-          stood when each part landed. Neutering the shared guard fails 47 of
-          8643 executed cells: 24 SFTP, 14 Local, 9 conformance. The 14 matches
-          the figure BUG-247 recorded for its own write guard, which is the
-          cross-check that extracting it preserved Local's behaviour.
+          stood when each part landed — and re-run again at every round that
+          moved the tree, because this figure's subject is the test suite the
+          loop keeps changing. Final: neutering the shared guard fails 93 of
+          8867 executed cells — 34 in the SFTP module, 26 in conformance, 22 in
+          Local's, 11 in test_flat_ns. Four
+          earlier versions of this sentence were true when written: 47 of 8643,
+          62 of 8725, 80 of 8749, 80 of 8776. Not one was falsified by a defect
+          in the guard; every one was falsified by the review loop adding cells
+          around it, which is the same failure mode BUG-247's own record spent a
+          paragraph on and this trace then reproduced.
         outcome: ok
       - file: src/remote_store/backends/_sftp.py
         section: "write, write_atomic, open_atomic"
         read_type: verify
         extract: >-
-          Removing only SFTP's three call sites fails 24 cells, all in the
-          per-backend module and NONE in conformance — with base_path present
+          Removing only SFTP's three call sites fails 34 cells, all in
+          the per-backend module and NONE in conformance — with base_path present
           SFTP already refused the root, so the conformance cell does not fence
           this item's own fix. A cell that passes before and after a fix is not
           coverage of it, and the two would have been easy to conflate given
@@ -281,14 +287,16 @@ phases:
         section: "(new cells, collection)"
         read_type: verify
         extract: >-
-          Coverage derived rather than assumed: the new cells collect 84 and
-          execute 58. The 26 skips are sqlquery (no WRITE), s3_pyarrow_moto
-          (needs the MinIO fixture on current PyArrow), and the Azure sync,
-          Azure async and Graph replay lanes, whose cassettes for these ids are
-          unrecorded. Four backends therefore have a conformance cell that never
-          runs; each was measured directly instead — S3PyArrow and Azure against
-          an unreachable endpoint, where an InvalidPath naming the root proves
-          the guard ran before the transport.
+          Coverage derived rather than assumed: the new cells collect 266 and
+          execute 188 (re-run at the closing gate; 84 and 58 when this step was
+          first written, before the destination and close-posture rosters). The
+          78 skips are backends not declaring the capability under test,
+          s3_pyarrow_moto (needs the MinIO fixture on current PyArrow), and the
+          Azure sync, Azure async and Graph replay lanes, whose cassettes for
+          these ids are unrecorded. Four backends therefore have a conformance
+          cell that never runs; each was measured directly instead — S3PyArrow
+          and Azure against an unreachable endpoint, where an InvalidPath naming
+          the root proves the guard ran before the transport.
         outcome: ok
 
   - id: spec
@@ -571,14 +579,22 @@ phases:
         section: "_addressable_segments"
         read_type: verify
         extract: >-
-          Two findings on the shared helper. It claimed to match RemotePath's
-          normalisation and did not fold backslashes, so "\\" — which RemotePath
-          calls the root — walked past the guard; the claim was over-reaching
-          rather than the code being wrong, and folding was the smaller fix than
-          narrowing two docstrings. And it was a byte-identical copy of Graph's
-          _key_segments, in a change whose own argument leans on the two
+          Two findings on the shared helper. It was a byte-identical copy of
+          Graph's _key_segments, in a change whose own argument leans on the two
           agreeing; Graph now imports it. A rule stated once in a spec should
-          not be implemented twice in the source that spec describes.
+          not be implemented twice in the source that spec describes. The second
+          finding was that it claimed to match RemotePath's normalisation and
+          did not fold backslashes, so "\\" — which RemotePath calls the root —
+          walked past the guard. Folding looked like the smaller fix than
+          narrowing two docstrings; it was landed, and round 4 measured what
+          that missed. Because Graph now shares the helper, and Graph's
+          _key_segments also builds native_path, the fold rewrote "a\\b" to the
+          two-segment ref /drives/D/root:/a/b: and BE-025's round-trip identity
+          broke on 4 of 7 probe keys (tmp/probe_graph_roundtrip.py). The fold was
+          withdrawn and the docstrings narrowed instead — the option declined in
+          round 3. The lesson is not "measure after landing" but that a helper
+          two backends share is not free to widen: the second consumer's other
+          use of it is invisible at the call site the widening was reasoned from.
         outcome: ok
       - file: docs-src/guides/custom-backend-guide.md
         section: "Step 11: Move and copy; Step 12: close_is_terminal"
@@ -636,6 +652,68 @@ phases:
           different reason: its numerator held at 80 across the rebase but the
           denominator moved from 8749 to 8776 with BK-354's cells, so the
           re-run was not optional even though the interesting half was stable.
+        outcome: ok
+
+  - id: fix_round_4
+    name: Round-4 fix pass (closing gate)
+    steps:
+      - file: src/remote_store/backends/_flat_ns.py
+        section: "_addressable_segments (backslash fold, withdrawn)"
+        read_type: verify
+        extract: >-
+          The round-3 fold, measured and withdrawn. The finding that produced it
+          was true — the docstring claimed RemotePath's normalisation and did not
+          fold — and the fix chosen for it was wrong, because by then the helper
+          had a second consumer: GraphBackend's _key_segments, which also builds
+          native_path. Probe over seven keys, 4 broke to_key(native_path(k)) == k.
+          What the round-3 reasoning could not see is that the *other* finding it
+          acted on in the same breath, "these two predicates should be one
+          function", is what made widening the predicate expensive. Two fixes
+          that are each right alone can be wrong together, and nothing in reading
+          either one shows it.
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "write, _raise_if_closed, _reject_user_metadata"
+        read_type: verify
+        extract: >-
+          The round-3 closed-ordering fix was one line too low. It moved the
+          closed check into _require_writable_key — the guard the round was
+          looking at — while the user-metadata gate sat above that call, so a
+          closed backend handed metadata= still answered CapabilityNotSupported:
+          2 of the 4 closed-write shapes, probed directly. The claim being made
+          was about every pre-check and the fix was made at one of them. Now at
+          the top of write; the cell is the cross product, because one closed-write
+          cell pins whichever pre-check runs first and stays green when a later
+          one is added above it. Fenced: reverting the hoist fails exactly the
+          two metadata cells.
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_parent_ref_path"
+        read_type: verify
+        extract: >-
+          A third segment predicate in the same backend, splitting with `if s`
+          only, and it decides the move/copy destination *address*. So the
+          destination guard (which drops ".") accepted "./x.txt" and the address
+          then named a folder literally called "." — %2E on the wire — while
+          write("./x.txt") went to the drive root: 4 of 7 spellings disagreed,
+          probed. Same shape as the withdrawn fold seen from the other side:
+          there, one predicate was widened and broke addressing; here, addressing
+          used a narrower one and broke the guard's promise. The invariant behind
+          both is that "does this key name a node" and "which node" must be one
+          function. Found by asking what else in this file splits a key.
+        outcome: ok
+      - file: sdd/traces/bug-259-sftp-root-write.yml
+        section: "Fence phase; BACKLOG-DONE figures"
+        read_type: verify
+        extract: >-
+          The trace's own Fence phase still held 47 of 8643 while BACKLOG-DONE
+          held 93 of 8858 — two artifacts in this PR disagreeing about the same
+          measurement, because later rounds corrected the record they were
+          reading and not the record they were writing in. The steps recording
+          the corrections were present and current; the step stating the figure
+          was not. Re-run and rewritten to name the whole sequence rather than a
+          point, since a figure whose subject is the test suite is invalidated by
+          every round that adds a cell.
         outcome: ok
 
   - id: verify

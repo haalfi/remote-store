@@ -231,7 +231,7 @@ if evidence changes; these are retired.
   now has a row per half.
   **Fenced by mutation, re-derived against the final tree** — the figures moved
   twice as review widened the change, so they are stated from the last run and
-  not from the first. Neutering the shared guard fails **93 of 8858** executed
+  not from the first. Neutering the shared guard fails **93 of 8867** executed
   cells: 34 in the SFTP module, 26 in conformance, 22 in Local's, 11 in
   `test_flat_ns`. Neutering only `SFTPBackend`'s own wrapper fails **34**, all in
   the SFTP module and **none** in conformance — with `base_path` present SFTP
@@ -259,6 +259,19 @@ if evidence changes; these are retired.
   among them. On the read side an unrecognised spelling costs an error class; on
   the write side it cost the container, and the asymmetry in the fix follows the
   asymmetry in the damage.
+  **The refusal stops at the slash-and-dot spellings, and the bound was bought
+  rather than assumed.** `RemotePath._normalize` folds `\` to `/` before it calls
+  a path empty, so it counts `"\"` as the root too; round 3 read the guard's
+  claim to match that normalisation, found it did not fold, and folded — the
+  smaller-looking fix over narrowing two docstrings. Round 4 measured the cost:
+  the shared predicate had by then become `GraphBackend`'s key splitter, which
+  also builds every item address, so the fold rewrote `native_path("a\b")` to
+  address `a/b` and broke the `to_key(native_path(key)) == key` identity on 4 of
+  7 probe keys. The fold was withdrawn and the docstrings narrowed instead. A
+  backslash-only key is therefore not refused: on a POSIX namespace it lands a
+  file named `\` inside the container rather than occupying it, which is the
+  milder of the two failures, and it is stated in BE-029 rather than closed,
+  because closing it there costs the addressing contract.
   **`GraphBackend` needed the destination guard too**, which the first
   destination sweep missed because it keyed on backends carrying
   `_reject_root_as_file(src)` and Graph uses its own `_require_writable_key`.
@@ -275,6 +288,26 @@ if evidence changes; these are retired.
   write to the drive root" where BE-020 requires "backend is closed". This item
   had classified Graph as already compliant, and on the root rule it was; the
   ordering rule the same clause carries is what it missed.
+  **That ordering fix was itself one line too low, and the closing round found
+  it.** Moving the closed check into `_require_writable_key` fixed the guard the
+  round was looking at and left the user-metadata gate above it untouched, so a
+  closed backend handed `metadata=` still answered `CapabilityNotSupported`:
+  measured, 2 of the 4 closed-write shapes. Fixing an ordering *at one guard*
+  cannot be right when the ordering claim is about every pre-check, so the check
+  now runs at the top of `write`, and the new cell is the cross product rather
+  than one closed write — a single cell pins whichever pre-check happens to be
+  first and stays green when a later one is added above it.
+  **The same root-spelling tolerance had a second consumer inside Graph.**
+  `_parent_ref_path`, which builds the `move`/`copy` destination address, carried
+  its own `if s` segment split while the destination guard used the
+  `"."`-dropping one. So `move(src, "./x.txt")` passed the guard and then
+  addressed `/drives/{id}/root:/%2E` — a folder literally named `.` — while
+  `write("./x.txt")` wrote to the drive root: 4 of 7 destination spellings
+  disagreed. It now splits on the shared predicate. The general shape is the one
+  the withdrawn backslash fold also demonstrates from the other direction: a
+  predicate that decides *whether* a key names a node and one that decides
+  *which* node have to be the same function, and this PR found both of the ways
+  that can fail.
   **Coverage bound, stated.** The conformance cells added here collect **266**
   and execute **188**; the **78** skips are unrecorded replay cassettes (Azure
   sync, Azure async, Graph), backends not declaring the capability under test,

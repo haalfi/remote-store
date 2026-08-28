@@ -238,12 +238,36 @@ implementing this clause as `if is_root(path)` is not conformant**, even though
 it passes the conformance cells below, which are parametrised over the two
 canonical spellings because they also assert `is_root` on the raised path.
 
-Decide it instead on the normalised key: fold backslashes to `/`, drop empty and
-`"."` segments, and refuse when nothing is left. That is what
-`RemotePath._normalize` does before it calls a path empty, and it covers `""`,
-`"."`, `"./"`, `".//"`, `"./."`, `"/"` and the backslash family alike.
+Decide it instead on the key's addressable segments: drop empty and `"."`
+segments, and refuse when nothing is left. That covers `""`, `"."`, `"./"`,
+`".//"`, `"./."` and `"/"`.
 `remote_store.backends._flat_ns._addressable_segments` is the shared
 implementation; `GraphBackend` reaches it through its own `_key_segments`.
+
+**The rule stops at the slash-and-dot spellings, and the bound is deliberate.**
+`RemotePath._normalize` folds `\` to `/` before dropping segments, so it calls
+`"\"` the root as well, and a draft of this clause required the same here. That
+was withdrawn on measurement: the shared predicate is also how `GraphBackend`
+builds every item address, so folding made `native_path("a\b")` address `a/b`
+and broke the round-trip identity [BE-025](#be-025-native_path) and NPR-005
+require of every non-root key.
+
+So a backslash-only key is **not** refused by this clause. It is the milder
+failure of the two — on a POSIX namespace it lands a file named `\` inside the
+container rather than occupying it — and it is stated here rather than closed,
+because closing it costs the addressing contract. A backend wanting to refuse it
+must do so without widening the predicate its addressing depends on.
+
+**The obligation this leaves is a normative one: within a backend, whether a key
+names a node and *which* node it names are decided by one predicate.** Both ways
+of breaking that were measured on `GraphBackend` in the change that added this
+clause. Widening the shared predicate for the guard's sake moved its addressing,
+which is the withdrawal above. Narrowing it for addressing's sake is the same
+defect mirrored: its `move`/`copy` destination address split on a predicate that
+kept `"."`, so `"./x"` passed the destination guard and then named a folder
+literally called `.` while `write("./x")` wrote to the root. A backend free to
+split a key two ways will eventually accept a spelling at one predicate and
+misplace it at the other.
 
 `is_root` itself is deliberately **not** widened, and § "One predicate, both
 spellings" above still holds for every other use of it: it has call sites in
