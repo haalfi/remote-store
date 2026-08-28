@@ -96,8 +96,13 @@ surprising_ripples:
 #   08ede48  round 5's findings
 #   72693b0  the consumer subject, closed on the user's instruction and
 #            counted per the schema's "feedback that produced a commit"
-#   + the commit carrying this edit, which holds the closing gate's findings
-#     and is the branch head at merge
+#   6554b2f  the closing gate's findings
+# Two kinds of commit on this branch are deliberately not counted, because
+# neither carries review feedback: a1a0de7, the merge of origin/master taken to
+# resolve the conflict BUG-259 created in CHANGELOG, BACKLOG-DONE,
+# backlogid.json and graph_viz.html; and any commit that edits this field and
+# nothing else, which is stated as a class rather than a SHA because such a
+# commit cannot name itself.
 # Three earlier drafts of this field were wrong, in three different ways, and
 # the list above is the only form that has survived a round. The first gave a
 # rule (`git rev-list --count origin/master..HEAD` minus one) to avoid naming a
@@ -106,11 +111,13 @@ surprising_ripples:
 # writing them, and annotated the total "rounds, not commits" — redefining the
 # field against its own schema. The third wrote "this commit" for the unwritten
 # entry, which resolved for exactly as long as it was the head and then named
-# the wrong commit for three commits running. Hence the phrase above: the last
-# entry is identified by its position at merge, not by a SHA it cannot know.
+# the wrong commit for three commits running. So the list above names only SHAs
+# that resolve: the entry that could not be named when it was first written is
+# named now that it can be.
 # The value is stale again on any further commit by construction, which is why
 # the schema calls it a post-merge field: re-derive at merge from that same
-# log, count everything but 0dca365, and do not increment.
+# log, counting everything but 0dca365 and any merge commit, and do not
+# increment.
 review_rounds: 8
 phases:
   - id: orient
