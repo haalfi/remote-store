@@ -16,6 +16,8 @@ audience:
   - user.api
   - user.api_docs
   - user.site
+discovery_followups:
+  - BK-359
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
@@ -24,11 +26,13 @@ expected_ripples:
 
 # Derivation, per the review_rounds description in _schema.yml: on
 # `git log --oneline origin/master..HEAD`, a4feee9 implements and does not
-# count; ef3edad incorporates review round 1. Value is 1. Written after
-# ef3edad existed rather than predicting its SHA, which is why it lands in a
-# commit of its own — the schema calls a plausible SHA that resolves to
-# nothing worse than no derivation at all.
-review_rounds: 1
+# count; ef3edad and b692e12 incorporate review round 1, and the round-2 fix
+# commit follows this line. Value is 2 — rounds, not commits, which is why
+# ef3edad and b692e12 count once between them. Each SHA is written after the
+# commit it names exists rather than predicted, which is why the naming lags
+# by a commit: the schema calls a plausible SHA that resolves to nothing worse
+# than no derivation at all.
+review_rounds: 2
 
 phases:
   - id: orient
@@ -185,4 +189,18 @@ phases:
           was 3 of 21 call sites, and no gate compares an options table to a
           signature. CLAUDE.md principle 9 names exactly this failure and I hit
           it inside the commit that cites the principle
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030 (Semantics)"
+        read_type: verify
+        extract: >-
+          Round 2 measured what round 1 read. The clause's load-bearing half —
+          the bound is on silence between bytes, not on transfer duration — was
+          asserted in four artifacts and pinned by no test: every existing test
+          makes the bytes stop, and no amount of stalling shows that a slow
+          transfer survives. The flip is what made it load-bearing, because it
+          is now the sentence telling every existing slow-link user to do
+          nothing. Closed with a throttling relay mode and a test; the claim
+          held. Reached by running, and a reading lens had already passed over
+          the same clause twice without seeing it
         outcome: ok

@@ -213,14 +213,30 @@ if evidence changes; these are retired.
   raises instead, so the flip introduced no such case.
   **What the tests pin, rather than what the prose claims.** The default reaches
   the live channel (`test_default_arms_the_bound_on_the_channel`, asserting the
-  literal `120.0` rather than reading it back off the signature, so a drift
-  between code and docs fails); `io_timeout=None` still leaves it unbounded
+  literal `120.0` rather than reading it back off the signature, which would
+  assert that a default exists and nothing about which one — the prose sites are
+  swept by review, since no gate compares them to the signature);
+  `io_timeout=None` still leaves it unbounded
   (`test_explicit_none_leaves_the_channel_unbounded`); and the version-exchange
   positive control now passes that opt-out explicitly
   (`test_version_exchange_unbounded_when_opted_out`) — omitting the argument
   would have armed 120 s and made the control vacuous. `_make_backend` grew an
   `_INHERIT` sentinel for the same reason: `None` and "argument omitted" used to
   select the same behaviour and now select opposite ones.
+  **And the half no stall test could reach**, added in review round 2: a
+  transfer *slower* than the bound completes, because bytes keep arriving
+  (`test_a_transfer_slower_than_the_bound_is_not_interrupted`). Every other test
+  in the file makes the bytes stop, so the clause telling every existing
+  slow-link caller to change nothing was the one assertion in SFTP-030 that
+  nothing executed — tolerable while the option was opt-in, and load-bearing the
+  moment it became the default. `_StallRelay` gained a `throttle_download` mode
+  for it: slow, never silent. Measured at a 1 s bound with a 0.3 s inter-piece
+  gap over 256 KiB, the read completes intact in ~4 s, and the test asserts the
+  elapsed time *exceeds* the bound so it cannot pass vacuously.
+  **One finding was filed rather than fixed**: a stalled operation raises
+  `BackendUnavailable` with an empty message and emits no log record. It is
+  BK-354's defect, unchanged here, but this flip promotes it from an opt-in edge
+  case to the shipped failure surface — so it is BK-359.
 
 - [x] **BK-357 — A `SEEK_END` seek hides its own stall, so the futile-close guard cannot arm**
   spec: SIO-011, SIO-010, SFTP-030 · effort: M · audience: user.api, user.api_docs, user.site

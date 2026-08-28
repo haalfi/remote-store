@@ -258,6 +258,36 @@ error: it meets the rows it was brought to and misses the bound that arrived
 after, which is what a clause growing a new sentence does to a backend that was
 compliant the day before.
 
+- [ ] **BK-359 — A stalled SFTP operation raises `BackendUnavailable` with an empty message and no log record**
+  spec: SFTP-030, SFTP-023 · effort: S · audience: user.api
+  `_map_exception` builds the error as `BackendUnavailable(str(exc), ...)`, and
+  paramiko raises `socket.timeout()` with no arguments, so the message is the
+  empty string. Measured on a real channel at `io_timeout=2.0`, with a relay
+  silencing server→client mid-`read_bytes`: `e.args == ('',)`,
+  `str(e) == " | path='delivery.csv' | backend='sftp'"`, `__context__` a bare
+  `TimeoutError()`, and — at `logging.DEBUG` — **no `remote_store` log record at
+  all** between the SFTP `Request: open` and the raise. The only lines are
+  paramiko's own transport traffic.
+  **Pre-existing from BK-354; promoted by BK-356.** While `io_timeout` defaulted
+  to `None`, the only caller who could reach this had set the option themselves
+  and knew what it meant. Flipping the default to `120.0` makes it the shipped
+  failure surface for a silent peer, so the first person to meet it is now
+  someone who configured nothing — the reader with the least context to decode an
+  empty message. Three sentences BK-356 shipped are what make that awkward: the
+  troubleshooting page's retained symptom "No exception, no log line" (there is
+  now an exception, but still no log line, and it says nothing); its new "a
+  silent peer raises `BackendUnavailable` after two minutes"; and the migration
+  entry's "It now raises `BackendUnavailable` after 120 s of silence" — read
+  precisely when a user has least context. The raised object carries none of
+  "silent", "timeout" or the bound, so a user reading their own error log cannot
+  tell it from any other `BackendUnavailable`, a refused connect included.
+  The recovery half is correct and was measured alongside: the client is dropped
+  and the next operation reconnects and reads normally. What is missing is the
+  message, not the behaviour — so the fix is a mapped error that names the
+  stall and the bound, and a decision about whether the backend logs it.
+  Found by BK-356's review round 2, which reached it by running the failure
+  rather than reading the mapping.
+
 - [ ] **BUG-254 — Five backend classes breach BE-029's root row against an absent container**
   spec: BE-004, BE-021, BE-029 · effort: S · audience: user.api
   BE-029 already decides this and is not qualified by whether the container

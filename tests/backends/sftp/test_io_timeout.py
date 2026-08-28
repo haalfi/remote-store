@@ -181,6 +181,13 @@ class _StallRelay:
     bound fires before the SSH out-window can drain. An earlier version of this
     docstring claimed the upload case reached ``Channel.sendall`` via window
     exhaustion; it does not.
+
+    ``throttle_download()`` is the opposite instrument and the only one here
+    that produces a *success*: the pump keeps forwarding, in small pieces with a
+    pause between them, so the link is slow but never silent. It exists because
+    every other mode makes the bytes stop, and a bound on silence has to be shown
+    not to fire on a transfer that merely takes longer than it — which no amount
+    of stalling can demonstrate.
     """
 
     def __init__(self, target_port: int) -> None:
@@ -189,6 +196,8 @@ class _StallRelay:
         self._stall_up = threading.Event()
         # Single-element holder so the pump thread sees updates; None = no budget.
         self._down_budget: list[int | None] = [None]
+        # Same holder trick; None = forward at full speed.
+        self._down_throttle: list[tuple[float, int] | None] = [None]
         self._stop = threading.Event()
         self._listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -223,11 +232,21 @@ class _StallRelay:
         """
         self._down_budget[0] = nbytes
 
+    def throttle_download(self, gap: float, piece: int) -> None:
+        """Forward server→client in *piece*-sized pieces, pausing *gap* between them.
+
+        Slow, never silent. *gap* must stay under the bound under test or this
+        becomes a stall with extra steps; what it makes slow is the transfer as
+        a whole, which is the thing the bound is *not* on.
+        """
+        self._down_throttle[0] = (gap, piece)
+
     def resume(self) -> None:
         """Deliver again, so a reconnect through this relay can succeed."""
         self._stall_down.clear()
         self._stall_up.clear()
         self._down_budget[0] = None
+        self._down_throttle[0] = None
 
     def _accept_loop(self) -> None:
         while not self._stop.is_set():
@@ -241,11 +260,12 @@ class _StallRelay:
                 client.close()
                 continue
             self._socks.extend((client, upstream))
-            for src, dst, gate, budget in (
-                (client, upstream, self._stall_up, [None]),
-                (upstream, client, self._stall_down, self._down_budget),
+            up_throttle: list[tuple[float, int] | None] = [None]
+            for src, dst, gate, budget, throttle in (
+                (client, upstream, self._stall_up, [None], up_throttle),
+                (upstream, client, self._stall_down, self._down_budget, self._down_throttle),
             ):
-                thread = threading.Thread(target=self._pump, args=(src, dst, gate, budget), daemon=True)
+                thread = threading.Thread(target=self._pump, args=(src, dst, gate, budget, throttle), daemon=True)
                 thread.start()
                 self._threads.append(thread)
 
@@ -255,6 +275,7 @@ class _StallRelay:
         dst: socket.socket,
         gate: threading.Event,
         budget: list[int | None],
+        throttle: list[tuple[float, int] | None],
     ) -> None:
         while not self._stop.is_set():
             try:
@@ -273,8 +294,15 @@ class _StallRelay:
                 # Keep draining the source so it never blocks on a full socket
                 # buffer, but deliver nothing: the far side simply goes quiet.
                 continue
+            plan = throttle[0]
             try:
-                dst.sendall(chunk)
+                if plan is None:
+                    dst.sendall(chunk)
+                else:
+                    gap, piece = plan
+                    for start in range(0, len(chunk), piece):
+                        dst.sendall(chunk[start : start + piece])
+                        time.sleep(gap)
             except OSError:
                 return
 
@@ -635,6 +663,50 @@ def test_stalled_open_raises_backend_unavailable(stall_relay: _StallRelay) -> No
     # enough to admit any bound would make the assertion vacuous, since the
     # pytest.raises above already catches an outright hang.
     assert elapsed < io_timeout * 3, f"read took {elapsed:.1f}s; expected ~{io_timeout}s"
+
+
+@pytest.mark.spec("SFTP-030")
+def test_a_transfer_slower_than_the_bound_is_not_interrupted(stall_relay: _StallRelay) -> None:
+    """A transfer that outlives the bound completes, because bytes keep arriving.
+
+    This is the half of SFTP-030 the rest of the file cannot reach. Every other
+    test here makes the bytes *stop*, and no amount of stalling shows that a
+    bound on silence does not fire on a transfer merely slower than itself.
+    The relay is throttled instead of stalled: the pump keeps forwarding, in
+    pieces, with a pause between them that stays under the bound.
+
+    **It is the claim the default flip made load-bearing.** Before, a caller
+    opted in and picked their own number. Now it is what tells every existing
+    user on a slow link to do nothing — the migration guide says a fetch that
+    runs for an hour never trips a 120 s bound, and the troubleshooting page
+    says a slow transfer is not a hung one. If those are wrong, the symptom is
+    every slow-link SFTP user meeting ``BackendUnavailable`` mid-transfer on
+    upgrade. `settimeout()` is a per-recv bound rather than a cumulative one,
+    which is exactly the class of paramiko-behaviour claim this file exists to
+    run rather than read.
+
+    Non-vacuity is asserted, not assumed: the elapsed time must *exceed* the
+    bound, or the transfer never got slow enough to prove anything. The control
+    is the whole rest of the file — the same relay, the same bound and the same
+    server raise inside one bound as soon as the bytes stop instead of slowing.
+    """
+    io_timeout = 1.0
+    gap = 0.3  # comfortably inside the bound, so the link is slow and never silent
+    backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
+    name = f"slow_{uuid.uuid4().hex[:8]}.bin"
+    payload = bytes(range(256)) * 1024  # 256 KiB, non-uniform so a wrong answer shows
+    backend.write(name, payload)
+
+    stall_relay.throttle_download(gap, 32 * 1024)
+    start = time.monotonic()
+    got = backend.read_bytes(name)
+    elapsed = time.monotonic() - start
+
+    assert got == payload, "a throttled transfer must deliver the file intact, not a prefix"
+    assert elapsed > io_timeout, (
+        f"the read finished in {elapsed:.1f}s at a {io_timeout}s bound, so it never "
+        "outlived the bound and this test proves nothing — raise the gap or the payload"
+    )
 
 
 @pytest.mark.spec("SFTP-030")

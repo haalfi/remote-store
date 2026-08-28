@@ -143,13 +143,17 @@ an unbounded hang, work through the three causes below.
 
 **1. The bound is off.** Either you passed `io_timeout=None`, or you are on a
 version before it defaulted to a bound (see the
-[migration guide](../reference/migration.md)). Remove the opt-out, or set a
-value that suits your server:
+[migration guide](../reference/migration.md)). Dropping the opt-out is enough —
+the default applies on its own. Pass a value only to move off it:
 
 ```python
 from remote_store.backends import SFTPBackend
 
-backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=120)
+# The default bound, with nothing to configure:
+backend = SFTPBackend(host="files.example.com", username="deploy")
+
+# Or a longer one, for a server that legitimately goes quiet for minutes:
+backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=300)
 ```
 
 **2. It is the one genuinely unbounded wait.** A server that opens the SSH
