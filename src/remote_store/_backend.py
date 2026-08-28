@@ -221,11 +221,13 @@ class Backend(abc.ABC):
         Raises:
             InvalidPath: If *path* is the store root. This is the **first**
                 precondition, decided from the key before any request is
-                issued, and it is the one no backend is exempt from —
+                issued, and no backend declaring ``WRITE`` is exempt from it —
                 including flat-namespace backends, which are exempt from the
-                directory check below. It covers every spelling that
-                addresses the root, which is wider than ``""`` and ``"."``:
-                ``"./"``, ``".//"``, ``"./."`` and ``"/"`` are refused too.
+                directory check below. (A backend without ``WRITE`` refuses
+                every path with ``CapabilityNotSupported`` and never reaches
+                this check.) It covers every spelling that addresses the root,
+                which is wider than ``""`` and ``"."``: ``"./"``, ``".//"``,
+                ``"./."`` and ``"/"`` are refused too.
                 Also if *path* names a directory, or if any slash-aligned
                 ancestor of *path* exists as a regular file. Flat-namespace
                 backends (S3, Azure non-HNS, SQL) cannot detect a file

@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from remote_store._capabilities import Capability
-from remote_store._errors import BackendUnavailable
+from remote_store._errors import BackendUnavailable, InvalidPath
 from tests.backends.conformance._helpers import _require
 
 if TYPE_CHECKING:
@@ -112,9 +112,12 @@ def test_close_posture_outranks_root_write_rejection(backend: Backend, root: str
         with pytest.raises(BackendUnavailable, match="is closed"):
             backend.write(root, b"x")
     else:
-        error: Exception | None = None
-        try:
+        # `raises` rather than a caught-and-inspected error: a bare
+        # "is closed" not in str(error) passes when nothing is raised at all,
+        # because str(None) is "None" -- and a non-terminal backend that
+        # silently *succeeds* in writing to the root is the defect this whole
+        # change exists for. The root refusal is unconditional, so the
+        # non-terminal arm owes it just as the terminal arm owes BackendUnavailable.
+        with pytest.raises(InvalidPath) as exc_info:
             backend.write(root, b"x")
-        except Exception as exc:  # noqa: BLE001 -- any typed error is acceptable here
-            error = exc
-        assert "is closed" not in str(error)
+        assert "is closed" not in str(exc_info.value)

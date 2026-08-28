@@ -61,6 +61,9 @@ surprising_ripples:
   - tests/test_snippets.py
   - src/remote_store/_backend.py
   - src/remote_store/aio/_async_backend.py
+  - src/remote_store/backends/_memory.py
+  - src/remote_store/aio/backends/_memory.py
+  - src/remote_store/backends/_sqlalchemy.py
   - sdd/specs/044-graph-backend.md
   - docs-src/_data/graph/graph.json
   - docs-src/explanation/graph_viz.html
@@ -1012,6 +1015,70 @@ phases:
           that the guide is the artifact each round updates last and verifies
           least.
         outcome: misleading
+
+  - id: fix_round_8
+    name: Round-8 closing gate (measuring clean; one rebase artifact)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "BK-355 x BUG-259 auto-merge"
+        read_type: verify
+        extract: >-
+          The merge nothing had measured, and it is clean. 92 cells against the
+          in-process paramiko server with the stall relay: all six root spellings
+          on all five write-shaped entry points refuse in under a millisecond,
+          with base_path present and absent, and on a STALLED channel — the guard
+          pays no bound. BK-355's skip-the-futile-close still costs one bound and
+          not two (2.00s against a 2.0s io_timeout). The interaction to fear was
+          structurally absent rather than merely unobserved: every guard fires
+          ahead of self._errors and any self._sftp access, so no handle exists
+          for a close path to assume, and open_atomic's guard sits ahead of the
+          try that owns temp cleanup. Worth recording that the reason is
+          structural, because that is what makes it durable against the next
+          rebase rather than true on one measurement.
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "Unreleased"
+        read_type: verify
+        extract: >-
+          The rebase resolution introduced a defect no gate catches. Resolving
+          the CHANGELOG conflict as "keep both sides" duplicated BK-354: master's
+          side carried it in its BK-355-amended form, this branch's side carried
+          the pre-BK-355 wording, and both survived. The copy this branch added
+          says the stalled-stream-handle wait "is tracked as BK-355" — i.e. open
+          — two lines above the BK-355 entry that closes it. A conflict where one
+          side is a *revision* of the other is not a keep-both, and "keep both"
+          is the resolution that looks safest. git diff <merge-base>..HEAD on the
+          single file is what shows it: +2 lines where only one is this branch's.
+        outcome: ok
+      - file: src/remote_store/backends/_memory.py
+        section: "write, write_atomic, move, copy (Raises:)"
+        read_type: verify
+        extract: >-
+          Round 7 swept the two ABCs after seven rounds had swept only the eight
+          modules this change touches. The same reasoning reaches one step
+          further and had not been applied: MemoryBackend, AsyncMemoryBackend and
+          SQLBlobBackend declare WRITE, are named in BE-008's asymmetry paragraph
+          as refusing the source under the *wider* predicate, and were not
+          touched by this change — so their published Raises: blocks still said
+          "if path is empty", which is both the is_root-shaped framing the spec
+          now calls non-conformant and narrower than what those three actually
+          do. A sweep scoped to "the files I changed" misses the files the change
+          made wrong without changing.
+        outcome: ok
+      - file: tests/backends/conformance/test_close_posture.py
+        section: "test_close_posture_outranks_root_write_rejection, non-terminal arm"
+        read_type: verify
+        extract: >-
+          The non-terminal arm caught the error and asserted only that "is
+          closed" was absent from str(error) — which passes when nothing is
+          raised at all, since str(None) is "None". So the cell was green on a
+          non-terminal backend that silently succeeded in writing to the root:
+          the defect this whole change exists for. Inherited from the read-shaped
+          sibling rather than introduced, and covered elsewhere by test_io.py, so
+          a redundancy gap rather than a hole — but it is the same union-shaped
+          weakness round 3 tightened in tests/backends/local/test_absent_root.py,
+          found in a cell this change wrote.
+        outcome: ok
 
   - id: verify
     name: Verify

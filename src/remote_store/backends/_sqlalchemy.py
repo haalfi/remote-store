@@ -1103,8 +1103,11 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             NotFound: If *src* does not exist, including when the backing table
                 is absent.
             AlreadyExists: If *dst* exists and ``overwrite`` is ``False``.
-            InvalidPath: If *src* or *dst* is malformed, or (opt-in) an ancestor
-                of *dst* exists as a file.
+            InvalidPath: If *src* or *dst* addresses the store root — under any
+                spelling, since ``_validate_path`` drops empty and ``"."``
+                segments, and ahead of the source-existence check — or is
+                otherwise malformed, or (opt-in) an ancestor of *dst* exists as
+                a file.
             BackendUnavailable: If the database operation fails.
         """
         self._validate_path(src)
@@ -1157,8 +1160,11 @@ class SQLBlobBackend(_SQLAlchemyBaseBackend):
             NotFound: If *src* does not exist, including when the backing table
                 is absent.
             AlreadyExists: If *dst* exists and ``overwrite`` is ``False``.
-            InvalidPath: If *src* or *dst* is malformed, or (opt-in) an ancestor
-                of *dst* exists as a file.
+            InvalidPath: If *src* or *dst* addresses the store root — under any
+                spelling, since ``_validate_path`` drops empty and ``"."``
+                segments, and ahead of the source-existence check — or is
+                otherwise malformed, or (opt-in) an ancestor of *dst* exists as
+                a file.
             BackendUnavailable: If the database operation fails.
         """
         self._validate_path(src)

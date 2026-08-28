@@ -400,7 +400,18 @@ class TestRejectRootAsWriteTarget:
     @pytest.mark.parametrize(
         "root",
         ["./", ".//", "./.", "/", "//", "/.", "././"],
-        ids=["dot-slash", "dot-slash-slash", "dot-dot", "slash", "slash-slash", "slash-dot", "dot-dot-slash"],
+        # "dot-dot" would read as "..", which this guard deliberately does NOT
+        # refuse -- the bound is the slash-and-dot family, and "_addressable_segments('..')"
+        # is [".."]. The ids spell the slashes out so a -v line cannot suggest otherwise.
+        ids=[
+            "dot-slash",
+            "dot-slash-slash",
+            "dot-slash-dot",
+            "slash",
+            "slash-slash",
+            "slash-dot",
+            "dot-slash-dot-slash",
+        ],
     )
     def test_non_canonical_root_spellings_also_raise(self, root: str) -> None:
         """The spellings ``is_root`` does not recognise, which is why this guard normalises.
