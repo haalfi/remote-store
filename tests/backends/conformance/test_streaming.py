@@ -218,7 +218,7 @@ class TestStreamingConformance:
             assert stream.read() == b"", "nothing follows the true end"
 
             assert stream.seek(-6, io.SEEK_END) == len(payload) - 6
-            assert stream.read() == payload[-6:], "a footer read must land on the last 6 bytes"
+            assert stream.read() == payload[-6:], "a negative offset must land 6 bytes from the end"
 
             # The probe must not disturb the handle's own position bookkeeping:
             # an absolute seek after an end-relative one still answers from 0.

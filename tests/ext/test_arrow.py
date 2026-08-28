@@ -1070,7 +1070,19 @@ class TestParquetOverSftpReachesTheSizeProbe:
         _ErrorMappingStream.seek = _recording  # type: ignore[method-assign]
         try:
             fs = pyarrow_fs(store, materialization_threshold=threshold)
-            round_tripped = pq.read_table(name, filesystem=fs)
+            # The handle is opened and closed here rather than left to
+            # ``pq.read_table(name, filesystem=fs)``, which does not close the
+            # ``PythonFile`` it is handed. On the tier-3 path that leaves the
+            # SFTP stream open when ``store.close()`` tears the transport down,
+            # and the ``ResourceWarning`` GC then raises is attributed by
+            # pytest's unraisable plugin to whichever test runs next — an
+            # intermittent failure in an innocent neighbour. Measured at 3 of 6
+            # runs of this file before the handle was closed explicitly.
+            handle = fs.open_input_file(name)
+            try:
+                round_tripped = pq.read_table(handle)
+            finally:
+                handle.close()
         finally:
             _ErrorMappingStream.seek = original_seek  # type: ignore[method-assign]
             store.close()

@@ -79,7 +79,7 @@ import pytest
 # Guard: skip entire module if dependencies are missing
 pytest.importorskip("paramiko", reason="paramiko not installed")
 
-from remote_store._errors import BackendUnavailable, NotFound, RemoteStoreError  # noqa: E402
+from remote_store._errors import BackendUnavailable, RemoteStoreError  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -1139,7 +1139,7 @@ def test_seek_to_end_on_a_healthy_channel_answers_the_true_size(
         assert stream.read() == b"", "the true end has no bytes after it"
 
         assert stream.seek(-8, 2) == len(payload) - 8
-        assert stream.read(8) == payload[-8:], "a footer read must land on the last 8 bytes"
+        assert stream.read(8) == payload[-8:], "a negative offset must land 8 bytes from the end"
 
         # SEEK_SET after SEEK_END: the probe must not have disturbed the
         # handle's own position bookkeeping.
@@ -1199,8 +1199,20 @@ def test_seek_to_end_raises_when_the_server_refuses_to_size_the_handle() -> None
 
             with pytest.raises(RemoteStoreError) as caught:
                 stream.seek(0, 2)
-            assert not isinstance(caught.value, NotFound), (
-                "a refused FSTAT is not a missing file; it must not be mapped to NotFound"
+            # The exact type, not just the base class. A refused FSTAT arrives
+            # as ``OSError`` with no errno on a *healthy* connection, so
+            # ``_map_exception`` falls past every branch — including
+            # ``_is_connection_dead`` — to the generic ``RemoteStoreError``.
+            # That is the right answer (nothing is wrong with the connection),
+            # and it differs from the stalled case's ``BackendUnavailable``,
+            # which the migration guide has to tell a caller apart. Asserting
+            # the base class alone let the guide and this test drift: the guide
+            # said to catch ``BackendUnavailable`` and would not have caught
+            # this.
+            assert type(caught.value) is RemoteStoreError, (
+                f"expected the generic RemoteStoreError on a healthy connection, got "
+                f"{type(caught.value).__name__}; if the mapping has changed, the "
+                "migration guide's error table changes with it"
             )
 
             assert stream.seek(2) == 2, "a SEEK_SET seek is local and must still work"

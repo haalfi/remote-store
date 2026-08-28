@@ -85,24 +85,33 @@ surprising_ripples:
 # Named commits, per the schema's review_rounds description, which asks for the
 # list rather than a rule: naming it is what makes the judgement checkable. The
 # field counts **commits** that exist because review feedback was incorporated,
-# which is the schema's own definition and what BK-355's trace counted:
+# which is the schema's own definition and what BK-355's trace counted. From
+# `git log --oneline origin/master..HEAD`:
 #   0dca365  implementation — does not count
 #   1fa628b  round 1's findings
 #   c2f9a7c  round 2's findings
 #   e5b268a  round 2's trace steps, split out of c2f9a7c
 #   4538e76  round 3's findings
-#   this commit  round 4's findings
-# Two earlier drafts of this field were wrong and the second was wrong twice
-# over. The first gave a rule (`git rev-list --count origin/master..HEAD` minus
-# one) to avoid naming a SHA that did not exist yet, and went stale inside the
-# very commit that added it. The second named the commits but stopped at the
-# commit before the one writing them, and annotated the total "rounds, not
-# commits" — redefining the field against its own schema. The value is stale
-# again on the next commit by construction, which is why the schema calls it a
-# post-merge field: re-derive it at merge with `git log --oneline
-# origin/master..HEAD`, count everything but the implementation commit, and do
-# not increment.
-review_rounds: 5
+#   b9c7d91  round 4's findings
+#   08ede48  round 5's findings
+#   72693b0  the consumer subject, closed on the user's instruction and
+#            counted per the schema's "feedback that produced a commit"
+#   + the commit carrying this edit, which holds the closing gate's findings
+#     and is the branch head at merge
+# Three earlier drafts of this field were wrong, in three different ways, and
+# the list above is the only form that has survived a round. The first gave a
+# rule (`git rev-list --count origin/master..HEAD` minus one) to avoid naming a
+# SHA that did not exist yet, and went stale inside the very commit that added
+# it. The second named the commits but stopped at the commit before the one
+# writing them, and annotated the total "rounds, not commits" — redefining the
+# field against its own schema. The third wrote "this commit" for the unwritten
+# entry, which resolved for exactly as long as it was the head and then named
+# the wrong commit for three commits running. Hence the phrase above: the last
+# entry is identified by its position at merge, not by a SHA it cannot know.
+# The value is stale again on any further commit by construction, which is why
+# the schema calls it a post-merge field: re-derive at merge from that same
+# log, count everything but 0dca365, and do not increment.
+review_rounds: 8
 phases:
   - id: orient
     name: Orient
@@ -283,9 +292,17 @@ phases:
         section: "Release / Phase 1"
         read_type: reference
         extract: >-
-          migration.md is absent from the content-freeze list. Added, with the
-          reason a per-PR entry is wrong (AF-040) stated in the line itself.
-        outcome: misleading
+          migration.md is absent from the content-freeze list, so a breaking
+          change's upgrade note has no owner in Phase 1. Added as a backstop:
+          the line now says a PR making the break may write its own section
+          ahead of the release, because the bump table above it fixes the
+          version pair for a pre-1.0 break before Phase 2 stamps it.
+          Retrospective: the line's first draft said the opposite — that a PR
+          *cannot* own an entry — and I derived that from a `git log` in a
+          shallow clone that hid 9 of the path's 11 commits, 6f5cfff among
+          them. The document was silent, not wrong; the false premise was
+          mine, which is why this is tagged unclear and not misleading.
+        outcome: unclear
 
   - id: verify
     name: Ripple-check
@@ -308,13 +325,18 @@ phases:
         read_type: verify
         extract: >-
           The consumer subject, closed last and by running it rather than
-          reading it. Four artifacts had said "a Parquet footer read is exactly
-          seek(-n, SEEK_END)"; tracing the wrapper's seeks under a real
+          reading it. Five artifacts had said "a Parquet footer read is exactly
+          seek(-n, SEEK_END)" — the migration guide, the CHANGELOG, the
+          conformance docstring, the wrapper's unit test and the SFTP
+          healthy-channel test: the seven paths in `git show 72693b0 --stat`
+          less this trace and tests/ext/test_arrow.py, which the same commit
+          added. Its own message named four, dropping the last;
+          tracing the wrapper's seeks under a real
           pq.read_table over SFTP showed both halves wrong. open_input_file has
-          three tiers and materialises anything below materialization_threshold
+          three tiers and materialises anything at or below materialization_threshold
           (64 MB default), so a small Parquet file reaches the wrapper zero
           times; above it PyArrow sizes with seek(0, SEEK_END), not a negative
-          offset. Claim corrected in all four and pinned by
+          offset. Claim corrected in all five and pinned by
           TestParquetOverSftpReachesTheSizeProbe, which asserts both tiers.
           Tagged ok, not misleading: this file's docstring names the three tiers
           and the threshold plainly. I asserted the consumer's behaviour across

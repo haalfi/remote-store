@@ -288,10 +288,11 @@ def _accept_connections(
 ) -> None:
     """Accept SSH connections in a loop until stop_event is set.
 
-    ``server_class`` selects the SFTP interface implementation (the plain
-    ``StubSFTPServer`` or the ``ChrootStubSFTPServer`` variant). ``ROOT`` and
-    ``CHROOT`` are set on that class so concurrently running servers of
-    different classes do not clobber each other's attributes.
+    ``server_class`` selects the SFTP interface implementation: the plain
+    ``StubSFTPServer`` or one of its variants (``ChrootStubSFTPServer``,
+    ``NoFstatStubSFTPServer``). ``ROOT`` and ``CHROOT`` are set on that class so
+    concurrently running servers of different classes do not clobber each
+    other's attributes.
     """
     server_socket.settimeout(0.5)
     server_class.ROOT = root
@@ -337,9 +338,11 @@ def start_sftp_server(
         port: Bind port (default: 0 = OS-assigned free port).
         server_class: SFTP interface implementation. Defaults to the plain
             ``StubSFTPServer``; pass ``ChrootStubSFTPServer`` for the
-            permission-restricted variant (ID-212).
-        chroot: Boundary path for ``ChrootStubSFTPServer``. Ignored by the
-            plain server.
+            permission-restricted variant (ID-212), or
+            ``NoFstatStubSFTPServer`` for one whose handles refuse
+            ``CMD_FSTAT``.
+        chroot: Boundary path for ``ChrootStubSFTPServer``. Ignored by every
+            other variant.
 
     Returns:
         (thread, actual_port, host_key, stop_event, server_socket)

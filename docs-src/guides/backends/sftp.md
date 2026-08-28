@@ -141,7 +141,10 @@ Seeking to the end of a stream (`stream.seek(0, os.SEEK_END)`) asks the server
 for the file's size, so it is bounded and reported like any other operation on
 the channel. Worth knowing because you may not be the one writing the seek:
 `read_seekable()` hands the stream to analytical readers such as PyArrow, and a
-reader that sizes a file internally reaches it the same way.
+reader that sizes a file internally reaches it the same way — for files large
+enough to stream. The [PyArrow adapter](../pyarrow-adapter.md) materialises
+anything at or below its `materialization_threshold` and never seeks the stream
+at all.
 
 !!! tip "Choosing a value"
     Size it against the longest legitimate pause your server can produce — an

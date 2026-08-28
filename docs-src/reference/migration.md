@@ -24,21 +24,30 @@ with store.read("data.bin") as stream:
 
 # After (v0.31.0): the failure reaches you
 with store.read("data.bin") as stream:
-    size = stream.seek(0, os.SEEK_END)   # raises BackendUnavailable
+    size = stream.seek(0, os.SEEK_END)   # raises
 ```
 
 **What to change.** Code that treated a `0` from seek-to-end as "empty file" was
-reading a wrong answer; handle
-[`BackendUnavailable`](api/errors.md) instead. Sizing a file with
-`get_file_info(path).size` is unaffected and always reported the failure.
+reading a wrong answer. Catch [`RemoteStoreError`](api/errors.md), which covers
+both causes — the two do **not** raise the same subclass, and that is deliberate
+rather than an oversight:
+
+| Cause | Raises | Why |
+|-------|--------|-----|
+| A stalled connection | `BackendUnavailable` | The connection is dead; the cached client is dropped and the next operation reconnects |
+| A server refusing to stat the handle | `RemoteStoreError` | The connection is healthy and nothing is wrong with it — only this one request is refused |
+
+Sizing a file with `get_file_info(path).size` is unaffected and always reported
+the failure.
 
 **You may not have written the seek.** SFTP streams report themselves seekable,
 so `read_seekable()` hands them to analytical readers such as PyArrow, which
 size a file with `seek(0, os.SEEK_END)` before reading its footer. If such a
 read previously returned empty or nonsense against a flaky SFTP endpoint, this
 is why, and it now raises instead. This applies to reads large enough to stream:
-`ext.arrow` materialises anything below its `materialization_threshold`
-(64 MB by default) and never seeks the stream at all.
+the PyArrow adapter materialises anything at or below its
+`materialization_threshold` and never seeks the stream at all — see the
+[PyArrow adapter guide](../guides/pyarrow-adapter.md) for that setting.
 
 **Scope:** SFTP only. Every other backend resolves an end-relative seek without
 a request that can fail, and their streams are byte-for-byte unchanged. The
