@@ -526,8 +526,10 @@ class AsyncMemoryBackend(AsyncBackend):
             NotFound: If ``src`` does not exist.
             AlreadyExists: If ``dst`` exists, ``src != dst``, and
                 ``overwrite`` is ``False``.
-            InvalidPath: If ``src`` or ``dst`` is empty, ``src`` names a
-                directory, or ``dst`` names an existing directory.
+            InvalidPath: If ``src`` or ``dst`` addresses the store root — under
+                any spelling, and ahead of the source-existence check — or
+                ``src`` names a directory, or ``dst`` names an existing
+                directory.
         """
         src_segments = _split_path(src)
         dst_segments = _split_path(dst)
@@ -595,8 +597,10 @@ class AsyncMemoryBackend(AsyncBackend):
             NotFound: If ``src`` does not exist.
             AlreadyExists: If ``dst`` exists, ``src != dst``, and
                 ``overwrite`` is ``False``.
-            InvalidPath: If ``src`` or ``dst`` is empty, ``src`` names a
-                directory, or ``dst`` names an existing directory.
+            InvalidPath: If ``src`` or ``dst`` addresses the store root — under
+                any spelling, and ahead of the source-existence check — or
+                ``src`` names a directory, or ``dst`` names an existing
+                directory.
         """
         src_segments = _split_path(src)
         dst_segments = _split_path(dst)

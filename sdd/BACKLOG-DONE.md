@@ -169,6 +169,165 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-259 — `SFTPBackend` writes leave an absent `base_path` occupied by a regular file**
+  spec: BE-008, BE-021, BE-029 · effort: S · audience: user.api
+  Write to the store root of an SFTP store whose `base_path` did not exist and
+  the bytes landed at the container path itself, leaving the store's container a
+  regular **file**; `open_atomic("")` returned cleanly having done it. The
+  backend's own guard was the observational stat that
+  `_classify_existing_target` reads, and an absent container is exactly the
+  state in which it finds nothing to classify, so the write proceeded:
+  `_ensure_parent_dirs` created the tree and the open landed on `base_path`.
+  The `InvalidPath` the other two writers did raise came from the `RemotePath`
+  layer *after* the write and carried no `backend=` attribute — the tell that it
+  was not the backend refusing.
+  **Measured beyond the item's table.** The item recorded three calls under one
+  spelling; the reproduction enumerated three writers × two spellings × two
+  overwrite modes and found all twelve corrupt the container. `overwrite=True`
+  matters on its own: `write` and `write_atomic` skip their existence stat
+  entirely in that mode, so a guard on the `overwrite=False` branch would have
+  left half the surface corrupting.
+  **Fixed by refusing the root key definitionally**, in a shared
+  `_flat_ns._reject_root_as_write_target` that `LocalBackend` (BUG-247) now
+  calls too — its private copy was extracted rather than duplicated, since the
+  two would have carried the same message string.
+  **The `move`/`copy` destination is guarded on the same terms, and the reason
+  it is worth recording is that it was first left out.** BUG-247 reasoned the
+  destination unreachable — container present, the destination probe reports a
+  directory; container absent, the source check fails first — this item
+  re-measured that on SFTP, found it held, and carried it into the spec as a
+  general claim. Round 1 objected to the *scope* of the claim, not to any code.
+  Measuring the generalisation rather than narrowing the sentence found
+  `S3Boto3Backend.move(src, ".")` **returning cleanly and deleting the source**,
+  and `S3Backend` answering `AlreadyExists` for a destination that does not
+  exist. So the carve-out was dropped rather than argued a second time, and the
+  guard now runs at every write-shaped entry point rather than at the three
+  writers: five call sites on four of the seven classes and four on the rest,
+  since `S3Backend` and `S3Boto3Backend` open `write_atomic` with a bare
+  `return self.write(...)` and `AsyncAzureBackend` has no `open_atomic` to
+  guard. On the hierarchical backends the guard now
+  changes the message rather than the verdict, which is the whole cost. The
+  ordering it produces is the contract's: a root destination is refused at
+  precondition step (0), before the round trip that would otherwise report the
+  source missing.
+  **Six classes were brought to the rule, one of which could corrupt.** The
+  conformance cell added here (`_ROOT_WRITE_OPS`) found the other five on its
+  first run: `S3Backend` answered `AlreadyExists` for a root write without
+  `overwrite` and leaked a raw parameter-validation error with it;
+  `S3Boto3Backend` answered `BackendUnavailable` — retryable, for a permanently
+  wrong request — for `""` while `"."` took a different route and raised from
+  above the backend, so the two spellings disagreed; `S3PyArrowBackend`,
+  `AzureBackend` and `AsyncAzureBackend` surfaced the SDK's own wording
+  unclassified. None of the five could occupy its container, because the SDK
+  refuses a zero-length key; all five breached the paragraphs at the head of
+  BE-029 regardless. Partitioning the thirteen `CAPABILITIES`-declaring classes
+  **on the writers half**: two lack `WRITE`, five already complied
+  definitionally, six were fixed.
+  **The destination half partitions differently, and that is the finding rather
+  than a footnote.** There, three complied definitionally, two (`LocalBackend`,
+  `SFTPBackend`) refused by observation, and six did not refuse at all —
+  `GraphBackend` among them, which the writers row puts in the compliant column.
+  Eight concrete classes take code changes in this PR, not six: the six named
+  plus Graph (destination guard and closed-guard ordering) and Local
+  (destination guard). Only `MemoryBackend`, `AsyncMemoryBackend` and
+  `SQLBlobBackend` are untouched. Compliance on one half of a clause turned out
+  not to be evidence about the other, which is the whole reason the spec's table
+  now has a row per half.
+  **Fenced by mutation, re-derived against the final tree** — the figures moved
+  twice as review widened the change, so they are stated from the last run and
+  not from the first. Neutering the shared guard fails **93 of 8900** executed
+  cells: 34 in the SFTP module, 26 in conformance, 22 in Local's, 11 in
+  `test_flat_ns`. Neutering only `SFTPBackend`'s own wrapper fails **34**, all in
+  the SFTP module and **none** in conformance — with `base_path` present SFTP
+  already refused the root, so the conformance cell does not fence this backend's
+  fix and the per-backend absent-container module is what does. That asymmetry is
+  the reason the conformance cell is not treated as covering the item.
+  **BE-029 amended, not merely satisfied.** Its § Out of scope placed writes to
+  the root outside the clause on the grounds that they are "rejected by path
+  validation" — true, and rejected *after* the bytes. The clause now binds the
+  order: refused from the key, before any request is issued. BE-008's
+  precondition list gains that as step (0), numbered rather than folded into
+  path validity because it is the one step the flat-namespace exemption does not
+  release.
+  **The guard normalises rather than consulting `is_root`, and that was round
+  2's finding.** `is_root` is exactly `{"", "."}`; `"./"` addresses the same node
+  and is neither. Measured against a `LocalBackend` whose root had been deleted,
+  with the first fix in place: `write("./")` and `write_atomic("./")` left the
+  root a regular **file** and raised from the path layer above the backend, and
+  `open_atomic("./")` returned **cleanly** having done it — the whole defect,
+  surviving one character from the spelling that was caught. The write guard now
+  drops empty and `"."` segments and tests what is left, which covers `"./"`,
+  `".//"`, `"./."` and `"/"` alike, and is how `GraphBackend` had always decided
+  the same question. `is_root` is deliberately not widened: 52 call sites across
+  13 files, `native_path` / `to_key` and every flat-namespace listing prefix
+  among them. On the read side an unrecognised spelling costs an error class; on
+  the write side it cost the container, and the asymmetry in the fix follows the
+  asymmetry in the damage.
+  **The refusal stops at the slash-and-dot spellings, and the bound was bought
+  rather than assumed.** `RemotePath._normalize` folds `\` to `/` before it calls
+  a path empty, so it counts `"\"` as the root too; round 3 read the guard's
+  claim to match that normalisation, found it did not fold, and folded — the
+  smaller-looking fix over narrowing two docstrings. Round 4 measured the cost:
+  the shared predicate had by then become `GraphBackend`'s key splitter, which
+  also builds every item address, so the fold rewrote `native_path("a\b")` to
+  address `a/b` and broke the `to_key(native_path(key)) == key` identity on 4 of
+  7 probe keys. The fold was withdrawn and the docstrings narrowed instead. A
+  backslash-only key is therefore not refused: on a POSIX namespace it lands a
+  file named `\` inside the container rather than occupying it, which is the
+  milder of the two failures, and it is stated in BE-029 rather than closed,
+  because closing it there costs the addressing contract.
+  **`GraphBackend` needed the destination guard too**, which the first
+  destination sweep missed because it keyed on backends carrying
+  `_reject_root_as_file(src)` and Graph uses its own `_require_writable_key`.
+  Measured against an unreachable endpoint: `write` refused from the key while
+  `move(src, "")` reached the transport. Both halves now refuse, under all five
+  spellings measured.
+  **One ordering breach found by the cell written to close another finding.**
+  Round 1 noted that four new docstrings assert the closed-backend guard
+  outranks the root write check while the conformance cell for that ordering
+  exercises `read_bytes` only, which never touches a write guard. The cell added
+  to close it failed on `GraphBackend` — terminal on close, reaching its closed
+  guard through the lazy `_client` property, with `_require_writable_key`
+  running ahead of the first touch of it. A closed Graph store answered "cannot
+  write to the drive root" where BE-020 requires "backend is closed". This item
+  had classified Graph as already compliant, and on the root rule it was; the
+  ordering rule the same clause carries is what it missed.
+  **That ordering fix was itself one line too low, and the closing round found
+  it.** Moving the closed check into `_require_writable_key` fixed the guard the
+  round was looking at and left the user-metadata gate above it untouched, so a
+  closed backend handed `metadata=` still answered `CapabilityNotSupported`:
+  measured, 2 of the 4 closed-write shapes. Fixing an ordering *at one guard*
+  cannot be right when the ordering claim is about every pre-check, so the check
+  now runs at the top of `write`, and the new cell is the cross product rather
+  than one closed write — a single cell pins whichever pre-check happens to be
+  first and stays green when a later one is added above it.
+  **The same root-spelling tolerance had a second consumer inside Graph.**
+  `_parent_ref_path`, which builds the `move`/`copy` destination address, carried
+  its own `if s` segment split while the destination guard used the
+  `"."`-dropping one. So `move(src, "./x.txt")` passed the guard and then
+  addressed `/drives/{id}/root:/%2E` — a folder literally named `.` — while
+  `write("./x.txt")` wrote to the drive root: 4 of 7 destination spellings
+  disagreed. It now splits on the shared predicate — and so does `_split_parent`,
+  whose *name* half the closing round caught still coming from `rpartition("/")`:
+  that keeps a trailing `"."`, so `move(src, "a/.")` addressed an item literally
+  named `.` inside `a` while `write("a/.")` wrote to `a`, on 3 of 9 spellings.
+  Fixing the parent half and not the name half is the shape to expect when the
+  fence is built from the spellings that motivated the fix — all five params of
+  the round-4 cell have an ordinary basename, so it passed with the name half
+  still breached. The general shape is the one
+  the withdrawn backslash fold also demonstrates from the other direction: a
+  predicate that decides *whether* a key names a node and one that decides
+  *which* node have to be the same function, and this PR found both of the ways
+  that can fail.
+  **Coverage bound, stated.** The conformance cells added here collect **266**
+  and execute **188**; the **78** skips are unrecorded replay cassettes (Azure
+  sync, Azure async, Graph), backends not declaring the capability under test,
+  and the PyArrow lane, which needs the MinIO fixture on current PyArrow. Every backend behind those skips was measured directly
+  instead — `S3PyArrowBackend`, `AzureBackend` and `GraphBackend` against an
+  unreachable endpoint, where an `InvalidPath` naming the root proves the guard
+  ran ahead of the transport, and `AsyncAzureBackend` with the guard stubbed out
+  to establish what it did before.
+
 - [x] **BK-355 — Closing a failed stream re-enters the dead connection, so the caller pays a second, silent timeout**
   spec: SIO-010, SFTP-030 · effort: S · audience: user.api, user.api_docs, user.site
   `_ErrorMappingStream.close` closed `self._inner` under

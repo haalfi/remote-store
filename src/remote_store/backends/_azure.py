@@ -433,6 +433,22 @@ class AzureBackend(Backend):
         self._raise_if_closed()
         _reject_root_as_file(path, self.name)
 
+    def _reject_root_as_write_target(self, path: str) -> None:
+        """Pre-check: the store root is a folder, so writing *to* it is a type error.
+
+        Runs on HNS accounts too, for the reason the sibling above gives: the
+        alternative is handing an empty blob name to the SDK, which answered
+        ``"Please specify a container name and blob name."`` as a bare
+        ``RemoteStoreError`` under both spellings and both overwrite modes —
+        the SDK's own wording, reaching the caller unclassified.
+
+        The closed-backend guard outranks this check and so runs first.
+        """
+        from remote_store.backends._flat_ns import _reject_root_as_write_target
+
+        self._raise_if_closed()
+        _reject_root_as_write_target(path, self.name)
+
     def _reject_folder(self, path: str) -> None:
         """Error path: raise ``InvalidPath`` if *path* is a virtual folder.
 
@@ -749,12 +765,13 @@ class AzureBackend(Backend):
 
         Raises:
             AlreadyExists: If the blob exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or (with the
-                ``reject_write_under_file_ancestor`` opt-in, or natively on HNS)
-                an ancestor exists as a file.
+            InvalidPath: If *path* is the store root, or names a directory, or
+                (with the ``reject_write_under_file_ancestor`` opt-in, or natively
+                on HNS) an ancestor exists as a file.
             PermissionDenied: If credentials are rejected or lack access (401/403).
             BackendUnavailable: On throttling (429), 5xx, or transport failure.
         """
+        self._reject_root_as_write_target(path)
         self._maybe_check_no_file_ancestor(path)
         with self._errors(path):
             bc = self._blob_client(path)
@@ -819,11 +836,12 @@ class AzureBackend(Backend):
 
         Raises:
             AlreadyExists: If the blob exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or an ancestor exists as a
-                file.
+            InvalidPath: If *path* is the store root, or names a directory, or an
+                ancestor exists as a file.
             PermissionDenied: If credentials are rejected or lack access (401/403).
             BackendUnavailable: On throttling (429), 5xx, or transport failure.
         """
+        self._reject_root_as_write_target(path)
         if not self._hns:
             # non-HNS: direct upload is atomic (PUT semantics)
             return self.write(path, content, overwrite=overwrite, metadata=metadata)
@@ -935,11 +953,12 @@ class AzureBackend(Backend):
 
         Raises:
             AlreadyExists: If the blob exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or an ancestor exists as a
-                file.
+            InvalidPath: If *path* is the store root, or names a directory, or an
+                ancestor exists as a file.
             PermissionDenied: If credentials are rejected or lack access (401/403).
             BackendUnavailable: On throttling (429), 5xx, or transport failure.
         """
+        self._reject_root_as_write_target(path)
         if not self._hns:
             # non-HNS: buffer then PUT (atomic by nature) -- SAW-011
             # ID-211 opt-in: pre-check up front so the caller does not write
@@ -1421,8 +1440,8 @@ class AzureBackend(Backend):
 
         Raises:
             NotFound: If *src* does not exist.
-            InvalidPath: If *src* or *dst* names a directory, or an ancestor of
-                *dst* exists as a file.
+            InvalidPath: If *src* or *dst* is the store root, or names a
+                directory, or an ancestor of *dst* exists as a file.
             AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is
                 ``False``.
             PermissionDenied: If credentials are rejected or lack access (401/403).
@@ -1436,6 +1455,7 @@ class AzureBackend(Backend):
         # azure_path collapses them; without normalising, the copy+delete
         # branch below would delete the sole copy (AZ-017 data-loss edge).
         self._reject_root_as_file(src)
+        self._reject_root_as_write_target(dst)
         if self._azure_path(src) == self._azure_path(dst):
             with self._errors(src):
                 src_bc = self._blob_client(src)
@@ -1508,8 +1528,8 @@ class AzureBackend(Backend):
 
         Raises:
             NotFound: If *src* does not exist.
-            InvalidPath: If *src* or *dst* names a directory, or an ancestor of
-                *dst* exists as a file.
+            InvalidPath: If *src* or *dst* is the store root, or names a
+                directory, or an ancestor of *dst* exists as a file.
             AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is
                 ``False``.
             PermissionDenied: If credentials are rejected or lack access (401/403).
@@ -1522,6 +1542,7 @@ class AzureBackend(Backend):
         # non-canonical paths ("a//b" vs "a/b") that name the same blob once
         # azure_path collapses them (AZ-018 self-op edge).
         self._reject_root_as_file(src)
+        self._reject_root_as_write_target(dst)
         if self._azure_path(src) == self._azure_path(dst):
             with self._errors(src):
                 src_bc = self._blob_client(src)

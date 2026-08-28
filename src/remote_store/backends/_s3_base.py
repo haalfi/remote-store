@@ -287,6 +287,32 @@ class _S3Base(Backend):
         self._raise_if_closed()
         _reject_root_as_file(path, self.name)
 
+    def _reject_root_as_write_target(self, path: str) -> None:
+        """Pre-check: the store root is a folder, so writing *to* it is a type error.
+
+        Shared by ``S3Backend`` and ``S3PyArrowBackend``. Without it the root key
+        reaches the SDK and the answer depends on which lane and which mode: an
+        `overwrite=False` s3fs write reads the bucket back as an existing object
+        and raises ``AlreadyExists`` — asserting a file is there — while the
+        `overwrite=True` path reaches ``PutObject`` and surfaces the zero-length
+        ``Key`` rejection as a transport-shaped error. Both are wrong in the same
+        way: a permanently wrong request answered with a retryable class, or with
+        a claim about an object that does not exist.
+
+        Nothing is corrupted on a flat namespace — the SDK refuses the empty key
+        — which is what separates this from the hierarchical backends, where the
+        same missing guard let the bytes land on the container itself. The rule
+        is one rule and it is cheaper to state once than to reason about per
+        namespace.
+
+        The closed-backend guard outranks this check and so runs first, exactly
+        as in ``_reject_root_as_file`` above.
+        """
+        from remote_store.backends._flat_ns import _reject_root_as_write_target
+
+        self._raise_if_closed()
+        _reject_root_as_write_target(path, self.name)
+
     def _probe_fail_open(self, probe: Callable[[str], bool], key: str) -> bool:
         """Answer ``False`` when a strict type probe could not answer at all.
 

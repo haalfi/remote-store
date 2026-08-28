@@ -1372,6 +1372,32 @@ _ASYNC_ROOT_FILE_OP_CALLS = {
     "copy": lambda b, p: b.copy(p, "rootop_dst.txt"),
 }
 
+_ASYNC_ROOT_WRITE_OPS = [
+    pytest.param("write", Capability.WRITE, id="write"),
+    pytest.param("write_atomic", Capability.ATOMIC_WRITE, id="write_atomic"),
+]
+"""Async mirror of ``test_io.py``'s ``_ROOT_WRITE_OPS``, minus ``open_atomic``.
+
+Two rather than three for the same reason ``_ASYNC_ROOT_FILE_OPS`` carries no
+``read_seekable``: the ``AsyncBackend`` surface does not declare the method, so
+there is nothing to hold to the rule. The capability pairing carries over
+unchanged — ``write_atomic`` is gated on ``ATOMIC_WRITE``, not ``WRITE``.
+"""
+
+_ASYNC_ROOT_WRITE_OP_CALLS = {
+    "write": lambda b, p, ow: b.write(p, b"x", overwrite=ow),
+    "write_atomic": lambda b, p, ow: b.write_atomic(p, b"x", overwrite=ow),
+}
+
+_ASYNC_OVERWRITE_MODES = [pytest.param(False, id="no_overwrite"), pytest.param(True, id="overwrite")]
+"""Async mirror of ``test_io.py``'s ``_OVERWRITE_MODES``; that docstring has the reason."""
+
+_ASYNC_ROOT_WRITE_DST_OPS = [
+    pytest.param("move", Capability.MOVE, id="move_dst"),
+    pytest.param("copy", Capability.COPY, id="copy_dst"),
+]
+"""Async mirror. Explicit ids, for the reason the sync roster's docstring gives."""
+
 
 class TestBackendRootPath:
     """BE-029 (async mirror of ``test_io.py::TestBackendRootPath``).
@@ -1464,6 +1490,48 @@ class TestBackendRootPath:
             await async_backend.delete(root, missing_ok=True)
         assert is_root(exc.value.path)
         assert await async_backend.exists("rootmok/a.txt") is True
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-008")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("overwrite", _ASYNC_OVERWRITE_MODES)
+    @pytest.mark.parametrize(("op", "cap"), _ASYNC_ROOT_WRITE_OPS)
+    async def test_write_to_root_is_refused_and_the_store_survives(
+        self, async_backend: AsyncBackend, root: str, overwrite: bool, op: str, cap: Capability
+    ) -> None:
+        """Async mirror of ``test_io.py``: a write to the root is refused, store intact.
+
+        The sync twin's docstring carries the reason the second assertion is the
+        load-bearing one — a raise alone passes on a backend that has already
+        occupied its own container by the time it raises.
+        """
+        _require(async_backend, cap, Capability.LIST, Capability.WRITE, Capability.READ)
+        await async_backend.write("rootwrite/a.txt", b"seed")
+        with pytest.raises(InvalidPath) as exc:
+            await _ASYNC_ROOT_WRITE_OP_CALLS[op](async_backend, root, overwrite)
+        assert is_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
+        assert await async_backend.read_bytes("rootwrite/a.txt") == b"seed"
+        assert await async_backend.is_folder(root) is True
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-008")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize(("op", "cap"), _ASYNC_ROOT_WRITE_DST_OPS)
+    async def test_root_as_move_or_copy_destination_is_refused(
+        self, async_backend: AsyncBackend, root: str, op: str, cap: Capability
+    ) -> None:
+        """Async mirror of ``test_io.py``: a root *destination* is a write to the root.
+
+        The sync twin's docstring carries the reason the source-survives
+        assertion is the load-bearing one.
+        """
+        _require(async_backend, cap, Capability.LIST, Capability.WRITE, Capability.READ)
+        await async_backend.write("rootdst/src.txt", b"seed")
+        with pytest.raises(InvalidPath) as exc:
+            await getattr(async_backend, op)("rootdst/src.txt", root)
+        assert is_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
+        assert await async_backend.read_bytes("rootdst/src.txt") == b"seed", f"{op} consumed its source"
+        assert await async_backend.is_folder(root) is True
 
 
 class TestAsyncBackendNativePath:
