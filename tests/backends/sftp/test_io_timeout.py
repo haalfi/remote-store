@@ -15,12 +15,15 @@ caller doing ``unwrap(SFTPClient).get_channel().settimeout(n)`` loses the
 setting on the first transparent reconnect, which is precisely when a flaky
 link needs it.
 
-**It arms by default**, at ``120.0`` seconds, so most of this file's backends
-deliberately pass no ``io_timeout`` at all and inherit the shipped value. The
-ones that pin ``2.0`` do so to keep a stall test's runtime bearable, and the two
-that pin ``None`` are asserting the opt-out itself. Nothing here omits the
-argument in order to mean "unbounded" — see ``_INHERIT`` below for why that
-distinction has to be spelled out.
+**It arms by default**, at ``120.0`` seconds, which splits this file's
+``_make_backend`` call sites three ways. Most **pin a value** — a short one, to
+keep a stall test's runtime bearable. Three **omit the argument**, inheriting the
+shipped default, and two **pass ``None``**, asserting the opt-out itself.
+(Derivation: 21 call sites, 16 pinned — 14 at ``2.0``, one at ``7.5``, one at
+``1.0`` — 3 omitted, 2 explicit ``None``; counted by extracting the
+``io_timeout=`` argument from every ``_make_backend(`` call in this file.)
+Nothing here omits the argument in order to mean "unbounded" — see ``_INHERIT``
+below for why that distinction has to be spelled out.
 
 This file pins both halves of SFTP-030: what ``io_timeout`` covers, and what it
 does not. The second half is not an afterthought — SFTP-030 states one exception
@@ -428,10 +431,14 @@ def test_default_arms_the_bound_on_the_channel(sftp_server: tuple[int, str] | No
 
     The literal is asserted rather than read back off the signature. Reading the
     default from ``inspect.signature`` would pass against any value the
-    constructor happened to carry, including one no document names — and the
-    whole point of ``120.0`` is that it is the value the SFTP guide and the
-    troubleshooting page already use in their worked examples, so a drift
-    between code and docs is exactly what this must fail on.
+    constructor happened to carry, so it would assert that a default exists and
+    nothing about *which* one — and the value is repeated in prose well outside
+    this file: the constructor's own docstring, SFTP-001's signature block,
+    SFTP-030, the SFTP guide, the troubleshooting page and the migration entry.
+    No gate compares any of those against the signature, so this assertion is
+    what a silent change to the default has to get past. Sweeping the prose
+    sites is a reviewer's job rather than this test's, and this docstring does
+    not claim otherwise.
 
     It asserts on the *live channel*, not on the stored attribute, because that
     is what the guarantee is: ``settimeout()`` in ``_connect``, which is also

@@ -18,6 +18,15 @@ audience:
   - user.site
 expected_ripples:
   - sdd/backlogid.json
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+
+# Derivation, per the review_rounds description in _schema.yml: on
+# `git log --oneline origin/master..HEAD`, a4feee9 implements and does not
+# count; the round-1 fix commit is named in the line below, which is written
+# after that commit exists rather than predicting its SHA. Value is 1.
+review_rounds: 1
 
 phases:
   - id: orient
@@ -144,6 +153,7 @@ phases:
         section: "Ripple-check > Detailed checklist"
         read_type: verify
         extract: "Walk each triggered row against the completed diff"
+        outcome: ok
       - file: CHANGELOG.md
         section: "[Unreleased]"
         read_type: verify
@@ -152,3 +162,25 @@ phases:
           rebases, whose two copies disagreed on how many exceptions SFTP-030
           states. Not this item's defect, but in this item's artifact and about
           this item's subject
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: verify
+        extract: >-
+          Qualitative half of the PR validation gates. Retrospectively: it
+          passed the changed tests, and could not have caught what round 1 did —
+          three of five findings were false sentences in docstrings and prose,
+          which no testing rule addresses
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "Module docstring, test_default_arms_the_bound_on_the_channel"
+        read_type: verify
+        extract: >-
+          Round 1's most useful finding, and it is my own miss rather than any
+          document's: I wrote a census ("most of this file's backends pass no
+          io_timeout at all") and a drift claim ("a drift between code and docs
+          is exactly what this must fail on") without running either. The census
+          was 3 of 21 call sites, and no gate compares an options table to a
+          signature. CLAUDE.md principle 9 names exactly this failure and I hit
+          it inside the commit that cites the principle
+        outcome: ok

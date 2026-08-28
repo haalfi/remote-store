@@ -189,10 +189,16 @@ if evidence changes; these are retired.
   lowering it converts a healthy-but-quiet server — an antivirus or dedup
   appliance scanning a large file on `open()` — into intermittent
   `BackendUnavailable`, which reads as network flakiness and is harder to
-  diagnose than the hang it replaces. Against the longest transfer #970 reports
-  (2.0 GiB, ~70 min) a 120 s silence bound is 2.8% of runtime. It is also the
-  value the SFTP guide and the troubleshooting page already used in their worked
-  examples, so the default and the docs stopped disagreeing.
+  diagnose than the hang it replaces. So the value was sized against the longest
+  *pause* a healthy server takes on one operation, not against transfer
+  duration. The item's own argument quoted 120 s as a fraction of #970's 70-min
+  transfer; review round 1 refuted the figure twice over — the arithmetic is
+  2.9%, not the 2.8% the item stated, and the ratio measures a silence bound
+  against total runtime, which is the yardstick SFTP-030 and both guides tell
+  callers not to use, so it discriminates 120 s from no other value. It is
+  dropped rather than corrected. `120.0` is also the value the SFTP guide and
+  the troubleshooting page already used in their worked examples, so the default
+  and the docs stopped disagreeing.
   **Breaking, and shipped as such**, with `io_timeout=None` as the opt-out —
   which the migration entry leads with, because the reader who needs it is
   exactly the one with a legitimately slow or quiet server. `0` is not the

@@ -414,12 +414,17 @@ costs detection latency only, which is cheap: the bound is on silence *between*
 bytes, so a slow link is unaffected at any value. Lowering it converts a
 healthy-but-quiet server — an antivirus or dedup appliance scanning a large file
 on `open()` — into intermittent `BackendUnavailable`, which reads as network
-flakiness and is harder to diagnose than the hang it replaces. Against the
-longest transfer reported on the originating issue (2.0 GiB, ~70 min), 120 s of
-silence is 2.8% of runtime: a stall surfaces inside two minutes while a server
-that legitimately goes quiet is left room. It is also the value the SFTP guide
-and the troubleshooting page already used in their worked examples, so the
-default and the documentation stop disagreeing.
+flakiness and is harder to diagnose than the hang it replaces. So the value is
+chosen against the longest *pause* a healthy server is expected to take on one
+operation, not against transfer duration — a stall surfaces inside two minutes,
+while a server that goes quiet on `open()` of a large file is left room. The
+originating issue's transfer times (214 MB in ~20 min, 2.0 GiB in ~70 min) do
+not constrain the choice and are not what it was sized against: expressing the
+bound as a fraction of them would use exactly the yardstick this clause tells
+callers not to use, and no fraction of a transfer time discriminates one silence
+bound from another. `120.0` is also the value the SFTP guide and the
+troubleshooting page already used in their worked examples, so the default and
+the documentation stop disagreeing.
 
 **It is a behaviour change for a caller who sets nothing**, and shipped as one:
 an operation that previously blocked forever now raises `BackendUnavailable`
@@ -642,7 +647,9 @@ retried like one.
 
 **Rationale:** Without this, a silent peer blocks forever while holding whatever
 pooled resource the operation runs on, and emits no signal — while the recovery
-machinery for exactly that fault already exists and merely lacks a trigger.
+machinery for exactly that fault already exists. That machinery lacked a trigger
+for as long as the default was `None`; arming it on every store is what the
+default above is for.
 `unwrap(SFTPClient).get_channel().settimeout()` is not a substitute: a
 transparent reconnect builds a fresh channel with `timeout=None`, so a
 caller-applied bound evaporates precisely after a recovered drop. Keeping the

@@ -77,9 +77,10 @@ pkey = SFTPUtils.load_private_key(pem_string)
 ### Bounding a stalled transfer
 
 `timeout` covers only the connect phase. Once the channel is open, paramiko
-places no bound on reads, so a peer that completes the handshake and then stops
-sending mid-transfer blocks indefinitely — holding whatever pool slot or worker
-the transfer was running on, with no error to act on.
+places no bound of its own on reads, so a peer that completes the handshake and
+then stops sending mid-transfer would block indefinitely — holding whatever pool
+slot or worker the transfer was running on, with no error to act on. `io_timeout`
+is what stops that, and it is armed for you.
 
 `io_timeout` bounds the silence *between* bytes rather than the transfer as a
 whole, which is what makes it usable on slow links: a multi-gigabyte fetch that
