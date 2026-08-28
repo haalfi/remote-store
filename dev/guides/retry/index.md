@@ -106,7 +106,9 @@ Full mapping via tenacity:
 | `jitter`          | `+ wait_random(0, N)`     |
 | `timeout`         | `\| stop_after_delay(N)`  |
 
-Retry scope: **the `SSHClient.connect()` call only** — not per-operation, and not the whole of connect. Everything the backend does after that call returns is reported rather than retried, including the SFTP session setup and any stall bounded by [`io_timeout`](https://docs.remotestore.dev/stable/guides/backends/sftp/#bounding-a-stalled-transfer). The distinction matters for a stalled transfer: retrying one would restart a stream the caller may already have read from, so it is deliberately not retried.
+Retry scope: **the `SSHClient.connect()` call only** — not per-operation, and not the whole of connect. Nothing the backend does after that call returns is retried, including the SFTP session setup and any stall bounded by [`io_timeout`](https://docs.remotestore.dev/stable/guides/backends/sftp/#bounding-a-stalled-transfer). The distinction matters for a stalled transfer: retrying one would restart a stream the caller may already have read from, so it is deliberately not retried.
+
+Not retried is not the same as reported. A stall paramiko swallows internally is neither — seeking to the end of a stalled stream answers `0` instead of failing, so there is nothing to retry and nothing to report. See [the SFTP guide](https://docs.remotestore.dev/stable/guides/backends/sftp/#bounding-a-stalled-transfer) for what to use instead.
 
 ### S3
 

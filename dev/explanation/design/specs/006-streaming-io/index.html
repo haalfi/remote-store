@@ -9358,6 +9358,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#sio-010-releasing-a-stream-whose-failure-condemned-the-connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIO-010: Releasing a Stream Whose Failure Condemned the Connection
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -10758,6 +10769,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#sio-010-releasing-a-stream-whose-failure-condemned-the-connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIO-010: Releasing a Stream Whose Failure Condemned the Connection
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -10824,6 +10846,58 @@ never receives the stream and therefore cannot close it.
 <h2 id="sio-009-lazy-read-capability">SIO-009: Lazy Read Capability<a class="headerlink" href="#sio-009-lazy-read-capability" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>Capability.LAZY_READ</code> indicates that <code>Backend.read()</code> fetches data lazily on demand from the native source. Backends that load the full file contents into memory before returning a stream do <strong>not</strong> declare this capability.
 <strong>Postconditions:</strong> When <code>Capability.LAZY_READ</code> is declared, the stream is connected to the native source and data is pulled as the caller reads. Reading only a small prefix of a large file is expected to avoid loading the full file, though the exact savings depend on backend-level buffering (e.g. s3fs read-ahead, TCP receive buffers). Callers can use <code>store.supports(Capability.LAZY_READ)</code> to decide whether partial reads are likely efficient. Backends without <code>LAZY_READ</code> (e.g. in-memory, SQL blob) still return a valid <code>BinaryIO</code> stream — it just wraps pre-loaded data.</p>
+<h2 id="sio-010-releasing-a-stream-whose-failure-condemned-the-connection">SIO-010: Releasing a Stream Whose Failure Condemned the Connection<a class="headerlink" href="#sio-010-releasing-a-stream-whose-failure-condemned-the-connection" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> Where a backend supplies <code>_ErrorMappingStream</code> with an <code>is_fatal</code>
+predicate, releasing a stream returned by that backend's <code>Backend.read()</code> does
+not re-enter a connection the stream's own failure has already established is
+unusable. Backends that supply no predicate release unconditionally, and this
+clause makes no claim about them. Supplying one is optional by design, not an
+omission each backend is expected to correct: it is worth the parameter only
+where a close on a dead connection blocks, which is a property of the transport,
+not of every stream. <code>SFTPBackend</code> is the only backend that supplies one.
+<strong>Postconditions:</strong> A backend that can recognise such a failure supplies
+<code>_ErrorMappingStream</code> with an <code>is_fatal</code> predicate over the raised exception.
+Once it answers <code>True</code> for a mapped failure, the wrapper's <code>close()</code> skips the
+inner close and marks itself closed; the caller sees an ordinary <code>close()</code>. A
+backend that supplies no predicate closes unconditionally, which is the
+behaviour every backend had before this clause.</p>
+<p><strong>Why a predicate rather than the mapped error type.</strong> The wrapper is shared, so
+a rule derived from the classification would bind backends the symptom was never
+measured on: <code>ReadOnlyHttpBackend._map_stream_error</code> maps <em>every</em> stream exception
+to <code>BackendUnavailable</code>, and skipping the close there would trade a bounded wait
+for an unreleased response body. Deciding by predicate keeps each backend
+answering only for its own failures.</p>
+<p><strong>What it buys.</strong> On a connection whose bound is enforced by a timeout, a
+synchronous close is a second round-trip that cannot complete: paramiko's
+<code>SFTPFile.close()</code> issues <code>CMD_CLOSE</code> and waits for a reply that never comes, so
+without this clause a caller consuming a stalled stream pays the bound twice and
+sees nothing explaining the second wait — paramiko swallows the timeout raised
+inside its own close, and the wrapper suppresses what reaches it. Measured on
+<code>SFTPBackend</code> at a 2 s <code>io_timeout</code>, consuming part of a <code>read()</code> and then
+stalling: 4.00 s before the guard and 2.00 s after.</p>
+<p><strong>The handle is not leaked, but it is not released synchronously either.</strong> It is
+freed by the peer's own teardown of the dead connection, or at collection <strong>of
+the wrapper</strong> — the skip leaves the inner handle bound, so it stays reachable for
+as long as the closed stream object is held, which is later than the handle's own
+collection would be. At that point paramiko's <code>SFTPFile.__del__</code> calls
+<code>_close(async_=True)</code>, which sends <code>CMD_CLOSE</code> without waiting for a reply. The
+clause trades a synchronous release that cannot succeed for an asynchronous one
+that costs the caller nothing, and a caller retaining closed streams retains the
+dead connections with them.</p>
+<p><strong>The limit of the mechanism.</strong> The guard is armed by an exception <em>reaching</em>
+<code>_fail</code>, so anything that stops one arriving defeats it — whether the transport
+discarded the failure, or raised something outside the <code>(OSError, EOFError)</code>
+tuple the mapping paths catch. Neither is a gap in a backend's predicate: what
+decides is the caught tuple, not the predicate. Where a failure does not arrive,
+the close re-enters the connection exactly as it would have without this clause,
+and whatever the mapper would have done — invalidating a cached client, marking a
+session dead — is left undone too.</p>
+<p>Both classes are non-empty on <code>SFTPBackend</code>, which is the only backend that has
+been measured: a <code>SEEK_END</code> seek for the first (SFTP-030 states it; BK-357
+carries the fix), and paramiko's <code>SSHException</code> / <code>SFTPError</code> for the second,
+which additionally escape unmapped in breach of BE-021 (BK-358).</p>
+<p><strong>See also:</strong> SFTP-030 in <a href="../009-sftp-backend/">009-sftp-backend.md</a>, the bound
+this clause completes, and where that limit is measured.</p>
 
 
 

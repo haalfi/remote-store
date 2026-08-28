@@ -11559,20 +11559,36 @@ session setup as well as later transfers. Setting it through the
 <a href="#escape-hatch">escape hatch</a> instead does not survive those reconnects, because
 each one opens a fresh channel.</p>
 <div class="admonition warning">
-<p class="admonition-title">One wait it does not cover</p>
-<p>A server that opens the SSH channel and then never answers the <code>sftp</code>
-subsystem request still hangs, regardless of <code>io_timeout</code>: paramiko waits
-for that reply on an untimed event, so no channel timeout applies. Every
-reconnect re-enters that window. It needs a wedged SSH daemon rather than a
-wedged SFTP subsystem, so it is rarer than the stall this option does cover
-— but if a peer hangs with <code>io_timeout</code> set, this is the shape to suspect.</p>
+<p class="admonition-title">Two cases it does not cover</p>
+<p><strong>A wedged SSH daemon.</strong> A server that opens the SSH channel and then never
+answers the <code>sftp</code> subsystem request still hangs, regardless of
+<code>io_timeout</code>: paramiko waits for that reply on an untimed event, so no
+channel timeout applies, and every reconnect re-enters that window. It needs
+a wedged SSH daemon rather than a wedged SFTP subsystem, so it is rarer than
+the stall this option does cover — but if a peer hangs with <code>io_timeout</code>
+set, this is the shape to suspect.</p>
+<p><strong>Seeking to the end of a stalled stream, which answers wrongly rather than
+failing.</strong> <code>stream.seek(0, os.SEEK_END)</code> asks the server for the file's
+size. On a stalled connection paramiko discards that failure internally and
+reports a size of <code>0</code>, so the seek returns <code>0</code> for a file of any size and
+raises nothing — indistinguishable from a genuinely empty file. Nothing
+reports the stall and the dead connection is not dropped, so the next
+operation waits again. Size files with <code>get_file_info(path).size</code> instead,
+which raises <code>BackendUnavailable</code> on a stalled connection and drops the
+dead client.</p>
+<p>You may not be the one writing the seek. See
+<a href="../../troubleshooting/#sftp-reports-a-file-as-empty">SFTP reports a file as empty</a>
+for how it presents and what to check.</p>
 </div>
-<p>A stall is reported, not retried: the connect-phase <code>RetryPolicy</code> does not cover
-it, so a partially consumed stream is never silently restarted underneath you.
-A streamed read raises rather than returning short, so a truncated transfer is
-never mistaken for a complete one — discard the handle and start again, since
+<p>A stall that surfaces is reported, and no stall is retried: the connect-phase
+<code>RetryPolicy</code> does not cover one, so a partially consumed stream is never
+silently restarted underneath you.
+A streamed <strong>read</strong> raises rather than returning short, so a truncated transfer
+is never mistaken for a complete one — discard the handle and start again, since
 the bytes already delivered are a valid prefix but the handle is dead. The
-backend drops the dead client, so the next operation reconnects.</p>
+backend drops the dead client, so the next operation reconnects. Both of those
+hold for reading; neither holds for the seek-to-end case above, which is why it
+is called out rather than left to the general rule.</p>
 <div class="admonition tip">
 <p class="admonition-title">Choosing a value</p>
 <p>Size it against the longest legitimate pause your server can produce — an
@@ -11742,7 +11758,7 @@ layer (e.g. <code>requirements.txt</code> line <code>paramiko&gt;=3.0,&lt;5</cod
 <ul>
 <li><strong>Lazy connect</strong> — no network call happens during construction. The SSH/SFTP connection is established on the first operation.</li>
 <li><strong>Auto-reconnect</strong> — if the connection goes stale between operations, the backend reconnects transparently.</li>
-<li><strong>Retry</strong> — transient SSH errors (<code>SSHException</code>, <code>OSError</code>, <code>EOFError</code>) are retried up to 3 times with exponential backoff (2 s min, 10 s max). Retry covers establishing the SSH connection only; anything after that, including a stall bounded by <code>io_timeout</code>, is reported to the caller rather than restarted.</li>
+<li><strong>Retry</strong> — transient SSH errors (<code>SSHException</code>, <code>OSError</code>, <code>EOFError</code>) are retried up to 3 times with exponential backoff (2 s min, 10 s max). Retry covers establishing the SSH connection only; nothing after that is restarted, and a stall bounded by <code>io_timeout</code> is reported to the caller unless it is one of the silent cases above.</li>
 <li><strong>Stall detection</strong> — off by default; set <a href="#bounding-a-stalled-transfer"><code>io_timeout</code></a> to bound a read or write that stops making progress on an open channel.</li>
 <li><strong>Single connection, not thread-safe</strong> — each <code>SFTPBackend</code> instance holds one paramiko <code>SFTPClient</code>. Calling it from multiple threads simultaneously (e.g. via <code>SyncBackendAdapter</code> + <code>asyncio.gather</code>) races on the shared socket. Create one <code>SFTPBackend</code> per thread for parallel workloads.</li>
 </ul>
@@ -11973,11 +11989,19 @@ sending mid-transfer raises <code>BackendUnavailable</code> instead of
 blocking forever. Must be positive when set; <code>0</code> is rejected
 because paramiko reads it as non-blocking. A streamed <code>read</code>
 raises rather than returning short, so a truncated transfer is
-never mistaken for a complete one. Every stall is reported, never
-retried: the <code>retry</code> policy wraps the SSH connect call alone, so
-a partially consumed stream is never silently restarted — and a
-stall during session setup is reported too, rather than retried as
-a connect failure would be.</p>
+never mistaken for a complete one. Every stall <em>that surfaces</em> is
+reported, and none is retried: the <code>retry</code> policy wraps the SSH
+connect call alone, so a partially consumed stream is never
+silently restarted — and a stall during session setup is reported
+too, rather than retried as a connect failure would be.
+<strong>One operation answers rather than raising, once this is set:</strong>
+seeking to the end of a stream (<code>seek(0, SEEK_END)</code>) asks the
+server for the file size, and on a stalled connection paramiko
+discards the failure and reports <code>0</code> — so the seek returns <code>0</code>
+for a file of any size, reports nothing, and leaves the dead
+connection in place. Use <code>get_file_info(path).size</code> where a stall
+must surface. See the SFTP guide for the same case from a caller's
+side.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">

@@ -11854,9 +11854,23 @@ explanation no run behind it had reached. Its replacement then said reaching
 generalised a measurement of the pre-armed case (<code>SFTPFile.write</code> entered 0 times)
 to every route, and stood while two tests in the suite reached it through plain
 <code>write</code> and <code>write_atomic</code>.</p>
-<p><strong>Postconditions:</strong> A stalled operation raises <code>BackendUnavailable</code>, via the
-existing <code>_is_connection_dead</code> / <code>_map_exception</code> path (SFTP-023), which also
-clears the cached client so the next operation reconnects (SFTP-010 tier 2).</p>
+<p><strong>Postconditions:</strong> A stalled operation <em>that fails</em> raises <code>BackendUnavailable</code>,
+via the existing <code>_is_connection_dead</code> / <code>_map_exception</code> path (SFTP-023), which
+also clears the cached client so the next operation reconnects (SFTP-010 tier 2).</p>
+<p><strong>The qualifier is load-bearing.</strong> Every mechanism below — the classification guards, the handle guard, the
+stream wrapper's futile-close guard, and the client invalidation the
+Postconditions above promise — is triggered by an exception. A stalled operation
+whose failure paramiko <em>discards</em> raises nothing, so it reaches none of them: it
+neither reports nor clears the cached client, and the next operation therefore
+re-enters the same dead channel and pays the bound again. Both halves are
+measured, not reasoned:
+<code>test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds</code> asserts the cached
+client survives the stalled seek, and the following operation was measured
+re-entering that same client object and paying the bound before failing.
+<code>SEEK_END</code> is the case worth stating, and it is the second stated exception
+below — not the only operation of its kind, as the paragraph on silent stalls
+further down records. Read the Postconditions as scoped to the failures that
+surface; the exception list is not a footnote to them.</p>
 <p>The caller-visible wall clock for a stalled operation is one bound, not
 several. A failed operation re-enters the channel two ways — to classify the
 failure (<code>_raise_if_dir</code>, <code>_has_file_ancestor</code>) and to release resources — and
@@ -11941,15 +11955,30 @@ re-entries differently:</p>
   observed so the block is pinned to the request rather than to an earlier
   handshake step. If that test ever fails, the wait has become bounded and this
   bullet should be deleted with it.</li>
-<li><strong>Releasing a <em>streamed-read</em> handle.</strong> <code>read</code> hands back an
-  <code>_ErrorMappingStream</code>, whose <code>close</code> closes the underlying paramiko file under
-  <code>contextlib.suppress</code>, so releasing a stream that has already failed blocks
-  once more. Measured at a 2 s bound, consuming part of a <code>read()</code> and then
-  stalling: 4.00 s for the failed reads plus the close. This is the one handle
-  the <code>_handle</code> guard above does not reach, because the wrapper — not this
-  backend — owns the close, and it serves the S3, Azure and HTTP backends too.
-  Tracked as BK-355; when it lands, this exception goes.</li>
+<li><strong>A <code>SEEK_END</code> seek on a stalled channel.</strong> <code>SFTPFile.seek(offset, SEEK_END)</code>
+  calls <code>_get_size()</code>, whose body is <code>try: return self.stat().st_size</code> under a
+  bare <code>except: return 0</code>. On a stalled channel that <code>stat</code> blocks for the bound
+  and is then swallowed, so the seek returns a bogus size of <code>0</code> and raises
+  nothing. Nothing reaches the wrapper's mapping path, so the futile-close guard
+  below never arms and the close pays the bound a second time. Measured at a 2 s
+  bound: 4.00 s (<code>test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds</code>).
+  It is an instance of the guard's general limit, which
+  <a href="../006-streaming-io/">SIO-010</a> states once for the shared wrapper. BK-357
+  carries the fix: the wrapper issuing its own size probe rather than delegating
+  one that can swallow, which is a change to every backend's seek path.
+  Like the bullet above, this exception is <strong>characterised by a test</strong>, not
+  asserted; if that test fails the swallow is gone and this bullet goes with it.</li>
 </ul>
+<p><strong>Releasing a <em>streamed-read</em> handle is bounded by the wrapper, not by
+<code>_handle</code>.</strong> <code>read</code> hands back an <code>_ErrorMappingStream</code>, and that wrapper — not
+this backend — owns the close, so the guard above cannot reach it; it serves the
+S3, Azure and HTTP backends too. The wrapper takes <code>_is_connection_dead</code> as its
+<code>is_fatal</code> predicate and skips a close its own failure has condemned
+(<a href="../006-streaming-io/">SIO-010</a>), which is what makes the bound above hold for a
+stream as well as for the handles <code>_handle</code> covers. Measured at a 2 s bound,
+consuming part of a <code>read()</code> and then stalling: 4.00 s for the failed reads plus
+the close before the guard, 2.00 s after
+(<code>test_releasing_a_stalled_stream_costs_one_bound</code>).</p>
 <p>For a <strong>streamed</strong> read (<code>read</code>), a stall after the caller has consumed bytes
 raises rather than returning short, so a truncated stream is never
 indistinguishable from a complete one. The bytes already delivered are a valid
@@ -11960,7 +11989,15 @@ here rather than left implied.</p>
 the whole of <code>_connect</code> (SFTP-009), so <strong>no</strong> stall bounded by <code>io_timeout</code> is
 retried — neither one on a caller's operation nor one in the session setup
 described above, which happens inside <code>_connect</code> but outside the retried
-closure. Every stall reaches the caller.</p>
+closure. Every stall that surfaces reaches the caller.</p>
+<p><strong>Not every stall surfaces</strong>, and the two exceptions above are the ones worth
+stating rather than an exhaustive list of the silent ones: releasing a stalled
+handle after no prior failure is silent too, because paramiko's
+<code>SFTPFile._close</code> catches <code>(IOError, socket.error)</code> and a stalled <code>CMD_CLOSE</code>
+arrives as <code>socket.timeout</code>. Measured at a 2 s bound: 2.00 s, nothing raised,
+no log record, the dead client still cached. It is listed here rather than as a
+third exception because it costs one bound and answers nothing — the two above
+are stated because they cost more than that.</p>
 <p>For an operation-level stall the exclusion is deliberate: retrying
 transparently would restart a partially consumed stream underneath a caller
 that had already read from it. That rationale does <strong>not</strong> reach a
