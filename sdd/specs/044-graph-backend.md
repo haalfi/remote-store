@@ -1562,8 +1562,22 @@ and keys returned by listing / `to_key` are stripped back to
 `base_path`-relative form, so the backend behaves as if `base_path` were
 its root.
 **Postconditions:**
-- `base_path` is normalised by trimming leading/trailing slashes; the
-  default `""` targets the drive root unchanged (backward compatible).
+- `base_path` is normalised by the same predicate that decides what a *key*
+  addresses on this backend — empty and `"."` segments are dropped, wherever
+  they appear. The default `""` targets the drive root unchanged (backward
+  compatible), and so now do `"."`, `"./"` and `".//"`; `"a/./b"` scopes to
+  `a/b`, and `"/root/sub/"` to `root/sub` as it always did.
+  **This narrows what `base_path` can name**: a drive folder literally called
+  `.` is no longer addressable through it. That is the intended trade. The
+  previous split kept `"."` as a segment, so `base_path="."` — the spelling
+  the backend contract treats as the store root everywhere else — silently
+  scoped an entire store under a folder named `.` and sent every write there.
+  A store nobody meant to create is the worse failure of the two, and the
+  addressable case has an escape hatch: a folder genuinely named `.` is
+  reachable as an ordinary key under a `base_path` that is not itself
+  root-spelled. See [BE-029](003-backend-adapter-contract.md#be-029-root-path)
+  for why one predicate decides both what a key addresses and whether it
+  addresses anything.
 - Intermediate folders of `base_path` are created on demand by the same
   auto-mkdir-on-write path as any nested key (GR-039); no eager creation
   occurs in `__init__` (GR-004).

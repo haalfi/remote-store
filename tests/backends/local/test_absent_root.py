@@ -493,7 +493,7 @@ class TestWriteRecreatesTheRoot:
         assert backend.exists(written), f"{op_name} reported success but {written} is not readable"
         assert backend.read_bytes(written) == b"x"
 
-    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("root", ["", ".", "./"], ids=["empty", "dot", "dot-slash"])
     @pytest.mark.parametrize(
         ("op_name", "call"),
         [
@@ -524,13 +524,18 @@ class TestWriteRecreatesTheRoot:
         deliberately not ``backend.is_file(root)``: that answers ``False`` from
         the BE-029 short-circuit without looking at the disk, so it would pass
         on exactly the corruption this cell exists to catch.
+
+        **The third spelling is not decoration.** ``is_root`` is exactly
+        ``{"", "."}``, so a guard written against it let ``"./"`` through and the
+        corruption survived on this exact cell's other two params. The write
+        guard normalises instead, and this param is what holds it there.
         """
         on_disk = Path(backend.native_path(root))
         with pytest.raises(InvalidPath):
             call(backend, root)
         assert not on_disk.is_file(), f"{op_name} left a regular file at the store root"
 
-    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("root", ["", ".", "./"], ids=["empty", "dot", "dot-slash"])
     def test_open_atomic_on_the_root_is_refused_on_enter(self, backend: LocalBackend, root: str) -> None:
         """The third writer, which the sibling above cannot reach.
 
@@ -539,6 +544,11 @@ class TestWriteRecreatesTheRoot:
         call. A copy of the sibling's ``pytest.raises(...): call(...)`` shape
         would pass without ever entering the block, and would still pass with the
         guard deleted.
+
+        This is also where the ``"./"`` spelling did its worst: the other two
+        writers at least raised (from above the backend, after the bytes), while
+        ``open_atomic("./")`` returned **cleanly** having left the root a regular
+        file.
         """
         on_disk = Path(backend.native_path(root))
         with pytest.raises(InvalidPath), backend.open_atomic(root) as stream:
@@ -565,12 +575,19 @@ class TestWriteRecreatesTheRoot:
         """The guard is unconditional, so the ordinary state needs a cell as well.
 
         Every other cell in this class runs against the absent-root fixture, and
-        the present root is the overwhelmingly common case — the one where this
-        PR changed the answer silently. It used to come from ``full.is_dir()``
-        as ``"Cannot write — '' exists as a directory"``; it now comes from the
-        pre-check, before the disk is touched. Conformance cannot cover it:
-        BE-029 § Out of scope excludes writes *to* the root, so ``_ROOT_FILE_OPS``
-        carries no writer.
+        the present root is the overwhelmingly common case — the one where the
+        answer changed silently. It used to come from ``full.is_dir()`` as
+        ``"Cannot write — '' exists as a directory"``; it now comes from the
+        pre-check, before the disk is touched.
+
+        Conformance *does* now reach this state — BE-029's § Out of scope no
+        longer excludes writes to the root, and ``_ROOT_WRITE_OPS`` runs the
+        three writers against a present container on every LIST+WRITE fixture.
+        What it does not reach is the **message**: those cells assert the error
+        class and ``is_root(exc.path)``, deliberately, so that a backend may
+        word its refusal how it likes. This cell is the local half of that
+        division of labour, matching on ``"store root"`` so a silent reversion to
+        the observational wording fails somewhere.
 
         Uses its own store rather than the module fixture, because the point is
         precisely that the root is there.
@@ -601,30 +618,36 @@ class TestWriteRecreatesTheRoot:
         op_name: str,
         call: Callable[[LocalBackend, str], object],
     ) -> None:
-        """The two writers that did *not* get the definitional guard, pinned anyway.
+        """The other two writers, and this cell now fences their guard.
 
-        ``_reject_root_as_write_target`` has three call sites, not five: ``move``
-        and ``copy`` write too, but only their *source* is guarded. The reason is
-        that their destination cannot reach the corruption the guard exists to
-        prevent, and that reason is worth a cell rather than only a docstring.
-        With the root gone nothing can exist beneath it, so the source check
-        fails first and the destination is never examined; with the root present
-        ``dst_full.is_dir()`` fires. Either way the answer is an error and the
-        root is not left a regular file — which is the assertion that matters,
-        as the sibling cells above establish.
+        ``_reject_root_as_write_target`` has **five** call sites: the three
+        writers, plus the ``move``/``copy`` destination. It had three, and this
+        docstring used to argue that was right — the destination could not reach
+        the corruption, since with the root gone nothing exists beneath it so the
+        source check fails first, and with the root present ``dst_full.is_dir()``
+        fires. Both halves are true of *this* backend. The argument was still
+        withdrawn: measured on a flat namespace, the same shape returned cleanly
+        and deleted the source, so the carve-out was worth less than the check it
+        saved.
 
-        Stated plainly, because this module has thrice shipped a docstring
-        claiming coverage it did not have: **this cell fences no guard.** It
-        passes with every part of the BUG-247 change reverted, because the
-        checks that save it are older than the change. It is a characterisation
-        test — it pins an outcome that currently holds for a reason recorded in
-        ``_reject_root_as_write_target``, so that adding a ``parent.mkdir`` on
-        the destination path, or guarding the source differently, fails here
-        instead of silently reintroducing the corruption.
+        **What that changes here is the assertion, not the outcome.** The cell
+        used to accept ``(NotFound, InvalidPath)``, tolerating whichever check
+        fired first — and under that union it fenced nothing: deleting both
+        destination guards left it passing through the ``NotFound`` arm. The
+        answer is now deterministic, because the destination guard is a
+        pre-check and runs ahead of the source-existence probe. So this asserts
+        the class, the path *and* the backend, which is what the SFTP twin does
+        and what makes reverting the guard fail here.
+
+        The module has four times shipped a docstring claiming coverage it did
+        not have, this cell's previous version among them; the assertion below is
+        the part that decides, and it is now narrow enough to.
         """
         on_disk = Path(backend.native_path(root))
-        with pytest.raises((NotFound, InvalidPath)):
+        with pytest.raises(InvalidPath) as exc_info:
             call(backend, root)
+        assert exc_info.value.path == root, f"{op_name} named {exc_info.value.path!r}, not the destination"
+        assert exc_info.value.backend == "local", "the refusal came from above the backend, not from it"
         assert not on_disk.is_file(), f"{op_name} left a regular file at the store root"
 
     @pytest.mark.spec("PING-002", "PING-003", "BE-029")

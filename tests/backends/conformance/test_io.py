@@ -96,6 +96,66 @@ _ROOT_FILE_OP_CALLS = {
 defers its verdict to first byte is not credited with a lazy handle."""
 
 
+def _open_atomic_write(backend: Backend, path: str, *, overwrite: bool = False) -> None:
+    """Drive ``open_atomic`` to completion — it refuses on ``__enter__``, not at the call."""
+    with backend.open_atomic(path, overwrite=overwrite) as handle:
+        handle.write(b"x")
+
+
+_ROOT_WRITE_OPS = [
+    pytest.param("write", Capability.WRITE, id="write"),
+    pytest.param("write_atomic", Capability.ATOMIC_WRITE, id="write_atomic"),
+    pytest.param("open_atomic", Capability.ATOMIC_WRITE, id="open_atomic"),
+]
+"""The write-shaped surface, kept apart from ``_ROOT_FILE_OPS`` above.
+
+A separate roster because it is a separate rule: ``_ROOT_FILE_OPS`` is BE-021's
+type-mismatch row — a *read*-shaped operation handed a folder — while these owe
+not merely an error class but the absence of a side effect, which no member of
+the other roster asserts.
+
+**Paired with a capability each, exactly as that roster is**, and the pairing is
+not decorative: ``write_atomic`` and ``open_atomic`` are gated on
+``ATOMIC_WRITE``, not ``WRITE`` (`_GATING` in ``_store.py``, `_BACKEND_GATING` in
+``gen_graph.py``). Requiring ``WRITE`` for all three would call two operations a
+backend never declared on any backend that ever ships ``WRITE`` without
+``ATOMIC_WRITE`` — no registered fixture is in that state today, which is
+precisely why it would have gone unnoticed.
+"""
+
+_ROOT_WRITE_OP_CALLS = {
+    "write": lambda b, p, ow: b.write(p, b"x", overwrite=ow),
+    "write_atomic": lambda b, p, ow: b.write_atomic(p, b"x", overwrite=ow),
+    "open_atomic": lambda b, p, ow: _open_atomic_write(b, p, overwrite=ow),
+}
+
+_OVERWRITE_MODES = [pytest.param(False, id="no_overwrite"), pytest.param(True, id="overwrite")]
+"""Both modes, because the clause binds both and they take different routes.
+
+``write`` and ``write_atomic`` skip their existence probe entirely when
+``overwrite=True`` — a guard placed on the ``overwrite=False`` branch alone would
+leave half the surface unguarded, which is not hypothetical: the reproduction
+that scoped BUG-259 found the ``overwrite=True`` cells corrupting on their own.
+Until this parameter existed the only cells covering the mode were one backend's,
+so a normative "in both overwrite modes" was falsifiable on one of eleven bound
+classes. The guard is a pre-check, so the cost of the second mode is collection
+count and no round trips.
+"""
+
+_ROOT_WRITE_DST_OPS = [
+    pytest.param("move", Capability.MOVE, id="move_dst"),
+    pytest.param("copy", Capability.COPY, id="copy_dst"),
+]
+"""The other two ways to write, keyed on the destination.
+
+Ids are explicit for the same reason ``_ROOT_FILE_OPS`` spells its ``move_src`` /
+``copy_src`` out: without them pytest derives the id from the ``Capability``
+member and the enum repr lands in the test id — which is also the cassette
+filename for every replay lane, so an id that changes with an unrelated enum edit
+orphans recorded cassettes.
+"""
+
+
 @pytest.mark.parametrize("backend", fixture_params(Capability.LIST), indirect=True)
 class TestBackendRootPath:
     """BE-029: the store root is a folder, under both spellings.
@@ -221,6 +281,73 @@ class TestBackendRootPath:
             backend.delete(root, missing_ok=True)
         assert is_root(exc.value.path)
         assert backend.exists("rootmok/a.txt") is True
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-008")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize("overwrite", _OVERWRITE_MODES)
+    @pytest.mark.parametrize(("op", "cap"), _ROOT_WRITE_OPS)
+    def test_write_to_root_is_refused_and_the_store_survives(
+        self, backend: Backend, root: str, overwrite: bool, op: str, cap: Capability
+    ) -> None:
+        """A write *to* the root is refused, and the store is intact afterwards.
+
+        The error class is the cheap half. The half that matters is the second
+        assertion: BUG-259 was a backend that raised ``InvalidPath`` on four of
+        its six write cells and had *already occupied its own container* with a
+        regular file by the time it did — the refusal arrived from the layer
+        above the backend, after the bytes. A cell asserting only the raise
+        passes on that.
+
+        So this seeds a file first and reads it back after. It is the strongest
+        claim conformance can make from outside a backend: whatever the write
+        did, the store still answers as a store.
+
+        Two bounds, both structural. The corruption itself is visible only from
+        the storage system's own side, which this suite has no handle on; and it
+        needs an **absent container**, which no conformance fixture arranges
+        (BK-345 owns that gap). So a backend whose container can go absent also
+        pins this against that state in its own per-backend home, where both the
+        fixture and the server-side assertion are available.
+
+        **Both overwrite modes**, because they reach the write by different
+        routes and the clause binds both — see ``_OVERWRITE_MODES``.
+        """
+        _require(backend, cap, Capability.WRITE, Capability.READ)
+        backend.write("rootwrite/a.txt", b"seed")
+        with pytest.raises(InvalidPath) as exc:
+            _ROOT_WRITE_OP_CALLS[op](backend, root, overwrite)
+        assert is_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
+        assert backend.read_bytes("rootwrite/a.txt") == b"seed"
+        assert backend.is_folder(root) is True
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-008")
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    @pytest.mark.parametrize(("op", "cap"), _ROOT_WRITE_DST_OPS)
+    def test_root_as_move_or_copy_destination_is_refused(
+        self, backend: Backend, root: str, op: str, cap: Capability
+    ) -> None:
+        """A ``move``/``copy`` *destination* that is the root is a write to the root.
+
+        The sibling above covers the three writers; this covers the other two
+        ways to write. It exists because the reasoning that made it unnecessary
+        held on one namespace and not another: a hierarchical backend refuses the
+        destination by observation, so this cell only changes the message there,
+        while on a flat namespace nothing observes and ``move(src, ".")``
+        **returned cleanly having deleted the source**.
+
+        Hence the third assertion. Asserting only the error class would pass on a
+        backend that raised after moving the bytes, and asserting the source
+        still exists is what separates a refusal from a silent data loss.
+        """
+        _require(backend, cap, Capability.WRITE, Capability.READ)
+        backend.write("rootdst/src.txt", b"seed")
+        with pytest.raises(InvalidPath) as exc:
+            getattr(backend, op)("rootdst/src.txt", root)
+        assert is_root(exc.value.path), f"error names {exc.value.path!r}, not the root"
+        assert backend.read_bytes("rootdst/src.txt") == b"seed", f"{op} consumed its source"
+        assert backend.is_folder(root) is True
 
 
 @pytest.mark.parametrize("backend", fixture_params(Capability.WRITE), indirect=True)

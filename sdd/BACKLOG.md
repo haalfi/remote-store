@@ -199,8 +199,7 @@ be edited to point elsewhere.
 store answers the same way on every backend.
 
 **Closes when:** the root of an absent container meets BE-029 on every
-backend (BUG-254) and a write to that root does not occupy it with a regular
-file (BUG-259); a listing does not truncate silently when its container is
+backend (BUG-254); a listing does not truncate silently when its container is
 deleted mid-scan (BUG-255) or when a folder vanishes part-way through a
 recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 (BUG-256); a constructor does not leak its driver's exception
@@ -210,8 +209,11 @@ registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
 (BK-345). The spec contradiction is adjudicated — BUG-248, closed by
 [ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md) — the
 never-leak invariant holds on the S3 listing path, closed by BUG-249 with
-BUG-246, and the last adapter answers the contract against an absent container,
-closed by BUG-247. **One cross-section dependency remains**, per
+BUG-246, the last adapter answers the contract against an absent container,
+closed by BUG-247, and a write to the store root no longer occupies that root
+with a regular file, closed by BUG-259 — which also brought the five
+flat-namespace classes that reached their SDK with the root key to the same
+rule. **One cross-section dependency remains**, per
 [§ How this file works](#how-this-file-works): BK-345 waits on **ID-244** in
 section 2 for the seeding hook, stated inside the item that carries it, so this
 section cannot close on its own items alone. BUG-249's denied half carried a
@@ -230,7 +232,7 @@ listing was outside it; now the bound is part of the clause and missing it is a
 breach of it. Writing a rule into a clause enlarges what the clause governs, and
 the two items that changed side are the evidence — neither was a new defect, and
 both were pre-existing behaviour that a new sentence made answerable.
-**Six** further disagreements sit in this section and none of them is with the
+**Five** further disagreements sit in this section and none of them is with the
 absent-container clause, which is why they are not in that count: BUG-253 is
 between two halves of one Graph operation; BUG-245 is a constructor leak, which
 BE-021 scopes to operations and so does not reach, and BK-358 is the same
@@ -238,9 +240,9 @@ never-leak breach reached through the shared stream wrapper on the operation
 path rather than at construction; BUG-254 is with **BE-029's
 root row**, which BE-021 § Reach now defers to rather than deciding, so the
 breach is of the row § Reach points at and not of the clause this count is about;
-BUG-256 is about a health probe, which is off the roster BE-021 governs; and
-BUG-259 is a write to the store root leaving an absent container occupied by a
-regular file, which is BE-029's root row again on the write path.
+and BUG-256 is about a health probe, which is off the roster BE-021 governs.
+BUG-259 was a sixth of this kind — BE-029's root row on the write path — and has
+closed; it is named in § Closes when above rather than counted here.
 **Six classes** have left the list on the *empty-listing and NotFound* rows —
 counted as classes, which is the frame this paragraph opens in and not the bullet
 frame the sentence above it uses. `GraphBackend` went first — BUG-248 adjudicated
@@ -420,38 +422,6 @@ compliant the day before.
   ([ADR-0025](adrs/0025-async-to-sync-backend-adapter.md)), not a second copy of
   the walk. Only the *cells* need a sync lane.
 
-- [ ] **BUG-259 — `SFTPBackend` writes leave an absent `base_path` occupied by a regular file**
-  spec: BE-029, BE-021 · effort: S · audience: user.api
-  Write to the store root of an SFTP store whose `base_path` does not exist and
-  the bytes land at the container path itself, leaving the store's container a
-  regular **file**. `open_atomic("")` does not even raise — it returns cleanly
-  having done it. Measured against the Stage-1 in-process paramiko server, with
-  `base_path` absent, checking the server-side filesystem after each call:
-
-  | Call | Server-side result | Raised |
-  | --- | --- | --- |
-  | `write("")` / `write(".")` | `base_path` is a file, size 1 | `InvalidPath("Path is empty after normalization")` |
-  | `write_atomic("")` / `write_atomic(".")` | `base_path` is a file, size 1 | `InvalidPath("Path is empty after normalization")` |
-  | `open_atomic("")` / `open_atomic(".")` | `base_path` is a file, size 1 | — **returns cleanly** |
-  | `write("")`, `base_path` present | unchanged directory | `InvalidPath("Not a file: ")` |
-
-  Note the error on the absent-`base_path` rows carries no `backend=` attribute:
-  it arrives from the `RemotePath` / `WriteResult` layer *after* the write, not
-  from the backend before it. The backend's own root guard is the observational
-  `is_dir()`-shaped check, which answers `False` when the container is gone.
-  Afterwards `is_folder("")` still answers `True` from SFTP's root
-  short-circuit, so BE-029's "a folder that always exists" becomes a claim about
-  a regular file and every later call answers about a store that cannot exist.
-  **This is BUG-247's defect on the other hierarchical backend**, found by that
-  work's round-3 measuring pass rather than by reading: BUG-247 borrowed SFTP's
-  *read*-side root short-circuits, which are correct, and did not look at its
-  write paths. The fix has the same shape — refuse the root key definitionally,
-  before the transport is touched — but the surfaces only *overlap*
-  ([§ Granularity](#how-this-file-works)), so it is a separate item.
-  **Not co-shipped with BUG-247 deliberately:** that item's scope is Local, and
-  widening it to a second backend mid-review would have put an untested SFTP
-  change into a PR whose SFTP claims are otherwise measurement-only.
-
 - [ ] **BUG-245 — `SQLBlobBackend(create_table=False)` leaks `NoSuchTableError` from its constructor**
   spec: BE-021, SQL-BLOB-012 · effort: S · audience: user.api
   Reflection is unguarded: `sa.Table(name, meta, autoload_with=engine)` against an
@@ -601,7 +571,7 @@ no clause of the contract ships unexercised.
 wrong answers (BUG-241's unescaped `LIKE` metacharacters, BUG-240's `max_depth`
 contradiction, BUG-251's cross-store cache collision) and three coverage holes
 measured in cells (ID-244's WRITE-gated classes, ID-242's four pragmas,
-ID-247's 22 root-path cells).
+ID-247's 30 root-path cells).
 **Bounded deliberately.** "No clause ships unexercised" is the promise, not the
 closing condition: nothing derives the full set of unreachable clauses today,
 which is what ID-245's inventory in section 6 would supply. Until it does, this
@@ -740,15 +710,71 @@ resting on it rather than a pending one.
   credentials. Each remaining pragma is a few params on that harness. Ship it
   independently of ID-244 — nothing here waits on the seeding decision.
 
+- [ ] **BUG-260 — `SQLBlobBackend.list_files("./")` answers empty for a non-empty root**
+  spec: BE-029, SQL-BLOB-010 · effort: S · audience: user.api
+  Measured on a root holding two files: `exists("./")` is `True`, `is_folder("./")`
+  is `True`, and `list_files("./", recursive=True)` returns **zero** entries —
+  where `""` and `"."` both return two. So the probes agree the folder is there
+  and the listing comes back empty, which is worse than either answering
+  consistently. `LocalBackend` and `MemoryBackend` answer `True / True / 2` under
+  all three spellings, so this is not the shared read-side behaviour.
+  The cause is the listing prefix: `is_root` recognises only `""` and `"."`, so
+  `"./"` falls through to the non-root branch and becomes the LIKE prefix
+  `'./%'`, which matches no stored key. The probes do not use that branch.
+  **Not fixed by widening `is_root`**, which has 52 call sites across 13 files
+  including `native_path` / `to_key` — BE-008's asymmetry paragraph explains why
+  that is a spec-amendment-class change rather than a local fix. The local fix is
+  in the prefix construction, and the general question — whether the read side
+  owes the wider predicate at all — is the one BE-008 currently answers "no" to
+  on the strength of the cost being an error class. This item is the
+  counterexample to that reasoning and should be read alongside it.
+  Found by the closing gate of BUG-259, which guarded the write side under the
+  wider predicate and left the read side stated but unmeasured.
+
+- [ ] **ID-251 — BE-029's widest clause is one the conformance suite cannot fail on**
+  spec: BE-029 · effort: M · audience: infra.test
+  BE-029 requires the write guard to refuse **every spelling that addresses the
+  root**, and says outright that a backend implementing it as `if is_root(path)`
+  is not conformant. The conformance cells cannot detect that: `_ROOT_WRITE_OPS`
+  and `_ROOT_WRITE_DST_OPS` are parametrised over `["", "."]` only, because they
+  also `assert is_root(exc.value.path)`. So a backend that reimplements the guard
+  narrowly ships green, and the only things holding the wider rule are
+  `tests/backends/test_flat_ns.py` (the shared helper in isolation) plus the
+  Local, SFTP and Graph per-backend modules — none of which a third-party backend
+  runs.
+  **Widening the parametrisation is not a one-liner**, which is why this is an
+  item rather than a follow-up commit. `assert exc.value.path == root` has to
+  replace the `is_root` assertion, and `DafnyOracleBackend` — registered with all
+  capabilities bar GLOB and LAZY_READ, so bound by these cells — passes `"./"`
+  through to the Dafny model unnormalised. Either the oracle normalises first or
+  the roster carries a documented carve-out for it; that choice is the work.
+  Found by the closing gate of BUG-259, which introduced the clause and the cells
+  in the same change and so had no round in which the gap was visible as a
+  regression.
+
 - [ ] **ID-247 — Record the Graph root-path cassettes**
   spec: BE-029 · effort: S · audience: infra.test
-  22 `TestBackendRootPath` cells still skip on `graph_replay` for want of a
+  **30** `TestBackendRootPath` cells still skip on `graph_replay` for want of a
   recording — the "pinned nowhere" column of spec 003's BE-029 table. Graph is
   the only HTTP family with **no emulator tier** (`graph_live` Stage 3 and
   `graph_replay` Stage 1, nothing between), so those contracts are unexercised
   against `GraphBackend` at every stage below a live account; Azure's equivalent
-  skips are covered by `azurite` at Stage 2. 14 of the 22 are Graph-only —
-  Azure passes them with no cassette at all (ID-241).
+  skips are covered by `azurite` at Stage 2.
+  The 30 is re-derived by `pytest -k TestBackendRootPath -rs`, summing the skip
+  reasons naming `cassettes/graph`. Twelve of the 30 are the rosters BUG-259
+  added — `test_write_to_root_is_refused_and_the_store_survives` at 2 ops × 2
+  overwrite modes × 2 root spellings, and
+  `test_root_as_move_or_copy_destination_is_refused` at 2 ops × 2 spellings —
+  both seeding through `write` and so skipping on the same terms, leaving **18**
+  that predate it. The item previously said 22, which the 30 does not reproduce
+  (18 + 12); the 22 is superseded rather than reconciled. Section 2's "Closes
+  when" cites this figure and was updated with it — a superseded number is only
+  harmless once nothing reads it, and checking that is part of superseding it.
+  **The old "14 of the 22 are Graph-only" split is not re-derived here** —
+  the new cells skip on the Azure replay lanes too, so the split did not simply
+  move with the total, and separating it needs a per-node comparison of the graph
+  and azure lanes rather than a count of skip reasons. Left for this item's own
+  work rather than guessed at.
   `python scripts/record_cassettes.py --backend graph` needs `RS_TEST_LIVE_GRAPH=1`
   plus `GRAPH_CLIENT_ID` / `GRAPH_TENANT_ID` / `GRAPH_DRIVE_ID` (device-code, so
   interactive). Prefer `--node` per cell: a full run re-records all 119 existing

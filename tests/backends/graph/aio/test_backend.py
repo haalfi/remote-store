@@ -17,8 +17,8 @@ import respx
 
 from remote_store._capabilities import Capability
 from remote_store._config import RetryPolicy
-from remote_store._errors import CapabilityNotSupported, InvalidPath
-from remote_store.aio.backends._graph.backend import GraphBackend, _encode_segment
+from remote_store._errors import BackendUnavailable, CapabilityNotSupported, InvalidPath
+from remote_store.aio.backends._graph.backend import GraphBackend, _encode_segment, _split_parent
 
 _DRIVE = "b!driveid123"
 _UPLOAD_URL = "https://up.example.com/session/abc?tempauth=secret"
@@ -198,9 +198,17 @@ class TestAddressing:
         They now run on ``graph_replay``, so this is no longer the only cover;
         it is kept because the conformance fixture is rooted under a
         ``base_path`` and this one is not, and the bare-root arm is where the
-        defect was. The root-*refusal* cells below are still conformance-
-        unreachable: rejecting a root write costs Graph an HTTP round trip
-        first, so those cells do need a cassette.
+        defect was.
+
+        The root-*refusal* cells below are conformance-unreachable for a reason
+        worth stating precisely, because the obvious one is wrong: it is not
+        that refusing costs Graph a round trip — the guards refuse from the key
+        before a request exists, which is what lets those cells run with no
+        ``respx.mock`` at all. It is that the conformance cells **seed**
+        through ``write`` to set up, and *that* write needs a cassette. The
+        distinction decides what can be pinned where: the close-posture cell
+        never seeds, so the Graph lane executes it inside conformance and it is
+        where the closed-guard ordering breach was caught.
         """
         backend = _make()
         assert backend.native_path(".") == backend.native_path("")
@@ -229,6 +237,87 @@ class TestAddressing:
         """
         with pytest.raises(InvalidPath, match="drive root"):
             _make()._require_writable_key(root)
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-008")
+    @pytest.mark.parametrize("root", ["", "/", ".", "./", "/./"], ids=range(5))
+    @pytest.mark.parametrize("op", ["move", "copy"], ids=["move", "copy"])
+    async def test_root_as_move_or_copy_destination_is_refused(self, root: str, op: str) -> None:
+        """The destination half, exercised through ``move``/``copy`` themselves.
+
+        The sibling above calls ``_require_writable_key`` directly, so it pins
+        the helper and not either call site — it passes with both destination
+        guards deleted. This drives the real methods, which is what makes it a
+        fence rather than a measurement.
+
+        No ``respx.mock``: the guard is a pure string test that runs before any
+        request, so an ``InvalidPath`` here *is* the proof it precedes the
+        transport. A call that reached the network would fail this cell with a
+        connection error instead, which is the discrimination it needs.
+
+        Conformance cannot supply this. Its destination cell seeds through
+        ``write``, so the Graph lane skips it for want of a cassette — measured,
+        the whole Graph suite passed with the destination guard reverted.
+        """
+        backend = _make()
+        with pytest.raises(InvalidPath, match="drive root") as exc_info:
+            await getattr(backend, op)("a.txt", root)
+        assert exc_info.value.path == root
+        assert exc_info.value.backend == "graph"
+        await backend.aclose()
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("BE-008")
+    @pytest.mark.parametrize("root", ["", "/", ".", "./", "/./"], ids=range(5))
+    @pytest.mark.parametrize("op", ["move", "copy"], ids=["move", "copy"])
+    async def test_root_as_move_or_copy_source_is_refused_from_the_key(self, root: str, op: str) -> None:
+        """The source half, and the assertion is about *when* rather than what.
+
+        Graph reaches every other file-shaped root verdict by observation — it
+        fetches the item and inspects the response — which satisfies the error
+        class and not the precondition order BE-008 step (0) now binds. Before
+        the guard, a root source cost a round trip and answered from the
+        response; measured against an unreachable endpoint it raised
+        ``BackendUnavailable``, not ``InvalidPath``.
+
+        So this cell is written with no mock and no reachable endpoint on
+        purpose: reverting the guard turns the raise into a connection failure,
+        which is exactly the property under test. Asserting the class alone
+        against a live drive would pass either way.
+        """
+        backend = _make()
+        with pytest.raises(InvalidPath, match="folder, not a file") as exc_info:
+            await getattr(backend, op)(root, "z.txt")
+        assert exc_info.value.path == root
+        assert exc_info.value.backend == "graph"
+        await backend.aclose()
+
+    @pytest.mark.spec("BE-020")
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.parametrize("metadata", [None, {"k": "v"}], ids=["no-metadata", "with-metadata"])
+    @pytest.mark.parametrize("path", ["", "a.txt"], ids=["root-key", "ordinary-key"])
+    async def test_closed_backend_answers_before_every_other_precondition(
+        self, path: str, metadata: dict[str, str] | None
+    ) -> None:
+        """A closed backend says so whatever *else* is wrong with the call.
+
+        The four cells are the cross product of the two pre-checks ``write``
+        runs ahead of its first client touch, and the point is the pair that
+        carries ``metadata=``: the user-metadata gate sat above the root check,
+        so moving the closed guard into ``_require_writable_key`` fixed the
+        no-metadata column and left the other answering
+        ``CapabilityNotSupported`` on a store that cannot honour any answer.
+
+        Written as a cross product rather than one closed-write cell because
+        that is the shape that fails: a single cell pins whichever pre-check
+        happens to run first and stays green when a new one is added above it.
+        Both columns must be ``BackendUnavailable`` or the caller's diagnosis
+        depends on which guard was written first.
+        """
+        backend = _make()
+        await backend.aclose()
+        with pytest.raises(BackendUnavailable, match="closed"):
+            await backend.write(path, b"x", metadata=metadata)
 
     @pytest.mark.spec("GR-009")
     def test_resolve_carries_drive_id(self) -> None:
@@ -260,6 +349,101 @@ class TestBasePath:
         # The move/copy parentReference must also be scoped (GR-058 + GR-027/025).
         backend = _make(base_path="root/sub")
         assert backend._parent_ref_path("dir") == f"/drives/{_DRIVE}/root:/root/sub/dir"
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("GR-027")
+    @pytest.mark.parametrize(
+        "dst",
+        ["./x.txt", "././x.txt", ".//x.txt", "/x.txt", "x.txt"],
+        ids=["dot", "dot-dot", "dot-slash", "slash", "bare"],
+    )
+    def test_move_destination_addresses_the_root_under_every_spelling(self, dst: str) -> None:
+        """The destination *address* must agree with the destination *guard*.
+
+        ``_parent_ref_path`` had its own ``if s`` split while the guard used the
+        ``"."``-dropping one, so these spellings passed the guard and then named
+        a folder literally called ``.`` on the wire (``%2E``) — the same defect
+        the root check itself was written for, one function along, and reachable
+        because the guard's tolerance is what lets the spelling get this far.
+
+        The second assertion is what makes this a fence rather than a literal:
+        the property is that the two predicates agree, so a change moving both
+        keeps it green and a change moving either alone does not.
+        """
+        backend = _make()
+        parent, _name = _split_parent(dst)
+        assert backend._parent_ref_path(parent) == f"/drives/{_DRIVE}/root:"
+        assert backend.native_path(dst) == backend.native_path("x.txt")
+
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.spec("GR-027")
+    @pytest.mark.parametrize(
+        "dst",
+        [
+            "x.txt",
+            "dir/x.txt",
+            "./x.txt",
+            "a/.",
+            "a/./",
+            "x.txt/.",
+            "a/./b",
+            "dir/./x.txt",
+            "/x.txt",
+            "a b/c#d",
+            "report.",
+            "p/q+r",
+        ],
+        ids=range(12),
+    )
+    def test_move_destination_and_write_address_the_same_node(self, dst: str) -> None:
+        """The whole destination address, name half included, agrees with ``write``.
+
+        The sibling above fences the *parent* half and passes with the name half
+        still broken, because every spelling it carries has an ordinary
+        basename. ``_split_parent`` took its name from ``rpartition("/")`` over
+        the stripped key, which keeps a trailing ``"."`` where every other
+        predicate here drops it — so ``move(src, "a/.")`` addressed an item
+        literally named ``.`` inside ``a`` while ``write("a/.")`` wrote to ``a``.
+        Three of the first nine spellings below disagreed — the trailing-dot
+        rows. The roster is twelve now; the last three were added later, for
+        the separate reason two paragraphs down.
+
+        Reconstructing the address from ``parentReference.path`` + ``name`` and
+        comparing it to ``native_path`` is the assertion, rather than a literal
+        per row: the property is that one key names one node however this
+        backend is asked, and a literal would pin today's spelling of the answer
+        instead of the agreement.
+
+        ``name`` is compared through ``_encode_segment`` because the body
+        carries it **raw** while ``parentReference.path`` and ``native_path``
+        are percent-encoded. The first version of this cell compared it raw and
+        so held only over basenames needing no encoding — the same weakness it
+        was written to correct in its sibling above, one level up. The last
+        three params are here for that: a space, a ``#``, a ``+``, and a
+        trailing dot, each of which ``_encode_segment`` touches.
+        """
+        backend = _make()
+        body = backend._move_copy_body(dst)
+        addressed = f"{body['parentReference']['path']}/{_encode_segment(body['name'])}"
+        assert addressed == backend.native_path(dst).removesuffix(":")
+
+    @pytest.mark.spec("GR-058")
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.parametrize("base", ["", ".", "./", ".//"], ids=["empty", "dot", "dot-slash", "dot-slash-slash"])
+    def test_root_spelled_base_path_scopes_at_the_drive_root(self, base: str) -> None:
+        """A ``base_path`` naming the root scopes at the root, under every spelling.
+
+        ``_base_segments`` was the fourth key splitter in this module to use its
+        own predicate — an ``if s`` filter, which keeps ``"."``. So
+        ``base_path="."`` scoped the whole store under a drive folder literally
+        named ``.``: every write went there, and the spelling this contract
+        treats as the root everywhere else silently meant something else.
+
+        Asserted through ``native_path`` rather than on ``_base_segments``, so
+        the cell states the consequence a user would see rather than the
+        implementation detail that produced it.
+        """
+        assert _make(base_path=base).native_path("x") == f"/drives/{_DRIVE}/root:/x:"
 
     @pytest.mark.spec("GR-058")
     def test_base_path_slashes_normalised(self) -> None:

@@ -261,8 +261,8 @@ class LocalBackend(Backend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or an ancestor of *path*
-                exists as a regular file.
+            InvalidPath: If *path* is the store root, or names a directory, or
+                an ancestor of *path* exists as a regular file.
             PermissionDenied: If the OS denies write access.
         """
         self._reject_root_as_write_target(path)
@@ -328,8 +328,8 @@ class LocalBackend(Backend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or an ancestor of *path*
-                exists as a regular file.
+            InvalidPath: If *path* is the store root, or names a directory, or
+                an ancestor of *path* exists as a regular file.
             PermissionDenied: If the OS denies write access.
         """
         self._reject_root_as_write_target(path)
@@ -388,8 +388,8 @@ class LocalBackend(Backend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or an ancestor of *path*
-                exists as a regular file.
+            InvalidPath: If *path* is the store root, or names a directory, or
+                an ancestor of *path* exists as a regular file.
             PermissionDenied: If the OS denies write access.
         """
         self._reject_root_as_write_target(path)
@@ -673,13 +673,14 @@ class LocalBackend(Backend):
 
         Raises:
             NotFound: If *src* does not exist.
-            InvalidPath: If *src* or *dst* names a directory, or an ancestor of
-                *dst* exists as a regular file.
+            InvalidPath: If *src* or *dst* is the store root, or names a
+                directory, or an ancestor of *dst* exists as a regular file.
             AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is
                 ``False``.
             PermissionDenied: If the OS denies the operation.
         """
         self._reject_root_as_file(src)
+        self._reject_root_as_write_target(dst)
         src_full = self._resolve(src)
         dst_full = self._resolve(dst)
         if not src_full.exists():
@@ -720,13 +721,14 @@ class LocalBackend(Backend):
 
         Raises:
             NotFound: If *src* does not exist.
-            InvalidPath: If *src* or *dst* names a directory, or an ancestor of
-                *dst* exists as a regular file.
+            InvalidPath: If *src* or *dst* is the store root, or names a
+                directory, or an ancestor of *dst* exists as a regular file.
             AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is
                 ``False``.
             PermissionDenied: If the OS denies the operation.
         """
         self._reject_root_as_file(src)
+        self._reject_root_as_write_target(dst)
         src_full = self._resolve(src)
         dst_full = self._resolve(dst)
         if not src_full.exists():
@@ -770,40 +772,27 @@ class LocalBackend(Backend):
     def _reject_root_as_write_target(self, path: str) -> None:
         """Reject the store root as a write destination, before touching the disk.
 
-        The three writers already reject it by observation — the root is a real
-        directory, so ``full.is_dir()`` fires. That check answers ``False`` once
-        the root has been deleted underneath the backend, and what follows is
-        worse than a wrong error: ``parent.mkdir`` recreates the tree, the bytes
-        land at the root path, and only then does building the ``WriteResult``
-        reject the empty key. The store root is left as a regular *file*, and
-        every later call answers about a store that cannot exist.
+        Local's own route into the shared guard, whose docstring carries the
+        rule and the reason it must be definitional rather than observed. The
+        state that defeats observation here is a root *deleted underneath a live
+        backend*: ``__init__`` mkdirs the root, so ``full.is_dir()`` is a correct
+        check right up until it is not. ``SFTPBackend`` reaches the same guard
+        from an untouched store instead.
 
-        So the rejection has to be definitional rather than observed, like the
-        root's other answers. Deliberately not ``_reject_root_as_file``: that
-        helper is explicitly not a mutation guard, and its wording ("a folder,
-        not a file") describes a *read* of the wrong type. This says what is
-        actually wrong with writing here, and says the same thing whether or not
-        the directory is currently on disk.
-
-        A write *under* the root is unaffected and still recreates it — only
-        the root key itself is refused.
-
-        Three call sites, not five: ``move`` and ``copy`` also write, but their
-        *destination* cannot reach the corruption above, so they are guarded on
-        the source side only. Measured both ways. With the root present,
-        ``dst_full.is_dir()`` fires and the answer is
-        ``"Destination is a directory"``. With the root gone, nothing can exist
-        beneath it, so the source check fails first with ``"Source not found"``
-        and the destination is never examined. There is no state in which the
-        root is both a legal source and an unguarded destination, and the root
-        is left a regular file in neither.
+        Five call sites: the three writers, plus the ``move``/``copy``
+        destination. What the guard changes on the destination depends on the
+        state, and the parenthetical that used to sit here was the counterexample
+        to its own conclusion. With the root present, ``dst_full.is_dir()`` fires
+        and the guard changes only the message. With the root **gone** — the
+        state this backend's guard exists for — the source check fires first and
+        the answer was ``NotFound``, so the guard changes the class and inverts
+        the precondition order. ``test_the_root_as_a_move_or_copy_destination_never_becomes_a_file``
+        asserted ``(NotFound, InvalidPath)`` for that reason and now asserts
+        ``InvalidPath`` alone.
         """
-        if is_root(path):
-            raise InvalidPath(
-                f"Cannot write — '{path}' is the store root, which is a folder",
-                path=path,
-                backend=self.name,
-            )
+        from remote_store.backends._flat_ns import _reject_root_as_write_target
+
+        _reject_root_as_write_target(path, self.name)
 
     def _reject_root_as_file(self, path: str) -> None:
         """Pre-check: the store root is a folder, so a file op on it is a type error.

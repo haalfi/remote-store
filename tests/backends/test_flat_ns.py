@@ -14,6 +14,18 @@ The BK-324 wrong-type helpers follow the same split. The sync pair is
 exercised end-to-end by every flat-NS conformance fixture; the async pair
 only by `azurite_async`, which needs a container, so its root carve-out and
 probe short-circuit are pinned here against stub awaitables.
+
+The BUG-259 root guards are here for a different reason, and it is the one
+that most needs stating. `_reject_root_as_write_target` runs on every
+write-shaped call on every backend, so its *over-matching* half — the
+ordinary keys it must let through — is the half a backend suite cannot
+reach cheaply: a predicate matching one character too many would fail
+everywhere at once and be diagnosed as anything but a root check. Its
+under-matching half has a second reason to live here: the conformance cells
+are parametrised over the two canonical spellings only (they assert
+`is_root` on the raised path), so the wider spellings the contract requires
+are pinned by these cells and by three per-backend modules, and nowhere in
+conformance. See ID-251.
 """
 
 from __future__ import annotations
@@ -21,6 +33,7 @@ from __future__ import annotations
 import pytest
 
 from remote_store._errors import InvalidPath
+from remote_store._path import is_root
 from remote_store.backends._flat_ns import (
     _acheck_no_file_ancestor,
     _achildren_or_absent_container,
@@ -29,6 +42,7 @@ from remote_store.backends._flat_ns import (
     _check_no_file_ancestor,
     _children_or_absent_container,
     _reject_root_as_file,
+    _reject_root_as_write_target,
     _wrong_type_if_file,
     _wrong_type_if_folder,
 )
@@ -360,6 +374,107 @@ class TestRejectRootAsFile:
         here would reject ordinary keys before any I/O.
         """
         assert _reject_root_as_file(path, "stub") is None
+
+
+@pytest.mark.spec("BE-029", "BE-008")
+class TestRejectRootAsWriteTarget:
+    """The pre-check that keeps the root out of write-shaped operations.
+
+    The sibling above answers a *read* of the wrong type; this answers a write,
+    and the two are deliberately separate helpers with separate wordings. Both
+    halves are pinned here rather than only through the backends, because the
+    over-matching half is the one a backend suite cannot reach cheaply: every
+    ordinary key on every backend runs through this guard, so a predicate that
+    matched one character too many would fail everywhere at once and be
+    diagnosed as anything but a root check.
+    """
+
+    @pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+    def test_both_spellings_raise_invalid_path(self, root: str) -> None:
+        with pytest.raises(InvalidPath, match="is the store root") as exc_info:
+            _reject_root_as_write_target(root, "stub")
+
+        assert exc_info.value.path == root
+        assert exc_info.value.backend == "stub"
+
+    @pytest.mark.parametrize(
+        "root",
+        ["./", ".//", "./.", "/", "//", "/.", "././"],
+        # "dot-dot" would read as "..", which this guard deliberately does NOT
+        # refuse -- the bound is the slash-and-dot family, and "_addressable_segments('..')"
+        # is [".."]. The ids spell the slashes out so a -v line cannot suggest otherwise.
+        ids=[
+            "dot-slash",
+            "dot-slash-slash",
+            "dot-slash-dot",
+            "slash",
+            "slash-slash",
+            "slash-dot",
+            "dot-slash-dot-slash",
+        ],
+    )
+    def test_non_canonical_root_spellings_also_raise(self, root: str) -> None:
+        """The spellings ``is_root`` does not recognise, which is why this guard normalises.
+
+        ``is_root`` is exactly ``{"", "."}``. Every string here addresses the
+        same node and none of them is in that set, so a guard written as
+        ``if is_root(path)`` lets all seven through. Measured before the fix
+        against a ``LocalBackend`` whose root had been deleted: ``write("./")``
+        left the root a regular **file** and raised from above the backend, and
+        ``open_atomic("./")`` returned cleanly having done it — the whole defect
+        the guard exists for, one character from the spelling it caught.
+
+        The error still echoes the caller's own spelling in ``path`` rather than
+        a canonicalised one, so a caller sees the string they passed.
+        """
+        with pytest.raises(InvalidPath, match="is the store root") as exc_info:
+            _reject_root_as_write_target(root, "stub")
+
+        assert exc_info.value.path == root
+        assert exc_info.value.backend == "stub"
+
+    def test_the_guard_does_not_defer_to_is_root(self) -> None:
+        """Fences the normalisation against a revert to the obvious one-liner.
+
+        Every other cell here would pass with the body rewritten as
+        ``if is_root(path)`` **except** the non-canonical class above, and that
+        class is easy to read as pedantry about strings nobody types. This cell
+        states the dependency outright: the two predicates disagree, and the
+        guard is required to follow the wider one.
+        """
+        assert is_root("./") is False, "is_root recognises './' — this cell's premise is gone"
+        with pytest.raises(InvalidPath):
+            _reject_root_as_write_target("./", "stub")
+
+    @pytest.mark.parametrize(
+        "path",
+        ["a.txt", "a/b.txt", "dot.txt", "a/./b", "./a.txt", "..txt", ".hidden"],
+        ids=range(7),
+    )
+    def test_non_root_paths_pass_through(self, path: str) -> None:
+        """Ordinary keys are untouched, including the ones that start with a dot.
+
+        ``".hidden"`` and ``"..txt"`` are here because they are what a
+        ``startswith(".")`` or a ``strip(".")`` spelling of this predicate would
+        swallow — the exact shape that once let ``"."`` through the Graph
+        backend's own root check in the opposite direction.
+        """
+        assert _reject_root_as_write_target(path, "stub") is None
+
+    def test_wording_differs_from_the_read_guard(self) -> None:
+        """The two guards must not converge on one message.
+
+        Their separation is the whole reason there are two helpers: a caller
+        told "not a file" about a write learns the wrong thing. A future edit
+        that unified the wording would pass every backend test, because those
+        assert the class and the path, never the sentence.
+        """
+        with pytest.raises(InvalidPath) as write_exc:
+            _reject_root_as_write_target("", "stub")
+        with pytest.raises(InvalidPath) as read_exc:
+            _reject_root_as_file("", "stub")
+        assert str(write_exc.value) != str(read_exc.value)
+        assert "Cannot write" in str(write_exc.value)
 
 
 class _Sentinel(Exception):
