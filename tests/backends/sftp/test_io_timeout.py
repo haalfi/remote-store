@@ -981,8 +981,14 @@ def test_releasing_a_stalled_handle_after_no_failure_is_silent(
         stream.close()  # raises nothing, which is the point
         elapsed = time.monotonic() - start
 
-    assert not caplog.records, (
-        f"the silent close emitted {[r.getMessage() for r in caplog.records]}; "
+    # Filtered by logger name, not by ``at_level``. That argument raises the
+    # level on the ``remote_store`` logger; it does not stop caplog's root
+    # handler capturing anything else that passes, so under ``--log-level=DEBUG``
+    # paramiko's own two close lines land in ``caplog.records`` too. Asserting on
+    # the unfiltered list failed on transport chatter while blaming SFTP-030.
+    ours = [r for r in caplog.records if r.name.startswith("remote_store")]
+    assert not ours, (
+        f"the silent close emitted {[r.getMessage() for r in ours]}; "
         "if it now reports the stall, SFTP-030's silent-stall paragraph is stale"
     )
     assert backend._sftp_client is not None, (

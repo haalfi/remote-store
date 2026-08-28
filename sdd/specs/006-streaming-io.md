@@ -182,22 +182,27 @@ only repair is to stop delegating the request that fails.
 runs on the success path. It also has no generic form: the wrapper holds no size
 of its own, so an unconditional version would need a per-backend source anyway.
 What decided it is that **paramiko is the only inner stream measured to discard
-its own size failure**, and the other four wrapper users reach `SEEK_END` by
-routes with nothing for a probe to repair — read off the call sites, one by one
-rather than as a class, because they do not share a mechanism:
+its own size failure**. The enumeration below is by *construction site* rather
+than by backend, because two backends build the wrapper twice over different
+inner streams and a per-backend list gets them wrong — an earlier draft
+attributed Azure's range reader to its `read()`, which does not use it:
 
-- `S3Boto3Backend`'s `_S3RangeReader.seek` and `AzureBackend`'s
-  `_RangeReader.seek` compute `self._size + offset` from a size captured at open.
-- `S3Backend` wraps an fsspec file, whose `AbstractBufferedFile.seek` computes
-  `self.size + loc` from a size held on the handle.
-- `S3PyArrowBackend` wraps a pyarrow `NativeFile`, which resolves `SEEK_END`
-  inside its own implementation and returns the new position.
-- `ReadOnlyHttpBackend` wraps a forward-only `RawIOBase` response adapter that
-  defines neither `seek` nor `seekable`, so its stream is not seekable at all.
+- **A size captured at open, added to the offset.** `_S3RangeReader.seek`, which
+  `S3Boto3Backend` uses for both `read()` and `read_seekable()`; and
+  `_AzureRangeReader.seek`, which `AzureBackend` uses for `read_seekable()`
+  alone.
+- **A size held on the handle.** `S3Backend.read()` wraps an fsspec file, whose
+  `AbstractBufferedFile.seek` computes `self.size + loc`.
+- **Resolved inside the inner implementation.** `S3PyArrowBackend.read()` wraps
+  a pyarrow `NativeFile` through `_PyArrowBinaryIO`.
+- **Not seekable at all.** `AzureBackend.read()` wraps `_AzureBinaryIO`, and
+  `ReadOnlyHttpBackend.read()` wraps its transport's response adapter — all
+  forward-only `RawIOBase` subclasses defining neither `seek` nor `seekable`.
 
-Probing on their behalf would buy a round-trip per seek and nothing else — or,
-for HTTP, a request against a stream that cannot seek. `SFTPBackend` is the only
-backend that supplies a probe.
+None of those has a failure for a probe to repair, so probing on their behalf
+would buy a round-trip per seek and nothing else — or, on the forward-only
+streams, a request against something that cannot seek. `SFTPBackend.read()` is
+the only site that supplies a probe.
 
 **The probe's own failure is bounded by the same caught tuple as every other
 path**, deliberately: a `paramiko.SFTPError` raised by the probe escapes

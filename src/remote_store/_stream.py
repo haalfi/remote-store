@@ -115,10 +115,13 @@ class _ErrorMappingStream(io.RawIOBase):
         size_probe: Optional ``(inner) -> int`` callable returning the size of
             *inner*, used to resolve ``SEEK_END``.  Unlike *is_fatal* this one
             **is** a round-trip, and it is called on the success path before any
-            failure is known.  Omitted by backends whose streams resolve
-            ``SEEK_END`` from a size they already hold -- the S3, Azure and HTTP
-            range readers all do -- and for them the seek delegates unchanged,
-            so no backend pays a probe on another's behalf.
+            failure is known.  Supply it only for an inner stream that resolves
+            ``SEEK_END`` by a request it can then discard -- paramiko's
+            ``SFTPFile`` is the one measured to do so.  Omitted everywhere else:
+            a ranged reader already holds its size, and a forward-only response
+            adapter is not seekable at all.  Where it is omitted the seek
+            delegates exactly as before, so no stream pays a probe on another's
+            behalf.
     """
 
     def __init__(

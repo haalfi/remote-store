@@ -194,19 +194,23 @@ if evidence changes; these are retired.
   BK-355's predicate — was answered in favour of opt-in**, and on evidence
   rather than symmetry. The wrapper holds no size of its own, so an
   unconditional version would need a per-backend source anyway; and paramiko is
-  the only inner stream measured to discard its own size failure. The other four
-  wrapper users reach `SEEK_END` by four different routes, none with anything
-  for a probe to repair, which is why they are checked one by one rather than
-  asserted as a class: `_S3RangeReader.seek` and Azure's `_RangeReader.seek` add
-  `offset` to a `_size` captured at open; `S3Backend`'s fsspec handle computes
-  `self.size + loc` the same way; `S3PyArrowBackend` defers to a pyarrow
-  `NativeFile`; and `ReadOnlyHttpBackend`'s response adapter is a forward-only
-  `RawIOBase` defining neither `seek` nor `seekable`, so its stream is not
-  seekable at all. A first draft of this paragraph called all five "range
-  readers resolving from a size they hold", which is true of three of them —
-  round 1 caught it.
-  The five backend classes that supply no probe delegate unchanged, pinned by a
-  unit test on the *wrapper's* default rather than on what those sites pass.
+  the only inner stream measured to discard its own size failure. The other six
+  construction sites reach `SEEK_END` by three different routes, none with
+  anything for a probe to repair: `_S3RangeReader.seek` (S3-boto3's `read` and
+  `read_seekable` both) and `_AzureRangeReader.seek` (Azure's `read_seekable`)
+  add `offset` to a `_size` captured at open; `S3Backend`'s fsspec handle
+  computes `self.size + loc` from a size it holds; `S3PyArrowBackend` defers to
+  a pyarrow `NativeFile`; and `AzureBackend.read()`'s `_AzureBinaryIO` and
+  `ReadOnlyHttpBackend.read()`'s response adapter are forward-only `RawIOBase`
+  subclasses defining neither `seek` nor `seekable`.
+  **The enumeration is by construction site because two rounds got it wrong by
+  backend.** A first draft called all five other backends "range readers
+  resolving from a size they hold" (round 1); its replacement then attributed
+  Azure's range reader to `AzureBackend.read()`, which does not use it, and
+  counted five sites as four (round 2). Azure builds the wrapper twice over
+  different inner streams, so no per-backend sentence can be right about it.
+  Those sites supply no probe and delegate unchanged, pinned by a unit test on
+  the *wrapper's* default rather than on what any of them passes.
   **Scope kept off one adjacent thing, and pulled onto another.** The caught
   tuple is unchanged, so a `paramiko.SFTPError` from the probe still escapes
   unmapped exactly as one from a read does — BK-358, not narrowed here. But

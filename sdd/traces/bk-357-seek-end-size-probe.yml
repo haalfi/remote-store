@@ -50,10 +50,15 @@ surprising_ripples:
   # table's rows are not shaped to find: they ask what references the thing you
   # changed, and nothing references a test by the clause it happens to hold up.
   - tests/backends/sftp/test_io_timeout.py
-# Name the commits, per the schema's review_rounds description. Filled at merge
-# from `git log --oneline origin/master..HEAD`: the implementation commit does
-# not count; every later commit exists because a review round found something.
-review_rounds: 0
+# Derivation, stated as a rule rather than a list, per the schema's
+# review_rounds description: `git rev-list --count origin/master..HEAD` minus
+# one. Every commit on this branch except 0dca365 exists because a review round
+# found something; 0dca365 is the implementation. Written as a rule because the
+# value counts commits, lives inside one of them, and grows with every round —
+# any enumeration is wrong the moment the commit carrying it is made, and naming
+# a not-yet-created SHA is the failure the schema calls worse than no derivation
+# at all. Run the command at merge and subtract one.
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -116,13 +121,22 @@ phases:
         read_type: reference
         extract: >-
           Resolves SEEK_END from a _size it already holds — no round-trip, so
-          nothing to swallow. This, with Azure's identical shape, is what decided
-          the item's open question for opt-in over a wrapper-wide probe.
+          nothing to swallow. This, with Azure's shape, is what decided the item's
+          open question for opt-in over a wrapper-wide probe. Retrospective: two
+          reads of two backends were enough to decide correctly and not enough to
+          *describe* the set — I generalised them to all five other backends
+          (round 1), then to the wrong Azure call site (round 2).
         outcome: ok
       - file: src/remote_store/backends/_azure.py
         section: "_RangeReader.seek"
         read_type: reference
-        extract: "Same local SEEK_END resolution as S3's; the second half of that evidence"
+        extract: >-
+          Local SEEK_END resolution from a captured size; the second half of that
+          evidence. Retrospective: I read the reader without reading which method
+          builds it. It is `read_seekable`'s; `AzureBackend.read()` wraps the
+          forward-only `_AzureBinaryIO` fifteen lines earlier, so Azure sits on
+          both sides of the enumeration and no per-backend sentence about it can
+          be right.
         outcome: ok
 
   - id: tests

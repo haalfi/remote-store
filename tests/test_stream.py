@@ -605,13 +605,14 @@ class TestSeekEndSizeProbe:
 
     @pytest.mark.spec("SIO-011")
     def test_without_a_probe_the_inner_swallow_still_answers(self) -> None:
-        """The hook is opt-in, and this is the behaviour the other backends keep.
+        """The hook is opt-in, and this is the behaviour every other stream keeps.
 
-        `S3Backend`, `S3Boto3Backend`, `S3PyArrowBackend`, `AzureBackend` and
-        `ReadOnlyHttpBackend` supply no probe: their range readers resolve
-        ``SEEK_END`` from a size they already hold, with no round-trip to fail.
-        This pins that the wrapper does not start probing on their behalf --
-        the same shape ``test_without_a_predicate_a_failure_never_skips_the_close``
+        The six non-SFTP construction sites supply no probe, and they reach
+        ``SEEK_END`` by three different routes -- a size captured at open, a size
+        held on the handle, or not at all, because two of them wrap forward-only
+        streams. SIO-011 enumerates them; what matters here is only that the
+        wrapper does not start probing on their behalf, which is what this pins,
+        on the same shape ``test_without_a_predicate_a_failure_never_skips_the_close``
         pins for the close.
         """
         inner = _ParamikoSeekEndStream(b"0123456789", stat_exc=_ChannelDeath("channel stalled"))
