@@ -423,8 +423,10 @@ not constrain the choice and are not what it was sized against: expressing the
 bound as a fraction of them would use exactly the yardstick this clause tells
 callers not to use, and no fraction of a transfer time discriminates one silence
 bound from another. `120.0` is also the value the SFTP guide and the
-troubleshooting page already used in their worked examples, so the default and
-the documentation stop disagreeing.
+troubleshooting page already used in their worked examples before it became the
+default, so the value a reader was being shown and the one they got stop
+disagreeing. The guide's example has since moved to a different value, because
+illustrating the option with the default illustrates nothing.
 
 **It is a behaviour change for a caller who sets nothing**, and shipped as one:
 an operation that previously blocked forever now raises `BackendUnavailable`

@@ -164,7 +164,7 @@ phases:
           rebases, whose two copies disagreed on how many exceptions SFTP-030
           states. Not this item's defect, but in this item's artifact and about
           this item's subject
-        outcome: ok
+        outcome: misleading
       - file: sdd/TESTING.md
         section: "Rules"
         read_type: verify
