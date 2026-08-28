@@ -18,20 +18,19 @@ audience:
 discovery_followups:
   - BK-357
   - BK-358
-# Counted from `git log --oneline origin/master..HEAD`, run immediately before
-# this line was last rewritten: 10 commits, of which a9779b1 is the
-# implementation and does not count. The nine that do are the fix passes for
-# rounds 1-7, two rounds having taken two commits each (round 1's sub-points,
-# and round 7's split between the structural restore and its follow-ups).
+# Derivation, stated so a reader can run it rather than trust the total:
+# `git rev-list --count origin/master..HEAD` minus one. Every commit on this
+# branch except a9779b1 exists because review feedback was incorporated, which
+# is the schema's test; a9779b1 is the implementation. At merge that command
+# returns 12, so the value is 11 — nine fix passes across seven rounds (two
+# rounds took two commits each), plus this branch's two closing commits.
 #
-# The value went stale twice before this, and the reason is structural rather
-# than careless: it counts commits, it lives inside one of them, and every
-# round adds another. Both earlier attempts enumerated the commits as the
-# schema asks and still under-counted, because re-reading an enumeration does
-# not reveal a row that did not exist when it was written. A reader should
-# re-run the command rather than trust the total; if it returns more than ten,
-# a later round ran and this is stale again by construction.
-review_rounds: 9
+# It is written this way because the earlier form — enumerating the commits —
+# went stale three times, and not carelessly: the value counts commits, it
+# lives inside one of them, and every round adds another, so any enumeration is
+# wrong the moment the commit carrying it is made. A rule a reader can execute
+# does not have that problem.
+review_rounds: 11
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
