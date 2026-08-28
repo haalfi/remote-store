@@ -9369,6 +9369,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#sio-011-sizing-a-stream-for-an-end-relative-seek" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIO-011: Sizing a Stream for an End-Relative Seek
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -10780,6 +10791,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#sio-011-sizing-a-stream-for-an-end-relative-seek" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIO-011: Sizing a Stream for an End-Relative Seek
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -10892,12 +10914,90 @@ decides is the caught tuple, not the predicate. Where a failure does not arrive,
 the close re-enters the connection exactly as it would have without this clause,
 and whatever the mapper would have done — invalidating a cached client, marking a
 session dead — is left undone too.</p>
-<p>Both classes are non-empty on <code>SFTPBackend</code>, which is the only backend that has
-been measured: a <code>SEEK_END</code> seek for the first (SFTP-030 states it; BK-357
-carries the fix), and paramiko's <code>SSHException</code> / <code>SFTPError</code> for the second,
-which additionally escape unmapped in breach of BE-021 (BK-358).</p>
+<p>Both classes are non-empty on <code>SFTPBackend</code>, the only backend that has been
+measured. For the second: paramiko's <code>SSHException</code> / <code>SFTPError</code>, which
+additionally escape unmapped in breach of BE-021 (BK-358). For the first, a
+send-side <code>EOFError</code> that <code>BufferedFile.read</code> swallows into a short read before
+it reaches the wrapper at all. A <code>SEEK_END</code> seek was a third case, and the one
+that cost most — the swallowed size request answered <code>0</code> rather than merely
+losing a failure — until
+<a href="#sio-011-sizing-a-stream-for-an-end-relative-seek">SIO-011</a> moved that request
+into the wrapper, where its failure has a mapping path to travel. That clause
+repairs one discarding call site; it does not empty the class, which is a
+property of the transport rather than of this one.</p>
 <p><strong>See also:</strong> SFTP-030 in <a href="../009-sftp-backend/">009-sftp-backend.md</a>, the bound
 this clause completes, and where that limit is measured.</p>
+<h2 id="sio-011-sizing-a-stream-for-an-end-relative-seek">SIO-011: Sizing a Stream for an End-Relative Seek<a class="headerlink" href="#sio-011-sizing-a-stream-for-an-end-relative-seek" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> Where a backend supplies <code>_ErrorMappingStream</code> with a
+<code>size_probe</code> callable, <code>seek(offset, SEEK_END)</code> resolves the stream's size
+through that callable and then delegates an absolute seek, so a failed size
+request is mapped by SIO-010's machinery rather than reaching the caller as a
+position. Backends that supply no probe delegate the end-relative seek to the
+inner stream unchanged, and this clause makes no claim about them.
+<strong>Postconditions:</strong> The seek returns <code>size + offset</code>. A size request that fails
+raises the mapped error, arms the SIO-010 guard when the backend's <code>is_fatal</code>
+agrees, and leaves the position unchanged. <code>SEEK_SET</code> and <code>SEEK_CUR</code> never call
+the probe.</p>
+<p><strong>Why this is a clause and not an implementation detail.</strong> paramiko's
+<code>SFTPFile.seek</code> resolves <code>SEEK_END</code> through <code>_get_size()</code>, whose whole body is
+<code>try: return self.stat().st_size</code> under a bare <code>except: return 0</code>. On a stalled
+channel that <code>stat</code> blocked for <code>io_timeout</code> and was then discarded, so the seek
+<em>answered</em> <code>0</code> on a file of any size and raised nothing. Three consequences, and
+the first is the one a caller could act on wrongly:</p>
+<ul>
+<li>The answer was wrong and indistinguishable from an empty file, so a caller
+  sizing a file by seeking to its end read zero bytes and had nothing to catch.</li>
+<li>Nothing reached <code>_fail</code>, so SIO-010's guard stayed unarmed and the close paid
+  the bound a second time.</li>
+<li>Nothing reached the backend's mapper, so the dead client stayed cached and the
+  next operation re-entered the same channel.</li>
+</ul>
+<p>Measured on <code>SFTPBackend</code> at a 2 s <code>io_timeout</code>, consuming part of a <code>read()</code>
+and then stalling: <strong>4.00 s</strong> answering <code>0</code> on a 1 MiB file with the dead client
+still cached, against <strong>2.00 s</strong> raising <code>BackendUnavailable</code> with the client
+dropped. Derivation: the stall relay
+<code>test_seek_to_end_on_a_stalled_channel_costs_one_bound</code> drives, run once as
+shipped and once with <code>size_probe</code> withheld from the wrapper — which is exactly
+the pre-clause delegation, so the two runs differ in that argument alone.</p>
+<p><strong>Why a probe rather than a wider catch.</strong> Nothing was raised to catch. The
+inner stream's own failure was consumed before the wrapper could see it, so the
+only repair is to stop delegating the request that fails.</p>
+<p><strong>Why opt-in.</strong> The probe is a round-trip, and unlike SIO-010's predicate it
+runs on the success path. It also has no generic form: the wrapper holds no size
+of its own, so an unconditional version would need a per-backend source anyway.
+What decided it is that <strong>paramiko is the only inner stream measured to discard
+its own size failure</strong>. The enumeration below is by <em>construction site</em> rather
+than by backend, because <code>AzureBackend</code> builds the wrapper twice over two
+different inner streams and a per-backend list gets it wrong — an earlier draft
+attributed Azure's range reader to its <code>read()</code>, which does not use it. The six
+non-SFTP sites reach <code>SEEK_END</code> by <strong>four</strong> routes:</p>
+<ul>
+<li><strong>A size captured at open, added to the offset.</strong> <code>_S3RangeReader.seek</code>, which
+  <code>S3Boto3Backend</code> builds once in <code>_open_range_stream</code> and serves to both
+  <code>read()</code> and <code>read_seekable()</code>; and <code>_AzureRangeReader.seek</code>, which
+  <code>AzureBackend</code> builds for <code>read_seekable()</code> alone.</li>
+<li><strong>A size held on the handle.</strong> <code>S3Backend.read()</code> wraps an fsspec file, whose
+  <code>AbstractBufferedFile.seek</code> computes <code>self.size + loc</code>.</li>
+<li><strong>Resolved inside the inner implementation.</strong> <code>S3PyArrowBackend.read()</code> wraps
+  a pyarrow <code>NativeFile</code> through <code>_PyArrowBinaryIO</code>, which passes the whence
+  down and returns the resulting position.</li>
+<li><strong>Not seekable at all.</strong> <code>AzureBackend.read()</code> wraps <code>_AzureBinaryIO</code>, and
+  <code>ReadOnlyHttpBackend.read()</code> wraps whatever body its transport yields — an
+  adapter over the response for the <code>requests</code> and <code>httpx</code> transports, and the
+  <code>http.client.HTTPResponse</code> itself for the stdlib one. None defines <code>seek</code> or
+  <code>seekable</code>, so <code>IOBase.seekable()</code> answers <code>False</code> for all three; the shared
+  fact is the missing methods, not a shared base class.</li>
+</ul>
+<p>None of those has a failure for a probe to repair, so probing on their behalf
+would buy a round-trip per seek and nothing else — or, on the forward-only
+streams, a request against something that cannot seek. <code>SFTPBackend.read()</code> is
+the only site that supplies a probe.</p>
+<p><strong>The probe's own failure is bounded by the same caught tuple as every other
+path</strong>, deliberately: a <code>paramiko.SFTPError</code> raised by the probe escapes
+unmapped exactly as one raised by a read does (BK-358). Widening the tuple for
+this path alone would make it better than the rest with no clause saying why.</p>
+<p><strong>See also:</strong> SFTP-030 in <a href="../009-sftp-backend/">009-sftp-backend.md</a>, where the
+<code>SEEK_END</code> case was a stated exception to the bound until this clause closed it.</p>
 
 
 

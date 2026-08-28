@@ -116,23 +116,7 @@ A stall then raises `BackendUnavailable`, and the backend reconnects on the next
 
 **If it still hangs with `io_timeout` set,** one wait is genuinely unbounded: a server that opens the SSH channel and then never answers the `sftp` subsystem request. Paramiko waits for that reply on an untimed event, so no channel timeout reaches it. That needs a wedged SSH daemon rather than a wedged SFTP subsystem — rarer than the stall above, but it is the shape to suspect when the bound appears to do nothing.
 
-`io_timeout` does not cover one further case, and it does not present as a hang at all — see [SFTP reports a file as empty](#sftp-reports-a-file-as-empty) below.
-
 **Choosing a value.** `io_timeout` bounds the silence *between* bytes, not the transfer as a whole — a multi-gigabyte fetch that legitimately takes an hour is unaffected. Size it against the longest legitimate pause your server can produce (an antivirus or dedup appliance may go quiet on `open()` of a large file), not against total transfer time. `0` does not mean "no bound": it is rejected at construction. Use `None`, the default, for no bound.
-
-## SFTP reports a file as empty
-
-**Symptom:** a file you know has content reads as zero bytes, or a reader that sizes the file before reading it finds nothing to read. Nothing is raised and nothing is logged, and the next operation is slow.
-
-**Cause.** A seek to the end of a stalled stream, on a backend with [`io_timeout`](https://docs.remotestore.dev/stable/guides/backends/sftp/#bounding-a-stalled-transfer) set. Without that bound the same call hangs instead of answering, which is the previous symptom rather than this one. `stream.seek(0, os.SEEK_END)` asks the server for the file's size, and on a stalled connection paramiko discards that failure internally and reports `0` — so the seek returns `0` for a file of any size, raises nothing, and is indistinguishable from a genuinely empty file. It is the one stall that returns a *wrong answer* rather than failing, which is why it does not present as the hang above. Nothing reports it and the dead connection is not dropped, so the following operation waits for the bound too.
-
-You may not have written the seek yourself. `read_seekable()` hands the stream to analytical readers such as PyArrow, and a reader that sizes a file internally reaches this the same way.
-
-**Fix.** Size files with `get_file_info(path).size`, which raises `BackendUnavailable` on a stalled connection and drops the dead client so the next operation reconnects.
-
-```
-size = store.get_file_info("data.bin").size    # raises on a stalled connection
-```
 
 ## Azure: HNS vs flat namespace
 

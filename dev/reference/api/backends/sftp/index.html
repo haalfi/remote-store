@@ -11225,19 +11225,13 @@ sending mid-transfer raises <code>BackendUnavailable</code> instead of
 blocking forever. Must be positive when set; <code>0</code> is rejected
 because paramiko reads it as non-blocking. A streamed <code>read</code>
 raises rather than returning short, so a truncated transfer is
-never mistaken for a complete one. Every stall <em>that surfaces</em> is
+never mistaken for a complete one. Seeking to the end of a stream
+(<code>seek(0, SEEK_END)</code>) asks the server for the file size, so a
+stall there raises like any other. Every stall <em>that surfaces</em> is
 reported, and none is retried: the <code>retry</code> policy wraps the SSH
 connect call alone, so a partially consumed stream is never
 silently restarted — and a stall during session setup is reported
-too, rather than retried as a connect failure would be.
-<strong>One operation answers rather than raising, once this is set:</strong>
-seeking to the end of a stream (<code>seek(0, SEEK_END)</code>) asks the
-server for the file size, and on a stalled connection paramiko
-discards the failure and reports <code>0</code> — so the seek returns <code>0</code>
-for a file of any size, reports nothing, and leaves the dead
-connection in place. Use <code>get_file_info(path).size</code> where a stall
-must surface. See the SFTP guide for the same case from a caller's
-side.</p>
+too, rather than retried as a connect failure would be.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">

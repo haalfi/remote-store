@@ -3693,7 +3693,7 @@ Full mapping via tenacity:
 
 Retry scope: **the `SSHClient.connect()` call only** — not per-operation, and not the whole of connect. Nothing the backend does after that call returns is retried, including the SFTP session setup and any stall bounded by [`io_timeout`](https://docs.remotestore.dev/stable/guides/backends/sftp/#bounding-a-stalled-transfer). The distinction matters for a stalled transfer: retrying one would restart a stream the caller may already have read from, so it is deliberately not retried.
 
-Not retried is not the same as reported. A stall paramiko swallows internally is neither — seeking to the end of a stalled stream answers `0` instead of failing, so there is nothing to retry and nothing to report. See [the SFTP guide](https://docs.remotestore.dev/stable/guides/backends/sftp/#bounding-a-stalled-transfer) for what to use instead.
+Not retried is not the same as unreported: a stall that reaches the caller raises `BackendUnavailable`, and the backend drops the dead client so the next operation reconnects. A stall paramiko swallows inside its own machinery is neither — releasing a stalled handle that never failed costs the bound, reports nothing, and leaves the dead connection in place for the next operation. See [the SFTP guide](https://docs.remotestore.dev/stable/guides/backends/sftp/#bounding-a-stalled-transfer).
 
 ### S3
 
@@ -3972,23 +3972,7 @@ A stall then raises `BackendUnavailable`, and the backend reconnects on the next
 
 **If it still hangs with `io_timeout` set,** one wait is genuinely unbounded: a server that opens the SSH channel and then never answers the `sftp` subsystem request. Paramiko waits for that reply on an untimed event, so no channel timeout reaches it. That needs a wedged SSH daemon rather than a wedged SFTP subsystem — rarer than the stall above, but it is the shape to suspect when the bound appears to do nothing.
 
-`io_timeout` does not cover one further case, and it does not present as a hang at all — see [SFTP reports a file as empty](#sftp-reports-a-file-as-empty) below.
-
 **Choosing a value.** `io_timeout` bounds the silence *between* bytes, not the transfer as a whole — a multi-gigabyte fetch that legitimately takes an hour is unaffected. Size it against the longest legitimate pause your server can produce (an antivirus or dedup appliance may go quiet on `open()` of a large file), not against total transfer time. `0` does not mean "no bound": it is rejected at construction. Use `None`, the default, for no bound.
-
-## SFTP reports a file as empty
-
-**Symptom:** a file you know has content reads as zero bytes, or a reader that sizes the file before reading it finds nothing to read. Nothing is raised and nothing is logged, and the next operation is slow.
-
-**Cause.** A seek to the end of a stalled stream, on a backend with [`io_timeout`](https://docs.remotestore.dev/stable/guides/backends/sftp/#bounding-a-stalled-transfer) set. Without that bound the same call hangs instead of answering, which is the previous symptom rather than this one. `stream.seek(0, os.SEEK_END)` asks the server for the file's size, and on a stalled connection paramiko discards that failure internally and reports `0` — so the seek returns `0` for a file of any size, raises nothing, and is indistinguishable from a genuinely empty file. It is the one stall that returns a *wrong answer* rather than failing, which is why it does not present as the hang above. Nothing reports it and the dead connection is not dropped, so the following operation waits for the bound too.
-
-You may not have written the seek yourself. `read_seekable()` hands the stream to analytical readers such as PyArrow, and a reader that sizes a file internally reaches this the same way.
-
-**Fix.** Size files with `get_file_info(path).size`, which raises `BackendUnavailable` on a stalled connection and drops the dead client so the next operation reconnects.
-
-```
-size = store.get_file_info("data.bin").size    # raises on a stalled connection
-```
 
 ## Azure: HNS vs flat namespace
 
@@ -8079,15 +8063,15 @@ BackendConfig(
 
 The bound is re-applied on every reconnect, including the transparent ones the backend performs after a dropped connection, and it covers most of the SFTP session setup as well as later transfers. Setting it through the [escape hatch](#escape-hatch) instead does not survive those reconnects, because each one opens a fresh channel.
 
-Two cases it does not cover
+Two limits, different in kind
 
-**A wedged SSH daemon.** A server that opens the SSH channel and then never answers the `sftp` subsystem request still hangs, regardless of `io_timeout`: paramiko waits for that reply on an untimed event, so no channel timeout applies, and every reconnect re-enters that window. It needs a wedged SSH daemon rather than a wedged SFTP subsystem, so it is rarer than the stall this option does cover — but if a peer hangs with `io_timeout` set, this is the shape to suspect.
+**A wedged SSH daemon is not bounded at all.** A server that opens the SSH channel and then never answers the `sftp` subsystem request still hangs, regardless of `io_timeout`: paramiko waits for that reply on an untimed event, so no channel timeout applies, and every reconnect re-enters that window. It needs a wedged SSH daemon rather than a wedged SFTP subsystem, so it is rarer than the stall this option does cover — but if a peer hangs with `io_timeout` set, this is the shape to suspect.
 
-**Seeking to the end of a stalled stream, which answers wrongly rather than failing.** `stream.seek(0, os.SEEK_END)` asks the server for the file's size. On a stalled connection paramiko discards that failure internally and reports a size of `0`, so the seek returns `0` for a file of any size and raises nothing — indistinguishable from a genuinely empty file. Nothing reports the stall and the dead connection is not dropped, so the next operation waits again. Size files with `get_file_info(path).size` instead, which raises `BackendUnavailable` on a stalled connection and drops the dead client.
+**Releasing a handle that never failed is bounded but silent.** Closing a stream you have not read to a failure on a stalled connection waits one `io_timeout` and then returns normally: paramiko catches that timeout inside its own close, so nothing is raised, `remote-store` logs nothing, and the dead connection stays cached for the next operation to wait on again. You see the delay, not the cause — paramiko's own DEBUG logging shows the close going out, but nothing there names the stall either. A stream whose read *did* fail costs nothing extra: that close is skipped.
 
-You may not be the one writing the seek. See [SFTP reports a file as empty](https://docs.remotestore.dev/stable/guides/troubleshooting/#sftp-reports-a-file-as-empty) for how it presents and what to check.
+A stall that surfaces is reported, and no stall is retried: the connect-phase `RetryPolicy` does not cover one, so a partially consumed stream is never silently restarted underneath you. A streamed **read** raises rather than returning short, so a truncated transfer is never mistaken for a complete one — discard the handle and start again, since the bytes already delivered are a valid prefix but the handle is dead. The backend drops the dead client, so the next operation reconnects.
 
-A stall that surfaces is reported, and no stall is retried: the connect-phase `RetryPolicy` does not cover one, so a partially consumed stream is never silently restarted underneath you. A streamed **read** raises rather than returning short, so a truncated transfer is never mistaken for a complete one — discard the handle and start again, since the bytes already delivered are a valid prefix but the handle is dead. The backend drops the dead client, so the next operation reconnects. Both of those hold for reading; neither holds for the seek-to-end case above, which is why it is called out rather than left to the general rule.
+Seeking to the end of a stream (`stream.seek(0, os.SEEK_END)`) asks the server for the file's size, so it is bounded and reported like any other operation on the channel. Worth knowing because you may not be the one writing the seek: `read_seekable()` hands the stream to analytical readers such as PyArrow, and a reader that sizes a file internally reaches it the same way — for files large enough to stream. The [PyArrow adapter](https://docs.remotestore.dev/stable/guides/pyarrow-adapter/index.md) materialises anything at or below its `materialization_threshold` and never seeks the stream at all.
 
 Choosing a value
 
@@ -8283,7 +8267,7 @@ Parameters:
 - **`host_keys_path`** (`str | None`, default: `None` ) – Path to known_hosts file (default: ~/.ssh/known_hosts).
 - **`config`** (`dict[str, Any] | None`, default: `None` ) – Optional config dict (may contain known_host_keys).
 - **`timeout`** (`int`, default: `10` ) – SSH connection timeout in seconds. Bounds the connect phase only — it is passed as paramiko's timeout / banner_timeout / auth_timeout / channel_timeout, the last of which bounds channel open, not traffic on an opened channel.
-- **`io_timeout`** (`float | None`, default: `None` ) – Seconds a single blocking read or write on the open SFTP channel may go without progress before it fails, or None (default) for no bound. Applied with Channel.settimeout() on every connect and every reconnect, and armed before the SFTP session setup, so a peer that completes the SSH handshake and then falls silent is bounded there too. This is silence between bytes, not a deadline for the whole transfer: a large file over a slow link is unaffected however long it takes, while a peer that stops sending mid-transfer raises BackendUnavailable instead of blocking forever. Must be positive when set; 0 is rejected because paramiko reads it as non-blocking. A streamed read raises rather than returning short, so a truncated transfer is never mistaken for a complete one. Every stall that surfaces is reported, and none is retried: the retry policy wraps the SSH connect call alone, so a partially consumed stream is never silently restarted — and a stall during session setup is reported too, rather than retried as a connect failure would be. One operation answers rather than raising, once this is set: seeking to the end of a stream (seek(0, SEEK_END)) asks the server for the file size, and on a stalled connection paramiko discards the failure and reports 0 — so the seek returns 0 for a file of any size, reports nothing, and leaves the dead connection in place. Use get_file_info(path).size where a stall must surface. See the SFTP guide for the same case from a caller's side.
+- **`io_timeout`** (`float | None`, default: `None` ) – Seconds a single blocking read or write on the open SFTP channel may go without progress before it fails, or None (default) for no bound. Applied with Channel.settimeout() on every connect and every reconnect, and armed before the SFTP session setup, so a peer that completes the SSH handshake and then falls silent is bounded there too. This is silence between bytes, not a deadline for the whole transfer: a large file over a slow link is unaffected however long it takes, while a peer that stops sending mid-transfer raises BackendUnavailable instead of blocking forever. Must be positive when set; 0 is rejected because paramiko reads it as non-blocking. A streamed read raises rather than returning short, so a truncated transfer is never mistaken for a complete one. Seeking to the end of a stream (seek(0, SEEK_END)) asks the server for the file size, so a stall there raises like any other. Every stall that surfaces is reported, and none is retried: the retry policy wraps the SSH connect call alone, so a partially consumed stream is never silently restarted — and a stall during session setup is reported too, rather than retried as a connect failure would be.
 - **`connect_kwargs`** (`dict[str, Any] | None`, default: `None` ) – Extra kwargs passed to SSHClient.connect().
 
 ### check_health
@@ -17099,7 +17083,7 @@ Parameters:
 - **`host_keys_path`** (`str | None`, default: `None` ) – Path to known_hosts file (default: ~/.ssh/known_hosts).
 - **`config`** (`dict[str, Any] | None`, default: `None` ) – Optional config dict (may contain known_host_keys).
 - **`timeout`** (`int`, default: `10` ) – SSH connection timeout in seconds. Bounds the connect phase only — it is passed as paramiko's timeout / banner_timeout / auth_timeout / channel_timeout, the last of which bounds channel open, not traffic on an opened channel.
-- **`io_timeout`** (`float | None`, default: `None` ) – Seconds a single blocking read or write on the open SFTP channel may go without progress before it fails, or None (default) for no bound. Applied with Channel.settimeout() on every connect and every reconnect, and armed before the SFTP session setup, so a peer that completes the SSH handshake and then falls silent is bounded there too. This is silence between bytes, not a deadline for the whole transfer: a large file over a slow link is unaffected however long it takes, while a peer that stops sending mid-transfer raises BackendUnavailable instead of blocking forever. Must be positive when set; 0 is rejected because paramiko reads it as non-blocking. A streamed read raises rather than returning short, so a truncated transfer is never mistaken for a complete one. Every stall that surfaces is reported, and none is retried: the retry policy wraps the SSH connect call alone, so a partially consumed stream is never silently restarted — and a stall during session setup is reported too, rather than retried as a connect failure would be. One operation answers rather than raising, once this is set: seeking to the end of a stream (seek(0, SEEK_END)) asks the server for the file size, and on a stalled connection paramiko discards the failure and reports 0 — so the seek returns 0 for a file of any size, reports nothing, and leaves the dead connection in place. Use get_file_info(path).size where a stall must surface. See the SFTP guide for the same case from a caller's side.
+- **`io_timeout`** (`float | None`, default: `None` ) – Seconds a single blocking read or write on the open SFTP channel may go without progress before it fails, or None (default) for no bound. Applied with Channel.settimeout() on every connect and every reconnect, and armed before the SFTP session setup, so a peer that completes the SSH handshake and then falls silent is bounded there too. This is silence between bytes, not a deadline for the whole transfer: a large file over a slow link is unaffected however long it takes, while a peer that stops sending mid-transfer raises BackendUnavailable instead of blocking forever. Must be positive when set; 0 is rejected because paramiko reads it as non-blocking. A streamed read raises rather than returning short, so a truncated transfer is never mistaken for a complete one. Seeking to the end of a stream (seek(0, SEEK_END)) asks the server for the file size, so a stall there raises like any other. Every stall that surfaces is reported, and none is retried: the retry policy wraps the SSH connect call alone, so a partially consumed stream is never silently restarted — and a stall during session setup is reported too, rather than retried as a connect failure would be.
 - **`connect_kwargs`** (`dict[str, Any] | None`, default: `None` ) – Extra kwargs passed to SSHClient.connect().
 
 ### check_health
@@ -20259,6 +20243,35 @@ else:
 Breaking changes and upgrade paths between `remote-store` versions.
 
 `remote-store` has been published on PyPI since v0.11.0 (first Beta release). The core Store API is stable, but extensions may evolve. This page documents changes that require action when upgrading.
+
+## v0.30.0 to v0.31.0
+
+**Seeking to the end of an SFTP stream raises where it used to answer `0`:**
+
+`SFTPBackend`'s streams resolve `seek(offset, os.SEEK_END)` by asking the server for the file's size. That request used to go out through paramiko, which discards its failure and reports a size of `0` — so on a stalled connection, or against a server that refuses to stat an open handle, the seek returned `0` for a file of any size and raised nothing. The backend now issues the request itself, so the failure surfaces.
+
+```
+# Before (v0.30.0): a wrong answer, indistinguishable from an empty file
+with store.read("data.bin") as stream:
+    size = stream.seek(0, os.SEEK_END)   # 0, on a 1 GiB file, no error
+
+# After (v0.31.0): the failure reaches you
+with store.read("data.bin") as stream:
+    size = stream.seek(0, os.SEEK_END)   # raises
+```
+
+**What to change.** Code that treated a `0` from seek-to-end as "empty file" was reading a wrong answer. Catch [`RemoteStoreError`](https://docs.remotestore.dev/stable/reference/api/errors/index.md), which covers both causes — the two do **not** raise the same subclass, and that is deliberate rather than an oversight:
+
+| Cause                                | Raises               | Why                                                                                       |
+| ------------------------------------ | -------------------- | ----------------------------------------------------------------------------------------- |
+| A stalled connection                 | `BackendUnavailable` | The connection is dead; the cached client is dropped and the next operation reconnects    |
+| A server refusing to stat the handle | `RemoteStoreError`   | The connection is healthy and nothing is wrong with it — only this one request is refused |
+
+Sizing a file with `get_file_info(path).size` is unaffected and always reported the failure.
+
+**You may not have written the seek.** SFTP streams report themselves seekable, so `read_seekable()` hands them to analytical readers such as PyArrow, which size a file with `seek(0, os.SEEK_END)` before reading its footer. If such a read previously returned empty or nonsense against a flaky SFTP endpoint, this is why, and it now raises instead. This applies to reads large enough to stream: the PyArrow adapter materialises anything at or below its `materialization_threshold` and never seeks the stream at all — see the [PyArrow adapter guide](https://docs.remotestore.dev/stable/guides/pyarrow-adapter/index.md) for that setting.
+
+**Scope:** SFTP only. Every other backend resolves an end-relative seek without a request that can fail, and their streams are byte-for-byte unchanged. The failure also arrives one `io_timeout` sooner than before on a stalled connection, because the release of a condemned stream no longer pays the bound a second time.
 
 ## v0.29.1 to v0.30.0
 

@@ -11893,6 +11893,7 @@ is authoritative.</p>
 <li>[ ] Specs vs code: spot-check shipped features match their specs (<code>pytest -m spec</code> as proxy)</li>
 <li>[ ] Examples: <code>hatch run examples</code> passes; manually review notebooks if API surface changed</li>
 <li>[ ] Guides: new/changed backend guides are accurate</li>
+<li>[ ] <code>docs-src/reference/migration.md</code>: every <code>[Unreleased]</code> entry marked <strong>Breaking</strong>, and any entry whose behaviour change a caller must act on, has a <code>## vPREV to vX.Y.Z</code> section. A PR making the break may write its own section ahead of the release and several have — the bump table above fixes the version pair for a pre-1.0 breaking change, so it is knowable before Phase 2 stamps it. This line is the backstop for the ones that did not, and the place to correct a pair a PR guessed wrong</li>
 <li>[ ] DEVELOPMENT_STORY.md: add a section for this release (pre-1.0 only)</li>
 </ul>
 <p><a id="phase-2"></a></p>
