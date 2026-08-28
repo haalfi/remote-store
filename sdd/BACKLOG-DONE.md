@@ -169,6 +169,49 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-357 — A `SEEK_END` seek hides its own stall, so the futile-close guard cannot arm**
+  spec: SIO-011, SIO-010, SFTP-030 · effort: M · audience: user.api, user.api_docs, user.site
+  `SFTPFile.seek(offset, SEEK_END)` resolved the position through paramiko's
+  `_get_size()`, whose whole body is `try: return self.stat().st_size` under a
+  bare `except: return 0`. On a stalled channel that `stat` blocked for
+  `io_timeout` and was then discarded, so the seek *answered* `0` and raised
+  nothing. Three consequences, and the first is the one a caller could act on
+  wrongly: the answer was indistinguishable from an empty file; BK-355's guard
+  stayed unarmed, so the close paid the bound again; and the dead client stayed
+  cached, so the next operation re-entered the same channel.
+  **The fix is the wrapper issuing the size request instead of delegating one
+  that can swallow.** `_ErrorMappingStream` takes an optional `size_probe` and
+  `SFTPBackend.read()` supplies `_sftp_handle_size`, which issues `CMD_FSTAT`
+  against the open handle. The wrapper then delegates an *absolute* seek, which
+  is local on a paramiko handle — delegating `SEEK_END` would round-trip twice.
+  Measured at a 2 s bound, consuming part of a `read()` and then stalling:
+  4.00 s answering `0` on a 1 MiB file with the client still cached, against
+  2.00 s raising `BackendUnavailable` with the client dropped. Derivation: the
+  same stall relay `test_seek_to_end_on_a_stalled_channel_costs_one_bound`
+  drives, run once as shipped and once with `size_probe` withheld, so the two
+  runs differ in that argument alone.
+  **The open question — probe in the wrapper for everyone, or opt-in like
+  BK-355's predicate — was answered in favour of opt-in**, and on evidence
+  rather than symmetry: `_S3RangeReader.seek` and Azure's `_RangeReader.seek`
+  already resolve `SEEK_END` from a `_size` they hold, with no request that can
+  fail, so an unconditional probe would buy those backends a round-trip per seek
+  and nothing else. The five backend classes that supply no probe delegate
+  unchanged, pinned by a unit test on the *wrapper's* default rather than on
+  what those sites pass.
+  **Scope kept off one adjacent thing, and pulled onto another.** The caught
+  tuple is unchanged, so a `paramiko.SFTPError` from the probe still escapes
+  unmapped exactly as one from a read does — BK-358, not narrowed here. But
+  deleting SFTP-030's `SEEK_END` exception also deleted the only test asserting
+  the "that fails" qualifier on its Postconditions, leaving the silent close as
+  the clause's one live instance with a figure in prose behind it and no gate.
+  That gap is this change's own making, so it is closed here rather than filed:
+  `test_releasing_a_stalled_handle_after_no_failure_is_silent` pins the three
+  halves the qualifier needs — bounded at one `io_timeout`, nothing raised, the
+  cached client surviving.
+  Found by BK-355's round-2 measuring review, which ran the seek path rather
+  than reading it — the reading rounds had all concluded the stream surface was
+  bounded.
+
 - [x] **BK-355 — Closing a failed stream re-enters the dead connection, so the caller pays a second, silent timeout**
   spec: SIO-010, SFTP-030 · effort: S · audience: user.api, user.api_docs, user.site
   `_ErrorMappingStream.close` closed `self._inner` under
@@ -187,12 +230,12 @@ if evidence changes; these are retired.
   that bites.** `SFTPFile.seek(offset, SEEK_END)` calls `_get_size()`, whose bare
   `except: return 0` swallows the stalled `stat`, so the seek blocks for the
   bound, returns `0`, and raises nothing — the guard never arms and the close
-  pays a second bound (4.00 s at a 2 s bound). SFTP-030 states that as an
-  exception alongside the `subsystem` request and characterises it with a test;
-  the fix, a wrapper-owned size probe for `SEEK_END`, changes every backend's
-  seek path and is filed as BK-357. Worth recording as the shape of the whole
-  mechanism rather than one backend's quirk: a guard armed by exceptions is blind
-  to a transport that discards them.
+  pays a second bound (4.00 s at a 2 s bound). SFTP-030 stated that as an
+  exception alongside the `subsystem` request and characterised it with a test;
+  the fix, a wrapper-owned size probe for `SEEK_END`, was filed as BK-357 and
+  landed in this same release, so that exception and its test are both gone.
+  Worth recording as the shape of the whole mechanism rather than one backend's
+  quirk: a guard armed by exceptions is blind to a transport that discards them.
   **The open question — how the wrapper decides a close is futile — was answered
   in favour of a backend-supplied predicate.** `_ErrorMappingStream` takes an
   optional `is_fatal`, and SFTP passes its existing `_is_connection_dead`, which

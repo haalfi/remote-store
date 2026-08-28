@@ -124,10 +124,68 @@ the close re-enters the connection exactly as it would have without this clause,
 and whatever the mapper would have done — invalidating a cached client, marking a
 session dead — is left undone too.
 
-Both classes are non-empty on `SFTPBackend`, which is the only backend that has
-been measured: a `SEEK_END` seek for the first (SFTP-030 states it; BK-357
-carries the fix), and paramiko's `SSHException` / `SFTPError` for the second,
-which additionally escape unmapped in breach of BE-021 (BK-358).
+On `SFTPBackend`, the only backend that has been measured, the second class is
+non-empty: paramiko's `SSHException` / `SFTPError`, which additionally escape
+unmapped in breach of BE-021 (BK-358). The first was too — a `SEEK_END` seek,
+whose size request paramiko discarded — until
+[SIO-011](#sio-011-sizing-a-stream-for-an-end-relative-seek) moved that request
+into the wrapper, where its failure has a mapping path to travel. No case of the
+first class is known on any backend today; that is a measurement, not a proof,
+and the class stays stated because a transport that discards a failure is a
+property of the transport rather than of this clause.
 
 **See also:** SFTP-030 in [009-sftp-backend.md](009-sftp-backend.md), the bound
 this clause completes, and where that limit is measured.
+
+## SIO-011: Sizing a Stream for an End-Relative Seek
+
+**Invariant:** Where a backend supplies `_ErrorMappingStream` with a
+`size_probe` callable, `seek(offset, SEEK_END)` resolves the stream's size
+through that callable and then delegates an absolute seek, so a failed size
+request is mapped by SIO-010's machinery rather than reaching the caller as a
+position. Backends that supply no probe delegate the end-relative seek to the
+inner stream unchanged, and this clause makes no claim about them.
+**Postconditions:** The seek returns `size + offset`. A size request that fails
+raises the mapped error, arms the SIO-010 guard when the backend's `is_fatal`
+agrees, and leaves the position unchanged. `SEEK_SET` and `SEEK_CUR` never call
+the probe.
+
+**Why this is a clause and not an implementation detail.** paramiko's
+`SFTPFile.seek` resolves `SEEK_END` through `_get_size()`, whose whole body is
+`try: return self.stat().st_size` under a bare `except: return 0`. On a stalled
+channel that `stat` blocked for `io_timeout` and was then discarded, so the seek
+*answered* `0` on a file of any size and raised nothing. Three consequences, and
+the first is the one a caller could act on wrongly:
+
+- The answer was wrong and indistinguishable from an empty file, so a caller
+  sizing a file by seeking to its end read zero bytes and had nothing to catch.
+- Nothing reached `_fail`, so SIO-010's guard stayed unarmed and the close paid
+  the bound a second time.
+- Nothing reached the backend's mapper, so the dead client stayed cached and the
+  next operation re-entered the same channel.
+
+Measured on `SFTPBackend` at a 2 s `io_timeout`, consuming part of a `read()`
+and then stalling: **4.00 s** answering `0` on a 1 MiB file with the dead client
+still cached, against **2.00 s** raising `BackendUnavailable` with the client
+dropped. Derivation: the stall relay
+`test_seek_to_end_on_a_stalled_channel_costs_one_bound` drives, run once as
+shipped and once with `size_probe` withheld from the wrapper — which is exactly
+the pre-clause delegation, so the two runs differ in that argument alone.
+
+**Why a probe rather than a wider catch.** Nothing was raised to catch. The
+inner stream's own failure was consumed before the wrapper could see it, so the
+only repair is to stop delegating the request that fails.
+
+**Why opt-in.** The probe is a round-trip, and unlike SIO-010's predicate it
+runs on the success path. The S3, S3-boto3, S3-PyArrow, Azure and HTTP range
+readers resolve `SEEK_END` from a size they already hold, with no request to
+fail; making the wrapper probe on their behalf would buy a round-trip per seek
+and nothing else. `SFTPBackend` is the only backend that supplies one.
+
+**The probe's own failure is bounded by the same caught tuple as every other
+path**, deliberately: a `paramiko.SFTPError` raised by the probe escapes
+unmapped exactly as one raised by a read does (BK-358). Widening the tuple for
+this path alone would make it better than the rest with no clause saying why.
+
+**See also:** SFTP-030 in [009-sftp-backend.md](009-sftp-backend.md), where the
+`SEEK_END` case was a stated exception to the bound until this clause closed it.

@@ -111,7 +111,7 @@ session setup as well as later transfers. Setting it through the
 [escape hatch](#escape-hatch) instead does not survive those reconnects, because
 each one opens a fresh channel.
 
-!!! warning "Two cases it does not cover"
+!!! warning "One case it does not cover"
     **A wedged SSH daemon.** A server that opens the SSH channel and then never
     answers the `sftp` subsystem request still hangs, regardless of
     `io_timeout`: paramiko waits for that reply on an untimed event, so no
@@ -120,29 +120,23 @@ each one opens a fresh channel.
     the stall this option does cover — but if a peer hangs with `io_timeout`
     set, this is the shape to suspect.
 
-    **Seeking to the end of a stalled stream, which answers wrongly rather than
-    failing.** `stream.seek(0, os.SEEK_END)` asks the server for the file's
-    size. On a stalled connection paramiko discards that failure internally and
-    reports a size of `0`, so the seek returns `0` for a file of any size and
-    raises nothing — indistinguishable from a genuinely empty file. Nothing
-    reports the stall and the dead connection is not dropped, so the next
-    operation waits again. Size files with `get_file_info(path).size` instead,
-    which raises `BackendUnavailable` on a stalled connection and drops the
-    dead client.
-
-    You may not be the one writing the seek. See
-    [SFTP reports a file as empty](../troubleshooting.md#sftp-reports-a-file-as-empty)
-    for how it presents and what to check.
-
 A stall that surfaces is reported, and no stall is retried: the connect-phase
 `RetryPolicy` does not cover one, so a partially consumed stream is never
 silently restarted underneath you.
 A streamed **read** raises rather than returning short, so a truncated transfer
 is never mistaken for a complete one — discard the handle and start again, since
 the bytes already delivered are a valid prefix but the handle is dead. The
-backend drops the dead client, so the next operation reconnects. Both of those
-hold for reading; neither holds for the seek-to-end case above, which is why it
-is called out rather than left to the general rule.
+backend drops the dead client, so the next operation reconnects.
+
+Seeking to the end of a stream (`stream.seek(0, os.SEEK_END)`) asks the server
+for the file's size, and on a stalled connection it raises like any other
+operation. That is worth knowing because it did not always: the size request
+went out through paramiko, which discards its failure and reports `0`, so the
+seek used to return `0` for a file of any size and raise nothing —
+indistinguishable from a genuinely empty file. The backend now issues that
+request itself so the stall surfaces. You may not be the one writing the seek:
+`read_seekable()` hands the stream to analytical readers such as PyArrow, and a
+reader that sizes a file internally reaches it the same way.
 
 !!! tip "Choosing a value"
     Size it against the longest legitimate pause your server can produce — an

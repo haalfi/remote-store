@@ -581,9 +581,13 @@ compliant the day before.
   Not measured against a real dropped socket, so it is recorded as an open
   question rather than as a defect — but it is the first thing to establish
   here, because it decides whether widening the tuple is sufficient.
-  **Filed in this section rather than beside BK-357** (which is section 4's,
-  being a cost left on the caller): the defect here is that a caller does not
-  catch one exception type, which is this section's promise verbatim.
+  **Filed in this section rather than beside BK-357** (which was section 4's,
+  being a cost left on the caller, and has since shipped): the defect here is
+  that a caller does not catch one exception type, which is this section's
+  promise verbatim. BK-357 added a second site for it — the `SEEK_END` size
+  probe, bounded by the same tuple as every other path, deliberately — without
+  narrowing the breach; `test_a_probe_failure_outside_the_caught_tuple_propagates_unmapped`
+  pins that boundary and goes when this item lands.
 
 ---
 
@@ -923,8 +927,10 @@ or paying for our shortcut.
 the backend can actually do (ID-140, ID-217); no capability a user cannot
 cheaply build themselves is left unbuilt without a recorded decision (ID-121,
 ID-217); no security tradeoff is scoped wider than the backend that needs it
-(ID-181); and no cost we know how to remove is left on the caller (BK-242,
-BK-357).
+(ID-181); and no cost we know how to remove is left on the caller (BK-242).
+That last clause was carried by two items; BK-357 closed one of them, removing a
+stalled `SEEK_END` seek's second `io_timeout` — and, more than a cost, the wrong
+answer it returned instead of failing.
 
 Each item here is something a user currently works around or eats. They are
 grouped because the decision in each is the same: build it, or say plainly and
@@ -1098,37 +1104,6 @@ here as legitimately as "built".
     retire it. Keep it in view when designing here — identity-derived keys are
     the wide fix for it, and this is where that scheme gets decided.
 
-- [ ] **BK-357 — A `SEEK_END` seek hides its own stall, so the futile-close guard cannot arm**
-  spec: SFTP-030, SIO-010 · effort: M · audience: user.api
-  BK-355's guard learns a connection is dead from an exception travelling through
-  `_ErrorMappingStream`'s mapping paths. `SFTPFile.seek(offset, SEEK_END)` calls
-  `_get_size()`, whose body is `try: return self.stat().st_size` under a bare
-  `except: return 0`. On a stalled channel that `stat` blocks for `io_timeout`
-  and is then swallowed, so the seek returns a bogus size of `0` and raises
-  nothing: the guard stays unarmed and the close pays the bound a second time.
-  Measured at a 2 s bound: 4.00 s
-  (`test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds`), against 2.00 s
-  for the read path BK-355 fixed (`test_releasing_a_stalled_stream_costs_one_bound`).
-  **Two defects, and the second is the worse one.** The doubled wait is the
-  visible cost, but the seek also *succeeds* with a size of `0` on a dead
-  channel, so a caller sizing a file by seeking to its end reads zero and cannot
-  tell that from an empty file. That is a wrong answer, not just a slow one, and
-  it is the half that argues for fixing this rather than living with it.
-  **Fix surface:** the wrapper issuing its own size probe for `SEEK_END` instead
-  of delegating to paramiko's, so the failure surfaces where the mapper can see
-  it. That is a change to the seek path of every backend `_ErrorMappingStream`
-  serves, not just SFTP's, which is why it is `M` rather than `S` and why it was
-  filed rather than widened into BK-355.
-  **Open question:** whether the probe belongs in the wrapper (one place, but it
-  round-trips on behalf of backends whose `seek` currently does not) or behind
-  the same opt-in predicate mechanism BK-355 added, which keeps the cost with the
-  backend that needs it. Undecided.
-  Found by BK-355's round-2 measuring review, which ran the seek path rather than
-  reading it — the reading rounds had all concluded the stream surface was bounded.
-  **Placed above BK-356 deliberately**, per this file's ordering rule: BK-356's
-  body argues this should land first, since flipping the default converts this
-  case from a hang into a silent wrong answer.
-
 - [ ] **BK-356 — `io_timeout` should default to a real bound, not `None`**
   spec: SFTP-030, SFTP-005 · effort: S · audience: user.api
   BK-354 shipped `io_timeout` defaulting to `None`, so the stall it exists to
@@ -1162,14 +1137,15 @@ here as legitimately as "built".
   it is exactly the one with a legitimately slow or quiet server. Note `0` is
   not the opt-out: it raises `ValueError` (SFTP-005), since paramiko reads it
   as non-blocking.
-  **No longer blocked.** BK-355 landed first, so releasing a stalled stream
-  costs one bound rather than two and the flip does not ship a doubling with it.
-  BK-357's `SEEK_END` case is what the flip does still ship, and it is worth
-  weighing as more than a doubled wait: with `io_timeout=None` the `stat` inside
-  `_get_size` blocks forever, so today that case is a hang. A real bound converts
-  the hang into a **silently wrong size of `0`**, which BK-357 argues is the worse
-  of its two defects. That is an argument for ordering BK-357 before this item,
-  not merely for noting it here.
+  **No longer blocked, and the ordering argument is now discharged.** BK-355
+  landed first, so releasing a stalled stream costs one bound rather than two and
+  the flip does not ship a doubling with it. BK-357 then landed too, which is the
+  half that mattered most here: with `io_timeout=None` the `stat` inside
+  paramiko's `_get_size` blocks forever, so a `SEEK_END` seek was a hang, and a
+  real bound would have converted that hang into a **silently wrong size of
+  `0`** — a wrong answer shipped by flipping a default. The seek now raises
+  instead, so the flip no longer introduces that case and this item can be taken
+  on its own merits.
 
 ---
 

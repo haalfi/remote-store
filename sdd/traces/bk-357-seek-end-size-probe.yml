@@ -1,0 +1,208 @@
+id: BK-357
+title: "A SEEK_END seek hides its own stall, so the futile-close guard cannot arm"
+trigger: >-
+  BK-355 bounded the release of a failed SFTP stream and then had to leave one
+  case stated as an exception in SFTP-030: a SEEK_END seek. paramiko resolves it
+  through _get_size(), whose whole body is `try: return self.stat().st_size`
+  under a bare `except: return 0`, so a stalled channel made the seek answer 0
+  on a file of any size and raise nothing. Nothing reached the wrapper's mapper,
+  so the guard stayed unarmed, the close paid the bound a second time, and the
+  dead client stayed cached. The wrong answer was the worse half: a caller
+  sizing a file by seeking to its end could not tell a dead channel from an
+  empty file.
+source_items:
+  - BK-357
+  - BK-355
+  - BK-354
+audience:
+  - user.api
+  - user.api_docs
+  - user.site
+expected_ripples:
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/specs/006-streaming-io.md
+  - sdd/specs/009-sftp-backend.md
+  - docs-src/guides/backends/sftp.md
+  - docs-src/guides/troubleshooting.md
+  - docs-src/guides/retry.md
+surprising_ripples:
+  # The `[Unreleased]` entries for BK-354 and BK-355 both state the SEEK_END
+  # case as live behaviour and both count SFTP-030's exceptions at two. Nothing
+  # in the ripple-check anticipates editing a *sibling item's* CHANGELOG entry:
+  # its "CHANGELOG entry" row is about adding your own stub. They ship in the
+  # same release as this fix, so a reader meets all three at once and two of
+  # them contradict the third.
+  - CHANGELOG.md
+  # CONTRIBUTING § Release Phase 1 names CHANGELOG, BACKLOG-DONE, FEATURES,
+  # README, guides and DEVELOPMENT_STORY, and does not name migration.md —
+  # while `git log -- docs-src/reference/migration.md` shows its only content
+  # commit is the v0.30.0 release commit. So the upgrade note for a breaking
+  # change has no owner: not the PR (the version pair does not exist yet, which
+  # is what AF-040 was filed for) and not the checklist. Found by asking where
+  # to put this change's note, not by any row.
+  - CONTRIBUTING.md
+  # Deleting SFTP-030's SEEK_END exception deleted the only test asserting the
+  # "that fails" qualifier on its Postconditions. The qualifier stayed true —
+  # the silent close is still silent — but its one live instance was a figure
+  # in prose with no gate behind it. A ripple from a *deletion*, which the
+  # table's rows are not shaped to find: they ask what references the thing you
+  # changed, and nothing references a test by the clause it happens to hold up.
+  - tests/backends/sftp/test_io_timeout.py
+# Name the commits, per the schema's review_rounds description. Filled at merge
+# from `git log --oneline origin/master..HEAD`: the implementation commit does
+# not count; every later commit exists because a review round found something.
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-357 (item)"
+        read_type: gate
+        extract: "Two defects, the wrong answer being the worse; and the open question the item leaves undecided"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Pre-work index"
+        read_type: gate
+        extract: >-
+          Triggered rows: Spec section, Bug fix, Backlog item touched, CHANGELOG
+          entry. All four delivered. Tagged unclear for what the index has no
+          row for and this change needed twice: a *sibling* item's unreleased
+          CHANGELOG entry stating the bug as live behaviour, and the ripples of
+          a deletion — the rows all ask what references the thing you changed,
+          which finds nothing when what you removed is a test holding a spec
+          clause up.
+        outcome: unclear
+      - file: sdd/BACKLOG.md
+        section: "BK-356, BK-358 (items)"
+        read_type: reference
+        extract: >-
+          BK-356 argues this should land first; BK-358 owns the unmapped-exception
+          breach, which bounds how far the probe's error handling may go
+        outcome: ok
+
+  - id: spec
+    name: Read the clauses under change
+    steps:
+      - file: sdd/specs/006-streaming-io.md
+        section: "SIO-010"
+        read_type: gate
+        extract: "The guard is armed by an exception reaching _fail; both classes that defeat it"
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030"
+        read_type: gate
+        extract: >-
+          The two stated exceptions and the load-bearing "that fails" qualifier.
+          Retrospective: the qualifier's demonstrating case was the seek this
+          change removes, which the section does not say and I did not see until
+          the sweep.
+        outcome: ok
+
+  - id: reproduce
+    name: Run paramiko rather than read it
+    steps:
+      - file: src/remote_store/_stream.py
+        section: "_ErrorMappingStream.seek, __init__"
+        read_type: reference
+        extract: >-
+          The seek delegates whence untouched, and is_fatal is the shape an
+          opt-in hook takes here
+        outcome: ok
+      - file: src/remote_store/backends/_s3_boto3.py
+        section: "_S3RangeReader.seek"
+        read_type: reference
+        extract: >-
+          Resolves SEEK_END from a _size it already holds — no round-trip, so
+          nothing to swallow. This, with Azure's identical shape, is what decided
+          the item's open question for opt-in over a wrapper-wide probe.
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "_RangeReader.seek"
+        read_type: reference
+        extract: "Same local SEEK_END resolution as S3's; the second half of that evidence"
+        outcome: ok
+
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds"
+        read_type: gate
+        extract: >-
+          Its own docstring sets the terms for its deletion: a failure means the
+          swallow is gone. Replaced with an asserting test rather than edited.
+        outcome: ok
+      - file: tests/test_stream.py
+        section: "TestFutileCloseGuard"
+        read_type: reference
+        extract: >-
+          The opt-in shape to mirror — a test on the wrapper's default, not on
+          what the five other backends pass
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "(full)"
+        read_type: gate
+        extract: "Assertion depth and spec tracing for the new SIO-011 cases"
+        outcome: ok
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/_stream.py
+        section: "seek, __init__ docstring"
+        read_type: reference
+        extract: >-
+          size_probe resolves the end and delegates an absolute seek, which is
+          local on a paramiko handle; the caught tuple stays as it was
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "read(), io_timeout docstring"
+        read_type: reference
+        extract: "_sftp_handle_size issues CMD_FSTAT on the open handle, not CMD_STAT on the path"
+        outcome: ok
+
+  - id: docs
+    name: Sweep the artifacts that state the bug as behaviour
+    steps:
+      - file: docs-src/guides/backends/sftp.md
+        section: "Bounding a stalled transfer"
+        read_type: reference
+        extract: "Warning admonition drops from two cases to one; the seek moves to body prose"
+        outcome: ok
+      - file: docs-src/guides/troubleshooting.md
+        section: "SFTP reports a file as empty"
+        read_type: reference
+        extract: "Section deleted — the symptom has no live cause; its one inbound link goes with it"
+        outcome: ok
+      - file: docs-src/guides/retry.md
+        section: "SFTP"
+        read_type: reference
+        extract: "'A stall paramiko swallows internally' now names the silent close, not the seek"
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Release / Phase 1"
+        read_type: reference
+        extract: >-
+          migration.md is absent from the content-freeze list. Added, with the
+          reason a per-PR entry is wrong (AF-040) stated in the line itself.
+        outcome: misleading
+
+  - id: verify
+    name: Ripple-check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Detailed checklist"
+        read_type: verify
+        extract: "Bug fix, Backlog item touched, CHANGELOG entry, Spec section rows"
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030 / 'Not every stall surfaces'"
+        read_type: verify
+        extract: >-
+          Both exception counts and the qualifier's demonstrating case. Caught
+          the deleted gate here, which is why the silent-close test is in this PR
+          rather than filed.
+        outcome: ok
