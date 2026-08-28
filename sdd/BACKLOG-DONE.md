@@ -59,6 +59,34 @@ if evidence changes; these are retired.
   entry because BK-354's PR closes #970, retiring the reporter's own record of the
   ask. Re-file under a new ID if an idle-connection death is ever observed.
 
+- [x] **— arc42 as an architecture-level specification layer** *(refused at admission; never had an ID)*
+  The ask was whether arc42's twelve sections should become an architecture-level
+  spec layer that agents read before proposing a change. Four dispositions were
+  evaluated against the trace corpus at `47f1b16` — the full skeleton, and the
+  three sections
+  [research](research/research-arc42-evaluation.md) § 2.2 finds thin here
+  (§ 2 constraints, § 10 quality requirements, § 12 glossary). All four refused.
+  **Diagnosis, carried across because the verdict alone is not re-decidable.**
+  Nine of the twelve sections already have an authoritative home, and three of
+  those (cross-cutting concepts, decisions, risks) are held by artifacts that are
+  normative, identified and gated rather than descriptive. The corpus
+  measures what a twelfth prose document would be worth:
+  `docs-src/explanation/architecture.md`, the one document of that class already
+  here, is cited **once** across 287 traces (`rg -c
+  'docs-src/explanation/architecture\.md' sdd/traces`), against 359 mentions for
+  `sdd/specs/`. The one dense architecture-adjacent tag cluster — the
+  custom-backend guide at 5 `misleading` over 11 reads — argues the opposite way:
+  it is a *second* prose statement of spec 003 drifting from it, already held by
+  `check_custom_backend_guide.py` and BK-332, and its residue is the semantic
+  class no gate reaches. A third statement adds to that class.
+  Refused rather than filed because none fits a section's promise: § 10's
+  requirement already executes as the `benchmark.yml` baseline gate with its
+  local-only scope registered in BK-309's entry, § 2's ground is held by the gate
+  and BK-332, and § 12 has zero measured cost. Re-file under a new ID on the
+  triggers research § 4.2 names — the first vocabulary-driven `unclear` tag for
+  § 12, guide tags failing to fall after BK-332 runs for § 2, a regression the
+  local baseline cannot see for § 10.
+
 - [x] **— `ext.cache` stampede guard** *(refused at admission; never had an ID)*
   BK-290 left the stampede — concurrent identical misses each hitting the backend
   — as an out-of-scope follow-up and named ID-218 as its owner. That attribution
