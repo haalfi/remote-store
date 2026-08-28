@@ -990,3 +990,103 @@ class TestAllExports:
 
         assert not hasattr(remote_store, "StoreFileSystemHandler")
         assert not hasattr(remote_store, "pyarrow_fs")
+
+
+class TestParquetOverSftpReachesTheSizeProbe:
+    """SIO-011's consumer path, end to end: PyArrow reading Parquet from SFTP.
+
+    This is what the SFTP backend's ``size_probe`` exists for, seen from a
+    caller's side. ``SFTPFile.seekable()`` is ``True`` unconditionally, so
+    ``read_seekable()`` hands PyArrow the probing wrapper rather than a spool,
+    and PyArrow sizes the file with an end-relative seek before reading the
+    footer — reaching a branch nobody wrote a seek to reach.
+
+    **It reaches it only above the materialization threshold**, which is the
+    part worth pinning rather than assuming. ``open_input_file`` has three
+    tiers: a native fast path, full materialization via ``read_bytes`` below
+    ``materialization_threshold`` (64 MB by default), and only then the seekable
+    stream. A Parquet file under that ceiling never touches the wrapper at all,
+    so the threshold is lowered here to exercise Tier 3 with a small file rather
+    than paying for a 64 MB one.
+    """
+
+    @pytest.mark.spec("SIO-011")
+    @pytest.mark.parametrize(
+        ("threshold", "tier", "expect_end_seek"),
+        [
+            pytest.param(1024, "seekable stream", True, id="tier3-above-threshold"),
+            pytest.param(64 * 1024 * 1024, "materialized", False, id="tier2-below-threshold"),
+        ],
+    )
+    def test_parquet_read_over_sftp(
+        self,
+        sftp_server: tuple[int, str] | None,
+        threshold: int,
+        tier: str,
+        expect_end_seek: bool,
+    ) -> None:
+        """Both tiers are asserted, because which one runs decides whether the probe runs.
+
+        The negative case is not filler: it is why the guides can say a *large*
+        analytical read reaches this and a small one does not, and an
+        implementation that materialized everything would satisfy the positive
+        case vacuously by never seeking at all.
+        """
+        pq = pytest.importorskip("pyarrow.parquet")
+        if sftp_server is None:
+            pytest.skip("paramiko not installed (in-process SFTP server unavailable)")
+
+        from remote_store._stream import _ErrorMappingStream
+        from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
+
+        table = pa.table({"n": list(range(5000)), "s": ["x" * 40] * 5000})
+        out = pa.BufferOutputStream()
+        pq.write_table(table, out)
+        payload = out.getvalue().to_pybytes()
+        assert len(payload) < 64 * 1024 * 1024, (
+            "the fixture file must sit below the default threshold, or the tier-2 case proves nothing"
+        )
+
+        seeks: list[tuple[int, int]] = []
+        original_seek = _ErrorMappingStream.seek
+
+        def _recording(self: Any, offset: int, whence: int = 0) -> int:
+            seeks.append((offset, whence))
+            return original_seek(self, offset, whence)  # type: ignore[no-any-return]
+
+        backend = SFTPBackend(
+            host="127.0.0.1",
+            port=sftp_server[0],
+            username="testuser",
+            password="testpass",
+            base_path="/",
+            host_key_policy=HostKeyPolicy.AUTO_ADD,
+            connect_kwargs={"allow_agent": False, "look_for_keys": False},
+        )
+        store = Store(backend)
+        name = f"probe_{threshold}.parquet"
+        store.write(name, payload)
+
+        _ErrorMappingStream.seek = _recording  # type: ignore[method-assign]
+        try:
+            fs = pyarrow_fs(store, materialization_threshold=threshold)
+            round_tripped = pq.read_table(name, filesystem=fs)
+        finally:
+            _ErrorMappingStream.seek = original_seek  # type: ignore[method-assign]
+            store.close()
+
+        assert round_tripped.num_rows == table.num_rows, f"the {tier} tier must still read the data"
+        assert round_tripped.column("n").to_pylist() == table.column("n").to_pylist()
+
+        end_relative = [s for s in seeks if s[1] == 2]
+        if expect_end_seek:
+            assert end_relative, (
+                "expected PyArrow to size the file with an end-relative seek through the "
+                "wrapper; if this is empty the consumer path no longer reaches SIO-011's "
+                "branch and the guides' claim about analytical readers is stale"
+            )
+        else:
+            assert not seeks, (
+                "below the materialization threshold open_input_file reads the whole file "
+                "and hands PyArrow a buffer, so the wrapper must see no seek at all"
+            )

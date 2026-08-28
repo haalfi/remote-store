@@ -1122,8 +1122,10 @@ def test_seek_to_end_on_a_healthy_channel_answers_the_true_size(
     only a stalled one, so the healthy path is the larger blast radius of the
     two and the one no stall test touches. ``seek(-n, SEEK_END)`` is the shape
     that matters: ``SFTPFile.seekable()`` returns ``True`` unconditionally, so
-    ``read_seekable()`` hands this stream straight to an analytical reader, and
-    a Parquet footer read is a negative offset from the end.
+    ``read_seekable()`` hands this stream straight to an analytical reader
+    rather than spooling it, and the offset arithmetic is then the wrapper's own
+    rather than paramiko's. That consumer path is exercised end to end by
+    ``TestParquetOverSftpReachesTheSizeProbe`` in ``tests/ext/test_arrow.py``.
     """
     if sftp_server is None:
         pytest.skip("paramiko not installed")

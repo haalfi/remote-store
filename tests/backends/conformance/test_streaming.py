@@ -198,12 +198,10 @@ class TestStreamingConformance:
         the containerised fixtures here while a default local run does not, so
         CI is what actually executes them.
 
-        The negative offset is the shape that matters: an analytical reader
-        sizing a file seeks backwards from the end (a Parquet footer read is
-        exactly ``seek(-n, SEEK_END)``), and it is the case where an
-        off-by-one in the wrapper's own arithmetic would show. ``seek(0,
-        SEEK_END)`` alone would pass against an implementation that ignored the
-        caller's offset entirely.
+        The negative offset is the shape that matters, and it is asserted
+        because ``seek(0, SEEK_END)`` alone would pass against an implementation
+        that ignored the caller's offset entirely. It is the case where an
+        off-by-one in the wrapper's own arithmetic shows.
 
         Read with a bare ``stream.read()`` rather than a sized call, for the
         reason the sibling test above gives: an unbuffered ``RawIOBase`` stream

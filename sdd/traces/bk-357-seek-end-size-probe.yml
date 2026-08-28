@@ -76,6 +76,12 @@ surprising_ripples:
   # tests marked with the clause ID, and this PR had two of those, both SFTP's.
   # The rows are shaped around the artifact changed, not the surface it serves.
   - tests/backends/conformance/test_streaming.py
+  # The consumer subject. No ripple-check row asks "does the extension that
+  # consumes this path still behave as your prose says?" — the rows reach from
+  # the changed artifact outwards, and ext/arrow.py neither imports nor mentions
+  # _ErrorMappingStream's seek. It was reached only because the subject list
+  # carried it as `not reached` to the end and the user asked for it closed.
+  - tests/ext/test_arrow.py
 # Named commits, per the schema's review_rounds description, which asks for the
 # list rather than a rule: naming it is what makes the judgement checkable. The
 # field counts **commits** that exist because review feedback was incorporated,
@@ -296,4 +302,22 @@ phases:
           Both exception counts and the qualifier's demonstrating case. Caught
           the deleted gate here, which is why the silent-close test is in this PR
           rather than filed.
+        outcome: ok
+      - file: src/remote_store/ext/arrow.py
+        section: "StoreFileSystemHandler.open_input_file"
+        read_type: verify
+        extract: >-
+          The consumer subject, closed last and by running it rather than
+          reading it. Four artifacts had said "a Parquet footer read is exactly
+          seek(-n, SEEK_END)"; tracing the wrapper's seeks under a real
+          pq.read_table over SFTP showed both halves wrong. open_input_file has
+          three tiers and materialises anything below materialization_threshold
+          (64 MB default), so a small Parquet file reaches the wrapper zero
+          times; above it PyArrow sizes with seek(0, SEEK_END), not a negative
+          offset. Claim corrected in all four and pinned by
+          TestParquetOverSftpReachesTheSizeProbe, which asserts both tiers.
+          Tagged ok, not misleading: this file's docstring names the three tiers
+          and the threshold plainly. I asserted the consumer's behaviour across
+          four artifacts without opening the module that implements it, which is
+          my miss and not a document's.
         outcome: ok

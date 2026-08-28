@@ -639,9 +639,9 @@ class TestSeekEndSizeProbe:
     def test_a_healthy_probe_positions_relative_to_the_probed_size(self, offset: int, expected: int) -> None:
         """The case that always worked must keep working, negative offsets included.
 
-        A parquet footer read is ``seek(-n, SEEK_END)``, not ``seek(0,
-        SEEK_END)``, so the offset arithmetic is the part a caller actually
-        depends on.
+        Parametrised over a negative offset as well as ``0`` because the offset
+        arithmetic is the wrapper's own: ``seek(0, SEEK_END)`` alone would pass
+        against an implementation that dropped the caller's offset entirely.
         """
         inner = _ParamikoSeekEndStream(b"0123456789")
         stream = _ErrorMappingStream(inner, _test_mapper, "f.txt", is_fatal=_fatal, size_probe=_stat_size_probe)

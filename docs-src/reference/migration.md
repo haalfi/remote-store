@@ -33,10 +33,12 @@ reading a wrong answer; handle
 `get_file_info(path).size` is unaffected and always reported the failure.
 
 **You may not have written the seek.** SFTP streams report themselves seekable,
-so `read_seekable()` hands them to analytical readers such as PyArrow, and a
-Parquet footer read is exactly `seek(-n, os.SEEK_END)`. If such a read
-previously returned empty or nonsense against a flaky SFTP endpoint, this is
-why, and it now raises instead.
+so `read_seekable()` hands them to analytical readers such as PyArrow, which
+size a file with `seek(0, os.SEEK_END)` before reading its footer. If such a
+read previously returned empty or nonsense against a flaky SFTP endpoint, this
+is why, and it now raises instead. This applies to reads large enough to stream:
+`ext.arrow` materialises anything below its `materialization_threshold`
+(64 MB by default) and never seeks the stream at all.
 
 **Scope:** SFTP only. Every other backend resolves an end-relative seek without
 a request that can fail, and their streams are byte-for-byte unchanged. The
