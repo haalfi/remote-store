@@ -24,8 +24,10 @@ expected_ripples:
 
 # Derivation, per the review_rounds description in _schema.yml: on
 # `git log --oneline origin/master..HEAD`, a4feee9 implements and does not
-# count; the round-1 fix commit is named in the line below, which is written
-# after that commit exists rather than predicting its SHA. Value is 1.
+# count; ef3edad incorporates review round 1. Value is 1. Written after
+# ef3edad existed rather than predicting its SHA, which is why it lands in a
+# commit of its own — the schema calls a plausible SHA that resolves to
+# nothing worse than no derivation at all.
 review_rounds: 1
 
 phases:
