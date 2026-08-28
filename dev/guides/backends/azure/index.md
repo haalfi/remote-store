@@ -454,7 +454,7 @@ The content is uploaded with `upload_blob` on both flat and HNS accounts — a b
 Raises:
 
 - `AlreadyExists` – If the blob exists and overwrite is False.
-- `InvalidPath` – If path names a directory, or (with the reject_write_under_file_ancestor opt-in, or natively on HNS) an ancestor exists as a file.
+- `InvalidPath` – If path is the store root, or names a directory, or (with the reject_write_under_file_ancestor opt-in, or natively on HNS) an ancestor exists as a file.
 - `PermissionDenied` – If credentials are rejected or lack access (401/403).
 - `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
 
@@ -477,7 +477,7 @@ Readers never observe a partial file. On flat accounts this is the plain `PUT` (
 Raises:
 
 - `AlreadyExists` – If the blob exists and overwrite is False.
-- `InvalidPath` – If path names a directory, or an ancestor exists as a file.
+- `InvalidPath` – If path is the store root, or names a directory, or an ancestor exists as a file.
 - `PermissionDenied` – If credentials are rejected or lack access (401/403).
 - `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
 
@@ -496,7 +496,7 @@ Writes spool to a temporary file (up to 8 MB in memory, then on disk). On flat a
 Raises:
 
 - `AlreadyExists` – If the blob exists and overwrite is False.
-- `InvalidPath` – If path names a directory, or an ancestor exists as a file.
+- `InvalidPath` – If path is the store root, or names a directory, or an ancestor exists as a file.
 - `PermissionDenied` – If credentials are rejected or lack access (401/403).
 - `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
 
@@ -663,7 +663,7 @@ On HNS accounts this is a single native `rename_file` (atomic). On flat accounts
 Raises:
 
 - `NotFound` – If src does not exist.
-- `InvalidPath` – If src or dst names a directory, or an ancestor of dst exists as a file.
+- `InvalidPath` – If src or dst is the store root, or names a directory, or an ancestor of dst exists as a file.
 - `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
 - `PermissionDenied` – If credentials are rejected or lack access (401/403).
 - `BackendUnavailable` – On throttling (429), 5xx, or transport failure.
@@ -683,7 +683,7 @@ Issues `start_copy_from_url` so the bytes never pass through the client. The cop
 Raises:
 
 - `NotFound` – If src does not exist.
-- `InvalidPath` – If src or dst names a directory, or an ancestor of dst exists as a file.
+- `InvalidPath` – If src or dst is the store root, or names a directory, or an ancestor of dst exists as a file.
 - `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
 - `PermissionDenied` – If credentials are rejected or lack access (401/403).
 - `BackendUnavailable` – On throttling (429), 5xx, or transport failure.

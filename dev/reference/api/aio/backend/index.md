@@ -171,8 +171,8 @@ Returns:
 
 Raises:
 
+- `InvalidPath` – If path is the store root. This is the first precondition, decided from the key before any request is issued, and no backend declaring WRITE is exempt from it — including flat-namespace backends, which are exempt from the directory check below. (A backend without WRITE refuses every path with CapabilityNotSupported and never reaches this check.) It covers every spelling that addresses the root, which is wider than "" and ".": "./", ".//", "./." and "/" are refused too. Also if path names a directory, or if any slash-aligned ancestor of path exists as a regular file. Flat-namespace backends (S3, Azure non-HNS, SQL) cannot detect a file ancestor in O(1) and skip that check by default; the per-backend reject_write_under_file_ancestor opt-in enables it.
 - `AlreadyExists` – If the file exists and overwrite is False.
-- `InvalidPath` – If path names a directory, or if any slash-aligned ancestor of path exists as a regular file. Flat-namespace backends (S3, Azure non-HNS, SQL) cannot detect a file ancestor in O(1) and skip the check by default; the per-backend reject_write_under_file_ancestor opt-in enables it.
 
 Backend-conditional argument: `metadata=`
 
@@ -206,8 +206,8 @@ Returns:
 Raises:
 
 - `CapabilityNotSupported` – If backend lacks ATOMIC_WRITE.
+- `InvalidPath` – If path is the store root (see write — first precondition, from the key, every spelling), if path names a directory, or if any slash-aligned ancestor of path exists as a regular file.
 - `AlreadyExists` – If the file exists and overwrite is False.
-- `InvalidPath` – If path names a directory, or if any slash-aligned ancestor of path exists as a regular file (see write).
 
 Requires `Capability.ATOMIC_WRITE`
 
@@ -443,7 +443,7 @@ Parameters:
 
 Raises:
 
-- `InvalidPath` – If src names a directory, dst names an existing directory, or any slash-aligned ancestor of dst exists as a regular file.
+- `InvalidPath` – If src or dst is the store root — the first precondition, decided from the key and ahead of the source-existence check, so a root dst is refused whether or not src exists. dst is a write and is refused under every spelling that addresses the root; src is a file-shaped operation on a folder and is refused for "" and "." at minimum. Also if src names a directory, dst names an existing directory, or any slash-aligned ancestor of dst exists as a regular file.
 - `NotFound` – If src does not exist.
 - `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
 
@@ -475,7 +475,7 @@ Parameters:
 
 Raises:
 
-- `InvalidPath` – If src names a directory, dst names an existing directory, or any slash-aligned ancestor of dst exists as a regular file.
+- `InvalidPath` – If src or dst is the store root — the first precondition, decided from the key and ahead of the source-existence check, so a root dst is refused whether or not src exists. dst is a write and is refused under every spelling that addresses the root; src is a file-shaped operation on a folder and is refused for "" and "." at minimum. Also if src names a directory, dst names an existing directory, or any slash-aligned ancestor of dst exists as a regular file.
 - `NotFound` – If src does not exist.
 - `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
 

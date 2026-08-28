@@ -163,6 +163,32 @@ def _path_from_key(self, key: bytes) -> str:
     """Extract the backend-relative path from a Redis key."""
     prefix = f"{self._prefix}file:"
     return key.decode().removeprefix(prefix)
+
+def _addressable_segments(self, path: str) -> list[str]:
+    """Return the segments of *path* that actually address something.
+
+    Empty and ``"."`` segments name nothing, so every spelling of the store
+    root -- ``""``, ``"."``, ``"./"``, ``".//"``, ``"./."``, ``"/"`` --
+    yields ``[]``. This is the predicate the backend contract requires for
+    deciding root-ness on a write, and it is deliberately wider than a
+    ``not path or path == "."`` test, which lets ``"./"`` through.
+    ``remote_store.backends._flat_ns._addressable_segments`` is the same
+    function; it is restated here so the tutorial stays dependency-free.
+
+    Use this one predicate everywhere you split a key, addressing included.
+    A backend that guards with it and addresses with something stricter
+    accepts ``"./x"`` at the guard and then writes it somewhere else.
+    """
+    return [s for s in path.split("/") if s and s != "."]
+
+def _reject_root_as_write_target(self, path: str) -> None:
+    """Refuse the store root as a write target, decided from the key."""
+    if not self._addressable_segments(path):
+        raise InvalidPath(
+            f"Cannot write -- '{path}' is the store root, which is a folder",
+            path=path,
+            backend=self.name,
+        )
 ```
 
 Redis has no concept of folders, so we use key prefixes to simulate a hierarchical namespace. Files live under `rs:file:<path>`, and folder markers (optional) under `rs:dir:<path>`.
@@ -292,12 +318,9 @@ def write(
     overwrite: bool = False,
     metadata: Mapping[str, str] | None = None,
 ) -> WriteResult:
-    if not path or path == ".":
-        raise InvalidPath(
-            "Path must not be empty for file operations",
-            path=path,
-            backend=self.name,
-        )
+    # Precondition (0): the root, from the key, before any request. Wider
+    # than ``not path or path == "."`` on purpose -- see _addressable_segments.
+    self._reject_root_as_write_target(path)
 
     raw = content if isinstance(content, bytes) else content.read()
 
@@ -563,10 +586,13 @@ ______________________________________________________________________
 
 ```
 def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+    # The source is a file-shaped operation on a folder; the destination is
+    # a write. Different messages, and the destination takes the wider
+    # predicate -- an unrecognised root spelling costs a read an error class
+    # and cost a write, on a shipped backend, its container.
     if not src or src == ".":
-        raise InvalidPath("Source path must not be empty", path=src, backend=self.name)
-    if not dst or dst == ".":
-        raise InvalidPath("Destination path must not be empty", path=dst, backend=self.name)
+        raise InvalidPath("Source path is a folder, not a file", path=src, backend=self.name)
+    self._reject_root_as_write_target(dst)
 
     try:
         # Read source
@@ -599,9 +625,8 @@ def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
 
 def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
     if not src or src == ".":
-        raise InvalidPath("Source path must not be empty", path=src, backend=self.name)
-    if not dst or dst == ".":
-        raise InvalidPath("Destination path must not be empty", path=dst, backend=self.name)
+        raise InvalidPath("Source path is a folder, not a file", path=src, backend=self.name)
+    self._reject_root_as_write_target(dst)
 
     try:
         data = self._client.hgetall(self._key(src))
@@ -630,8 +655,12 @@ def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
 **Rules the code above implements:**
 
 - **`src == dst` is a data-preserving no-op** — never a delete-after-write on the same key. Place the no-op return *after* the source check so a missing source still raises `NotFound`. (Contract rule.)
-- **Precondition order matters:** a missing source raises `NotFound` before the destination is checked for `AlreadyExists`. (Contract rule.)
-- Empty source or destination paths raise `InvalidPath` — today a `Store`-enforced convention that shipped backends (and this tutorial) also guard defensively; promoting it to a formal backend-contract clause is tracked spec work.
+- **The store root is refused at both ends, from the key, before any request.** A source that names the root is a file-shaped operation on a folder; a destination that names it is a write to the root. Both raise `InvalidPath`. (Contract rule — this is the first precondition, ahead of the source-existence check below.) It used to be a `Store`-enforced convention that backends also guarded defensively; it is now a requirement, and the conformance suite holds you to it for the two canonical spellings `""` and `"."`, so a backend that leaves those to the layer above will fail.
+- **On the write end, decide "is this the root" on the key's addressable segments, not on `is_root`.** Drop empty and `"."` segments and refuse when nothing is left. `is_root` recognises only `""` and `"."`, so a guard written against it lets `"./"` through, and `"./"` addresses the same node. That is not a hypothetical: it is how a shipped backend came to leave its own container as a regular file. **The conformance suite cannot catch this for you** — its cells are parametrised over the two canonical spellings — so it is a rule you have to hold yourself to, which is why it is stated here rather than left to the gate. The write end is the three writers plus the `move`/`copy` **destination**.
+- **The `move`/`copy` source is held to the narrower predicate, and that is deliberate.** The contract requires only `""` and `"."` there. The tutorial above keeps `not src or src == "."` on the source for exactly that reason, which is why the two ends of the same `move` do not look alike. The asymmetry follows the damage: on the write side an unrecognised root spelling cost a backend its container, and on the read side it costs an error class or an empty listing. Refusing the source under the wider predicate is permitted and four shipped backends do it; none is required to.
+- **Do not fold backslashes into that predicate** to match `RemotePath`, tempting as the symmetry looks. If your backend also builds its native paths from it, the fold makes two distinct keys collide onto one address — `a\b` and `a/b` become the same node, and `a\b` stops being addressable as itself. That has been tried and measured. (It is not a round-trip-identity breach: a backslash key is not well-formed to begin with. The cost is the collision.)
+- **Use that one predicate everywhere the key is split, addressing included.** A backend that guards with the tolerant predicate and addresses with a stricter one accepts `"./x"` at the guard and then names a folder literally called `.` on the wire, while its own `write("./x")` goes to the root. Whether a key names a node and *which* node it names have to be decided the same way. That has been measured on a shipped backend three separate times, in three functions that each split a key their own way — so audit every one of yours, not only the guard.
+- **Precondition order matters:** after the root check, a missing source raises `NotFound` before the destination is checked for `AlreadyExists`. (Contract rule.) Note the root check outranks both — a root *destination* is refused even when the source does not exist, so the caller hears about the destination rather than about a source they may not have expected to find.
 
 The conformance suite verifies the no-op rule for backends that declare `self_op_supported` (a registration fact covered later in this guide).
 
@@ -661,6 +690,8 @@ def close(self) -> None:
 `check_health()` should be the **cheapest possible read-only operation**. Redis `PING` is ideal. For S3 it's a `HEAD` on the bucket. For a database it's `SELECT 1`.
 
 One declarative flag rides along with `close()`: the `close_is_terminal: ClassVar[bool]` class attribute (default `False`, meaning the backend stays usable after `close()`). Declare `True` when use-after-close must fail — the close-posture conformance lane tests whichever posture you declare, so an undeclared terminal backend fails it.
+
+**If you declare `True`, the closed check must run ahead of your root checks.** A closed backend raises `BackendUnavailable` even when the path is also invalid — the closed state is the more fundamental error, and a cheap string-test root guard is exactly the kind that naturally gets written first. Both root pre-checks are affected, the file-shaped one and the write one, and they need separate attention: a backend can order the read guard correctly and still get the write guard wrong, which is how the ordering was last found broken here. The conformance lane has a cell for each.
 
 ______________________________________________________________________
 

@@ -12578,8 +12578,11 @@ is absent.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../../../reference/api/errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>src</em> or <em>dst</em> is malformed, or (opt-in) an ancestor
-of <em>dst</em> exists as a file.</p>
+            <p>If <em>src</em> or <em>dst</em> addresses the store root — under any
+spelling, since <code>_validate_path</code> drops empty and <code>"."</code>
+segments, and ahead of the source-existence check — or is
+otherwise malformed, or (opt-in) an ancestor of <em>dst</em> exists as
+a file.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12638,8 +12641,11 @@ is absent.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../../../reference/api/errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>src</em> or <em>dst</em> is malformed, or (opt-in) an ancestor
-of <em>dst</em> exists as a file.</p>
+            <p>If <em>src</em> or <em>dst</em> addresses the store root — under any
+spelling, since <code>_validate_path</code> drops empty and <code>"."</code>
+segments, and ahead of the source-existence check — or is
+otherwise malformed, or (opt-in) an ancestor of <em>dst</em> exists as
+a file.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">

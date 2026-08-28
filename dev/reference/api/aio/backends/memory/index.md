@@ -334,7 +334,7 @@ Raises:
 
 - `NotFound` – If src does not exist.
 - `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
-- `InvalidPath` – If src or dst is empty, src names a directory, or dst names an existing directory.
+- `InvalidPath` – If src or dst addresses the store root — under any spelling, and ahead of the source-existence check — or src names a directory, or dst names an existing directory.
 
 ### copy
 
@@ -358,7 +358,7 @@ Raises:
 
 - `NotFound` – If src does not exist.
 - `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
-- `InvalidPath` – If src or dst is empty, src names a directory, or dst names an existing directory.
+- `InvalidPath` – If src or dst addresses the store root — under any spelling, and ahead of the source-existence check — or src names a directory, or dst names an existing directory.
 
 ## See also
 

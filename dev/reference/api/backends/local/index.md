@@ -143,7 +143,7 @@ The bytes land directly at the final path (no temp-and-rename), so a crash or er
 Raises:
 
 - `AlreadyExists` – If the file exists and overwrite is False.
-- `InvalidPath` – If path names a directory, or an ancestor of path exists as a regular file.
+- `InvalidPath` – If path is the store root, or names a directory, or an ancestor of path exists as a regular file.
 - `PermissionDenied` – If the OS denies write access.
 
 ### write_atomic
@@ -165,7 +165,7 @@ Readers never observe a partial file: the body is written to a temporary file in
 Raises:
 
 - `AlreadyExists` – If the file exists and overwrite is False.
-- `InvalidPath` – If path names a directory, or an ancestor of path exists as a regular file.
+- `InvalidPath` – If path is the store root, or names a directory, or an ancestor of path exists as a regular file.
 - `PermissionDenied` – If the OS denies write access.
 
 ### open_atomic
@@ -183,7 +183,7 @@ Writes go to a temp file in *path*'s directory; on normal exit it is atomically 
 Raises:
 
 - `AlreadyExists` – If the file exists and overwrite is False.
-- `InvalidPath` – If path names a directory, or an ancestor of path exists as a regular file.
+- `InvalidPath` – If path is the store root, or names a directory, or an ancestor of path exists as a regular file.
 - `PermissionDenied` – If the OS denies write access.
 
 ### delete
@@ -316,7 +316,7 @@ Atomic when *src* and *dst* are on the same filesystem (`os.rename` via `shutil.
 Raises:
 
 - `NotFound` – If src does not exist.
-- `InvalidPath` – If src or dst names a directory, or an ancestor of dst exists as a regular file.
+- `InvalidPath` – If src or dst is the store root, or names a directory, or an ancestor of dst exists as a regular file.
 - `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
 - `PermissionDenied` – If the OS denies the operation.
 
@@ -335,7 +335,7 @@ Not atomic: content is streamed to *dst*, so a crash mid-copy can leave a partia
 Raises:
 
 - `NotFound` – If src does not exist.
-- `InvalidPath` – If src or dst names a directory, or an ancestor of dst exists as a regular file.
+- `InvalidPath` – If src or dst is the store root, or names a directory, or an ancestor of dst exists as a regular file.
 - `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
 - `PermissionDenied` – If the OS denies the operation.
 

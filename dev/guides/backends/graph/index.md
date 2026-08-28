@@ -609,7 +609,7 @@ Graph answers `POST copy` with `202 Accepted` and a `Location` monitor URL; this
 Raises:
 
 - `NotFound` – If src does not exist.
-- `InvalidPath` – If src names a folder, or dst names an existing folder or descends through a file ancestor.
+- `InvalidPath` – If src or dst is the drive root, or src names a folder, or dst names an existing folder or descends through a file ancestor.
 - `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
 - `PermissionDenied` – If the token is rejected or lacks access to the item (401/403).
 - `BackendUnavailable` – On a 202 without a Location monitor URL, a copy_timeout expiry, or a transient/5xx failure.
@@ -629,7 +629,7 @@ Graph answers `PATCH driveItem` synchronously in most cases (`200`); a large-ite
 Raises:
 
 - `NotFound` – If src does not exist.
-- `InvalidPath` – If src names a folder, or dst names an existing folder or descends through a file ancestor.
+- `InvalidPath` – If src or dst is the drive root, or src names a folder, or dst names an existing folder or descends through a file ancestor.
 - `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
 - `PermissionDenied` – If the token is rejected or lacks access to the item (401/403).
 - `BackendUnavailable` – On a 202 without a Location monitor URL, a copy_timeout expiry, or a transient/5xx failure.

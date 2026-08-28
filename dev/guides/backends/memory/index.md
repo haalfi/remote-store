@@ -189,7 +189,7 @@ The whole body is buffered into memory before the store (streams are drained ful
 Raises:
 
 - `AlreadyExists` – If a file exists at path and overwrite is False.
-- `InvalidPath` – If path is empty or names a folder, or an ancestor of path exists as a file.
+- `InvalidPath` – If path addresses the store root — under any spelling, not only "" and ".", since \_split_path drops empty and "." segments — or names a folder, or an ancestor of path exists as a file.
 
 ### write_atomic
 
@@ -210,7 +210,7 @@ Memory writes are already atomic under the process-wide lock, so this is exactly
 Raises:
 
 - `AlreadyExists` – If a file exists at path and overwrite is False.
-- `InvalidPath` – If path is empty or names a folder, or an ancestor of path exists as a file.
+- `InvalidPath` – If path addresses the store root — under any spelling, not only "" and ".", since \_split_path drops empty and "." segments — or names a folder, or an ancestor of path exists as a file.
 
 ### open_atomic
 
@@ -343,7 +343,7 @@ Detach-from-source and attach-to-destination happen in one locked step, so the m
 Raises:
 
 - `NotFound` – If src does not exist.
-- `InvalidPath` – If src or dst is empty, src names a folder, or dst names an existing folder.
+- `InvalidPath` – If src or dst addresses the store root — under any spelling, and ahead of the source-existence check — or src names a folder, or dst names an existing folder.
 - `AlreadyExists` – If dst is an existing file and overwrite is False.
 
 ### copy
@@ -361,5 +361,5 @@ The destination receives a fresh `bytearray` copy of the source bytes, all in on
 Raises:
 
 - `NotFound` – If src does not exist.
-- `InvalidPath` – If src or dst is empty, src names a folder, or dst names an existing folder.
+- `InvalidPath` – If src or dst addresses the store root — under any spelling, and ahead of the source-existence check — or src names a folder, or dst names an existing folder.
 - `AlreadyExists` – If dst is an existing file and overwrite is False.

@@ -12507,9 +12507,9 @@ there when readers must never observe an intermediate state.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../../../reference/api/errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>path</em> names a directory, or (with the
-<code>reject_write_under_file_ancestor</code> opt-in, or natively on HNS)
-an ancestor exists as a file.</p>
+            <p>If <em>path</em> is the store root, or names a directory, or
+(with the <code>reject_write_under_file_ancestor</code> opt-in, or natively
+on HNS) an ancestor exists as a file.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12577,8 +12577,8 @@ on failure).</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../../../reference/api/errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>path</em> names a directory, or an ancestor exists as a
-file.</p>
+            <p>If <em>path</em> is the store root, or names a directory, or an
+ancestor exists as a file.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12637,8 +12637,8 @@ exception before exit leaves <em>path</em> untouched.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../../../reference/api/errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>path</em> names a directory, or an ancestor exists as a
-file.</p>
+            <p>If <em>path</em> is the store root, or names a directory, or an
+ancestor exists as a file.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -13196,8 +13196,8 @@ failure between the two steps can leave both <em>src</em> and <em>dst</em> prese
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../../../reference/api/errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>src</em> or <em>dst</em> names a directory, or an ancestor of
-<em>dst</em> exists as a file.</p>
+            <p>If <em>src</em> or <em>dst</em> is the store root, or names a
+directory, or an ancestor of <em>dst</em> exists as a file.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -13263,8 +13263,8 @@ destination. <code>src == dst</code> is a no-op.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../../../reference/api/errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>src</em> or <em>dst</em> names a directory, or an ancestor of
-<em>dst</em> exists as a file.</p>
+            <p>If <em>src</em> or <em>dst</em> is the store root, or names a
+directory, or an ancestor of <em>dst</em> exists as a file.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">

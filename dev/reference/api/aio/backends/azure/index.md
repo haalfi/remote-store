@@ -243,7 +243,7 @@ Returns:
 Raises:
 
 - `AlreadyExists` – If the file exists and overwrite is False.
-- `InvalidPath` – If path names a directory.
+- `InvalidPath` – If path is the store root, or names a directory.
 
 ### write_atomic
 
@@ -277,7 +277,7 @@ Returns:
 Raises:
 
 - `AlreadyExists` – If the file exists and overwrite is False.
-- `InvalidPath` – If path names a directory.
+- `InvalidPath` – If path is the store root, or names a directory.
 
 ### delete
 
@@ -468,7 +468,7 @@ Parameters:
 Raises:
 
 - `NotFound` – If src does not exist.
-- `InvalidPath` – If src or dst names a directory (HNS only).
+- `InvalidPath` – If src or dst is the store root, or names a directory (HNS only).
 - `AlreadyExists` – If dst exists and overwrite is False.
 
 ### copy
@@ -490,7 +490,7 @@ Parameters:
 Raises:
 
 - `NotFound` – If src does not exist.
-- `InvalidPath` – If src or dst names a directory (HNS only).
+- `InvalidPath` – If src or dst is the store root, or names a directory (HNS only).
 - `AlreadyExists` – If dst exists and overwrite is False.
 
 ### aclose

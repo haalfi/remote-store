@@ -11540,8 +11540,10 @@ concurrent callers in the same process.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../../../reference/api/errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>path</em> is empty or names a folder, or an ancestor of
-<em>path</em> exists as a file.</p>
+            <p>If <em>path</em> addresses the store root — under any
+spelling, not only <code>""</code> and <code>"."</code>, since <code>_split_path</code>
+drops empty and <code>"."</code> segments — or names a folder, or an
+ancestor of <em>path</em> exists as a file.</p>
           </div>
         </li>
     </ul>
@@ -11593,8 +11595,10 @@ exactly <code>write</code>; the whole body is buffered first.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../../../reference/api/errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>path</em> is empty or names a folder, or an ancestor of
-<em>path</em> exists as a file.</p>
+            <p>If <em>path</em> addresses the store root — under any
+spelling, not only <code>""</code> and <code>"."</code>, since <code>_split_path</code>
+drops empty and <code>"."</code> segments — or names a folder, or an
+ancestor of <em>path</em> exists as a file.</p>
           </div>
         </li>
     </ul>
@@ -11963,8 +11967,9 @@ the source is a file and is otherwise a no-op.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../../../reference/api/errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>src</em> or <em>dst</em> is empty, <em>src</em> names a folder, or
-<em>dst</em> names an existing folder.</p>
+            <p>If <em>src</em> or <em>dst</em> addresses the store root — under any
+spelling, and ahead of the source-existence check — or <em>src</em>
+names a folder, or <em>dst</em> names an existing folder.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -12015,8 +12020,9 @@ all in one locked step (atomic). <code>src == dst</code> is a no-op.</p>
               <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../../../reference/api/errors/#remote_store.InvalidPath">InvalidPath</a></code>
             –
           <div class="doc-md-description">
-            <p>If <em>src</em> or <em>dst</em> is empty, <em>src</em> names a folder, or
-<em>dst</em> names an existing folder.</p>
+            <p>If <em>src</em> or <em>dst</em> addresses the store root — under any
+spelling, and ahead of the source-existence check — or <em>src</em>
+names a folder, or <em>dst</em> names an existing folder.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">

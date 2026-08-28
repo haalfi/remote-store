@@ -13768,8 +13768,22 @@ and keys returned by listing / <code>to_key</code> are stripped back to
 <code>base_path</code>-relative form, so the backend behaves as if <code>base_path</code> were
 its root.
 <strong>Postconditions:</strong>
-- <code>base_path</code> is normalised by trimming leading/trailing slashes; the
-  default <code>""</code> targets the drive root unchanged (backward compatible).
+- <code>base_path</code> is normalised by the same predicate that decides what a <em>key</em>
+  addresses on this backend — empty and <code>"."</code> segments are dropped, wherever
+  they appear. The default <code>""</code> targets the drive root unchanged (backward
+  compatible), and so now do <code>"."</code>, <code>"./"</code> and <code>".//"</code>; <code>"a/./b"</code> scopes to
+  <code>a/b</code>, and <code>"/root/sub/"</code> to <code>root/sub</code> as it always did.
+  <strong>This narrows what <code>base_path</code> can name</strong>: a drive folder literally called
+  <code>.</code> is no longer addressable through it. That is the intended trade. The
+  previous split kept <code>"."</code> as a segment, so <code>base_path="."</code> — the spelling
+  the backend contract treats as the store root everywhere else — silently
+  scoped an entire store under a folder named <code>.</code> and sent every write there.
+  A store nobody meant to create is the worse failure of the two, and the
+  addressable case has an escape hatch: a folder genuinely named <code>.</code> is
+  reachable as an ordinary key under a <code>base_path</code> that is not itself
+  root-spelled. See <a href="../003-backend-adapter-contract/#be-029-root-path">BE-029</a>
+  for why one predicate decides both what a key addresses and whether it
+  addresses anything.
 - Intermediate folders of <code>base_path</code> are created on demand by the same
   auto-mkdir-on-write path as any nested key (GR-039); no eager creation
   occurs in <code>__init__</code> (GR-004).

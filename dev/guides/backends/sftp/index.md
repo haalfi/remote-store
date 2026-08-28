@@ -439,7 +439,7 @@ The returned `WriteResult` carries `size` (counted during upload) and `source="n
 Raises:
 
 - `AlreadyExists` – If the file exists and overwrite is False.
-- `InvalidPath` – If path names a directory, or an ancestor of path exists as a regular file.
+- `InvalidPath` – If path is the store root, or names a directory, or an ancestor of path exists as a regular file.
 - `PermissionDenied` – If the server denies access (EACCES).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails mid-write.
 
@@ -464,7 +464,7 @@ As in `write`, the returned `WriteResult` carries `size` and `source="native"` b
 Raises:
 
 - `AlreadyExists` – If the file exists and overwrite is False.
-- `InvalidPath` – If path names a directory, or an ancestor of path exists as a regular file.
+- `InvalidPath` – If path is the store root, or names a directory, or an ancestor of path exists as a regular file.
 - `PermissionDenied` – If the server denies access (EACCES).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
@@ -483,7 +483,7 @@ Writes stream to a hidden temp file in the destination directory; on clean exit 
 Raises:
 
 - `AlreadyExists` – If the file exists and overwrite is False.
-- `InvalidPath` – If path names a directory, or an ancestor of path exists as a regular file.
+- `InvalidPath` – If path is the store root, or names a directory, or an ancestor of path exists as a regular file.
 - `PermissionDenied` – If the server denies access (EACCES).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
 
@@ -609,7 +609,7 @@ Tries `posix_rename` first (atomic on POSIX-compliant servers), then a plain `re
 Raises:
 
 - `NotFound` – If src does not exist.
-- `InvalidPath` – If src or dst names a directory, or an ancestor of dst exists as a regular file.
+- `InvalidPath` – If src or dst is the store root, or names a directory, or an ancestor of dst exists as a regular file.
 - `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
 - `PermissionDenied` – If the server denies access (EACCES).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.
@@ -629,7 +629,7 @@ SFTP has no server-side copy, so the bytes round-trip through the client (downlo
 Raises:
 
 - `NotFound` – If src does not exist.
-- `InvalidPath` – If src or dst names a directory, or an ancestor of dst exists as a regular file.
+- `InvalidPath` – If src or dst is the store root, or names a directory, or an ancestor of dst exists as a regular file.
 - `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
 - `PermissionDenied` – If the server denies access (EACCES).
 - `BackendUnavailable` – If the SSH/SFTP connection cannot be established or fails.

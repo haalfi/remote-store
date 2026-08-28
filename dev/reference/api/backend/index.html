@@ -12235,22 +12235,31 @@ file. Only honoured when the backend declares <code>USER_METADATA</code>.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>path</em> is the store root. This is the <strong>first</strong>
+precondition, decided from the key before any request is
+issued, and no backend declaring <code>WRITE</code> is exempt from it —
+including flat-namespace backends, which are exempt from the
+directory check below. (A backend without <code>WRITE</code> refuses
+every path with <code>CapabilityNotSupported</code> and never reaches
+this check.) It covers every spelling that addresses the root,
+which is wider than <code>""</code> and <code>"."</code>: <code>"./"</code>, <code>".//"</code>,
+<code>"./."</code> and <code>"/"</code> are refused too.
+Also if <em>path</em> names a directory, or if any slash-aligned
+ancestor of <em>path</em> exists as a regular file. Flat-namespace
+backends (S3, Azure non-HNS, SQL) cannot detect a file
+ancestor in O(1) and skip <em>that</em> check by default; the
+per-backend <code>reject_write_under_file_ancestor</code> opt-in
+enables it.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
               <code><a class="autorefs autorefs-internal" title="            AlreadyExists (remote_store._errors.AlreadyExists)" href="../errors/#remote_store.AlreadyExists">AlreadyExists</a></code>
             –
           <div class="doc-md-description">
             <p>If the file exists and <code>overwrite</code> is <code>False</code>.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
-            –
-          <div class="doc-md-description">
-            <p>If <em>path</em> names a directory, or if any slash-aligned
-ancestor of <em>path</em> exists as a regular file. Flat-namespace
-backends (S3, Azure non-HNS, SQL) cannot detect a file
-ancestor in O(1) and skip the check by default; the
-per-backend <code>reject_write_under_file_ancestor</code> opt-in
-enables it.</p>
           </div>
         </li>
     </ul>
@@ -12364,18 +12373,20 @@ declare <code>Capability.USER_METADATA</code>. Passing <code>None</code> or <cod
           </div>
         </li>
         <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>path</em> is the store root (see <code>write</code> — first
+precondition, from the key, every spelling), if <em>path</em> names
+a directory, or if any slash-aligned ancestor of <em>path</em>
+exists as a regular file.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
               <code><a class="autorefs autorefs-internal" title="            AlreadyExists (remote_store._errors.AlreadyExists)" href="../errors/#remote_store.AlreadyExists">AlreadyExists</a></code>
             –
           <div class="doc-md-description">
             <p>If the file exists and <code>overwrite</code> is <code>False</code>.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
-            –
-          <div class="doc-md-description">
-            <p>If <em>path</em> names a directory, or if any slash-aligned
-ancestor of <em>path</em> exists as a regular file (see <code>write</code>).</p>
           </div>
         </li>
     </ul>
@@ -12444,18 +12455,20 @@ On exception the temp file is removed and <em>path</em> is untouched.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <em>path</em> is the store root (see <code>write</code> — first
+precondition, from the key, every spelling), if <em>path</em> names
+a directory, or if any slash-aligned ancestor of <em>path</em>
+exists as a regular file.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
               <code><a class="autorefs autorefs-internal" title="            AlreadyExists (remote_store._errors.AlreadyExists)" href="../errors/#remote_store.AlreadyExists">AlreadyExists</a></code>
             –
           <div class="doc-md-description">
             <p>If <em>path</em> exists and <em>overwrite</em> is <code>False</code>.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
-            –
-          <div class="doc-md-description">
-            <p>If <em>path</em> names a directory, or if any slash-aligned
-ancestor of <em>path</em> exists as a regular file (see <code>write</code>).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -13170,18 +13183,25 @@ glob support override this and declare <code>Capability.GLOB</code>.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <code>src</code> or <code>dst</code> is the store root — the first
+precondition, decided from the key and ahead of the
+source-existence check, so a root <code>dst</code> is refused whether
+or not <code>src</code> exists. <code>dst</code> is a write and is refused
+under every spelling that addresses the root; <code>src</code> is a
+file-shaped operation on a folder and is refused for <code>""</code>
+and <code>"."</code> at minimum. Also if <code>src</code> or <code>dst</code> names a
+directory, or if any slash-aligned ancestor of <code>dst</code> exists
+as a regular file.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
             <p>If <code>src</code> does not exist.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
-            –
-          <div class="doc-md-description">
-            <p>If <code>src</code> or <code>dst</code> names a directory, or if any
-slash-aligned ancestor of <code>dst</code> exists as a regular file.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -13259,18 +13279,25 @@ slash-aligned ancestor of <code>dst</code> exists as a regular file.</p>
 <p><span class="doc-section-title">Raises:</span></p>
     <ul>
         <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
+            –
+          <div class="doc-md-description">
+            <p>If <code>src</code> or <code>dst</code> is the store root — the first
+precondition, decided from the key and ahead of the
+source-existence check, so a root <code>dst</code> is refused whether
+or not <code>src</code> exists. <code>dst</code> is a write and is refused
+under every spelling that addresses the root; <code>src</code> is a
+file-shaped operation on a folder and is refused for <code>""</code>
+and <code>"."</code> at minimum. Also if <code>src</code> or <code>dst</code> names a
+directory, or if any slash-aligned ancestor of <code>dst</code> exists
+as a regular file.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
               <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../errors/#remote_store.NotFound">NotFound</a></code>
             –
           <div class="doc-md-description">
             <p>If <code>src</code> does not exist.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../errors/#remote_store.InvalidPath">InvalidPath</a></code>
-            –
-          <div class="doc-md-description">
-            <p>If <code>src</code> or <code>dst</code> names a directory, or if any
-slash-aligned ancestor of <code>dst</code> exists as a regular file.</p>
           </div>
         </li>
         <li class="doc-section-item field-body">

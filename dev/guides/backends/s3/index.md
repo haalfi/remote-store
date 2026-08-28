@@ -532,7 +532,7 @@ The upload commits atomically — a reader sees either the old object or the new
 Raises:
 
 - `AlreadyExists` – If the object exists and overwrite is False.
-- `InvalidPath` – With the reject_write_under_file_ancestor opt-in, if an ancestor of path exists as an object.
+- `InvalidPath` – If path is the store root; or, with the reject_write_under_file_ancestor opt-in, if an ancestor of path exists as an object.
 - `PermissionDenied` – If the credentials lack access.
 - `BackendUnavailable` – On a transport or service failure, or after close().
 
@@ -555,7 +555,7 @@ An S3 `PUT` is already atomic, so this is exactly `write`.
 Raises:
 
 - `AlreadyExists` – If the object exists and overwrite is False.
-- `InvalidPath` – With the opt-in, if an ancestor of path exists as an object.
+- `InvalidPath` – If path is the store root; or, with the opt-in, if an ancestor of path exists as an object.
 - `PermissionDenied` – If the credentials lack access.
 - `BackendUnavailable` – On a transport or service failure, or after close().
 
@@ -574,7 +574,7 @@ Writes spool to a temporary file (up to 8 MB in memory, then on disk); on clean 
 Raises:
 
 - `AlreadyExists` – If the object exists and overwrite is False.
-- `InvalidPath` – With the opt-in, if an ancestor of path exists as an object.
+- `InvalidPath` – If path is the store root; or, with the opt-in, if an ancestor of path exists as an object.
 - `PermissionDenied` – If the credentials lack access.
 - `BackendUnavailable` – On a transport or service failure, or after close().
 
@@ -650,7 +650,7 @@ Raises:
 
 - `NotFound` – If src does not exist.
 - `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
-- `InvalidPath` – With the opt-in, if an ancestor of dst exists as an object.
+- `InvalidPath` – If src or dst is the store root; or, with the opt-in, if an ancestor of dst exists as an object.
 - `PermissionDenied` – If the credentials lack access.
 - `BackendUnavailable` – On a transport or service failure, or after close().
 
@@ -670,6 +670,6 @@ Raises:
 
 - `NotFound` – If src does not exist.
 - `AlreadyExists` – If dst exists, src != dst, and overwrite is False.
-- `InvalidPath` – With the opt-in, if an ancestor of dst exists as an object.
+- `InvalidPath` – If src or dst is the store root; or, with the opt-in, if an ancestor of dst exists as an object.
 - `PermissionDenied` – If the credentials lack access.
 - `BackendUnavailable` – On a transport or service failure, or after close().
