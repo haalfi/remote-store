@@ -138,6 +138,35 @@ phases:
           both sides of the enumeration and no per-backend sentence about it can
           be right.
         outcome: ok
+      # The three reads below happened during round 1's fix pass, not before it,
+      # and are recorded here rather than omitted: the first draft of the opt-in
+      # paragraph was written from two call sites, and these are the reads that
+      # should have preceded it. Round 2 flagged their absence from this phase.
+      - file: src/remote_store/backends/_s3.py
+        section: "read()"
+        read_type: reference
+        extract: >-
+          Wraps an fsspec file, not a range reader. fsspec's
+          AbstractBufferedFile.seek computes `nloc = self.size + loc` for
+          whence 2, from a size held on the handle — read with inspect.getsource
+          rather than assumed.
+        outcome: ok
+      - file: src/remote_store/backends/_s3_pyarrow.py
+        section: "_PyArrowBinaryIO.seek, read()"
+        read_type: reference
+        extract: >-
+          Delegates seek to a pyarrow NativeFile and returns its tell(), so
+          SEEK_END is resolved a layer below anything this wrapper can see
+        outcome: ok
+      - file: src/remote_store/backends/_http.py
+        section: "read(), HttpResponse.body"
+        read_type: reference
+        extract: >-
+          No range reader and no size: the body is a forward-only RawIOBase
+          adapter per transport, defining neither seek nor seekable, so a
+          SEEK_END never reaches a size at all. The bullet this replaced had
+          claimed HTTP resolved one.
+        outcome: ok
 
   - id: tests
     name: Failing tests first
