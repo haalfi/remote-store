@@ -15,6 +15,13 @@ caller doing ``unwrap(SFTPClient).get_channel().settimeout(n)`` loses the
 setting on the first transparent reconnect, which is precisely when a flaky
 link needs it.
 
+**It arms by default**, at ``120.0`` seconds, so most of this file's backends
+deliberately pass no ``io_timeout`` at all and inherit the shipped value. The
+ones that pin ``2.0`` do so to keep a stall test's runtime bearable, and the two
+that pin ``None`` are asserting the opt-out itself. Nothing here omits the
+argument in order to mean "unbounded" — see ``_INHERIT`` below for why that
+distinction has to be spelled out.
+
 This file pins both halves of SFTP-030: what ``io_timeout`` covers, and what it
 does not. The second half is not an afterthought — SFTP-030 states one exception
 and one silent case, and a clause asserting a paramiko behaviour is the kind of
@@ -99,11 +106,22 @@ def _close_tracked_backends() -> Iterator[None]:
             backend.close()
 
 
-def _make_backend(port: int, *, io_timeout: float | None = None, base_path: str = "/") -> Any:
+_INHERIT = object()
+"""Sentinel for ``_make_backend``: pass no ``io_timeout``, so the shipped default applies.
+
+``None`` cannot serve as that sentinel, because ``None`` is itself a meaningful
+value — the opt-out that restores an unbounded channel. Omitting the argument
+and passing ``None`` selected the same behaviour while the default *was*
+``None``; since BK-356 they select opposite ones, so the two spellings have to
+be distinguishable here.
+"""
+
+
+def _make_backend(port: int, *, io_timeout: Any = _INHERIT, base_path: str = "/") -> Any:
     from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
 
     kwargs: dict[str, Any] = {}
-    if io_timeout is not None:
+    if io_timeout is not _INHERIT:
         kwargs["io_timeout"] = io_timeout
     backend = SFTPBackend(
         host="127.0.0.1",
@@ -405,11 +423,38 @@ def test_non_positive_io_timeout_rejected(bad: float) -> None:
 
 
 @pytest.mark.spec("SFTP-030")
-def test_default_leaves_channel_unbounded(sftp_server: tuple[int, str] | None) -> None:
-    """Default is ``None``: no bound is armed, so no existing caller changes behaviour."""
+def test_default_arms_the_bound_on_the_channel(sftp_server: tuple[int, str] | None) -> None:
+    """A caller who configures nothing gets a bounded channel, at the documented value.
+
+    The literal is asserted rather than read back off the signature. Reading the
+    default from ``inspect.signature`` would pass against any value the
+    constructor happened to carry, including one no document names — and the
+    whole point of ``120.0`` is that it is the value the SFTP guide and the
+    troubleshooting page already use in their worked examples, so a drift
+    between code and docs is exactly what this must fail on.
+
+    It asserts on the *live channel*, not on the stored attribute, because that
+    is what the guarantee is: ``settimeout()`` in ``_connect``, which is also
+    what makes it survive a reconnect.
+    """
     if sftp_server is None:
         pytest.skip("paramiko not installed")
     backend = _make_backend(sftp_server[0])
+    assert _channel_timeout(backend) == pytest.approx(120.0)
+
+
+@pytest.mark.spec("SFTP-030")
+def test_explicit_none_leaves_the_channel_unbounded(sftp_server: tuple[int, str] | None) -> None:
+    """``io_timeout=None`` is the opt-out, and it reaches the live channel.
+
+    This is the escape the migration guide sends a reader to when their server
+    legitimately goes quiet for longer than the default, so it is asserted
+    rather than described. ``0`` is *not* this escape — it raises ``ValueError``
+    (SFTP-005), pinned by ``test_non_positive_io_timeout_rejected`` above.
+    """
+    if sftp_server is None:
+        pytest.skip("paramiko not installed")
+    backend = _make_backend(sftp_server[0], io_timeout=None)
     assert _channel_timeout(backend) is None
 
 
@@ -525,17 +570,22 @@ def test_version_exchange_is_bounded(mute_server: _MuteSubsystemServer) -> None:
 
 
 @pytest.mark.spec("SFTP-030")
-def test_version_exchange_unbounded_without_io_timeout(
+def test_version_exchange_unbounded_when_opted_out(
     mute_server: _MuteSubsystemServer,
 ) -> None:
-    """The default really is unbounded here, so the test above is not vacuous.
+    """Opted out, the wait really is unbounded, so the test above is not vacuous.
 
-    A positive control: without ``io_timeout`` the same mute peer does not fail
-    within the window the bounded case returns in. Without this, a connect that
-    happened to fail for an unrelated reason would make the bounded assertion
-    pass while proving nothing.
+    A positive control: with ``io_timeout=None`` the same mute peer does not
+    fail within the window the bounded case returns in. Without this, a connect
+    that happened to fail for an unrelated reason would make the bounded
+    assertion pass while proving nothing.
+
+    The opt-out is passed explicitly. Since BK-356 the *default* is a bound, so
+    omitting the argument would arm 120 s here and this control would be
+    asserting the absence of a failure it had merely put out of reach of the
+    8 s window — vacuous in exactly the way it exists to prevent.
     """
-    backend = _make_backend(mute_server.port)
+    backend = _make_backend(mute_server.port, io_timeout=None)
     done = threading.Event()
 
     def _probe() -> None:

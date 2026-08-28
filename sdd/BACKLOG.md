@@ -1130,49 +1130,6 @@ here as legitimately as "built".
     retire it. Keep it in view when designing here — identity-derived keys are
     the wide fix for it, and this is where that scheme gets decided.
 
-- [ ] **BK-356 — `io_timeout` should default to a real bound, not `None`**
-  spec: SFTP-030, SFTP-005 · effort: S · audience: user.api
-  BK-354 shipped `io_timeout` defaulting to `None`, so the stall it exists to
-  bound is still unbounded unless a caller opts in. The default was chosen for
-  compatibility and the reporter's objection to it was recorded rather than
-  answered (issue #970: "'no bound at all' is a surprising default given
-  `_is_connection_dead` already assumes one"). It stands unrebutted.
-  **Why the default is wrong on the library's own terms, not just on taste.**
-  `ReadOnlyHttpBackend` already defaults `timeout=30.0`, which reaches reads, so SFTP
-  is the outlier rather than the pioneer — a user meets a bounded read on HTTP
-  and an unbounded one on SFTP with no principle separating them. And the SFTP
-  recovery path (`_is_connection_dead` → `_map_exception` → cleared client) was
-  written presuming a bound exists; shipping the machinery without its trigger
-  is an internal contradiction that BK-354 documented instead of closing.
-  **Decided: `120.0`.** It is the value the SFTP guide and troubleshooting page
-  already use in their worked examples, so the docs and the default stop
-  disagreeing. Against the longest transfer #970 reports (2.0 GiB, ~70 min) a
-  120 s silence bound is 2.8% of runtime — a stall is caught inside two minutes
-  while leaving room for a server that legitimately goes quiet, e.g. an
-  antivirus or dedup appliance scanning a large file on `open()`.
-  The asymmetry is what picks the value: too high costs detection latency,
-  which is cheap because the bound is on silence *between* bytes and a slow
-  link is unaffected at any value; too low converts a healthy-but-quiet server
-  into intermittent `BackendUnavailable`, which reads as network flakiness and
-  is harder to diagnose than the hang it replaces.
-  **Breaking, and shipped as such.** Pre-1.0 (`0.30.0`, Development Status ::
-  4 - Beta) with an established `docs-src/reference/migration.md` — v0.29.0
-  made Azure's `hns` a *required* argument, a harder break than changing a
-  default that keeps an opt-out. The migration entry must lead with the opt-out
-  (`io_timeout=None` restores the old behaviour), because the reader who needs
-  it is exactly the one with a legitimately slow or quiet server. Note `0` is
-  not the opt-out: it raises `ValueError` (SFTP-005), since paramiko reads it
-  as non-blocking.
-  **No longer blocked, and the ordering argument is now discharged.** BK-355
-  landed first, so releasing a stalled stream costs one bound rather than two and
-  the flip does not ship a doubling with it. BK-357 then landed too, which is the
-  half that mattered most here: with `io_timeout=None` the `stat` inside
-  paramiko's `_get_size` blocks forever, so a `SEEK_END` seek was a hang, and a
-  real bound would have converted that hang into a **silently wrong size of
-  `0`** — a wrong answer shipped by flipping a default. The seek now raises
-  instead, so the flip no longer introduces that case and this item can be taken
-  on its own merits.
-
 ---
 
 <a id="no-release-surprises"></a>

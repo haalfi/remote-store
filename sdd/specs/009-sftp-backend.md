@@ -36,7 +36,7 @@ SFTPBackend(
     host_keys_path: str | None = None,  # defaults to ~/.ssh/known_hosts
     config: dict | None = None,         # may contain "known_host_keys"
     timeout: int = 10,                  # connect phase only (see SFTP-030)
-    io_timeout: float | None = None,    # bound on a stalled open channel
+    io_timeout: float | None = 120.0,   # bound on a stalled open channel
     connect_kwargs: dict | None = None, # extra SSHClient.connect() kwargs
 )
 ```
@@ -88,7 +88,9 @@ on staleness is also supported (see SFTP-010).
 host raises `ValueError` at construction time. `io_timeout`, when not `None`, must
 be a positive number of seconds; `0` and negatives raise `ValueError` — paramiko
 reads `0` as non-blocking, which would fail every read immediately rather than
-bound it.
+bound it. `None` is therefore the only way to ask for an unbounded channel, and
+`0` is not a spelling of it: the two look interchangeable to a caller reaching
+for "no limit" from a default that is now a real bound (SFTP-030).
 **Postconditions:** No network validation of host reachability at construction time.
 
 ---
@@ -167,8 +169,10 @@ is given deliberately: every signal named here is enumerated, mapped and
 tested, so any example drawn from the list would illustrate the opposite of the
 claim. Note also that this tier only *handles* a `socket.timeout`; nothing here
 causes one. A read that stalls on an open channel raises nothing at all unless
-SFTP-030's `io_timeout` arms the bound, so with its default of `None` this path
-is unreachable for a merely silent peer. Operations outside the default
+SFTP-030's `io_timeout` arms the bound — which it now does by default, so a
+merely silent peer reaches this path on a store configured with nothing. A
+caller who opts out with `io_timeout=None` puts it back out of reach for that
+fault, and the other signals in the set are unaffected either way. Operations outside the default
 `_errors()` scope must still route through this mapping for the guarantee to
 hold: the listing operations route their failure through `_map_exception`, and
 `open_atomic`'s streamed-write phase — which yields the handle outside
@@ -390,11 +394,36 @@ and `docs-src/guides/async.md`.
 *open*, not traffic on an opened one. Blocking I/O on the open channel is
 governed by `Channel.timeout`, which paramiko initialises to `None`.
 
-`io_timeout` (default `None`, meaning unbounded — no behaviour change for
-callers that do not set it; `0` and negatives raise `ValueError`, see SFTP-005)
-is applied via `Channel.settimeout()` in `_connect`, and **every** reconnect
-re-arms it on its new channel because it is applied there rather than at
-construction.
+`io_timeout` (default `120.0`; `None` means unbounded and is the opt-out; `0`
+and negatives raise `ValueError`, see SFTP-005) is applied via
+`Channel.settimeout()` in `_connect`, and **every** reconnect re-arms it on its
+new channel because it is applied there rather than at construction.
+
+**Why the default is a bound rather than `None`.** The option shipped defaulting
+to `None`, which left the stall it exists to bound unbounded unless a caller
+opted in. Two things in this library made that the wrong resting state rather
+than a conservative one. `ReadOnlyHttpBackend` already defaults `timeout=30.0`
+and that bound reaches reads, so a user met a bounded read on HTTP and an
+unbounded one on SFTP with no principle separating them. And the recovery path
+below — `_is_connection_dead` → `_map_exception` → cleared client — was written
+presuming a bound exists; shipping the machinery without its trigger left the
+clause internally contradictory.
+
+**Why `120.0`.** The asymmetry picks it, not a benchmark. Raising the value
+costs detection latency only, which is cheap: the bound is on silence *between*
+bytes, so a slow link is unaffected at any value. Lowering it converts a
+healthy-but-quiet server — an antivirus or dedup appliance scanning a large file
+on `open()` — into intermittent `BackendUnavailable`, which reads as network
+flakiness and is harder to diagnose than the hang it replaces. Against the
+longest transfer reported on the originating issue (2.0 GiB, ~70 min), 120 s of
+silence is 2.8% of runtime: a stall surfaces inside two minutes while a server
+that legitimately goes quiet is left room. It is also the value the SFTP guide
+and the troubleshooting page already used in their worked examples, so the
+default and the documentation stop disagreeing.
+
+**It is a behaviour change for a caller who sets nothing**, and shipped as one:
+an operation that previously blocked forever now raises `BackendUnavailable`
+after two minutes of silence. `io_timeout=None` restores the old behaviour.
 
 **It is armed before the SFTP session exists, not after.** `_connect` opens the
 channel, arms the bound, then invokes the `sftp` subsystem and constructs the

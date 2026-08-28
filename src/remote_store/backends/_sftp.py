@@ -589,16 +589,24 @@ class SFTPBackend(Backend):
             ``auth_timeout`` / ``channel_timeout``, the last of which bounds
             channel *open*, not traffic on an opened channel.
         io_timeout: Seconds a single blocking read or write on the open SFTP
-            channel may go without progress before it fails, or ``None``
-            (default) for no bound. Applied with ``Channel.settimeout()`` on
+            channel may go without progress before it fails. Defaults to
+            ``120.0``; pass ``None`` for no bound. Applied with
+            ``Channel.settimeout()`` on
             every connect *and every reconnect*, and armed before the SFTP
             session setup, so a peer that completes the SSH handshake and then
             falls silent is bounded there too. This is silence between bytes,
             not a deadline for the whole transfer: a large file over a slow
             link is unaffected however long it takes, while a peer that stops
             sending mid-transfer raises ``BackendUnavailable`` instead of
-            blocking forever. Must be positive when set; ``0`` is rejected
-            because paramiko reads it as non-blocking. A streamed ``read``
+            blocking forever. That asymmetry is what picks the default: raising
+            it costs only detection latency, since a slow link is unaffected at
+            any value, while lowering it turns a healthy-but-quiet server — an
+            antivirus or dedup appliance scanning a large file on ``open()`` —
+            into intermittent ``BackendUnavailable``, which reads as network
+            flakiness and is harder to diagnose than the hang it replaces.
+            Must be positive when set; ``0`` is rejected
+            because paramiko reads it as non-blocking, so it is not the way to
+            ask for no bound — ``None`` is. A streamed ``read``
             raises rather than returning short, so a truncated transfer is
             never mistaken for a complete one. Seeking to the end of a stream
             (``seek(0, SEEK_END)``) asks the server for the file size, so a
@@ -626,7 +634,7 @@ class SFTPBackend(Backend):
         host_keys_path: str | None = None,
         config: dict[str, Any] | None = None,
         timeout: int = 10,
-        io_timeout: float | None = None,
+        io_timeout: float | None = 120.0,
         connect_kwargs: dict[str, Any] | None = None,
         retry: RetryPolicy | None = None,
     ) -> None:
@@ -2358,13 +2366,16 @@ class SFTPBackend(Backend):
         dead connection reconnects is upheld by ``_map_exception`` clearing the
         client on *every* ``BackendUnavailable`` it returns, not by this list.
 
-        On the ``TimeoutError`` arm: this docstring used to call it "the most
+        On the ``TimeoutError`` arm: this docstring once called it "the most
         realistic trigger, since a slow op hits the channel timeout", which
-        presumed a bound on the open channel that did not exist. Whether it is
-        reached at all is now a configuration question — ``io_timeout`` is what
-        arms such a bound, and its default is ``None``. The arm predates that
-        option and is kept for the other shapes of half-open socket that surface
-        as a timeout, so it is neither the likeliest signal nor dead code.
+        presumed a bound on the open channel that did not exist; it was then
+        corrected to make the arm's reachability a configuration question,
+        against an ``io_timeout`` defaulting to ``None``. That default is now
+        ``120.0``, so a silent peer reaches this arm on an ordinary store — the
+        original claim, true at last, and by construction rather than by
+        assumption. The arm still predates the option and still covers the other
+        shapes of half-open socket that surface as a timeout, so it is not the
+        only way in either.
         """
         import paramiko
 

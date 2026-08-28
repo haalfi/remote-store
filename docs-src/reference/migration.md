@@ -8,6 +8,50 @@ changes that require action when upgrading.
 
 ## v0.30.0 to v0.31.0
 
+**SFTP reads and writes are now bounded by default:**
+
+`SFTPBackend(io_timeout=...)` bounds a read or write that stalls on an
+already-open channel. It defaulted to `None` — no bound — and now defaults to
+`120.0` seconds. A caller who configures nothing is affected.
+
+**To restore the previous behaviour, pass `None`:**
+
+```python
+backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=None)
+```
+
+Reach for that if your server legitimately goes silent for more than two minutes
+mid-operation and you would rather wait than fail. Note `0` is **not** the
+opt-out — it raises `ValueError`, because paramiko reads it as non-blocking and
+every read would fail at once.
+
+**What changes if you do nothing.** An operation against a peer that completes
+the SSH handshake and then stops sending used to block forever, with no
+exception and no log line. It now raises
+[`BackendUnavailable`](api/errors.md) after 120 s of silence, and the backend
+drops the dead client so the next operation reconnects.
+
+```python
+# Before (v0.30.0): the call never returns
+store.read_bytes("delivery.csv")
+
+# After (v0.31.0): raises BackendUnavailable after 120 s of silence
+store.read_bytes("delivery.csv")
+```
+
+**The bound is on silence between bytes, not on the transfer.** A large file
+over a slow link is unaffected however long it takes — a multi-gigabyte fetch
+that runs for an hour never trips a 120 s bound, because bytes keep arriving.
+What trips it is a flow that stops making progress. So a legitimately slow
+transfer needs no change; a server that pauses for a long time on a single
+operation (an antivirus or dedup appliance scanning a large file when you open
+it) is the case to size the value against. See the
+[SFTP guide](../guides/backends/sftp.md#bounding-a-stalled-transfer) for tuning.
+
+**Scope:** SFTP only. No other backend's timeouts change.
+[`ReadOnlyHttpBackend`](api/backends/http.md) already defaulted `timeout=30.0`, and
+this brings SFTP into line with it rather than introducing a new kind of limit.
+
 **Seeking to the end of an SFTP stream raises where it used to answer `0`:**
 
 `SFTPBackend`'s streams resolve `seek(offset, os.SEEK_END)` by asking the server

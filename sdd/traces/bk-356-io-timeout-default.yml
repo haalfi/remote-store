@@ -1,0 +1,154 @@
+id: BK-356
+title: "`io_timeout` should default to a real bound, not `None`"
+trigger: >-
+  BK-354 shipped SFTPBackend(io_timeout=...) defaulting to None, so the stall it
+  exists to bound stayed unbounded unless a caller opted in. The reporter's
+  objection to that default was recorded rather than answered, and two things in
+  the library already contradicted it: ReadOnlyHttpBackend defaults timeout=30.0
+  and that bound reaches reads, and SFTP's own recovery path was written
+  presuming a bound exists.
+source_items:
+  - BK-356
+  - BK-354
+  - BK-355
+  - BK-357
+audience:
+  - user.api
+  - user.api_docs
+  - user.site
+expected_ripples:
+  - sdd/backlogid.json
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-356 (item)"
+        read_type: gate
+        extract: "The value is decided in the item (120.0) with its rationale; the flip is breaking and ships with an opt-out"
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-355, BK-354 (items)"
+        read_type: reference
+        extract: "Confirm both ordering blockers landed, so the flip ships neither a doubling nor a silently wrong size"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Pre-work index"
+        read_type: gate
+        extract: "Triggered rows: Spec section, Public method signature, Bug fix, Backlog item touched, CHANGELOG entry, Tracker ID in published prose"
+        outcome: ok
+
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030, SFTP-005, SFTP-023, SFTP-001"
+        read_type: gate
+        extract: >-
+          Four sites assert the default, not one. SFTP-001's signature block and
+          SFTP-030's clause were the expected two; SFTP-023's tier-2 prose ("with
+          its default of None this path is unreachable for a merely silent
+          peer") and SFTP-005's rejection text were only found by reading the
+          whole file for the word "default"
+        outcome: ok
+      - file: sdd/specs/006-streaming-io.md
+        section: "SIO-010, SIO-011"
+        read_type: reference
+        extract: >-
+          Check whether the wrapper clauses depend on the default. They do not —
+          is_fatal and size_probe are SFTP-supplied and their measured figures
+          are stated at an explicit 2 s bound, so no figure moves
+        outcome: ok
+
+  - id: reproduce
+    name: Failing test first
+    steps:
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "_make_backend, test_default_leaves_channel_unbounded"
+        read_type: gate
+        extract: >-
+          The helper treated io_timeout=None as "omit the argument", which the
+          flip silently turns into 120.0. Two tests depended on that conflation,
+          and one of them is the positive control that keeps the bounded
+          version-exchange assertion non-vacuous — so the flip would have left it
+          asserting a failure it had merely put out of reach of its own 8 s
+          window
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "Write the failing test, run it, see it fail before implementing — done: assert None == 120.0 ± 1.2e-04 against the unflipped default"
+        outcome: ok
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "__init__ signature, Args docstring, _is_connection_dead docstring"
+        read_type: gate
+        extract: >-
+          One-line default flip, but three prose sites. The _is_connection_dead
+          docstring was the non-obvious one: it argued the TimeoutError arm's
+          reachability was "a configuration question — its default is None",
+          which the flip falsifies. Found by grepping io_timeout across the
+          module rather than by reading the constructor
+        outcome: ok
+
+  - id: docs
+    name: Docs
+    steps:
+      - file: docs-src/guides/backends/sftp.md
+        section: "Options table, Bounding a stalled transfer, Connection Behaviour"
+        read_type: gate
+        extract: >-
+          The whole section was written to sell an opt-in feature: the worked
+          example enabled the bound, and the Connection Behaviour bullet said
+          "off by default". Reframed to tuning and opting out
+        outcome: ok
+      - file: docs-src/guides/troubleshooting.md
+        section: "SFTP transfer hangs with no error"
+        read_type: gate
+        extract: >-
+          Structured as Symptom / Cause / Fix, where the Fix was "set
+          io_timeout". With the bound on by default the page's premise changes:
+          a reader who still hangs is opted out, on an older version, or meeting
+          the subsystem case. Its closing line ("Use None, the default, for no
+          bound") was false in two ways at once
+        outcome: ok
+      - file: docs-src/guides/retry.md
+        section: "Retry scope"
+        read_type: verify
+        extract: "Checked whether the retry-exclusion prose depends on the default; it does not — it scopes the retried closure, not what arms the bound"
+        outcome: ok
+      - file: docs-src/reference/migration.md
+        section: "v0.30.0 to v0.31.0"
+        read_type: gate
+        extract: "Section for the pair already exists (BK-357 wrote it); the flip gets a sibling subsection leading with the opt-out"
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Release / Phase 1"
+        read_type: gate
+        extract: >-
+          "[Unreleased] is complete — every completed item has a stub line";
+          stubs are expanded to prose at release time. Read only after the user
+          corrected a plan that proposed prose, and it settles a second question
+          too: a stub carries no claim, so BK-354's now-false "Default is None,
+          so no existing caller changes behaviour" needed no separate amendment
+        outcome: ok
+
+  - id: verify
+    name: Ripple-check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Detailed checklist"
+        read_type: verify
+        extract: "Walk each triggered row against the completed diff"
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: >-
+          Carried duplicate BK-354 and BK-355 entries from the #976/#977
+          rebases, whose two copies disagreed on how many exceptions SFTP-030
+          states. Not this item's defect, but in this item's artifact and about
+          this item's subject

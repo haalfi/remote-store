@@ -71,7 +71,7 @@ pkey = SFTPUtils.load_private_key(pem_string)
 | `host_keys_path` | `str` | `~/.ssh/known_hosts` | Path to known_hosts file |
 | `config` | `dict` | `None` | Config dict (may contain `known_host_keys`) |
 | `timeout` | `int` | `10` | Connect-phase timeout in seconds (connect, banner, auth, channel open) |
-| `io_timeout` | `float` | `None` | Seconds a blocking read or write on the open channel may stall before failing. `None` (the default) means no bound; `0` and negatives are rejected |
+| `io_timeout` | `float` | `120.0` | Seconds a blocking read or write on the open channel may stall before failing. Pass `None` for no bound; `0` and negatives are rejected |
 | `connect_kwargs` | `dict` | `None` | Extra kwargs passed to `SSHClient.connect()` |
 
 ### Bounding a stalled transfer
@@ -86,22 +86,42 @@ whole, which is what makes it usable on slow links: a multi-gigabyte fetch that
 takes an hour is unaffected, while a flow that goes quiet for longer than the
 bound raises [`BackendUnavailable`](../../reference/api/errors.md).
 
+**It is on by default, at 120 seconds.** You get the bound without asking for
+it, so nothing you write hangs forever on a silent peer. What you configure is
+whether that value suits your server:
+
 ```python
 from remote_store.backends import SFTPBackend
 
 backend = SFTPBackend(
     host="files.example.com",
     username="deploy",
-    io_timeout=120,
+    io_timeout=300,   # a server that legitimately goes quiet for longer
 )
 ```
+
+Raising it costs only how quickly a stall is noticed, which is cheap — the bound
+is on silence between bytes, so a slow transfer is unaffected at any value.
+Lowering it is the riskier direction: a server that goes quiet for legitimate
+reasons, such as an antivirus or dedup appliance scanning a large file when you
+open it, starts failing intermittently, which looks like network flakiness and
+is harder to diagnose than the hang the bound replaced.
+
+To turn the bound off entirely, pass `None`:
+
+```python
+backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=None)
+```
+
+`0` is **not** how you ask for that — it is rejected with `ValueError`, because
+paramiko reads `0` as non-blocking and every read would fail at once.
 
 It is an ordinary option, so it is equally settable from a declarative config:
 
 ```python
 BackendConfig(
     type="sftp",
-    options={"host": "files.example.com", "username": "deploy", "io_timeout": 120},
+    options={"host": "files.example.com", "username": "deploy", "io_timeout": 300},
 )
 ```
 
@@ -117,8 +137,8 @@ each one opens a fresh channel.
     regardless of `io_timeout`: paramiko waits for that reply on an untimed
     event, so no channel timeout applies, and every reconnect re-enters that
     window. It needs a wedged SSH daemon rather than a wedged SFTP subsystem, so
-    it is rarer than the stall this option does cover — but if a peer hangs with
-    `io_timeout` set, this is the shape to suspect.
+    it is rarer than the stall this option does cover — but if a peer hangs
+    despite the bound, this is the shape to suspect.
 
     **Releasing a handle that never failed is bounded but silent.** Closing a
     stream you have not read to a failure on a stalled connection waits one
@@ -303,7 +323,7 @@ layer (e.g. `requirements.txt` line `paramiko>=3.0,<5`).
 - **Lazy connect** — no network call happens during construction. The SSH/SFTP connection is established on the first operation.
 - **Auto-reconnect** — if the connection goes stale between operations, the backend reconnects transparently.
 - **Retry** — transient SSH errors (`SSHException`, `OSError`, `EOFError`) are retried up to 3 times with exponential backoff (2 s min, 10 s max). Retry covers establishing the SSH connection only; nothing after that is restarted, and a stall bounded by `io_timeout` is reported to the caller unless it is one of the silent cases above.
-- **Stall detection** — off by default; set [`io_timeout`](#bounding-a-stalled-transfer) to bound a read or write that stops making progress on an open channel.
+- **Stall detection** — on by default: [`io_timeout`](#bounding-a-stalled-transfer) bounds a read or write that stops making progress on an open channel at 120 s. Tune it, or pass `None` to opt out.
 - **Single connection, not thread-safe** — each `SFTPBackend` instance holds one paramiko `SFTPClient`. Calling it from multiple threads simultaneously (e.g. via `SyncBackendAdapter` + `asyncio.gather`) races on the shared socket. Create one `SFTPBackend` per thread for parallel workloads.
 
 ## Capabilities

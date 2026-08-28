@@ -169,6 +169,53 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-356 — `io_timeout` should default to a real bound, not `None`**
+  spec: SFTP-030, SFTP-005 · effort: S · audience: user.api, user.api_docs, user.site
+  BK-354 shipped `io_timeout` defaulting to `None`, so the stall it exists to
+  bound stayed unbounded unless a caller opted in. The default was chosen for
+  compatibility and the reporter's objection to it was recorded rather than
+  answered ([issue #970](https://github.com/haalfi/remote-store/issues/970):
+  "'no bound at all' is a surprising default given `_is_connection_dead` already
+  assumes one"). It stood unrebutted, and it was wrong on the library's own
+  terms rather than on taste: `ReadOnlyHttpBackend` already defaults
+  `timeout=30.0` and that bound reaches reads (`src/remote_store/backends/_http.py`,
+  `__init__` signature), so SFTP was the outlier rather than the pioneer; and the
+  SFTP recovery path (`_is_connection_dead` → `_map_exception` → cleared client)
+  was written presuming a bound exists, so shipping the machinery without its
+  trigger left SFTP-030 internally contradictory.
+  **Shipped at `120.0`.** The asymmetry picks the value, not a benchmark:
+  raising it costs detection latency only, which is cheap because the bound is
+  on silence *between* bytes and a slow link is unaffected at any value, while
+  lowering it converts a healthy-but-quiet server — an antivirus or dedup
+  appliance scanning a large file on `open()` — into intermittent
+  `BackendUnavailable`, which reads as network flakiness and is harder to
+  diagnose than the hang it replaces. Against the longest transfer #970 reports
+  (2.0 GiB, ~70 min) a 120 s silence bound is 2.8% of runtime. It is also the
+  value the SFTP guide and the troubleshooting page already used in their worked
+  examples, so the default and the docs stopped disagreeing.
+  **Breaking, and shipped as such**, with `io_timeout=None` as the opt-out —
+  which the migration entry leads with, because the reader who needs it is
+  exactly the one with a legitimately slow or quiet server. `0` is not the
+  opt-out: it raises `ValueError` (SFTP-005), since paramiko reads it as
+  non-blocking.
+  **The two ordering blockers were discharged before this landed.** BK-355 made
+  releasing a stalled stream cost one bound rather than two, so the flip did not
+  ship a doubling with it; BK-357 mattered more, because with `io_timeout=None`
+  the `stat` inside paramiko's `_get_size` blocked forever and a `SEEK_END` seek
+  was a hang — a real bound would have converted that hang into a **silently
+  wrong size of `0`**, a wrong answer shipped by flipping a default. The seek
+  raises instead, so the flip introduced no such case.
+  **What the tests pin, rather than what the prose claims.** The default reaches
+  the live channel (`test_default_arms_the_bound_on_the_channel`, asserting the
+  literal `120.0` rather than reading it back off the signature, so a drift
+  between code and docs fails); `io_timeout=None` still leaves it unbounded
+  (`test_explicit_none_leaves_the_channel_unbounded`); and the version-exchange
+  positive control now passes that opt-out explicitly
+  (`test_version_exchange_unbounded_when_opted_out`) — omitting the argument
+  would have armed 120 s and made the control vacuous. `_make_backend` grew an
+  `_INHERIT` sentinel for the same reason: `None` and "argument omitted" used to
+  select the same behaviour and now select opposite ones.
+
 - [x] **BK-357 — A `SEEK_END` seek hides its own stall, so the futile-close guard cannot arm**
   spec: SIO-011, SIO-010, SFTP-030 · effort: M · audience: user.api, user.api_docs, user.site
   `SFTPFile.seek(offset, SEEK_END)` resolved the position through paramiko's

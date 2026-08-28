@@ -130,12 +130,21 @@ worker or pool slot it was running on stays occupied.
 passed to paramiko as `timeout` / `banner_timeout` / `auth_timeout` /
 `channel_timeout`, and the last of those bounds how long the client waits for a
 channel to *open*, not traffic on an opened one. Once the channel is up,
-paramiko applies no bound at all, so a peer that completes the handshake and
-then stops sending blocks indefinitely. This is a silent peer, not a dropped
-connection: a drop raises and is recovered from, whereas silence looks exactly
-like a very slow transfer.
+paramiko applies no bound of its own, so a peer that completes the handshake and
+then stops sending would block indefinitely. This is a silent peer, not a
+dropped connection: a drop raises and is recovered from, whereas silence looks
+exactly like a very slow transfer.
 
-**Fix.** Set [`io_timeout`](backends/sftp.md#bounding-a-stalled-transfer):
+**What stops it.** [`io_timeout`](backends/sftp.md#bounding-a-stalled-transfer)
+bounds that silence, and it is **on by default at 120 s** — so on a current
+version a silent peer raises `BackendUnavailable` after two minutes and the
+backend reconnects on the next operation, rather than hanging. If you are seeing
+an unbounded hang, work through the three causes below.
+
+**1. The bound is off.** Either you passed `io_timeout=None`, or you are on a
+version before it defaulted to a bound (see the
+[migration guide](../reference/migration.md)). Remove the opt-out, or set a
+value that suits your server:
 
 ```python
 from remote_store.backends import SFTPBackend
@@ -143,22 +152,25 @@ from remote_store.backends import SFTPBackend
 backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=120)
 ```
 
-A stall then raises `BackendUnavailable`, and the backend reconnects on the
-next operation.
+**2. It is the one genuinely unbounded wait.** A server that opens the SSH
+channel and then never answers the `sftp` subsystem request hangs regardless:
+paramiko waits for that reply on an untimed event, so no channel timeout reaches
+it. That needs a wedged SSH daemon rather than a wedged SFTP subsystem — rarer
+than the stall above, but it is the shape to suspect when the bound appears to
+do nothing.
 
-**If it still hangs with `io_timeout` set,** one wait is genuinely unbounded: a
-server that opens the SSH channel and then never answers the `sftp` subsystem
-request. Paramiko waits for that reply on an untimed event, so no channel
-timeout reaches it. That needs a wedged SSH daemon rather than a wedged SFTP
-subsystem — rarer than the stall above, but it is the shape to suspect when the
-bound appears to do nothing.
+**3. It is not hung, only slow.** The bound is on silence *between* bytes, not
+on the transfer as a whole, so a multi-gigabyte fetch that legitimately takes an
+hour never trips it — and equally, never looks hung to `io_timeout`. Time the
+transfer rather than assuming a stall.
 
-**Choosing a value.** `io_timeout` bounds the silence *between* bytes, not the
-transfer as a whole — a multi-gigabyte fetch that legitimately takes an hour is
-unaffected. Size it against the longest legitimate pause your server can
-produce (an antivirus or dedup appliance may go quiet on `open()` of a large
-file), not against total transfer time. `0` does not mean "no bound": it is
-rejected at construction. Use `None`, the default, for no bound.
+**Choosing a value.** Size it against the longest legitimate pause your server
+can produce (an antivirus or dedup appliance may go quiet on `open()` of a large
+file), not against total transfer time. Raising it costs only how quickly a
+stall is noticed; lowering it turns a healthy-but-quiet server into intermittent
+`BackendUnavailable`, which is harder to diagnose than the hang it replaced.
+`0` does not mean "no bound": it is rejected at construction. `None` is the way
+to ask for no bound.
 
 ## Azure: HNS vs flat namespace
 
