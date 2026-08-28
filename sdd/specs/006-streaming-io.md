@@ -124,15 +124,17 @@ the close re-enters the connection exactly as it would have without this clause,
 and whatever the mapper would have done — invalidating a cached client, marking a
 session dead — is left undone too.
 
-On `SFTPBackend`, the only backend that has been measured, the second class is
-non-empty: paramiko's `SSHException` / `SFTPError`, which additionally escape
-unmapped in breach of BE-021 (BK-358). The first was too — a `SEEK_END` seek,
-whose size request paramiko discarded — until
+Both classes are non-empty on `SFTPBackend`, the only backend that has been
+measured. For the second: paramiko's `SSHException` / `SFTPError`, which
+additionally escape unmapped in breach of BE-021 (BK-358). For the first, a
+send-side `EOFError` that `BufferedFile.read` swallows into a short read before
+it reaches the wrapper at all. A `SEEK_END` seek was a third case, and the one
+that cost most — the swallowed size request answered `0` rather than merely
+losing a failure — until
 [SIO-011](#sio-011-sizing-a-stream-for-an-end-relative-seek) moved that request
-into the wrapper, where its failure has a mapping path to travel. No case of the
-first class is known on any backend today; that is a measurement, not a proof,
-and the class stays stated because a transport that discards a failure is a
-property of the transport rather than of this clause.
+into the wrapper, where its failure has a mapping path to travel. That clause
+repairs one discarding call site; it does not empty the class, which is a
+property of the transport rather than of this one.
 
 **See also:** SFTP-030 in [009-sftp-backend.md](009-sftp-backend.md), the bound
 this clause completes, and where that limit is measured.
@@ -177,10 +179,25 @@ inner stream's own failure was consumed before the wrapper could see it, so the
 only repair is to stop delegating the request that fails.
 
 **Why opt-in.** The probe is a round-trip, and unlike SIO-010's predicate it
-runs on the success path. The S3, S3-boto3, S3-PyArrow, Azure and HTTP range
-readers resolve `SEEK_END` from a size they already hold, with no request to
-fail; making the wrapper probe on their behalf would buy a round-trip per seek
-and nothing else. `SFTPBackend` is the only backend that supplies one.
+runs on the success path. It also has no generic form: the wrapper holds no size
+of its own, so an unconditional version would need a per-backend source anyway.
+What decided it is that **paramiko is the only inner stream measured to discard
+its own size failure**, and the other four wrapper users reach `SEEK_END` by
+routes with nothing for a probe to repair — read off the call sites, one by one
+rather than as a class, because they do not share a mechanism:
+
+- `S3Boto3Backend`'s `_S3RangeReader.seek` and `AzureBackend`'s
+  `_RangeReader.seek` compute `self._size + offset` from a size captured at open.
+- `S3Backend` wraps an fsspec file, whose `AbstractBufferedFile.seek` computes
+  `self.size + loc` from a size held on the handle.
+- `S3PyArrowBackend` wraps a pyarrow `NativeFile`, which resolves `SEEK_END`
+  inside its own implementation and returns the new position.
+- `ReadOnlyHttpBackend` wraps a forward-only `RawIOBase` response adapter that
+  defines neither `seek` nor `seekable`, so its stream is not seekable at all.
+
+Probing on their behalf would buy a round-trip per seek and nothing else — or,
+for HTTP, a request against a stream that cannot seek. `SFTPBackend` is the only
+backend that supplies a probe.
 
 **The probe's own failure is bounded by the same caught tuple as every other
 path**, deliberately: a `paramiko.SFTPError` raised by the probe escapes

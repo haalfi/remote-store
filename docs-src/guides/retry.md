@@ -119,9 +119,9 @@ may already have read from, so it is deliberately not retried.
 
 Not retried is not the same as unreported: a stall that reaches the caller
 raises `BackendUnavailable`, and the backend drops the dead client so the next
-operation reconnects. What is neither retried nor reported is a stall paramiko
-swallows inside its own machinery — releasing a stalled handle after no prior
-failure is the case that remains. See
+operation reconnects. A stall paramiko swallows inside its own machinery is
+neither — releasing a stalled handle that never failed costs the bound, reports
+nothing, and leaves the dead connection in place for the next operation. See
 [the SFTP guide](backends/sftp.md#bounding-a-stalled-transfer).
 
 ### S3

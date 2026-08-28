@@ -129,12 +129,8 @@ the bytes already delivered are a valid prefix but the handle is dead. The
 backend drops the dead client, so the next operation reconnects.
 
 Seeking to the end of a stream (`stream.seek(0, os.SEEK_END)`) asks the server
-for the file's size, and on a stalled connection it raises like any other
-operation. That is worth knowing because it did not always: the size request
-went out through paramiko, which discards its failure and reports `0`, so the
-seek used to return `0` for a file of any size and raise nothing —
-indistinguishable from a genuinely empty file. The backend now issues that
-request itself so the stall surfaces. You may not be the one writing the seek:
+for the file's size, so it is bounded and reported like any other operation on
+the channel. Worth knowing because you may not be the one writing the seek:
 `read_seekable()` hands the stream to analytical readers such as PyArrow, and a
 reader that sizes a file internally reaches it the same way.
 

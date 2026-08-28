@@ -192,12 +192,21 @@ if evidence changes; these are retired.
   runs differ in that argument alone.
   **The open question — probe in the wrapper for everyone, or opt-in like
   BK-355's predicate — was answered in favour of opt-in**, and on evidence
-  rather than symmetry: `_S3RangeReader.seek` and Azure's `_RangeReader.seek`
-  already resolve `SEEK_END` from a `_size` they hold, with no request that can
-  fail, so an unconditional probe would buy those backends a round-trip per seek
-  and nothing else. The five backend classes that supply no probe delegate
-  unchanged, pinned by a unit test on the *wrapper's* default rather than on
-  what those sites pass.
+  rather than symmetry. The wrapper holds no size of its own, so an
+  unconditional version would need a per-backend source anyway; and paramiko is
+  the only inner stream measured to discard its own size failure. The other four
+  wrapper users reach `SEEK_END` by four different routes, none with anything
+  for a probe to repair, which is why they are checked one by one rather than
+  asserted as a class: `_S3RangeReader.seek` and Azure's `_RangeReader.seek` add
+  `offset` to a `_size` captured at open; `S3Backend`'s fsspec handle computes
+  `self.size + loc` the same way; `S3PyArrowBackend` defers to a pyarrow
+  `NativeFile`; and `ReadOnlyHttpBackend`'s response adapter is a forward-only
+  `RawIOBase` defining neither `seek` nor `seekable`, so its stream is not
+  seekable at all. A first draft of this paragraph called all five "range
+  readers resolving from a size they hold", which is true of three of them —
+  round 1 caught it.
+  The five backend classes that supply no probe delegate unchanged, pinned by a
+  unit test on the *wrapper's* default rather than on what those sites pass.
   **Scope kept off one adjacent thing, and pulled onto another.** The caught
   tuple is unchanged, so a `paramiko.SFTPError` from the probe still escapes
   unmapped exactly as one from a read does — BK-358, not narrowed here. But

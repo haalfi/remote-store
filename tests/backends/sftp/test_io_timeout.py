@@ -16,12 +16,12 @@ setting on the first transparent reconnect, which is precisely when a flaky
 link needs it.
 
 This file pins both halves of SFTP-030: what ``io_timeout`` covers, and what it
-does not. The second half is not an afterthought — SFTP-030 states two
-exceptions, and a clause asserting a paramiko behaviour is the kind of claim
-this work has got wrong by reading rather than running, so each exception is
+does not. The second half is not an afterthought — SFTP-030 states one exception
+and one silent case, and a clause asserting a paramiko behaviour is the kind of
+claim this work has got wrong by reading rather than running, so each is
 *characterised by a test* rather than asserted.
 
-**Four faults it covers**, because they fail by different mechanisms and none
+**Five faults it covers**, because they fail by different mechanisms and none
 implies the others:
 
 - **A silent peer** (server→client), driven through a TCP relay that stops
@@ -51,6 +51,14 @@ closed and the SFTP-030 exception can go with it:
 - **A peer that never answers the `sftp` subsystem request**, which paramiko
   waits for on an untimed event that no channel timeout reaches. The file's only
   genuinely *unbounded* case, and now its only stated exception.
+
+**And one it covers silently**, which is neither of the two categories above:
+releasing a handle that never failed, where paramiko catches the stalled
+``CMD_CLOSE`` itself. Bounded at one ``io_timeout``, but nothing is raised and
+the dead client stays cached — which is what keeps SFTP-030's Postconditions
+qualified to a stall *that fails*. "Stated exception" and "unbounded wait" are
+therefore not the same set, and neither is "covered" and "reported"; two
+artifacts in this repo have collapsed the first pair at least once each.
 """
 
 from __future__ import annotations
@@ -450,15 +458,16 @@ def test_stall_recovers_and_rearms_the_bound(stall_relay: _StallRelay) -> None:
 def test_subsystem_request_is_not_bounded(unanswering_server: _MuteSubsystemServer) -> None:
     """Characterises a stated exception: the ``subsystem`` request is unbounded.
 
-    SFTP-030 states two exceptions, and this is the one that is *unbounded*: the
-    other, a ``SEEK_END`` seek, is bounded but paid twice and answered wrongly
-    (``test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds``, below).
-    Keeping the two categories apart matters — "stated exception" and "unbounded
-    wait" are not the same set, and this docstring has conflated them once. A
-    spec clause asserting a paramiko behaviour is exactly the kind of claim
-    this item has got wrong three times by reading rather than running. So it is
-    pinned here: with ``io_timeout`` set, a peer that opens the channel and never
-    answers the request is *still* blocked well past the bound.
+    SFTP-030 states one exception and this is it — the file's only genuinely
+    *unbounded* wait. Keeping the categories apart matters, and the module
+    docstring is where they are kept: "stated exception" is not the same set as
+    "unbounded wait", nor as "silent". A ``SEEK_END`` seek was the second stated
+    exception until SIO-011 made it raise
+    (``test_seek_to_end_on_a_stalled_channel_costs_one_bound``, below), which is
+    exactly the kind of paramiko-behaviour claim this item has got wrong three
+    times by reading rather than running. So this one is pinned: with
+    ``io_timeout`` set, a peer that opens the channel and never answers the
+    request is *still* blocked well past the bound.
 
     The mechanism, for the reader who finds this test failing: ``invoke_subsystem``
     waits in ``Channel._wait_for_event``, a bare ``threading.Event.wait()`` that
