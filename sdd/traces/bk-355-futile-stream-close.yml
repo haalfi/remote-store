@@ -18,20 +18,23 @@ audience:
 discovery_followups:
   - BK-357
   - BK-358
-# Re-derived from `git log --oneline origin/master..HEAD` at the round-5 fix
-# pass, not carried from the earlier value: the count had gone stale once
-# already, because each round's own fix commit adds to it. a9779b1 is the
-# implementation and does not count. Five review-driven commits do: 525ce32
-# (round 1, 5 findings), b90dba8 (three sub-points raised inside round 1's
-# findings that the first fix pass left undone), 615691e (round 2, 3 findings,
-# one withdrawing a spec claim this PR had made), eebdd13 (round 3, a panel of
-# three, 12 findings after dedup), and the round-5 commit carrying this line
-# (a closing panel, 11 findings, ~9 of them created by the round-4 pass).
-# b90dba8 is counted separately rather than folded into 525ce32 because it
-# exists for review feedback the round-1 pass did not act on, which is the
-# schema's test — "commits that exist specifically because review feedback was
-# incorporated" — not one-commit-per-round.
-review_rounds: 5
+# Counted from `git log --oneline origin/master..HEAD`, run immediately before
+# this line was rewritten. a9779b1 is the implementation and does not count.
+# Seven review-driven commits do — 525ce32 (round 1, 5 findings), b90dba8
+# (round 1 sub-points the first fix pass left undone), 615691e (round 2, 3),
+# eebdd13 (round 3, 12), 20b7ba7 (round 4, 10), afb41d8 (round 5, 11, and the
+# consolidation those findings argued for), and the round-6 commit carrying
+# this line (8 findings, one of which was this figure).
+#
+# It went stale twice before this, and the reason is structural rather than
+# careless: the value counts commits, it lives inside one of them, and every
+# round adds another. Both earlier attempts enumerated the commits as the
+# schema asks and still under-counted, because re-reading the enumeration does
+# not reveal a row that did not exist when it was written. A reader checking
+# this should re-run the command rather than trust the total — and if the log
+# returns more than eight commits, a later round ran and this value is stale
+# again by construction, not by oversight.
+review_rounds: 7
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md

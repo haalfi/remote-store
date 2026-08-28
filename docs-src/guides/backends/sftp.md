@@ -135,8 +135,9 @@ each one opens a fresh channel.
     file internally reaches this without any seek appearing in your code —
     over SFTP, the likelier route than a hand-written one.
 
-A stall is reported, not retried: the connect-phase `RetryPolicy` does not cover
-it, so a partially consumed stream is never silently restarted underneath you.
+A stall that surfaces is reported, and no stall is retried: the connect-phase
+`RetryPolicy` does not cover one, so a partially consumed stream is never
+silently restarted underneath you.
 A streamed **read** raises rather than returning short, so a truncated transfer
 is never mistaken for a complete one — discard the handle and start again, since
 the bytes already delivered are a valid prefix but the handle is dead. The

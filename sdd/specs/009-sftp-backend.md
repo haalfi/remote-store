@@ -577,8 +577,16 @@ here rather than left implied.
 the whole of `_connect` (SFTP-009), so **no** stall bounded by `io_timeout` is
 retried — neither one on a caller's operation nor one in the session setup
 described above, which happens inside `_connect` but outside the retried
-closure. Every stall that surfaces reaches the caller; the exceptions above
-are the ones that do not surface at all.
+closure. Every stall that surfaces reaches the caller.
+
+**Not every stall surfaces**, and the two exceptions above are the ones worth
+stating rather than an exhaustive list of the silent ones: releasing a stalled
+handle after no prior failure is silent too, because paramiko's
+`SFTPFile._close` catches `(IOError, socket.error)` and a stalled `CMD_CLOSE`
+arrives as `socket.timeout`. Measured at a 2 s bound: 2.00 s, nothing raised,
+no log record, the dead client still cached. It is listed here rather than as a
+third exception because it costs one bound and answers nothing — the two above
+are stated because they cost more than that.
 
 For an operation-level stall the exclusion is deliberate: retrying
 transparently would restart a partially consumed stream underneath a caller

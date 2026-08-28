@@ -53,8 +53,9 @@ class _ErrorMappingStream(io.RawIOBase):
     ``EOFError`` to ``SSHException``, and a send-side ``EOFError`` is swallowed
     by ``BufferedFile.read`` into a short read before it reaches this wrapper
     (both measured).  A stalled channel *is* caught, as ``socket.timeout`` is
-    an ``OSError``.  Do not read the ``EOFError`` arm as covering a specific
-    paramiko path; it is there for the wrapper's other backends.
+    an ``OSError``.  Which producer does reach the ``EOFError`` arm is
+    undetermined -- do not read it as covering a specific paramiko path, and do
+    not narrow the tuple on the strength of that.
 
     Programming errors (``TypeError``, ``ValueError``, ``AttributeError``, etc.)
     are **not** caught -- they propagate normally.  That includes anything

@@ -230,10 +230,12 @@ listing was outside it; now the bound is part of the clause and missing it is a
 breach of it. Writing a rule into a clause enlarges what the clause governs, and
 the two items that changed side are the evidence — neither was a new defect, and
 both were pre-existing behaviour that a new sentence made answerable.
-**Five** further disagreements sit in this section and none of them is with the
+**Six** further disagreements sit in this section and none of them is with the
 absent-container clause, which is why they are not in that count: BUG-253 is
 between two halves of one Graph operation; BUG-245 is a constructor leak, which
-BE-021 scopes to operations and so does not reach; BUG-254 is with **BE-029's
+BE-021 scopes to operations and so does not reach, and BK-358 is the same
+never-leak breach reached through the shared stream wrapper on the operation
+path rather than at construction; BUG-254 is with **BE-029's
 root row**, which BE-021 § Reach now defers to rather than deciding, so the
 breach is of the row § Reach points at and not of the clause this count is about;
 BUG-256 is about a health probe, which is off the roster BE-021 governs; and
@@ -579,78 +581,6 @@ compliant the day before.
   **Filed in this section rather than beside BK-357** (which is section 4's,
   being a cost left on the caller): the defect here is that a caller does not
   catch one exception type, which is this section's promise verbatim.
-
-- [ ] **BK-356 — `io_timeout` should default to a real bound, not `None`**
-  spec: SFTP-030, SFTP-005 · effort: S · audience: user.api
-  BK-354 shipped `io_timeout` defaulting to `None`, so the stall it exists to
-  bound is still unbounded unless a caller opts in. The default was chosen for
-  compatibility and the reporter's objection to it was recorded rather than
-  answered (issue #970: "'no bound at all' is a surprising default given
-  `_is_connection_dead` already assumes one"). It stands unrebutted.
-  **Why the default is wrong on the library's own terms, not just on taste.**
-  `ReadOnlyHttpBackend` already defaults `timeout=30.0`, which reaches reads, so SFTP
-  is the outlier rather than the pioneer — a user meets a bounded read on HTTP
-  and an unbounded one on SFTP with no principle separating them. And the SFTP
-  recovery path (`_is_connection_dead` → `_map_exception` → cleared client) was
-  written presuming a bound exists; shipping the machinery without its trigger
-  is an internal contradiction that BK-354 documented instead of closing.
-  **Decided: `120.0`.** It is the value the SFTP guide and troubleshooting page
-  already use in their worked examples, so the docs and the default stop
-  disagreeing. Against the longest transfer #970 reports (2.0 GiB, ~70 min) a
-  120 s silence bound is 2.8% of runtime — a stall is caught inside two minutes
-  while leaving room for a server that legitimately goes quiet, e.g. an
-  antivirus or dedup appliance scanning a large file on `open()`.
-  The asymmetry is what picks the value: too high costs detection latency,
-  which is cheap because the bound is on silence *between* bytes and a slow
-  link is unaffected at any value; too low converts a healthy-but-quiet server
-  into intermittent `BackendUnavailable`, which reads as network flakiness and
-  is harder to diagnose than the hang it replaces.
-  **Breaking, and shipped as such.** Pre-1.0 (`0.30.0`, Development Status ::
-  4 - Beta) with an established `docs-src/reference/migration.md` — v0.29.0
-  made Azure's `hns` a *required* argument, a harder break than changing a
-  default that keeps an opt-out. The migration entry must lead with the opt-out
-  (`io_timeout=None` restores the old behaviour), because the reader who needs
-  it is exactly the one with a legitimately slow or quiet server. Note `0` is
-  not the opt-out: it raises `ValueError` (SFTP-005), since paramiko reads it
-  as non-blocking.
-  **No longer blocked.** BK-355 landed first, so releasing a stalled stream
-  costs one bound rather than two and the flip does not ship a doubling with it.
-  BK-357's `SEEK_END` case is what the flip does still ship, and it is worth
-  weighing as more than a doubled wait: with `io_timeout=None` the `stat` inside
-  `_get_size` blocks forever, so today that case is a hang. A real bound converts
-  the hang into a **silently wrong size of `0`**, which BK-357 argues is the worse
-  of its two defects. That is an argument for ordering BK-357 before this item,
-  not merely for noting it here.
-
----
-
-<a id="correct-and-proven"></a>
-## 2. Answers are correct, and the contract is proven
-
-**Promise:** the same call returns the same right result on every backend, and
-no clause of the contract ships unexercised.
-
-**Closes when:** the six defects and holes enumerated below are closed — three
-wrong answers (BUG-241's unescaped `LIKE` metacharacters, BUG-240's `max_depth`
-contradiction, BUG-251's cross-store cache collision) and three coverage holes
-measured in cells (ID-244's WRITE-gated classes, ID-242's four pragmas,
-ID-247's 22 root-path cells).
-**Bounded deliberately.** "No clause ships unexercised" is the promise, not the
-closing condition: nothing derives the full set of unreachable clauses today,
-which is what ID-245's inventory in section 6 would supply. Until it does, this
-section closes on a counted list rather than on a claim nobody can check —
-saying otherwise would make the promise unfalsifiable, which is the failure this
-structure exists to remove.
-
-A corrected clause nobody tests is the same defect one layer up, which is why
-the wrong-answer defects and the coverage holes are one promise. The wrong-answer
-defects come first because a user can hit them today. **One item here is depended
-on from section 1**: BK-345 waits on ID-244's per-fixture seeding decision, so
-section 1 cannot close before it lands even though it sits here. ID-242 was a
-second such dependency, from BUG-249's denied path; that item shipped without it,
-leaving the denied listing asserted by one hand-written 403 probe and by nothing
-in conformance — the exact hole ID-242 exists to fill, now with a shipped clause
-resting on it rather than a pending one.
 
 - [ ] **BUG-251 — A shared `cache_backend=` serves one store's bytes for another's**
   spec: RES-100 · effort: S/M · audience: user.api
@@ -1166,6 +1096,77 @@ here as legitimately as "built".
   body argues this should land first, since flipping the default converts this
   case from a hang into a silent wrong answer.
 
+- [ ] **BK-356 — `io_timeout` should default to a real bound, not `None`**
+  spec: SFTP-030, SFTP-005 · effort: S · audience: user.api
+  BK-354 shipped `io_timeout` defaulting to `None`, so the stall it exists to
+  bound is still unbounded unless a caller opts in. The default was chosen for
+  compatibility and the reporter's objection to it was recorded rather than
+  answered (issue #970: "'no bound at all' is a surprising default given
+  `_is_connection_dead` already assumes one"). It stands unrebutted.
+  **Why the default is wrong on the library's own terms, not just on taste.**
+  `ReadOnlyHttpBackend` already defaults `timeout=30.0`, which reaches reads, so SFTP
+  is the outlier rather than the pioneer — a user meets a bounded read on HTTP
+  and an unbounded one on SFTP with no principle separating them. And the SFTP
+  recovery path (`_is_connection_dead` → `_map_exception` → cleared client) was
+  written presuming a bound exists; shipping the machinery without its trigger
+  is an internal contradiction that BK-354 documented instead of closing.
+  **Decided: `120.0`.** It is the value the SFTP guide and troubleshooting page
+  already use in their worked examples, so the docs and the default stop
+  disagreeing. Against the longest transfer #970 reports (2.0 GiB, ~70 min) a
+  120 s silence bound is 2.8% of runtime — a stall is caught inside two minutes
+  while leaving room for a server that legitimately goes quiet, e.g. an
+  antivirus or dedup appliance scanning a large file on `open()`.
+  The asymmetry is what picks the value: too high costs detection latency,
+  which is cheap because the bound is on silence *between* bytes and a slow
+  link is unaffected at any value; too low converts a healthy-but-quiet server
+  into intermittent `BackendUnavailable`, which reads as network flakiness and
+  is harder to diagnose than the hang it replaces.
+  **Breaking, and shipped as such.** Pre-1.0 (`0.30.0`, Development Status ::
+  4 - Beta) with an established `docs-src/reference/migration.md` — v0.29.0
+  made Azure's `hns` a *required* argument, a harder break than changing a
+  default that keeps an opt-out. The migration entry must lead with the opt-out
+  (`io_timeout=None` restores the old behaviour), because the reader who needs
+  it is exactly the one with a legitimately slow or quiet server. Note `0` is
+  not the opt-out: it raises `ValueError` (SFTP-005), since paramiko reads it
+  as non-blocking.
+  **No longer blocked.** BK-355 landed first, so releasing a stalled stream
+  costs one bound rather than two and the flip does not ship a doubling with it.
+  BK-357's `SEEK_END` case is what the flip does still ship, and it is worth
+  weighing as more than a doubled wait: with `io_timeout=None` the `stat` inside
+  `_get_size` blocks forever, so today that case is a hang. A real bound converts
+  the hang into a **silently wrong size of `0`**, which BK-357 argues is the worse
+  of its two defects. That is an argument for ordering BK-357 before this item,
+  not merely for noting it here.
+
+---
+
+<a id="correct-and-proven"></a>
+## 2. Answers are correct, and the contract is proven
+
+**Promise:** the same call returns the same right result on every backend, and
+no clause of the contract ships unexercised.
+
+**Closes when:** the six defects and holes enumerated below are closed — three
+wrong answers (BUG-241's unescaped `LIKE` metacharacters, BUG-240's `max_depth`
+contradiction, BUG-251's cross-store cache collision) and three coverage holes
+measured in cells (ID-244's WRITE-gated classes, ID-242's four pragmas,
+ID-247's 22 root-path cells).
+**Bounded deliberately.** "No clause ships unexercised" is the promise, not the
+closing condition: nothing derives the full set of unreachable clauses today,
+which is what ID-245's inventory in section 6 would supply. Until it does, this
+section closes on a counted list rather than on a claim nobody can check —
+saying otherwise would make the promise unfalsifiable, which is the failure this
+structure exists to remove.
+
+A corrected clause nobody tests is the same defect one layer up, which is why
+the wrong-answer defects and the coverage holes are one promise. The wrong-answer
+defects come first because a user can hit them today. **One item here is depended
+on from section 1**: BK-345 waits on ID-244's per-fixture seeding decision, so
+section 1 cannot close before it lands even though it sits here. ID-242 was a
+second such dependency, from BUG-249's denied path; that item shipped without it,
+leaving the denied listing asserted by one hand-written 403 probe and by nothing
+in conformance — the exact hole ID-242 exists to fill, now with a shipped clause
+resting on it rather than a pending one.
 
 ---
 

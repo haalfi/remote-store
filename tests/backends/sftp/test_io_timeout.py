@@ -925,6 +925,47 @@ def test_releasing_a_stalled_stream_costs_one_bound(stall_relay: _StallRelay) ->
 
 
 @pytest.mark.spec("SFTP-030")
+def test_get_file_info_surfaces_a_stall_the_seek_hides(stall_relay: _StallRelay) -> None:
+    """The remedy the guides offer for the ``SEEK_END`` case actually works.
+
+    Four artifacts tell a user to size files with ``get_file_info(path).size``
+    rather than by seeking to the end: the SFTP guide, the troubleshooting page,
+    ``retry.md`` by reference, and ``SFTPBackend``'s own ``io_timeout``
+    docstring. That is a paramiko-behaviour claim of exactly the kind this file
+    exists to run rather than read — and the hazard it is offered against is a
+    bare ``except`` around a ``stat``, while ``get_file_info`` reaches the wire
+    through a ``stat`` too. Its safety rests on ``SFTPClient.stat`` having no
+    such sibling, which nothing else pins.
+
+    Both halves of the promise are asserted, because a user acting on it needs
+    both: the stall *surfaces*, and the dead client is dropped so the next
+    operation reconnects rather than paying the bound again. Contrast the seek
+    in the sibling test below, which does neither.
+    """
+    io_timeout = 2.0
+    backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
+    name = f"sized_{uuid.uuid4().hex[:8]}.bin"
+    payload = bytes(range(256)) * 4096  # 1 MiB
+    backend.write(name, payload)
+    assert backend.get_file_info(name).size == len(payload), "healthy sizing must be correct first"
+
+    stall_relay.stall_download()
+    start = time.monotonic()
+    with pytest.raises(BackendUnavailable):
+        backend.get_file_info(name)
+    elapsed = time.monotonic() - start
+
+    assert elapsed < io_timeout * 1.75, (
+        f"get_file_info took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "
+        "the remedy the guides recommend should cost one bound, not several"
+    )
+    assert backend._sftp_client is None, (
+        "get_file_info must drop the dead client — the guides promise the next "
+        "operation reconnects, which is the half that distinguishes it from the seek"
+    )
+
+
+@pytest.mark.spec("SFTP-030")
 @pytest.mark.spec("SIO-010")
 def test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds(stall_relay: _StallRelay) -> None:
     """Characterises a stated exception: a ``SEEK_END`` seek leaves the channel uncondemned.
