@@ -780,12 +780,15 @@ class LocalBackend(Backend):
         from an untouched store instead.
 
         Five call sites: the three writers, plus the ``move``/``copy``
-        destination. Local's destination was already refused by observation
-        (``dst_full.is_dir()`` fires on a present root, and with the root gone
-        the source check fails first), so here the guard changes the message
-        rather than the verdict — it is called anyway, because the shared
-        helper's docstring records what relying on that argument cost on
-        another namespace.
+        destination. What the guard changes on the destination depends on the
+        state, and the parenthetical that used to sit here was the counterexample
+        to its own conclusion. With the root present, ``dst_full.is_dir()`` fires
+        and the guard changes only the message. With the root **gone** — the
+        state this backend's guard exists for — the source check fires first and
+        the answer was ``NotFound``, so the guard changes the class and inverts
+        the precondition order. ``test_the_root_as_a_move_or_copy_destination_never_becomes_a_file``
+        asserted ``(NotFound, InvalidPath)`` for that reason and now asserts
+        ``InvalidPath`` alone.
         """
         from remote_store.backends._flat_ns import _reject_root_as_write_target
 

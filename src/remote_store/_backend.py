@@ -219,13 +219,20 @@ class Backend(abc.ABC):
             call ``get_file_info()`` for them).
 
         Raises:
-            AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or if any slash-aligned
+            InvalidPath: If *path* is the store root. This is the **first**
+                precondition, decided from the key before any request is
+                issued, and it is the one no backend is exempt from —
+                including flat-namespace backends, which are exempt from the
+                directory check below. It covers every spelling that
+                addresses the root, which is wider than ``""`` and ``"."``:
+                ``"./"``, ``".//"``, ``"./."`` and ``"/"`` are refused too.
+                Also if *path* names a directory, or if any slash-aligned
                 ancestor of *path* exists as a regular file. Flat-namespace
                 backends (S3, Azure non-HNS, SQL) cannot detect a file
-                ancestor in O(1) and skip the check by default; the
+                ancestor in O(1) and skip *that* check by default; the
                 per-backend ``reject_write_under_file_ancestor`` opt-in
                 enables it.
+            AlreadyExists: If the file exists and ``overwrite`` is ``False``.
         """
 
     @abc.abstractmethod
@@ -250,9 +257,11 @@ class Backend(abc.ABC):
 
         Raises:
             CapabilityNotSupported: If backend lacks ``ATOMIC_WRITE``.
+            InvalidPath: If *path* is the store root (see ``write`` — first
+                precondition, from the key, every spelling), if *path* names
+                a directory, or if any slash-aligned ancestor of *path*
+                exists as a regular file.
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or if any slash-aligned
-                ancestor of *path* exists as a regular file (see ``write``).
         """
 
     @abc.abstractmethod
@@ -267,9 +276,11 @@ class Backend(abc.ABC):
             overwrite: If ``False``, raise if file already exists.
 
         Raises:
+            InvalidPath: If *path* is the store root (see ``write`` — first
+                precondition, from the key, every spelling), if *path* names
+                a directory, or if any slash-aligned ancestor of *path*
+                exists as a regular file.
             AlreadyExists: If *path* exists and *overwrite* is ``False``.
-            InvalidPath: If *path* names a directory, or if any slash-aligned
-                ancestor of *path* exists as a regular file (see ``write``).
             CapabilityNotSupported: If the backend lacks ``ATOMIC_WRITE``.
         """
 
@@ -390,9 +401,16 @@ class Backend(abc.ABC):
             overwrite: If ``True``, replace any existing file at *dst*.
 
         Raises:
+            InvalidPath: If ``src`` or ``dst`` is the store root — the first
+                precondition, decided from the key and ahead of the
+                source-existence check, so a root ``dst`` is refused whether
+                or not ``src`` exists. ``dst`` is a write and is refused
+                under every spelling that addresses the root; ``src`` is a
+                file-shaped operation on a folder and is refused for ``""``
+                and ``"."`` at minimum. Also if ``src`` or ``dst`` names a
+                directory, or if any slash-aligned ancestor of ``dst`` exists
+                as a regular file.
             NotFound: If ``src`` does not exist.
-            InvalidPath: If ``src`` or ``dst`` names a directory, or if any
-                slash-aligned ancestor of ``dst`` exists as a regular file.
             AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
 
@@ -408,9 +426,16 @@ class Backend(abc.ABC):
             overwrite: If ``True``, replace any existing file at *dst*.
 
         Raises:
+            InvalidPath: If ``src`` or ``dst`` is the store root — the first
+                precondition, decided from the key and ahead of the
+                source-existence check, so a root ``dst`` is refused whether
+                or not ``src`` exists. ``dst`` is a write and is refused
+                under every spelling that addresses the root; ``src`` is a
+                file-shaped operation on a folder and is refused for ``""``
+                and ``"."`` at minimum. Also if ``src`` or ``dst`` names a
+                directory, or if any slash-aligned ancestor of ``dst`` exists
+                as a regular file.
             NotFound: If ``src`` does not exist.
-            InvalidPath: If ``src`` or ``dst`` names a directory, or if any
-                slash-aligned ancestor of ``dst`` exists as a regular file.
             AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
 

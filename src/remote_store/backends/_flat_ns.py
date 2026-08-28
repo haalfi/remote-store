@@ -14,15 +14,20 @@ contents:
 * **Absent container reads as absent path** — the folder-existence probe's
   answer when the bucket / container itself is gone, documented at
   ``_children_or_absent_container``.
-* **Root refusal, definitionally from the key** — ``_reject_root_as_file``
-  and ``_reject_root_as_write_target``, over the ``_addressable_segments``
-  predicate. This one binds *every* backend: the hierarchical ones call it
-  too (``LocalBackend``, ``SFTPBackend``), ``GraphBackend`` reaches the
-  predicate through its own ``_key_segments``, and the backend contract
-  numbers it as the one precondition the flat-namespace exemption does not
-  release. It lives here because the flat namespaces were where it was
-  found missing, not because it is theirs; the custom-backend guide points
-  third-party authors at ``_addressable_segments`` by name.
+* **Root refusal, definitionally from the key** — two guards on **two
+  different predicates**, which is the point rather than an inconsistency.
+  ``_reject_root_as_write_target`` decides on ``_addressable_segments`` and
+  so refuses every spelling that addresses the root; ``_reject_root_as_file``
+  decides on ``is_root`` and so refuses only ``""`` and ``"."``. The write
+  side cost a container and the read side costs an error class or a wrong
+  listing, and the backend contract makes that asymmetry normative — see
+  each guard's own docstring, and do not unify them. This binds *every*
+  backend: the hierarchical ones call it too (``LocalBackend``,
+  ``SFTPBackend``), ``GraphBackend`` reaches the wide predicate through its
+  own ``_key_segments``, and the contract numbers the write half as the one
+  precondition the flat-namespace exemption does not release. It lives here
+  because the flat namespaces were where it was found missing, not because
+  it is theirs.
 
 Hierarchical backends (Local, SFTP, Memory) detect a file-ancestor path on
 ``write`` / ``move`` / ``copy`` for free because their native APIs cannot

@@ -269,18 +269,32 @@ returns the stream as-is.
   destination that names it is a write to the root. Both raise `InvalidPath`.
   (Contract rule — this is the first precondition, ahead of the source-existence
   check below.) It used to be a `Store`-enforced convention that backends also
-  guarded defensively; it is now a requirement the conformance suite holds you
-  to, so a backend that leaves it to the layer above will fail.
-- **Decide "is this the root" on the key's addressable segments, not on
-  `is_root`.** Drop empty and `"."` segments and refuse when nothing is left —
-  `remote_store.backends._flat_ns._addressable_segments` does exactly that.
-  `is_root` recognises only `""` and `"."`, so a guard written against it lets
-  `"./"` through, and `"./"` addresses the same node. That is not a hypothetical:
-  it is how a shipped backend came to leave its own container as a regular file.
-  Do **not** extend that predicate to fold backslashes to match `RemotePath`,
-  tempting as the symmetry looks: if your backend also builds its native paths
-  from it, the fold rewrites ordinary keys and breaks the `to_key(native_path(k))
-  == k` identity. That has been tried and measured.
+  guarded defensively; it is now a requirement, and the conformance suite holds
+  you to it for the two canonical spellings `""` and `"."`, so a backend that
+  leaves those to the layer above will fail.
+- **On the write end, decide "is this the root" on the key's addressable
+  segments, not on `is_root`.** Drop empty and `"."` segments and refuse when
+  nothing is left. `is_root` recognises only `""` and `"."`, so a guard written
+  against it lets `"./"` through, and `"./"` addresses the same node. That is not
+  a hypothetical: it is how a shipped backend came to leave its own container as
+  a regular file. **The conformance suite cannot catch this for you** — its cells
+  are parametrised over the two canonical spellings — so it is a rule you have to
+  hold yourself to, which is why it is stated here rather than left to the gate.
+  The write end is the three writers plus the `move`/`copy` **destination**.
+- **The `move`/`copy` source is held to the narrower predicate, and that is
+  deliberate.** The contract requires only `""` and `"."` there. The tutorial
+  above keeps `not src or src == "."` on the source for exactly that reason,
+  which is why the two ends of the same `move` do not look alike. The asymmetry
+  follows the damage: on the write side an unrecognised root spelling cost a
+  backend its container, and on the read side it costs an error class or an
+  empty listing. Refusing the source under the wider predicate is permitted and
+  four shipped backends do it; none is required to.
+- **Do not fold backslashes into that predicate** to match `RemotePath`,
+  tempting as the symmetry looks. If your backend also builds its native paths
+  from it, the fold makes two distinct keys collide onto one address — `a\b` and
+  `a/b` become the same node, and `a\b` stops being addressable as itself. That
+  has been tried and measured. (It is not a round-trip-identity breach: a
+  backslash key is not well-formed to begin with. The cost is the collision.)
 - **Use that one predicate everywhere the key is split, addressing included.**
   A backend that guards with the tolerant predicate and addresses with a
   stricter one accepts `"./x"` at the guard and then names a folder literally

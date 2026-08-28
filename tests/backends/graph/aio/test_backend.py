@@ -404,7 +404,9 @@ class TestBasePath:
         the stripped key, which keeps a trailing ``"."`` where every other
         predicate here drops it — so ``move(src, "a/.")`` addressed an item
         literally named ``.`` inside ``a`` while ``write("a/.")`` wrote to ``a``.
-        Three of these nine spellings disagreed.
+        Three of the first nine spellings below disagreed — the trailing-dot
+        rows. The roster is twelve now; the last three were added later, for
+        the separate reason two paragraphs down.
 
         Reconstructing the address from ``parentReference.path`` + ``name`` and
         comparing it to ``native_path`` is the assertion, rather than a literal

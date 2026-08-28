@@ -1876,11 +1876,17 @@ class SFTPBackend(Backend):
         runs to completion against the container path itself.
 
         Five call sites: the three writers, plus the ``move``/``copy``
-        destination, whose source side is ``_reject_root_as_file``. As on the
-        other hierarchical backend the destination was already refused by
-        observation, so the guard changes the message rather than the verdict
-        there; the shared helper's docstring records why that is not a reason to
-        leave it out.
+        destination, whose source side is ``_reject_root_as_file``.
+
+        On the destination the guard's effect depends on whether ``base_path``
+        exists, and the interesting case is the one this module is about. With
+        it present the destination probe already reported a directory, so the
+        guard changes the message and not the verdict. With it **absent**
+        nothing exists beneath it, the source stat fired first, and
+        ``move(missing_src, "")`` answered ``NotFound`` — so there the guard
+        changes the class as well, and the precondition order inverts.
+        ``test_move_and_copy_destination_cannot_reach_the_corruption`` is that
+        inversion, and it used to assert ``NotFound``.
         """
         from remote_store.backends._flat_ns import _reject_root_as_write_target
 

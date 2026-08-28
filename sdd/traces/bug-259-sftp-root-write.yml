@@ -59,11 +59,15 @@ surprising_ripples:
   - docs-src/guides/custom-backend-guide.md
   - examples/snippets/custom_backend_guide.py
   - tests/test_snippets.py
+  - src/remote_store/_backend.py
+  - src/remote_store/aio/_async_backend.py
+  - sdd/specs/044-graph-backend.md
   - docs-src/_data/graph/graph.json
   - docs-src/explanation/graph_viz.html
 
 discovery_followups:
   - ID-251
+  - BUG-260
 
 # Counted from `git log --oneline origin/master..HEAD`, applying the schema's
 # test — "exists specifically because review feedback was incorporated":
@@ -76,21 +80,26 @@ discovery_followups:
 #   fc2af3f  round 3, all sixteen panel findings           — yes
 #   f5d0ff0  round 4, the backslash withdrawal and two
 #            Graph predicate breaches                      — yes
-#   (this)   round 5, the closing gate                     — yes
+#   f9c63d9  round 5, the destination name half and nine
+#            falsified claims                              — yes
+#   003534b  round 6, the fourth key splitter and the
+#            guide's own reference backend                 — yes
+#   (this)   round 7, the closing gate                     — yes
 #
 # The last entry is "(this)" rather than a SHA on purpose: a commit cannot name
 # its own hash, and writing the tip's SHA here made the file stale the moment it
 # was amended into that very commit. The sibling trace uses the same form.
 #
-# Promoting "(this)" to a SHA and adding a fresh one is TWO edits, and this list
-# has now dropped a round twice by doing one of them. Round 4 omitted fc2af3f;
-# round 5 added it, wrote a note saying that skipping the promotion is how the
-# omission happens, and then omitted f5d0ff0 in the same edit — one round later,
-# two reviewers found it. Re-run `git log --oneline origin/master..HEAD` and
-# count the lines before touching this block; the comment naming the command is
-# not a substitute for running it.
-# Six qualify. The field counts commits rather than rounds; the loop has run
-# five review rounds and produced six review-driven commits, because round 1's
+# THIS LIST HAS NOW DROPPED A COMMIT THREE TIMES, and twice in the very edit
+# that added a paragraph warning about it. Round 4 omitted fc2af3f. Round 5
+# added it, wrote the warning, and omitted f5d0ff0. Round 6 added that, sharpened
+# the warning, and omitted f9c63d9. The warning is not the fix. The fix is that
+# this block is rewritten from the OUTPUT of `git log --oneline origin/master..HEAD`
+# every time it is touched — paste the lines, then classify them — rather than
+# amended in place from what the last edit remembered. Amending in place is what
+# fails, because the amender sees a list that looks complete.
+# Seven qualify. The field counts commits rather than rounds; the loop has run
+# six review rounds and produced seven review-driven commits, because round 1's
 # reply-writing surfaced a gap of its own.
 #
 # These SHAs are post-rebase, and have now been rewritten twice — first by the
@@ -98,10 +107,10 @@ discovery_followups:
 # invalidated by any history rewrite, not only by new work, and re-reading it
 # would never show that: the stale SHAs still look like SHAs. Re-derived from
 # the command above after each rebase. This is the argument for the "(this)"
-# entry rather than a sixth hash — the tip's own SHA cannot be written into the
-# commit that carries it, and the five below it move whenever the branch is
+# entry rather than an eighth hash — the tip's own SHA cannot be written into the
+# commit that carries it, and the seven below it move whenever the branch is
 # replayed.
-review_rounds: 6
+review_rounds: 7
 
 phases:
   - id: orient
@@ -279,18 +288,19 @@ phases:
           moved the tree, because this figure's subject is the test suite the
           loop keeps changing. Final: neutering the shared guard fails 93 of
           8887 executed cells — 34 in the SFTP module, 26 in conformance, 22 in
-          Local's, 11 in test_flat_ns; SFTP's own wrapper alone, 34. Both closing
-          rounds re-ran both fences rather than carrying them, and both times the
+          Local's, 11 in test_flat_ns; SFTP's own wrapper alone, 34. Every closing
+          round re-ran both fences rather than carrying them, and every time the
           numerator held while the denominator moved with that round's own new
-          cells (8867, 8876, 8887). A re-read would have shown nothing wrong on
-          either occasion, which is the whole argument for re-running.
+          cells. A re-read would have shown nothing wrong on any of those
+          occasions, which is the whole argument for re-running.
 
           This sentence itself held 47 of 8643 from the day it was written until
           round 4, while the same measurement in BACKLOG-DONE.md was re-derived
-          three times over the same period. That file's committed history, from
-          git diff across the branch commits rather than from memory: 47 of 8643,
-          then 80 of 8776 at round 2, then 93 of 8858 at round 3, then 93 of 8867
-          and 93 of 8876 at the two closing rounds. Two artifacts in one PR
+          at every round over the same period. That file's committed history, read
+          out of the commits themselves rather than from memory — `git show
+          <sha>:sdd/BACKLOG-DONE.md` per commit on the branch — is 47 of 8643,
+          then 80 of 8776, 93 of 8858, 93 of 8867, 93 of 8876, 93 of 8887, one
+          per review-driven commit from round 2 on. Two artifacts in one PR
           disagreeing about one number, because each round corrected the record
           it was reading and not the record it was writing in — and the trace's
           later steps, which record those corrections as events, made the file
@@ -900,6 +910,89 @@ phases:
           reply had been carried into one. The measurement's home is BE-029 and
           the BACKLOG-DONE entry, which already carry it.
         outcome: ok
+
+  - id: fix_round_7
+    name: Round-7 fix pass (closing gate, third attempt)
+    steps:
+      - file: sdd/specs/044-graph-backend.md
+        section: "GR-058"
+        read_type: verify
+        extract: >-
+          The round-6 fix changed a public constructor argument's meaning and did
+          not say so anywhere. GR-058's postcondition still read "normalised by
+          trimming leading/trailing slashes"; _key_segments also drops every "."
+          segment, so base_path="." now targets the drive root where it used to
+          scope the store under a folder named ".", and a drive folder genuinely
+          named "." is no longer addressable through base_path. The fix was right
+          and shipping it as a bug fix to another clause was not: the spec that
+          defines the argument and the CHANGELOG a user reads were both untouched,
+          and the new cells even carried a GR-058 mark for a clause GR-058 did not
+          state. Found by the measuring member, which exercised base_path end to
+          end rather than reading the diff — the change is invisible in the hunk,
+          which only swaps one comprehension for a call.
+        outcome: ok
+      - file: src/remote_store/_backend.py
+        section: "write, write_atomic, open_atomic, move, copy (Raises:)"
+        read_type: verify
+        extract: >-
+          The Raises: sweep covered all eight concrete backend modules and neither
+          ABC — the rendered public contract, at docs-src/reference/api/backend.md,
+          and the class a custom-backend author subclasses. So the change promoted
+          the root refusal to precondition step (0), told the guide that the
+          conformance suite enforces it, and left the ABC listing only the
+          directory and file-ancestor causes. No gate covers it: the parity gate
+          compares sync-to-async twins and lists these blocks as declared
+          divergences, and the API-docs gate checks structure rather than Raises:
+          content. A sweep scoped to "the backends" misses the thing backends are
+          written against.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-008 asymmetry paragraph"
+        read_type: verify
+        extract: >-
+          Round 6 wrote "every class but GraphBackend uses _reject_root_as_file",
+          and three of the eleven bound classes do not import _flat_ns at all.
+          Worse for the paragraph's argument, those three hold the source to a
+          WIDER predicate than is_root, not a narrower one — measured,
+          MemoryBackend.move("./", dst) raises. So the sentence was wrong about
+          which classes and about which direction. It is round 5's failure mode
+          recurring inside the paragraph written to fix round 5's failure mode:
+          a universal asserted from the sentence rather than against the tree.
+          Now stated as a floor (is_root) with seven meeting it through the
+          shared helper and four exceeding it.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-260"
+        read_type: verify
+        extract: >-
+          The justification for not widening is_root was "on the read side an
+          unrecognised root spelling costs a wrong error class". Measured over
+          exists / is_folder / list_files on a two-file root: Local and Memory
+          answer True/True/2 under all three spellings, and SQLBlobBackend answers
+          True/True/0 for "./" — the probes say the folder is there and the
+          listing comes back empty. A silently wrong value, not a wrong class.
+          Filed as BUG-260 rather than fixed here: the local fix is in the listing
+          prefix, and the general question it raises is the one BE-008 answers,
+          so the item and the clause have to be read together. The clause now
+          states the measured cost instead of the assumed one — a justification
+          nobody had run was carrying a scope decision for three rounds.
+        outcome: ok
+      - file: docs-src/guides/custom-backend-guide.md
+        section: "Step 11 rule bullets"
+        read_type: verify
+        extract: >-
+          Three defects in one bullet list, all from the write/source asymmetry
+          reaching the spec and the snippet and not the guide. It told authors
+          the conformance suite holds them to the wider predicate, which ID-251
+          (filed one commit earlier, by this same change) says it cannot — a
+          measuring member reproduced that: an is_root-only guard passes the whole
+          conformance root surface, 490 cells. It prescribed the wide predicate
+          unscoped while the tutorial code below deliberately keeps the narrow one
+          on the source. And it still carried the round-trip-identity framing that
+          round 6 withdrew from the spec. The pattern across rounds 5, 6 and 7 is
+          that the guide is the artifact each round updates last and verifies
+          least.
+        outcome: misleading
 
   - id: verify
     name: Verify

@@ -396,13 +396,27 @@ namespace concept to decide.
 write end — the three writers and the `move`/`copy` destination — must refuse
 **every spelling that addresses the root**, which is wider than `is_root`; see
 [BE-029](#be-029-root-path), which states why a guard written as
-`if is_root(path)` is not conformant there. The source end is held to `is_root`
-alone: `_reject_root_as_file` is the shared implementation, and every class but
-`GraphBackend` uses it. That is not an oversight being tolerated. On the read
-side an unrecognised root spelling costs a wrong error class, and on the write
-side it cost a container, which is the same asymmetry BE-029 gives for leaving
-`is_root` itself unwidened. A backend MAY refuse the source under the wider
-predicate — `GraphBackend` does — and none is required to.
+`if is_root(path)` is not conformant there. The source end is required only to
+refuse `is_root`. Seven of the eleven `WRITE`-capable classes meet that through
+the shared `_reject_root_as_file`, which is exactly `is_root`; the other four —
+`GraphBackend`, `MemoryBackend`, `AsyncMemoryBackend`, `SQLBlobBackend` — refuse
+the source under the **wider** predicate as a by-product of their own key
+splitters, so `move("./", dst)` raises there and not on the seven. That
+divergence is permitted: the floor is `is_root` and a backend MAY exceed it.
+
+**What an unrecognised root spelling costs on the read side, stated rather than
+assumed.** The usual summary is "a wrong error class". That is not the whole of
+it, and the difference matters because this summary is the justification for
+leaving `is_root` unwidened. Measured over `exists` / `is_folder` /
+`list_files(recursive=True)` on a root holding two files: `LocalBackend` and
+`MemoryBackend` answer `True / True / 2` under all three of `""`, `"."` and
+`"./"`; `SQLBlobBackend` answers `True / True / 2` for the first two and
+**`True / True / 0`** for `"./"` — the probes agree the folder is there and the
+listing comes back empty. So the read side can cost a silently wrong *value*
+(BUG-260). It remains the milder failure — the write side cost a container — and
+the reason not to widen `is_root` here is its blast radius, not the harmlessness
+of the read side: it is also how addressing, `to_key` and every flat-namespace
+listing prefix decide the root.
 **Flat-namespace exemption:** Backends where the underlying storage has no
 native directory concept (e.g. S3, Azure non-HNS, SQL) are exempt from step
 (1): they cannot distinguish "path names a directory" from "path does not
@@ -1130,7 +1144,7 @@ raising `InvalidPath`. All other operations MUST raise appropriate errors.
 ### BE-025: native_path()
 
 **Invariant:** `native_path(path)` converts a backend-relative key to the backend-native path. The inverse of `to_key()`: `backend.to_key(backend.native_path(key)) == key`. The default implementation is the identity function — backends with a native root **must** override.
-**Root spellings:** `native_path("")` and `native_path(".")` return the same value, the bare backend root (BE-029). The round-trip identity therefore returns the canonical root key — `to_key(native_path("."))` is `""` — since one native path cannot invert to two spellings. Every non-root key **in canonical form** round-trips verbatim; a non-canonical one need not, and for the same reason — `native_path` normalises, and one address cannot invert to the several keys that produced it. The lossy classes are exactly the ones `WellFormedPath` (PATH-002 through PATH-008) already excludes: a redundant `"."` segment, an empty segment (leading, trailing or doubled slash), and on backends that fold it, a backslash. Measured on `GraphBackend`, `native_path("a/./b")`, `native_path("dir/")`, `native_path("a//b")` and `native_path("/a")` each invert to the canonical key rather than the caller's spelling. So the identity is exact over the keys `to_key` produces and over every canonical key, and lossy over the wider set a caller holding a `Backend` directly may hand `native_path`. The identity-default implementation normalises both root spellings for the same reason.
+**Root spellings:** `native_path("")` and `native_path(".")` return the same value, the bare backend root (BE-029). The round-trip identity therefore returns the canonical root key — `to_key(native_path("."))` is `""` — since one native path cannot invert to two spellings. Every non-root key **in canonical form** round-trips verbatim; a non-canonical one need not, and for the same reason — `native_path` normalises, and one address cannot invert to the several keys that produced it. Every lossy class is one `WellFormedPath` (PATH-002 through PATH-008) already excludes, though not every exclusion is lossy — `".."` segments and null bytes are excluded and do round-trip verbatim. The lossy ones are: a redundant `"."` segment, an empty segment (leading, trailing or doubled slash), and on backends that fold it, a backslash. Measured on `GraphBackend`, `native_path("a/./b")`, `native_path("dir/")`, `native_path("a//b")` and `native_path("/a")` each invert to the canonical key rather than the caller's spelling. So the identity is exact over the keys `to_key` produces and over every canonical key, and lossy over the wider set a caller holding a `Backend` directly may hand `native_path`. The identity-default implementation normalises both root spellings for the same reason.
 **Postconditions:** Pure, deterministic, total (never raises). The returned path is usable with the native handle from `unwrap()`.
 **Overrides:** `LocalBackend` (prepends root dir), `S3Backend` (prepends bucket), `S3PyArrowBackend` (prepends bucket), `SFTPBackend` (prepends base_path), `AzureBackend` (prepends container).
 **Example:** `S3PyArrowBackend(bucket="lake").native_path("data/file.parquet")` returns `"lake/data/file.parquet"`.

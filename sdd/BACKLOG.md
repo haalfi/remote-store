@@ -567,7 +567,7 @@ no clause of the contract ships unexercised.
 wrong answers (BUG-241's unescaped `LIKE` metacharacters, BUG-240's `max_depth`
 contradiction, BUG-251's cross-store cache collision) and three coverage holes
 measured in cells (ID-244's WRITE-gated classes, ID-242's four pragmas,
-ID-247's 22 root-path cells).
+ID-247's 30 root-path cells).
 **Bounded deliberately.** "No clause ships unexercised" is the promise, not the
 closing condition: nothing derives the full set of unreachable clauses today,
 which is what ID-245's inventory in section 6 would supply. Until it does, this
@@ -706,6 +706,27 @@ resting on it rather than a pending one.
   credentials. Each remaining pragma is a few params on that harness. Ship it
   independently of ID-244 — nothing here waits on the seeding decision.
 
+- [ ] **BUG-260 — `SQLBlobBackend.list_files("./")` answers empty for a non-empty root**
+  spec: BE-029, SQL-BLOB-010 · effort: S · audience: user.api
+  Measured on a root holding two files: `exists("./")` is `True`, `is_folder("./")`
+  is `True`, and `list_files("./", recursive=True)` returns **zero** entries —
+  where `""` and `"."` both return two. So the probes agree the folder is there
+  and the listing comes back empty, which is worse than either answering
+  consistently. `LocalBackend` and `MemoryBackend` answer `True / True / 2` under
+  all three spellings, so this is not the shared read-side behaviour.
+  The cause is the listing prefix: `is_root` recognises only `""` and `"."`, so
+  `"./"` falls through to the non-root branch and becomes the LIKE prefix
+  `'./%'`, which matches no stored key. The probes do not use that branch.
+  **Not fixed by widening `is_root`**, which has 52 call sites across 13 files
+  including `native_path` / `to_key` — BE-008's asymmetry paragraph explains why
+  that is a spec-amendment-class change rather than a local fix. The local fix is
+  in the prefix construction, and the general question — whether the read side
+  owes the wider predicate at all — is the one BE-008 currently answers "no" to
+  on the strength of the cost being an error class. This item is the
+  counterexample to that reasoning and should be read alongside it.
+  Found by the closing gate of BUG-259, which guarded the write side under the
+  wider predicate and left the read side stated but unmeasured.
+
 - [ ] **ID-251 — BE-029's widest clause is one the conformance suite cannot fail on**
   spec: BE-029 · effort: M · audience: infra.test
   BE-029 requires the write guard to refuse **every spelling that addresses the
@@ -742,8 +763,10 @@ resting on it rather than a pending one.
   `test_root_as_move_or_copy_destination_is_refused` at 2 ops × 2 spellings —
   both seeding through `write` and so skipping on the same terms, leaving **18**
   that predate it. The item previously said 22, which the 30 does not reproduce
-  (18 + 12); the 22 is superseded rather than reconciled, since nothing now reads
-  it. **The old "14 of the 22 are Graph-only" split is not re-derived here** —
+  (18 + 12); the 22 is superseded rather than reconciled. Section 2's "Closes
+  when" cites this figure and was updated with it — a superseded number is only
+  harmless once nothing reads it, and checking that is part of superseding it.
+  **The old "14 of the 22 are Graph-only" split is not re-derived here** —
   the new cells skip on the Azure replay lanes too, so the split did not simply
   move with the total, and separating it needs a per-node comparison of the graph
   and azure lanes rather than a count of skip reasons. Left for this item's own
