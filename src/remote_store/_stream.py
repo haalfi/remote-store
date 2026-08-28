@@ -84,6 +84,23 @@ class _ErrorMappingStream(io.RawIOBase):
     exception would keep its traceback, and the frames it references, alive for
     as long as the stream is.
 
+    **Sizing a stream for a ``SEEK_END`` seek.**  Some inner streams answer
+    ``seek(offset, SEEK_END)`` by asking the remote for a size, and can swallow
+    that request's failure: paramiko's ``SFTPFile.seek`` delegates to
+    ``_get_size()``, whose whole body is ``try: return self.stat().st_size``
+    under a bare ``except: return 0``.  A stalled channel therefore made the
+    seek *answer* ``0`` on a file of any size while raising nothing, so nothing
+    reached ``_fail``, the guard above stayed unarmed, and the close paid the
+    bound a second time.  A backend whose handle behaves that way passes
+    *size_probe*; the wrapper then resolves the size itself and delegates an
+    absolute seek, so the failure travels the ordinary mapping path.
+
+    That probe is bounded by the same caught tuple as every other path, which
+    is deliberate: a ``paramiko.SFTPError`` raised by the probe escapes unmapped
+    exactly as one raised by a read does.  Widening the tuple for the probe
+    alone would make one path better than the rest with no reason saying why --
+    what that tuple should catch is a separate question from this one.
+
     Args:
         inner: The underlying stream to wrap.
         mapper: ``(Exception, str) -> RemoteStoreError`` callable.
@@ -95,6 +112,18 @@ class _ErrorMappingStream(io.RawIOBase):
             of the exception** -- no I/O, no round-trip: it is called on the
             failure path of a connection that may already be dead, so a probe
             inside it would pay the very wait this guard exists to remove.
+        size_probe: Optional ``(inner) -> int`` callable returning the size of
+            *inner*, used to resolve ``SEEK_END``.  Unlike *is_fatal* this one
+            **is** a round-trip, and it is called on the success path before any
+            failure is known.  Supply it only for an inner stream that resolves
+            ``SEEK_END`` by a request it can then discard -- paramiko's
+            ``SFTPFile`` is the one measured to do so.  Every other stream this
+            wrapper serves reaches ``SEEK_END`` by some route with no such
+            request in it, so all of them omit the probe and their seek
+            delegates exactly as before; no stream pays a probe on another's
+            behalf.  The routes themselves are enumerated once, in the spec --
+            not here, because paraphrasing that list is what made it wrong in
+            three successive reviews.
     """
 
     def __init__(
@@ -104,11 +133,13 @@ class _ErrorMappingStream(io.RawIOBase):
         path: str,
         *,
         is_fatal: Callable[[Exception], bool] | None = None,
+        size_probe: Callable[[Any], int] | None = None,
     ) -> None:
         self._inner = inner
         self._mapper = mapper
         self._path = path
         self._is_fatal = is_fatal
+        self._size_probe = size_probe
         self._connection_lost = False
 
     def _fail(self, exc: Exception) -> RemoteStoreError:
@@ -150,7 +181,15 @@ class _ErrorMappingStream(io.RawIOBase):
 
     def seek(self, offset: int, whence: int = 0) -> int:
         try:
-            result = self._inner.seek(offset, whence)
+            if whence == io.SEEK_END and self._size_probe is not None:
+                # SIO-010/SIO-011: resolve the end ourselves so a failed size
+                # request reaches ``_fail`` instead of being swallowed by the
+                # inner stream. The delegated seek is absolute, which is local
+                # on a paramiko handle -- delegating SEEK_END would round-trip
+                # a second time.
+                result = self._inner.seek(self._size_probe(self._inner) + offset, io.SEEK_SET)
+            else:
+                result = self._inner.seek(offset, whence)
             # paramiko SFTPFile.seek() returns None
             if result is None:
                 return self._inner.tell() or 0

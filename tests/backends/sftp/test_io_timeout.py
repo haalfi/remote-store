@@ -16,12 +16,12 @@ setting on the first transparent reconnect, which is precisely when a flaky
 link needs it.
 
 This file pins both halves of SFTP-030: what ``io_timeout`` covers, and what it
-does not. The second half is not an afterthought — SFTP-030 states two
-exceptions, and a clause asserting a paramiko behaviour is the kind of claim
-this work has got wrong by reading rather than running, so each exception is
+does not. The second half is not an afterthought — SFTP-030 states one exception
+and one silent case, and a clause asserting a paramiko behaviour is the kind of
+claim this work has got wrong by reading rather than running, so each is
 *characterised by a test* rather than asserted.
 
-**Four faults it covers**, because they fail by different mechanisms and none
+**Five faults it covers**, because they fail by different mechanisms and none
 implies the others:
 
 - **A silent peer** (server→client), driven through a TCP relay that stops
@@ -40,26 +40,35 @@ implies the others:
 - **Releasing a handle into a channel its own failure condemned**, which the
   bound would otherwise be paid for twice — once by the failed operation and
   once, silently, by the close.
+- **Sizing an open handle for a `SEEK_END` seek**, which paramiko's
+  ``_get_size`` swallows under a bare ``except`` — so before SIO-011 the seek
+  answered ``0`` rather than failing, armed nothing, and left the close to pay a
+  second bound. Bounded, but wrong. The wrapper now issues that probe itself.
 
-**Two faults it does not cover**, each pinned so that a test failure means the
-gap has closed and the SFTP-030 exception can go with it:
+**One fault it does not cover**, pinned so that a test failure means the gap has
+closed and the SFTP-030 exception can go with it:
 
 - **A peer that never answers the `sftp` subsystem request**, which paramiko
   waits for on an untimed event that no channel timeout reaches. The file's only
-  genuinely *unbounded* case.
-- **A `SEEK_END` seek on a stalled channel**, which paramiko's ``_get_size``
-  swallows — so it answers ``0`` rather than failing, arms nothing, and leaves
-  the close to pay a second bound. Bounded, but wrong.
+  genuinely *unbounded* case, and now its only stated exception.
 
-"Stated exception" and "unbounded wait" are therefore not the same set, which is
-a distinction two artifacts in this repo have collapsed at least once each.
+**And one it covers silently**, which is neither of the two categories above:
+releasing a handle that never failed, where paramiko catches the stalled
+``CMD_CLOSE`` itself. Bounded at one ``io_timeout``, but nothing is raised and
+the dead client stays cached — which is what keeps SFTP-030's Postconditions
+qualified to a stall *that fails*. "Stated exception" and "unbounded wait" are
+therefore not the same set, and neither is "covered" and "reported"; two
+artifacts in this repo have collapsed the first pair at least once each.
 """
 
 from __future__ import annotations
 
 import contextlib
 import errno
+import logging
+import shutil
 import socket
+import tempfile
 import threading
 import time
 import uuid
@@ -70,7 +79,7 @@ import pytest
 # Guard: skip entire module if dependencies are missing
 pytest.importorskip("paramiko", reason="paramiko not installed")
 
-from remote_store._errors import BackendUnavailable  # noqa: E402
+from remote_store._errors import BackendUnavailable, RemoteStoreError  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -451,15 +460,16 @@ def test_stall_recovers_and_rearms_the_bound(stall_relay: _StallRelay) -> None:
 def test_subsystem_request_is_not_bounded(unanswering_server: _MuteSubsystemServer) -> None:
     """Characterises a stated exception: the ``subsystem`` request is unbounded.
 
-    SFTP-030 states two exceptions, and this is the one that is *unbounded*: the
-    other, a ``SEEK_END`` seek, is bounded but paid twice and answered wrongly
-    (``test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds``, below).
-    Keeping the two categories apart matters — "stated exception" and "unbounded
-    wait" are not the same set, and this docstring has conflated them once. A
-    spec clause asserting a paramiko behaviour is exactly the kind of claim
-    this item has got wrong three times by reading rather than running. So it is
-    pinned here: with ``io_timeout`` set, a peer that opens the channel and never
-    answers the request is *still* blocked well past the bound.
+    SFTP-030 states one exception and this is it — the file's only genuinely
+    *unbounded* wait. Keeping the categories apart matters, and the module
+    docstring is where they are kept: "stated exception" is not the same set as
+    "unbounded wait", nor as "silent". A ``SEEK_END`` seek was the second stated
+    exception until SIO-011 made it raise
+    (``test_seek_to_end_on_a_stalled_channel_costs_one_bound``, below), which is
+    exactly the kind of paramiko-behaviour claim this item has got wrong three
+    times by reading rather than running. So this one is pinned: with
+    ``io_timeout`` set, a peer that opens the channel and never answers the
+    request is *still* blocked well past the bound.
 
     The mechanism, for the reader who finds this test failing: ``invoke_subsystem``
     waits in ``Channel._wait_for_event``, a bare ``threading.Event.wait()`` that
@@ -925,22 +935,98 @@ def test_releasing_a_stalled_stream_costs_one_bound(stall_relay: _StallRelay) ->
 
 
 @pytest.mark.spec("SFTP-030")
-def test_get_file_info_surfaces_a_stall_the_seek_hides(stall_relay: _StallRelay) -> None:
-    """The remedy the guides offer for the ``SEEK_END`` case actually works.
+def test_releasing_a_stalled_handle_after_no_failure_is_silent(
+    stall_relay: _StallRelay, caplog: pytest.LogCaptureFixture
+) -> None:
+    """Characterises what keeps SFTP-030's Postconditions qualified to a stall *that fails*.
 
-    Four artifacts tell a user to size files with ``get_file_info(path).size``
-    rather than by seeking to the end: the SFTP guide, the troubleshooting page,
-    ``retry.md`` by reference, and ``SFTPBackend``'s own ``io_timeout``
-    docstring. That is a paramiko-behaviour claim of exactly the kind this file
-    exists to run rather than read — and the hazard it is offered against is a
-    bare ``except`` around a ``stat``, while ``get_file_info`` reaches the wire
-    through a ``stat`` too. Its safety rests on ``SFTPClient.stat`` having no
-    such sibling, which nothing else pins.
+    Every mechanism SFTP-030 promises — the classification guards, the handle
+    guard, the wrapper's futile-close guard, the client invalidation — is
+    triggered by an exception. This is the case that raises none: a handle
+    released on a stalled channel with no prior failure. paramiko's
+    ``SFTPFile._close`` catches ``(IOError, socket.error)`` itself, and a stalled
+    ``CMD_CLOSE`` arrives as ``socket.timeout``, so the wait is paid and
+    discarded inside paramiko before anything of ours sees it.
+
+    Note the guard above cannot apply here and is not being tested: it skips a
+    close **its own stream's failure** condemned, and this stream never failed.
+    The two are siblings only in cost.
+
+    All three halves are asserted because the qualifier needs all three — the
+    wait is bounded, nothing is raised, and the cached client survives, which is
+    what makes the *following* operation pay the bound again. Only
+    ``remote_store``'s own records are checked: paramiko emits two DEBUG lines of
+    its own (``[chan 0] close(...)`` and ``[chan 0] Request: close``), which are
+    transport chatter rather than a report of the stall.
+
+    **A failure here is good news**, on the same terms as the subsystem test: it
+    means the close has become reportable, and SFTP-030's qualifier — plus the
+    silent-stall paragraph that carries this figure — should be revisited with
+    it. It replaces the ``SEEK_END`` seek as the clause's demonstrating case;
+    that one now raises (SIO-011), which is why it can no longer serve.
+    """
+    io_timeout = 2.0
+    backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
+    name = f"silentclose_{uuid.uuid4().hex[:8]}.bin"
+    backend.write(name, bytes(range(256)) * 4096)  # 1 MiB
+
+    stream = backend.read(name)
+    assert stream.read(64 * 1024), "expected the stream to deliver bytes before the stall"
+    stall_relay.stall_download()
+
+    with caplog.at_level(logging.DEBUG, logger="remote_store"):
+        # Cleared here, not at entry: ``caplog.records`` spans the whole test,
+        # and the backend logs an AUTO_ADD warning when it connects. What is
+        # being asserted is what the *close* emits.
+        caplog.clear()
+        start = time.monotonic()
+        stream.close()  # raises nothing, which is the point
+        elapsed = time.monotonic() - start
+
+    # Filtered by logger name, not by ``at_level``. That argument raises the
+    # level on the ``remote_store`` logger; it does not stop caplog's root
+    # handler capturing anything else that passes, so under ``--log-level=DEBUG``
+    # paramiko's own two close lines land in ``caplog.records`` too. Asserting on
+    # the unfiltered list failed on transport chatter while blaming SFTP-030.
+    ours = [r for r in caplog.records if r.name.startswith("remote_store")]
+    assert not ours, (
+        f"the silent close emitted {[r.getMessage() for r in ours]}; "
+        "if it now reports the stall, SFTP-030's silent-stall paragraph is stale"
+    )
+    assert backend._sftp_client is not None, (
+        "no failure reached _map_exception, so the dead client must still be cached — "
+        "if this is now None the close has become reportable and SFTP-030's "
+        "Postconditions can drop their qualifier"
+    )
+    # Two-sided: the lower bound is what says the close really did re-enter the
+    # stalled channel rather than returning early, and the upper is what says it
+    # cost one bound rather than several. No pytest-timeout is configured, so an
+    # unbounded regression hangs the suite rather than failing here.
+    assert io_timeout * 0.5 < elapsed < io_timeout * 1.75, (
+        f"the silent close took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "
+        "expected ~1x — one CMD_CLOSE into a stalled channel, swallowed by paramiko"
+    )
+
+
+@pytest.mark.spec("SFTP-030")
+def test_get_file_info_surfaces_a_stall(stall_relay: _StallRelay) -> None:
+    """Sizing a file by path surfaces a stall, and costs one bound doing it.
+
+    ``get_file_info`` reaches the wire through a ``stat`` — the same *kind* of
+    call the ``SEEK_END`` probe makes, though ``SFTPClient.stat`` against a path
+    rather than the ``SFTPFile.stat`` the probe issues against an open handle.
+    So what this pins is that ``SFTPClient.stat`` has no swallowing sibling of
+    paramiko's ``_get_size``, and nothing about the probe: that is
+    ``test_seek_to_end_on_a_stalled_channel_costs_one_bound``'s job. Both are
+    paramiko-behaviour claims of exactly the kind this file exists to run rather
+    than read, which is why they get a test each rather than one standing in for
+    the other.
 
     Both halves of the promise are asserted, because a user acting on it needs
     both: the stall *surfaces*, and the dead client is dropped so the next
-    operation reconnects rather than paying the bound again. Contrast the seek
-    in the sibling test below, which does neither.
+    operation reconnects rather than paying the bound again. The sibling test
+    below asserts the same two of the seek, which is what SIO-011 brought it to;
+    before that it did neither.
     """
     io_timeout = 2.0
     backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
@@ -957,35 +1043,32 @@ def test_get_file_info_surfaces_a_stall_the_seek_hides(stall_relay: _StallRelay)
 
     assert elapsed < io_timeout * 1.75, (
         f"get_file_info took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "
-        "the remedy the guides recommend should cost one bound, not several"
+        "sizing a file by path should cost one bound, not several"
     )
-    assert backend._sftp_client is None, (
-        "get_file_info must drop the dead client — the guides promise the next "
-        "operation reconnects, which is the half that distinguishes it from the seek"
-    )
+    assert backend._sftp_client is None, "get_file_info must drop the dead client so the next operation reconnects"
 
 
 @pytest.mark.spec("SFTP-030")
 @pytest.mark.spec("SIO-010")
-def test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds(stall_relay: _StallRelay) -> None:
-    """Characterises a stated exception: a ``SEEK_END`` seek leaves the channel uncondemned.
+@pytest.mark.spec("SIO-011")
+def test_seek_to_end_on_a_stalled_channel_costs_one_bound(stall_relay: _StallRelay) -> None:
+    """A ``SEEK_END`` seek fails, once, and condemns the channel on the way out.
 
-    The futile-close guard can only skip a close it knows is futile, and it
-    learns that from an exception passing through the wrapper's mapping paths.
-    ``SFTPFile.seek(offset, SEEK_END)`` calls ``_get_size()``, which is
-    ``try: return self.stat().st_size / except: return 0`` — a bare ``except``
-    that swallows the stalled ``stat``. So the seek blocks for the bound, returns
-    a bogus size of 0, and raises nothing: no exception reaches ``_fail``, the
-    guard stays unarmed, and the close then pays the bound a second time.
+    ``SFTPFile.seek(offset, SEEK_END)`` calls paramiko's ``_get_size()``, whose
+    whole body is ``try: return self.stat().st_size`` under a bare ``except:
+    return 0``. Delegating to it meant the stalled ``stat`` was swallowed: the
+    seek blocked for the bound, *answered* ``0`` on a file of any size, and
+    raised nothing — so no exception reached ``_fail``, the guard stayed
+    unarmed, and the close paid the bound a second time.
 
-    That is why SFTP-030 states this as an exception rather than claiming the
-    stream path is bounded outright, and why it is pinned here rather than
-    asserted: the claim is about paramiko's behaviour, which this item has got
-    wrong by reading rather than running before.
+    SIO-011 has the wrapper issue the size probe itself, so all three follow
+    from one round-trip: the failure surfaces as ``BackendUnavailable``, the
+    futile-close guard arms, and ``_map_exception`` clears the cached client.
+    All three are asserted, because an implementation could deliver any one
+    without the others and each is a separate promise to a caller.
 
-    **A failure here is good news.** It means the swallow is gone — paramiko
-    stopped discarding the error, or the wrapper grew its own ``SEEK_END`` size
-    probe (BK-357) — and the SFTP-030 exception should be deleted with this test.
+    This replaces a test that characterised the swallow rather than asserting
+    against it, on the terms that test set for its own deletion.
     """
     io_timeout = 2.0
     backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
@@ -999,41 +1082,161 @@ def test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds(stall_relay: _S
         stall_relay.stall_download()
 
         start = time.monotonic()
-        # Raises nothing: paramiko swallows the stalled stat inside _get_size.
-        position = stream.seek(0, 2)
+        # The wrong-answer half: this used to return 0 and raise nothing.
+        with pytest.raises(BackendUnavailable):
+            stream.seek(0, 2)
     finally:
+        # What a ``with`` block does on the way out, and the half that used to
+        # pay the second bound.
         stream.close()
     elapsed = time.monotonic() - start
 
-    # The worse half, and the one a caller can act on wrongly: the seek does not
-    # merely block, it *answers*, and the answer is 0 on a 1 MiB file. A caller
-    # sizing a file this way cannot tell a dead channel from an empty file.
-    assert position == 0, (
-        f"seek-to-end returned {position} rather than the swallowed 0; "
-        f"the real size is {len(payload)}, so if this now returns either the true "
-        "size or an error, BK-357 has landed and this test should go"
+    # The half that outlives the call. A swallowed failure left the dead client
+    # cached, so the next operation re-entered the same channel and waited again;
+    # a mapped one clears it, which is what makes SFTP-030's Postconditions hold
+    # for the seek without a qualifier.
+    assert backend._sftp_client is None, (
+        "the stalled seek must clear the cached client so the next operation reconnects"
     )
-    # SFTP-030's Postconditions are scoped to a stall that *fails*, and this is
-    # why: no exception reaches ``_map_exception``, so the dead client is still
-    # cached and the next operation re-enters the same channel. Asserted rather
-    # than reasoned — it is the half of the exception that outlives the call.
-    assert backend._sftp_client is not None, (
-        "the stalled seek left no failure to clear the cached client; if this is "
-        "now None the swallow is gone and SFTP-030's Postconditions can drop their qualifier"
-    )
-    # Two-sided, unlike a lower bound alone: `> 1.75x` passes at ten bounds and
-    # at an indefinite hang, and no pytest-timeout is configured, so a regression
-    # to a genuinely unbounded wait would hang the suite rather than fail here.
-    # Two-sided, unlike the lower bound alone: `> 1.75x` passes at ten bounds and
-    # at an indefinite hang, and no pytest-timeout is configured, so a regression
-    # to a genuinely unbounded wait would hang the suite rather than fail here.
-    # The ceiling is 5x rather than 3x to leave this the same relative headroom
-    # the file's other elapsed assertions have — they allow 3x an expected ~1x,
-    # and this expects ~2x — while still failing well below the 6x a third
-    # round-trip would cost.
-    assert io_timeout * 1.75 < elapsed < io_timeout * 5, (
+    # Upper bound only, and two-sided would be wrong here: the cost is now one
+    # bound, and there is no floor to assert below it — a seek that failed
+    # *faster* than the bound would be a different fault, not this one. No
+    # pytest-timeout is configured, so a regression to an unbounded wait hangs
+    # the suite rather than failing here; the 1.75x ceiling is what catches the
+    # doubling, which is the regression this guards.
+    assert elapsed < io_timeout * 1.75, (
         f"seek-to-end plus release took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "
-        "expected ~2x — one bound swallowed inside the seek and one paid by the close. "
-        "Below the band, the swallow is gone and SFTP-030's exception should go with it; "
-        "above it, the cost has grown a third round-trip and SFTP-030's figure is stale"
+        "expected ~1x — one bound inside the probe and a close the guard skips. "
+        "At ~2x the probe's failure is not arming the guard and the close is "
+        "re-entering the stalled channel"
     )
+
+
+@pytest.mark.spec("SIO-011")
+def test_seek_to_end_on_a_healthy_channel_answers_the_true_size(
+    sftp_server: tuple[int, str] | None,
+) -> None:
+    """The case that always worked keeps working, negative offsets included.
+
+    The probe replaces paramiko's ``_get_size`` on every ``SEEK_END`` seek, not
+    only a stalled one, so the healthy path is the larger blast radius of the
+    two and the one no stall test touches. ``seek(-n, SEEK_END)`` is the shape
+    that matters: ``SFTPFile.seekable()`` returns ``True`` unconditionally, so
+    ``read_seekable()`` hands this stream straight to an analytical reader
+    rather than spooling it, and the offset arithmetic is then the wrapper's own
+    rather than paramiko's. That consumer path is exercised end to end by
+    ``TestParquetOverSftpReachesTheSizeProbe`` in ``tests/ext/test_arrow.py``.
+    """
+    if sftp_server is None:
+        pytest.skip("paramiko not installed")
+    backend = _make_backend(sftp_server[0])
+    name = f"healthy_seekend_{uuid.uuid4().hex[:8]}.bin"
+    payload = bytes(range(256)) * 4096  # 1 MiB
+    backend.write(name, payload)
+
+    with backend.read(name) as stream:
+        assert stream.seek(0, 2) == len(payload), "seek-to-end must report the real size"
+        assert stream.read() == b"", "the true end has no bytes after it"
+
+        assert stream.seek(-8, 2) == len(payload) - 8
+        assert stream.read(8) == payload[-8:], "a negative offset must land 8 bytes from the end"
+
+        # SEEK_SET after SEEK_END: the probe must not have disturbed the
+        # handle's own position bookkeeping.
+        assert stream.seek(0) == 0
+        assert stream.read(4) == payload[:4]
+
+
+@pytest.mark.spec("SIO-011")
+def test_seek_to_end_raises_when_the_server_refuses_to_size_the_handle() -> None:
+    """A server that refuses ``CMD_FSTAT`` gets an error, where it used to get ``0``.
+
+    This is the only case where SIO-011 changes behaviour on a connection that
+    is not stalled, which is why it is asserted apart from the stall. FSTAT is
+    optional in the SFTP protocol: a minimal or embedded server may serve
+    streamed reads while answering ``SSH_FX_OP_UNSUPPORTED`` to a stat on the
+    open handle. paramiko's ``_get_size`` swallowed that refusal under its bare
+    ``except`` and returned ``0``, so the seek answered ``0`` on a readable file
+    — the same wrong answer as the stalled case, reached with nothing stalled.
+
+    Both directions are asserted against the same server, because "now raises"
+    means little beside an unstated alternative: the raw paramiko handle, which
+    is what the wrapper used to delegate to, still swallows the refusal here and
+    answers ``0`` on a 16-byte file. That is the pre-clause behaviour reproduced
+    rather than described, and if paramiko ever drops the bare ``except`` this
+    half fails and takes the contrast with it.
+
+    **Such a server is not otherwise healthy, and the surrounding assertions say
+    where the line falls.** Path-based ``stat`` is left working, so
+    ``get_file_info`` sizes the file and ``exists`` answers; the streamed
+    ``read`` and a ``SEEK_SET`` seek work, because neither needs the handle's
+    size. ``read_bytes`` does *not* — paramiko's prefetch stats the handle — and
+    it raised on this server before this change as much as after, which is worth
+    pinning here so the failure is not misread as one SIO-011 introduced.
+    """
+    from tests.backends.sftp._helpers import (
+        NoFstatStubSFTPServer,
+        start_sftp_server,
+        stop_sftp_server,
+    )
+
+    tmpdir = tempfile.mkdtemp(prefix="sftp_nofstat_")
+    thread, port, _host_key, stop_event, sock = start_sftp_server(
+        root=tmpdir, host="127.0.0.1", server_class=NoFstatStubSFTPServer
+    )
+    try:
+        backend = _make_backend(port)
+        name = f"nofstat_{uuid.uuid4().hex[:8]}.bin"
+        payload = b"0123456789abcdef"
+        backend.write(name, payload)
+
+        # Where the line falls: everything that does not need the handle's size.
+        assert backend.get_file_info(name).size == len(payload)
+        assert backend.exists(name) is True
+
+        with backend.read(name) as stream:
+            assert stream.read(4) == payload[:4], "a streamed read needs no handle stat"
+
+            with pytest.raises(RemoteStoreError) as caught:
+                stream.seek(0, 2)
+            # The exact type, not just the base class. A refused FSTAT arrives
+            # as ``OSError`` with no errno on a *healthy* connection, so
+            # ``_map_exception`` falls past every branch — including
+            # ``_is_connection_dead`` — to the generic ``RemoteStoreError``.
+            # That is the right answer (nothing is wrong with the connection),
+            # and it differs from the stalled case's ``BackendUnavailable``,
+            # which the migration guide has to tell a caller apart. Asserting
+            # the base class alone let the guide and this test drift: the guide
+            # said to catch ``BackendUnavailable`` and would not have caught
+            # this.
+            assert type(caught.value) is RemoteStoreError, (
+                f"expected the generic RemoteStoreError on a healthy connection, got "
+                f"{type(caught.value).__name__}; if the mapping has changed, the "
+                "migration guide's error table changes with it"
+            )
+
+            assert stream.seek(2) == 2, "a SEEK_SET seek is local and must still work"
+            assert stream.read(3) == payload[2:5]
+
+        # Pre-existing, and pinned so it is not read as this clause's doing:
+        # paramiko's prefetch stats the handle, so the buffered read already
+        # failed on such a server before SIO-011 existed.
+        with pytest.raises(RemoteStoreError):
+            backend.read_bytes(name)
+
+        # The pre-clause behaviour, on the same server: the raw handle the
+        # wrapper used to delegate to swallows the refusal and answers 0.
+        raw = backend._sftp.file(backend._sftp_path(name), "r")
+        try:
+            raw.seek(0, 2)
+            assert raw.tell() == 0, (
+                "expected paramiko's _get_size to swallow the refusal and answer 0; "
+                "if this is now the real size or an error, the bare except is gone "
+                "and this test's contrast has lost its subject"
+            )
+        finally:
+            with contextlib.suppress(Exception):
+                raw.close()
+    finally:
+        stop_sftp_server(thread, stop_event, sock)
+        shutil.rmtree(tmpdir, ignore_errors=True)

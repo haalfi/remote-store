@@ -1,0 +1,352 @@
+id: BK-357
+title: "A SEEK_END seek hides its own stall, so the futile-close guard cannot arm"
+trigger: >-
+  BK-355 bounded the release of a failed SFTP stream and then had to leave one
+  case stated as an exception in SFTP-030: a SEEK_END seek. paramiko resolves it
+  through _get_size(), whose whole body is `try: return self.stat().st_size`
+  under a bare `except: return 0`, so a stalled channel made the seek answer 0
+  on a file of any size and raise nothing. Nothing reached the wrapper's mapper,
+  so the guard stayed unarmed, the close paid the bound a second time, and the
+  dead client stayed cached. The wrong answer was the worse half: a caller
+  sizing a file by seeking to its end could not tell a dead channel from an
+  empty file.
+source_items:
+  - BK-357
+  - BK-355
+  - BK-354
+audience:
+  - user.api
+  - user.api_docs
+  - user.site
+expected_ripples:
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/specs/006-streaming-io.md
+  - sdd/specs/009-sftp-backend.md
+  - docs-src/guides/backends/sftp.md
+  - docs-src/guides/troubleshooting.md
+  - docs-src/guides/retry.md
+  - docs-src/reference/migration.md
+  # The three the schema names verbatim as this field's canonical examples, and
+  # the three I left out: backlogid.json after any BACKLOG/BACKLOG-DONE edit
+  # (BK 355 -> 357), and both graph artifacts after a public-API docstring
+  # change — SFTPBackend's io_timeout paragraph, which also moved the class down
+  # 24 lines, so graph.json's "line" for it is re-stamped.
+  - sdd/backlogid.json
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+surprising_ripples:
+  # The `[Unreleased]` entries for BK-354 and BK-355 both state the SEEK_END
+  # case as live behaviour and both count SFTP-030's exceptions at two. Nothing
+  # in the ripple-check anticipates editing a *sibling item's* CHANGELOG entry:
+  # its "CHANGELOG entry" row is about adding your own stub. They ship in the
+  # same release as this fix, so a reader meets all three at once and two of
+  # them contradict the third.
+  - CHANGELOG.md
+  # CONTRIBUTING § Release Phase 1 names CHANGELOG, BACKLOG-DONE, FEATURES,
+  # README, guides and DEVELOPMENT_STORY, and does not name migration.md, so
+  # the upgrade note for a breaking change had no owner in the checklist. Found
+  # by asking where to put this change's note, not by any row.
+  #
+  # **The reason first given for it was false, and the way it was false is the
+  # point.** I argued a PR *cannot* own a migration entry because the version
+  # pair does not exist until Phase 2 names it, deriving that from `git log --
+  # docs-src/reference/migration.md` returning two commits. This checkout is a
+  # shallow clone (`git rev-parse --is-shallow-repository` -> true; the apparent
+  # root 21d2329 is a graft), so that log is truncated: against full history the
+  # path has 11 commits, and 6f5cfff (BK-302, a feature PR making a breaking
+  # change) added its own `## v0.28.0 to v0.29.0` section four days before
+  # v0.29.0 shipped. Round 5's measuring member caught it. A `git log` in a
+  # shallow clone answers a different question than the one it looks like it
+  # answers, and nothing in the ripple-check or the gates flags that.
+  - CONTRIBUTING.md
+  # Deleting SFTP-030's SEEK_END exception deleted the only test asserting the
+  # "that fails" qualifier on its Postconditions. The qualifier stayed true —
+  # the silent close is still silent — but its one live instance was a figure
+  # in prose with no gate behind it. A ripple from a *deletion*, which the
+  # table's rows are not shaped to find: they ask what references the thing you
+  # changed, and nothing references a test by the clause it happens to hold up.
+  - tests/backends/sftp/test_io_timeout.py
+  # Round 3's measuring member enumerated SEEK_END across the whole test tree
+  # and found no conformance case seeks to the end on any backend — so a branch
+  # of the *shared* wrapper, which every backend's read() stream passes through,
+  # had run against one real server only. No ripple-check row asks "does
+  # conformance exercise the path you changed?"; the Spec-section row asks for
+  # tests marked with the clause ID, and this PR had two of those, both SFTP's.
+  # The rows are shaped around the artifact changed, not the surface it serves.
+  - tests/backends/conformance/test_streaming.py
+  # The consumer subject. No ripple-check row asks "does the extension that
+  # consumes this path still behave as your prose says?" — the rows reach from
+  # the changed artifact outwards, and ext/arrow.py neither imports nor mentions
+  # _ErrorMappingStream's seek. It was reached only because the subject list
+  # carried it as `not reached` to the end and the user asked for it closed.
+  - tests/ext/test_arrow.py
+# Named commits, per the schema's review_rounds description, which asks for the
+# list rather than a rule: naming it is what makes the judgement checkable. The
+# field counts **commits** that exist because review feedback was incorporated,
+# which is the schema's own definition and what BK-355's trace counted. From
+# `git log --oneline origin/master..HEAD`:
+#   0dca365  implementation — does not count
+#   1fa628b  round 1's findings
+#   c2f9a7c  round 2's findings
+#   e5b268a  round 2's trace steps, split out of c2f9a7c
+#   4538e76  round 3's findings
+#   b9c7d91  round 4's findings
+#   08ede48  round 5's findings
+#   72693b0  the consumer subject, closed on the user's instruction and
+#            counted per the schema's "feedback that produced a commit"
+#   6554b2f  the closing gate's findings
+# Two kinds of commit on this branch are deliberately not counted, because
+# neither carries review feedback: a1a0de7, the merge of origin/master taken to
+# resolve the conflict BUG-259 created in CHANGELOG, BACKLOG-DONE,
+# backlogid.json and graph_viz.html; and any commit that edits this field and
+# nothing else, which is stated as a class rather than a SHA because such a
+# commit cannot name itself.
+# Three earlier drafts of this field were wrong, in three different ways, and
+# the list above is the only form that has survived a round. The first gave a
+# rule (`git rev-list --count origin/master..HEAD` minus one) to avoid naming a
+# SHA that did not exist yet, and went stale inside the very commit that added
+# it. The second named the commits but stopped at the commit before the one
+# writing them, and annotated the total "rounds, not commits" — redefining the
+# field against its own schema. The third wrote "this commit" for the unwritten
+# entry, which resolved for exactly as long as it was the head and then named
+# the wrong commit for three commits running. So the list above names only SHAs
+# that resolve: the entry that could not be named when it was first written is
+# named now that it can be.
+# The value is stale again on any further commit by construction, which is why
+# the schema calls it a post-merge field: re-derive at merge from that same
+# log, counting everything but 0dca365 and any merge commit, and do not
+# increment.
+review_rounds: 8
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-357 (item)"
+        read_type: gate
+        extract: "Two defects, the wrong answer being the worse; and the open question the item leaves undecided"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Pre-work index"
+        read_type: gate
+        extract: >-
+          Triggered rows: Spec section, Bug fix, Backlog item touched, CHANGELOG
+          entry. All four delivered. Tagged unclear for what the index has no
+          row for and this change needed twice: a *sibling* item's unreleased
+          CHANGELOG entry stating the bug as live behaviour, and the ripples of
+          a deletion — the rows all ask what references the thing you changed,
+          which finds nothing when what you removed is a test holding a spec
+          clause up.
+        outcome: unclear
+      - file: sdd/BACKLOG.md
+        section: "BK-356, BK-358 (items)"
+        read_type: reference
+        extract: >-
+          BK-356 argues this should land first; BK-358 owns the unmapped-exception
+          breach, which bounds how far the probe's error handling may go
+        outcome: ok
+
+  - id: spec
+    name: Read the clauses under change
+    steps:
+      - file: sdd/specs/006-streaming-io.md
+        section: "SIO-010"
+        read_type: gate
+        extract: "The guard is armed by an exception reaching _fail; both classes that defeat it"
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030"
+        read_type: gate
+        extract: >-
+          The two stated exceptions and the load-bearing "that fails" qualifier.
+          Retrospective: the qualifier's demonstrating case was the seek this
+          change removes, which the section does not say and I did not see until
+          the sweep.
+        outcome: ok
+
+  - id: reproduce
+    name: Run paramiko rather than read it
+    steps:
+      - file: src/remote_store/_stream.py
+        section: "_ErrorMappingStream.seek, __init__"
+        read_type: reference
+        extract: >-
+          The seek delegates whence untouched, and is_fatal is the shape an
+          opt-in hook takes here
+        outcome: ok
+      - file: src/remote_store/backends/_s3_boto3.py
+        section: "_S3RangeReader.seek"
+        read_type: reference
+        extract: >-
+          Resolves SEEK_END from a _size it already holds — no round-trip, so
+          nothing to swallow. This, with Azure's shape, is what decided the item's
+          open question for opt-in over a wrapper-wide probe. Retrospective: two
+          reads of two backends were enough to decide correctly and not enough to
+          *describe* the set — I generalised them to all five other backends
+          (round 1), then to the wrong Azure call site (round 2).
+        outcome: ok
+      - file: src/remote_store/backends/_azure.py
+        section: "_AzureRangeReader.seek"
+        read_type: reference
+        extract: >-
+          Local SEEK_END resolution from a captured size; the second half of that
+          evidence. Retrospective: I read the reader without reading which method
+          builds it. It is `read_seekable`'s; `AzureBackend.read()` wraps the
+          forward-only `_AzureBinaryIO` a few dozen lines earlier, in the method
+          above, so Azure sits on both sides of the enumeration and no
+          per-backend sentence about it can be right.
+        outcome: ok
+      # The three reads below happened during round 1's fix pass, not before it,
+      # and are recorded here rather than omitted: the first draft of the opt-in
+      # paragraph was written from two call sites, and these are the reads that
+      # should have preceded it. Round 2 flagged their absence from this phase.
+      - file: src/remote_store/backends/_s3.py
+        section: "read()"
+        read_type: reference
+        extract: >-
+          Wraps an fsspec file, not a range reader. fsspec's
+          AbstractBufferedFile.seek computes `nloc = self.size + loc` for
+          whence 2, from a size held on the handle — read with inspect.getsource
+          rather than assumed.
+        outcome: ok
+      - file: src/remote_store/backends/_s3_pyarrow.py
+        section: "_PyArrowBinaryIO.seek, read()"
+        read_type: reference
+        extract: >-
+          Delegates seek to a pyarrow NativeFile and returns its tell(), so
+          SEEK_END is resolved a layer below anything this wrapper can see
+        outcome: ok
+      - file: src/remote_store/backends/_http.py
+        section: "read(), HttpResponse.body"
+        read_type: reference
+        extract: >-
+          No range reader and no size: the body defines neither seek nor
+          seekable, so IOBase.seekable() answers False and a SEEK_END never
+          reaches a size at all. The bullet this replaced had claimed HTTP
+          resolved one. Retrospective: I read this module and generalised from
+          it to "a forward-only RawIOBase adapter per transport", which the two
+          sibling transport modules would have refuted — the stdlib one passes
+          http.client.HTTPResponse straight through, a BufferedIOBase and no
+          adapter at all. Round 3 caught it.
+        outcome: ok
+
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds"
+        read_type: gate
+        extract: >-
+          Its own docstring sets the terms for its deletion: a failure means the
+          swallow is gone. Replaced with an asserting test rather than edited.
+        outcome: ok
+      - file: tests/test_stream.py
+        section: "TestFutileCloseGuard"
+        read_type: reference
+        extract: >-
+          The opt-in shape to mirror — a test on the wrapper's default, not on
+          what the five other backends pass
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "(full)"
+        read_type: gate
+        extract: "Assertion depth and spec tracing for the new SIO-011 cases"
+        outcome: ok
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/_stream.py
+        section: "seek, __init__ docstring"
+        read_type: reference
+        extract: >-
+          size_probe resolves the end and delegates an absolute seek, which is
+          local on a paramiko handle; the caught tuple stays as it was
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "read(), io_timeout docstring"
+        read_type: reference
+        extract: "_sftp_handle_size issues CMD_FSTAT on the open handle, not CMD_STAT on the path"
+        outcome: ok
+
+  - id: docs
+    name: Sweep the artifacts that state the bug as behaviour
+    steps:
+      - file: docs-src/guides/backends/sftp.md
+        section: "Bounding a stalled transfer"
+        read_type: reference
+        extract: >-
+          The warning admonition keeps two cases but swaps the second: the
+          SEEK_END seek's bullet goes, the silent close takes its place, and the
+          seek moves to body prose. Retrospective: this step said "drops from
+          two cases to one" and was true for three commits, until round 4 put a
+          second bullet back and edited this file in the same commit without
+          revisiting the step.
+        outcome: ok
+      - file: docs-src/guides/troubleshooting.md
+        section: "SFTP reports a file as empty"
+        read_type: reference
+        extract: "Section deleted — the symptom has no live cause; its one inbound link goes with it"
+        outcome: ok
+      - file: docs-src/guides/retry.md
+        section: "SFTP"
+        read_type: reference
+        extract: "'A stall paramiko swallows internally' now names the silent close, not the seek"
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Release / Phase 1"
+        read_type: reference
+        extract: >-
+          migration.md is absent from the content-freeze list, so a breaking
+          change's upgrade note has no owner in Phase 1. Added as a backstop:
+          the line now says a PR making the break may write its own section
+          ahead of the release, because the bump table above it fixes the
+          version pair for a pre-1.0 break before Phase 2 stamps it.
+          Retrospective: the line's first draft said the opposite — that a PR
+          *cannot* own an entry — and I derived that from a `git log` in a
+          shallow clone that hid 9 of the path's 11 commits, 6f5cfff among
+          them. The document was silent, not wrong; the false premise was
+          mine, which is why this is tagged unclear and not misleading.
+        outcome: unclear
+
+  - id: verify
+    name: Ripple-check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Detailed checklist"
+        read_type: verify
+        extract: "Bug fix, Backlog item touched, CHANGELOG entry, Spec section rows"
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030 / 'Not every stall surfaces'"
+        read_type: verify
+        extract: >-
+          Both exception counts and the qualifier's demonstrating case. Caught
+          the deleted gate here, which is why the silent-close test is in this PR
+          rather than filed.
+        outcome: ok
+      - file: src/remote_store/ext/arrow.py
+        section: "StoreFileSystemHandler.open_input_file"
+        read_type: verify
+        extract: >-
+          The consumer subject, closed last and by running it rather than
+          reading it. Five artifacts had said "a Parquet footer read is exactly
+          seek(-n, SEEK_END)" — the migration guide, the CHANGELOG, the
+          conformance docstring, the wrapper's unit test and the SFTP
+          healthy-channel test: the seven paths in `git show 72693b0 --stat`
+          less this trace and tests/ext/test_arrow.py, which the same commit
+          added. Its own message named four, dropping the last;
+          tracing the wrapper's seeks under a real
+          pq.read_table over SFTP showed both halves wrong. open_input_file has
+          three tiers and materialises anything at or below materialization_threshold
+          (64 MB default), so a small Parquet file reaches the wrapper zero
+          times; above it PyArrow sizes with seek(0, SEEK_END), not a negative
+          offset. Claim corrected in all five and pinned by
+          TestParquetOverSftpReachesTheSizeProbe, which asserts both tiers.
+          Tagged ok, not misleading: this file's docstring names the three tiers
+          and the threshold plainly. I asserted the consumer's behaviour across
+          four artifacts without opening the module that implements it, which is
+          my miss and not a document's.
+        outcome: ok

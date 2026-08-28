@@ -117,11 +117,12 @@ retried, including the SFTP session setup and any stall bounded by
 matters for a stalled transfer: retrying one would restart a stream the caller
 may already have read from, so it is deliberately not retried.
 
-Not retried is not the same as reported. A stall paramiko swallows internally is
-neither — seeking to the end of a stalled stream answers `0` instead of failing,
-so there is nothing to retry and nothing to report. See
-[the SFTP guide](backends/sftp.md#bounding-a-stalled-transfer) for what to use
-instead.
+Not retried is not the same as unreported: a stall that reaches the caller
+raises `BackendUnavailable`, and the backend drops the dead client so the next
+operation reconnects. A stall paramiko swallows inside its own machinery is
+neither — releasing a stalled handle that never failed costs the bound, reports
+nothing, and leaves the dead connection in place for the next operation. See
+[the SFTP guide](backends/sftp.md#bounding-a-stalled-transfer).
 
 ### S3
 

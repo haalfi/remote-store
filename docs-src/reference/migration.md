@@ -6,6 +6,55 @@ Breaking changes and upgrade paths between `remote-store` versions.
 The core Store API is stable, but extensions may evolve. This page documents
 changes that require action when upgrading.
 
+## v0.30.0 to v0.31.0
+
+**Seeking to the end of an SFTP stream raises where it used to answer `0`:**
+
+`SFTPBackend`'s streams resolve `seek(offset, os.SEEK_END)` by asking the server
+for the file's size. That request used to go out through paramiko, which
+discards its failure and reports a size of `0` — so on a stalled connection, or
+against a server that refuses to stat an open handle, the seek returned `0` for
+a file of any size and raised nothing. The backend now issues the request
+itself, so the failure surfaces.
+
+```python
+# Before (v0.30.0): a wrong answer, indistinguishable from an empty file
+with store.read("data.bin") as stream:
+    size = stream.seek(0, os.SEEK_END)   # 0, on a 1 GiB file, no error
+
+# After (v0.31.0): the failure reaches you
+with store.read("data.bin") as stream:
+    size = stream.seek(0, os.SEEK_END)   # raises
+```
+
+**What to change.** Code that treated a `0` from seek-to-end as "empty file" was
+reading a wrong answer. Catch [`RemoteStoreError`](api/errors.md), which covers
+both causes — the two do **not** raise the same subclass, and that is deliberate
+rather than an oversight:
+
+| Cause | Raises | Why |
+|-------|--------|-----|
+| A stalled connection | `BackendUnavailable` | The connection is dead; the cached client is dropped and the next operation reconnects |
+| A server refusing to stat the handle | `RemoteStoreError` | The connection is healthy and nothing is wrong with it — only this one request is refused |
+
+Sizing a file with `get_file_info(path).size` is unaffected and always reported
+the failure.
+
+**You may not have written the seek.** SFTP streams report themselves seekable,
+so `read_seekable()` hands them to analytical readers such as PyArrow, which
+size a file with `seek(0, os.SEEK_END)` before reading its footer. If such a
+read previously returned empty or nonsense against a flaky SFTP endpoint, this
+is why, and it now raises instead. This applies to reads large enough to stream:
+the PyArrow adapter materialises anything at or below its
+`materialization_threshold` and never seeks the stream at all — see the
+[PyArrow adapter guide](../guides/pyarrow-adapter.md) for that setting.
+
+**Scope:** SFTP only. Every other backend resolves an end-relative seek without
+a request that can fail, and their streams are byte-for-byte unchanged. The
+failure also arrives one `io_timeout` sooner than before on a stalled
+connection, because the release of a condemned stream no longer pays the bound a
+second time.
+
 ## v0.29.1 to v0.30.0
 
 **SFTP `write()` / `write_atomic()` no longer return a `last_modified` timestamp:**

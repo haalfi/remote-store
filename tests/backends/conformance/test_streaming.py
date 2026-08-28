@@ -170,6 +170,63 @@ class TestStreamingConformance:
         finally:
             stream.close()
 
+    @pytest.mark.spec("SIO-008")
+    @pytest.mark.spec("SIO-011")
+    def test_seek_to_end_reports_the_true_size(self, backend: Backend) -> None:
+        """An end-relative seek answers the real size on every seekable backend.
+
+        SIO-011 splits the backends in two: one hands the shared stream wrapper
+        a ``size_probe`` and the wrapper resolves ``SEEK_END`` itself, and the
+        rest delegate the end-relative seek to their own stream exactly as they
+        always did. Which is which is the spec's business, not this layer's —
+        what makes the case belong *here* is that it is the one assertion
+        holding both halves to the same answer, so a probe that drifts from the
+        delegating path fails in conformance rather than in whichever backend
+        introduced it.
+
+        Until this was added, no conformance test seeked to the end at all:
+        every ``.seek()`` in this directory passed an offset and no whence.
+        ``SEEK_END`` appeared under ``tests/`` in three files, none of them
+        here — the shared wrapper's own unit stubs, one backend's stalled-channel
+        suite, and one backend's range-reader suite. So the wrapper's
+        ``SEEK_END`` branch had been exercised against a single in-process stub
+        server whose ``stat()`` is a local ``os.fstat``, and the Stage-2 lane —
+        the one that exists to catch real-server differences — never reached the
+        path SIO-011 changed.
+
+        It does now, but only where Stage 2 runs: ``--stage=2`` collection lists
+        the containerised fixtures here while a default local run does not, so
+        CI is what actually executes them.
+
+        The negative offset is the shape that matters, and it is asserted
+        because ``seek(0, SEEK_END)`` alone would pass against an implementation
+        that ignored the caller's offset entirely. It is the case where an
+        off-by-one in the wrapper's own arithmetic shows.
+
+        Read with a bare ``stream.read()`` rather than a sized call, for the
+        reason the sibling test above gives: an unbuffered ``RawIOBase`` stream
+        is permitted to short-read on ``read(n)``.
+        """
+        _require(backend, Capability.SEEKABLE_READ)
+        payload = b"0123456789abcdef"
+        backend.write("seek_end.bin", payload)
+        stream = backend.read("seek_end.bin")
+        try:
+            assert stream.seek(0, io.SEEK_END) == len(payload), (
+                "seek-to-end must report the file's real size, not a swallowed 0"
+            )
+            assert stream.read() == b"", "nothing follows the true end"
+
+            assert stream.seek(-6, io.SEEK_END) == len(payload) - 6
+            assert stream.read() == payload[-6:], "a negative offset must land 6 bytes from the end"
+
+            # The probe must not disturb the handle's own position bookkeeping:
+            # an absolute seek after an end-relative one still answers from 0.
+            assert stream.seek(0) == 0
+            assert stream.read() == payload
+        finally:
+            stream.close()
+
 
 @pytest.mark.extended_conformance
 @pytest.mark.parametrize("backend", fixture_params(Capability.WRITE), indirect=True)

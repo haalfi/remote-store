@@ -530,6 +530,30 @@ def _load_host_keys_from_string(ssh: Any, keys_content: str) -> None:
 
 # endregion
 
+# region: stream helpers
+
+
+def _sftp_handle_size(handle: Any) -> int:
+    """Size an open ``SFTPFile`` over the wire, letting a failure surface.
+
+    ``_ErrorMappingStream`` calls this to resolve ``SEEK_END`` instead of
+    delegating to paramiko's ``SFTPFile.seek``, whose ``_get_size()`` is
+    ``try: return self.stat().st_size`` under a bare ``except: return 0``.  The
+    swallow made a stalled seek answer ``0`` on a file of any size and raise
+    nothing, so the failure never reached the wrapper's mapper: the
+    dead-connection guard stayed unarmed, the close paid ``io_timeout`` a second
+    time, and the cached client was left in place.
+
+    ``SFTPFile.stat()`` issues ``CMD_FSTAT`` against the open handle rather than
+    ``CMD_STAT`` against a path, which is both what ``_get_size`` calls and the
+    answer a caller of *this* stream wants: a file replaced under the path while
+    the handle is open cannot substitute its size here.
+    """
+    return int(handle.stat().st_size)
+
+
+# endregion
+
 
 class SFTPBackend(Backend):
     """SFTP backend using pure paramiko.
@@ -576,19 +600,13 @@ class SFTPBackend(Backend):
             blocking forever. Must be positive when set; ``0`` is rejected
             because paramiko reads it as non-blocking. A streamed ``read``
             raises rather than returning short, so a truncated transfer is
-            never mistaken for a complete one. Every stall *that surfaces* is
+            never mistaken for a complete one. Seeking to the end of a stream
+            (``seek(0, SEEK_END)``) asks the server for the file size, so a
+            stall there raises like any other. Every stall *that surfaces* is
             reported, and none is retried: the ``retry`` policy wraps the SSH
             connect call alone, so a partially consumed stream is never
             silently restarted — and a stall during session setup is reported
             too, rather than retried as a connect failure would be.
-            **One operation answers rather than raising, once this is set:**
-            seeking to the end of a stream (``seek(0, SEEK_END)``) asks the
-            server for the file size, and on a stalled connection paramiko
-            discards the failure and reports ``0`` — so the seek returns ``0``
-            for a file of any size, reports nothing, and leaves the dead
-            connection in place. Use ``get_file_info(path).size`` where a stall
-            must surface. See the SFTP guide for the same case from a caller's
-            side.
         connect_kwargs: Extra kwargs passed to ``SSHClient.connect()``.
     """
 
@@ -825,8 +843,16 @@ class SFTPBackend(Backend):
                 # ``is_fatal`` is ``_handle``'s guard, applied to the one handle
                 # ``_handle`` cannot reach: the wrapper owns this close, so a
                 # stall would otherwise pay ``io_timeout`` again on the way out
-                # (SIO-010, SFTP-030).
-                raw = _ErrorMappingStream(f, self._map_exception, path, is_fatal=self._is_connection_dead)
+                # (SIO-010, SFTP-030). ``size_probe`` is what gives that guard
+                # something to arm on a ``SEEK_END`` seek, whose failure
+                # paramiko would otherwise swallow (SIO-011).
+                raw = _ErrorMappingStream(
+                    f,
+                    self._map_exception,
+                    path,
+                    is_fatal=self._is_connection_dead,
+                    size_probe=_sftp_handle_size,
+                )
                 return io.BufferedReader(cast(io.RawIOBase, raw))  # noqa: TC006
             except Exception:
                 f.close()

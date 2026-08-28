@@ -111,28 +111,23 @@ session setup as well as later transfers. Setting it through the
 [escape hatch](#escape-hatch) instead does not survive those reconnects, because
 each one opens a fresh channel.
 
-!!! warning "Two cases it does not cover"
-    **A wedged SSH daemon.** A server that opens the SSH channel and then never
-    answers the `sftp` subsystem request still hangs, regardless of
-    `io_timeout`: paramiko waits for that reply on an untimed event, so no
-    channel timeout applies, and every reconnect re-enters that window. It needs
-    a wedged SSH daemon rather than a wedged SFTP subsystem, so it is rarer than
-    the stall this option does cover — but if a peer hangs with `io_timeout`
-    set, this is the shape to suspect.
+!!! warning "Two limits, different in kind"
+    **A wedged SSH daemon is not bounded at all.** A server that opens the SSH
+    channel and then never answers the `sftp` subsystem request still hangs,
+    regardless of `io_timeout`: paramiko waits for that reply on an untimed
+    event, so no channel timeout applies, and every reconnect re-enters that
+    window. It needs a wedged SSH daemon rather than a wedged SFTP subsystem, so
+    it is rarer than the stall this option does cover — but if a peer hangs with
+    `io_timeout` set, this is the shape to suspect.
 
-    **Seeking to the end of a stalled stream, which answers wrongly rather than
-    failing.** `stream.seek(0, os.SEEK_END)` asks the server for the file's
-    size. On a stalled connection paramiko discards that failure internally and
-    reports a size of `0`, so the seek returns `0` for a file of any size and
-    raises nothing — indistinguishable from a genuinely empty file. Nothing
-    reports the stall and the dead connection is not dropped, so the next
-    operation waits again. Size files with `get_file_info(path).size` instead,
-    which raises `BackendUnavailable` on a stalled connection and drops the
-    dead client.
-
-    You may not be the one writing the seek. See
-    [SFTP reports a file as empty](../troubleshooting.md#sftp-reports-a-file-as-empty)
-    for how it presents and what to check.
+    **Releasing a handle that never failed is bounded but silent.** Closing a
+    stream you have not read to a failure on a stalled connection waits one
+    `io_timeout` and then returns normally: paramiko catches that timeout inside
+    its own close, so nothing is raised, `remote-store` logs nothing, and the
+    dead connection stays cached for the next operation to wait on again. You
+    see the delay, not the cause — paramiko's own DEBUG logging shows the close
+    going out, but nothing there names the stall either. A stream whose read
+    *did* fail costs nothing extra: that close is skipped.
 
 A stall that surfaces is reported, and no stall is retried: the connect-phase
 `RetryPolicy` does not cover one, so a partially consumed stream is never
@@ -140,9 +135,16 @@ silently restarted underneath you.
 A streamed **read** raises rather than returning short, so a truncated transfer
 is never mistaken for a complete one — discard the handle and start again, since
 the bytes already delivered are a valid prefix but the handle is dead. The
-backend drops the dead client, so the next operation reconnects. Both of those
-hold for reading; neither holds for the seek-to-end case above, which is why it
-is called out rather than left to the general rule.
+backend drops the dead client, so the next operation reconnects.
+
+Seeking to the end of a stream (`stream.seek(0, os.SEEK_END)`) asks the server
+for the file's size, so it is bounded and reported like any other operation on
+the channel. Worth knowing because you may not be the one writing the seek:
+`read_seekable()` hands the stream to analytical readers such as PyArrow, and a
+reader that sizes a file internally reaches it the same way — for files large
+enough to stream. The [PyArrow adapter](../pyarrow-adapter.md) materialises
+anything at or below its `materialization_threshold` and never seeks the stream
+at all.
 
 !!! tip "Choosing a value"
     Size it against the longest legitimate pause your server can produce — an
