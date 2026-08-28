@@ -601,10 +601,8 @@ class SFTPBackend(Backend):
             because paramiko reads it as non-blocking. A streamed ``read``
             raises rather than returning short, so a truncated transfer is
             never mistaken for a complete one. Seeking to the end of a stream
-            (``seek(0, SEEK_END)``) asks the server for the file size and
-            raises like any other stalled operation: paramiko discards that
-            failure and answers ``0``, so the wrapper issues the size request
-            itself rather than delegating it. Every stall *that surfaces* is
+            (``seek(0, SEEK_END)``) asks the server for the file size, so a
+            stall there raises like any other. Every stall *that surfaces* is
             reported, and none is retried: the ``retry`` policy wraps the SSH
             connect call alone, so a partially consumed stream is never
             silently restarted — and a stall during session setup is reported

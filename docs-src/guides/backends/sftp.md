@@ -111,14 +111,22 @@ session setup as well as later transfers. Setting it through the
 [escape hatch](#escape-hatch) instead does not survive those reconnects, because
 each one opens a fresh channel.
 
-!!! warning "One case it does not cover"
-    **A wedged SSH daemon.** A server that opens the SSH channel and then never
-    answers the `sftp` subsystem request still hangs, regardless of
-    `io_timeout`: paramiko waits for that reply on an untimed event, so no
-    channel timeout applies, and every reconnect re-enters that window. It needs
-    a wedged SSH daemon rather than a wedged SFTP subsystem, so it is rarer than
-    the stall this option does cover — but if a peer hangs with `io_timeout`
-    set, this is the shape to suspect.
+!!! warning "Two limits, different in kind"
+    **A wedged SSH daemon is not bounded at all.** A server that opens the SSH
+    channel and then never answers the `sftp` subsystem request still hangs,
+    regardless of `io_timeout`: paramiko waits for that reply on an untimed
+    event, so no channel timeout applies, and every reconnect re-enters that
+    window. It needs a wedged SSH daemon rather than a wedged SFTP subsystem, so
+    it is rarer than the stall this option does cover — but if a peer hangs with
+    `io_timeout` set, this is the shape to suspect.
+
+    **Releasing a handle that never failed is bounded but silent.** Closing a
+    stream you have not read to a failure on a stalled connection waits one
+    `io_timeout` and then returns normally: paramiko catches that timeout inside
+    its own close, so nothing is raised, nothing is logged, and the dead
+    connection stays cached for the next operation to wait on again. You see the
+    delay, not the cause. A stream whose read *did* fail costs nothing extra —
+    that close is skipped.
 
 A stall that surfaces is reported, and no stall is retried: the connect-phase
 `RetryPolicy` does not cover one, so a partially consumed stream is never

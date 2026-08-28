@@ -184,13 +184,15 @@ class TestStreamingConformance:
         delegating path fails in conformance rather than in whichever backend
         introduced it.
 
-        Until this was added, no conformance test seeked to the end at all
-        (``rg 'SEEK_END' tests/`` reached only this file's siblings, the
-        wrapper's own unit stubs, and one backend's range-reader suite), so the
-        wrapper's ``SEEK_END`` branch had been exercised against a single
-        in-process stub server whose ``stat()`` is a local ``os.fstat``. The
-        Stage-2 lane — the one that exists to catch real-server differences —
-        never reached the path SIO-011 changed.
+        Until this was added, no conformance test seeked to the end at all:
+        every ``.seek()`` in this directory passed an offset and no whence.
+        ``SEEK_END`` appeared under ``tests/`` in three files, none of them
+        here — the shared wrapper's own unit stubs, one backend's stalled-channel
+        suite, and one backend's range-reader suite. So the wrapper's
+        ``SEEK_END`` branch had been exercised against a single in-process stub
+        server whose ``stat()`` is a local ``os.fstat``, and the Stage-2 lane —
+        the one that exists to catch real-server differences — never reached the
+        path SIO-011 changed.
 
         It does now, but only where Stage 2 runs: ``--stage=2`` collection lists
         the containerised fixtures here while a default local run does not, so

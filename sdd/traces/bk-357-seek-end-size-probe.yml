@@ -67,19 +67,26 @@ surprising_ripples:
   # The rows are shaped around the artifact changed, not the surface it serves.
   - tests/backends/conformance/test_streaming.py
 # Named commits, per the schema's review_rounds description, which asks for the
-# list rather than a rule: naming it is what makes the judgement checkable.
+# list rather than a rule: naming it is what makes the judgement checkable. The
+# field counts **commits** that exist because review feedback was incorporated,
+# which is the schema's own definition and what BK-355's trace counted:
 #   0dca365  implementation — does not count
-#   1fa628b  round 1's five findings
-#   c2f9a7c  round 2's six findings
+#   1fa628b  round 1's findings
+#   c2f9a7c  round 2's findings
 #   e5b268a  round 2's trace steps, split out of c2f9a7c
-# Rounds, not commits: round 2 landed two. An earlier draft of this field gave
-# the rule `git rev-list --count origin/master..HEAD` minus one instead, to
-# avoid naming a SHA that did not exist yet — but that rule counts commits, so
-# it read 3 for two rounds, and it went stale inside the very commit that added
-# it. The schema's own example answers the objection: name the SHAs that exist
-# when the trace is written, and re-derive on the next round rather than
-# incrementing.
-review_rounds: 2
+#   4538e76  round 3's findings
+#   this commit  round 4's findings
+# Two earlier drafts of this field were wrong and the second was wrong twice
+# over. The first gave a rule (`git rev-list --count origin/master..HEAD` minus
+# one) to avoid naming a SHA that did not exist yet, and went stale inside the
+# very commit that added it. The second named the commits but stopped at the
+# commit before the one writing them, and annotated the total "rounds, not
+# commits" — redefining the field against its own schema. The value is stale
+# again on the next commit by construction, which is why the schema calls it a
+# post-merge field: re-derive it at merge with `git log --oneline
+# origin/master..HEAD`, count everything but the implementation commit, and do
+# not increment.
+review_rounds: 5
 phases:
   - id: orient
     name: Orient
@@ -155,9 +162,9 @@ phases:
           Local SEEK_END resolution from a captured size; the second half of that
           evidence. Retrospective: I read the reader without reading which method
           builds it. It is `read_seekable`'s; `AzureBackend.read()` wraps the
-          forward-only `_AzureBinaryIO` fifteen lines earlier, so Azure sits on
-          both sides of the enumeration and no per-backend sentence about it can
-          be right.
+          forward-only `_AzureBinaryIO` a few dozen lines earlier, in the method
+          above, so Azure sits on both sides of the enumeration and no
+          per-backend sentence about it can be right.
         outcome: ok
       # The three reads below happened during round 1's fix pass, not before it,
       # and are recorded here rather than omitted: the first draft of the opt-in
