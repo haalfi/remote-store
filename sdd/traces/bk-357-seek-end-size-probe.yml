@@ -27,6 +27,14 @@ expected_ripples:
   - docs-src/guides/backends/sftp.md
   - docs-src/guides/troubleshooting.md
   - docs-src/guides/retry.md
+  # The three the schema names verbatim as this field's canonical examples, and
+  # the three I left out: backlogid.json after any BACKLOG/BACKLOG-DONE edit
+  # (BK 355 -> 357), and both graph artifacts after a public-API docstring
+  # change — SFTPBackend's io_timeout paragraph, which also moved the class down
+  # 24 lines, so graph.json's "line" for it is re-stamped.
+  - sdd/backlogid.json
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
 surprising_ripples:
   # The `[Unreleased]` entries for BK-354 and BK-355 both state the SEEK_END
   # case as live behaviour and both count SFTP-030's exceptions at two. Nothing
@@ -50,14 +58,27 @@ surprising_ripples:
   # table's rows are not shaped to find: they ask what references the thing you
   # changed, and nothing references a test by the clause it happens to hold up.
   - tests/backends/sftp/test_io_timeout.py
-# Derivation, stated as a rule rather than a list, per the schema's
-# review_rounds description: `git rev-list --count origin/master..HEAD` minus
-# one. Every commit on this branch except 0dca365 exists because a review round
-# found something; 0dca365 is the implementation. Written as a rule because the
-# value counts commits, lives inside one of them, and grows with every round —
-# any enumeration is wrong the moment the commit carrying it is made, and naming
-# a not-yet-created SHA is the failure the schema calls worse than no derivation
-# at all. Run the command at merge and subtract one.
+  # Round 3's measuring member enumerated SEEK_END across the whole test tree
+  # and found no conformance case seeks to the end on any backend — so a branch
+  # of the *shared* wrapper, which every backend's read() stream passes through,
+  # had run against one real server only. No ripple-check row asks "does
+  # conformance exercise the path you changed?"; the Spec-section row asks for
+  # tests marked with the clause ID, and this PR had two of those, both SFTP's.
+  # The rows are shaped around the artifact changed, not the surface it serves.
+  - tests/backends/conformance/test_streaming.py
+# Named commits, per the schema's review_rounds description, which asks for the
+# list rather than a rule: naming it is what makes the judgement checkable.
+#   0dca365  implementation — does not count
+#   1fa628b  round 1's five findings
+#   c2f9a7c  round 2's six findings
+#   e5b268a  round 2's trace steps, split out of c2f9a7c
+# Rounds, not commits: round 2 landed two. An earlier draft of this field gave
+# the rule `git rev-list --count origin/master..HEAD` minus one instead, to
+# avoid naming a SHA that did not exist yet — but that rule counts commits, so
+# it read 3 for two rounds, and it went stale inside the very commit that added
+# it. The schema's own example answers the objection: name the SHAs that exist
+# when the trace is written, and re-derive on the next round rather than
+# incrementing.
 review_rounds: 2
 phases:
   - id: orient
@@ -128,7 +149,7 @@ phases:
           (round 1), then to the wrong Azure call site (round 2).
         outcome: ok
       - file: src/remote_store/backends/_azure.py
-        section: "_RangeReader.seek"
+        section: "_AzureRangeReader.seek"
         read_type: reference
         extract: >-
           Local SEEK_END resolution from a captured size; the second half of that
@@ -162,10 +183,14 @@ phases:
         section: "read(), HttpResponse.body"
         read_type: reference
         extract: >-
-          No range reader and no size: the body is a forward-only RawIOBase
-          adapter per transport, defining neither seek nor seekable, so a
-          SEEK_END never reaches a size at all. The bullet this replaced had
-          claimed HTTP resolved one.
+          No range reader and no size: the body defines neither seek nor
+          seekable, so IOBase.seekable() answers False and a SEEK_END never
+          reaches a size at all. The bullet this replaced had claimed HTTP
+          resolved one. Retrospective: I read this module and generalised from
+          it to "a forward-only RawIOBase adapter per transport", which the two
+          sibling transport modules would have refuted — the stdlib one passes
+          http.client.HTTPResponse straight through, a BufferedIOBase and no
+          adapter at all. Round 3 caught it.
         outcome: ok
 
   - id: tests

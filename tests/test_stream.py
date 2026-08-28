@@ -607,13 +607,17 @@ class TestSeekEndSizeProbe:
     def test_without_a_probe_the_inner_swallow_still_answers(self) -> None:
         """The hook is opt-in, and this is the behaviour every other stream keeps.
 
-        The six non-SFTP construction sites supply no probe, and they reach
-        ``SEEK_END`` by three different routes -- a size captured at open, a size
-        held on the handle, or not at all, because two of them wrap forward-only
-        streams. SIO-011 enumerates them; what matters here is only that the
-        wrapper does not start probing on their behalf, which is what this pins,
-        on the same shape ``test_without_a_predicate_a_failure_never_skips_the_close``
-        pins for the close.
+        The six non-SFTP construction sites supply no probe, and none of them
+        resolves ``SEEK_END`` by a request it could then discard -- SIO-011
+        enumerates the routes they take instead. Deliberately not restated here:
+        that enumeration has been wrong in three successive review rounds, once
+        in each artifact that copied it, so this docstring links rather than
+        paraphrases (CONTENT-RULES rule 4).
+
+        What matters at this level is only that the wrapper does not start
+        probing on their behalf, which is what this pins, on the same shape
+        ``test_without_a_predicate_a_failure_never_skips_the_close`` pins for the
+        close.
         """
         inner = _ParamikoSeekEndStream(b"0123456789", stat_exc=_ChannelDeath("channel stalled"))
         stream = _ErrorMappingStream(inner, _test_mapper, "f.txt", is_fatal=_fatal)

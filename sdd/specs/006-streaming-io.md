@@ -183,21 +183,26 @@ runs on the success path. It also has no generic form: the wrapper holds no size
 of its own, so an unconditional version would need a per-backend source anyway.
 What decided it is that **paramiko is the only inner stream measured to discard
 its own size failure**. The enumeration below is by *construction site* rather
-than by backend, because two backends build the wrapper twice over different
-inner streams and a per-backend list gets them wrong — an earlier draft
-attributed Azure's range reader to its `read()`, which does not use it:
+than by backend, because `AzureBackend` builds the wrapper twice over two
+different inner streams and a per-backend list gets it wrong — an earlier draft
+attributed Azure's range reader to its `read()`, which does not use it. The six
+non-SFTP sites reach `SEEK_END` by **four** routes:
 
 - **A size captured at open, added to the offset.** `_S3RangeReader.seek`, which
-  `S3Boto3Backend` uses for both `read()` and `read_seekable()`; and
-  `_AzureRangeReader.seek`, which `AzureBackend` uses for `read_seekable()`
-  alone.
+  `S3Boto3Backend` builds once in `_open_range_stream` and serves to both
+  `read()` and `read_seekable()`; and `_AzureRangeReader.seek`, which
+  `AzureBackend` builds for `read_seekable()` alone.
 - **A size held on the handle.** `S3Backend.read()` wraps an fsspec file, whose
   `AbstractBufferedFile.seek` computes `self.size + loc`.
 - **Resolved inside the inner implementation.** `S3PyArrowBackend.read()` wraps
-  a pyarrow `NativeFile` through `_PyArrowBinaryIO`.
+  a pyarrow `NativeFile` through `_PyArrowBinaryIO`, which passes the whence
+  down and returns the resulting position.
 - **Not seekable at all.** `AzureBackend.read()` wraps `_AzureBinaryIO`, and
-  `ReadOnlyHttpBackend.read()` wraps its transport's response adapter — all
-  forward-only `RawIOBase` subclasses defining neither `seek` nor `seekable`.
+  `ReadOnlyHttpBackend.read()` wraps whatever body its transport yields — an
+  adapter over the response for the `requests` and `httpx` transports, and the
+  `http.client.HTTPResponse` itself for the stdlib one. None defines `seek` or
+  `seekable`, so `IOBase.seekable()` answers `False` for all three; the shared
+  fact is the missing methods, not a shared base class.
 
 None of those has a failure for a probe to repair, so probing on their behalf
 would buy a round-trip per seek and nothing else — or, on the forward-only

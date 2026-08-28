@@ -195,22 +195,25 @@ if evidence changes; these are retired.
   rather than symmetry. The wrapper holds no size of its own, so an
   unconditional version would need a per-backend source anyway; and paramiko is
   the only inner stream measured to discard its own size failure. The other six
-  construction sites reach `SEEK_END` by three different routes, none with
-  anything for a probe to repair: `_S3RangeReader.seek` (S3-boto3's `read` and
-  `read_seekable` both) and `_AzureRangeReader.seek` (Azure's `read_seekable`)
-  add `offset` to a `_size` captured at open; `S3Backend`'s fsspec handle
-  computes `self.size + loc` from a size it holds; `S3PyArrowBackend` defers to
-  a pyarrow `NativeFile`; and `AzureBackend.read()`'s `_AzureBinaryIO` and
-  `ReadOnlyHttpBackend.read()`'s response adapter are forward-only `RawIOBase`
-  subclasses defining neither `seek` nor `seekable`.
-  **The enumeration is by construction site because two rounds got it wrong by
-  backend.** A first draft called all five other backends "range readers
-  resolving from a size they hold" (round 1); its replacement then attributed
-  Azure's range reader to `AzureBackend.read()`, which does not use it, and
-  counted five sites as four (round 2). Azure builds the wrapper twice over
-  different inner streams, so no per-backend sentence can be right about it.
+  construction sites reach `SEEK_END` by four routes, none with anything for a
+  probe to repair; SIO-011 enumerates them, and this entry does not restate
+  them for the reason below.
+  **The enumeration was wrong in three successive rounds, each time in the
+  artifact that copied it.** A first draft called all five other backends "range
+  readers resolving from a size they hold" — true of three (round 1). Its
+  replacement attributed Azure's range reader to `AzureBackend.read()`, which
+  does not use it, and counted five sites as four (round 2). Its replacement
+  called four routes three, said two backends build the wrapper twice when only
+  Azure does, and described all three HTTP transports as `RawIOBase` adapters
+  when the stdlib one hands back an `http.client.HTTPResponse` — a
+  `BufferedIOBase`, and no adapter at all (round 3).
+  Two lessons, and the second is the one that stuck: enumerate by construction
+  site, because Azure builds the wrapper twice over different inner streams and
+  no per-backend sentence can be right about it; and **keep one copy**, because
+  each round fixed the spec and left a paraphrase somewhere else to go stale.
   Those sites supply no probe and delegate unchanged, pinned by a unit test on
-  the *wrapper's* default rather than on what any of them passes.
+  the *wrapper's* default rather than on what any of them passes, and by a
+  conformance case that seeks to the end on every `SEEKABLE_READ` backend.
   **Scope kept off one adjacent thing, and pulled onto another.** The caught
   tuple is unchanged, so a `paramiko.SFTPError` from the probe still escapes
   unmapped exactly as one from a read does — BK-358, not narrowed here. But

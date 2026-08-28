@@ -117,11 +117,13 @@ class _ErrorMappingStream(io.RawIOBase):
             **is** a round-trip, and it is called on the success path before any
             failure is known.  Supply it only for an inner stream that resolves
             ``SEEK_END`` by a request it can then discard -- paramiko's
-            ``SFTPFile`` is the one measured to do so.  Omitted everywhere else:
-            a ranged reader already holds its size, and a forward-only response
-            adapter is not seekable at all.  Where it is omitted the seek
-            delegates exactly as before, so no stream pays a probe on another's
-            behalf.
+            ``SFTPFile`` is the one measured to do so.  Every other stream this
+            wrapper serves reaches ``SEEK_END`` by some route with no such
+            request in it, so all of them omit the probe and their seek
+            delegates exactly as before; no stream pays a probe on another's
+            behalf.  The routes themselves are enumerated once, in the spec --
+            not here, because paraphrasing that list is what made it wrong in
+            three successive reviews.
     """
 
     def __init__(
