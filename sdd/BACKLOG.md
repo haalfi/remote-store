@@ -574,7 +574,10 @@ compliant the day before.
   which returned empty rather than raising. If that path is reachable
   mid-transfer it contradicts SFTP-030's repeated claim that "a streamed read
   raises rather than returning short, so a truncated transfer is never mistaken
-  for a complete one", which is asserted rather than characterised by a test.
+  for a complete one". That claim *is* characterised by a test
+  (`test_streaming_read_raises_rather_than_truncating`), but only against a
+  **stall** — a silent peer, which raises `socket.timeout`. No test covers the
+  drop, which is the fault this item is about.
   Not measured against a real dropped socket, so it is recorded as an open
   question rather than as a defect — but it is the first thing to establish
   here, because it decides whether widening the tuple is sufficient.

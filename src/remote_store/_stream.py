@@ -70,9 +70,14 @@ class _ErrorMappingStream(io.RawIOBase):
     that never comes, so the caller pays ``io_timeout`` a second time with
     nothing to explain the wait.  A backend that can recognise such a failure
     passes *is_fatal*; once it returns ``True`` for a mapped exception, the inner
-    close is skipped.  The handle is then released by the peer's own teardown or
-    at collection -- for paramiko, ``SFTPFile.__del__`` calls
-    ``_close(async_=True)``, which sends ``CMD_CLOSE`` without waiting for it.
+    close is skipped.  The handle is then released by the peer's own teardown, or
+    at collection **of this wrapper** -- ``close`` does not drop ``_inner``, so
+    the handle stays reachable through it for as long as the closed stream
+    object itself is held.  For paramiko, that collection runs
+    ``SFTPFile.__del__`` -> ``_close(async_=True)``, which sends ``CMD_CLOSE``
+    without waiting.  A caller that retains closed streams therefore retains
+    the dead connection with them; the backend has already dropped its own
+    reference by then, so this wrapper is what keeps the transport alive.
 
     The verdict is taken when the failure is mapped rather than at close time, so
     the stream records a ``bool`` instead of holding the exception: keeping the

@@ -1024,7 +1024,14 @@ def test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds(stall_relay: _S
     # Two-sided, unlike a lower bound alone: `> 1.75x` passes at ten bounds and
     # at an indefinite hang, and no pytest-timeout is configured, so a regression
     # to a genuinely unbounded wait would hang the suite rather than fail here.
-    assert io_timeout * 1.75 < elapsed < io_timeout * 3, (
+    # Two-sided, unlike the lower bound alone: `> 1.75x` passes at ten bounds and
+    # at an indefinite hang, and no pytest-timeout is configured, so a regression
+    # to a genuinely unbounded wait would hang the suite rather than fail here.
+    # The ceiling is 5x rather than 3x to leave this the same relative headroom
+    # the file's other elapsed assertions have — they allow 3x an expected ~1x,
+    # and this expects ~2x — while still failing well below the 6x a third
+    # round-trip would cost.
+    assert io_timeout * 1.75 < elapsed < io_timeout * 5, (
         f"seek-to-end plus release took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "
         "expected ~2x — one bound swallowed inside the seek and one paid by the close. "
         "Below the band, the swallow is gone and SFTP-030's exception should go with it; "

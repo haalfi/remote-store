@@ -106,10 +106,14 @@ inside its own close, and the wrapper suppresses what reaches it. Measured on
 stalling: 4.00 s before the guard and 2.00 s after.
 
 **The handle is not leaked, but it is not released synchronously either.** It is
-freed by the peer's own teardown of the dead connection, or at collection —
-paramiko's `SFTPFile.__del__` calls `_close(async_=True)`, which sends
-`CMD_CLOSE` without waiting for a reply. The clause trades a synchronous release
-that cannot succeed for an asynchronous one that costs the caller nothing.
+freed by the peer's own teardown of the dead connection, or at collection **of
+the wrapper** — the skip leaves the inner handle bound, so it stays reachable for
+as long as the closed stream object is held, which is later than the handle's own
+collection would be. At that point paramiko's `SFTPFile.__del__` calls
+`_close(async_=True)`, which sends `CMD_CLOSE` without waiting for a reply. The
+clause trades a synchronous release that cannot succeed for an asynchronous one
+that costs the caller nothing, and a caller retaining closed streams retains the
+dead connections with them.
 
 **The limit of the mechanism.** The guard is armed by an exception *reaching*
 `_fail`, so anything that stops one arriving defeats it — whether the transport

@@ -247,6 +247,22 @@ phases:
           path, where no mapped failure has occurred and the guard is inert. No
           invariant mentions _ErrorMappingStream.close, so nothing to amend.
         outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "test_read_stream_eoferror_maps_and_reconnects"
+        read_type: verify
+        extract: >-
+          Round 7 asked whether the guard's deferred close is safe under
+          `filterwarnings = ["error", ...]`: the skip leaves a real SFTPFile to
+          be closed at collection, and anything SFTPFile.__del__ raises reaches
+          pytest as PytestUnraisableExceptionWarning and becomes a failure
+          attributed to whichever test the GC lands in. This repo has been bitten
+          by that class twice (BUG-224, BK-304). Run rather than reasoned:
+          `pytest tests/backends/sftp/ tests/test_stream.py -p randomly` twice,
+          once with `-W error::pytest.PytestUnraisableExceptionWarning`, gave 279
+          passed and no unraisable exception either time. A negative result over
+          two randomised runs, not a proof — recorded so the next reader knows it
+          was checked and how far the check goes.
+        outcome: ok
       - file: docs-src/guides/backends/sftp.md
         section: "Bounding a stalled transfer"
         read_type: verify

@@ -130,10 +130,9 @@ each one opens a fresh channel.
     which raises `BackendUnavailable` on a stalled connection and drops the
     dead client.
 
-    You may not be the one writing the seek: `read_seekable()` exists to hand
-    a stream to analytical readers such as PyArrow, and a reader that sizes a
-    file internally reaches this without any seek appearing in your code —
-    over SFTP, the likelier route than a hand-written one.
+    You may not be the one writing the seek. See
+    [SFTP reports a file as empty](../troubleshooting.md#sftp-reports-a-file-as-empty)
+    for how it presents and what to check.
 
 A stall that surfaces is reported, and no stall is retried: the connect-phase
 `RetryPolicy` does not cover one, so a partially consumed stream is never
