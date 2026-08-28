@@ -198,9 +198,17 @@ class TestAddressing:
         They now run on ``graph_replay``, so this is no longer the only cover;
         it is kept because the conformance fixture is rooted under a
         ``base_path`` and this one is not, and the bare-root arm is where the
-        defect was. The root-*refusal* cells below are still conformance-
-        unreachable: rejecting a root write costs Graph an HTTP round trip
-        first, so those cells do need a cassette.
+        defect was.
+
+        The root-*refusal* cells below are conformance-unreachable for a reason
+        worth stating precisely, because the obvious one is wrong: it is not
+        that refusing costs Graph a round trip — the guards refuse from the key
+        before a request exists, which is what lets those cells run with no
+        ``respx.mock`` at all. It is that the conformance cells **seed**
+        through ``write`` to set up, and *that* write needs a cassette. The
+        distinction decides what can be pinned where: the close-posture cell
+        never seeds, so the Graph lane executes it inside conformance and it is
+        where the closed-guard ordering breach was caught.
         """
         backend = _make()
         assert backend.native_path(".") == backend.native_path("")
@@ -371,8 +379,21 @@ class TestBasePath:
     @pytest.mark.spec("GR-027")
     @pytest.mark.parametrize(
         "dst",
-        ["x.txt", "dir/x.txt", "./x.txt", "a/.", "a/./", "x.txt/.", "a/./b", "dir/./x.txt", "/x.txt"],
-        ids=range(9),
+        [
+            "x.txt",
+            "dir/x.txt",
+            "./x.txt",
+            "a/.",
+            "a/./",
+            "x.txt/.",
+            "a/./b",
+            "dir/./x.txt",
+            "/x.txt",
+            "a b/c#d",
+            "report.",
+            "p/q+r",
+        ],
+        ids=range(12),
     )
     def test_move_destination_and_write_address_the_same_node(self, dst: str) -> None:
         """The whole destination address, name half included, agrees with ``write``.
@@ -390,11 +411,37 @@ class TestBasePath:
         per row: the property is that one key names one node however this
         backend is asked, and a literal would pin today's spelling of the answer
         instead of the agreement.
+
+        ``name`` is compared through ``_encode_segment`` because the body
+        carries it **raw** while ``parentReference.path`` and ``native_path``
+        are percent-encoded. The first version of this cell compared it raw and
+        so held only over basenames needing no encoding — the same weakness it
+        was written to correct in its sibling above, one level up. The last
+        three params are here for that: a space, a ``#``, a ``+``, and a
+        trailing dot, each of which ``_encode_segment`` touches.
         """
         backend = _make()
         body = backend._move_copy_body(dst)
-        addressed = f"{body['parentReference']['path']}/{body['name']}"
+        addressed = f"{body['parentReference']['path']}/{_encode_segment(body['name'])}"
         assert addressed == backend.native_path(dst).removesuffix(":")
+
+    @pytest.mark.spec("GR-058")
+    @pytest.mark.spec("BE-029")
+    @pytest.mark.parametrize("base", ["", ".", "./", ".//"], ids=["empty", "dot", "dot-slash", "dot-slash-slash"])
+    def test_root_spelled_base_path_scopes_at_the_drive_root(self, base: str) -> None:
+        """A ``base_path`` naming the root scopes at the root, under every spelling.
+
+        ``_base_segments`` was the fourth key splitter in this module to use its
+        own predicate — an ``if s`` filter, which keeps ``"."``. So
+        ``base_path="."`` scoped the whole store under a drive folder literally
+        named ``.``: every write went there, and the spelling this contract
+        treats as the root everywhere else silently meant something else.
+
+        Asserted through ``native_path`` rather than on ``_base_segments``, so
+        the cell states the consequence a user would see rather than the
+        implementation detail that produced it.
+        """
+        assert _make(base_path=base).native_path("x") == f"/drives/{_DRIVE}/root:/x:"
 
     @pytest.mark.spec("GR-058")
     def test_base_path_slashes_normalised(self) -> None:

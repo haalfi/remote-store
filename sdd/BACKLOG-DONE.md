@@ -200,8 +200,12 @@ if evidence changes; these are retired.
   Measuring the generalisation rather than narrowing the sentence found
   `S3Boto3Backend.move(src, ".")` **returning cleanly and deleting the source**,
   and `S3Backend` answering `AlreadyExists` for a destination that does not
-  exist. So the carve-out was dropped rather than argued a second time: five
-  call sites per backend, not three. On the hierarchical backends the guard now
+  exist. So the carve-out was dropped rather than argued a second time, and the
+  guard now runs at every write-shaped entry point rather than at the three
+  writers: five call sites on four of the seven classes and four on the rest,
+  since `S3Backend` and `S3Boto3Backend` open `write_atomic` with a bare
+  `return self.write(...)` and `AsyncAzureBackend` has no `open_atomic` to
+  guard. On the hierarchical backends the guard now
   changes the message rather than the verdict, which is the whole cost. The
   ordering it produces is the contract's: a root destination is refused at
   precondition step (0), before the round trip that would otherwise report the
@@ -231,7 +235,7 @@ if evidence changes; these are retired.
   now has a row per half.
   **Fenced by mutation, re-derived against the final tree** — the figures moved
   twice as review widened the change, so they are stated from the last run and
-  not from the first. Neutering the shared guard fails **93 of 8876** executed
+  not from the first. Neutering the shared guard fails **93 of 8887** executed
   cells: 34 in the SFTP module, 26 in conformance, 22 in Local's, 11 in
   `test_flat_ns`. Neutering only `SFTPBackend`'s own wrapper fails **34**, all in
   the SFTP module and **none** in conformance — with `base_path` present SFTP

@@ -14,6 +14,18 @@ The BK-324 wrong-type helpers follow the same split. The sync pair is
 exercised end-to-end by every flat-NS conformance fixture; the async pair
 only by `azurite_async`, which needs a container, so its root carve-out and
 probe short-circuit are pinned here against stub awaitables.
+
+The BUG-259 root guards are here for a different reason, and it is the one
+that most needs stating. `_reject_root_as_write_target` runs on every
+write-shaped call on every backend, so its *over-matching* half — the
+ordinary keys it must let through — is the half a backend suite cannot
+reach cheaply: a predicate matching one character too many would fail
+everywhere at once and be diagnosed as anything but a root check. Its
+under-matching half has a second reason to live here: the conformance cells
+are parametrised over the two canonical spellings only (they assert
+`is_root` on the raised path), so the wider spellings the contract requires
+are pinned by these cells and by three per-backend modules, and nowhere in
+conformance. See ID-251.
 """
 
 from __future__ import annotations

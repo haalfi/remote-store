@@ -286,7 +286,9 @@ returns the stream as-is.
   stricter one accepts `"./x"` at the guard and then names a folder literally
   called `.` on the wire, while its own `write("./x")` goes to the root. Whether
   a key names a node and *which* node it names have to be decided the same way.
-  Measured on a shipped backend, on four of seven destination spellings.
+  That has been measured on a shipped backend three separate times, in three
+  functions that each split a key their own way — so audit every one of yours,
+  not only the guard.
 - **Precondition order matters:** after the root check, a missing source raises
   `NotFound` before the destination is checked for `AlreadyExists`. (Contract
   rule.) Note the root check outranks both — a root *destination* is refused even

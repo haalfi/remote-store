@@ -247,11 +247,20 @@ implementation; `GraphBackend` reaches it through its own `_key_segments`.
 **The rule stops at the slash-and-dot spellings, and the bound is deliberate.**
 `RemotePath._normalize` folds `\` to `/` before dropping segments, so it calls
 `"\"` the root as well, and a draft of this clause required the same here. That
-was withdrawn on measurement: the shared predicate is also how `GraphBackend`
-builds every item address, so folding made `native_path("a\b")` address `a/b`
-and broke the round-trip identity [BE-025](#be-025-native_path) and NPR-005
-require of every canonical non-root key — including keys a caller would never
-think of as unusual, since `a\b` is one segment on a POSIX namespace.
+was withdrawn on measurement. The shared predicate is also how `GraphBackend`
+builds every item address, so folding made `native_path("a\b")` address the same
+node as `native_path("a/b")`: two distinct keys collided onto one address, and
+`a\b` became unaddressable as itself.
+
+**The cost is the collision, not a BE-025 breach**, and the distinction is worth
+stating because the first version of this paragraph got it wrong. `\` is
+excluded from `WellFormedPath` by PATH-002, so a backslash key is not canonical
+and [BE-025](#be-025-native_path)'s round-trip identity never covered it —
+`LocalBackend.to_key` folds `\` to `/` today, for that reason, and is conformant.
+What the fold broke is the rule this clause is about: a predicate deciding
+*refusal* and a predicate deciding *addressing* were made one function, and
+widening it moved the addressing. The reach is narrower than "any POSIX key with
+a backslash" and the class of error is the one that matters here.
 
 So a backslash-only key is **not** refused by this clause. It is the milder
 failure of the two — on a POSIX namespace it lands a file named `\` inside the
@@ -315,7 +324,7 @@ what they do reach is measured rather than assumed:
 | Backend | Reached by the conformance cells | Pinned only in its per-backend home | Pinned nowhere |
 |---------|----------------------------------|--------------------------------------|----------------|
 | `SQLQueryBackend` — fixture `sqlquery` | the query rows on the empty store (`exists` / `is_folder` / `is_file`, both spellings); addressing (`native_path` / `resolve` agreeing on both spellings, `to_key` returning the canonical root key); and the **read half** of the file-shaped-operation row — `read`, `read_bytes`, `read_seekable`, `get_file_info`, both spellings | the populated-store rows (`get_folder_info` aggregating a non-empty store), because the conformance fixture registers an empty query mapping and the suite seeds through `write` (ID-244) | — |
-| Graph — fixture `graph_replay` | addressing, under the fixture's `base_path`: `native_path` / `resolve` agreeing on both spellings, `to_key` returning the canonical root key | in `tests/backends/graph/aio/test_backend.py`: every root spelling refused by `_require_writable_key`, and the same addressing agreement with **no** `base_path` — the conformance fixture is always rooted under one, and the bare-root arm is where both defects this clause was written from lived | the query rows, the file-shaped-operation row, and both write rows — the write and destination rosters seed through `write`, so the lane skips them for want of a cassette |
+| Graph — fixture `graph_replay` | addressing, under the fixture's `base_path`: `native_path` / `resolve` agreeing on both spellings, `to_key` returning the canonical root key | in `tests/backends/graph/aio/test_backend.py`: every root spelling refused as a write target, as a `move`/`copy` destination and as a `move`/`copy` source, plus the closed-state ordering across both pre-checks, and the same addressing agreement with **no** `base_path` — the conformance fixture is always rooted under one, and the bare-root arm is where both defects this clause was written from lived | the query rows, and the five file-shaped operations other than the `move`/`copy` source. **Not** the write rows: those seed through `write`, so the conformance cells skip for want of a cassette, but the per-backend cells above pin the same guards — they refuse before a request exists, so they need no recording. The close-posture cell does not seed either, and the Graph lane executes it within conformance |
 
 The file-shaped-operation row is seven operations (`_ROOT_FILE_OPS`): the four
 reads above plus `delete`, `move` and `copy`. `SQLQueryBackend` declares no
@@ -369,11 +378,9 @@ cannot reach any cell that seeds through `write` (ID-244).
 **Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `InvalidPath` if an ancestor of `path` exists as a regular file (file-as-directory-component — see ID-209). `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out — `metadata=None` and `metadata={}` are both no-ops with respect to this gate).
 **See also:** [045-write-result.md](045-write-result.md) (WR-001 through WR-005, WR-010 through WR-012).
 **Precondition evaluation order:** Backends MUST evaluate preconditions in this
-order: (0) the root — if `path` addresses the store root under **any** spelling,
-raises `InvalidPath`, decided from the key and before any request is issued.
-"Any spelling" is wider than `is_root` and BE-029 carries the predicate: a guard
-written as `if is_root(path)` satisfies this list's wording read loosely and is
-not conformant ([BE-029](#be-029-root-path)); (1) path validity — if `path` names an
+order: (0) the root — if `path` is the store root, raises `InvalidPath`, decided
+from the key and before any request is issued ([BE-029](#be-029-root-path));
+(1) path validity — if `path` names an
 existing *directory* OR any slash-aligned ancestor of `path` is a regular file
 (file-as-directory-component, ID-209), raises `InvalidPath`; (2) overwrite
 conflict — if the file exists and `overwrite=False`, raises `AlreadyExists`;
@@ -385,6 +392,17 @@ Step (0) is numbered rather than folded into (1) because it is the one step no
 backend is exempt from: the flat-namespace exemption below releases (1), and a
 backend taking it still owes the root refusal, which needs no round trip and no
 namespace concept to decide.
+**The two ends owe different predicates, and the asymmetry is deliberate.** The
+write end — the three writers and the `move`/`copy` destination — must refuse
+**every spelling that addresses the root**, which is wider than `is_root`; see
+[BE-029](#be-029-root-path), which states why a guard written as
+`if is_root(path)` is not conformant there. The source end is held to `is_root`
+alone: `_reject_root_as_file` is the shared implementation, and every class but
+`GraphBackend` uses it. That is not an oversight being tolerated. On the read
+side an unrecognised root spelling costs a wrong error class, and on the write
+side it cost a container, which is the same asymmetry BE-029 gives for leaving
+`is_root` itself unwidened. A backend MAY refuse the source under the wider
+predicate — `GraphBackend` does — and none is required to.
 **Flat-namespace exemption:** Backends where the underlying storage has no
 native directory concept (e.g. S3, Azure non-HNS, SQL) are exempt from step
 (1): they cannot distinguish "path names a directory" from "path does not
@@ -1112,7 +1130,7 @@ raising `InvalidPath`. All other operations MUST raise appropriate errors.
 ### BE-025: native_path()
 
 **Invariant:** `native_path(path)` converts a backend-relative key to the backend-native path. The inverse of `to_key()`: `backend.to_key(backend.native_path(key)) == key`. The default implementation is the identity function — backends with a native root **must** override.
-**Root spellings:** `native_path("")` and `native_path(".")` return the same value, the bare backend root (BE-029). The round-trip identity therefore returns the canonical root key — `to_key(native_path("."))` is `""` — since one native path cannot invert to two spellings. Every non-root key **in canonical form** round-trips verbatim; a key carrying a redundant `"."` segment does not, and for the same reason — `native_path("a/./b")` and `native_path("a/b")` are one address, which can only invert to one key. So the identity is exact over the keys `to_key` produces, and lossy over the wider set a caller may hand `native_path` directly (measured on `GraphBackend`: 9 of 10 probe keys verbatim, the exception being the dot-segment class). The identity-default implementation normalises both root spellings for the same reason.
+**Root spellings:** `native_path("")` and `native_path(".")` return the same value, the bare backend root (BE-029). The round-trip identity therefore returns the canonical root key — `to_key(native_path("."))` is `""` — since one native path cannot invert to two spellings. Every non-root key **in canonical form** round-trips verbatim; a non-canonical one need not, and for the same reason — `native_path` normalises, and one address cannot invert to the several keys that produced it. The lossy classes are exactly the ones `WellFormedPath` (PATH-002 through PATH-008) already excludes: a redundant `"."` segment, an empty segment (leading, trailing or doubled slash), and on backends that fold it, a backslash. Measured on `GraphBackend`, `native_path("a/./b")`, `native_path("dir/")`, `native_path("a//b")` and `native_path("/a")` each invert to the canonical key rather than the caller's spelling. So the identity is exact over the keys `to_key` produces and over every canonical key, and lossy over the wider set a caller holding a `Backend` directly may hand `native_path`. The identity-default implementation normalises both root spellings for the same reason.
 **Postconditions:** Pure, deterministic, total (never raises). The returned path is usable with the native handle from `unwrap()`.
 **Overrides:** `LocalBackend` (prepends root dir), `S3Backend` (prepends bucket), `S3PyArrowBackend` (prepends bucket), `SFTPBackend` (prepends base_path), `AzureBackend` (prepends container).
 **Example:** `S3PyArrowBackend(bucket="lake").native_path("data/file.parquet")` returns `"lake/data/file.parquet"`.

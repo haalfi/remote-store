@@ -276,9 +276,15 @@ class GraphBackend(AsyncBackend):
         self._token_provider = token_provider
         self._base_url = base_url.rstrip("/")
         # GR-058: scope every key under this drive subfolder. Normalised to a
-        # slash-trimmed segment list so native_path / parentReference prepend it
-        # and keys returned to callers stay base_path-relative.
-        self._base_segments = [s for s in base_path.split("/") if s]
+        # segment list so native_path / parentReference prepend it and keys
+        # returned to callers stay base_path-relative. Split by _key_segments,
+        # the one predicate that decides what addresses something here: an
+        # `if s` split kept "." as a segment, so base_path="." scoped the whole
+        # store under a drive folder literally named "." (measured) instead of
+        # at the drive root, which is what "." names everywhere else in this
+        # contract. This was the fourth key splitter in this module to
+        # disagree; the other three are _key_segments' own callers.
+        self._base_segments = _key_segments(base_path)
         self._http_client = http_client
         self._owned_client: httpx.AsyncClient | None = None
         self._retry = retry if retry is not None else RetryPolicy()

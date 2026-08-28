@@ -57,10 +57,13 @@ surprising_ripples:
   - sdd/specs/003-backend-adapter-contract.md
   - tests/backends/graph/aio/test_backend.py
   - docs-src/guides/custom-backend-guide.md
+  - examples/snippets/custom_backend_guide.py
+  - tests/test_snippets.py
   - docs-src/_data/graph/graph.json
   - docs-src/explanation/graph_viz.html
 
-discovery_followups: []
+discovery_followups:
+  - ID-251
 
 # Counted from `git log --oneline origin/master..HEAD`, applying the schema's
 # test — "exists specifically because review feedback was incorporated":
@@ -71,16 +74,23 @@ discovery_followups: []
 #            re-deriving a figure for a review reply        — yes
 #   ccfe97e  round 2, all seven findings                   — yes
 #   fc2af3f  round 3, all sixteen panel findings           — yes
-#   (this)   round 4, the closing gate                     — yes
+#   f5d0ff0  round 4, the backslash withdrawal and two
+#            Graph predicate breaches                      — yes
+#   (this)   round 5, the closing gate                     — yes
 #
 # The last entry is "(this)" rather than a SHA on purpose: a commit cannot name
 # its own hash, and writing the tip's SHA here made the file stale the moment it
-# was amended into that very commit. The sibling trace uses the same form. Note
-# that the entry above it is a real SHA now and was "(this)" a commit ago: each
-# new round promotes the placeholder and adds a fresh one, and skipping that
-# promotion is how this list came to omit a round.
-# Five qualify. The field counts commits rather than rounds; the loop has run
-# four review rounds and produced five review-driven commits, because round 1's
+# was amended into that very commit. The sibling trace uses the same form.
+#
+# Promoting "(this)" to a SHA and adding a fresh one is TWO edits, and this list
+# has now dropped a round twice by doing one of them. Round 4 omitted fc2af3f;
+# round 5 added it, wrote a note saying that skipping the promotion is how the
+# omission happens, and then omitted f5d0ff0 in the same edit — one round later,
+# two reviewers found it. Re-run `git log --oneline origin/master..HEAD` and
+# count the lines before touching this block; the comment naming the command is
+# not a substitute for running it.
+# Six qualify. The field counts commits rather than rounds; the loop has run
+# five review rounds and produced six review-driven commits, because round 1's
 # reply-writing surfaced a gap of its own.
 #
 # These SHAs are post-rebase, and have now been rewritten twice — first by the
@@ -88,10 +98,10 @@ discovery_followups: []
 # invalidated by any history rewrite, not only by new work, and re-reading it
 # would never show that: the stale SHAs still look like SHAs. Re-derived from
 # the command above after each rebase. This is the argument for the "(this)"
-# entry rather than a fifth hash — the tip's own SHA cannot be written into the
-# commit that carries it, and the four below it move whenever the branch is
+# entry rather than a sixth hash — the tip's own SHA cannot be written into the
+# commit that carries it, and the five below it move whenever the branch is
 # replayed.
-review_rounds: 5
+review_rounds: 6
 
 phases:
   - id: orient
@@ -268,16 +278,19 @@ phases:
           stood when each part landed — and re-run again at every round that
           moved the tree, because this figure's subject is the test suite the
           loop keeps changing. Final: neutering the shared guard fails 93 of
-          8876 executed cells — 34 in the SFTP module, 26 in conformance, 22 in
-          Local's, 11 in test_flat_ns; SFTP's own wrapper alone, 34. Round 5
-          re-ran both, as its own predecessor's note said it would have to: the
-          numerator held and the denominator moved with nine new Graph cells,
-          so a re-read would have shown nothing wrong.
+          8887 executed cells — 34 in the SFTP module, 26 in conformance, 22 in
+          Local's, 11 in test_flat_ns; SFTP's own wrapper alone, 34. Both closing
+          rounds re-ran both fences rather than carrying them, and both times the
+          numerator held while the denominator moved with that round's own new
+          cells (8867, 8876, 8887). A re-read would have shown nothing wrong on
+          either occasion, which is the whole argument for re-running.
 
           This sentence itself held 47 of 8643 from the day it was written until
           round 4, while the same measurement in BACKLOG-DONE.md was re-derived
-          three times over the same period (80 of 8749 at round 3, then 80 of
-          8776 after the rebase, then 93 of 8858). Two artifacts in one PR
+          three times over the same period. That file's committed history, from
+          git diff across the branch commits rather than from memory: 47 of 8643,
+          then 80 of 8776 at round 2, then 93 of 8858 at round 3, then 93 of 8867
+          and 93 of 8876 at the two closing rounds. Two artifacts in one PR
           disagreeing about one number, because each round corrected the record
           it was reading and not the record it was writing in — and the trace's
           later steps, which record those corrections as events, made the file
@@ -287,10 +300,18 @@ phases:
           BUG-247's record spent a paragraph on and this trace then reproduced.
         outcome: ok
       - file: src/remote_store/backends/_sftp.py
-        section: "write, write_atomic, open_atomic"
+        section: "_reject_root_as_write_target (the SFTP wrapper)"
         read_type: verify
         extract: >-
-          Removing only SFTP's three call sites fails 34 cells, all in
+          Neutering SFTP's own wrapper — all five call sites, not the three
+          writers this step first said — fails 34 cells: 18 in
+          test_write_to_the_root_does_not_create_the_container, 12 in
+          test_write_to_the_root_leaves_no_file_at_base_path, and 4 in
+          test_move_and_copy_destination_cannot_reach_the_corruption, whose
+          presence is what shows the mutation covers the destination too. The
+          figure was right and its stated mutation was not, which the sibling
+          record described correctly all along — the two disagreed for two
+          rounds. All in
           the per-backend module and NONE in conformance — with base_path present
           SFTP already refused the root, so the conformance cell does not fence
           this item's own fix. A cell that passes before and after a fix is not
@@ -802,6 +823,82 @@ phases:
           the item's 22 does not reproduce. The total was right and its stated
           derivation was not, which is the harder case to catch — a figure that
           checks out invites nobody to run the sentence beside it.
+        outcome: ok
+
+  - id: fix_round_6
+    name: Round-6 fix pass (closing gate, second attempt)
+    steps:
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-008 step (0), spelling scope"
+        read_type: verify
+        extract: >-
+          Round 5 widened step (0) to "any spelling" and made seven shipped
+          classes non-conformant in one edit. Step (0) binds both ends of
+          move/copy; the source end is _reject_root_as_file, which is is_root
+          and unchanged, and BE-029 three paragraphs away explicitly accepts
+          that ("on the read side an unrecognised root spelling costs a wrong
+          error class"). So the same clause required and excused the same thing.
+          The fix that closed a spec defect opened one, because it was made at
+          the sentence rather than against the tree. Now the two ends carry
+          different predicates and the asymmetry is stated with its reason.
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_base_segments"
+        read_type: verify
+        extract: >-
+          The fourth key splitter, and the third round in a row to find one.
+          __init__ built _base_segments with an `if s` filter, so base_path="."
+          scoped the whole store under a drive folder literally named "." —
+          measured. Pre-existing and not a GR-058 breach as GR-058 is written,
+          but the universal claim landed in this module one round earlier ("every
+          function here that decides which node has to reach that answer the same
+          way") was false while it stood. The pattern across rounds 4, 5 and 6 is
+          the finding: each round fixed the splitter it was looking at and
+          asserted the universal, and the next round found another splitter. What
+          finally closed it was enumerating every function in the module that
+          calls split("/"), rather than following the call chain from the guard.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029 withdrawal argument; BE-025 Root spellings"
+        read_type: verify
+        extract: >-
+          The withdrawal argument cited an identity that does not cover its own
+          example. PATH-002 excludes backslash from WellFormedPath, so a
+          backslash key is not canonical and BE-025 never promised it round-trips
+          — LocalBackend.to_key folds it today and is conformant, measured at 2 of
+          7 verbatim. The withdrawal is still right and its stated reason was not:
+          the cost is that two distinct keys collided onto one address, which is
+          this clause's own rule about refusal and addressing sharing a predicate.
+          Separately, round 5's narrowing of BE-025 named the dot-segment class as
+          the exception and the predicate drops empty segments too; probed, all
+          eight non-canonical spellings are lossy and all eight canonical ones
+          verbatim, so the lossy set is exactly what WellFormedPath excludes.
+        outcome: ok
+      - file: examples/snippets/custom_backend_guide.py
+        section: "write, move, copy"
+        read_type: verify
+        extract: >-
+          The guide's own reference backend implemented the shape the guide's new
+          bullet calls non-conformant — `if not path or path == "."` at three
+          write-shaped sites — under a heading reading "Rules the code above
+          implements". The snippet file is not in this change's diff, which is why
+          four rounds of reviewers reading the guide never reached it. The three
+          write-shaped guards now use an addressable-segments predicate; the eight
+          read-shaped ones deliberately still do not, which makes the asymmetry
+          BE-008 states demonstrable in the tutorial rather than only asserted.
+          tests/test_snippets.py pinned the old messages and is the ripple: its
+          roster now carries "./" rows on the write half, so the tutorial's
+          conformance is executable rather than described.
+        outcome: misleading
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 3"
+        read_type: gate
+        extract: >-
+          Rule 3 puts exact counts out of narrative prose and scopes the
+          exemption to sdd/ records, backlog items, commit messages and skills —
+          docs-src/ guides are in scope, and a measurement written for a review
+          reply had been carried into one. The measurement's home is BE-029 and
+          the BACKLOG-DONE entry, which already carry it.
         outcome: ok
 
   - id: verify
