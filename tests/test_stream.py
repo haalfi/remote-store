@@ -69,10 +69,13 @@ class _FailingStream(io.RawIOBase):
 
 
 class _EOFStream(io.RawIOBase):
-    """Raises ``EOFError`` on every read op — how paramiko signals a channel death mid-read.
+    """Raises ``EOFError`` on every read op — a dead-connection signal the wrapper must map.
 
-    paramiko's ``_read_all`` / ``_read_response`` raise ``EOFError`` (which is
-    *not* an ``OSError``) when the channel dies during a streamed read.
+    ``EOFError`` is not an ``OSError``, so it needs its own arm in the caught
+    tuple. Deliberately *not* attributed to a paramiko call site: on the SFTP
+    read path a drop surfaces as ``SSHException`` (``_read_response`` catches
+    the ``EOFError`` and converts it) and a send-side ``EOFError`` is swallowed
+    into a short read by ``BufferedFile``. This stands in for the shape.
     """
 
     def readable(self) -> bool:
@@ -299,10 +302,11 @@ class TestErrorMappingStreamErrors:
     def test_operation_remaps_eoferror(self, action) -> None:
         """audit-020 M1: ``EOFError`` must map like ``OSError``.
 
-        paramiko raises ``EOFError`` (not an ``OSError``) on a channel death
-        mid-read. The wrapper caught only ``OSError``, so an ``EOFError`` escaped
-        raw to the ``read()`` consumer, unmapped — and for the SFTP backend that
-        also meant the dead client was never invalidated (a read-path wedge).
+        ``EOFError`` is not an ``OSError``. The wrapper caught only ``OSError``,
+        so an ``EOFError`` escaped raw to the ``read()`` consumer, unmapped — and
+        for the SFTP backend that also meant the dead client was never
+        invalidated. The arm is pinned by shape rather than by a paramiko call
+        site: see ``_EOFStream`` above for why no SFTP read path produces one.
         """
         stream = _ErrorMappingStream(_EOFStream(), _test_mapper, "f.txt")
         with pytest.raises(NotFound, match="mapped"):

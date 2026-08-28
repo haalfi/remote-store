@@ -583,8 +583,8 @@ class SFTPBackend(Backend):
             because paramiko reads it as non-blocking. A streamed ``read``
             raises rather than returning short, so a truncated transfer is
             never mistaken for a complete one. Every stall *that surfaces* is
-            reported — the seek above is the one that does not — and none is
-            retried: the ``retry`` policy wraps the SSH connect call alone, so
+            reported, and none is retried: the ``retry`` policy wraps the SSH
+            connect call alone, so
             a partially consumed stream is never silently restarted — and a
             stall during session setup is reported too, rather than retried as
             a connect failure would be.

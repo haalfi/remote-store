@@ -548,12 +548,10 @@ re-entries differently:
   nothing. Nothing reaches the wrapper's mapping path, so the futile-close guard
   below never arms and the close pays the bound a second time. Measured at a 2 s
   bound: 4.00 s (`test_seek_to_end_on_a_stalled_channel_still_costs_two_bounds`).
-  **This is the limit of what the guard can reach, and it is a general one:** the
-  guard learns a connection is dead from an exception passing through the
-  wrapper, so a failure the transport library swallows is invisible to it. Fixing
-  it means the wrapper issuing its own size probe for `SEEK_END` rather than
-  delegating to paramiko's — a change to every backend's seek path, so it is
-  filed as BK-357 rather than taken here.
+  It is an instance of the guard's general limit, which
+  [SIO-010](006-streaming-io.md) states once for the shared wrapper. BK-357
+  carries the fix: the wrapper issuing its own size probe rather than delegating
+  one that can swallow, which is a change to every backend's seek path.
   Like the bullet above, this exception is **characterised by a test**, not
   asserted; if that test fails the swallow is gone and this bullet goes with it.
 
@@ -568,17 +566,6 @@ consuming part of a `read()` and then stalling: 4.00 s for the failed reads plus
 the close before the guard, 2.00 s after
 (`test_releasing_a_stalled_stream_costs_one_bound`).
 
-**Bounded only where the stall raises**, which is the `SEEK_END` exception above
-rather than a caveat on this paragraph: the guard is armed by an exception
-travelling through the wrapper, so a stream operation whose failure paramiko
-discards leaves the connection uncondemned and the close pays the bound again.
-Sorted by what each path actually does on a stalled channel: `read`, `readinto`
-and `readline` round-trip and raise, so they arm the guard and are bounded;
-`tell` and a `SEEK_SET` / `SEEK_CUR` seek are local reads of `_realpos` that
-never round-trip, so they neither block nor arm it; and `SEEK_END` alone
-round-trips *and* swallows, which is what makes it the exception rather than one
-case among three.
-
 For a **streamed** read (`read`), a stall after the caller has consumed bytes
 raises rather than returning short, so a truncated stream is never
 indistinguishable from a complete one. The bytes already delivered are a valid
@@ -590,7 +577,8 @@ here rather than left implied.
 the whole of `_connect` (SFTP-009), so **no** stall bounded by `io_timeout` is
 retried — neither one on a caller's operation nor one in the session setup
 described above, which happens inside `_connect` but outside the retried
-closure. Every stall reaches the caller.
+closure. Every stall that surfaces reaches the caller; the exceptions above
+are the ones that do not surface at all.
 
 For an operation-level stall the exclusion is deliberate: retrying
 transparently would restart a partially consumed stream underneath a caller

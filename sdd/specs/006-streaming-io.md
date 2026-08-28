@@ -111,39 +111,19 @@ paramiko's `SFTPFile.__del__` calls `_close(async_=True)`, which sends
 `CMD_CLOSE` without waiting for a reply. The clause trades a synchronous release
 that cannot succeed for an asynchronous one that costs the caller nothing.
 
-**The limit of the mechanism, which is general rather than one backend's quirk.**
-The guard learns a connection is unusable from an exception *reaching* `_fail`,
-so anything that stops one arriving defeats it. **Two classes do, and neither is
-a gap in any backend's predicate:**
+**The limit of the mechanism.** The guard is armed by an exception *reaching*
+`_fail`, so anything that stops one arriving defeats it — whether the transport
+discarded the failure, or raised something outside the `(OSError, EOFError)`
+tuple the mapping paths catch. Neither is a gap in a backend's predicate: what
+decides is the caught tuple, not the predicate. Where a failure does not arrive,
+the close re-enters the connection exactly as it would have without this clause,
+and whatever the mapper would have done — invalidating a cached client, marking a
+session dead — is left undone too.
 
-1. **The failure is discarded by the transport**, so no exception is raised at
-   all. No predicate can classify what was never raised. The measured instance is
-   `SFTPFile.seek(offset, SEEK_END)`, whose stalled `stat` paramiko swallows
-   under a bare `except`; SFTP-030 states it as an exception and BK-357 carries
-   the fix, which is this wrapper issuing its own size probe rather than
-   delegating one that can swallow.
-2. **The failure is raised but falls outside the `(OSError, EOFError)` tuple the
-   mapping paths catch**, so it never reaches the predicate either — and, being
-   uncaught, it escapes the wrapper unmapped as well, which is a defect against
-   SIO-001 rather than only a limit on this clause. On SFTP the class is not
-   empty and includes the ordinary mid-read *drop*: paramiko's
-   `SFTPClient._read_response` converts an `EOFError` into
-   `SSHException("Server connection dropped")`, and `SFTPError` is raised for a
-   garbage packet. Measured through this wrapper, both propagate as themselves
-   rather than as a `RemoteStoreError`, and `SFTPError` does so even though the
-   backend's own predicate matches it. Tracked as BK-358.
-
-In both classes the close re-enters the connection exactly as it would have
-without this clause. The distinction that matters to a backend adopting
-`is_fatal` is that its predicate is not the thing that decides: the caught tuple
-is.
-
-A second consequence follows for any backend whose recovery is driven by the same
-exceptions: a swallowed failure also leaves whatever the mapper would have done —
-invalidating a cached client, marking a session dead — undone. The clause buys
-nothing on such a path, and says so here rather than leaving a reader to infer it
-from the invariant's scope.
+Both classes are non-empty on `SFTPBackend`, which is the only backend that has
+been measured: a `SEEK_END` seek for the first (SFTP-030 states it; BK-357
+carries the fix), and paramiko's `SSHException` / `SFTPError` for the second,
+which additionally escape unmapped in breach of BE-021 (BK-358).
 
 **See also:** SFTP-030 in [009-sftp-backend.md](009-sftp-backend.md), the bound
-this clause completes, and where that limit is stated for the one backend on
-which it is measured.
+this clause completes, and where that limit is measured.

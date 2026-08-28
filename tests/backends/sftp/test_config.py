@@ -877,13 +877,16 @@ class TestSFTPConnection:
     def test_read_stream_eoferror_maps_and_reconnects(self, sftp_backend: Backend) -> None:
         """audit-020 M1 at the SFTP level: a read-path ``EOFError`` maps + invalidates the client.
 
-        paramiko raises ``EOFError`` (not an ``OSError``) on a channel death
-        mid-read. ``read()`` wraps the handle in ``_ErrorMappingStream``, so
-        pulling bytes after the drop must surface ``BackendUnavailable``,
-        invalidate the client, and reconnect on the next read. The direct
-        ``_ErrorMappingStream`` unit test (fake mapper, no ``BufferedReader``)
-        pins none of this — dropping the wrap at ``read()`` would leave read-path
-        channel deaths escaping raw with that test still green.
+        The injected ``EOFError`` is a dead-connection *shape*, not a paramiko
+        call site: a real mid-read drop surfaces as ``SSHException`` because
+        ``_read_response`` catches the ``EOFError`` and converts it, which is
+        why this test bypasses ``_read_response`` and why it never caught the
+        gap BK-358 records. What it does pin is the wiring: ``read()`` wraps the
+        handle in ``_ErrorMappingStream``, so a caught shape must surface
+        ``BackendUnavailable``, invalidate the client, and reconnect on the next
+        read. The direct ``_ErrorMappingStream`` unit test (fake mapper, no
+        ``BufferedReader``) pins none of that — dropping the wrap at ``read()``
+        would leave it green.
         """
         assert isinstance(sftp_backend, SFTPBackend)
         sftp_backend.write("r.txt", b"payload")  # warm + a real file to read

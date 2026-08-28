@@ -204,7 +204,8 @@ file (BUG-259); a listing does not truncate silently when its container is
 deleted mid-scan (BUG-255) or when a folder vanishes part-way through a
 recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 (BUG-256); a constructor does not leak its driver's exception
-(BUG-245); one operation does not answer by payload size (BUG-253); and a newly
+(BUG-245) and neither does a stream (BK-358); one operation does not answer by
+payload size (BUG-253); and a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
 (BK-345). The spec contradiction is adjudicated — BUG-248, closed by
 [ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md) — the
@@ -528,6 +529,98 @@ compliant the day before.
   hand-written cassette would fabricate a response the tier has never produced.
   This is the item that makes the section's promise stay true for backend seven,
   which is why it sits here and not with the coverage work.
+
+- [ ] **BK-358 — Two paramiko exception shapes escape `_ErrorMappingStream` unmapped**
+  spec: BE-021, SIO-010 · effort: M · audience: user.api
+  `_ErrorMappingStream`'s mapping paths catch `(OSError, EOFError)`. Neither
+  `paramiko.SSHException` nor `paramiko.SFTPError` derives from either, so both
+  propagate out of the wrapper **unmapped**: the caller gets a raw paramiko
+  exception, where BE-021 requires that backend-native exceptions never leak and
+  SFTP-024 extends that to the caller-facing handle. This wrapper is the
+  mechanism those clauses rely on once `_errors()` has exited.
+  **This is the ordinary mid-read drop, not an exotic shape.**
+  `SFTPClient._read_response` converts the underlying `EOFError` into
+  `SSHException("Server connection dropped: ...")`, and `_read_packet` raises
+  `SFTPError("Garbage packet received")`. Measured through the wrapper with a
+  backend predicate supplied: both propagate as themselves, `_connection_lost`
+  stays `False`, and the inner close still runs — so BK-355's guard is inert on
+  exactly the shape a dropped connection takes. `SFTPError` is the sharper case,
+  because `_is_connection_dead` *does* match it: the backend's predicate
+  recognises a failure the wrapper can never hand it.
+  **Pre-existing, and not narrowed by BK-355** — the tuple has been
+  `(OSError, EOFError)` since AF-006. It surfaced during BK-355's closing review
+  because that PR's new clauses describe what the guard reaches, and describing
+  it exposed what it does not.
+  **Fix surface is why this is filed rather than folded in.** The wrapper serves
+  S3, S3-boto3, S3-PyArrow, Azure and HTTP as well as SFTP, and widening the
+  caught tuple changes what every one of them maps. Whether the widening is a
+  paramiko-specific tuple on the SFTP construction site, a second opt-in
+  parameter beside `is_fatal`, or a base-`Exception` catch with the mapper
+  deciding, is undecided — the last is the tempting one and is also the one that
+  would start mapping programming errors, which the wrapper deliberately lets
+  propagate.
+  **Needs a failing test first** (bug-fix protocol): a real dropped connection
+  mid-read, not an injected `EOFError`. The existing SFTP test that covers this
+  ground (`test_read_stream_eoferror_maps_and_reconnects`) injects `EOFError`
+  from a fake handle and so bypasses `_read_response`, which is why the gap has
+  never been caught.
+  **A related measurement, and possibly the worse half.** The `EOFError` arm of
+  the tuple has no reachable producer on the SFTP read path *either*: a
+  send-side `EOFError` from `BaseSFTP._write_all` is swallowed by
+  `BufferedFile.read` into a **short read** before it reaches the wrapper —
+  measured against `SFTPFile.read`, `readline` and `readinto`, all three of
+  which returned empty rather than raising. If that path is reachable
+  mid-transfer it contradicts SFTP-030's repeated claim that "a streamed read
+  raises rather than returning short, so a truncated transfer is never mistaken
+  for a complete one", which is asserted rather than characterised by a test.
+  Not measured against a real dropped socket, so it is recorded as an open
+  question rather than as a defect — but it is the first thing to establish
+  here, because it decides whether widening the tuple is sufficient.
+  **Filed in this section rather than beside BK-357** (which is section 4's,
+  being a cost left on the caller): the defect here is that a caller does not
+  catch one exception type, which is this section's promise verbatim.
+
+- [ ] **BK-356 — `io_timeout` should default to a real bound, not `None`**
+  spec: SFTP-030, SFTP-005 · effort: S · audience: user.api
+  BK-354 shipped `io_timeout` defaulting to `None`, so the stall it exists to
+  bound is still unbounded unless a caller opts in. The default was chosen for
+  compatibility and the reporter's objection to it was recorded rather than
+  answered (issue #970: "'no bound at all' is a surprising default given
+  `_is_connection_dead` already assumes one"). It stands unrebutted.
+  **Why the default is wrong on the library's own terms, not just on taste.**
+  `ReadOnlyHttpBackend` already defaults `timeout=30.0`, which reaches reads, so SFTP
+  is the outlier rather than the pioneer — a user meets a bounded read on HTTP
+  and an unbounded one on SFTP with no principle separating them. And the SFTP
+  recovery path (`_is_connection_dead` → `_map_exception` → cleared client) was
+  written presuming a bound exists; shipping the machinery without its trigger
+  is an internal contradiction that BK-354 documented instead of closing.
+  **Decided: `120.0`.** It is the value the SFTP guide and troubleshooting page
+  already use in their worked examples, so the docs and the default stop
+  disagreeing. Against the longest transfer #970 reports (2.0 GiB, ~70 min) a
+  120 s silence bound is 2.8% of runtime — a stall is caught inside two minutes
+  while leaving room for a server that legitimately goes quiet, e.g. an
+  antivirus or dedup appliance scanning a large file on `open()`.
+  The asymmetry is what picks the value: too high costs detection latency,
+  which is cheap because the bound is on silence *between* bytes and a slow
+  link is unaffected at any value; too low converts a healthy-but-quiet server
+  into intermittent `BackendUnavailable`, which reads as network flakiness and
+  is harder to diagnose than the hang it replaces.
+  **Breaking, and shipped as such.** Pre-1.0 (`0.30.0`, Development Status ::
+  4 - Beta) with an established `docs-src/reference/migration.md` — v0.29.0
+  made Azure's `hns` a *required* argument, a harder break than changing a
+  default that keeps an opt-out. The migration entry must lead with the opt-out
+  (`io_timeout=None` restores the old behaviour), because the reader who needs
+  it is exactly the one with a legitimately slow or quiet server. Note `0` is
+  not the opt-out: it raises `ValueError` (SFTP-005), since paramiko reads it
+  as non-blocking.
+  **No longer blocked.** BK-355 landed first, so releasing a stalled stream
+  costs one bound rather than two and the flip does not ship a doubling with it.
+  BK-357's `SEEK_END` case is what the flip does still ship, and it is worth
+  weighing as more than a doubled wait: with `io_timeout=None` the `stat` inside
+  `_get_size` blocks forever, so today that case is a hang. A real bound converts
+  the hang into a **silently wrong size of `0`**, which BK-357 argues is the worse
+  of its two defects. That is an argument for ordering BK-357 before this item,
+  not merely for noting it here.
 
 ---
 
@@ -1072,82 +1165,6 @@ here as legitimately as "built".
   **Placed above BK-356 deliberately**, per this file's ordering rule: BK-356's
   body argues this should land first, since flipping the default converts this
   case from a hang into a silent wrong answer.
-
-- [ ] **BK-358 — Two paramiko exception shapes escape `_ErrorMappingStream` unmapped**
-  spec: SIO-001, SIO-010 · effort: M · audience: user.api
-  `_ErrorMappingStream`'s mapping paths catch `(OSError, EOFError)`. Neither
-  `paramiko.SSHException` nor `paramiko.SFTPError` derives from either, so both
-  propagate out of the wrapper **unmapped**: the caller gets a raw paramiko
-  exception where SIO-001 says the wrapper exists precisely so native exceptions
-  do not leak once `_errors()` has exited.
-  **This is the ordinary mid-read drop, not an exotic shape.**
-  `SFTPClient._read_response` converts the underlying `EOFError` into
-  `SSHException("Server connection dropped: ...")`, and `_read_packet` raises
-  `SFTPError("Garbage packet received")`. Measured through the wrapper with a
-  backend predicate supplied: both propagate as themselves, `_connection_lost`
-  stays `False`, and the inner close still runs — so BK-355's guard is inert on
-  exactly the shape a dropped connection takes. `SFTPError` is the sharper case,
-  because `_is_connection_dead` *does* match it: the backend's predicate
-  recognises a failure the wrapper can never hand it.
-  **Pre-existing, and not narrowed by BK-355** — the tuple has been
-  `(OSError, EOFError)` since AF-006. It surfaced during BK-355's closing review
-  because that PR's new clauses describe what the guard reaches, and describing
-  it exposed what it does not.
-  **Fix surface is why this is filed rather than folded in.** The wrapper serves
-  S3, S3-boto3, S3-PyArrow, Azure and HTTP as well as SFTP, and widening the
-  caught tuple changes what every one of them maps. Whether the widening is a
-  paramiko-specific tuple on the SFTP construction site, a second opt-in
-  parameter beside `is_fatal`, or a base-`Exception` catch with the mapper
-  deciding, is undecided — the last is the tempting one and is also the one that
-  would start mapping programming errors, which the wrapper deliberately lets
-  propagate.
-  **Needs a failing test first** (bug-fix protocol): a real dropped connection
-  mid-read, not an injected `EOFError`. The existing SFTP test that covers this
-  ground (`test_read_stream_eoferror_maps_and_reconnects`) injects `EOFError`
-  from a fake handle and so bypasses `_read_response`, which is why the gap has
-  never been caught.
-
-- [ ] **BK-356 — `io_timeout` should default to a real bound, not `None`**
-  spec: SFTP-030, SFTP-005 · effort: S · audience: user.api
-  BK-354 shipped `io_timeout` defaulting to `None`, so the stall it exists to
-  bound is still unbounded unless a caller opts in. The default was chosen for
-  compatibility and the reporter's objection to it was recorded rather than
-  answered (issue #970: "'no bound at all' is a surprising default given
-  `_is_connection_dead` already assumes one"). It stands unrebutted.
-  **Why the default is wrong on the library's own terms, not just on taste.**
-  `ReadOnlyHttpBackend` already defaults `timeout=30.0`, which reaches reads, so SFTP
-  is the outlier rather than the pioneer — a user meets a bounded read on HTTP
-  and an unbounded one on SFTP with no principle separating them. And the SFTP
-  recovery path (`_is_connection_dead` → `_map_exception` → cleared client) was
-  written presuming a bound exists; shipping the machinery without its trigger
-  is an internal contradiction that BK-354 documented instead of closing.
-  **Decided: `120.0`.** It is the value the SFTP guide and troubleshooting page
-  already use in their worked examples, so the docs and the default stop
-  disagreeing. Against the longest transfer #970 reports (2.0 GiB, ~70 min) a
-  120 s silence bound is 2.8% of runtime — a stall is caught inside two minutes
-  while leaving room for a server that legitimately goes quiet, e.g. an
-  antivirus or dedup appliance scanning a large file on `open()`.
-  The asymmetry is what picks the value: too high costs detection latency,
-  which is cheap because the bound is on silence *between* bytes and a slow
-  link is unaffected at any value; too low converts a healthy-but-quiet server
-  into intermittent `BackendUnavailable`, which reads as network flakiness and
-  is harder to diagnose than the hang it replaces.
-  **Breaking, and shipped as such.** Pre-1.0 (`0.30.0`, Development Status ::
-  4 - Beta) with an established `docs-src/reference/migration.md` — v0.29.0
-  made Azure's `hns` a *required* argument, a harder break than changing a
-  default that keeps an opt-out. The migration entry must lead with the opt-out
-  (`io_timeout=None` restores the old behaviour), because the reader who needs
-  it is exactly the one with a legitimately slow or quiet server. Note `0` is
-  not the opt-out: it raises `ValueError` (SFTP-005), since paramiko reads it
-  as non-blocking.
-  **No longer blocked.** BK-355 landed first, so releasing a stalled stream
-  costs one bound rather than two and the flip does not ship a doubling with it.
-  BK-357's `SEEK_END` case is what the flip does still ship, and it is worth
-  weighing as more than a doubled wait: with `io_timeout=None` the `stat` inside
-  `_get_size` blocks forever, so today that case is a hang. A real bound converts
-  the hang into a **silently wrong size of `0`**, which BK-357 argues is the worse
-  of its two defects. That is an argument for ordering BK-357 before this item,
-  not merely for noting it here.
 
 
 ---

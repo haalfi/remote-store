@@ -18,17 +18,20 @@ audience:
 discovery_followups:
   - BK-357
   - BK-358
-# Counted over `git log --oneline origin/master..HEAD`, run before this line was
-# written. a9779b1 is the implementation and does not count. Four review-driven
-# commits do: 525ce32 (round 1, 5 findings), b90dba8 (three sub-points raised
-# inside round 1's findings that the first fix pass had left undone), 615691e
-# (round 2, 3 findings, one of which withdrew a spec claim this PR had made),
-# and the round-3 commit carrying this line (a panel of three, 12 findings after
-# dedup). b90dba8 is counted separately rather than folded into 525ce32 because
-# it exists for review feedback the round-1 pass did not act on, which is the
+# Re-derived from `git log --oneline origin/master..HEAD` at the round-5 fix
+# pass, not carried from the earlier value: the count had gone stale once
+# already, because each round's own fix commit adds to it. a9779b1 is the
+# implementation and does not count. Five review-driven commits do: 525ce32
+# (round 1, 5 findings), b90dba8 (three sub-points raised inside round 1's
+# findings that the first fix pass left undone), 615691e (round 2, 3 findings,
+# one withdrawing a spec claim this PR had made), eebdd13 (round 3, a panel of
+# three, 12 findings after dedup), and the round-5 commit carrying this line
+# (a closing panel, 11 findings, ~9 of them created by the round-4 pass).
+# b90dba8 is counted separately rather than folded into 525ce32 because it
+# exists for review feedback the round-1 pass did not act on, which is the
 # schema's test — "commits that exist specifically because review feedback was
 # incorporated" — not one-commit-per-round.
-review_rounds: 4
+review_rounds: 5
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
@@ -62,6 +65,13 @@ surprising_ripples:
   # from the trace entirely until round 3, because the round-1 verification
   # checked one page and the ripple is a claim, not a filename.
   - docs-src/guides/troubleshooting.md
+  # Round 4, and the third page in the same class — found two rounds after the
+  # ripple-check step was recorded `ok`. It asserted "Everything the backend
+  # does after that call returns is *reported* rather than retried", which the
+  # SEEK_END discovery falsified. Three pages carried one claim and no grep for
+  # the changed symbols reached any of them: the ripple is the claim, not the
+  # filename, and this is the strongest instance of that in the trace.
+  - docs-src/guides/retry.md
 phases:
   - id: orient
     name: Orient

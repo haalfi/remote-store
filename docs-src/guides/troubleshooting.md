@@ -170,12 +170,15 @@ rejected at construction. Use `None`, the default, for no bound.
 sizes the file before reading it finds nothing to read. Nothing is raised and
 nothing is logged, and the next operation is slow.
 
-**Cause.** A seek to the end of a stalled stream. `stream.seek(0, os.SEEK_END)`
+**Cause.** A seek to the end of a stalled stream, on a backend with
+[`io_timeout`](backends/sftp.md#bounding-a-stalled-transfer) set. Without that
+bound the same call hangs instead of answering, which is the previous symptom
+rather than this one. `stream.seek(0, os.SEEK_END)`
 asks the server for the file's size, and on a stalled connection paramiko
 discards that failure internally and reports `0` — so the seek returns `0` for a
 file of any size, raises nothing, and is indistinguishable from a genuinely
-empty file. It is the one stall that *answers* instead of failing, which is why
-it does not present as the hang above. Nothing reports it and the dead
+empty file. It is the one stall that returns a *wrong answer* rather than
+failing, which is why it does not present as the hang above. Nothing reports it and the dead
 connection is not dropped, so the following operation waits for the bound too.
 
 You may not have written the seek yourself. `read_seekable()` hands the stream

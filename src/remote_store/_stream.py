@@ -40,22 +40,21 @@ class _ErrorMappingStream(io.RawIOBase):
     """Wraps a BinaryIO stream and maps I/O exceptions through a classifier.
 
     When the caller reads from a stream returned by ``Backend.read()``, the
-    backend's ``_errors()`` context manager has already exited.  Any native
-    ``OSError`` -- or ``EOFError``, which is *not* an ``OSError`` and which
-    paramiko raises from a failed send -- would otherwise leak unmapped.  This
-    wrapper intercepts I/O methods and passes both through the backend's error
-    classifier so callers see ``RemoteStoreError`` subtypes.
+    backend's ``_errors()`` context manager has already exited, so a native
+    ``OSError`` -- or an ``EOFError``, which is *not* an ``OSError`` -- would
+    otherwise leak unmapped.  This wrapper intercepts I/O methods and passes
+    both through the backend's error classifier so callers see
+    ``RemoteStoreError`` subtypes.
 
-    **The caught tuple is the real bound on this wrapper, and it is narrower
-    than the backends it serves.**  Only ``(OSError, EOFError)`` are
-    intercepted, so an exception outside that pair propagates unmapped -- and
-    paramiko's mid-read *drop* is outside it: ``SFTPClient._read_response``
-    converts the underlying ``EOFError`` into ``SSHException("Server connection
-    dropped")``, and a garbage packet raises ``SFTPError``.  Neither derives
-    from ``OSError``, so on that path a caller sees the raw paramiko exception
-    rather than a ``RemoteStoreError``.  Stated because the paragraph above
-    previously attributed the ``EOFError`` arm to that drop, which is the one
-    case it does not cover.
+    **The caught tuple is the real bound here, and it is narrower than the
+    backends this serves.**  Only ``(OSError, EOFError)`` are intercepted, so
+    anything outside that pair propagates unmapped.  On paramiko's SFTP read
+    path neither arm catches a dropped connection: the read side converts its
+    ``EOFError`` to ``SSHException``, and a send-side ``EOFError`` is swallowed
+    by ``BufferedFile.read`` into a short read before it reaches this wrapper
+    (both measured).  A stalled channel *is* caught, as ``socket.timeout`` is
+    an ``OSError``.  Do not read the ``EOFError`` arm as covering a specific
+    paramiko path; it is there for the wrapper's other backends.
 
     Programming errors (``TypeError``, ``ValueError``, ``AttributeError``, etc.)
     are **not** caught -- they propagate normally.  That includes anything
