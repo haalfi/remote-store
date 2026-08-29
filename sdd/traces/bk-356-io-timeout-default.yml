@@ -32,14 +32,17 @@ expected_ripples:
 # Derivation, per the review_rounds description in _schema.yml: on
 # `git log --oneline origin/master..HEAD`, a4feee9 implements and does not
 # count; ef3edad and b692e12 incorporate review round 1, fb6fbb3 incorporates
-# round 2, 422d119 incorporates round 3 (the closing panel), and 1e265fd
-# incorporates round 4. Value is 4 — rounds, not commits,
-# which is why ef3edad and b692e12 count once between them, and why the
-# SHA-naming commits (8428841, 2d35d6a) count for nothing. Each SHA is written
-# after the commit it names exists rather than predicted, which is why the
-# naming lags by a commit: the schema calls a plausible SHA that resolves to
-# nothing worse than no derivation at all.
-review_rounds: 4
+# round 2, 422d119 incorporates round 3 (the closing panel), 1e265fd
+# incorporates round 4, and the round-5 fix commit is named here once it
+# exists. Value is 5 — rounds, not commits, which is why ef3edad and b692e12
+# count once between them, and why every "Name the round-N fix commit in the
+# trace" commit counts for nothing. That class is stated as a class rather than
+# listed: review round 5 caught the listed form two members short, because the
+# branch grows one such commit per round and a closed list cannot. Each SHA is
+# written after the commit it names exists rather than predicted, which is why
+# the naming lags by a commit: the schema calls a plausible SHA that resolves
+# to nothing worse than no derivation at all.
+review_rounds: 5
 
 phases:
   - id: orient

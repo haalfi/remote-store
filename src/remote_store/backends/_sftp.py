@@ -641,9 +641,10 @@ class SFTPBackend(Backend):
         if not host or not host.strip():
             raise ValueError("host must be a non-empty string")
         if io_timeout is not None and io_timeout <= 0:
-            # paramiko reads 0 as non-blocking, which would fail every read
-            # immediately rather than bounding it. Reject it here instead of
-            # letting it surface as an unexplained storm of BackendUnavailable.
+            # paramiko reads 0 as non-blocking rather than as a bound, and every
+            # SFTP request waits on a reply, so every operation would fail at
+            # once. Reject it here instead of letting it surface as an
+            # unexplained storm of BackendUnavailable.
             raise ValueError("io_timeout must be a positive number of seconds, or None")
         if isinstance(host_key_policy, str):
             host_key_policy = HostKeyPolicy(host_key_policy)

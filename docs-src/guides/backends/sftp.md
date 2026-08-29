@@ -117,7 +117,8 @@ backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=No
 ```
 
 `0` is **not** how you ask for that — it is rejected with `ValueError`, because
-paramiko reads `0` as non-blocking and every operation would fail at once.
+paramiko reads `0` as non-blocking rather than as a bound, and every SFTP
+operation waits on a reply, so all of them would fail at once.
 
 It is an ordinary option, so it is equally settable from a declarative config:
 

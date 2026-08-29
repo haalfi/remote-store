@@ -227,11 +227,11 @@ if evidence changes; these are retired.
   select the same behaviour and now select opposite ones.
   **And the half no stall test could reach**, added in review round 2: a
   transfer *slower* than the bound completes, because bytes keep arriving
-  (`test_a_transfer_slower_than_the_bound_is_not_interrupted`). Every other test
-  in the file makes the bytes stop, so the clause telling every existing
-  slow-link caller to change nothing was the one assertion in SFTP-030 that
-  nothing executed — tolerable while the option was opt-in, and load-bearing the
-  moment it became the default. `_StallRelay` gained a `throttle_download` mode
+  (`test_a_transfer_slower_than_the_bound_is_not_interrupted`). Stalling cannot
+  reach that claim — it is about what happens when the bytes keep coming — so
+  the clause telling every existing slow-link caller to change nothing was the
+  one assertion in SFTP-030 that nothing executed: tolerable while the option
+  was opt-in, and load-bearing the moment it became the default. `_StallRelay` gained a `throttle_download` mode
   for it: slow, never silent. Measured at a 1 s bound with a 0.3 s inter-piece
   gap over 256 KiB, the read completes intact in ~4 s, and the test asserts the
   elapsed time *exceeds* the bound so it cannot pass vacuously.

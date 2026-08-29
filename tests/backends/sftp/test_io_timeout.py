@@ -37,18 +37,17 @@ and one silent case, and a clause asserting a paramiko behaviour is the kind of
 claim this work has got wrong by reading rather than running, so each is
 *characterised by a test* rather than asserted.
 
-The **fault** tests are enumerated below. One relay-driven test is not among
-them and is not an omission: a transfer merely *slower* than the bound, which
-must complete (``test_a_transfer_slower_than_the_bound_is_not_interrupted``,
-driven by ``_StallRelay.throttle_download``). It is the only relay test
-asserting a success, and no arrangement of the fault tests can reach what it
-asserts — they all make the bytes stop, and the claim is about what happens when
-they do not. It is the half of SFTP-030 that tells a slow-link caller to change
-nothing, so it became load-bearing when the bound became the default.
+The enumerations below cover **faults**, not the file. Tests that stage no fault
+— construction validation, the ones asserting the bound reaches the channel, the
+healthy-channel seek cases — are not listed and are not omissions.
 
-The enumerations below cover the faults, not the file: construction validation
-and the tests that assert the bound reaches the channel stage no fault either,
-and are not listed.
+One of those unlisted tests is worth naming here because SFTP-030 rests on it:
+``test_a_transfer_slower_than_the_bound_is_not_interrupted`` covers a transfer
+merely *slower* than the bound, which must complete. Stalling cannot reach that
+claim — the claim is about what happens when the bytes keep coming — so it is
+driven by ``_StallRelay.throttle_download`` instead. It is the half of SFTP-030
+that tells a slow-link caller to change nothing, and it became load-bearing when
+the bound became the default.
 
 **Five faults it covers**, because they fail by different mechanisms and none
 implies the others:
@@ -688,11 +687,11 @@ def test_stalled_open_raises_backend_unavailable(stall_relay: _StallRelay) -> No
 def test_a_transfer_slower_than_the_bound_is_not_interrupted(stall_relay: _StallRelay) -> None:
     """A transfer that outlives the bound completes, because bytes keep arriving.
 
-    This is the half of SFTP-030 the rest of the file cannot reach. Every other
-    test here makes the bytes *stop*, and no amount of stalling shows that a
-    bound on silence does not fire on a transfer merely slower than itself.
-    The relay is throttled instead of stalled: the pump keeps forwarding, in
-    pieces, with a pause between them that stays under the bound.
+    This is the half of SFTP-030 that stalling cannot reach: no arrangement of
+    stopped bytes shows that a bound on silence does not fire on a transfer
+    merely slower than itself. The relay is throttled instead of stalled: the
+    pump keeps forwarding, in pieces, with a pause between them that stays under
+    the bound.
 
     **It is the claim the default flip made load-bearing.** Before, a caller
     opted in and picked their own number. Now it is what tells every existing
@@ -700,7 +699,7 @@ def test_a_transfer_slower_than_the_bound_is_not_interrupted(stall_relay: _Stall
     runs for an hour never trips a 120 s bound, and the troubleshooting page
     says a slow transfer is not a hung one. If those are wrong, the symptom is
     every slow-link SFTP user meeting ``BackendUnavailable`` mid-transfer on
-    upgrade. `settimeout()` is a per-recv bound rather than a cumulative one,
+    upgrade. ``settimeout()`` is a per-recv bound rather than a cumulative one,
     which is exactly the class of paramiko-behaviour claim this file exists to
     run rather than read.
 
@@ -710,10 +709,10 @@ def test_a_transfer_slower_than_the_bound_is_not_interrupted(stall_relay: _Stall
     channel*, or the test says nothing about the bound at all. Without the
     second, deleting ``settimeout()`` from ``_connect`` leaves this green: a
     throttled transfer completes slowly on an unbounded channel too, which is
-    not the claim. Relying on the rest of the file as the control was the
-    argument this file rejects one test earlier, where the version-exchange
-    control was made to pass ``io_timeout=None`` explicitly rather than lean on
-    a neighbour.
+    not the claim. Relying on the rest of the file as the control is the
+    argument this file rejects in
+    ``test_version_exchange_unbounded_when_opted_out``, which was made to pass
+    ``io_timeout=None`` explicitly rather than lean on a neighbour.
     """
     io_timeout = 1.0
     gap = 0.3  # comfortably inside the bound, so the link is slow and never silent
@@ -736,7 +735,10 @@ def test_a_transfer_slower_than_the_bound_is_not_interrupted(stall_relay: _Stall
     assert got == payload, "a throttled transfer must deliver the file intact, not a prefix"
     assert elapsed > io_timeout, (
         f"the read finished in {elapsed:.1f}s at a {io_timeout}s bound, so it never "
-        "outlived the bound and this test proves nothing — raise the gap or the payload"
+        "outlived the bound and this test proves nothing — raise the payload or lower "
+        "the piece size, which multiplies the gaps. Do NOT raise the gap itself: "
+        "throttle_download requires it to stay under the bound, and above it this "
+        "becomes a stall test"
     )
 
 

@@ -120,11 +120,19 @@ identify which list the server narrowed.
   `connect_kwargs={"disabled_algorithms": ...}`; the
   `enable_ssh_rsa_compat()` helper does not address these.
 
-## SFTP transfer hangs with no error
+## SFTP transfer stalls: hangs, or fails after two minutes
 
-**Symptom:** an SFTP read or write stops making progress and never returns.
-No exception, no log line — the call simply does not come back, and whatever
-worker or pool slot it was running on stays occupied.
+**Symptom, one of two.** Either an SFTP read or write **never returns** — no
+exception, no log line, and whatever worker or pool slot it was running on stays
+occupied — or it **returns after about two minutes** raising
+`BackendUnavailable` with an empty message and nothing in the log to explain it.
+
+Both come from the same fault, a peer that goes silent mid-operation. Which one
+you see depends on whether the bound below is armed: the second is what a
+current version does by default, and it is the intended behaviour rather than a
+new failure. If a healthy server of yours legitimately pauses for longer than
+two minutes, skip to **Choosing a value** at the end of this section; if the
+call never returns at all, read on.
 
 **Cause.** `SFTPBackend`'s `timeout` bounds the *connect* phase only. It is
 passed to paramiko as `timeout` / `banner_timeout` / `auth_timeout` /

@@ -87,11 +87,14 @@ on staleness is also supported (see SFTP-010).
 **Invariant:** `host` must be a non-empty string. Passing an empty or whitespace-only
 host raises `ValueError` at construction time. `io_timeout`, when not `None`, must
 be a positive number of seconds; `0` and negatives raise `ValueError` — paramiko
-reads `0` as non-blocking, which would fail every operation immediately rather
-than bound it — writes included, since `settimeout(0)` is a property of the
-channel and not of a direction. `None` is therefore the only way to ask for an unbounded channel, and
-`0` is not a spelling of it: the two look interchangeable to a caller reaching
-for "no limit" from a default that is now a real bound (SFTP-030).
+reads `0` as non-blocking rather than as a bound, and every SFTP request waits
+on a reply, so every operation fails at once — writes included, via the
+acknowledgement read that follows them. (`settimeout(0)` does not fail an
+operation that need not block: paramiko raises only when the read buffer is
+empty or the send window is full. Every SFTP operation reaches one of those.)
+`None` is therefore the only way to ask for an unbounded channel, and `0` is not
+a spelling of it: the two look interchangeable to a caller reaching for
+"no limit" from a default that is now a real bound (SFTP-030).
 **Postconditions:** No network validation of host reachability at construction time.
 
 ---
@@ -173,7 +176,8 @@ causes one. A read that stalls on an open channel raises nothing at all unless
 SFTP-030's `io_timeout` arms the bound — which it now does by default, so a
 merely silent peer reaches this path on a store configured with nothing. A
 caller who opts out with `io_timeout=None` puts it back out of reach for that
-fault, and the other signals in the set are unaffected either way. Operations outside the default
+fault, and the other signals in the set are unaffected either way. Operations
+outside the default
 `_errors()` scope must still route through this mapping for the guarantee to
 hold: the listing operations route their failure through `_map_exception`, and
 `open_atomic`'s streamed-write phase — which yields the handle outside
@@ -435,23 +439,20 @@ looks for it.
 an operation that previously blocked forever now raises `BackendUnavailable`
 after two minutes of silence. `io_timeout=None` restores the old behaviour.
 
-**The value is restated in prose in many places, and nothing gates that.** The
-constructor's signature is the source. It is repeated in the constructor's own
-docstring, in `_is_connection_dead`'s, in SFTP-001's signature block, in the
-clauses here, across the SFTP guide, the troubleshooting page and the migration
-entry, and in this test file's own prose — and no check compares any of them to
-the signature. `test_default_arms_the_bound_on_the_channel` pins the
-*constructor* against a literal, so a silent change to the default fails there;
-the prose sweep is a reviewer's job.
+**The value is restated in prose across the source, this spec, the guides, the
+migration entry, the backlog and the tests, and nothing gates that.** The
+constructor's signature is the source of the value;
+`test_default_arms_the_bound_on_the_channel` pins the constructor against a
+literal, so a silent change to the default fails there. No check compares any
+prose site to the signature, so that sweep is a reviewer's job.
 
-**No list of those sites is given here, deliberately.** An enumeration is the
-obvious mitigation and the wrong one: it is a second derived artifact over the
-same fact, so it goes stale exactly as the prose does, and a checklist a reader
+**No enumeration of those sites is given, deliberately.** A list is the obvious
+mitigation and the wrong one: it is a second derived artifact over the same
+fact, so it goes stale exactly as the prose does, and a checklist a reader
 trusts and that is one entry short is worse than no checklist, because it stops
-the search. This clause tried the enumeration and it was short by five sites
-within one review round. Derive the set instead — `rg -n 'io_timeout' src docs-src sdd tests`,
-read the hits that state a value — which is the same trade the `_make_backend`
-census in `tests/backends/sftp/test_io_timeout.py` made for the same reason.
+the search. This clause carried such a list twice and it was short both times.
+Derive the set instead — `rg -n 'io_timeout' src docs-src sdd tests`, read the
+hits that state a value.
 
 Both halves are registered rather than assumed away.
 [`DRIFT-RULES.md` Rule 5](../DRIFT-RULES.md#mandatory-path) asks why the check is
