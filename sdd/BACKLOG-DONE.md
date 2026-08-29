@@ -224,7 +224,7 @@ if evidence changes; these are retired.
   if any `[Unreleased]` entry carries `**Breaking**`, `migration.md` must hold
   `## v<current> to v<next minor>`. In the v0.31.0 window BK-357 wrote that
   heading while BUG-248 and BK-324 shipped uncovered beneath it, so the check
-  passes with two of three breaks undocumented — it would have been green on the
+  passes with **two of the four** marked entries undocumented — it would have been green on the
   exact defect BUG-261 was filed for. The obligation is per **entry**; the
   heading is per **release**; a per-release check cannot decide a per-entry rule.
   **Shipped: the per-entry form.** Every `[Unreleased]` entry marked
@@ -264,6 +264,32 @@ if evidence changes; these are retired.
   puts the marker at the head of the entry body (`- BK-357: **Breaking** — …`),
   so the match is anchored there, which is also what the release skill reads.
   Pinned by `test_an_entry_that_merely_mentions_the_marker_is_not_marked`.
+  **Review round 1 found the same class twice more, both fail-open.** The entry
+  grammar required the ID to end in digits, so a marked entry using the live
+  suffixed form — `sdd/traces/_schema.yml` states `PREFIX-[0-9]+[a-z]?`, and
+  `BACKLOG-DONE.md` carries BK-139d, ID-118b, BK-167a/b, ID-013b, ID-151b/c,
+  ID-147b, ID-143b — was skipped and the gate exited 0. And the link test was a
+  bare substring search over the line, so an entry that merely *mentions*
+  `reference/migration.md` in prose passed: the unanchored-substring defect the
+  marker fix had just closed, one line below the comment explaining why
+  anchoring matters, on the other half of the same rule. Both are now anchored
+  and both carry a test.
+  **The stated bound was wrong on the phase, in the direction that hides the
+  blind window.** It said Phase 2 condensation drops the marker.
+  `CONTRIBUTING.md` § Release **Phase 1** condenses `[Unreleased]` in place, and
+  the operative exclusion is not the marker at all but the entry *shape*: a
+  condensed entry leads with a title (`- **SFTP write() …** (BK-313):`), so the
+  ID no longer leads the line and nothing matches. The gate therefore enumerates
+  zero entries from Phase 1 condensation until Phase 2 renames the heading —
+  which is exactly while Phase 1's own migration-guide checklist item is being
+  verified. Fixed two ways: the docstring states the shape and the window, and
+  the success line now reports how many entries were enumerated, so a blind pass
+  reads differently from a clean one.
+  **`main()`, `--repo-root` and both failure paths now have tests**, per the 20
+  sibling files in `tests/scripts/` that cover `main()`; `pyproject.toml` wires
+  the script, not `collect_violations`, so what `lint` and `docs-gate` run was
+  otherwise unexercised. A missing `## [Unreleased]` heading — which Phase 2
+  produces — now raises rather than reporting success over nothing.
 
 - [x] **BUG-261 — Two breaking changes are on master with no upgrade path, and the obligation is stated where their authors never read**
   spec: — · effort: S · audience: user.api_docs, user.site, contributor.tooling

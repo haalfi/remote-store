@@ -4,7 +4,7 @@ trigger: >-
   BUG-261 moved the obligation to write a migration section onto the PR making
   the break, and shipped nothing that checks it. Its own proposed gate keyed on
   the release heading, which the same release window had already shown to be
-  green while two of three breaking entries went undocumented.
+  green while two of the four marked entries went undocumented.
 source_items:
   - BUG-262
   - BUG-261
@@ -14,11 +14,10 @@ audience:
 expected_ripples:
   - sdd/backlogid.json
   - sdd/GATE-INVENTORY.md
-# Named from `git log --oneline origin/master..HEAD`: this branch carries one
-# implementation commit and no review has run against it yet. Omitted rather
-# than asserted as 0 — BUG-261's trace recorded the same justification while a
-# review phase sat below it in the same file, so the claim is only made here
-# because the phase list genuinely stops at `wire`.
+# Named from `git log --oneline origin/master..HEAD`: 168e80a implements and
+# does not count; the commit carrying review round 1 does. Value is 1, and the
+# `fix` phase below records what that round found.
+review_rounds: 1
 phases:
   - id: orient
     name: Orient on what BUG-261 left open
@@ -117,4 +116,57 @@ phases:
         section: "(generated)"
         read_type: verify
         extract: "35 → 36 mechanisms after `hatch run gen-gate-inventory`; the Drift-gate:: block is what registers it"
+        outcome: ok
+  - id: fix
+    name: Review round 1
+    steps:
+      - file: sdd/traces/_schema.yml
+        section: "id (pattern)"
+        read_type: gate
+        extract: >-
+          Retrospective. The schema states the backlog-ID shape as
+          PREFIX-[0-9]+[a-z]? and the suffixed form is live in BACKLOG-DONE.md
+          (BK-139d, ID-118b, BK-167a/b, ID-013b, ID-151b/c). The gate's grammar
+          required the ID to end in digits, so a marked entry using one was
+          skipped and the gate exited 0 — a fail-open in a gate whose whole
+          value is not failing open. The comment above the regex had justified
+          widening the *prefix* for a hypothetical compound tracker while
+          narrowing away a convention with a dozen live instances.
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Release Phase 1, Phase 2"
+        read_type: gate
+        extract: >-
+          Retrospective, and the round's sharpest finding. Condensation is
+          Phase 1 ("stubs expanded to prose at release time"), not Phase 2,
+          whose only CHANGELOG line renames the heading. So the section is
+          condensed while it is still [Unreleased], the entry shape changes to
+          title-first, and the gate enumerates zero entries for the rest of
+          Phase 1 — while Phase 1's own migration-guide item is being verified.
+          The stated bound named the wrong phase and the wrong mechanism (the
+          marker, not the shape), which is the half a later reader would have
+          had to reason about.
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Release Phase 1 (migration.md bullet)"
+        read_type: verify
+        extract: >-
+          Ripple the row alone did not cover: the gate's remediation sends an
+          author to this bullet, and the bullet stated only the section
+          obligation. An author who did exactly what it says — writes the
+          section, does not link it — got a red gate pointing back at the line
+          they had satisfied. The bullet now carries the link half and names the
+          script.
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Assertion depth"
+        read_type: gate
+        extract: >-
+          Retrospective. Two guards were vacuous: the released-section case used
+          a fixture the entry grammar rejects anyway, so it passed with the
+          scope loop deleted, and every assertion in the file was `== []`, which
+          a parser matching zero entries satisfies everywhere at once. Fixed by
+          using a stub-shaped released entry and by exposing marked_entries() so
+          a test can assert the parser saw what it should have seen, including
+          one case that derives the expected set from the live CHANGELOG.
         outcome: ok
