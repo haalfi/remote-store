@@ -182,32 +182,84 @@ if evidence changes; these are retired.
   and BK-324.
   **Shipped:** both, plus a third section the item's softer half asked to be
   adjudicated rather than assumed. Under the existing
-  `## v0.30.0 to v0.31.0` heading, **five** new subsections join the SFTP
+  `## v0.30.0 to v0.31.0` heading, **six** new subsections join the SFTP
   material already there. Derivation: the bold `**…:**` leads between that
-  heading and the next number 8, of which 3 are pre-existing — BK-356 and
+  heading and the next number 9, of which 3 are pre-existing — BK-356 and
   BK-357's two topics, the first carrying a second lead for its opt-out. The
-  five are the flat-namespace wrong-type `InvalidPath` roster, the root-path
-  answers (`""` / `"."` on every backend, including the write refusal BUG-259
-  landed), the `max_depth`-without-`recursive` rule for direct `Backend`
-  callers, one shared section covering BUG-247, BUG-246 and BUG-243 — an absent
-  root or container reading as absence, with `Store.ping()` named as the
-  replacement for the `except` clause that stops firing — and the absent-drive
-  reclassification with its three-check detection order and the
-  `GraphBackend(base_path=".")` renormalisation.
-  **The three unmarked entries were adjudicated as owing a section, not
-  waived.** BUG-247 and BUG-246 move an absent root or container from
-  `InvalidPath` / `BackendUnavailable` to `NotFound` / `False` / empty, and
-  BUG-243 makes a tolerant delete return after `close()` on an in-memory
-  `SQLBlobBackend` where it used to raise. All three break an existing `except`
-  clause, which is the test `CONTRIBUTING.md` § Release Phase 1 states. One
-  shared section rather than three, because they are one behavioural theme and
-  three copies of "your `except` clause stops firing" is the shape that goes
-  stale unevenly.
+  six are the flat-namespace wrong-type `InvalidPath` roster; the root-path
+  answers for `""` / `"."`, scoped to backends declaring `Capability.LIST` and
+  carrying the write refusal BUG-259 landed; the
+  `max_depth`-without-`recursive` rule for direct `Backend` callers; the two S3
+  misclassifications (BUG-242, BUG-249); one shared section covering BUG-247,
+  BUG-246 and BUG-243 — an absent root or container reading as absence, with
+  `Store.ping()` named as the replacement for the `except` clause that stops
+  firing, bounded on `SQLBlobBackend`; and the absent-drive reclassification
+  with its three-check detection order and the `GraphBackend(base_path=".")`
+  renormalisation. The count was **five** on the first push; the S3 subsection
+  is round 1's.
+  **The softer half's candidate set was re-derived, not inherited — and the
+  item's three were six.** Round 1 caught the first draft taking BUG-247,
+  BUG-246 and BUG-243 verbatim from the item after having just re-derived the
+  marker count, which is the same drift caught the same way. Derivation:
+  parsing `[Unreleased]` for `- <ID>: ` lines returns **19** entries, **4**
+  carrying `**Breaking**`; classifying the remaining 15 against Phase 1's test —
+  a behaviour change a caller must act on — yields **6**. The item named three:
+  - BUG-247, BUG-246, BUG-243 — an absent root or container moving from
+    `InvalidPath` / `BackendUnavailable` to `NotFound` / `False` / empty, plus a
+    tolerant delete returning after `close()` on an in-memory `SQLBlobBackend`
+    where it used to raise. One shared section rather than three, because they
+    are one behavioural theme and three copies of "your `except` clause stops
+    firing" is the shape that goes stale unevenly.
+  - **BUG-259**, which the item missed and which two of the new subsections were
+    already documenting without saying so: the root-write refusal and the
+    `GraphBackend(base_path=".")` renormalisation, a stored configuration value
+    whose meaning changed.
+  - **BUG-249** and **BUG-242**, which nothing in this PR covered until round 1:
+    a raw `botocore.ClientError` from three `S3Boto3Backend` listings becoming a
+    `RemoteStoreError`, and a 403 read as `NotFound` on `S3Backend` /
+    `S3PyArrowBackend` becoming `PermissionDenied` — including
+    `delete(missing_ok=True)`, which swallowed it. Both break an `except` clause
+    as squarely as the three named. Now a sixth subsection.
+  The nine excluded are the four `**Breaking**` ones (already covered), BK-355
+  and BK-354 (a faster failure path and an additive parameter), ID-245 and
+  BUG-258 (tooling and a typing-only conformance fix), and the four
+  documentation entries BK-331, BK-320, BUG-235 and BK-317.
+  **None of the six is marked `**Breaking**`, and that is the rule working.**
+  The softer half owes the section, not the marker, so a `migration.md` section
+  whose entry reads `**Fix**` is not a counterexample to the new row — round 1
+  read it as one, correctly, because the row said "both artifacts" without
+  saying the implication runs one way. Both presentations now state it.
   **`Store.ping()`, not `check_health()`, is what that section tells a user to
   call** — a correction made against the source, not the item. `check_health()`
   is the `Backend` method; `Store` exposes it as `ping()`
   (`src/remote_store/_store.py:824`), and every prior artifact describing this
   work, this item included, named the backend method.
+  **The root section is scoped by capability, not by "every backend".** BE-029's
+  own `Applies to:` clause binds backends declaring `Capability.LIST` and names
+  `ReadOnlyHttpBackend` (`{READ, METADATA, LAZY_READ}`,
+  `src/remote_store/backends/_http.py:43`) as the counterexample, on the
+  reasoning that naming backends instead would reintroduce the undeclared
+  divergence the clause removes. BK-324's CHANGELOG entry carries the flat "on
+  every backend" phrasing and the first draft inherited it, which is
+  [principle 5](../CLAUDE.md#principles) the wrong way round: the guide is where
+  a user acts on it.
+  **Two open items bound what the guide is allowed to promise, and round 1 found
+  the guide promising past both.** **BUG-256** measures `check_health()`
+  returning cleanly on `SQLBlobBackend` against a dropped table, so naming
+  `ping()` as *the* replacement was wrong on one of the five backends the
+  absent-container section lists — and the draft then forbade the `write()`
+  fallback that item records as the reason BUG-246's advice used `write()` in the
+  first place. **BUG-254** measures `get_folder_info("")` raising `NotFound` on
+  `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend` against an absent
+  container, three of those same five, so the root row promised a v0.31.0 answer
+  three of them do not give. The guide now states both bounds instead, which is
+  the option that keeps it true today; the two items carry the paragraphs their
+  closure deletes.
+  **Their enumerations moved, and both were repaired here.** BUG-256's "five
+  documentation surfaces" is six with the new section, and BUG-254 acquired a
+  published-docs consequence it did not carry. A fix scoped to a stale
+  enumeration reaches five of six surfaces, which is why the count is the
+  ripple, not the prose.
   **Of the item's three dispositions, the *ruling* shipped and the other two did
   not.** `CONTRIBUTING.md` § Release Phase 1 no longer says a breaking PR "may
   write its own section"; it says the PR owes it, and points at the new

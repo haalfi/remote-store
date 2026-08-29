@@ -147,12 +147,19 @@ wrong-typed path. On a flat namespace a write to a key that shadows a prefix
 still succeeds, so there was no error there to reclassify, and `write`,
 `write_atomic`, `open_atomic` and the `move` / `copy` destination are unchanged.
 
-**`""` and `"."` name the store root on every backend:**
+**`""` and `"."` name the store root on every backend that lists:**
 
 The store root is a folder, it always exists, and both spellings address it.
 Several backends previously disagreed: `is_file("")` raised rather than
 answering `False`, `get_folder_info(".")` raised on Local, Memory and SFTP, and
 an SFTP store's root did not exist at all until its first write.
+
+**Scope:** backends declaring `Capability.LIST`. "The root is a folder"
+presupposes a backend that *has* folders, and `LIST` is how a backend declares
+it enumerates them. [`ReadOnlyHttpBackend`](api/backends/http.md) declares no
+`LIST` — it exposes a flat set of addressable objects with no root to speak of,
+resolves the empty key to its base URL and reads that — so the table below does
+not describe it, and nothing about it changed.
 
 | Call on the store root | Answer from v0.31.0 |
 |------------------------|---------------------|
@@ -184,6 +191,28 @@ full control there. Only code holding a [`Backend`](api/backend.md) and calling
 it without going through `Store` needs to pass `recursive=True` alongside
 `max_depth`.
 
+**S3 failures that arrived as the wrong type now arrive as the right one:**
+
+Two classes of S3 failure reached callers misclassified. Both change which
+`except` clause fires, and neither is a new restriction.
+
+*A denied operation is `PermissionDenied`, not `NotFound`.* On `S3Backend` and
+`S3PyArrowBackend` a 403 was read as absence on `delete`, the `move` / `copy`
+source, `delete_folder` and `get_folder_info` — and `delete(missing_ok=True)`
+swallowed it entirely and returned. All of them now raise `PermissionDenied`,
+the tolerant delete included: `missing_ok` forgives a missing file, not a
+refused one, and a delete that silently did nothing against a denied bucket
+reported success for work that never happened.
+
+*A listing failure is a `RemoteStoreError`, not a raw `botocore.ClientError`.*
+`S3Boto3Backend`'s `list_files()`, `list_folders()` and `iter_children()` called
+the paginator without the error mapping the rest of the class uses, so botocore's
+own exception reached the caller untouched and an `except RemoteStoreError`
+clause caught every backend but this one. `glob()` reaches the wire through
+`list_files` and was affected the same way. If you wrote an
+`except botocore.exceptions.ClientError` for these three listings specifically,
+it no longer fires — catch `RemoteStoreError`.
+
 **An absent root or container reads as an absent path, not as an error:**
 
 When the directory, bucket, container or table holding your data is not there, a
@@ -202,20 +231,38 @@ a deleted root, and `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` and
 | `read`, `read_bytes`, `read_seekable`, `get_file_info`, `get_folder_info`, `move` / `copy` source | `NotFound` |
 | `exists`, `is_file`, `is_folder` | `False` |
 | `list_files`, `list_folders`, `iter_children`, `glob` | empty |
-| the store root | as an empty store: `exists("")` is `True`, `get_folder_info("")` aggregates to zero |
+| `exists("")`, `is_folder("")` on the store root | `True` — the root is a folder whether or not the container is |
+
+**One root answer has not caught up, and the guide says so rather than
+promising it.** `get_folder_info("")` should aggregate to zero against an absent
+container exactly as it does against an empty one, and on `LocalBackend` and
+`SQLBlobBackend` it does. On `S3Boto3Backend`, `AzureBackend` and
+`AsyncAzureBackend` it still raises `NotFound`: those three short-circuit the
+probes at the root but route `get_folder_info` through a listing whose 404 they
+do not tolerate there. Treat it as unfinished rather than as the contract — keep
+a `NotFound` handler if you aggregate the root of a store that may not exist.
 
 **What to change.** An `except` clause that caught the old error to detect a
-store that is not there no longer fires. Use [`Store.ping()`](api/store.md) —
-`Backend.check_health()` if you hold a backend directly. That is the operation
-whose job is to report an unreachable store, and on `LocalBackend` it now also
-reports a root path occupied by something that is not a directory, which no
-other operation can see: the root answers as a folder by definition, so nothing
-else observes what is actually there.
+store that is not there no longer fires. [`Store.ping()`](api/store.md) —
+`Backend.check_health()` if you hold a backend directly — is the operation whose
+job is to report an unreachable store, and it answers on four of the five
+backends above: `NotFound` for a deleted `LocalBackend` root and for a missing
+`S3Boto3Backend` bucket or `AzureBackend` / `AsyncAzureBackend` container. On
+`LocalBackend` it also reports a root path occupied by something that is not a
+directory, which no other operation can see: the root answers as a folder by
+definition, so nothing else observes what is actually there.
 
-**Do not substitute `write()` for that check.** The contract deliberately leaves
-`write` against an absent container to each backend, and they differ: a write
-under a deleted `LocalBackend` root recreates the root and succeeds, while a
-write against a dropped `SQLBlobBackend` table still raises `BackendUnavailable`.
+**On `SQLBlobBackend`, `ping()` is not yet that check.** The SQL backends verify
+connectivity with a bare `SELECT 1` that never looks at the table, so a dropped
+table and a discarded in-memory store both report healthy. There, a `write()` is
+what surfaces the absence — it still raises `BackendUnavailable`. That is a gap
+in `ping()` rather than a rule about `write()`: expect it to close, and reach
+for `ping()` first on every other backend here.
+
+**`write()` is not a portable substitute for it either.** The contract
+deliberately leaves `write` against an absent container to each backend, and
+they differ in both directions: a write under a deleted `LocalBackend` root
+recreates the root and succeeds, where the `SQLBlobBackend` case above raises.
 
 **One case is about `close()` rather than a missing container.** Disposing an
 in-memory SQLite engine destroys the database rather than releasing a connection
@@ -231,7 +278,7 @@ with `BackendUnavailable` whenever Graph reported `404 resourceNotFound` — the
 drive-identity code, which any item-by-path URL can return because every such URL
 embeds the drive. A deleted or misconfigured drive therefore failed as a backend
 identity error even on the operations the backend contract decides otherwise. It
-now answers those the way every other backend answers an absent container:
+now answers those the way the backend contract decides an absent container:
 
 | Call against an absent drive | Answer from v0.31.0 |
 |------------------------------|---------------------|

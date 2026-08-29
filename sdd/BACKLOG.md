@@ -359,6 +359,14 @@ compliant the day before.
   No spec decision is needed first — BE-029 states the answer. What the fix owes
   is the *reason* each backend misses it, since the two directions have different
   causes, plus a conformance cell so a sixth backend cannot inherit either.
+  **This item now has a published-docs consequence, acquired in BUG-261.**
+  `docs-src/reference/migration.md` § v0.30.0 to v0.31.0 documents the
+  `get_folder_info("")` half of the second row — `NotFound` on `S3Boto3Backend`,
+  `AzureBackend` and `AsyncAzureBackend` against an absent container — as
+  unfinished, and tells a caller to keep a `NotFound` handler for it. That was
+  the alternative to promising a row three of the five backends that section
+  names do not deliver. So closing this item also deletes that paragraph, and
+  the `exists("")` / `is_folder("")` row it sits under stays as written.
   **Filed on a wrong premise and corrected in the same PR:** the first version of
   this item said nothing decided the question and asked for a spec decision. That
   was read off BE-021 § Reach alone, which decides operations and is silent about
@@ -382,10 +390,18 @@ compliant the day before.
   `SQLBlobBackend` understates it. The `S3PyArrowBackend` probe misses it for the
   same reason one layer out. `ReadOnlyHttpBackend` is a fourth case of a different
   kind and is listed so a fix does not stop at the three.
-  **Five documentation surfaces promise the behaviour** and are part of this item
+  **Six documentation surfaces promise the behaviour** and are part of this item
   rather than of BUG-246, which measured the divergence but did not create it:
   `Backend.check_health` and `AsyncBackend.check_health` docstrings,
-  `Store.ping()`, `AsyncStore.ping()`, and `docs-src/guides/health-check.md`.
+  `Store.ping()`, `AsyncStore.ping()`, `docs-src/guides/health-check.md`, and
+  `docs-src/reference/migration.md` § v0.30.0 to v0.31.0, whose
+  absent-container section sends a caller to `ping()` as the replacement for the
+  `except` clause this release stops firing. The sixth was **five** until BUG-261
+  added that section; it is counted here rather than left to the grep because the
+  figure is the derivation ([principle 9](../CLAUDE.md#principles)) and a fix
+  scoped to a stale enumeration reaches five of six surfaces. That section already
+  carries the `SQLBlobBackend` bound in published prose, so closing this item
+  edits it rather than discovering it.
   The caller this hurts is the one doing the obvious thing — using `ping()` at
   startup to check the store is really there — and getting "yes" for a store that
   is not. It is also the operation an absent-container caller is *sent* to by the

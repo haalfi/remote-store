@@ -21,10 +21,15 @@ audience:
 expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:
-  # The item's own body named ID-252 as reading the same CHANGELOG section, so
-  # closing it falsified a present-tense "both stand" sentence three sections
-  # away. Found by the completing-work sweep, not by any ripple-check row —
-  # which is BK-346 instance 6's class exactly.
+  # Three separate misses land in this one file, none of them reached by a
+  # ripple-check row. (1) The item's own body named ID-252 as reading the same
+  # CHANGELOG section, so closing it falsified a present-tense "both stand"
+  # sentence three sections away — found by the completing-work sweep, which is
+  # BK-346 instance 6's class exactly. (2) and (3) came from review round 1:
+  # BUG-256's enumerated "five documentation surfaces" became six when this PR
+  # added one, and BUG-254 acquired a published-docs consequence it did not
+  # carry. Writing a migration section is what created both, and no row asks
+  # whether a new published promise lands inside an open item's measured extent.
   - sdd/BACKLOG.md
 # review_rounds is filled post-merge from the commits on this branch; naming the
 # commits is required by _schema.yml's review_rounds description. At authoring
@@ -206,4 +211,62 @@ phases:
         section: "Detailed checklist / Bug fix, CHANGELOG entry, Backlog item touched"
         read_type: verify
         extract: "BACKLOG item moved, CHANGELOG stub added, trace shipped in the same PR"
+        outcome: ok
+  - id: fix
+    name: Review round 1
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "1 / BUG-256, BUG-254"
+        read_type: gate
+        extract: >-
+          Retrospective, and the round's central miss. Both items are open, both
+          measure the exact absent-container behaviour the new section
+          prescribes, and neither was read while writing it. BUG-256 measures
+          check_health() returning cleanly on SQLBlobBackend against a dropped
+          table — so naming ping() as the replacement was wrong on one of the
+          five backends the section lists, and the draft then forbade the
+          write() fallback that item records as the reason BUG-246's advice used
+          write(). BUG-254 measures get_folder_info("") raising NotFound on
+          S3Boto3Backend, AzureBackend and AsyncAzureBackend, three of those
+          same five, against a root row the draft promised flatly. The reads in
+          the docs phase went to the specs and to the shipped items' own
+          BACKLOG-DONE entries, and neither surface says a later item reopened
+          the question. Section 1 of BACKLOG.md does.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-029 (Applies to)"
+        read_type: gate
+        extract: >-
+          Retrospective: the clause is scoped to backends declaring
+          Capability.LIST and names ReadOnlyHttpBackend as the counterexample in
+          its opening paragraph. The docs phase read BE-029 for its root answers
+          and took the heading wording from BK-324's CHANGELOG entry instead,
+          which says "on every backend" — a copy inheriting a flat guarantee
+          from a source that had the qualifier.
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: gate
+        extract: >-
+          Re-derive the softer half's candidate set rather than inheriting the
+          item's three, since the marker count had already been re-derived for
+          the same reason. Parsing the section for `- <ID>: ` lines returns 19
+          entries, 4 marked; classifying the other 15 against Phase 1's test
+          yields 6 candidates, not 3 — BUG-259, BUG-249 and BUG-242 join the
+          named three, and the last two had no coverage in this PR at all.
+        outcome: ok
+      - file: src/remote_store/backends/_http.py
+        section: "_CAPABILITIES"
+        read_type: verify
+        extract: "ReadOnlyHttpBackend declares {READ, METADATA, LAZY_READ} and no LIST, so BE-029's carve-out is live rather than hypothetical"
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "check_health"
+        read_type: verify
+        extract: >-
+          Sibling sweep for the ping() finding: the Graph section prescribes
+          ping() too. It probes the effective root at identity scope, so a
+          drive-identity resourceNotFound still escalates — sound, and left as
+          written. Graph is absent from BUG-256's measured table, so the check
+          was the source rather than that item.
         outcome: ok
