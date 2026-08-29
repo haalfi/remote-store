@@ -425,12 +425,32 @@ callers not to use, and no fraction of a transfer time discriminates one silence
 bound from another. `120.0` is also the value the SFTP guide and the
 troubleshooting page already used in their worked examples before it became the
 default, so the value a reader was being shown and the one they got stop
-disagreeing. The guide's example has since moved to a different value, because
-illustrating the option with the default illustrates nothing.
+disagreeing. **Both** worked examples have since moved off it, because
+illustrating an option with its own default illustrates nothing; the pages state
+the default in prose and in the options table instead, which is where a reader
+looks for it.
 
 **It is a behaviour change for a caller who sets nothing**, and shipped as one:
 an operation that previously blocked forever now raises `BackendUnavailable`
 after two minutes of silence. `io_timeout=None` restores the old behaviour.
+
+**The value is restated in prose in several places, and nothing gates that.**
+The constructor's default is the source; SFTP-001's signature block, the clauses
+here, the SFTP guide's options table and Connection Behaviour bullet, the
+troubleshooting page and the migration entry all repeat it, and no check
+compares any of them to the signature. `test_default_arms_the_bound_on_the_channel`
+pins the *constructor* against a literal, so a silent change to the default
+fails there; the prose sweep is a reviewer's job.
+This is a **tolerated divergence** rather than an oversight, recorded here per
+[`DRIFT-RULES.md` Rule 5](../DRIFT-RULES.md#tolerated) with its cost stated
+rather than assumed away: a gate would have to parse a default out of a
+signature and match it against prose in four file formats, and the claim space
+is one number that changes about once per major behavioural decision. The cost
+is real and was paid in this item's own review — a derived figure in a test
+docstring went stale one commit after review corrected it. That is the failure
+mode a reader should expect here; the mitigation is that every site is listed
+in this paragraph, so a future change to the default has a checklist rather
+than a search.
 
 **It is armed before the SFTP session exists, not after.** `_connect` opens the
 channel, arms the bound, then invokes the `sftp` subsystem and constructs the
@@ -452,6 +472,16 @@ raises `socket.timeout`. Since it is `settimeout()`, the bound covers writes as
 well as reads, and a stalled write reaches it on the receive side like a read
 does. The distinct fault it covers is a request that never reaches the server,
 as against a reply that never returns.
+
+The "unaffected however long it takes" half is asserted by
+`test_a_transfer_slower_than_the_bound_is_not_interrupted`, which throttles a
+relay rather than stalling it — slow, never silent — and asserts both that the
+transfer completes intact and that it *outlived* the bound, so it cannot pass by
+finishing early. Named here for the reason the silent-close case below is: the
+`SFTP-030` marker says a test pins this clause, not which of its claims, and
+this is the claim that tells a slow-link caller to change nothing. It was
+unexecuted while the default was `None` and load-bearing from the moment the
+default became a bound.
 
 Note which round-trip a stalled write fails on, because it depends on *when* the
 peer went silent, not on which method was called. A stall already in effect when

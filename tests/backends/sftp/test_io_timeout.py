@@ -16,20 +16,36 @@ setting on the first transparent reconnect, which is precisely when a flaky
 link needs it.
 
 **It arms by default**, at ``120.0`` seconds, which splits this file's
-``_make_backend`` call sites three ways. Most **pin a value** — a short one, to
-keep a stall test's runtime bearable. Three **omit the argument**, inheriting the
-shipped default, and two **pass ``None``**, asserting the opt-out itself.
-(Derivation: 21 call sites, 16 pinned — 14 at ``2.0``, one at ``7.5``, one at
-``1.0`` — 3 omitted, 2 explicit ``None``; counted by extracting the
-``io_timeout=`` argument from every ``_make_backend(`` call in this file.)
+``_make_backend`` call sites three ways. Most **pin a value** — a short one, so a
+test that waits out a bound stays cheap. A few **omit the argument**, inheriting
+the shipped default, and two **pass ``None``**, asserting the opt-out itself.
 Nothing here omits the argument in order to mean "unbounded" — see ``_INHERIT``
 below for why that distinction has to be spelled out.
+
+No count is given, deliberately. A tally of call sites is invalidated by adding
+a test, which is the one thing this file exists to have done to it — and it was
+invalidated exactly that way once: a count corrected in review went stale one
+commit later, when the test below it was added. A figure whose only guard is
+that a reader will notice is a figure that goes wrong between readers. Derive it
+if you need it, by extracting the ``io_timeout=`` argument from every
+``_make_backend(`` call here and resolving ``io_timeout=io_timeout`` through
+its local.
 
 This file pins both halves of SFTP-030: what ``io_timeout`` covers, and what it
 does not. The second half is not an afterthought — SFTP-030 states one exception
 and one silent case, and a clause asserting a paramiko behaviour is the kind of
 claim this work has got wrong by reading rather than running, so each is
 *characterised by a test* rather than asserted.
+
+That splits the file into **faults**, enumerated below, and **one case that is
+not a fault at all**: a transfer merely *slower* than the bound, which must
+complete. It gets its own category because it is the only test here asserting a
+success, and because no arrangement of the fault tests can reach it — they all
+make the bytes stop, and the claim is about what happens when they do not
+(``test_a_transfer_slower_than_the_bound_is_not_interrupted``, driven by
+``_StallRelay.throttle_download``). It is the half of SFTP-030 that tells a
+slow-link caller to change nothing, so it became load-bearing when the bound
+became the default.
 
 **Five faults it covers**, because they fail by different mechanisms and none
 implies the others:

@@ -18,21 +18,26 @@ audience:
   - user.site
 discovery_followups:
   - BK-359
+# sdd/backlogid.json is deliberately absent: the ripple-check anticipates it
+# after a BACKLOG move, and `hatch run gen-backlogid` was run, but it produced
+# no change — the generator stores the max *done* ID per prefix and
+# BACKLOG-DONE.md already carried BK-357. The field records what was
+# mechanically touched, not what was anticipated, so an untouched file does not
+# belong here.
 expected_ripples:
-  - sdd/backlogid.json
   - CHANGELOG.md
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
 
 # Derivation, per the review_rounds description in _schema.yml: on
 # `git log --oneline origin/master..HEAD`, a4feee9 implements and does not
-# count; ef3edad and b692e12 incorporate review round 1, and fb6fbb3
-# incorporates round 2. Value is 2 — rounds, not commits, which is why
-# ef3edad and b692e12 count once between them. Each SHA is written after the
-# commit it names exists rather than predicted, which is why the naming lags
-# by a commit: the schema calls a plausible SHA that resolves to nothing worse
-# than no derivation at all.
-review_rounds: 2
+# count; ef3edad and b692e12 incorporate review round 1, fb6fbb3 incorporates
+# round 2, and the round-3 fix commit is named below once it exists. Value is
+# 3 — rounds, not commits, which is why ef3edad and b692e12 count once between
+# them. Each SHA is written after the commit it names exists rather than
+# predicted, which is why the naming lags by a commit: the schema calls a
+# plausible SHA that resolves to nothing worse than no derivation at all.
+review_rounds: 3
 
 phases:
   - id: orient
@@ -203,4 +208,40 @@ phases:
           nothing. Closed with a throttling relay mode and a test; the claim
           held. Reached by running, and a reading lens had already passed over
           the same clause twice without seeing it
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "Module docstring (census, fault enumeration)"
+        read_type: verify
+        extract: >-
+          Round 3's whole-file lens, and the clearest evidence in this trace for
+          why that gate exists. Two defects the fix passes created, neither in a
+          `+` line of the commit that falsified it: the census round 1 corrected
+          went stale when round 2 added a call site beneath it, and the file's
+          three-way fault partition gained no bucket for the success test round
+          2 added. All three closing passes found the census independently. The
+          fix drops the count rather than correcting it — a tally invalidated by
+          adding a test is a figure that goes wrong between readers, and this
+          one had already done so once
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "[Unreleased] (BK-354, BK-355 stubs)"
+        read_type: verify
+        extract: >-
+          Collapsing the duplicated entries to stubs used the backlog titles,
+          which in this repo are problem statements — so the published line read
+          "SFTP has no way to bound a read that stalls on an open channel",
+          three lines below the entry saying the bound now defaults on. Reached
+          the built site. My own miss, and it survived two reading rounds
+          because the stub is the right *shape*; only the measuring pass, which
+          diffed the entries against their base-branch prose, caught the content
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rule 5 (tolerated divergence)"
+        read_type: verify
+        extract: >-
+          Round 3 asked why 17 prose restatements of the default are ungated.
+          Recorded as a tolerated divergence in SFTP-030 with its cost stated,
+          rather than building a signature-to-prose gate. The stale census in
+          the same round is that tolerance being paid, which is the honest thing
+          to put next to the decision
         outcome: ok

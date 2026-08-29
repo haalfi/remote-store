@@ -101,12 +101,14 @@ backend = SFTPBackend(
 )
 ```
 
-Raising it costs only how quickly a stall is noticed, which is cheap — the bound
-is on silence between bytes, so a slow transfer is unaffected at any value.
-Lowering it is the riskier direction: a server that goes quiet for legitimate
-reasons, such as an antivirus or dedup appliance scanning a large file when you
-open it, starts failing intermittently, which looks like network flakiness and
-is harder to diagnose than the hang the bound replaced.
+**Size it against the longest legitimate pause your server can produce, not
+against total transfer time.** Raising it costs only how quickly a stall is
+noticed, which is cheap — the bound is on silence between bytes, so a slow
+transfer is unaffected at any value. Lowering it is the riskier direction: a
+server that goes quiet for legitimate reasons, such as an antivirus or dedup
+appliance scanning a large file when you open it, starts failing intermittently,
+which looks like network flakiness and is harder to diagnose than the hang the
+bound replaced.
 
 To turn the bound off entirely, pass `None`:
 
@@ -115,7 +117,7 @@ backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=No
 ```
 
 `0` is **not** how you ask for that — it is rejected with `ValueError`, because
-paramiko reads `0` as non-blocking and every read would fail at once.
+paramiko reads `0` as non-blocking and every operation would fail at once.
 
 It is an ordinary option, so it is equally settable from a declarative config:
 
@@ -166,13 +168,6 @@ reader that sizes a file internally reaches it the same way — for files large
 enough to stream. The [PyArrow adapter](../pyarrow-adapter.md) materialises
 anything at or below its `materialization_threshold` and never seeks the stream
 at all.
-
-!!! tip "Choosing a value"
-    Size it against the longest legitimate pause your server can produce — an
-    antivirus or dedup appliance may go quiet for a while on `open()` of a large
-    file — not against total transfer time. `0` does not mean "no bound": it is
-    rejected at construction, because paramiko reads it as non-blocking, which
-    would fail every operation instantly. Use `None` for no bound.
 
 ## Preflight host-key discovery
 

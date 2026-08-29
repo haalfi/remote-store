@@ -141,20 +141,28 @@ version a silent peer raises `BackendUnavailable` after two minutes and the
 backend reconnects on the next operation, rather than hanging. If you are seeing
 an unbounded hang, work through the three causes below.
 
-**1. The bound is off.** Either you passed `io_timeout=None`, or you are on a
-version before it defaulted to a bound (see the
-[migration guide](../reference/migration.md)). Dropping the opt-out is enough —
-the default applies on its own. Pass a value only to move off it:
+**1. The bound is off**, which happens two ways.
+
+*You passed `io_timeout=None`.* Drop it — the default applies on its own, and you
+need pass nothing:
 
 ```python
 from remote_store.backends import SFTPBackend
 
-# The default bound, with nothing to configure:
 backend = SFTPBackend(host="files.example.com", username="deploy")
+```
 
-# Or a longer one, for a server that legitimately goes quiet for minutes:
+*You are on a version before `io_timeout` defaulted to a bound* (see the
+[migration guide](../reference/migration.md)). There is no opt-out to drop and
+the default is `None`, so set a value explicitly — or upgrade, and get one
+without asking:
+
+```python
 backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=300)
 ```
+
+That value is also how you move off the default on a current version, for a
+server that legitimately goes quiet for minutes.
 
 **2. It is the one genuinely unbounded wait.** A server that opens the SSH
 channel and then never answers the `sftp` subsystem request hangs regardless:

@@ -197,8 +197,10 @@ if evidence changes; these are retired.
   against total runtime, which is the yardstick SFTP-030 and both guides tell
   callers not to use, so it discriminates 120 s from no other value. It is
   dropped rather than corrected. `120.0` is also the value the SFTP guide and
-  the troubleshooting page already used in their worked examples, so the default
-  and the docs stopped disagreeing.
+  the troubleshooting page already used in their worked examples before it
+  became the default, so the value a reader was shown and the one they got
+  stopped disagreeing — and both examples then moved off it, since illustrating
+  an option with its own default illustrates nothing.
   **Breaking, and shipped as such**, with `io_timeout=None` as the opt-out —
   which the migration entry leads with, because the reader who needs it is
   exactly the one with a legitimately slow or quiet server. `0` is not the
@@ -237,6 +239,20 @@ if evidence changes; these are retired.
   `BackendUnavailable` with an empty message and emits no log record. It is
   BK-354's defect, unchanged here, but this flip promotes it from an opt-in edge
   case to the shipped failure surface — so it is BK-359.
+  **What the closing round cost and returned.** Three passes — unprimed,
+  whole-file and measuring — returned ten findings and no bug. Nine were claims
+  a changed file makes that its own state falsifies, and the two that mattered
+  were both defects the *fix passes* had created: the `_make_backend` census
+  round 1 corrected went stale when round 2 added a call site beneath it, and
+  the CHANGELOG stubs used the backlog titles, which are problem statements — so
+  the published line said SFTP "has no way to bound a read that stalls",
+  three lines below the entry saying the bound now defaults on. Neither sat in a
+  `+` line of the commit that falsified it, which is why two diff-anchored
+  rounds passed over both. The measuring pass also *refuted* a reading-based
+  finding: the new throttle test was flagged as a likely CI flake, and measured
+  at a 3.6x margin that is sleep-dominated, 6/6 passing under 6x CPU
+  oversubscription and 284 passing under `-n auto`. Two reviewers disagreed on
+  fact and the one that ran it settled it.
 
 - [x] **BK-357 — A `SEEK_END` seek hides its own stall, so the futile-close guard cannot arm**
   spec: SIO-011, SIO-010, SFTP-030 · effort: M · audience: user.api, user.api_docs, user.site

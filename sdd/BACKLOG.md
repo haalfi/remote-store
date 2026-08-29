@@ -204,9 +204,13 @@ deleted mid-scan (BUG-255) or when a folder vanishes part-way through a
 recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 (BUG-256); a constructor does not leak its driver's exception
 (BUG-245) and neither does a stream (BK-358); one operation does not answer by
-payload size (BUG-253); and a newly
+payload size (BUG-253); a caller who meets a failure can tell *which* failure it
+was, rather than an empty message and no log record (BK-359); and a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
-(BK-345). The spec contradiction is adjudicated — BUG-248, closed by
+(BK-345). BK-359 widens the promise a little and deliberately: an error that is
+the right *type* on every backend but says nothing is predictable to a checker
+and not to the person reading their log, and this section is where that reader
+is served. The spec contradiction is adjudicated — BUG-248, closed by
 [ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md) — the
 never-leak invariant holds on the S3 listing path, closed by BUG-249 with
 BUG-246, the last adapter answers the contract against an absent container,
