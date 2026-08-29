@@ -355,6 +355,70 @@ if evidence changes; these are retired.
   it — the same two-places-to-widen shape the `_MARKER` comment argues against,
   rebuilt three lines from where the argument is written.
 
+- [x] **ID-252 — CHANGELOG `[Unreleased]` was unlinted, so a duplicated entry shipped and contradicted itself**
+  spec: — · effort: S · audience: contributor.tooling
+  No CHANGELOG entry, and that is the rule rather than an omission: the audience
+  is `contributor.tooling` alone, and [`traces/_schema.yml`](traces/_schema.yml)'s
+  derived rule requires an entry only for a `user.` audience. The gate this item
+  adds is what now enforces that rule, so shipping it in violation of the rule
+  would have been its own first failure.
+  **The repair had already happened, by the route the item predicted.** The item
+  scoped the deletion of the two stale lines out of itself and said whichever
+  change landed first would do it; `165bd00` collapsed the duplicate BK-354 and
+  BK-355 entries into stubs three commits later. So this work began against a
+  section that already read correctly, and the duplicate rule could not be tested
+  against master. It was tested against history instead: run over `165bd00~1`,
+  `check_changelog_unreleased.py` reports 12 violations — both duplicates, each
+  naming the line of the copy it duplicates, and the ten entries that state had
+  over the budget.
+  **The shape rule is enforced by length, and the entries were condensed to meet
+  it.** Every entry was already one physical line, so a line-count rule would
+  have passed on a 4,910-character paragraph — length is the machine-decidable
+  half of "one-line stub", and length is what hid the duplicate: at one line each
+  two copies of BK-355 are unmissable, at 2.3 kB each they sat four lines apart
+  unseen. Six entries were condensed, the six over the budget, taking the longest
+  from 4,910 characters down to a stub. **The budget measures prose, not bytes**:
+  Markdown link targets are discounted, because a URL's length is a property of
+  the docs site rather than a choice the author made, and counting it priced a
+  breaking entry out of the migration link it owes — measured at 112 characters a
+  link, enough to push two of the four breaking entries over. **What the longest
+  survivor now measures is deliberately not restated here**: that figure went
+  stale twice during this work, so the constant's own comment carries the command
+  to re-derive it instead.
+  **Nothing was lost by condensing, and that had to be checked rather than
+  assumed.** The first justification written for it — that release Phase 1
+  re-expands the stubs — is not true as stated: `CONTRIBUTING.md` names no source
+  for that prose and the release skill has no expansion step. The durable homes
+  are the ones that actually hold the detail: each item's own entry in this file,
+  and `docs-src/reference/migration.md` for anything a caller must act on, which
+  BUG-261 published. A sweep of all six condensed entries against both confirmed
+  it. The unsourced expansion step is filed as ID-253.
+  **The audience rule's authority direction is decided in writing**
+  ([Rule 4](DRIFT-RULES.md#authority)), because the two sets are not required to
+  be equal. The completed-item side governs: a user-facing completed item with no
+  entry fails; an entry with no completed item does not. Two legitimate cases
+  produce the latter — an item still open with one bullet shipped, and the
+  schema's escape clause for a `contributor.process` change introducing a
+  user-facing framework. **The first is registered rather than merely tolerated**
+  ([Rule 6](DRIFT-RULES.md#tolerated)): an entry whose ID is open in
+  `BACKLOG.md` is *silent*, because a note printing on every green run until that
+  item closes is how a passing gate's output becomes something readers skip. Only
+  an ID the backlog knows nowhere draws one.
+  **Derived, both sides** ([Rule 3](DRIFT-RULES.md#claim-space)): entries parse
+  out of the section, the audience side off the `spec: · effort: · audience:`
+  line each entry here already carries, split on `,`/`·` and tested for a `user.`
+  prefix — the schema's predicate, not a substring search. The ID grammar matches
+  `gen_backlogid.py`'s, suffix and parenthetical included, because they read the
+  same file: spelling it `[A-Z]+-\d+` failed a legitimate `BK-139a` stub as a
+  stray line and silently truncated the same ID on the completed side.
+  **What the loop cost, and what it bought.** Seven review passes across five
+  rounds, and the class that kept recurring was a universal asserted over a space
+  measured on two backends — refuted four rounds running until the remedy stopped
+  being "narrow it again" and became "delete it and name what was measured". The
+  gate's own rules changed twice under review: the budget learned to discount
+  link targets, and the advisory note gained its register. Both were found by
+  reading, not by running.
+
 - [x] **BUG-261 — Two breaking changes are on master with no upgrade path, and the obligation is stated where their authors never read**
   spec: — · effort: S · audience: user.api_docs, user.site, contributor.tooling
   **The item's own figure had moved before the work started, which is the first

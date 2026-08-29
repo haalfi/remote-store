@@ -1,0 +1,393 @@
+"""Unit tests for scripts/check_changelog_unreleased.py.
+
+The gate exists because a duplicated `[Unreleased]` entry reached master and
+contradicted itself: two copies of one item four lines apart, the lower one
+pre-amendment, so the section called an item open two lines below the entry
+that closed it. The regression cases below reproduce that class -- a duplicate,
+a paragraph where a stub belongs, a user-facing completed item with no entry --
+and the clean baseline proves the gate does not fire on the shape the section
+is supposed to have.
+
+The advisory case matters as much as the failing ones, and it is narrower than
+it first looks. An entry with no completed item is legitimate — an open item
+that shipped one bullet — and a gate that failed on it would be wrong about the
+repo rather than the repo being wrong about itself. But such an entry is
+*silent* rather than reported, because its ID is a live open item and that is a
+register with an owner already; only an ID the backlog knows nowhere draws a
+note. Both halves are pinned below, in `TestAudienceRule`.
+"""
+
+from __future__ import annotations
+
+import importlib.util
+import sys
+from pathlib import Path
+
+import pytest
+
+_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "check_changelog_unreleased.py"
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _load():
+    spec = importlib.util.spec_from_file_location("check_changelog_unreleased", _SCRIPT)
+    assert spec is not None
+    assert spec.loader is not None
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules.setdefault("check_changelog_unreleased", mod)
+    spec.loader.exec_module(mod)  # type: ignore[union-attr]
+    return mod
+
+
+_mod = _load()
+
+
+def _changelog(entries: str) -> str:
+    return (
+        "# Changelog\n\nIntro prose.\n\n## [Unreleased]\n\n"
+        + entries
+        + "\n## [0.30.0] - 2026-07-19\n\n### Changed\n\n"
+        + "- Released prose that no rule here applies to, at whatever length it likes.\n"
+    )
+
+
+def _backlog_done(items: str) -> str:
+    return "# Completed\n\n## Unreleased\n\n" + items + "\n## v0.30.0\n\n- [x] **BK-001 — old**\n  audience: user.api\n"
+
+
+def _line_of(tmp_path: Path, needle: str) -> int:
+    """1-indexed line of the first CHANGELOG line containing *needle*.
+
+    Derived from the written fixture rather than counted by hand: the fixture's
+    preamble is not what these tests are about, and a hand count of it goes
+    wrong when the preamble changes.
+    """
+    lines = (tmp_path / "CHANGELOG.md").read_text(encoding="utf-8").split("\n")
+    return next(i + 1 for i, line in enumerate(lines) if needle in line)
+
+
+def _tree(tmp_path: Path, entries: str, items: str) -> Path:
+    (tmp_path / "CHANGELOG.md").write_text(_changelog(entries), encoding="utf-8")
+    (tmp_path / "sdd").mkdir(exist_ok=True)
+    (tmp_path / "sdd" / "BACKLOG-DONE.md").write_text(_backlog_done(items), encoding="utf-8")
+    return tmp_path
+
+
+# One user-facing item and one that is not, each with its entry where the rule
+# asks for one. Reused as the clean baseline the mutation cases bend.
+_ENTRIES = "- BK-100: **Fix** — the thing now does the thing\n- BK-101: Tooling change nobody outside the repo sees\n"
+_ITEMS = (
+    "- [x] **BK-100 — The thing did not do the thing**\n"
+    "  spec: — · effort: S · audience: user.api, contributor.process\n"
+    "  Body prose.\n"
+    "- [x] **BK-101 — Rework a hatch script**\n"
+    "  spec: — · effort: S · audience: contributor.tooling\n"
+)
+
+
+class TestCleanBaseline:
+    def test_a_well_formed_section_passes(self, tmp_path: Path) -> None:
+        violations, notes = _mod.collect(_tree(tmp_path, _ENTRIES, _ITEMS))
+        assert violations == []
+        assert notes == []
+
+    def test_released_sections_are_not_read(self, tmp_path: Path) -> None:
+        """The fixture's [0.30.0] section carries a `###` heading and long prose,
+        both of which fail every rule here. Neither may be reported."""
+        violations, _ = _mod.collect(_tree(tmp_path, _ENTRIES, _ITEMS))
+        assert violations == []
+
+
+class TestUniqueness:
+    def test_a_duplicated_id_fails_naming_both_lines(self, tmp_path: Path) -> None:
+        entries = _ENTRIES + "- BK-100: **Fix** — the pre-amendment wording that a keep-both merge left behind\n"
+        violations, _ = _mod.collect(_tree(tmp_path, entries, _ITEMS))
+        assert len(violations) == 1
+        assert "BK-100" in violations[0].message
+        # Localized on both ends (DRIFT-RULES Rule 2): the duplicate's own line,
+        # and the line of the copy it duplicates.
+        assert violations[0].line == _line_of(tmp_path, "pre-amendment wording")
+        assert f"line {_line_of(tmp_path, 'the thing now does the thing')}" in violations[0].message
+
+    def test_the_shipped_defect_reproduces(self, tmp_path: Path) -> None:
+        """Two items each duplicated once is the state that reached master."""
+        entries = _ENTRIES + "- BK-100: earlier wording\n- BK-101: earlier wording\n"
+        tree = _tree(tmp_path, entries, _ITEMS)
+        violations, _ = _mod.collect(tree)
+        assert sorted(v.line for v in violations) == [
+            _line_of(tmp_path, "- BK-100: earlier wording"),
+            _line_of(tmp_path, "- BK-101: earlier wording"),
+        ]
+
+
+class TestShape:
+    def test_an_over_long_entry_fails(self, tmp_path: Path) -> None:
+        long_entry = "- BK-100: " + "x" * _mod._MAX_ENTRY_CHARS + "\n"
+        violations, _ = _mod.collect(_tree(tmp_path, long_entry + "- BK-101: fine\n", _ITEMS))
+        assert len(violations) == 1
+        assert str(_mod._MAX_ENTRY_CHARS) in violations[0].message
+
+    def test_an_entry_at_the_budget_passes(self, tmp_path: Path) -> None:
+        """The boundary is inclusive, so the constant means what it says."""
+        exact = "- BK-100: " + "x" * (_mod._MAX_ENTRY_CHARS - len("- BK-100: ")) + "\n"
+        assert len(exact.rstrip("\n")) == _mod._MAX_ENTRY_CHARS
+        violations, _ = _mod.collect(_tree(tmp_path, exact + "- BK-101: fine\n", _ITEMS))
+        assert violations == []
+
+    def test_a_link_target_is_not_charged_to_the_budget(self, tmp_path: Path) -> None:
+        """A URL is not prose, and counting it priced a breaking entry out of
+        linking to the migration section it owes — measured: two of four
+        breaking entries busted the budget on the link alone."""
+        url = "https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310"
+        entry = "- BK-100: " + "x" * 250 + f" See the [migration guide]({url}).\n"
+        assert len(entry.rstrip("\n")) > _mod._MAX_ENTRY_CHARS
+        violations, _ = _mod.collect(_tree(tmp_path, entry + "- BK-101: fine\n", _ITEMS))
+        assert violations == []
+
+    def test_a_long_link_label_is_charged(self, tmp_path: Path) -> None:
+        """The other half of the discount rule, and the half a mutant survived.
+
+        `_LINK_RE.sub(r"\\1", …)` keeps the link *text* and drops only the
+        target. Widening it to `sub("", …)` — one token — makes an arbitrarily
+        long reader-visible label free, which is the budget defeated, and the
+        two tests above both still passed under that mutant: one got further
+        under budget, the other was already over from its own padding.
+        """
+        label = "A" * 400
+        entry = f"- BK-100: [{label}](https://example.com)\n"
+        violations, _ = _mod.collect(_tree(tmp_path, entry + "- BK-101: fine\n", _ITEMS))
+        assert len(violations) == 1
+        assert "characters of prose" in violations[0].message
+
+    def test_prose_around_a_link_is_still_charged(self, tmp_path: Path) -> None:
+        """The discount is the target only — a paragraph does not become a stub
+        by having a link in it."""
+        entry = "- BK-100: " + "x" * _mod._MAX_ENTRY_CHARS + " [see](https://example.com).\n"
+        violations, _ = _mod.collect(_tree(tmp_path, entry + "- BK-101: fine\n", _ITEMS))
+        assert len(violations) == 1
+        assert "characters of prose" in violations[0].message
+
+    def test_a_sub_heading_inside_unreleased_fails(self, tmp_path: Path) -> None:
+        """Grouping headings are Phase 2's work; here they break the grammar the
+        duplicate check keys on."""
+        violations, _ = _mod.collect(_tree(tmp_path, "### Added\n\n" + _ENTRIES, _ITEMS))
+        assert len(violations) == 1
+        assert "not an entry" in violations[0].message
+
+    def test_a_wrapped_entry_fails(self, tmp_path: Path) -> None:
+        entries = "- BK-100: a title that someone\n  wrapped onto a second line\n- BK-101: fine\n"
+        violations, _ = _mod.collect(_tree(tmp_path, entries, _ITEMS))
+        assert len(violations) == 1
+        assert violations[0].line == _line_of(tmp_path, "wrapped onto a second line")
+
+
+class TestAudienceRule:
+    def test_a_user_facing_item_without_an_entry_fails(self, tmp_path: Path) -> None:
+        violations, _ = _mod.collect(_tree(tmp_path, "- BK-101: tooling\n", _ITEMS))
+        assert len(violations) == 1
+        assert violations[0].path == "sdd/BACKLOG-DONE.md"
+        assert "BK-100" in violations[0].message
+
+    def test_a_non_user_tag_is_recognised_as_user_facing(self, tmp_path: Path) -> None:
+        """The schema's predicate is the `user.` prefix, not the literal
+        `user.api`. Testing for the latter drops the items whose only user tag
+        is `user.site` or `user.discoverability.llm` -- which is exactly how a
+        hand count of the same parse came out three short."""
+        items = "- [x] **BK-100 — a docs change**\n  spec: — · effort: S · audience: user.discoverability.llm\n"
+        violations, _ = _mod.collect(_tree(tmp_path, "- BK-101: unrelated\n", items))
+        assert len(violations) == 1
+        assert "user.discoverability.llm" in violations[0].message
+
+    def test_an_item_with_no_audience_line_is_reported(self, tmp_path: Path) -> None:
+        """Unevaluable is a finding, not a silent pass."""
+        items = "- [x] **BK-100 — no metadata line at all**\n  Body prose.\n"
+        violations, _ = _mod.collect(_tree(tmp_path, "- BK-100: fine\n", items))
+        assert len(violations) == 1
+        assert "no `audience:` line" in violations[0].message
+
+    def test_body_prose_mentioning_audience_is_not_a_metadata_line(self, tmp_path: Path) -> None:
+        """The silent direction of the same defect, and the one the previous
+        test could not reach.
+
+        These bodies argue about audience routinely — the ID-252 entry argues
+        about its own — so an item with no metadata line whose prose contains
+        the word was handed whatever that sentence parsed to, and escaped the
+        rule entirely if none of it began with `user.`. Anchoring the pattern to
+        the metadata line is what prevents it; taking only the first match never
+        did.
+        """
+        items = (
+            "- [x] **BK-100 — no metadata line, but the body discusses it**\n"
+            "  This item's audience: contributor.tooling was argued about at length.\n"
+        )
+        violations, _ = _mod.collect(_tree(tmp_path, "- BK-101: unrelated\n", items))
+        assert len(violations) == 1
+        assert "no `audience:` line" in violations[0].message
+
+    def test_an_entry_without_a_completed_item_is_advisory(self, tmp_path: Path) -> None:
+        """The authority direction: the completed-item side governs, so an extra
+        entry is reported and does not fail."""
+        entries = _ENTRIES + "- ID-999: an ID the backlog knows nowhere\n"
+        violations, notes = _mod.collect(_tree(tmp_path, entries, _ITEMS))
+        assert violations == []
+        assert len(notes) == 1
+        assert "ID-999" in notes[0]
+
+    def test_an_entry_for_an_open_item_is_silent(self, tmp_path: Path) -> None:
+        """The register (DRIFT-RULES Rule 6). An open item that shipped one
+        bullet is a tolerated divergence with an owner already — the item — so
+        it draws no note. Without this, the live instance would print on every
+        green run until it closed, which is how a passing gate's output becomes
+        something readers skip."""
+        tree = _tree(tmp_path, _ENTRIES + "- ID-999: one bullet of a still-open item\n", _ITEMS)
+        (tree / "sdd" / "BACKLOG.md").write_text(
+            "# Backlog\n\n- [ ] **ID-999 — still open**\n  spec: — · effort: S · audience: user.api\n",
+            encoding="utf-8",
+        )
+        violations, notes = _mod.collect(tree)
+        assert violations == []
+        assert notes == []
+
+    def test_a_tilde_item_also_registers(self, tmp_path: Path) -> None:
+        """`[~]` is the in-progress marker CLAUDE.md principle 1 mandates, and it
+        is live — narrowing the register to `[ ]` would start nagging about a
+        partially-shipped item, which is the case the register exists for."""
+        tree = _tree(tmp_path, _ENTRIES + "- ID-999: one bullet of a [~] item\n", _ITEMS)
+        (tree / "sdd" / "BACKLOG.md").write_text(
+            "# Backlog\n\n- [~] **ID-999 — in progress**\n  spec: — · effort: S · audience: user.api\n",
+            encoding="utf-8",
+        )
+        violations, notes = _mod.collect(tree)
+        assert violations == []
+        assert notes == []
+
+    def test_a_completed_item_in_the_open_backlog_still_notes(self, tmp_path: Path) -> None:
+        """The register keys on *open*, so widening it to any status would
+        suppress the note for an `[x]` bullet left in BACKLOG.md — an item that
+        belongs in BACKLOG-DONE and whose entry nothing has accounted for."""
+        tree = _tree(tmp_path, _ENTRIES + "- ID-999: an entry nothing accounts for\n", _ITEMS)
+        (tree / "sdd" / "BACKLOG.md").write_text(
+            "# Backlog\n\n- [x] **ID-999 — done, but filed in the wrong place**\n",
+            encoding="utf-8",
+        )
+        violations, notes = _mod.collect(tree)
+        assert violations == []
+        assert len(notes) == 1
+        assert "ID-999" in notes[0]
+
+    def test_a_suffixed_id_parses_as_itself(self, tmp_path: Path) -> None:
+        """IDs may carry a letter suffix — BK-139d, ID-118b and ID-013b are live
+        in the backlog, and `gen_backlogid.py` spells the number `\\d+[a-z]*`.
+
+        Spelling it `[A-Z]+-\\d+` was wrong twice over: a legitimate suffixed
+        stub was failed as a stray line, and the completed-item pattern silently
+        truncated `BK-139a` to `BK-139`, so the audience rule would demand an
+        entry for an ID that does not exist and accept an unrelated one.
+        """
+        entries = "- BK-139a: **Fix** — a suffixed item\n"
+        items = "- [x] **BK-139a — a suffixed item**\n  spec: — · effort: S · audience: user.api\n"
+        violations, notes = _mod.collect(_tree(tmp_path, entries, items))
+        assert violations == []
+        assert notes == []
+
+    def test_a_parenthetical_bullet_parses(self, tmp_path: Path) -> None:
+        """`**BK-167b (partial) — …` is a live shape that gen_backlogid tolerates."""
+        entries = "- BK-167b: **Fix** — the partial one\n"
+        items = "- [x] **BK-167b (partial) — the partial one**\n  spec: — · effort: S · audience: user.api\n"
+        violations, _ = _mod.collect(_tree(tmp_path, entries, items))
+        assert violations == []
+
+    def test_a_non_x_status_is_not_a_completed_item(self, tmp_path: Path) -> None:
+        """Completed means `[x]`, matching BACKLOG-DONE's own preamble and
+        gen_backlogid.py. Two parsers over one artifact disagreeing about what
+        counts is the defect the shared module exists to avoid."""
+        items = "- [~] **BK-100 — shipped one bullet**\n  spec: — · effort: S · audience: user.api\n"
+        violations, _ = _mod.collect(_tree(tmp_path, "- BK-101: unrelated\n", items))
+        assert violations == []
+
+
+class TestCannotFailSilently:
+    """The failure mode that made round 1's only bug finding.
+
+    Returning an empty item list for "the heading is gone" made the audience
+    rule evaluate nothing while the gate printed success and exited 0 — and
+    Phase 2 renames that exact heading, so the silent case sat on the release
+    path.
+    """
+
+    def test_a_renamed_done_heading_raises(self, tmp_path: Path) -> None:
+        tree = _tree(tmp_path, _ENTRIES, _ITEMS)
+        done = tree / "sdd" / "BACKLOG-DONE.md"
+        done.write_text(
+            done.read_text(encoding="utf-8").replace("## Unreleased", "## v0.31.0"),
+            encoding="utf-8",
+        )
+        with pytest.raises(_mod.DerivationError):
+            _mod.collect(tree)
+
+    def test_a_missing_done_file_raises(self, tmp_path: Path) -> None:
+        tree = _tree(tmp_path, _ENTRIES, _ITEMS)
+        (tree / "sdd" / "BACKLOG-DONE.md").unlink()
+        with pytest.raises(_mod.DerivationError):
+            _mod.collect(tree)
+
+    def test_main_exits_nonzero_rather_than_reporting_success(self, tmp_path: Path, capsys) -> None:
+        """The half that matters: the CLI must not print the success line."""
+        tree = _tree(tmp_path, _ENTRIES, _ITEMS)
+        (tree / "sdd" / "BACKLOG-DONE.md").unlink()
+        assert _mod.main(["--repo-root", str(tree)]) == 1
+        captured = capsys.readouterr()
+        assert "stub-shaped and complete" not in captured.out
+        assert "cannot derive the claim" in captured.err
+
+    def test_a_missing_changelog_raises_rather_than_blaming_the_heading(self, tmp_path: Path) -> None:
+        """The two failures are different and were reported as one: an
+        unreadable file came back as "no `## [Unreleased]` heading (was it
+        renamed early?)", sending the reader to Phase 2 to look for a renamed
+        heading in a file that is not there."""
+        tree = _tree(tmp_path, _ENTRIES, _ITEMS)
+        (tree / "CHANGELOG.md").unlink()
+        with pytest.raises(_mod.DerivationError):
+            _mod.collect(tree)
+
+    def test_a_missing_unreleased_heading_is_reported(self, tmp_path: Path) -> None:
+        """The CHANGELOG side already reported this; pinned so it stays that way."""
+        tree = _tree(tmp_path, _ENTRIES, _ITEMS)
+        changelog = tree / "CHANGELOG.md"
+        changelog.write_text(
+            changelog.read_text(encoding="utf-8").replace("## [Unreleased]", "## [0.31.0] - 2026-09-01"),
+            encoding="utf-8",
+        )
+        violations, _ = _mod.collect(tree)
+        assert len(violations) == 1
+        assert "no `## [Unreleased]` heading" in violations[0].message
+
+
+class TestAgainstTheRepo:
+    def test_the_repo_passes_its_own_gate(self) -> None:
+        violations, _ = _mod.collect(_REPO_ROOT)
+        assert violations == []
+
+    def test_main_returns_zero_on_the_repo(self, capsys) -> None:
+        assert _mod.main(["--repo-root", str(_REPO_ROOT)]) == 0
+
+    def test_main_renders_a_violation(self, tmp_path: Path, capsys) -> None:
+        """The exit-1 branch is the one a developer actually meets, and its
+        message is the whole user-facing value of this gate — it is where the
+        reader is sent to CONTRIBUTING and the ripple-check row. `scripts/` is
+        outside `--cov=remote_store`, so nothing else would notice it breaking.
+        """
+        entries = _ENTRIES + "- BK-100: a duplicate\n"
+        assert _mod.main(["--repo-root", str(_tree(tmp_path, entries, _ITEMS))]) == 1
+        captured = capsys.readouterr()
+        assert "CHANGELOG.md:" in captured.err
+        assert "1 violation(s)" in captured.err
+        assert "ripple-check row" in captured.err
+        assert "stub-shaped and complete" not in captured.out
+
+    def test_main_prints_the_advisory_note_and_still_passes(self, tmp_path: Path, capsys) -> None:
+        entries = _ENTRIES + "- ID-999: an ID the backlog knows nowhere\n"
+        assert _mod.main(["--repo-root", str(_tree(tmp_path, entries, _ITEMS))]) == 0
+        captured = capsys.readouterr()
+        assert "ID-999" in captured.out
+        assert "stub-shaped and complete" in captured.out
