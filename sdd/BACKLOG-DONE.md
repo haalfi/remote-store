@@ -253,6 +253,26 @@ if evidence changes; these are retired.
   at a 3.6x margin that is sleep-dominated, 6/6 passing under 6x CPU
   oversubscription and 284 passing under `-n auto`. Two reviewers disagreed on
   fact and the one that ran it settled it.
+  **Round 4 then found eight more, every one in round 3's own output**, which is
+  the fourth consecutive round whose findings were created by the corrections of
+  the round before. The sharpest was a test:
+  `test_a_transfer_slower_than_the_bound_is_not_interrupted` passed with the
+  bound unarmed, because asserting a success and asserting the transfer outlived
+  the bound never observes a channel timeout — so the test carrying SFTP-030's
+  load-bearing claim was silent about the bound. It now asserts the armed value
+  on the live channel first. The others were a docstring that claimed a two-way
+  partition the file does not have, a tolerated-divergence register that cited
+  Rule 5 while linking Rule 6's anchor and satisfied neither, and that register's
+  "every site is listed here" mitigation, which was five sites short when
+  written — a checklist a reader trusts and that is one entry short is worse than
+  no checklist, so it was replaced by a derivation, as the census had been one
+  round earlier.
+  **What the loop cost, and what it never found.** Four rounds, 26 findings, and
+  **no defect in shipped behaviour**: the implementation is one line, unchanged
+  since the first commit, executed against the base branch in both directions by
+  two measuring passes. Every finding was in prose or in a test's own claims
+  about itself, and the majority were introduced by fix passes rather than by the
+  original change.
 
 - [x] **BK-357 — A `SEEK_END` seek hides its own stall, so the futile-close guard cannot arm**
   spec: SIO-011, SIO-010, SFTP-030 · effort: M · audience: user.api, user.api_docs, user.site

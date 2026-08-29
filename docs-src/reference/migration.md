@@ -23,7 +23,7 @@ backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=No
 Reach for that if your server legitimately goes silent for more than two minutes
 mid-operation and you would rather wait than fail. Note `0` is **not** the
 opt-out — it raises `ValueError`, because paramiko reads it as non-blocking and
-every read would fail at once.
+every operation would fail at once, writes included.
 
 **What changes if you do nothing.** An operation against a peer that completes
 the SSH handshake and then stops sending used to block forever, with no

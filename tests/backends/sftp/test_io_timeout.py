@@ -18,7 +18,7 @@ link needs it.
 **It arms by default**, at ``120.0`` seconds, which splits this file's
 ``_make_backend`` call sites three ways. Most **pin a value** — a short one, so a
 test that waits out a bound stays cheap. A few **omit the argument**, inheriting
-the shipped default, and two **pass ``None``**, asserting the opt-out itself.
+the shipped default, and a few **pass ``None``**, asserting the opt-out itself.
 Nothing here omits the argument in order to mean "unbounded" — see ``_INHERIT``
 below for why that distinction has to be spelled out.
 
@@ -37,15 +37,18 @@ and one silent case, and a clause asserting a paramiko behaviour is the kind of
 claim this work has got wrong by reading rather than running, so each is
 *characterised by a test* rather than asserted.
 
-That splits the file into **faults**, enumerated below, and **one case that is
-not a fault at all**: a transfer merely *slower* than the bound, which must
-complete. It gets its own category because it is the only test here asserting a
-success, and because no arrangement of the fault tests can reach it — they all
-make the bytes stop, and the claim is about what happens when they do not
-(``test_a_transfer_slower_than_the_bound_is_not_interrupted``, driven by
-``_StallRelay.throttle_download``). It is the half of SFTP-030 that tells a
-slow-link caller to change nothing, so it became load-bearing when the bound
-became the default.
+The **fault** tests are enumerated below. One relay-driven test is not among
+them and is not an omission: a transfer merely *slower* than the bound, which
+must complete (``test_a_transfer_slower_than_the_bound_is_not_interrupted``,
+driven by ``_StallRelay.throttle_download``). It is the only relay test
+asserting a success, and no arrangement of the fault tests can reach what it
+asserts — they all make the bytes stop, and the claim is about what happens when
+they do not. It is the half of SFTP-030 that tells a slow-link caller to change
+nothing, so it became load-bearing when the bound became the default.
+
+The enumerations below cover the faults, not the file: construction validation
+and the tests that assert the bound reaches the channel stage no fault either,
+and are not listed.
 
 **Five faults it covers**, because they fail by different mechanisms and none
 implies the others:
@@ -701,10 +704,16 @@ def test_a_transfer_slower_than_the_bound_is_not_interrupted(stall_relay: _Stall
     which is exactly the class of paramiko-behaviour claim this file exists to
     run rather than read.
 
-    Non-vacuity is asserted, not assumed: the elapsed time must *exceed* the
-    bound, or the transfer never got slow enough to prove anything. The control
-    is the whole rest of the file — the same relay, the same bound and the same
-    server raise inside one bound as soon as the bytes stop instead of slowing.
+    **Non-vacuity is asserted twice, because one assertion covers only half of
+    it.** The elapsed time must *exceed* the bound, or the transfer never got
+    slow enough to prove anything — and the bound must be *armed on the live
+    channel*, or the test says nothing about the bound at all. Without the
+    second, deleting ``settimeout()`` from ``_connect`` leaves this green: a
+    throttled transfer completes slowly on an unbounded channel too, which is
+    not the claim. Relying on the rest of the file as the control was the
+    argument this file rejects one test earlier, where the version-exchange
+    control was made to pass ``io_timeout=None`` explicitly rather than lean on
+    a neighbour.
     """
     io_timeout = 1.0
     gap = 0.3  # comfortably inside the bound, so the link is slow and never silent
@@ -712,6 +721,12 @@ def test_a_transfer_slower_than_the_bound_is_not_interrupted(stall_relay: _Stall
     name = f"slow_{uuid.uuid4().hex[:8]}.bin"
     payload = bytes(range(256)) * 1024  # 256 KiB, non-uniform so a wrong answer shows
     backend.write(name, payload)
+    # The write above connects, so this costs no round trip. It is what makes
+    # the assertions below statements about the bound rather than about a slow
+    # transfer on a channel that may have had no bound at all.
+    assert _channel_timeout(backend) == pytest.approx(io_timeout), (
+        "the bound must be armed on the live channel, or this test proves nothing about it"
+    )
 
     stall_relay.throttle_download(gap, 32 * 1024)
     start = time.monotonic()

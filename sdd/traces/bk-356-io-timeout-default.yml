@@ -32,12 +32,14 @@ expected_ripples:
 # Derivation, per the review_rounds description in _schema.yml: on
 # `git log --oneline origin/master..HEAD`, a4feee9 implements and does not
 # count; ef3edad and b692e12 incorporate review round 1, fb6fbb3 incorporates
-# round 2, and 422d119 incorporates round 3, the closing panel. Value is
-# 3 — rounds, not commits, which is why ef3edad and b692e12 count once between
-# them. Each SHA is written after the commit it names exists rather than
-# predicted, which is why the naming lags by a commit: the schema calls a
-# plausible SHA that resolves to nothing worse than no derivation at all.
-review_rounds: 3
+# round 2, 422d119 incorporates round 3 (the closing panel), and the round-4
+# fix commit is named here once it exists. Value is 4 — rounds, not commits,
+# which is why ef3edad and b692e12 count once between them, and why the
+# SHA-naming commits (8428841, 2d35d6a) count for nothing. Each SHA is written
+# after the commit it names exists rather than predicted, which is why the
+# naming lags by a commit: the schema calls a plausible SHA that resolves to
+# nothing worse than no derivation at all.
+review_rounds: 4
 
 phases:
   - id: orient
@@ -236,12 +238,45 @@ phases:
           diffed the entries against their base-branch prose, caught the content
         outcome: ok
       - file: sdd/DRIFT-RULES.md
-        section: "Rule 5 (tolerated divergence)"
+        section: "Rule 5 (mandatory path), Rule 6 (tolerated divergence)"
         read_type: verify
         extract: >-
-          Round 3 asked why 17 prose restatements of the default are ungated.
-          Recorded as a tolerated divergence in SFTP-030 with its cost stated,
-          rather than building a signature-to-prose gate. The stale census in
-          the same round is that tolerance being paid, which is the honest thing
-          to put next to the decision
+          Round 3 asked why the prose restatements of the default are ungated,
+          and the answer was recorded in SFTP-030 rather than gated. Round 4
+          then caught the record itself twice: it cited "Rule 5" while linking
+          Rule 6's anchor, and it satisfied neither — Rule 5 wants the reason a
+          check is not gating, Rule 6 wants an owner and a rationale, and the
+          entry named no owner. Both are now cited correctly and separately,
+          with CONTENT-RULES Rule 5 named as the authority the duplication
+          actually diverges from. Tagged misleading against my own reading of
+          this file rather than against the file: the anchor and the number are
+          both plainly there, and I paired them wrong
+        outcome: misleading
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030 (tolerated-divergence register)"
+        read_type: verify
+        extract: >-
+          Round 4's sharpest structural finding, and the second time in two
+          rounds the same lesson had to be learned: the register's mitigation
+          was "every site is listed in this paragraph", and the list was five
+          sites short when written. A checklist a reader trusts and that is one
+          entry short is worse than no checklist, because it stops the search —
+          the same defect shape as the stale census, in the paragraph written to
+          record why that defect is tolerated. Replaced by a derivation, which
+          is what the census fix had already chosen one round earlier
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "test_a_transfer_slower_than_the_bound_is_not_interrupted"
+        read_type: verify
+        extract: >-
+          Round 4's unprimed pass found the test carrying SFTP-030's
+          load-bearing claim passed with the bound unarmed: it asserted a
+          success and that the transfer outlived the bound, neither of which
+          observes a channel timeout. Deleting settimeout() from _connect left
+          it green. One line closes it, and the argument I had written against
+          it — that the rest of the file is the control — is the argument this
+          same file rejects one test earlier, where the version-exchange control
+          was made to pass io_timeout=None explicitly rather than lean on a
+          neighbour. I applied the standard in round 1 and failed to apply it to
+          the test I wrote in round 2
         outcome: ok

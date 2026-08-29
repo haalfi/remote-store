@@ -195,8 +195,9 @@ be edited to point elsewhere.
 <a id="predictable-failure"></a>
 ## 1. Failures are predictable
 
-**Promise:** a caller catches one exception type, and an absent or denied
-store answers the same way on every backend.
+**Promise:** a caller catches one exception type, an absent or denied store
+answers the same way on every backend, and the failure they catch says which
+failure it was.
 
 **Closes when:** the root of an absent container meets BE-029 on every
 backend (BUG-254); a listing does not truncate silently when its container is
@@ -207,7 +208,8 @@ recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 payload size (BUG-253); a caller who meets a failure can tell *which* failure it
 was, rather than an empty message and no log record (BK-359); and a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
-(BK-345). BK-359 widens the promise a little and deliberately: an error that is
+(BK-345). BK-359 is why the Promise above carries a third clause, added with it
+rather than left implicit: an error that is
 the right *type* on every backend but says nothing is predictable to a checker
 and not to the person reading their log, and this section is where that reader
 is served. The spec contradiction is adjudicated — BUG-248, closed by

@@ -87,8 +87,9 @@ on staleness is also supported (see SFTP-010).
 **Invariant:** `host` must be a non-empty string. Passing an empty or whitespace-only
 host raises `ValueError` at construction time. `io_timeout`, when not `None`, must
 be a positive number of seconds; `0` and negatives raise `ValueError` — paramiko
-reads `0` as non-blocking, which would fail every read immediately rather than
-bound it. `None` is therefore the only way to ask for an unbounded channel, and
+reads `0` as non-blocking, which would fail every operation immediately rather
+than bound it — writes included, since `settimeout(0)` is a property of the
+channel and not of a direction. `None` is therefore the only way to ask for an unbounded channel, and
 `0` is not a spelling of it: the two look interchangeable to a caller reaching
 for "no limit" from a default that is now a real bound (SFTP-030).
 **Postconditions:** No network validation of host reachability at construction time.
@@ -434,23 +435,39 @@ looks for it.
 an operation that previously blocked forever now raises `BackendUnavailable`
 after two minutes of silence. `io_timeout=None` restores the old behaviour.
 
-**The value is restated in prose in several places, and nothing gates that.**
-The constructor's default is the source; SFTP-001's signature block, the clauses
-here, the SFTP guide's options table and Connection Behaviour bullet, the
-troubleshooting page and the migration entry all repeat it, and no check
-compares any of them to the signature. `test_default_arms_the_bound_on_the_channel`
-pins the *constructor* against a literal, so a silent change to the default
-fails there; the prose sweep is a reviewer's job.
-This is a **tolerated divergence** rather than an oversight, recorded here per
-[`DRIFT-RULES.md` Rule 5](../DRIFT-RULES.md#tolerated) with its cost stated
-rather than assumed away: a gate would have to parse a default out of a
-signature and match it against prose in four file formats, and the claim space
-is one number that changes about once per major behavioural decision. The cost
-is real and was paid in this item's own review — a derived figure in a test
-docstring went stale one commit after review corrected it. That is the failure
-mode a reader should expect here; the mitigation is that every site is listed
-in this paragraph, so a future change to the default has a checklist rather
-than a search.
+**The value is restated in prose in many places, and nothing gates that.** The
+constructor's signature is the source. It is repeated in the constructor's own
+docstring, in `_is_connection_dead`'s, in SFTP-001's signature block, in the
+clauses here, across the SFTP guide, the troubleshooting page and the migration
+entry, and in this test file's own prose — and no check compares any of them to
+the signature. `test_default_arms_the_bound_on_the_channel` pins the
+*constructor* against a literal, so a silent change to the default fails there;
+the prose sweep is a reviewer's job.
+
+**No list of those sites is given here, deliberately.** An enumeration is the
+obvious mitigation and the wrong one: it is a second derived artifact over the
+same fact, so it goes stale exactly as the prose does, and a checklist a reader
+trusts and that is one entry short is worse than no checklist, because it stops
+the search. This clause tried the enumeration and it was short by five sites
+within one review round. Derive the set instead — `rg -n 'io_timeout' src docs-src sdd tests`,
+read the hits that state a value — which is the same trade the `_make_backend`
+census in `tests/backends/sftp/test_io_timeout.py` made for the same reason.
+
+Both halves are registered rather than assumed away.
+[`DRIFT-RULES.md` Rule 5](../DRIFT-RULES.md#mandatory-path) asks why the check is
+not gating: a gate would have to parse a default out of a signature and match it
+against prose in four file formats, while the claim space is one number that
+changes about once per major behavioural decision.
+[`Rule 6`](../DRIFT-RULES.md#tolerated) asks for an owner and a rationale on what
+that leaves tolerated: **owner BK-356**, rationale as above.
+[`CONTENT-RULES.md` Rule 5](../CONTENT-RULES.md) is the authority the duplication
+actually diverges from — source-code facts stay in source — and the divergence
+is narrower than it looks: the options table and the migration entry have to
+state values to do their jobs, and what is genuinely tolerated is the narrative
+restatements beside them. The cost is real and was paid inside this item's own
+review, twice: a derived figure in a test docstring went stale one commit after
+review corrected it, and the enumeration this paragraph used to carry was
+incomplete when written.
 
 **It is armed before the SFTP session exists, not after.** `_connect` opens the
 channel, arms the bound, then invokes the `sftp` subsystem and constructs the
