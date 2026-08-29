@@ -45,6 +45,52 @@ a decision *about* a diagnosis is still a decision and deleting both is how the
 same idea returns with the argument had from scratch. Re-file under a **new** ID
 if evidence changes; these are retired.
 
+- [x] **— A gate binding a `**Breaking**` entry to a migration section** *(refused as BUG-261's second disposition; never had an ID)*
+  BUG-261 offered it as one of three dispositions: if any `[Unreleased]` entry
+  contains `**Breaking**`, `docs-src/reference/migration.md` must carry a
+  `## v<current> to v<next minor>` heading, both halves derived
+  ([Rule 3](DRIFT-RULES.md#claim-space)) — the entries parsed from the section,
+  the current version from the `pyproject.toml` field `bump-my-version` owns,
+  the next from `CONTRIBUTING.md` § When to bump. Wiring, if it is ever built:
+  both files sit in `ci.yml`'s `DOCS_PAT` and not `CODE_PAT`, so a
+  CHANGELOG-only diff runs `docs-gate` and not `lint` — the trap BK-333
+  documents, and reaching only one leaves the check unreachable for the diff
+  class that invalidates it.
+  **Refused because its measurable subset is the half already least likely to
+  go wrong, and its bounds are wide.** A gate keys on the marker, so it measures
+  the marked entries only; BUG-261's own re-derivation found **6** softer-half
+  candidates against 4 marked ones, and none of the six is reachable by any
+  marker — the miss rate is larger than the catch. It can also only check that a
+  *section for the version pair* exists, never that the section covers the entry
+  in question, because `scripts/check_no_tracker_refs.py` forbids the published
+  guide from citing the entry it answers. So a green gate would mean "some
+  section exists for this release", which BK-357 already satisfied while BUG-248
+  and BK-324 went uncovered — the exact defect BUG-261 was filed for would have
+  passed it. The ruling that shipped instead puts the obligation in the
+  ripple-check row the author reads before starting, which reaches both halves.
+  Re-file under a new ID if a marked entry ships without a section again; that
+  is the observation this refusal is betting against, and it is checkable at any
+  release's Phase 1.
+
+- [x] **— Keeping the `**Breaking**` marker through CHANGELOG condensation** *(refused as BUG-261's third disposition; never had an ID)*
+  BUG-261's third disposition, and a real observation: the marker exists **only**
+  while a section is unreleased, because `CONTRIBUTING.md` § Release Phase 2
+  condenses `[Unreleased]` into `### Added` / `### Changed` prose and drops it.
+  That is why 38 released sections carry one bold `**Breaking**` between them
+  (`rg -c '^## \[' CHANGELOG.md` returns 39, one of them `[Unreleased]`), and it
+  means nothing can audit breaking changes across history — only the current
+  window.
+  **Refused on blast radius against demonstrated need.** Preserving the marker
+  changes the shape of every released section and the release skill that writes
+  them, and the only use named for it is a hypothetical retrospective audit that
+  nobody has asked to run. Under [§ Admission test](BACKLOG.md#how-this-file-works)
+  that is an idea with no demonstrated value, so it is refused rather than filed
+  and carried. The narrower need it would serve — knowing whether *this* release's
+  breaking entries have upgrade paths — is answered by Phase 1 while the section
+  is still unreleased and the marker is still there. Re-file under a new ID if an
+  audit of historical breaking changes is ever actually wanted; the diagnosis
+  above is what it would start from.
+
 - [x] **— SFTP `keepalive_interval`** *(refused at admission; never had an ID)*
   The second of the two asks in [issue #970](https://github.com/haalfi/remote-store/issues/970),
   which the reporter themself scoped as "secondary, and clearly lower priority"
@@ -183,9 +229,21 @@ if evidence changes; these are retired.
   **Shipped:** both, plus a third section the item's softer half asked to be
   adjudicated rather than assumed. Under the existing
   `## v0.30.0 to v0.31.0` heading, **six** new subsections join the SFTP
-  material already there. Derivation: the bold `**…:**` leads between that
-  heading and the next number 9, of which 3 are pre-existing — BK-356 and
-  BK-357's two topics, the first carrying a second lead for its opt-out. The
+  material already there. Derivation, and **the instrument had to be fixed
+  before the figure was right**: counting the bold `**…:**` leads between that
+  heading and the next with a single-line pattern returns 9 here and 3 on
+  master, and both undercount by one — BK-356's "If your server legitimately
+  pauses for minutes…" lead wraps across two source lines, so `^\*\*.*:\*\*$`
+  never matches it. Re-run with a multiline pattern
+  (`(?ms)^\*\*(?:(?!\*\*).)*?:\*\*$`) over `git show
+  origin/master:docs-src/reference/migration.md` and over the working copy: **4**
+  pre-existing leads and **10** now, so **6** are new. The 6 was right and the
+  9/3 pair was not, which is the failure mode
+  [principle 9](../CLAUDE.md#principles) names — re-reading the sentence does
+  not catch a silently undercounting instrument, and the two wrapped-lead
+  siblings (lines 18 and 29 on master) are structurally the same kind of lead,
+  so "the first carrying a second lead for its opt-out" was counting one of a
+  pair. The
   six are the flat-namespace wrong-type `InvalidPath` roster; the root-path
   answers for `""` / `"."`, scoped to backends declaring `Capability.LIST` and
   carrying the write refusal BUG-259 landed; the
@@ -220,10 +278,17 @@ if evidence changes; these are retired.
     `S3PyArrowBackend` becoming `PermissionDenied` — including
     `delete(missing_ok=True)`, which swallowed it. Both break an `except` clause
     as squarely as the three named. Now a sixth subsection.
-  The nine excluded are the four `**Breaking**` ones (already covered), BK-355
-  and BK-354 (a faster failure path and an additive parameter), ID-245 and
-  BUG-258 (tooling and a typing-only conformance fix), and the four
-  documentation entries BK-331, BK-320, BUG-235 and BK-317.
+  The **nine** excluded are the 15 minus the 6, so the four `**Breaking**` ones
+  are not among them — they were never in the set being partitioned. Named in
+  full, because a total a reader cannot check is worth nothing: BK-355 and
+  BK-354 (a faster failure path and an additive parameter), ID-245 and BUG-258
+  (tooling and a typing-only conformance fix), the four documentation entries
+  BK-331, BK-320, BUG-235 and BK-317, and **BUG-261 itself**, whose own stub is
+  one of the 19 the count was taken over. The first draft of this sentence named
+  twelve items for a total of nine by folding the four `**Breaking**` entries in
+  and dropping BUG-261 — caught in round 2, and it is the same defect twice over:
+  a list that neither reproduces its total nor excludes what the derivation
+  excluded.
   **None of the six is marked `**Breaking**`, and that is the rule working.**
   The softer half owes the section, not the marker, so a `migration.md` section
   whose entry reads `**Fix**` is not a counterexample to the new row — round 1
@@ -275,18 +340,16 @@ if evidence changes; these are retired.
   and one parallel line there is the highest-leverage placement left. Not taken:
   the ruling as scoped was two artifacts, and a third restatement is another
   copy to keep in step for a rule whose authority is now the ripple-check row.
-  Worth a new ID if the row proves not to reach authors.
-  - *Tooling* (a gate deriving the expected `## v<current> to v<next minor>`
-    heading from the `[Unreleased]` markers and `bump-my-version`'s
-    `current_version`) was **declined for this PR, not decided against.** The
-    diagnosis stands and the wiring trap BK-333 records still applies — both
-    files sit in `ci.yml`'s `DOCS_PAT`, not `CODE_PAT`. Re-file under a new ID
-    if the ruling misses.
-  - *Marker survival* (keeping `**Breaking**` through Phase 2's condensation, so
-    anything can audit history rather than only the current window) likewise
-    declined here: it changes the convention of all 38 released sections
-    (`rg -c '^## \[' CHANGELOG.md` returns 39, one of them `[Unreleased]`),
-    which is a larger blast radius than the item's close condition needs.
+  The same reasoning retires it rather than deferring it, as below.
+  **The other two dispositions are refused, not deferred, and each has its own
+  [§ Decided against](#decided-against) entry** carrying its diagnosis. Round 2
+  caught the first draft calling them "declined for this PR, not decided
+  against" while closing the item `[x]` with no successor ID — which is
+  [§ Completing work](BACKLOG.md#how-this-file-works)'s *partially done* branch
+  wearing the *fully done* mark, and that branch asks for a new ID. Settled the
+  other way on the author's decision: BUG-261 closes fully done, the two ideas
+  are refused with their arguments preserved, and no ID is consumed, which is
+  what the `—`-prefixed form in that section exists for.
   **The row's shape prejudges BK-346's shared question, and says so.** BK-346
   carries N-rows-versus-widened-rows for its four row-wanting instances and has
   not answered it; this is a new row. Chosen because widening **CHANGELOG
@@ -307,9 +370,12 @@ if evidence changes; these are retired.
   recorded one. Both figures moved for the same reason the rate did.
   **What the published guide still cannot do**, unchanged by this work:
   `scripts/check_no_tracker_refs.py` scans every `.md` under `docs-src/` and
-  fails any `PREFIX-NNN`, so no section can cite the entry it answers. The five
-  new subsections are therefore written by what a caller observes, and
+  fails any `PREFIX-NNN`, so no section can cite the entry it answers. All
+  **six** new subsections are therefore written by what a caller observes, and
   per-entry accountability lives on the `sdd/` side — here and in the trace.
+  The count is load-bearing rather than decorative here, since it names which
+  sections the constraint is claimed over; it said five until round 2, having
+  been written against the five-subsection draft.
   Same file and same window as **ID-252**, which lints the `[Unreleased]`
   section's own integrity and never reads `migration.md`; that item is
   unaffected by this closure and its cross-reference was repaired in the same

@@ -31,10 +31,16 @@ surprising_ripples:
   # carry. Writing a migration section is what created both, and no row asks
   # whether a new published promise lands inside an open item's measured extent.
   - sdd/BACKLOG.md
-# review_rounds is filled post-merge from the commits on this branch; naming the
-# commits is required by _schema.yml's review_rounds description. At authoring
-# time the branch carries one implementation commit and no review has run, so
-# the field is omitted rather than asserted as 0.
+# Named from `git log --oneline origin/master..HEAD`, per _schema.yml's
+# review_rounds description. c691866 implements and does not count. c337327
+# corrects a figure I found while drafting the PR body, not review feedback, so
+# it does not count either. fdfba64 incorporates review round 1 and counts; the
+# commit carrying round 2 is the second. Value is 2 at the time of writing, and
+# the field is set rather than omitted because two rounds have run and are
+# documented as phases below — an earlier draft justified omitting it by saying
+# no review had run, which was false in the same file 130 lines further down.
+# Raise it if a later round lands another fix commit.
+review_rounds: 2
 phases:
   - id: orient
     name: Orient on the item and re-derive its figures
@@ -213,7 +219,7 @@ phases:
         extract: "BACKLOG item moved, CHANGELOG stub added, trace shipped in the same PR"
         outcome: ok
   - id: fix
-    name: Review round 1
+    name: Review rounds 1 and 2
     steps:
       - file: sdd/BACKLOG.md
         section: "1 / BUG-256, BUG-254"
@@ -269,4 +275,43 @@ phases:
           drive-identity resourceNotFound still escalates — sound, and left as
           written. Graph is absent from BUG-256's measured table, so the check
           was the source rather than that item.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "1 / BUG-254 (measured table)"
+        read_type: gate
+        extract: >-
+          Round 2, and the round-1 fix's own defect. BUG-254's table has three
+          breaching columns and counts seven class-cells; round 1 bounded the
+          guide against one column (get_folder_info on three classes) and left
+          the other two — exists("") and is_folder("") answering False on
+          S3Backend and S3PyArrowBackend — promised flatly by the root table.
+          Worse, the round-1 reply asserted that table "describes a store whose
+          container is present", which the table itself never said. Fixed by
+          stating the scope in the text and tabulating all seven cells. The
+          lesson is that reading one row of a measured table and fixing what it
+          names is the same miss the table exists to prevent.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 (type mismatch outranks missing_ok)"
+        read_type: gate
+        extract: >-
+          Round 2. The clause at lines 738-741 says delete(folder,
+          missing_ok=True) and delete_folder(file, missing_ok=True) raise
+          InvalidPath, and the flat-namespace section omitted it — the one
+          interaction most likely to newly raise in existing code, since a
+          cleanup loop passing missing_ok=True is exactly the idiom that used to
+          get the silent no-op. The other two new sections both documented their
+          missing_ok interaction, so this one was the outlier.
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work"
+        read_type: gate
+        extract: >-
+          Round 2. Recording two dispositions as "declined for this PR, not
+          decided against" while closing the item [x] with no successor ID is
+          the partially-done branch wearing the fully-done mark. Settled on the
+          author's decision as decided-against: two entries in BACKLOG-DONE
+          § Decided against using the `—`-prefixed form that section defines for
+          a refused idea that never had an ID, so the diagnoses survive with no
+          open item and no ID consumed.
         outcome: ok

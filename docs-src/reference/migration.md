@@ -141,6 +141,15 @@ cases need action:
   `move` / `copy` reporting success, now gets an error. Those calls were
   reporting an operation that had not happened: use `delete_folder` for a
   folder, and `move` / `copy` on files.
+- **`missing_ok=True` does not suppress it.** A type mismatch outranks the
+  tolerance, so `delete(folder, missing_ok=True)` and
+  `delete_folder(file, missing_ok=True)` raise `InvalidPath` too — the tolerance
+  is for a *missing* path, not a wrong-typed one. This is the case most likely
+  to newly raise in code you already have: a cleanup loop written as
+  `store.delete(p, missing_ok=True)` is exactly the idiom that used to get the
+  silent no-op above, and passing `missing_ok=True` to be tolerant does not
+  exempt it. Hierarchical backends already behaved this way; the flat-namespace
+  ones now match.
 
 **Scope:** the operations above, which are the ones that can *fail* on a
 wrong-typed path. On a flat namespace a write to a key that shadows a prefix
@@ -161,6 +170,10 @@ it enumerates them. [`ReadOnlyHttpBackend`](api/backends/http.md) declares no
 resolves the empty key to its base URL and reads that — so the table below does
 not describe it, and nothing about it changed.
 
+The table below describes a store whose bucket, container or directory is
+**present**. What the root answers when it is *not* is the subject of a later
+section, and two of the answers here do not yet survive that case.
+
 | Call on the store root | Answer from v0.31.0 |
 |------------------------|---------------------|
 | `exists("")`, `is_folder("")` | `True` |
@@ -168,6 +181,16 @@ not describe it, and nothing about it changed.
 | `get_folder_info("")` | aggregates the whole store; zero on an empty one |
 | `read`, `get_file_info`, `delete` on the root | `InvalidPath` — the root is a folder, not a file |
 | `write`, `write_atomic`, `open_atomic` on the root | `InvalidPath`, decided from the key before any request is issued |
+
+**Two of these do not hold yet against a container that is missing**, and the
+guide says so rather than promising them. On `S3Backend` and
+`S3PyArrowBackend`, `exists("")` and `is_folder("")` answer **`False`** for a
+bucket that is not there: those two go to the wire for the root probe and read a
+missing bucket as "the root is not there". `get_folder_info("")` has its own
+gap on a different set of backends, described in the absent-container section
+below. Both are unfinished rather than the contract, and the practical
+consequence is that "is my store there?" is not yet portable across the root
+probes — see that section for what to call instead.
 
 The last row changed behaviour rather than an error type. A write addressed at
 the root used to reach the storage system: on SFTP with no `base_path` it left
@@ -233,14 +256,21 @@ a deleted root, and `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` and
 | `list_files`, `list_folders`, `iter_children`, `glob` | empty |
 | `exists("")`, `is_folder("")` on the store root | `True` — the root is a folder whether or not the container is |
 
-**One root answer has not caught up, and the guide says so rather than
-promising it.** `get_folder_info("")` should aggregate to zero against an absent
-container exactly as it does against an empty one, and on `LocalBackend` and
-`SQLBlobBackend` it does. On `S3Boto3Backend`, `AzureBackend` and
-`AsyncAzureBackend` it still raises `NotFound`: those three short-circuit the
-probes at the root but route `get_folder_info` through a listing whose 404 they
-do not tolerate there. Treat it as unfinished rather than as the contract — keep
-a `NotFound` handler if you aggregate the root of a store that may not exist.
+**The root has not caught up everywhere, and the guide says so rather than
+promising it.** Against a container that is missing, the root should answer
+exactly as it does for an empty one. Three backends give the wrong answer, in
+two opposite directions:
+
+| Backend | What still diverges at the root |
+|---|---|
+| `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` | `get_folder_info("")` raises `NotFound` instead of aggregating to zero — the root probes are short-circuited, but `get_folder_info` is routed through a listing whose 404 is not tolerated there |
+| `S3Backend`, `S3PyArrowBackend` | `exists("")` and `is_folder("")` answer `False` instead of `True` — the root probe goes to the wire and reads a missing bucket as "the root is not there" |
+
+The row above holds for the backends this section names; the second row of the
+table is where the divergence sits, and those two are not in that list. Treat
+both as unfinished rather than as the contract: keep a `NotFound` handler if you
+aggregate the root of a store that may not exist, and do not use `exists("")` as
+a portable "is my store there?" — the next paragraph says what to use instead.
 
 **What to change.** An `except` clause that caught the old error to detect a
 store that is not there no longer fires. [`Store.ping()`](api/store.md) —
