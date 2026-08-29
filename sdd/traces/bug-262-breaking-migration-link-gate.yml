@@ -1,0 +1,120 @@
+id: BUG-262
+title: "The breaking-change upgrade-path rule is review-enforced, and the gate the diagnosis proposed would not have caught it"
+trigger: >-
+  BUG-261 moved the obligation to write a migration section onto the PR making
+  the break, and shipped nothing that checks it. Its own proposed gate keyed on
+  the release heading, which the same release window had already shown to be
+  green while two of three breaking entries went undocumented.
+source_items:
+  - BUG-262
+  - BUG-261
+audience:
+  - contributor.tooling
+  - user.api_docs
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/GATE-INVENTORY.md
+# Named from `git log --oneline origin/master..HEAD`: this branch carries one
+# implementation commit and no review has run against it yet. Omitted rather
+# than asserted as 0 — BUG-261's trace recorded the same justification while a
+# review phase sat below it in the same file, so the claim is only made here
+# because the phase list genuinely stops at `wire`.
+phases:
+  - id: orient
+    name: Orient on what BUG-261 left open
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "BUG-261, and § Decided against"
+        read_type: gate
+        extract: >-
+          The ruling shipped and the gate was refused. The refusal entry states
+          the reason to re-derive rather than reuse: a marker-keyed heading
+          check reaches 4 of 10 relevant entries and would have passed the
+          defect the item was filed for.
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: gate
+        extract: >-
+          Measure the gap before designing for it. Of the 4 entries marked
+          **Breaking**, exactly 1 (BK-357) links the migration guide; BK-356,
+          BUG-248 and BK-324 do not. That 1-of-4 is both the motivation and the
+          proof the per-entry form is decidable from the entry alone.
+        outcome: ok
+  - id: design
+    name: Choose the per-entry form over the per-release one
+    steps:
+      - file: scripts/check_no_tracker_refs.py
+        section: "Scope"
+        read_type: gate
+        extract: >-
+          The citation can only run one way. Every `.md` under `docs-src/` is
+          scanned and any PREFIX-NNN fails, so the published section cannot name
+          the entry it answers — but CHANGELOG.md is explicitly out of scope
+          ("the tracker ID IS the index entry"), so the entry can name the
+          section. That asymmetry is what makes a per-entry check possible at
+          all, and it decided the direction of the link.
+        outcome: ok
+      - file: docs-src/reference/migration.md
+        section: "v0.30.0 to v0.31.0"
+        read_type: reference
+        extract: >-
+          Only the `## vPREV to vNEXT` heading carries an anchor; the
+          subsections are bold paragraph leads, so all three new links point at
+          the one section anchor, exactly as BK-357's existing link does. The
+          convention was already in the corpus rather than invented here.
+        outcome: ok
+  - id: implement
+    name: Write the gate and repair the window
+    steps:
+      - file: scripts/check_ripple_parity.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Structural analogue for a small pair-check: module docstring with a
+          Drift-gate:: block, collect_violations() over a parsed region, and a
+          main() printing one line per violation plus remediation
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 3, 4, 7"
+        read_type: gate
+        extract: >-
+          Claim space derived (entries parsed from the section, link matched by
+          pattern), authority declared (the entry owes the link, not the guide),
+          and the bound stated in the docstring — the unchecked remainder here
+          is larger than the checked part, since the softer half was measured at
+          6 unmarked entries against 4 marked ones.
+        outcome: ok
+      - file: tests/scripts/test_check_ripple_parity.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Test shape for a script guard: load the module by path, build a
+          minimal fixture document, and pin the regression that motivated the
+          gate rather than only the happy path
+        outcome: ok
+  - id: wire
+    name: Reach the diff class that invalidates it
+    steps:
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] lint, docs-gate"
+        read_type: gate
+        extract: >-
+          Wire into both, per the trap BK-333 records: CHANGELOG.md matches
+          ci.yml's DOCS_PAT and not CODE_PAT, so a CHANGELOG-only diff runs
+          docs-gate and not lint. A lint-only wiring is unreachable for exactly
+          the edit that breaks the rule.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index and Detailed checklist / Breaking change"
+        read_type: verify
+        extract: >-
+          The row BUG-261 added now names its enforcing gate in both
+          presentations, with what the gate cannot check stated beside it so the
+          row does not read as fully mechanised
+        outcome: ok
+      - file: sdd/GATE-INVENTORY.md
+        section: "(generated)"
+        read_type: verify
+        extract: "35 → 36 mechanisms after `hatch run gen-gate-inventory`; the Drift-gate:: block is what registers it"
+        outcome: ok

@@ -215,6 +215,56 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-262 — The breaking-change upgrade-path rule is review-enforced, and the gate the diagnosis proposed would not have caught it**
+  spec: — · effort: S · audience: contributor.tooling, user.api_docs
+  BUG-261 moved the obligation onto the PR making the break and left nothing
+  checking it. This closes that half.
+  **The gate BUG-261 proposed was refused, and re-proposing it would repeat the
+  measurement that refused it.** That disposition keyed on the release heading:
+  if any `[Unreleased]` entry carries `**Breaking**`, `migration.md` must hold
+  `## v<current> to v<next minor>`. In the v0.31.0 window BK-357 wrote that
+  heading while BUG-248 and BK-324 shipped uncovered beneath it, so the check
+  passes with two of three breaks undocumented — it would have been green on the
+  exact defect BUG-261 was filed for. The obligation is per **entry**; the
+  heading is per **release**; a per-release check cannot decide a per-entry rule.
+  **Shipped: the per-entry form.** Every `[Unreleased]` entry marked
+  `**Breaking**` must link the migration guide in its own text. That is
+  decidable from the entry alone, it runs the citation in the only direction
+  available (`check_no_tracker_refs.py` bars `PREFIX-NNN` from all of
+  `docs-src/`, so the guide cannot name the entry, but the entry can name the
+  guide), and it hands a reader of the entry somewhere to go. The convention
+  already existed: BK-357's entry and the released v0.30.0 bullets carry exactly
+  this link, so the gate formalises a practice rather than inventing one.
+  **Measured before and after, which is what made it worth building.** At
+  filing, `1 of 4` marked entries linked the guide — BK-357 did; BK-356,
+  BUG-248 and BK-324 did not. The three missing links ship with the gate, so
+  master lands green rather than red on the first commit.
+  `scripts/check_breaking_migration_link.py`, wired into both `lint` and
+  `docs-gate` per the trap BK-333 records — `CHANGELOG.md` matches `ci.yml`'s
+  `DOCS_PAT` and not `CODE_PAT`, so a CHANGELOG-only diff reaches `docs-gate`
+  alone and a lint-only wiring would be unreachable for the diff class that
+  invalidates the check. Guard at
+  `tests/scripts/test_check_breaking_migration_link.py`; a `Drift-gate::` block
+  puts it in [`GATE-INVENTORY.md`](GATE-INVENTORY.md).
+  **Bounds stated in the module docstring** ([Rule 7](DRIFT-RULES.md#miss-rate)),
+  because the unchecked remainder here is larger than the checked part. It
+  cannot tell whether the linked section says anything about this entry — a link
+  to the right heading with the wrong content passes. It sees only the current
+  window, since Phase 2 condensation drops the marker. And it cannot reach the
+  softer half at all: BUG-261 re-derived that set at **6** unmarked entries a
+  caller must act on, against 4 marked ones, and no marker decides them, so
+  `CONTRIBUTING.md` § Release Phase 1 keeps that judgement. A test pins the
+  non-firing case so a later sweep does not "finish the job" by making the gate
+  guess.
+  **The gate found a defect in itself on its first full run**, which is the
+  cheapest evidence it works. `hatch run all` failed on this item's own
+  CHANGELOG stub: the stub *describes* the rule, so its prose contains the
+  literal `**Breaking**`, and an unanchored substring test read that as the
+  marker. Fixed at the rule rather than by rewording the stub — the convention
+  puts the marker at the head of the entry body (`- BK-357: **Breaking** — …`),
+  so the match is anchored there, which is also what the release skill reads.
+  Pinned by `test_an_entry_that_merely_mentions_the_marker_is_not_marked`.
+
 - [x] **BUG-261 — Two breaking changes are on master with no upgrade path, and the obligation is stated where their authors never read**
   spec: — · effort: S · audience: user.api_docs, user.site, contributor.tooling
   **The item's own figure had moved before the work started, which is the first
