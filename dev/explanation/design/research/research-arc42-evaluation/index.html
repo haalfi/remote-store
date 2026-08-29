@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/reference/api/aio/backends/graph/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/research/research-arc42-evaluation/">
       
       
-        <link rel="prev" href="../azure/">
+        <link rel="prev" href="../research-agent-workflow-substrate/">
       
       
-        <link rel="next" href="../../extensions/">
+        <link rel="next" href="../research-async-store-api-round2/">
       
       
         
       
       
-      <link rel="icon" href="../../../../../assets/logo.png">
+      <link rel="icon" href="../../../../assets/logo.png">
       <meta name="generator" content="mkdocs-ProperDocs 1.6.7, mkdocs-material-9.7.7">
     
     
       
-        <title>GraphBackend - remote-store</title>
+        <title>arc42 as an architecture-level specification layer - remote-store</title>
       
     
     
-      <link rel="stylesheet" href="../../../../../assets/stylesheets/main.ec1eaa64.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
-        <link rel="stylesheet" href="../../../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,11 +53,11 @@
       
     
     
-      <link rel="stylesheet" href="../../../../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../../../../css/custom.css">
+      <link rel="stylesheet" href="../../../../css/custom.css">
     
-    <script>__md_scope=new URL("../../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#graphbackend" class="md-skip">
+        <a href="#research-arc42-as-an-architecture-level-specification-layer" class="md-skip">
           Skip to content
         </a>
       
@@ -102,9 +102,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../../../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../../../.." title="remote-store" class="md-header__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../../../../../assets/logo.png" alt="logo">
+  <img src="../../../../assets/logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              GraphBackend
+              arc42 as an architecture-level specification layer
             
           </span>
         </div>
@@ -228,7 +228,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../../.." class="md-tabs__link">
+      <a href="../../../.." class="md-tabs__link">
         
   
   
@@ -247,7 +247,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../../../tutorial/" class="md-tabs__link">
+      <a href="../../../../tutorial/" class="md-tabs__link">
         
   
   
@@ -266,7 +266,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../../../guides/" class="md-tabs__link">
+      <a href="../../../../guides/" class="md-tabs__link">
         
   
   
@@ -283,11 +283,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="../../../../" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../../../../reference/" class="md-tabs__link">
         
   
   
@@ -304,9 +302,11 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../../../../../explanation/" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="../../../" class="md-tabs__link">
         
   
   
@@ -347,9 +347,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../../../.." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
+    <a href="../../../.." title="remote-store" class="md-nav__button md-logo" aria-label="remote-store" data-md-component="logo">
       
-  <img src="../../../../../assets/logo.png" alt="logo">
+  <img src="../../../../assets/logo.png" alt="logo">
 
     </a>
     remote-store
@@ -376,7 +376,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../.." class="md-nav__link">
+      <a href="../../../.." class="md-nav__link">
         
   
   
@@ -418,7 +418,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../../tutorial/" class="md-nav__link ">
+            <a href="../../../../tutorial/" class="md-nav__link ">
               
   
   
@@ -460,7 +460,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/getting-started/" class="md-nav__link">
+      <a href="../../../../tutorial/getting-started/" class="md-nav__link">
         
   
   
@@ -503,7 +503,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../../tutorial/examples/" class="md-nav__link ">
+            <a href="../../../../tutorial/examples/" class="md-nav__link ">
               
   
   
@@ -595,7 +595,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/quickstart/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/quickstart/" class="md-nav__link">
         
   
   
@@ -623,7 +623,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/file-operations/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/file-operations/" class="md-nav__link">
         
   
   
@@ -651,7 +651,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/streaming-io/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/streaming-io/" class="md-nav__link">
         
   
   
@@ -679,7 +679,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/atomic-writes/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/atomic-writes/" class="md-nav__link">
         
   
   
@@ -765,7 +765,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/configuration/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/configuration/" class="md-nav__link">
         
   
   
@@ -793,7 +793,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/config-loaders/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/config-loaders/" class="md-nav__link">
         
   
   
@@ -879,7 +879,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/error-handling/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/error-handling/" class="md-nav__link">
         
   
   
@@ -907,7 +907,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/capabilities-and-errors/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/capabilities-and-errors/" class="md-nav__link">
         
   
   
@@ -993,7 +993,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/path-model/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/path-model/" class="md-nav__link">
         
   
   
@@ -1021,7 +1021,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/memory-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/memory-backend/" class="md-nav__link">
         
   
   
@@ -1049,7 +1049,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/store-child/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/store-child/" class="md-nav__link">
         
   
   
@@ -1077,7 +1077,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/async-store/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/async-store/" class="md-nav__link">
         
   
   
@@ -1105,7 +1105,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/retry-policy/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/retry-policy/" class="md-nav__link">
         
   
   
@@ -1133,7 +1133,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/health-check/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/health-check/" class="md-nav__link">
         
   
   
@@ -1219,7 +1219,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/s3-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/s3-backend/" class="md-nav__link">
         
   
   
@@ -1247,7 +1247,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -1275,7 +1275,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/s3-listing-strategies/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/s3-listing-strategies/" class="md-nav__link">
         
   
   
@@ -1303,7 +1303,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/sftp-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/sftp-backend/" class="md-nav__link">
         
   
   
@@ -1331,7 +1331,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/azure-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/azure-backend/" class="md-nav__link">
         
   
   
@@ -1359,7 +1359,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/graph-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/graph-backend/" class="md-nav__link">
         
   
   
@@ -1387,7 +1387,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/sql-blob-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/sql-blob-backend/" class="md-nav__link">
         
   
   
@@ -1415,7 +1415,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/http-backend/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/http-backend/" class="md-nav__link">
         
   
   
@@ -1501,7 +1501,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/batch-operations/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/batch-operations/" class="md-nav__link">
         
   
   
@@ -1529,7 +1529,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/transfer-operations/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/transfer-operations/" class="md-nav__link">
         
   
   
@@ -1557,7 +1557,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/glob-pattern-matching/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -1585,7 +1585,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/caching/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/caching/" class="md-nav__link">
         
   
   
@@ -1613,7 +1613,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/observe-hooks/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/observe-hooks/" class="md-nav__link">
         
   
   
@@ -1641,7 +1641,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/otel-tracing/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/otel-tracing/" class="md-nav__link">
         
   
   
@@ -1727,7 +1727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/pyarrow-adapter/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -1755,7 +1755,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/parquet-dataset/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/parquet-dataset/" class="md-nav__link">
         
   
   
@@ -1783,7 +1783,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/dagster-io-manager/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/dagster-io-manager/" class="md-nav__link">
         
   
   
@@ -1811,7 +1811,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/dagster-v2-resource/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/dagster-v2-resource/" class="md-nav__link">
         
   
   
@@ -1839,7 +1839,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/dagster-compute-log-manager/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/dagster-compute-log-manager/" class="md-nav__link">
         
   
   
@@ -1925,7 +1925,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../tutorial/examples/medallion-dagster/" class="md-nav__link">
+      <a href="../../../../tutorial/examples/medallion-dagster/" class="md-nav__link">
         
   
   
@@ -1991,7 +1991,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../../guides/" class="md-nav__link ">
+            <a href="../../../../guides/" class="md-nav__link ">
               
   
   
@@ -2048,7 +2048,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../../guides/backends/" class="md-nav__link ">
+            <a href="../../../../guides/backends/" class="md-nav__link ">
               
   
   
@@ -2090,7 +2090,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/backends/local/" class="md-nav__link">
+      <a href="../../../../guides/backends/local/" class="md-nav__link">
         
   
   
@@ -2118,7 +2118,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/backends/memory/" class="md-nav__link">
+      <a href="../../../../guides/backends/memory/" class="md-nav__link">
         
   
   
@@ -2146,7 +2146,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/backends/http/" class="md-nav__link">
+      <a href="../../../../guides/backends/http/" class="md-nav__link">
         
   
   
@@ -2174,7 +2174,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/backends/s3/" class="md-nav__link">
+      <a href="../../../../guides/backends/s3/" class="md-nav__link">
         
   
   
@@ -2202,7 +2202,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../../../guides/backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -2230,7 +2230,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/backends/sftp/" class="md-nav__link">
+      <a href="../../../../guides/backends/sftp/" class="md-nav__link">
         
   
   
@@ -2258,7 +2258,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/backends/azure/" class="md-nav__link">
+      <a href="../../../../guides/backends/azure/" class="md-nav__link">
         
   
   
@@ -2286,7 +2286,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/backends/azure-hns-setup/" class="md-nav__link">
+      <a href="../../../../guides/backends/azure-hns-setup/" class="md-nav__link">
         
   
   
@@ -2314,7 +2314,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/backends/graph/" class="md-nav__link">
+      <a href="../../../../guides/backends/graph/" class="md-nav__link">
         
   
   
@@ -2342,7 +2342,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/backends/graph-setup/" class="md-nav__link">
+      <a href="../../../../guides/backends/graph-setup/" class="md-nav__link">
         
   
   
@@ -2370,7 +2370,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/backends/sql-blob/" class="md-nav__link">
+      <a href="../../../../guides/backends/sql-blob/" class="md-nav__link">
         
   
   
@@ -2398,7 +2398,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/backends/sql-query/" class="md-nav__link">
+      <a href="../../../../guides/backends/sql-query/" class="md-nav__link">
         
   
   
@@ -2484,7 +2484,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/extensions/" class="md-nav__link">
+      <a href="../../../../guides/extensions/" class="md-nav__link">
         
   
   
@@ -2512,7 +2512,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/batch-operations/" class="md-nav__link">
+      <a href="../../../../guides/batch-operations/" class="md-nav__link">
         
   
   
@@ -2540,7 +2540,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/cache/" class="md-nav__link">
+      <a href="../../../../guides/cache/" class="md-nav__link">
         
   
   
@@ -2568,7 +2568,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/glob-pattern-matching/" class="md-nav__link">
+      <a href="../../../../guides/glob-pattern-matching/" class="md-nav__link">
         
   
   
@@ -2596,7 +2596,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/observe/" class="md-nav__link">
+      <a href="../../../../guides/observe/" class="md-nav__link">
         
   
   
@@ -2624,7 +2624,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/transfer-operations/" class="md-nav__link">
+      <a href="../../../../guides/transfer-operations/" class="md-nav__link">
         
   
   
@@ -2652,7 +2652,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/pyarrow-adapter/" class="md-nav__link">
+      <a href="../../../../guides/pyarrow-adapter/" class="md-nav__link">
         
   
   
@@ -2680,7 +2680,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/parquet-datasets/" class="md-nav__link">
+      <a href="../../../../guides/parquet-datasets/" class="md-nav__link">
         
   
   
@@ -2708,7 +2708,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/dagster/" class="md-nav__link">
+      <a href="../../../../guides/dagster/" class="md-nav__link">
         
   
   
@@ -2736,7 +2736,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/retry/" class="md-nav__link">
+      <a href="../../../../guides/retry/" class="md-nav__link">
         
   
   
@@ -2772,7 +2772,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/async/" class="md-nav__link">
+      <a href="../../../../guides/async/" class="md-nav__link">
         
   
   
@@ -2800,7 +2800,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/async-sync-bridges/" class="md-nav__link">
+      <a href="../../../../guides/async-sync-bridges/" class="md-nav__link">
         
   
   
@@ -2828,7 +2828,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/write-integrity/" class="md-nav__link">
+      <a href="../../../../guides/write-integrity/" class="md-nav__link">
         
   
   
@@ -2856,7 +2856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/health-check/" class="md-nav__link">
+      <a href="../../../../guides/health-check/" class="md-nav__link">
         
   
   
@@ -2884,7 +2884,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/data-lake-patterns/" class="md-nav__link">
+      <a href="../../../../guides/data-lake-patterns/" class="md-nav__link">
         
   
   
@@ -2912,7 +2912,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/troubleshooting/" class="md-nav__link">
+      <a href="../../../../guides/troubleshooting/" class="md-nav__link">
         
   
   
@@ -2940,7 +2940,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/choosing-a-backend/" class="md-nav__link">
+      <a href="../../../../guides/choosing-a-backend/" class="md-nav__link">
         
   
   
@@ -2968,7 +2968,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../guides/custom-backend-guide/" class="md-nav__link">
+      <a href="../../../../guides/custom-backend-guide/" class="md-nav__link">
         
   
   
@@ -3000,30 +3000,25 @@
       
   
   
-    
   
   
-  
     
     
     
     
       
-        
-        
-      
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../" class="md-nav__link ">
+            <a href="../../../../reference/" class="md-nav__link ">
               
   
   
@@ -3041,13 +3036,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="">
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3065,7 +3060,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../FEATURES/" class="md-nav__link">
+      <a href="../../../../reference/FEATURES/" class="md-nav__link">
         
   
   
@@ -3093,7 +3088,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../capabilities-matrix/" class="md-nav__link">
+      <a href="../../../../reference/capabilities-matrix/" class="md-nav__link">
         
   
   
@@ -3121,7 +3116,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../tested-versions/" class="md-nav__link">
+      <a href="../../../../reference/tested-versions/" class="md-nav__link">
         
   
   
@@ -3146,8 +3141,6 @@
                 
   
   
-    
-  
   
   
     
@@ -3158,15 +3151,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../" class="md-nav__link ">
+            <a href="../../../../reference/api/" class="md-nav__link ">
               
   
   
@@ -3190,7 +3183,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3208,7 +3201,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../store/" class="md-nav__link">
+      <a href="../../../../reference/api/store/" class="md-nav__link">
         
   
   
@@ -3236,7 +3229,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../proxy/" class="md-nav__link">
+      <a href="../../../../reference/api/proxy/" class="md-nav__link">
         
   
   
@@ -3264,7 +3257,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../registry/" class="md-nav__link">
+      <a href="../../../../reference/api/registry/" class="md-nav__link">
         
   
   
@@ -3292,7 +3285,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../config/" class="md-nav__link">
+      <a href="../../../../reference/api/config/" class="md-nav__link">
         
   
   
@@ -3320,7 +3313,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../models/" class="md-nav__link">
+      <a href="../../../../reference/api/models/" class="md-nav__link">
         
   
   
@@ -3348,7 +3341,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../capabilities/" class="md-nav__link">
+      <a href="../../../../reference/api/capabilities/" class="md-nav__link">
         
   
   
@@ -3376,7 +3369,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../errors/" class="md-nav__link">
+      <a href="../../../../reference/api/errors/" class="md-nav__link">
         
   
   
@@ -3404,7 +3397,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backend/" class="md-nav__link">
+      <a href="../../../../reference/api/backend/" class="md-nav__link">
         
   
   
@@ -3429,8 +3422,6 @@
                 
   
   
-    
-  
   
   
     
@@ -3441,15 +3432,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_9" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_9" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../" class="md-nav__link ">
+            <a href="../../../../reference/api/aio/" class="md-nav__link ">
               
   
   
@@ -3473,7 +3464,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_9_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_4_4_9_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4_4_9">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3491,7 +3482,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../store/" class="md-nav__link">
+      <a href="../../../../reference/api/aio/store/" class="md-nav__link">
         
   
   
@@ -3519,7 +3510,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../backend/" class="md-nav__link">
+      <a href="../../../../reference/api/aio/backend/" class="md-nav__link">
         
   
   
@@ -3547,7 +3538,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adapters/" class="md-nav__link">
+      <a href="../../../../reference/api/aio/adapters/" class="md-nav__link">
         
   
   
@@ -3572,8 +3563,6 @@
                 
   
   
-    
-  
   
   
     
@@ -3584,15 +3573,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_9_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4_9_4" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../../../reference/api/aio/backends/" class="md-nav__link ">
               
   
   
@@ -3616,7 +3605,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_4_9_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_4_9_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4_4_9_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -3634,7 +3623,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../memory/" class="md-nav__link">
+      <a href="../../../../reference/api/aio/backends/memory/" class="md-nav__link">
         
   
   
@@ -3662,7 +3651,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../azure/" class="md-nav__link">
+      <a href="../../../../reference/api/aio/backends/azure/" class="md-nav__link">
         
   
   
@@ -3687,37 +3676,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    GraphBackend
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../../../reference/api/aio/backends/graph/" class="md-nav__link">
         
   
   
@@ -3733,170 +3695,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#remote_store.aio.GraphBackend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;GraphBackend
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#graphauth" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GraphAuth
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#remote_store.aio.GraphAuth" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;GraphAuth
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label=" GraphAuth">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.GraphAuth.authority" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;authority
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.GraphAuth.get_token" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_token
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.GraphAuth.__call__" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__call__
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.GraphAuth.aget_token" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;aget_token
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.GraphAuth.flush_cache" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;flush_cache
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#graphutils" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        GraphUtils
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="GraphUtils">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.GraphUtils.resolve_drive_id" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;resolve_drive_id
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.GraphUtils.aresolve_drive_id" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;aresolve_drive_id
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        See also
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -3932,7 +3730,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../extensions/" class="md-nav__link ">
+            <a href="../../../../reference/api/aio/extensions/" class="md-nav__link ">
               
   
   
@@ -3974,7 +3772,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../extensions/write/" class="md-nav__link">
+      <a href="../../../../reference/api/aio/extensions/write/" class="md-nav__link">
         
   
   
@@ -4018,7 +3816,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../info/" class="md-nav__link">
+      <a href="../../../../reference/api/info/" class="md-nav__link">
         
   
   
@@ -4046,7 +3844,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../sftp-utils/" class="md-nav__link">
+      <a href="../../../../reference/api/sftp-utils/" class="md-nav__link">
         
   
   
@@ -4074,7 +3872,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../azure-utils/" class="md-nav__link">
+      <a href="../../../../reference/api/azure-utils/" class="md-nav__link">
         
   
   
@@ -4117,7 +3915,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../backends/" class="md-nav__link ">
+            <a href="../../../../reference/api/backends/" class="md-nav__link ">
               
   
   
@@ -4159,7 +3957,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/local/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/local/" class="md-nav__link">
         
   
   
@@ -4187,7 +3985,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/memory/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/memory/" class="md-nav__link">
         
   
   
@@ -4215,7 +4013,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/http/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/http/" class="md-nav__link">
         
   
   
@@ -4243,7 +4041,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/s3/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/s3/" class="md-nav__link">
         
   
   
@@ -4271,7 +4069,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/s3-pyarrow/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/s3-pyarrow/" class="md-nav__link">
         
   
   
@@ -4299,7 +4097,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/sftp/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/sftp/" class="md-nav__link">
         
   
   
@@ -4327,7 +4125,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/azure/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/azure/" class="md-nav__link">
         
   
   
@@ -4355,7 +4153,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/sql-blob/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/sql-blob/" class="md-nav__link">
         
   
   
@@ -4383,7 +4181,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../backends/sql-query/" class="md-nav__link">
+      <a href="../../../../reference/api/backends/sql-query/" class="md-nav__link">
         
   
   
@@ -4434,7 +4232,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../extensions/" class="md-nav__link ">
+            <a href="../../../../reference/api/extensions/" class="md-nav__link ">
               
   
   
@@ -4476,7 +4274,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../extensions/batch/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/batch/" class="md-nav__link">
         
   
   
@@ -4504,7 +4302,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../extensions/cache/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/cache/" class="md-nav__link">
         
   
   
@@ -4532,7 +4330,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../extensions/glob/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/glob/" class="md-nav__link">
         
   
   
@@ -4560,7 +4358,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../extensions/integrity/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/integrity/" class="md-nav__link">
         
   
   
@@ -4588,7 +4386,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../extensions/observe/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/observe/" class="md-nav__link">
         
   
   
@@ -4616,7 +4414,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../extensions/partition/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/partition/" class="md-nav__link">
         
   
   
@@ -4644,7 +4442,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../extensions/streams/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/streams/" class="md-nav__link">
         
   
   
@@ -4672,7 +4470,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../extensions/transfer/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/transfer/" class="md-nav__link">
         
   
   
@@ -4700,7 +4498,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../extensions/write/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/write/" class="md-nav__link">
         
   
   
@@ -4728,7 +4526,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../extensions/arrow/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/arrow/" class="md-nav__link">
         
   
   
@@ -4756,7 +4554,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../extensions/dagster/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/dagster/" class="md-nav__link">
         
   
   
@@ -4784,7 +4582,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../extensions/otel/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/otel/" class="md-nav__link">
         
   
   
@@ -4812,7 +4610,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../extensions/parquet/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/parquet/" class="md-nav__link">
         
   
   
@@ -4840,7 +4638,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../extensions/pydantic/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/pydantic/" class="md-nav__link">
         
   
   
@@ -4868,7 +4666,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../extensions/yaml/" class="md-nav__link">
+      <a href="../../../../reference/api/extensions/yaml/" class="md-nav__link">
         
   
   
@@ -4912,7 +4710,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../migration/" class="md-nav__link">
+      <a href="../../../../reference/migration/" class="md-nav__link">
         
   
   
@@ -4940,7 +4738,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../changelog/" class="md-nav__link">
+      <a href="../../../../reference/changelog/" class="md-nav__link">
         
   
   
@@ -4972,25 +4770,30 @@
       
   
   
+    
   
   
+  
     
     
     
     
-      
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+      
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../../explanation/" class="md-nav__link ">
+            <a href="../../../" class="md-nav__link ">
               
   
   
@@ -5008,13 +4811,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -5032,7 +4835,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/architecture/" class="md-nav__link">
+      <a href="../../../architecture/" class="md-nav__link">
         
   
   
@@ -5060,7 +4863,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/graph-ir/" class="md-nav__link">
+      <a href="../../../graph-ir/" class="md-nav__link">
         
   
   
@@ -5088,7 +4891,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/performance/" class="md-nav__link">
+      <a href="../../../performance/" class="md-nav__link">
         
   
   
@@ -5116,7 +4919,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/concurrency/" class="md-nav__link">
+      <a href="../../../concurrency/" class="md-nav__link">
         
   
   
@@ -5144,7 +4947,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/security-model/" class="md-nav__link">
+      <a href="../../../security-model/" class="md-nav__link">
         
   
   
@@ -5172,7 +4975,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/contributing/" class="md-nav__link">
+      <a href="../../../contributing/" class="md-nav__link">
         
   
   
@@ -5200,7 +5003,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/development-story/" class="md-nav__link">
+      <a href="../../../development-story/" class="md-nav__link">
         
   
   
@@ -5225,6 +5028,8 @@
                 
   
   
+    
+  
   
   
     
@@ -5235,15 +5040,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../../explanation/design/" class="md-nav__link ">
+            <a href="../../" class="md-nav__link ">
               
   
   
@@ -5267,7 +5072,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_8">
             <span class="md-nav__icon md-icon"></span>
             
@@ -5285,7 +5090,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/authoring/" class="md-nav__link">
+      <a href="../../authoring/" class="md-nav__link">
         
   
   
@@ -5313,7 +5118,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/ci-operations/" class="md-nav__link">
+      <a href="../../ci-operations/" class="md-nav__link">
         
   
   
@@ -5341,7 +5146,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/content-rules/" class="md-nav__link">
+      <a href="../../content-rules/" class="md-nav__link">
         
   
   
@@ -5369,7 +5174,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/design/" class="md-nav__link">
+      <a href="../../design/" class="md-nav__link">
         
   
   
@@ -5397,7 +5202,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/documentation/" class="md-nav__link">
+      <a href="../../documentation/" class="md-nav__link">
         
   
   
@@ -5425,7 +5230,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/drift-rules/" class="md-nav__link">
+      <a href="../../drift-rules/" class="md-nav__link">
         
   
   
@@ -5453,7 +5258,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/process/" class="md-nav__link">
+      <a href="../../process/" class="md-nav__link">
         
   
   
@@ -5481,7 +5286,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/testing/" class="md-nav__link">
+      <a href="../../testing/" class="md-nav__link">
         
   
   
@@ -5524,7 +5329,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../../explanation/design/adrs/" class="md-nav__link ">
+            <a href="../../adrs/" class="md-nav__link ">
               
   
   
@@ -5566,7 +5371,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
+      <a href="../../adrs/0001-architecture-store-registry-backends/" class="md-nav__link">
         
   
   
@@ -5594,7 +5399,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0002-config-resolution-no-merge/" class="md-nav__link">
+      <a href="../../adrs/0002-config-resolution-no-merge/" class="md-nav__link">
         
   
   
@@ -5622,7 +5427,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
+      <a href="../../adrs/0003-fsspec-is-implementation-detail/" class="md-nav__link">
         
   
   
@@ -5650,7 +5455,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0004-empty-path-semantics/" class="md-nav__link">
+      <a href="../../adrs/0004-empty-path-semantics/" class="md-nav__link">
         
   
   
@@ -5678,7 +5483,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0005-native-path-resolution/" class="md-nav__link">
+      <a href="../../adrs/0005-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -5706,7 +5511,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0006-documentation-architecture/" class="md-nav__link">
+      <a href="../../adrs/0006-documentation-architecture/" class="md-nav__link">
         
   
   
@@ -5734,7 +5539,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0007-docs-src-literate-nav/" class="md-nav__link">
+      <a href="../../adrs/0007-docs-src-literate-nav/" class="md-nav__link">
         
   
   
@@ -5762,7 +5567,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0008-extension-architecture/" class="md-nav__link">
+      <a href="../../adrs/0008-extension-architecture/" class="md-nav__link">
         
   
   
@@ -5790,7 +5595,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0009-glob-three-tier-design/" class="md-nav__link">
+      <a href="../../adrs/0009-glob-three-tier-design/" class="md-nav__link">
         
   
   
@@ -5818,7 +5623,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0010-observe-proxy-pattern/" class="md-nav__link">
+      <a href="../../adrs/0010-observe-proxy-pattern/" class="md-nav__link">
         
   
   
@@ -5846,7 +5651,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0011-retry-per-backend-native/" class="md-nav__link">
+      <a href="../../adrs/0011-retry-per-backend-native/" class="md-nav__link">
         
   
   
@@ -5874,7 +5679,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0012-async-store-backend-api/" class="md-nav__link">
+      <a href="../../adrs/0012-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -5902,7 +5707,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
+      <a href="../../adrs/0013-drop-optional-extension-reexports/" class="md-nav__link">
         
   
   
@@ -5930,7 +5735,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
+      <a href="../../adrs/0014-middleware-path-1-proxy-store-stream-wrappers/" class="md-nav__link">
         
   
   
@@ -5958,7 +5763,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
+      <a href="../../adrs/0015-proxystore-publicly-documented/" class="md-nav__link">
         
   
   
@@ -5986,7 +5791,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
+      <a href="../../adrs/0016-seekable-read-three-tier-design/" class="md-nav__link">
         
   
   
@@ -6014,7 +5819,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
+      <a href="../../adrs/0017-seekable-read-on-store-api/" class="md-nav__link">
         
   
   
@@ -6042,7 +5847,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
+      <a href="../../adrs/0018-sqlalchemy-two-class-architecture/" class="md-nav__link">
         
   
   
@@ -6070,7 +5875,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0019-multi-agent-orchestration/" class="md-nav__link">
+      <a href="../../adrs/0019-multi-agent-orchestration/" class="md-nav__link">
         
   
   
@@ -6098,7 +5903,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0020-orchestrate-iterative-convergence/" class="md-nav__link">
+      <a href="../../adrs/0020-orchestrate-iterative-convergence/" class="md-nav__link">
         
   
   
@@ -6126,7 +5931,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0021-graph-sdk-choice/" class="md-nav__link">
+      <a href="../../adrs/0021-graph-sdk-choice/" class="md-nav__link">
         
   
   
@@ -6154,7 +5959,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0022-graph-auth-model/" class="md-nav__link">
+      <a href="../../adrs/0022-graph-auth-model/" class="md-nav__link">
         
   
   
@@ -6182,7 +5987,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0023-async-monitor-polling/" class="md-nav__link">
+      <a href="../../adrs/0023-async-monitor-polling/" class="md-nav__link">
         
   
   
@@ -6210,7 +6015,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0024-resource-locked-error/" class="md-nav__link">
+      <a href="../../adrs/0024-resource-locked-error/" class="md-nav__link">
         
   
   
@@ -6238,7 +6043,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0025-async-to-sync-backend-adapter/" class="md-nav__link">
+      <a href="../../adrs/0025-async-to-sync-backend-adapter/" class="md-nav__link">
         
   
   
@@ -6266,7 +6071,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0026-strict-gate-on-kwarg/" class="md-nav__link">
+      <a href="../../adrs/0026-strict-gate-on-kwarg/" class="md-nav__link">
         
   
   
@@ -6294,7 +6099,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0027-docs-bridge-single-mechanism/" class="md-nav__link">
+      <a href="../../adrs/0027-docs-bridge-single-mechanism/" class="md-nav__link">
         
   
   
@@ -6322,7 +6127,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0028-testing-architecture-kind-stage-replay/" class="md-nav__link">
+      <a href="../../adrs/0028-testing-architecture-kind-stage-replay/" class="md-nav__link">
         
   
   
@@ -6350,7 +6155,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0029-graph-transfer-blocking-io-offload/" class="md-nav__link">
+      <a href="../../adrs/0029-graph-transfer-blocking-io-offload/" class="md-nav__link">
         
   
   
@@ -6378,7 +6183,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0030-azure-hns-explicit-declaration/" class="md-nav__link">
+      <a href="../../adrs/0030-azure-hns-explicit-declaration/" class="md-nav__link">
         
   
   
@@ -6406,7 +6211,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0031-expert-personas-as-subagent-files/" class="md-nav__link">
+      <a href="../../adrs/0031-expert-personas-as-subagent-files/" class="md-nav__link">
         
   
   
@@ -6434,7 +6239,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0032-tiered-ci-gate-with-full-matrix-backstop/" class="md-nav__link">
+      <a href="../../adrs/0032-tiered-ci-gate-with-full-matrix-backstop/" class="md-nav__link">
         
   
   
@@ -6462,7 +6267,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0033-ship-convergence-driven-review/" class="md-nav__link">
+      <a href="../../adrs/0033-ship-convergence-driven-review/" class="md-nav__link">
         
   
   
@@ -6490,7 +6295,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0034-ship-panel-rounds-and-unprimed-exit/" class="md-nav__link">
+      <a href="../../adrs/0034-ship-panel-rounds-and-unprimed-exit/" class="md-nav__link">
         
   
   
@@ -6518,7 +6323,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0035-vary-method-not-model/" class="md-nav__link">
+      <a href="../../adrs/0035-vary-method-not-model/" class="md-nav__link">
         
   
   
@@ -6546,7 +6351,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0036-reviewers-by-subject-and-method/" class="md-nav__link">
+      <a href="../../adrs/0036-reviewers-by-subject-and-method/" class="md-nav__link">
         
   
   
@@ -6574,7 +6379,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0037-whole-file-gate-and-derived-figures/" class="md-nav__link">
+      <a href="../../adrs/0037-whole-file-gate-and-derived-figures/" class="md-nav__link">
         
   
   
@@ -6602,7 +6407,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/adrs/0038-absent-container-outranks-drive-identity/" class="md-nav__link">
+      <a href="../../adrs/0038-absent-container-outranks-drive-identity/" class="md-nav__link">
         
   
   
@@ -6653,7 +6458,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../../explanation/design/audits/" class="md-nav__link ">
+            <a href="../../audits/" class="md-nav__link ">
               
   
   
@@ -6695,7 +6500,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/audits/audit-001-adversarial-review/" class="md-nav__link">
+      <a href="../../audits/audit-001-adversarial-review/" class="md-nav__link">
         
   
   
@@ -6723,7 +6528,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/audits/audit-002-design-compliance/" class="md-nav__link">
+      <a href="../../audits/audit-002-design-compliance/" class="md-nav__link">
         
   
   
@@ -6751,7 +6556,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/audits/audit-003-documentation/" class="md-nav__link">
+      <a href="../../audits/audit-003-documentation/" class="md-nav__link">
         
   
   
@@ -6779,7 +6584,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/audits/audit-004-docs-structural-consistency/" class="md-nav__link">
+      <a href="../../audits/audit-004-docs-structural-consistency/" class="md-nav__link">
         
   
   
@@ -6807,7 +6612,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/audits/audit-005-laziness-memory/" class="md-nav__link">
+      <a href="../../audits/audit-005-laziness-memory/" class="md-nav__link">
         
   
   
@@ -6835,7 +6640,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/audits/audit-006-docs-list-completeness/" class="md-nav__link">
+      <a href="../../audits/audit-006-docs-list-completeness/" class="md-nav__link">
         
   
   
@@ -6863,7 +6668,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/audits/audit-007-test-behavior-assertions/" class="md-nav__link">
+      <a href="../../audits/audit-007-test-behavior-assertions/" class="md-nav__link">
         
   
   
@@ -6891,7 +6696,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/audits/audit-008-package-bugs/" class="md-nav__link">
+      <a href="../../audits/audit-008-package-bugs/" class="md-nav__link">
         
   
   
@@ -6919,7 +6724,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/audits/audit-009-backend-specifics-visibility/" class="md-nav__link">
+      <a href="../../audits/audit-009-backend-specifics-visibility/" class="md-nav__link">
         
   
   
@@ -6947,7 +6752,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/audits/audit-010-ext-private-imports/" class="md-nav__link">
+      <a href="../../audits/audit-010-ext-private-imports/" class="md-nav__link">
         
   
   
@@ -6975,7 +6780,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/audits/audit-011-docs-v023-gaps/" class="md-nav__link">
+      <a href="../../audits/audit-011-docs-v023-gaps/" class="md-nav__link">
         
   
   
@@ -7003,7 +6808,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/audits/audit-012-docs-structure/" class="md-nav__link">
+      <a href="../../audits/audit-012-docs-structure/" class="md-nav__link">
         
   
   
@@ -7031,7 +6836,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/audits/audit-013-docstring-style/" class="md-nav__link">
+      <a href="../../audits/audit-013-docstring-style/" class="md-nav__link">
         
   
   
@@ -7059,7 +6864,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/audits/audit-014-grandfathered-tests-allow-list/" class="md-nav__link">
+      <a href="../../audits/audit-014-grandfathered-tests-allow-list/" class="md-nav__link">
         
   
   
@@ -7087,7 +6892,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/audits/audit-015-spec-traceability/" class="md-nav__link">
+      <a href="../../audits/audit-015-spec-traceability/" class="md-nav__link">
         
   
   
@@ -7115,7 +6920,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/audits/audit-016-graph-backend-review/" class="md-nav__link">
+      <a href="../../audits/audit-016-graph-backend-review/" class="md-nav__link">
         
   
   
@@ -7143,7 +6948,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/audits/audit-017-dev-process-gate-topology/" class="md-nav__link">
+      <a href="../../audits/audit-017-dev-process-gate-topology/" class="md-nav__link">
         
   
   
@@ -7171,7 +6976,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/audits/audit-018-ci-operations/" class="md-nav__link">
+      <a href="../../audits/audit-018-ci-operations/" class="md-nav__link">
         
   
   
@@ -7199,7 +7004,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/audits/audit-019-azure-backend-review/" class="md-nav__link">
+      <a href="../../audits/audit-019-azure-backend-review/" class="md-nav__link">
         
   
   
@@ -7227,7 +7032,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/audits/audit-020-sftp-roundtrips-correctness/" class="md-nav__link">
+      <a href="../../audits/audit-020-sftp-roundtrips-correctness/" class="md-nav__link">
         
   
   
@@ -7278,7 +7083,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../../explanation/design/rfcs/" class="md-nav__link ">
+            <a href="../../rfcs/" class="md-nav__link ">
               
   
   
@@ -7320,7 +7125,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/rfcs/rfc-0001-azure-backend/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0001-azure-backend/" class="md-nav__link">
         
   
   
@@ -7348,7 +7153,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0002-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -7376,7 +7181,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0003-s3-pyarrow-read-optimization/" class="md-nav__link">
         
   
   
@@ -7404,7 +7209,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0004-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -7432,7 +7237,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0005-code-deduplication/" class="md-nav__link">
         
   
   
@@ -7460,7 +7265,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0006-naming-inconsistencies/" class="md-nav__link">
         
   
   
@@ -7488,7 +7293,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0007-doc-cross-links/" class="md-nav__link">
         
   
   
@@ -7516,7 +7321,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/rfcs/rfc-0008-parquet-dataset-storage/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0008-parquet-dataset-storage/" class="md-nav__link">
         
   
   
@@ -7544,7 +7349,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/rfcs/rfc-0009-multi-agent-orchestration/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0009-multi-agent-orchestration/" class="md-nav__link">
         
   
   
@@ -7572,7 +7377,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/rfcs/rfc-0010-graph-backend/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0010-graph-backend/" class="md-nav__link">
         
   
   
@@ -7600,7 +7405,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/rfcs/rfc-0011-write-result/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0011-write-result/" class="md-nav__link">
         
   
   
@@ -7628,7 +7433,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/rfcs/rfc-0012-doc-graph-model/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0012-doc-graph-model/" class="md-nav__link">
         
   
   
@@ -7656,7 +7461,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/rfcs/rfc-0013-list-folders-pattern/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0013-list-folders-pattern/" class="md-nav__link">
         
   
   
@@ -7684,7 +7489,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/rfcs/rfc-0014-dagster-compute-log-manager/" class="md-nav__link">
+      <a href="../../rfcs/rfc-0014-dagster-compute-log-manager/" class="md-nav__link">
         
   
   
@@ -7717,6 +7522,8 @@
                 
   
   
+    
+  
   
   
     
@@ -7727,15 +7534,15 @@
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_12" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8_12" checked>
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../../explanation/design/research/" class="md-nav__link ">
+            <a href="../" class="md-nav__link ">
               
   
   
@@ -7759,7 +7566,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_12_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_5_8_12_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5_8_12">
             <span class="md-nav__icon md-icon"></span>
             
@@ -7777,7 +7584,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-agent-workflow-substrate/" class="md-nav__link">
+      <a href="../research-agent-workflow-substrate/" class="md-nav__link">
         
   
   
@@ -7802,10 +7609,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-arc42-evaluation/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    arc42 as an architecture-level specification layer
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -7821,6 +7655,187 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-problem-statement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Problem Statement
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-survey" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. Survey
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. Survey">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-arc42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 arc42
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-what-this-repo-has-section-by-section" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 What this repo has, section by section
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-evaluation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Evaluation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Evaluation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31-the-filter-and-the-thing-it-cannot-see" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 The filter, and the thing it cannot see
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32-what-the-corpus-says-about-narrative-architecture-prose" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 What the corpus says about narrative architecture prose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-the-one-cluster-that-looks-arc42-shaped-and-what-it-actually-is" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 The one cluster that looks arc42-shaped, and what it actually is
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-candidates-against-the-evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Candidates against the evidence
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-recommendation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Recommendation
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. Recommendation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-where-the-decision-lives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Where the decision lives
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-what-would-change-the-answer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 What would change the answer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-what-this-document-does-not-claim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 What this document does not claim
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -7833,7 +7848,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-async-store-api-round2/" class="md-nav__link">
+      <a href="../research-async-store-api-round2/" class="md-nav__link">
         
   
   
@@ -7861,7 +7876,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-async-store-api/" class="md-nav__link">
+      <a href="../research-async-store-api/" class="md-nav__link">
         
   
   
@@ -7889,7 +7904,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-azure-pyarrow-optimization/" class="md-nav__link">
+      <a href="../research-azure-pyarrow-optimization/" class="md-nav__link">
         
   
   
@@ -7917,7 +7932,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-backend-contract-completeness/" class="md-nav__link">
+      <a href="../research-backend-contract-completeness/" class="md-nav__link">
         
   
   
@@ -7945,7 +7960,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-backend-setup-guides/" class="md-nav__link">
+      <a href="../research-backend-setup-guides/" class="md-nav__link">
         
   
   
@@ -7973,7 +7988,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-benchmark-suite-v2/" class="md-nav__link">
+      <a href="../research-benchmark-suite-v2/" class="md-nav__link">
         
   
   
@@ -8001,7 +8016,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-bk-181-cassette-replay-poc/" class="md-nav__link">
+      <a href="../research-bk-181-cassette-replay-poc/" class="md-nav__link">
         
   
   
@@ -8029,7 +8044,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-bk-181-s3-cassette-infeasibility/" class="md-nav__link">
+      <a href="../research-bk-181-s3-cassette-infeasibility/" class="md-nav__link">
         
   
   
@@ -8057,7 +8072,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-bk-198-paramiko-ssh-rsa-empirical/" class="md-nav__link">
+      <a href="../research-bk-198-paramiko-ssh-rsa-empirical/" class="md-nav__link">
         
   
   
@@ -8085,7 +8100,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-bk-283-example-replay-design/" class="md-nav__link">
+      <a href="../research-bk-283-example-replay-design/" class="md-nav__link">
         
   
   
@@ -8113,7 +8128,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-bk-289-concurrency-test-lane/" class="md-nav__link">
+      <a href="../research-bk-289-concurrency-test-lane/" class="md-nav__link">
         
   
   
@@ -8141,7 +8156,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-bug-prevention-beyond-testing/" class="md-nav__link">
+      <a href="../research-bug-prevention-beyond-testing/" class="md-nav__link">
         
   
   
@@ -8169,7 +8184,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-dagster-extension/" class="md-nav__link">
+      <a href="../research-dagster-extension/" class="md-nav__link">
         
   
   
@@ -8197,7 +8212,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-depth-limited-listing/" class="md-nav__link">
+      <a href="../research-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -8225,7 +8240,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-doc-content-longevity/" class="md-nav__link">
+      <a href="../research-doc-content-longevity/" class="md-nav__link">
         
   
   
@@ -8253,7 +8268,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-docs-landing-page/" class="md-nav__link">
+      <a href="../research-docs-landing-page/" class="md-nav__link">
         
   
   
@@ -8281,7 +8296,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-ducklake-azure/" class="md-nav__link">
+      <a href="../research-ducklake-azure/" class="md-nav__link">
         
   
   
@@ -8309,7 +8324,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-example-testing/" class="md-nav__link">
+      <a href="../research-example-testing/" class="md-nav__link">
         
   
   
@@ -8337,7 +8352,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-expectation-driven-review/" class="md-nav__link">
+      <a href="../research-expectation-driven-review/" class="md-nav__link">
         
   
   
@@ -8365,7 +8380,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-fastapi-docs/" class="md-nav__link">
+      <a href="../research-fastapi-docs/" class="md-nav__link">
         
   
   
@@ -8393,7 +8408,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-feature-discoverability/" class="md-nav__link">
+      <a href="../research-feature-discoverability/" class="md-nav__link">
         
   
   
@@ -8421,7 +8436,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-google-docstring-migration/" class="md-nav__link">
+      <a href="../research-google-docstring-migration/" class="md-nav__link">
         
   
   
@@ -8449,7 +8464,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-health-check/" class="md-nav__link">
+      <a href="../research-health-check/" class="md-nav__link">
         
   
   
@@ -8477,7 +8492,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-id-147-obs003-decomposition/" class="md-nav__link">
+      <a href="../research-id-147-obs003-decomposition/" class="md-nav__link">
         
   
   
@@ -8505,7 +8520,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-id-147-tla-augmentation/" class="md-nav__link">
+      <a href="../research-id-147-tla-augmentation/" class="md-nav__link">
         
   
   
@@ -8533,7 +8548,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-id-147b-tla-poc/" class="md-nav__link">
+      <a href="../research-id-147b-tla-poc/" class="md-nav__link">
         
   
   
@@ -8561,7 +8576,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-id-211-flat-ns-file-ancestor-precheck/" class="md-nav__link">
+      <a href="../research-id-211-flat-ns-file-ancestor-precheck/" class="md-nav__link">
         
   
   
@@ -8589,7 +8604,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-id-230-benchmark-overhead-story/" class="md-nav__link">
+      <a href="../research-id-230-benchmark-overhead-story/" class="md-nav__link">
         
   
   
@@ -8617,7 +8632,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-id-232-detail-placement-durability/" class="md-nav__link">
+      <a href="../research-id-232-detail-placement-durability/" class="md-nav__link">
         
   
   
@@ -8645,7 +8660,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-inconsistency-detection-multi-artifact/" class="md-nav__link">
+      <a href="../research-inconsistency-detection-multi-artifact/" class="md-nav__link">
         
   
   
@@ -8673,7 +8688,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-llms-full-txt-tooling/" class="md-nav__link">
+      <a href="../research-llms-full-txt-tooling/" class="md-nav__link">
         
   
   
@@ -8701,7 +8716,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-logging-monitoring-tracing/" class="md-nav__link">
+      <a href="../research-logging-monitoring-tracing/" class="md-nav__link">
         
   
   
@@ -8729,7 +8744,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-lx-llms-context-tooling/" class="md-nav__link">
+      <a href="../research-lx-llms-context-tooling/" class="md-nav__link">
         
   
   
@@ -8757,7 +8772,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-medallion-dagster-showcase/" class="md-nav__link">
+      <a href="../research-medallion-dagster-showcase/" class="md-nav__link">
         
   
   
@@ -8785,7 +8800,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-openrouter-integration/" class="md-nav__link">
+      <a href="../research-openrouter-integration/" class="md-nav__link">
         
   
   
@@ -8813,7 +8828,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-readonly-http-backend/" class="md-nav__link">
+      <a href="../research-readonly-http-backend/" class="md-nav__link">
         
   
   
@@ -8841,7 +8856,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-resolve-spec-proposal/" class="md-nav__link">
+      <a href="../research-resolve-spec-proposal/" class="md-nav__link">
         
   
   
@@ -8869,7 +8884,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-retry-policy/" class="md-nav__link">
+      <a href="../research-retry-policy/" class="md-nav__link">
         
   
   
@@ -8897,7 +8912,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-s3-boto3-poc/" class="md-nav__link">
+      <a href="../research-s3-boto3-poc/" class="md-nav__link">
         
   
   
@@ -8925,7 +8940,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-s3-error-mapping-fidelity/" class="md-nav__link">
+      <a href="../research-s3-error-mapping-fidelity/" class="md-nav__link">
         
   
   
@@ -8953,7 +8968,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-seekable-read/" class="md-nav__link">
+      <a href="../research-seekable-read/" class="md-nav__link">
         
   
   
@@ -8981,7 +8996,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-sftpgo-comparison/" class="md-nav__link">
+      <a href="../research-sftpgo-comparison/" class="md-nav__link">
         
   
   
@@ -9009,7 +9024,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-spec-kit-comparison/" class="md-nav__link">
+      <a href="../research-spec-kit-comparison/" class="md-nav__link">
         
   
   
@@ -9037,7 +9052,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-sqlalchemy-backend/" class="md-nav__link">
+      <a href="../research-sqlalchemy-backend/" class="md-nav__link">
         
   
   
@@ -9065,7 +9080,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-store-api-refinement/" class="md-nav__link">
+      <a href="../research-store-api-refinement/" class="md-nav__link">
         
   
   
@@ -9093,7 +9108,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-store-config/" class="md-nav__link">
+      <a href="../research-store-config/" class="md-nav__link">
         
   
   
@@ -9121,7 +9136,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-store-middleware-architecture/" class="md-nav__link">
+      <a href="../research-store-middleware-architecture/" class="md-nav__link">
         
   
   
@@ -9149,7 +9164,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-testing-best-practices/" class="md-nav__link">
+      <a href="../research-testing-best-practices/" class="md-nav__link">
         
   
   
@@ -9177,7 +9192,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/research/research-v1-communication-plan/" class="md-nav__link">
+      <a href="../research-v1-communication-plan/" class="md-nav__link">
         
   
   
@@ -9228,7 +9243,7 @@
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../../../../../explanation/design/specs/" class="md-nav__link ">
+            <a href="../../specs/" class="md-nav__link ">
               
   
   
@@ -9270,7 +9285,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/001-store-api/" class="md-nav__link">
+      <a href="../../specs/001-store-api/" class="md-nav__link">
         
   
   
@@ -9298,7 +9313,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/002-registry-config/" class="md-nav__link">
+      <a href="../../specs/002-registry-config/" class="md-nav__link">
         
   
   
@@ -9326,7 +9341,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/003-backend-adapter-contract/" class="md-nav__link">
+      <a href="../../specs/003-backend-adapter-contract/" class="md-nav__link">
         
   
   
@@ -9354,7 +9369,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/004-path-model/" class="md-nav__link">
+      <a href="../../specs/004-path-model/" class="md-nav__link">
         
   
   
@@ -9382,7 +9397,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/005-error-model/" class="md-nav__link">
+      <a href="../../specs/005-error-model/" class="md-nav__link">
         
   
   
@@ -9410,7 +9425,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/006-streaming-io/" class="md-nav__link">
+      <a href="../../specs/006-streaming-io/" class="md-nav__link">
         
   
   
@@ -9438,7 +9453,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/007-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/007-atomic-writes/" class="md-nav__link">
         
   
   
@@ -9466,7 +9481,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/008-s3-backend/" class="md-nav__link">
+      <a href="../../specs/008-s3-backend/" class="md-nav__link">
         
   
   
@@ -9494,7 +9509,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/009-sftp-backend/" class="md-nav__link">
+      <a href="../../specs/009-sftp-backend/" class="md-nav__link">
         
   
   
@@ -9522,7 +9537,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/010-native-path-resolution/" class="md-nav__link">
+      <a href="../../specs/010-native-path-resolution/" class="md-nav__link">
         
   
   
@@ -9550,7 +9565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/011-s3-pyarrow-backend/" class="md-nav__link">
+      <a href="../../specs/011-s3-pyarrow-backend/" class="md-nav__link">
         
   
   
@@ -9578,7 +9593,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/012-azure-backend/" class="md-nav__link">
+      <a href="../../specs/012-azure-backend/" class="md-nav__link">
         
   
   
@@ -9606,7 +9621,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/013-memory-backend/" class="md-nav__link">
+      <a href="../../specs/013-memory-backend/" class="md-nav__link">
         
   
   
@@ -9634,7 +9649,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
+      <a href="../../specs/014-pyarrow-filesystem-adapter/" class="md-nav__link">
         
   
   
@@ -9662,7 +9677,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/015-store-child/" class="md-nav__link">
+      <a href="../../specs/015-store-child/" class="md-nav__link">
         
   
   
@@ -9690,7 +9705,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/016-ext-batch/" class="md-nav__link">
+      <a href="../../specs/016-ext-batch/" class="md-nav__link">
         
   
   
@@ -9718,7 +9733,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/017-ext-transfer/" class="md-nav__link">
+      <a href="../../specs/017-ext-transfer/" class="md-nav__link">
         
   
   
@@ -9746,7 +9761,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/018-glob/" class="md-nav__link">
+      <a href="../../specs/018-glob/" class="md-nav__link">
         
   
   
@@ -9774,7 +9789,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/019-ext-observe/" class="md-nav__link">
+      <a href="../../specs/019-ext-observe/" class="md-nav__link">
         
   
   
@@ -9802,7 +9817,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/020-credential-hygiene/" class="md-nav__link">
+      <a href="../../specs/020-credential-hygiene/" class="md-nav__link">
         
   
   
@@ -9830,7 +9845,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/021-config-loaders/" class="md-nav__link">
+      <a href="../../specs/021-config-loaders/" class="md-nav__link">
         
   
   
@@ -9858,7 +9873,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/022-streaming-atomic-writes/" class="md-nav__link">
+      <a href="../../specs/022-streaming-atomic-writes/" class="md-nav__link">
         
   
   
@@ -9886,7 +9901,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/023-ext-cache/" class="md-nav__link">
+      <a href="../../specs/023-ext-cache/" class="md-nav__link">
         
   
   
@@ -9914,7 +9929,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/024-ext-partition/" class="md-nav__link">
+      <a href="../../specs/024-ext-partition/" class="md-nav__link">
         
   
   
@@ -9942,7 +9957,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/025-retry-policy/" class="md-nav__link">
+      <a href="../../specs/025-retry-policy/" class="md-nav__link">
         
   
   
@@ -9970,7 +9985,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/026-health-check/" class="md-nav__link">
+      <a href="../../specs/026-health-check/" class="md-nav__link">
         
   
   
@@ -9998,7 +10013,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/027-iter-children/" class="md-nav__link">
+      <a href="../../specs/027-iter-children/" class="md-nav__link">
         
   
   
@@ -10026,7 +10041,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/028-read-text/" class="md-nav__link">
+      <a href="../../specs/028-read-text/" class="md-nav__link">
         
   
   
@@ -10054,7 +10069,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/029-async-store-backend-api/" class="md-nav__link">
+      <a href="../../specs/029-async-store-backend-api/" class="md-nav__link">
         
   
   
@@ -10082,7 +10097,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/030-write-text/" class="md-nav__link">
+      <a href="../../specs/030-write-text/" class="md-nav__link">
         
   
   
@@ -10110,7 +10125,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/031-ext-dagster/" class="md-nav__link">
+      <a href="../../specs/031-ext-dagster/" class="md-nav__link">
         
   
   
@@ -10138,7 +10153,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/032-http-backend/" class="md-nav__link">
+      <a href="../../specs/032-http-backend/" class="md-nav__link">
         
   
   
@@ -10166,7 +10181,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/033-ext-streams/" class="md-nav__link">
+      <a href="../../specs/033-ext-streams/" class="md-nav__link">
         
   
   
@@ -10194,7 +10209,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/034-ext-integrity/" class="md-nav__link">
+      <a href="../../specs/034-ext-integrity/" class="md-nav__link">
         
   
   
@@ -10222,7 +10237,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/035-content-digest/" class="md-nav__link">
+      <a href="../../specs/035-content-digest/" class="md-nav__link">
         
   
   
@@ -10250,7 +10265,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/036-seekable-read/" class="md-nav__link">
+      <a href="../../specs/036-seekable-read/" class="md-nav__link">
         
   
   
@@ -10278,7 +10293,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/037-depth-limited-listing/" class="md-nav__link">
+      <a href="../../specs/037-depth-limited-listing/" class="md-nav__link">
         
   
   
@@ -10306,7 +10321,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/038-nonrecursive-folder-info/" class="md-nav__link">
+      <a href="../../specs/038-nonrecursive-folder-info/" class="md-nav__link">
         
   
   
@@ -10334,7 +10349,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/039-tls-ca-bundle/" class="md-nav__link">
+      <a href="../../specs/039-tls-ca-bundle/" class="md-nav__link">
         
   
   
@@ -10362,7 +10377,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/040-sql-blob-backend/" class="md-nav__link">
+      <a href="../../specs/040-sql-blob-backend/" class="md-nav__link">
         
   
   
@@ -10390,7 +10405,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/041-sql-query-backend/" class="md-nav__link">
+      <a href="../../specs/041-sql-query-backend/" class="md-nav__link">
         
   
   
@@ -10418,7 +10433,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/042-ext-parquet/" class="md-nav__link">
+      <a href="../../specs/042-ext-parquet/" class="md-nav__link">
         
   
   
@@ -10446,7 +10461,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/043-resolution-plan/" class="md-nav__link">
+      <a href="../../specs/043-resolution-plan/" class="md-nav__link">
         
   
   
@@ -10474,7 +10489,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/044-graph-backend/" class="md-nav__link">
+      <a href="../../specs/044-graph-backend/" class="md-nav__link">
         
   
   
@@ -10502,7 +10517,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/045-write-result/" class="md-nav__link">
+      <a href="../../specs/045-write-result/" class="md-nav__link">
         
   
   
@@ -10530,7 +10545,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/046-ext-write/" class="md-nav__link">
+      <a href="../../specs/046-ext-write/" class="md-nav__link">
         
   
   
@@ -10558,7 +10573,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/047-docs-framework-tooling/" class="md-nav__link">
+      <a href="../../specs/047-docs-framework-tooling/" class="md-nav__link">
         
   
   
@@ -10586,7 +10601,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/048-testing-architecture/" class="md-nav__link">
+      <a href="../../specs/048-testing-architecture/" class="md-nav__link">
         
   
   
@@ -10614,7 +10629,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/049-live-recording-architecture/" class="md-nav__link">
+      <a href="../../specs/049-live-recording-architecture/" class="md-nav__link">
         
   
   
@@ -10642,7 +10657,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../../explanation/design/specs/050-doc-graph-model/" class="md-nav__link">
+      <a href="../../specs/050-doc-graph-model/" class="md-nav__link">
         
   
   
@@ -10713,10 +10728,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#remote_store.aio.GraphBackend" class="md-nav__link">
+  <a href="#1-problem-statement" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;GraphBackend
+        1. Problem Statement
       
     </span>
   </a>
@@ -10724,33 +10739,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#graphauth" class="md-nav__link">
+  <a href="#2-survey" class="md-nav__link">
     <span class="md-ellipsis">
       
-        GraphAuth
+        2. Survey
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#remote_store.aio.GraphAuth" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;GraphAuth
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label=" GraphAuth">
+    <nav class="md-nav" aria-label="2. Survey">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#remote_store.aio.GraphAuth.authority" class="md-nav__link">
+  <a href="#21-arc42" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;authority
+        2.1 arc42
       
     </span>
   </a>
@@ -10758,43 +10762,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#remote_store.aio.GraphAuth.get_token" class="md-nav__link">
+  <a href="#22-what-this-repo-has-section-by-section" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;get_token
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.GraphAuth.__call__" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;__call__
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.GraphAuth.aget_token" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;aget_token
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remote_store.aio.GraphAuth.flush_cache" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;flush_cache
+        2.2 What this repo has, section by section
       
     </span>
   </a>
@@ -10807,22 +10778,22 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#graphutils" class="md-nav__link">
+  <a href="#3-evaluation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        GraphUtils
+        3. Evaluation
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="GraphUtils">
+    <nav class="md-nav" aria-label="3. Evaluation">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#remote_store.aio.GraphUtils.resolve_drive_id" class="md-nav__link">
+  <a href="#31-the-filter-and-the-thing-it-cannot-see" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;resolve_drive_id
+        3.1 The filter, and the thing it cannot see
       
     </span>
   </a>
@@ -10830,10 +10801,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#remote_store.aio.GraphUtils.aresolve_drive_id" class="md-nav__link">
+  <a href="#32-what-the-corpus-says-about-narrative-architecture-prose" class="md-nav__link">
     <span class="md-ellipsis">
       
-        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;aresolve_drive_id
+        3.2 What the corpus says about narrative architecture prose
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-the-one-cluster-that-looks-arc42-shaped-and-what-it-actually-is" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 The one cluster that looks arc42-shaped, and what it actually is
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#34-candidates-against-the-evidence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.4 Candidates against the evidence
       
     </span>
   </a>
@@ -10846,13 +10839,52 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
+  <a href="#4-recommendation" class="md-nav__link">
     <span class="md-ellipsis">
       
-        See also
+        4. Recommendation
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="4. Recommendation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-where-the-decision-lives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 Where the decision lives
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-what-would-change-the-answer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 What would change the answer
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-what-this-document-does-not-claim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 What this document does not claim
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -10872,718 +10904,627 @@
                   
 
 
-  
-  
 
-
-<h1 id="graphbackend">GraphBackend<a class="headerlink" href="#graphbackend" title="Permanent link">&para;</a></h1>
-<p>Native async Microsoft Graph backend over OneDrive, SharePoint document
-libraries, and Teams files. A single instance targets one drive
-(<code>drive_id</code>); transport is <code>httpx</code> and auth is a token-provider callable
-(the built-in <code>GraphAuth</code> helper, or any user-supplied callable). Requires
-the <code>graph</code> extra. See the <a href="../../../../../guides/backends/graph-setup/">Graph setup guide</a>
-for provisioning credentials and resolving a <code>drive_id</code>.</p>
-<p>Graph is async-only — there is no synchronous <code>GraphBackend</code>. To use it from
-synchronous code, wrap it with <a href="../../adapters/"><code>AsyncBackendSyncAdapter</code></a>.</p>
-
-
-<div class="doc doc-object doc-class">
-
-
-
-<h2 id="remote_store.aio.GraphBackend" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">GraphBackend</span>
-
-
-<a href="#remote_store.aio.GraphBackend" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">GraphBackend</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">drive_id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">token_provider</span><span class="p">:</span> <span class="n"><span title="remote_store.aio.backends._graph.backend.TokenProvider">TokenProvider</span></span><span class="p">,</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">base_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="n"><span title="remote_store.aio.backends._graph.backend._DEFAULT_BASE_URL">_DEFAULT_BASE_URL</span></span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">http_client</span><span class="p">:</span> <span class="n"><span title="httpx.AsyncClient">AsyncClient</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">retry</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            RetryPolicy
-
-
-  
-      dataclass
-   (remote_store._config.RetryPolicy)" href="../../../config/#remote_store.RetryPolicy">RetryPolicy</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">upload_chunk_size</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="n"><span title="remote_store.aio.backends._graph.backend._DEFAULT_UPLOAD_CHUNK_SIZE">_DEFAULT_UPLOAD_CHUNK_SIZE</span></span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">copy_timeout</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">base_path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s2">""</span><span class="p">,</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">client_options</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents first">
-
-
-
-        <p>Async Microsoft Graph backend over OneDrive / SharePoint / Teams files.</p>
-<p>A single instance targets one drive, identified by an immutable
-<code>drive_id</code>. Items are addressed by <code>/</code>-rooted POSIX path; transport is
-<code>httpx</code>; auth is a token-provider callable (the built-in <code>GraphAuth</code>
-helper, or any user-supplied callable).</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-            <b><code>drive_id</code></b>
-              (<code><span title="str">str</span></code>)
-          –
-          <div class="doc-md-description">
-            <p>Opaque Graph drive id. Resolve one from a URL / "me" /
-Teams channel with <code>GraphUtils.resolve_drive_id</code>.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>token_provider</code></b>
-              (<code><span title="remote_store.aio.backends._graph.backend.TokenProvider">TokenProvider</span></code>)
-          –
-          <div class="doc-md-description">
-            <p><code>Callable[[], str]</code> or <code>Callable[[], Awaitable[str]]</code>
-returning a bearer token, invoked lazily (never in <code>__init__</code>).</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>base_url</code></b>
-              (<code><span title="str">str</span></code>, default:
-                  <code><span title="remote_store.aio.backends._graph.backend._DEFAULT_BASE_URL">_DEFAULT_BASE_URL</span></code>
-)
-          –
-          <div class="doc-md-description">
-            <p>Graph API root (default <code>https://graph.microsoft.com/v1.0</code>).</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>http_client</code></b>
-              (<code><span title="httpx.AsyncClient">AsyncClient</span> | None</code>, default:
-                  <code>None</code>
-)
-          –
-          <div class="doc-md-description">
-            <p>Reuse an existing <code>httpx.AsyncClient</code>; the caller owns
-its lifecycle and <code>close()</code> does not close it. When omitted, one
-is created lazily on first use and closed by <code>close()</code>.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>retry</code></b>
-              (<code><a class="autorefs autorefs-internal" title="            RetryPolicy
-
-
-  
-      dataclass
-   (remote_store._config.RetryPolicy)" href="../../../config/#remote_store.RetryPolicy">RetryPolicy</a> | None</code>, default:
-                  <code>None</code>
-)
-          –
-          <div class="doc-md-description">
-            <p>Retry policy for transient failures; <code>None</code> uses the default
-<code>RetryPolicy()</code> profile.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>upload_chunk_size</code></b>
-              (<code><span title="int">int</span></code>, default:
-                  <code><span title="remote_store.aio.backends._graph.backend._DEFAULT_UPLOAD_CHUNK_SIZE">_DEFAULT_UPLOAD_CHUNK_SIZE</span></code>
-)
-          –
-          <div class="doc-md-description">
-            <p>Upload-session chunk size; must be a positive
-multiple of 320 KiB and strictly less than 60 MiB (Graph's
-per-request ceiling). Default 10 MiB.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>copy_timeout</code></b>
-              (<code><span title="float">float</span> | None</code>, default:
-                  <code>None</code>
-)
-          –
-          <div class="doc-md-description">
-            <p>Wall-clock budget for copy/move monitor polling, or
-<code>None</code> for no backend-imposed ceiling. When set, must be a
-positive float.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>base_path</code></b>
-              (<code><span title="str">str</span></code>, default:
-                  <code>&#39;&#39;</code>
-)
-          –
-          <div class="doc-md-description">
-            <p>Optional drive subfolder to scope every operation under.
-When set, all keys are addressed relative to this folder and keys
-returned by listing / <code>to_key</code> stay relative to it, so the backend
-behaves as if <code>base_path</code> were its root. Defaults to the drive root.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>client_options</code></b>
-              (<code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>] | None</code>, default:
-                  <code>None</code>
-)
-          –
-          <div class="doc-md-description">
-            <p>Extra options passed through to the internal
-<code>httpx.AsyncClient</code>. (When a future revision adds an explicit
-httpx-level constructor parameter, it takes precedence over a
-<code>client_options</code> key of the same name; the backend has no such
-parameter today, so this is passthrough only.)</p>
-          </div>
-        </li>
-    </ul>
-
-
-<p><span class="doc-section-title">Raises:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-              <code><span title="ValueError">ValueError</span></code>
-            –
-          <div class="doc-md-description">
-            <p>For an empty <code>drive_id</code>, a non-callable
-<code>token_provider</code>, a non-string <code>base_path</code>, an
-<code>upload_chunk_size</code> that is not a positive 320 KiB multiple
-below 60 MiB, or a non-positive <code>copy_timeout</code>.</p>
-          </div>
-        </li>
-    </ul>
-
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-
-
-  </div>
-
-    </div>
-
-</div><h2 id="graphauth">GraphAuth<a class="headerlink" href="#graphauth" title="Permanent link">&para;</a></h2>
-<p>MSAL-backed token provider for <code>GraphBackend</code>. Wraps the client-credentials
-(app-only) and device-code (interactive) flows and exposes the bearer token
-through the token-provider protocol — a <code>GraphAuth</code> instance is itself a
-<code>Callable[[], str]</code>.</p>
-
-
-<div class="doc doc-object doc-class">
-
-
-
-<h2 id="remote_store.aio.GraphAuth" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">GraphAuth</span>
-
-
-<a href="#remote_store.aio.GraphAuth" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">GraphAuth</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">tenant_id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">client_id</span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">client_secret</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../../config/#remote_store.Secret">Secret</a></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">client_certificate</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="n">scopes</span><span class="p">:</span> <span class="n"><span title="collections.abc.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">cache_path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">prompt_callback</span><span class="p">:</span> <span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[</span><span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]],</span> <span class="kc">None</span><span class="p">]</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="p">)</span>
-</code></pre></div>
-
-    <div class="doc doc-contents first">
-
-
-
-        <p>MSAL-backed token provider for <code>GraphBackend</code>.</p>
-<p>Selects the OAuth flow from the supplied credentials: a <code>client_secret</code>
-or <code>client_certificate</code> selects client-credentials (app-only); their
-absence selects device-code (interactive). The resulting bearer token is
-reachable synchronously through <code>get_token()</code> (and through calling the
-instance directly) and asynchronously through <code>aget_token()</code>, which
-offloads the blocking MSAL work off the event loop and single-flights
-concurrent acquisitions — prefer it on the event loop.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-            <b><code>tenant_id</code></b>
-              (<code><span title="str">str</span></code>)
-          –
-          <div class="doc-md-description">
-            <p>Entra tenant id, or <code>"consumers"</code> / <code>"common"</code> /
-<code>"organizations"</code> for the device-code multi-tenant authorities.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>client_id</code></b>
-              (<code><span title="str">str</span></code>)
-          –
-          <div class="doc-md-description">
-            <p>Application (client) id of the Entra app registration.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>client_secret</code></b>
-              (<code><span title="str">str</span> | <a class="autorefs autorefs-internal" title="            Secret (remote_store._config.Secret)" href="../../../config/#remote_store.Secret">Secret</a> | None</code>, default:
-                  <code>None</code>
-)
-          –
-          <div class="doc-md-description">
-            <p>Client secret for client-credentials. Accepts a
-<code>Secret</code> and is masked in <code>repr</code>.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>client_certificate</code></b>
-              (<code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>] | None</code>, default:
-                  <code>None</code>
-)
-          –
-          <div class="doc-md-description">
-            <p>Certificate dict for client-credentials, as
-MSAL's <code>client_credential</code> mapping. Mutually exclusive with
-<code>client_secret</code>.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>scopes</code></b>
-              (<code><span title="collections.abc.Sequence">Sequence</span>[<span title="str">str</span>] | None</code>, default:
-                  <code>None</code>
-)
-          –
-          <div class="doc-md-description">
-            <p>Override the default scope set. Client-credentials defaults
-to <code>["https://graph.microsoft.com/.default"]</code>; device-code
-defaults to the delegated <code>["Files.ReadWrite", "User.Read"]</code>
-(the signed-in user's OneDrive — consumer-compatible). Add
-<code>Sites.ReadWrite.All</code> for delegated SharePoint access.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>cache_path</code></b>
-              (<code><span title="str">str</span> | None</code>, default:
-                  <code>None</code>
-)
-          –
-          <div class="doc-md-description">
-            <p>Override the MSAL token-cache file location. Defaults to
-<code>&lt;user_config_dir("remote-store")&gt;/graph_token_cache.json</code>. The
-cache is persisted multi-process-safely: a sibling
-<code>&lt;cache_path&gt;.lockfile</code> coordinates concurrent writers so a
-shared default cache survives the common multi-worker deployment.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>prompt_callback</code></b>
-              (<code><span title="collections.abc.Callable">Callable</span>[[<span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>]], None] | None</code>, default:
-                  <code>None</code>
-)
-          –
-          <div class="doc-md-description">
-            <p>Invoked with the MSAL device-flow dict on device-code
-login; defaults to printing <code>flow["message"]</code>.</p>
-          </div>
-        </li>
-    </ul>
-
-
-<p><span class="doc-section-title">Raises:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-              <code><span title="ValueError">ValueError</span></code>
-            –
-          <div class="doc-md-description">
-            <p>If <code>tenant_id</code> or <code>client_id</code> is empty, or if both
-<code>client_secret</code> and <code>client_certificate</code> are supplied.</p>
-          </div>
-        </li>
-    </ul>
-
-
-
-
-
-
-
-
-
-
-
-<div class="doc doc-children">
-
-
-
-
-
-
-
-<div class="doc doc-object doc-attribute">
-
-
-
-<h3 id="remote_store.aio.GraphAuth.authority" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">authority</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-property"><code>property</code></small>
-  </span>
-
-<a href="#remote_store.aio.GraphAuth.authority" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">authority</span><span class="p">:</span> <span class="n"><span title="str">str</span></span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>The MSAL authority URL derived from <code>tenant_id</code>.</p>
-
-    </div>
-
-</div>
-
-
-
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="remote_store.aio.GraphAuth.get_token" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">get_token</span>
-
-
-<a href="#remote_store.aio.GraphAuth.get_token" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_token</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Acquire (or silently refresh) a bearer token.</p>
-<p>The token-provider callable the backend invokes. Re-invoking it after
-a <code>401</code> refreshes through MSAL's cache. The acquisition writes the
-refreshed cache through to disk itself — the backing
-<code>PersistedTokenCache</code> persists under a cross-process lock on every
-change, so no explicit flush is needed here.</p>
-
-
-<p><span class="doc-section-title">Raises:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
-            –
-          <div class="doc-md-description">
-            <p>If MSAL returns no token (auth failure); the
-<code>error_description</code> is included, never the secret. A typed
-<code>RemoteStoreError</code> so a failure surfacing mid-<code>read</code> /
-<code>write</code> stays catchable via <code>except RemoteStoreError</code>.</p>
-          </div>
-        </li>
-    </ul>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="remote_store.aio.GraphAuth.__call__" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">__call__</span>
-
-
-<a href="#remote_store.aio.GraphAuth.__call__" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">__call__</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Return a bearer token — makes the instance a token-provider callable.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="remote_store.aio.GraphAuth.aget_token" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">aget_token</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-async"><code>async</code></small>
-  </span>
-
-<a href="#remote_store.aio.GraphAuth.aget_token" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">aget_token</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Acquire a bearer token without blocking the event loop.</p>
-<p>The async token-provider entry point: pass <code>token_provider=auth.aget_token</code>
-(a bound async method is a <code>Callable[[], Awaitable[str]]</code>) so the backend
-awaits it instead of calling the synchronous instance. It offloads the
-synchronous MSAL acquisition — including any contended token-cache lock
-wait — to a worker thread so sibling coroutines keep running, and
-single-flights concurrent callers: N coroutines acquiring at once share
-<strong>one</strong> acquisition rather than each hitting the identity provider (which
-also dedupes the one-shot refresh after a <code>401</code>).</p>
-<p>Use this on the event loop; reuse the synchronous <code>get_token</code> /
-<code>__call__</code> from synchronous wiring code that has no running loop. The
-single-flight state is bound to the loop the first caller runs on — share
-one instance per loop, mirroring the backend's own single-loop posture.
-Cancelling one caller (e.g. a <code>gather</code> sibling that times out) neither
-cancels the shared acquisition nor disturbs the other joiners.</p>
-
-
-<p><span class="doc-section-title">Raises:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
-            –
-          <div class="doc-md-description">
-            <p>Propagated from <code>get_token</code> to the owning
-caller and every joiner sharing the in-flight acquisition; a
-later call retries afresh.</p>
-          </div>
-        </li>
-    </ul>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="remote_store.aio.GraphAuth.flush_cache" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">flush_cache</span>
-
-
-<a href="#remote_store.aio.GraphAuth.flush_cache" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">flush_cache</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Best-effort no-op retained for the <code>GraphBackend.close()</code> hook.</p>
-<p>The token cache is a <code>PersistedTokenCache</code> that writes through to
-disk under a cross-process lock on every acquisition, so there is
-nothing to flush at close. The method stays because
-<code>GraphBackend.close()</code> invokes it duck-typed and user-supplied
-providers may implement their own. Never raises — teardown must not
-fail.</p>
-
-
-    </div>
-
-</div>
-
-
-
-  </div>
-
-    </div>
-
-</div><h2 id="graphutils">GraphUtils<a class="headerlink" href="#graphutils" title="Permanent link">&para;</a></h2>
-<p>Namespace helpers for Graph configuration. <code>resolve_drive_id</code> turns "my
-OneDrive" (<code>"me"</code>), a SharePoint site URL, or a Teams channel mapping into the
-opaque <code>drive_id</code> the backend requires.</p>
-
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="remote_store.aio.GraphUtils.resolve_drive_id" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">resolve_drive_id</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
-  </span>
-
-<a href="#remote_store.aio.GraphUtils.resolve_drive_id" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">resolve_drive_id</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">target</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">],</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">token_provider</span><span class="p">:</span> <span class="n"><span title="remote_store.aio.backends._graph.utils.TokenProvider">TokenProvider</span></span><span class="p">,</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">http_client</span><span class="p">:</span> <span class="n"><span title="httpx.AsyncClient">AsyncClient</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">base_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="n"><span title="remote_store.aio.backends._graph.utils._DEFAULT_BASE_URL">_DEFAULT_BASE_URL</span></span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
-</code></pre></div>
-
-    <div class="doc doc-contents first">
-
-        <p>Resolve a <code>drive_id</code> from one of the three target shapes.</p>
-<p>Sync entry point for application wiring; runs <code>aresolve_drive_id</code>
-under a private event loop. See <code>aresolve_drive_id</code> for the accepted
-shapes and raised errors.</p>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h3 id="remote_store.aio.GraphUtils.aresolve_drive_id" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">aresolve_drive_id</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-async"><code>async</code></small>
-      <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
-  </span>
-
-<a href="#remote_store.aio.GraphUtils.aresolve_drive_id" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">aresolve_drive_id</span><span class="p">(</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">target</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">],</span>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="o">*</span><span class="p">,</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">token_provider</span><span class="p">:</span> <span class="n"><span title="remote_store.aio.backends._graph.utils.TokenProvider">TokenProvider</span></span><span class="p">,</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">http_client</span><span class="p">:</span> <span class="n"><span title="httpx.AsyncClient">AsyncClient</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">base_url</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="n"><span title="remote_store.aio.backends._graph.utils._DEFAULT_BASE_URL">_DEFAULT_BASE_URL</span></span><span class="p">,</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="str">str</span></span>
-</code></pre></div>
-
-    <div class="doc doc-contents first">
-
-        <p>Resolve a <code>drive_id</code> from one of three target shapes.</p>
-<p>Accepted shapes:</p>
+<h1 id="research-arc42-as-an-architecture-level-specification-layer">Research: arc42 as an architecture-level specification layer<a class="headerlink" href="#research-arc42-as-an-architecture-level-specification-layer" title="Permanent link">&para;</a></h1>
+<p><strong>Date:</strong> 2026-08-28
+<strong>Backlog items:</strong> none — the question arrived directly, and § 4.1 explains why
+it leaves none behind
+<strong>Status:</strong> Research complete — all four dispositions refused; this document is
+the record</p>
+<hr />
+<h2 id="1-problem-statement">1. Problem Statement<a class="headerlink" href="#1-problem-statement" title="Permanent link">&para;</a></h2>
+<p><a href="https://arc42.org/">arc42</a> is a twelve-section template for architecture
+documentation. The case for adopting it in a spec-driven repository worked by
+coding agents is that it gives architectural intent a predictable, complete,
+agent-readable home: instead of re-explaining boundaries, quality goals and
+prior decisions in prompts, you maintain them as versioned documents an agent
+consults before proposing a change. The pitch names specific agent failure modes
+— adding a dependency that violates a platform rule, placing a component in the
+wrong layer, implementing a happy path only, reopening a settled decision — and
+maps each to the arc42 section that would have prevented it.</p>
+<p>The question this document answers is whether that is worth doing here.</p>
+<p>The obvious method is to walk the twelve sections, find the ones this repo has
+no document for, and fill them. That method is the one
+<a href="../research-spec-kit-comparison/">research § 1</a> already rejected for the same
+class of question: <strong>it selects for absence rather than for cost.</strong> A section
+this repo has never had, and has never paid for not having, is not a gap, and
+filling it spends review attention — the scarce resource — on a problem we do
+not have.</p>
+<p>So the decision is narrower than "is arc42 good": <strong>which of its sections
+addresses a failure this repo can show evidence of.</strong> Two instruments answer
+that, and § 3.4 records which one decided each row:</p>
+<ol>
+<li><strong>The trace corpus</strong>, which records where our own descriptions have failed
+   their readers (<a href="../../content-rules/"><code>CONTENT-RULES.md</code></a>). It ranks documents
+   that exist and misled someone.</li>
+<li><strong>Executable parity</strong> — for a section arc42 would add, does the thing it
+   would document already exist in a <em>non-prose</em> form: an executable gate, or a
+   tracked item with a named owner and cadence? Where it does, the candidate is
+   not a missing artifact but a missing restatement.</li>
+</ol>
+<p>The second instrument is stated here for the reader's benefit but was not
+planned: § 3.1 records that it exists because the first one turned out to be
+structurally blind to three of the four dispositions, and that discovery is part
+of the finding rather than a preamble to it.</p>
+<p>Constraints that bind the answer:</p>
 <ul>
-<li><code>"me"</code> — the authenticated user's default drive (<code>GET /me/drive</code>).</li>
-<li>a SharePoint site URL <code>str</code> — the site's default drive; or a
-  <code>(site_url, library_name)</code> tuple — the named document library.</li>
-<li>a <code>{"team_id": ..., "channel_id": ...}</code> mapping — a Teams
-  channel's backing drive.</li>
+<li><a href="../../drift-rules/#one-driver"><code>DRIFT-RULES.md</code> Rule 1</a>: prefer one normative
+  description driving N artifacts over N² pairwise checks. Twelve new documents
+  restating what specs already state normatively is the shape this rejects.</li>
+<li><a href="../../drift-rules/#independence"><code>DRIFT-RULES.md</code> Rule 8</a>: a second description
+  must record what it was derived from, and independent authors do not produce
+  independent errors.</li>
+<li><a href="../../authoring/#rules"><code>AUTHORING.md</code> Rule 2</a>: each <code>.md</code> lives at exactly one
+  path; other presentations are derived, never copied. <a href="../../adrs/0006-documentation-architecture/">ADR-0006</a>
+  is the record of what it cost to have two homes for the same content.</li>
+<li><a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#principles"><code>CLAUDE.md</code> principle 8</a>: detail belongs at the
+  layer whose change-rate and correctness-locus fit it.</li>
+<li><a href="../../content-rules/#six-month-test"><code>CONTENT-RULES.md</code> Rule 1</a>: anything
+  adopted has to still be true in six months.</li>
 </ul>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-            <b><code>target</code></b>
-              (<code><span title="str">str</span> | <span title="tuple">tuple</span>[<span title="str">str</span>, <span title="str">str</span>] | <span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="str">str</span>]</code>)
-          –
-          <div class="doc-md-description">
-            <p>One of the shapes above.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>token_provider</code></b>
-              (<code><span title="remote_store.aio.backends._graph.utils.TokenProvider">TokenProvider</span></code>)
-          –
-          <div class="doc-md-description">
-            <p>Bearer-token callable (sync or async).</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>http_client</code></b>
-              (<code><span title="httpx.AsyncClient">AsyncClient</span> | None</code>, default:
-                  <code>None</code>
-)
-          –
-          <div class="doc-md-description">
-            <p>Reuse an existing client; one is created and closed
-per call when omitted.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-            <b><code>base_url</code></b>
-              (<code><span title="str">str</span></code>, default:
-                  <code><span title="remote_store.aio.backends._graph.utils._DEFAULT_BASE_URL">_DEFAULT_BASE_URL</span></code>
-)
-          –
-          <div class="doc-md-description">
-            <p>Graph API root.</p>
-          </div>
-        </li>
-    </ul>
-
-
-<p><span class="doc-section-title">Returns:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-              <code><span title="str">str</span></code>
-          –
-          <div class="doc-md-description">
-            <p>The opaque Graph <code>drive.id</code> string.</p>
-          </div>
-        </li>
-    </ul>
-
-
-<p><span class="doc-section-title">Raises:</span></p>
-    <ul>
-        <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="            InvalidPath (remote_store._errors.InvalidPath)" href="../../../errors/#remote_store.InvalidPath">InvalidPath</a></code>
-            –
-          <div class="doc-md-description">
-            <p>If <code>target</code> matches no accepted shape, the SharePoint
-site URL has no host, or the named library does not exist.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="            NotFound (remote_store._errors.NotFound)" href="../../../errors/#remote_store.NotFound">NotFound</a></code>
-            –
-          <div class="doc-md-description">
-            <p>If a site/team/channel id resolves but returns a <code>404</code>
-carrying any code other than <code>resourceNotFound</code>.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="            PermissionDenied (remote_store._errors.PermissionDenied)" href="../../../errors/#remote_store.PermissionDenied">PermissionDenied</a></code>
-            –
-          <div class="doc-md-description">
-            <p>If Graph returns <code>403</code> for the lookup.</p>
-          </div>
-        </li>
-        <li class="doc-section-item field-body">
-              <code><a class="autorefs autorefs-internal" title="            BackendUnavailable (remote_store._errors.BackendUnavailable)" href="../../../errors/#remote_store.BackendUnavailable">BackendUnavailable</a></code>
-            –
-          <div class="doc-md-description">
-            <p>If Graph reports the target as a drive-identity
-failure (<code>404 resourceNotFound</code>) — these lookups resolve a
-drive rather than address a path, so a resource that is not
-there is a configuration error, not an absence. Also for a
-transport error, a retryable <code>5xx</code> / <code>429</code> / <code>507</code>, or a
-malformed <code>@odata.nextLink</code> while paging a site's document
-libraries.</p>
-          </div>
-        </li>
-    </ul>
-
-
-    </div>
-
-</div><h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
+<hr />
+<h2 id="2-survey">2. Survey<a class="headerlink" href="#2-survey" title="Permanent link">&para;</a></h2>
+<h3 id="21-arc42">2.1 arc42<a class="headerlink" href="#21-arc42" title="Permanent link">&para;</a></h3>
+<p><strong>Pattern:</strong> architecture documentation as a fixed, tailorable table of contents.
+Twelve purpose-specific sections, all optional, tool-agnostic, intended for
+docs-as-code rather than a documentation ceremony. The template's own guidance is
+to document only what stakeholders need in order to understand the system, and to
+leave the rest sparse.</p>
+<p><strong>How it works in the agent-enabled framing:</strong> the twelve sections become stable
+paths (conventionally <code>docs/architecture/01-…</code> through <code>12-…</code>) that an agent is
+instructed to read before planning a change. Section 9 (Architecture Decisions)
+holds ADRs; section 8 (Cross-cutting Concepts) holds error handling, logging,
+auth and validation conventions; section 10 (Quality Requirements) holds
+measurable scenarios that convert into acceptance criteria and tests; section 11
+(Risks and Technical Debt) records areas an agent must not opportunistically
+"clean up". A prompt contract in an agent-instructions file points at the index
+and requires a change proposal naming affected building blocks, applicable
+decisions and quality scenarios before implementation.</p>
+<p><strong>Trade-offs:</strong></p>
 <ul>
-<li><a href="../../../../../guides/backends/graph/">Graph Backend Guide</a> — usage patterns and capabilities</li>
-<li><a href="../../../../../guides/backends/graph-setup/">Graph setup guide</a> — provisioning credentials and resolving a <code>drive_id</code></li>
-<li><a href="../../adapters/">Adapters</a> — run <code>GraphBackend</code> from synchronous code</li>
+<li>Pro: the section list is a genuinely well-factored vocabulary for the questions
+  an agent otherwise guesses at, and it is stable across projects, so it travels.</li>
+<li>Pro: it is explicitly tailorable — sparse use is sanctioned by the method
+  itself, so adopting three sections is not a deviation.</li>
+<li>Con: every section is descriptive prose. Nothing in the template is executable,
+  and its own limits section concedes that documentation alone is advisory and
+  goes stale when updates are optional.</li>
+<li>Con: the framing it is usually pitched in is a deployed service — hosting,
+  environments, secrets, scaling, observability in production, database
+  migrations. A library has no deployment topology of its own.</li>
+<li>Con: the recommended layout puts architecture under <code>docs/</code>, a location this
+  repo has already decided against (§ 3.4).</li>
 </ul>
+<h3 id="22-what-this-repo-has-section-by-section">2.2 What this repo has, section by section<a class="headerlink" href="#22-what-this-repo-has-section-by-section" title="Permanent link">&para;</a></h3>
+<p>Mapping is by function, not by name — the question is whether a reader looking
+for what section N answers has an authoritative place to look.</p>
+<table>
+<thead>
+<tr>
+<th>arc42 section</th>
+<th>Where the answer lives here</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1. Introduction and goals</td>
+<td><a href="https://github.com/haalfi/remote-store/blob/master/README.md"><code>README.md</code></a> — what it does, audience, when not to use it — and its § Quality &amp; Testing, which states the quality intent per dimension; <a href="../../../../reference/FEATURES/"><code>FEATURES.md</code></a></td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>2. Constraints</td>
+<td><strong>Conventions:</strong> the nine root-level <code>sdd/</code> process documents <a href="../../../contributing/#authoritative-document-format"><code>CONTRIBUTING.md</code> § Authoritative Document Format</a> scopes, applied in a declared order (<a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#documentation-framework"><code>CLAUDE.md</code> § Documentation framework</a>). <strong>Technical:</strong> <a href="../../adrs/0003-fsspec-is-implementation-detail/">ADR-0003</a>, <a href="../../adrs/0008-extension-architecture/">ADR-0008</a>, <a href="../../design/"><code>sdd/DESIGN.md</code></a>, <code>pyproject.toml</code></td>
+<td>Covered — a declared framework, not a scatter</td>
+</tr>
+<tr>
+<td>3. Context and scope</td>
+<td><code>README.md</code>, <a href="../../specs/003-backend-adapter-contract/">spec 003</a>, <a href="../../../security-model/"><code>explanation/security-model.md</code></a></td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>4. Solution strategy</td>
+<td><a href="../../adrs/0001-architecture-store-registry-backends/">ADR-0001</a>, <a href="../../../architecture/"><code>explanation/architecture.md</code></a></td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>5. Building-block view</td>
+<td>ADR-0001, <code>explanation/architecture.md</code>, <a href="https://github.com/haalfi/remote-store/blob/master/sdd/CLAUDE-REFERENCE.md"><code>CLAUDE-REFERENCE.md</code></a> repo layout</td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>6. Runtime view</td>
+<td><a href="../../specs/001-store-api/">spec 001</a>, <a href="../../specs/006-streaming-io/">spec 006</a>, <a href="../../specs/022-streaming-atomic-writes/">spec 022</a>, <a href="../../../concurrency/"><code>explanation/concurrency.md</code></a></td>
+<td>Covered</td>
+</tr>
+<tr>
+<td>7. Deployment view</td>
+<td><a href="https://github.com/haalfi/remote-store/blob/master/infra"><code>infra/</code></a>, <a href="https://github.com/haalfi/remote-store/blob/master/packaging"><code>packaging/</code></a></td>
+<td>Largely inapplicable</td>
+</tr>
+<tr>
+<td>8. Cross-cutting concepts</td>
+<td><a href="../../specs/004-path-model/">spec 004</a>, <a href="../../specs/005-error-model/">spec 005</a>, <a href="../../specs/020-credential-hygiene/">spec 020</a>, <a href="../../specs/025-retry-policy/">spec 025</a>, <a href="https://github.com/haalfi/remote-store/blob/master/sdd/formal"><code>sdd/formal/</code></a>, the conformance suite</td>
+<td>Stronger than the template asks</td>
+</tr>
+<tr>
+<td>9. Architecture decisions</td>
+<td><a href="../../adrs/"><code>sdd/adrs/</code></a> plus a generated <a href="https://github.com/haalfi/remote-store/blob/master/sdd/adrs/DIGEST.md"><code>DIGEST.md</code></a> with a gated supersession graph</td>
+<td>Stronger</td>
+</tr>
+<tr>
+<td>10. Quality requirements</td>
+<td><a href="https://github.com/haalfi/remote-store/blob/master/README.md"><code>README.md</code> § Quality &amp; Testing</a> names the dimensions this project verifies — spec-driven development, design by contract, examples and snippets, unit tests, dependency drift, property-based testing, formal verification, mutation testing, benchmarks. Each is carried by a mechanism rather than a paragraph: <code>benchmark.yml</code>'s baseline gate, <code>mutation.yml</code>, <code>drift-guard.yml</code>, the Dafny layer, Hypothesis, <code>tests/test_snippets.py</code>, the conformance suite, the coverage floor</td>
+<td>Stronger — the requirements execute rather than being read</td>
+</tr>
+<tr>
+<td>11. Risks and technical debt</td>
+<td><a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md"><code>BACKLOG.md</code></a>, <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md"><code>BACKLOG-DONE.md</code></a>, <a href="../../audits/"><code>sdd/audits/</code></a></td>
+<td>Stronger</td>
+</tr>
+<tr>
+<td>12. Glossary</td>
+<td>Absent</td>
+<td>Absent, and § 3.4 finds no cost</td>
+</tr>
+</tbody>
+</table>
+<p>Ten of the twelve have an authoritative home — every row above except 7, which
+has little subject matter in a library, and 12, which is genuinely absent.</p>
+<p>The four rows marked stronger are not close.</p>
+<ul>
+<li><strong>§ 8 and § 9</strong> are prose a reader consults in arc42; specs 004, 005, 020 and
+  025 are normative clauses with stable <code>PREFIX-NNN</code> identifiers, mechanically
+  wired to tests by
+  <a href="https://github.com/haalfi/remote-store/blob/master/scripts/check_spec_marks.py"><code>check_spec_marks.py</code></a>, with a Dafny layer
+  under <code>sdd/formal/</code> for the core contract. <strong>That gate's own stated bound is
+  citation, not assertion</strong> — it proves every shipped spec ID is cited by a
+  <code>@pytest.mark.spec</code> marker somewhere under <code>tests/</code>, and does not prove the
+  marked test asserts the clause, is enabled, or cites the right ID. So the
+  claim here is that the clauses are <em>identified and tracked</em>, which is what
+  arc42 § 8 and § 9 do not ask for at all; it is not a claim that each is
+  proven.</li>
+<li><strong>§ 10</strong> asks for measurable quality scenarios a reader converts into tests.
+  Here the conversion has already happened in the other direction: the
+  dimensions README names are carried by mechanisms that fail a job.
+  <code>mutation.yml</code> and <code>drift-guard.yml</code> run on their own schedules and open
+  rolling issues; <code>benchmark.yml</code> and <code>ci-full.yml</code> have runbooks in
+  <a href="../../ci-operations/"><code>CI-OPERATIONS.md</code></a>, whose inventory
+  <code>check_ci_inventory.py</code> gates against <code>.github/workflows/</code>. A scenario that
+  runs weekly and files its own issue is not improved by also being a paragraph.</li>
+<li><strong>§ 11</strong> asks for a list of known debt; <code>BACKLOG.md</code> is a promise-structured
+  register with an admission test, an authority rule, and a drain file that
+  records refusals so the same argument is not had twice.</li>
+</ul>
+<hr />
+<h2 id="3-evaluation">3. Evaluation<a class="headerlink" href="#3-evaluation" title="Permanent link">&para;</a></h2>
+<h3 id="31-the-filter-and-the-thing-it-cannot-see">3.1 The filter, and the thing it cannot see<a class="headerlink" href="#31-the-filter-and-the-thing-it-cannot-see" title="Permanent link">&para;</a></h3>
+<p><code>hatch run report-trace-outcomes</code>, measured at <strong><code>47f1b16</code></strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Measure</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Traces</td>
+<td>287</td>
+</tr>
+<tr>
+<td>Steps</td>
+<td>4,300</td>
+</tr>
+<tr>
+<td>Steps carrying an explicit <code>outcome</code></td>
+<td>2,047 (47.6%)</td>
+</tr>
+<tr>
+<td>Negative tags</td>
+<td>241 (<code>misleading</code> 204, <code>unclear</code> 37)</td>
+</tr>
+<tr>
+<td>Traces and references carrying them</td>
+<td>121 traces, 118 references</td>
+</tr>
+</tbody>
+</table>
+<p>These figures are exact at the named commit and perishable, and the commit is
+stamped for the reason <a href="../research-spec-kit-comparison/">research § 3.1</a>
+established: this document's own work adds to the corpus it measures, so an
+unstamped table is false on arrival. Re-run the report and compare against
+<code>47f1b16</code> rather than trusting the numbers.</p>
+<p>The report's three documented bounds apply unchanged here — drain files split one
+artifact's signal across two rows, the sort key measures exposure at least as much
+as failure rate, and <code>rate</code>'s denominator mixes assessed with never-assessed
+reads.</p>
+<p><strong>A fourth bound matters more for this question than any of those three, and the
+spec-kit precedent did not have to state it.</strong> The corpus records what readers
+read. <strong>A document that does not exist cannot be tagged.</strong> So the filter is
+strong evidence for "should we restructure, merge or delete a document we have",
+and it is <em>structurally blind</em> to "is an artifact missing". Three of the four
+candidate dispositions in § 3.4 were advanced <em>as</em> missing-artifact claims — two
+of them wrongly, as § 3.4 records — and reading their zero tags as a verdict
+would be the same error as reading a shallow clone's zero commits as a quiet
+period.</p>
+<p>So a <strong>second instrument</strong> carries the missing-artifact half: for each candidate,
+ask whether the thing arc42 would document already exists in a <em>non-prose</em> form —
+an executable gate, or a tracked item with a named owner and cadence. Where it
+does, the candidate is not a missing artifact but a missing <em>restatement</em>, and
+<a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#principles">principle 8</a> decides restatements. Where it does not,
+the candidate survives to be argued on its own. § 3.4 applies both instruments per
+row and says which one decided.</p>
+<h3 id="32-what-the-corpus-says-about-narrative-architecture-prose">3.2 What the corpus says about narrative architecture prose<a class="headerlink" href="#32-what-the-corpus-says-about-narrative-architecture-prose" title="Permanent link">&para;</a></h3>
+<p>arc42's deliverable is eleven or twelve narrative documents. This repo already has
+one document of exactly that class and shape — <code>docs-src/explanation/architecture.md</code>,
+which is arc42 § 4 and § 5 in miniature: the three-layer diagram, what each layer
+is for, the error hierarchy, the capability system, the configuration philosophy.</p>
+<p>It is cited <strong>once</strong> in the entire trace corpus (<code>rg -c
+'docs-src/explanation/architecture\.md' sdd/traces</code> returns one file with one
+hit, <code>bk-246-tracker-id-cleanup.yml</code>, where it was edited rather than consulted).</p>
+<p>Counting citations by artifact class, <strong>per document rather than per class</strong>,
+because a class total over 50 files against a single file is not a comparison.
+One consistent method: <code>rg -c '&lt;anchored pattern&gt;' sdd/traces</code>, which counts
+every mention in a trace rather than only step references, over patterns
+anchored so they match the documents themselves and not the directory or its
+docs-site mirrors.</p>
+<table>
+<thead>
+<tr>
+<th>Artifact class</th>
+<th>Pattern</th>
+<th style="text-align: right;">Mentions</th>
+<th style="text-align: right;">Documents</th>
+<th style="text-align: right;">Per document</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Specs</td>
+<td><code>sdd/specs/[0-9]</code></td>
+<td style="text-align: right;">351</td>
+<td style="text-align: right;">50</td>
+<td style="text-align: right;"><strong>7.0</strong></td>
+</tr>
+<tr>
+<td>Explanation pages</td>
+<td>the six <code>docs-src/explanation/*.md</code> names</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;"><strong>2.7</strong></td>
+</tr>
+<tr>
+<td>ADRs</td>
+<td><code>sdd/adrs/[0-9]</code></td>
+<td style="text-align: right;">79</td>
+<td style="text-align: right;">38</td>
+<td style="text-align: right;"><strong>2.1</strong></td>
+</tr>
+<tr>
+<td><code>architecture.md</code> alone</td>
+<td>its own path</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">1.0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>This is weaker than the earlier draft of this section claimed, and the
+correction is the point.</strong> An unanchored count normalised by <em>citing traces</em>
+rather than by documents put explanation pages last; anchoring the patterns and
+dividing by the document count does not. Read straight:</p>
+<ul>
+<li><strong>Specs dominate.</strong> At 7.0 mentions per document they are consulted roughly
+  three times as often as either narrative class.</li>
+<li><strong>Explanation pages and ADRs are comparable</strong> (2.7 against 2.1). Narrative
+  prose is <em>not</em> the least-consulted class here, and any sentence saying so is
+  unsupported.</li>
+<li><strong><code>architecture.md</code> at 1 is below its own class mean of 2.7</strong>, but that is
+  <strong>n = 1</strong> — stated because the framing flatters it, the way
+  <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md">BK-332</a> states its own.</li>
+</ul>
+<p>Two further bounds. The count is mentions, looser than the report's <code>reads</code>
+column; for <code>architecture.md</code> the two agree at 1. And it measures what
+contributors and agents in this repo consult, saying nothing about docs-site
+readers, who are <code>docs-src/explanation/</code>'s actual audience and leave no traces.</p>
+<p><strong>What this section can and cannot carry.</strong> It cannot carry "agents ignore
+narrative architecture prose" — the corrected figures do not support it. What it
+carries is narrower: agents reach for identified, gated artifacts at several
+times the rate they reach for prose of any kind, and the single existing
+document of arc42's exact shape is at the bottom of its own class. That is
+suggestive rather than decisive, and the full-skeleton reject in § 3.4 does not
+rest on it: Rules 1 and 8, <code>AUTHORING.md</code> Rule 2 and ADR-0006 are structural and
+hold whatever these counts say.</p>
+<h3 id="33-the-one-cluster-that-looks-arc42-shaped-and-what-it-actually-is">3.3 The one cluster that looks arc42-shaped, and what it actually is<a class="headerlink" href="#33-the-one-cluster-that-looks-arc42-shaped-and-what-it-actually-is" title="Permanent link">&para;</a></h3>
+<p>Two references carry a dense negative-tag cluster around the same subject — what
+a backend implementer must do — which is arc42's "agent violates a platform rule
+/ implements against the wrong constraints" row:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">Total</th>
+<th style="text-align: right;"><code>misleading</code></th>
+<th style="text-align: right;"><code>unclear</code></th>
+<th style="text-align: right;"><code>reads</code></th>
+<th style="text-align: right;"><code>rate</code></th>
+<th>Reference</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">73</td>
+<td style="text-align: right;">9.6%</td>
+<td><code>sdd/specs/003-backend-adapter-contract.md</code></td>
+</tr>
+<tr>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">11</td>
+<td style="text-align: right;">45.5%</td>
+<td><code>docs-src/guides/custom-backend-guide.md</code></td>
+</tr>
+</tbody>
+</table>
+<p>Spec 003 is the most-read spec in the corpus, and the guide's <code>rate</code> is the
+highest of any documentation file clearing a meaningful read count. <strong>The two
+clusters are different failures, and reading them as one total would invert the
+conclusion.</strong> Reading the extracts rather than counting them:</p>
+<p>Spec 003's seven are <em>spec-internal</em>: BE-029's root row outranking § Reach's
+NotFound row was stated only in a docstring and a backlog item (<code>bug-246</code>); a
+clause placed writes to the root outside itself on a true premise and a wrong
+conjunction (<code>bug-259</code>); the completeness clause was described as symmetrically
+gated when the obligation had been weakened (<code>id-184</code>). Each was amended in the
+same change that found it. That is a normative artifact being sharpened as cases
+reach it — the process working, not a home missing.</p>
+<p>The guide's five are drift: four are contract claims that were false against the
+contract, and the fifth is stale test-path residue.</p>
+<ul>
+<li><code>bk-320</code>: "Walkthrough agents consumed the guide as their sole instruction
+  source; the Step 5/8 root-alias invariants and the standalone checklist's
+  wrong-type rows proved wrong against the conformance-passing <code>s3_boto3</code>
+  backend."</li>
+<li><code>bug-259</code>: "The document a custom-backend author implements against, falsified
+  by this change and not in its diff… It told implementers the root refusal was
+  'a Store-enforced convention'" when the same item promoted it to a contract
+  clause.</li>
+<li><code>bug-259</code>, again: "The pattern across rounds 5, 6 and 7 is that the guide is the
+  artifact each round updates last and verifies least."</li>
+<li><code>bk-324</code>: the PR "shipped a guide line that told third-party backend authors to
+  make the probe fail-open, unqualified — one commit after the same PR diagnosed
+  that exact conflation as BUG-242's root cause."</li>
+</ul>
+<p>This is the strongest architecture-adjacent evidence in the corpus, and it argues
+<strong>against</strong> arc42 rather than for it. The failure is not that constraints lack a
+home. They have one, it is normative, and it is the most-read spec in the repo.
+The failure is that a <em>second</em> statement of the same constraints, written for a
+different audience, is updated last and verified least. Adding arc42 § 2 as a
+third statement is <a href="../../drift-rules/#one-driver">Rule 1</a>'s N² shape with one
+more node, and <a href="../../drift-rules/#independence">Rule 8</a> says the new node —
+derived from the same specs by the same kind of pass — would not even fail
+independently.</p>
+<p>The second instrument finds the ground held twice over:</p>
+<ul>
+<li><a href="https://github.com/haalfi/remote-store/blob/master/scripts/check_custom_backend_guide.py"><code>scripts/check_custom_backend_guide.py</code></a>,
+  wired into <code>lint</code> and <code>docs-gate</code>, differences the guide against
+  <code>Backend.__abstractmethods__</code>, the conformance files it names, and the fixture
+  loader's closed vocabularies.</li>
+<li><strong>BK-332</strong> schedules the custom-backend rehearsal on a
+  <a href="../../drift-rules/#period">Rule 9</a> cadence anchored to the two events that can
+  invalidate the guide, and states its own evidence level as n = 1.</li>
+</ul>
+<p><strong>The gate's stated bound is what settles the arc42 question here</strong>, and it is
+stated in its own docstring rather than inferred: it proves <em>structural sync</em> —
+names, members, files, enum values — and cannot reach a prose claim about what a
+clause requires. Every one of the four contract-drift tags is in that
+unreachable class: a sentence about the root refusal being a convention, a
+sentence prescribing an unqualified fail-open probe. So the residual failure is
+semantic drift between two prose statements of one contract, which
+<a href="../research-inconsistency-detection-multi-artifact/">research § 1</a> marks as
+having no general oracle. A twelfth prose document is a net addition to exactly
+the class nothing can check.</p>
+<p><strong>The constraint this places on any future work here is narrow and worth
+stating.</strong> A <em>new</em> statement of the backend constraints — whatever section it
+sits under — has to be <strong>derived</strong> from spec 003 by extraction or generation,
+not authored beside it, because an authored copy re-enters the unreachable class
+by construction (<a href="../../drift-rules/#independence">Rule 8</a>: a second description
+records what it was derived from, and one author does not produce independent
+errors). This does not condemn the guides that already exist: the custom-backend
+guide is a tutorial with a different job than the spec, and its structural half
+is already generated-checked. The rule bites on adding <em>another</em> description of
+the same clauses, which is precisely what arc42 § 2 proposes.</p>
+<h3 id="34-candidates-against-the-evidence">3.4 Candidates against the evidence<a class="headerlink" href="#34-candidates-against-the-evidence" title="Permanent link">&para;</a></h3>
+<p>Four dispositions were put to evaluation: the full skeleton, and the three
+sections that looked thin here on a first reading — § 2, § 10, § 12. The full
+skeleton is evaluated separately because a reject of the parts does not by itself
+reject the whole.</p>
+<p><strong>Two of those three were thin only in the reading, not in the repo</strong>, which
+§ 2.2 now records: § 2's conventions are a declared nine-document framework, and
+§ 10's requirements execute. Both were corrected by opening the source — the
+<a href="../../../contributing/#authoritative-document-format"><code>CONTRIBUTING.md</code></a> scope
+list and <code>README.md</code> § Quality &amp; Testing — after a first pass had judged them
+from the section names. § 4.3 collects that defect with the two others review
+found, because all three are one failure mode rather than three mistakes.</p>
+<table>
+<thead>
+<tr>
+<th>Candidate</th>
+<th>Trace evidence</th>
+<th>Second instrument</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>§ 2 — a single constraints home</td>
+<td>The 5 guide tags are drift between two prose statements of one contract; spec 003's 7 are the normative doc being amended, not a missing home (§ 3.3)</td>
+<td><strong>Decided here.</strong> The conventions already have a home <em>and a declared read order</em> — the nine process documents <code>CONTRIBUTING.md</code> scopes. The one measured drift site is held twice more: <a href="https://github.com/haalfi/remote-store/blob/master/scripts/check_custom_backend_guide.py"><code>check_custom_backend_guide.py</code></a> in <code>lint</code> and <code>docs-gate</code>, plus <strong>BK-332</strong> on a Rule 9 cadence</td>
+<td><strong>Reject</strong> — the evidence argues the other way</td>
+</tr>
+<tr>
+<td>§ 10 — quality requirements as measurable scenarios</td>
+<td>Zero tags; and the filter is blind here (§ 3.1)</td>
+<td><strong>Decided here.</strong> The requirements <strong>exist and execute</strong>, across the dimensions README names — not only performance. <code>benchmarks/baseline/local-baseline.json</code> at <code>threshold 2.0</code> / <code>min-abs 0.0005</code> in <a href="https://github.com/haalfi/remote-store/blob/master/.github/workflows/benchmark.yml"><code>benchmark.yml</code></a>; <code>mutation.yml</code> and <code>drift-guard.yml</code> on their own schedules with rolling issues; <code>ci-full.yml</code>; the coverage floor; the Dafny layer, Hypothesis, <code>tests/test_snippets.py</code> and the conformance suite. The benchmark gate's local-only scope is registered in BK-309's <code>BACKLOG-DONE.md</code> entry, the <a href="../../drift-rules/#tolerated">Rule 6</a> form</td>
+<td><strong>Reject</strong></td>
+</tr>
+<tr>
+<td>§ 12 — glossary</td>
+<td><strong>Decided here.</strong> A keyword pass over all 241 negative tags for terminology, vocabulary, naming and ambiguity returns no reader blocked on vocabulary. § 3.1's blindness does not apply: a missing glossary leaves no tag <em>on the glossary</em>, but it surfaces as an <code>unclear</code> tag on whatever document the reader did open and could not parse — which the corpus records</td>
+<td>No non-prose form exists, so this is the one candidate instrument two does not decide</td>
+<td><strong>Reject</strong>, revisitable (§ 4.2)</td>
+</tr>
+<tr>
+<td>Full twelve-section skeleton</td>
+<td>Suggestive only, and § 3.2 says so: specs are cited ~3× more per document than prose of either kind, and <code>architecture.md</code> sits below its own class mean — but at n = 1</td>
+<td><strong>Decided here.</strong> Rules <a href="../../drift-rules/#one-driver">1</a> and <a href="../../drift-rules/#independence">8</a>; <code>AUTHORING.md</code> Rule 2; ADR-0006 makes the conventional <code>docs/</code> location generated and gitignored</td>
+<td><strong>Reject</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Two rows deserve their reasoning stated rather than compressed into a verdict.</p>
+<p><strong>§ 10 turns on a distinction arc42 does not draw.</strong> The template asks for
+measurable quality scenarios a reader converts into tests. Here the conversion
+has already run the other way: the dimensions README names are carried by
+mechanisms that fail a job, open a rolling issue, or block a merge. A scenario
+that executes weekly is not improved by also being a paragraph, and
+<a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#principles">principle 8</a> puts a quality bar's authoritative home
+at the mechanism that enforces it. What arc42 § 10 would add here is the
+<em>restatement</em>, not the requirement.</p>
+<p>The residue is real and already registered: only the local backend is
+timing-gated, because the Docker backends have no runner-captured baseline. That
+is a coverage bound with an owner, not a missing document.</p>
+<p>This row was drafted wrong three times before reaching that reading. The history
+is in § 4.3 with the other two rounds, because all of it is one failure mode and
+splitting it across two sections is what made it read as three separate
+mistakes.</p>
+<p><strong>The full skeleton was evaluated on its own terms, not dismissed as the sum of
+the parts.</strong> The maximal case is that the sections are worth more together than
+apart: an agent reading one index gets boundaries, constraints, decisions and
+qualities in a known order, which no assembly of specs provides. Against that:
+eleven of twelve sections would be derived from artifacts this repo already
+treats as authoritative, by one pass, which is precisely the derivation
+<a href="../../drift-rules/#independence">Rule 8</a> says produces correlated rather than
+independent errors; the resulting documents would compete with <code>sdd/</code> for the
+"where does this belong" question that <a href="../../authoring/#rules"><code>AUTHORING.md</code> Rule 2</a>
+exists to answer once; and the conventional <code>docs/architecture/</code> location is
+unavailable by construction, since <a href="../../adrs/0006-documentation-architecture/">ADR-0006</a>
+makes <code>docs/</code> a generated, gitignored representation. The index argument is the
+strongest half and it already has a home: <code>CLAUDE-REFERENCE.md</code> is the most-read
+document in the corpus and is exactly an architectural index, one whose rows are
+triggers and ripples rather than chapters.</p>
+<hr />
+<h2 id="4-recommendation">4. Recommendation<a class="headerlink" href="#4-recommendation" title="Permanent link">&para;</a></h2>
+<p><strong>Adopt nothing. File nothing.</strong> The four candidates are rejected above, and the
+rejections are the substance of this document.</p>
+<h3 id="41-where-the-decision-lives">4.1 Where the decision lives<a class="headerlink" href="#41-where-the-decision-lives" title="Permanent link">&para;</a></h3>
+<p><strong>This document is the whole record.</strong> No backlog item is filed, and that is the
+admission test operating rather than an omission: an item that fits no section's
+promise has no demonstrated value, and on today's evidence none of the four fits
+one.</p>
+<p>Nothing is registered in <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG-DONE.md#decided-against"><code>BACKLOG-DONE.md</code> § Decided
+against</a> either. That section exists for
+ideas <em>removed from</em> <code>BACKLOG.md</code>, plus refusals at admission, and its entries
+are the durable half of a decision whose argument lived somewhere transient — a
+review thread, an issue, a conversation. This decision's argument is not
+transient: it is here, with its derivations, under a path
+<a href="../../authoring/"><code>AUTHORING.md</code></a> fixes and the docs bridge publishes. A register
+line pointing at this file would be a second description of a decision already
+fully written down, which is the shape § 3 spends its length rejecting.</p>
+<p>The cost of that choice, stated because it is real: a reader sweeping the
+register will not meet this refusal, and may re-open the question without
+finding the argument. § 4.2's re-file triggers are written to be legible to
+someone arriving that way.</p>
+<h3 id="42-what-would-change-the-answer">4.2 What would change the answer<a class="headerlink" href="#42-what-would-change-the-answer" title="Permanent link">&para;</a></h3>
+<p>Stated so a reversal needs new evidence rather than a new opinion.</p>
+<ul>
+<li><strong>§ 12 (glossary)</strong> is the only candidate rejected purely for want of evidence
+  rather than because a better mechanism holds the ground. Re-file under a new ID
+  the first time a trace tags a document <code>unclear</code> for vocabulary. The instrument
+  already exists and needs no new mechanism: the tag, and the report that ranks
+  it.
+  <strong>The trigger is polysemy across artifact boundaries, not local phrasing.</strong> A
+  glossary fixes one term carrying different senses in different homes — "root"
+  meaning the store's scope root in spec 004 and the container root in BE-029,
+  or "adapter" meaning a backend adapter and the async-to-sync adapter. It does
+  not fix a sentence that is merely badly worded, and an <code>unclear</code> tag on one
+  spec's phrasing is that spec's defect to repair in place. Discriminate by
+  asking whether the reader was reconciling <strong>two artifacts</strong> or parsing one:
+  only the first is a lexicon gap. Counting the second would fire this trigger
+  on prose defects a glossary would not touch.</li>
+<li><strong>§ 2 (constraints)</strong> reverses if BK-332's rehearsal runs at its stated cadence
+  and the custom-backend guide's negative tags do <em>not</em> fall — currently 5 at
+  <code>47f1b16</code>. That would mean the drift is not a rehearsal-frequency problem, and a
+  differently-shaped home would be back in scope. Rules 1 and 8 would still bar a
+  third prose copy, so the shape would have to be <strong>generation</strong> from spec 003,
+  extending what <code>check_custom_backend_guide.py</code> already does structurally into
+  the semantic half its docstring declares out of reach — not authorship beside
+  it.</li>
+<li><strong>§ 10 (quality requirements)</strong> reverses if a defect ships past all nine
+  enforced dimensions and the post-mortem finds that a <em>stated</em> scenario would
+  have caught it where the mechanisms did not. The near case is a performance
+  regression in a backend the local baseline cannot see; the remedy there is a
+  runner-captured baseline for the Docker backends, which is a gate change and
+  not a document. A reversal needs the harder version: a quality this repo cares
+  about that no mechanism expresses at all.</li>
+</ul>
+<h3 id="43-what-this-document-does-not-claim">4.3 What this document does not claim<a class="headerlink" href="#43-what-this-document-does-not-claim" title="Permanent link">&para;</a></h3>
+<p>The reading of arc42 is of its published template and method pages, not of a
+project run with it. Claims about how its sections behave in practice are
+inferences from the template's own guidance, which is sufficient for the
+adopt/reject decisions in § 3.4 — those turn on our evidence, not on arc42's —
+and insufficient for any claim about how well arc42 serves its own users.</p>
+<p><strong>The verdict is about this repository at this maturity, and says nothing about
+arc42 generally.</strong> Every "stronger" row in § 2.2 is stronger because something was
+built there: 50 specs with stable IDs, 38 ADRs with a gated digest, a formal
+layer, a promise-structured backlog, quality dimensions carried by mechanisms
+rather than prose, and 22 <code>check_*.py</code> cross-artifact gates
+(<code>ls scripts/check_*.py scripts/docs/check_*.py</code>). A repository
+without those would find arc42's sections a considerable improvement on nothing,
+and the same filter run there would return the opposite answer. What is being
+rejected is a second description of ground already held normatively — not the
+template.</p>
+<p><strong>Three rounds of review corrected the reasoning under this document, and never
+a verdict.</strong> Stated as a limit on the method rather than as a list of fixed
+defects, because the pattern is one thing:</p>
+<ol>
+<li>§ 2's row was judged from the section name against a sample of its homes,
+   missing the nine-document framework <code>CONTRIBUTING.md</code> § Scope enumerates.</li>
+<li><strong>§ 10's row was drafted wrong three times</strong>, which is the fullest instance.
+   First it was judged from the section name — "benchmarks measure, no prose
+   states a target" — and opening <code>benchmark.yml</code> falsified that. Second, the
+   correction cited <em>only</em> the benchmark workflow, repairing the sentence a
+   reviewer would point at and leaving the class open, which is the failure mode
+   <a href="https://github.com/haalfi/remote-store/blob/master/sdd/BACKLOG.md#how-this-file-works"><code>BACKLOG.md</code> § Item authority</a> describes.
+   Third, the widened replacement was written from <code>CI-OPERATIONS.md</code>'s workflow
+   inventory rather than from <code>README.md</code> § Quality &amp; Testing, and so offered
+   nine <em>mechanisms</em> as though they were the nine <em>dimensions</em>: <code>codeql.yml</code>
+   answers to no README dimension, while design by contract and
+   examples-and-snippets had no entry. The total reached nine by adding one
+   non-dimension and dropping two — which is why the arithmetic never flagged it,
+   and why a count is not a check.</li>
+<li>§ 3.2's table compared class totals against a single file, and the first
+   attempt to normalise it divided by <em>citing traces</em> rather than by documents,
+   which reversed the result. Anchoring the patterns and dividing by document
+   count removed the "least-consulted class" claim entirely.</li>
+</ol>
+<p>Every one is the same defect: <strong>a sentence naming a source it did not reopen at
+the moment of writing.</strong> All three ran in the same direction — making the
+rejected candidate look better supported than it was — which is why the four
+Rejects survived. That is luck about direction, not a property of the method.
+A future reading that wants to reverse one of these should start from the
+enumerations, not from this document's summary of them: <code>CONTRIBUTING.md</code>
+§ Scope, <code>README.md</code> § Quality &amp; Testing, <code>CI-OPERATIONS.md</code>'s gated inventory,
+and, for anything counted per class, the document count rather than the trace
+count.</p>
+<p><strong>§ 3.2's measure is agent-facing and bounded.</strong> It counts what leaves a trace,
+which is contributor and agent work. <code>docs-src/explanation/</code> is written for docs
+site readers, who leave none. Its citation rate is evidence about the
+agent-behaviour claim arc42 is being evaluated on, and is not evidence that any
+page fails its own audience.</p>
 
 
 
@@ -11619,7 +11560,7 @@ libraries.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../azure/" class="md-footer__link md-footer__link--prev" aria-label="Previous: AsyncAzureBackend">
+          <a href="../research-agent-workflow-substrate/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Substrate for Data-Driven Improvement of Agent Workflows">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -11629,20 +11570,20 @@ libraries.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                AsyncAzureBackend
+                Substrate for Data-Driven Improvement of Agent Workflows
               </div>
             </div>
           </a>
         
         
           
-          <a href="../../extensions/" class="md-footer__link md-footer__link--next" aria-label="Next: Extensions">
+          <a href="../research-async-store-api-round2/" class="md-footer__link md-footer__link--next" aria-label="Next: Research Round 2: Async Store API vs Current Feature Surface (ID-013)">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Extensions
+                Research Round 2: Async Store API vs Current Feature Surface (ID-013)
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -11679,10 +11620,10 @@ libraries.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../../../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow", "navigation.footer"], "search": "../../../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../../../..", "features": ["content.code.copy", "navigation.instant", "navigation.tabs", "navigation.top", "navigation.tabs.sticky", "search.suggest", "search.highlight", "toc.follow", "navigation.footer"], "search": "../../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>
