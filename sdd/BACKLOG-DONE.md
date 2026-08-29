@@ -182,8 +182,11 @@ if evidence changes; these are retired.
   and BK-324.
   **Shipped:** both, plus a third section the item's softer half asked to be
   adjudicated rather than assumed. Under the existing
-  `## v0.30.0 to v0.31.0` heading, five subsections now stand where the two SFTP
-  ones did: the flat-namespace wrong-type `InvalidPath` roster, the root-path
+  `## v0.30.0 to v0.31.0` heading, **five** new subsections join the SFTP
+  material already there. Derivation: the bold `**…:**` leads between that
+  heading and the next number 8, of which 3 are pre-existing — BK-356 and
+  BK-357's two topics, the first carrying a second lead for its opt-out. The
+  five are the flat-namespace wrong-type `InvalidPath` roster, the root-path
   answers (`""` / `"."` on every backend, including the write refusal BUG-259
   landed), the `max_depth`-without-`recursive` rule for direct `Backend`
   callers, one shared section covering BUG-247, BUG-246 and BUG-243 — an absent
