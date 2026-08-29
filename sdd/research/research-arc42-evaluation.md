@@ -319,16 +319,27 @@ semantic drift between two prose statements of one contract, which
 having no general oracle. A twelfth prose document is a net addition to exactly
 the class nothing can check.
 
-**The constraint this places on any future work here is narrow and worth
-stating.** A *new* statement of the backend constraints — whatever section it
-sits under — has to be **derived** from spec 003 by extraction or generation,
-not authored beside it, because an authored copy re-enters the unreachable class
-by construction ([Rule 8](../DRIFT-RULES.md#independence): a second description
-records what it was derived from, and one author does not produce independent
-errors). This does not condemn the guides that already exist: the custom-backend
-guide is a tutorial with a different job than the spec, and its structural half
-is already generated-checked. The rule bites on adding *another* description of
-the same clauses, which is precisely what arc42 § 2 proposes.
+**What that implies about a hypothetical arc42 § 2 is worth drawing out**, since
+it is the reason this row rejects rather than defers. An *authored* new statement
+of the backend constraints would land in the unreachable class by construction:
+[Rule 8](../DRIFT-RULES.md#independence) holds that a second description records
+what it was derived from and that one author does not produce independent errors,
+so a hand-written third copy inherits the defect and adds no independent check. A
+*generated* one would not — extraction from spec 003 is a different artifact with
+different failure modes. The evidence here says nothing about whether such a
+generator is worth building; it says only that the authored form is the one this
+corpus has already measured going wrong.
+
+None of which condemns the guides that exist. The custom-backend guide is a
+tutorial with a different job than the spec, and its structural half is already
+generated-checked. The observation is about *adding another description of the
+same clauses*, which is what arc42 § 2 proposes.
+
+**This is an observation, not a rule.** A research document is a point-in-time
+snapshot ([`000-process.md` § Document types](../000-process.md)) and cannot bind
+future work; if the generated-only reading is ever wanted as a constraint, it
+needs a home that carries that force — a `DRIFT-RULES.md` clause or an ADR — and
+an argument this document does not make.
 
 ### 3.4 Candidates against the evidence
 
@@ -438,11 +449,13 @@ Stated so a reversal needs new evidence rather than a new opinion.
 - **§ 2 (constraints)** reverses if BK-332's rehearsal runs at its stated cadence
   and the custom-backend guide's negative tags do *not* fall — currently 5 at
   `47f1b16`. That would mean the drift is not a rehearsal-frequency problem, and a
-  differently-shaped home would be back in scope. Rules 1 and 8 would still bar a
-  third prose copy, so the shape would have to be **generation** from spec 003,
-  extending what `check_custom_backend_guide.py` already does structurally into
-  the semantic half its docstring declares out of reach — not authorship beside
-  it.
+  differently-shaped home would be back in scope. Rules 1 and 8 argue against a
+  third prose copy even then, so the direction worth examining first is
+  **generation** from spec 003 — extending what
+  `check_custom_backend_guide.py` already does structurally into the semantic
+  half its docstring declares out of reach — rather than authorship beside it.
+  Whether that is worth building is a question for whoever re-files, not one
+  this document settles.
 - **§ 10 (quality requirements)** reverses if a defect ships past all nine
   enforced dimensions and the post-mortem finds that a *stated* scenario would
   have caught it where the mechanisms did not. The near case is a performance
