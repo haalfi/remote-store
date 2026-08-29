@@ -1222,10 +1222,36 @@ open item as neglect.
   [ripple-check](CLAUDE-REFERENCE.md#detailed-checklist) § Release & meta has
   rows for **Bug fix**, **CHANGELOG entry** and **Version number** and **no row
   for a breaking change**, so an author who consults it before starting is told
-  to write a CHANGELOG stub and nothing about the migration guide. Measured
-  across this cycle: three PRs marked an entry `**Breaking**`, one touched
-  `migration.md` (`git log --oneline -- docs-src/reference/migration.md` since
-  v0.30.0 returns exactly one non-release commit, 47f1b16 for BK-357).
+  to write a CHANGELOG stub and nothing about the migration guide.
+  **First recorded in [`traces/bk-357-seek-end-size-probe.yml`](traces/bk-357-seek-end-size-probe.yml)**,
+  whose `surprising_ripples` names `CONTRIBUTING.md` and says Phase 1 lists
+  CHANGELOG, BACKLOG-DONE, FEATURES, README, guides and DEVELOPMENT_STORY and
+  not `migration.md`, "so the upgrade note for a breaking change had no owner in
+  the checklist. Found by asking where to put this change's note, not by any
+  row." That trace filed no `discovery_followups`, so this item is where the
+  diagnosis lands.
+  **This cycle's rate is 1 of 3, which is not the same claim as an unused
+  path.** Three PRs marked an entry `**Breaking**` and one touched
+  `migration.md`, and the same trace records a prior where the author side did
+  the work: BK-302, a feature PR, added its own `## v0.28.0 to v0.29.0` section
+  four days before v0.29.0 shipped — which is also what `CONTRIBUTING.md:492`
+  means by "several have". Carried from the trace, not re-derived: that commit
+  predates this checkout's graft (`git cat-file -e 6f5cfff` fails), and what is
+  checkable here is the section it left behind, which `migration.md` still
+  carries. The defect is that nothing *asks*, not that nobody ever does it.
+  **Derive that rate shallow-safely, because the obvious command lies here.**
+  `git rev-parse --is-shallow-repository` returns `true` in this checkout, and
+  the same trace records the measured consequence: an earlier round argued from
+  `git log -- docs-src/reference/migration.md` returning two commits, when full
+  history has 11 — which is how BK-302 was missed. The graft's SHA differs per
+  checkout (the trace names `21d2329`; this one grafts at `0f43910`), so the
+  check is the command, never the SHA. The window here survives that, and the
+  survival is the derivation: `git merge-base --is-ancestor <graft> 7931c7d`
+  succeeds, so the v0.30.0 release commit is a descendant of the graft and the
+  46 commits after it are whole; `git log --oneline 7931c7d..HEAD --
+  docs-src/reference/migration.md` then returns exactly one, 47f1b16 for BK-357.
+  A window that started before the graft would have needed a different
+  instrument — the three entries' own merge commits, say.
   **Three dispositions, not one, and they are not exclusive.**
   - *Ruling.* Promote the permission to an obligation and add the ripple-check
     row. Cheapest, and it puts the rule where the author already looks — the
@@ -1234,7 +1260,12 @@ open item as neglect.
     how BK-357 wrote `v0.30.0 to v0.31.0` before any release stamped it. The
     row's *shape* is the shared question BK-346 carries (N rows versus widened
     rows); this item names it rather than answering it, and BK-346's answer
-    governs.
+    governs. **That is a dependency of this disposition, not of the item**, so
+    the cross-section rule in [§ How this file works](#how-this-file-works) does
+    not bite and section 5's `Closes when` names no BK-346: the item closes by
+    writing the two migration sections, with or without a row ever existing.
+    Stated because a reader of section 5 alone would otherwise have to open
+    section 6 to find that out.
   - *Tooling.* A gate over the same rule: if any `[Unreleased]` entry contains
     `**Breaking**`, `migration.md` must carry `## v<current> to v<next minor>`,
     with both halves **derived** ([Rule 3](DRIFT-RULES.md#claim-space)) —
@@ -1566,6 +1597,17 @@ the commit that writes it lands, so cite the generator instead.
   duplicated BK-354 … A conflict where one side is a revision of the other is
   not a keep-both." Found by a reviewer once, missed by the next merge — which
   is the argument for a check rather than another convention.
+  **The repair precedes the check and is not part of it.** Deleting the two
+  stale lines needs no mechanism to exist first, and until it happens a
+  duplicate-ID check is red on master from its first commit. It is also owed
+  ahead of any tooling on its own terms: `CHANGELOG.md` carries a
+  `doc: dual dest=reference/changelog.md` marker, so the contradiction is live
+  on the docs site, and [principle 3](../CLAUDE.md#principles) does not wait for
+  a gate. So this item does not own it: whichever change lands first — the
+  check, a release's Phase 1 condensation, or any PR touching the section — the
+  two lines go, and the check is written against a file that already reads
+  correctly. Deliberately not fixed in the PR that filed this item, on the
+  author's decision to scope that PR to the tooling gap alone.
   **Nothing mechanical looks at this file's content.** `CHANGELOG` appears in
   `scripts/` only in `docs/check_links.py`, `gen_pages.py`,
   `check_no_tracker_refs.py` and `mkdocs_hooks.py`, all link or render concerns,
@@ -1574,11 +1616,21 @@ the commit that writes it lands, so cite the generator instead.
   **Claim spaces, all three derived** ([Rule 3](DRIFT-RULES.md#claim-space)):
   the entries parse out of the section itself, and the audience side off the
   `spec: · effort: · audience:` line each `BACKLOG-DONE.md` § Unreleased entry
-  already carries. Measured 2026-08-29 by parsing both: 19 entries against 39
-  items, 13 items carrying a `user.*` audience and all 13 present, no
-  non-user-facing item present. So the audience rule holds by discipline today,
-  which is ID-235's situation exactly, and the duplicate is what discipline
-  already missed.
+  already carries. Measured 2026-08-29 by parsing both — splitting each
+  `audience:` line on `,`/`·` and testing each tag for a `user.` prefix, which
+  is the schema's predicate rather than a substring search: 19 entries (17
+  distinct, the two duplicates being the defect above) against 39 items, of
+  which **16** carry a `user.*` tag; all 16 have an entry and no other item
+  does. So the audience rule holds by discipline today, which is ID-235's
+  situation exactly, and the duplicate is what discipline already missed.
+  **That figure was 13 in the first draft, and how it was wrong is worth the
+  line.** 13 is exactly the count of items tagged `user.api*`; the three it
+  drops are the three whose only user tag is something else — BK-320 and
+  BUG-235 (`user.site`) and BK-317 (`user.discoverability.llm`). The parse ran
+  the right predicate and the sentence was written from a hand count of its
+  output, so it read as a narrower predicate that nobody had chosen. A figure
+  in an item arguing for derived claim spaces is the last place to count by
+  eye.
   **Two questions the item does not presuppose.**
   - *Shape, and whether it can be enforced as written.* Nine of the 19 entries
     are release-grade prose rather than stubs — 88 to 4,910 characters, the nine
