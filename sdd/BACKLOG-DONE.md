@@ -288,7 +288,22 @@ if evidence changes; these are retired.
   considered. Round 5 stopped narrowing and deleted both classes, which is what
   the check prescribes: they assert nothing a reader acts on, and every version
   of them was false.
-  **What the loop cost, and what it never found.** Five rounds, 33 findings, and
+  **Round 6, the last, found the two defects that actually reached a user.**
+  `io_timeout` has never been released — added in this same unreleased cycle,
+  with every CHANGELOG mention above the `[0.30.0]` heading — yet the migration
+  entry said v0.30.0 defaulted it to `None`, and the troubleshooting page told
+  that reader to pass `io_timeout=300`, which raises `TypeError` on a version
+  without the parameter. The real v0.30.0 → v0.31.0 delta is that SFTP gains a
+  bound where there was none *and no way to set one*. **Five rounds missed it
+  because every round checked this PR against itself**, and the false premise was
+  uniform across the spec, both guides, the migration entry and the backlog:
+  internal consistency cannot catch a premise nothing in the diff contradicts.
+  Catching it needed `git log` and the CHANGELOG's release headings, which no
+  brief before the last one asked for. That is a gap in how the loop was run.
+  The same round found the enumeration claim class back a fourth time and
+  deleted the premise rather than narrowing it again, and three record defects
+  from round 5 editing pages without revisiting the artifacts that quote them.
+  **What the loop cost, and what it never found.** Six rounds, 39 findings, and
   **no defect in shipped behaviour**: the implementation is one line, unchanged
   since the first commit, executed against the base branch in both directions by
   two measuring passes. Every finding was in prose or in a test's own claims
@@ -297,10 +312,10 @@ if evidence changes; these are retired.
   and round 3 found only three that were not — two pre-existing spec and guide
   paragraphs, and one observation about the PR as a whole. The instrument that
   kept paying was the whole-file lens: none of the fix-pass defects sat in a `+`
-  line of the commit that falsified it. Derivation of the count: 33 top-level
+  line of the commit that falsified it. Derivation of the count: 39 top-level
   review comments on PR #978 (`gh api …/pulls/978/comments --jq '[.[] |
-  select(.in_reply_to_id == null)] | length'`), across rounds of 5, 3, 10, 8
-  and 7.
+  select(.in_reply_to_id == null)] | length'`), across rounds of 5, 3, 10, 8,
+  7 and 6.
 
 - [x] **BK-357 — A `SEEK_END` seek hides its own stall, so the futile-close guard cannot arm**
   spec: SIO-011, SIO-010, SFTP-030 · effort: M · audience: user.api, user.api_docs, user.site

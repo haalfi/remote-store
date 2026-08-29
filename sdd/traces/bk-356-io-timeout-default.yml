@@ -33,8 +33,9 @@ expected_ripples:
 # `git log --oneline origin/master..HEAD`, a4feee9 implements and does not
 # count; ef3edad and b692e12 incorporate review round 1, fb6fbb3 incorporates
 # round 2, 422d119 incorporates round 3 (the closing panel), 1e265fd
-# incorporates round 4, and 192996b incorporates round 5.
-# Value is 5 — rounds, not commits, which is why ef3edad and b692e12
+# incorporates round 4, 192996b incorporates round 5, and e28d4c5
+# incorporates round 6.
+# Value is 6 — rounds, not commits, which is why ef3edad and b692e12
 # count once between them, and why every "Name the round-N fix commit in the
 # trace" commit counts for nothing. That class is stated as a class rather than
 # listed: review round 5 caught the listed form two members short, because the
@@ -42,7 +43,7 @@ expected_ripples:
 # written after the commit it names exists rather than predicted, which is why
 # the naming lags by a commit: the schema calls a plausible SHA that resolves
 # to nothing worse than no derivation at all.
-review_rounds: 5
+review_rounds: 6
 
 phases:
   - id: orient
@@ -283,6 +284,22 @@ phases:
           comment I corrected away from was the better of the two. The lesson is
           the one this test file's own docstring states: a paramiko-behaviour
           claim is got wrong by reading rather than running
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "[Unreleased] vs [0.30.0]"
+        read_type: verify
+        extract: >-
+          Round 6's finding, and the loop's most serious: io_timeout has never
+          been released — added by e78e0ea in this same cycle, every mention
+          above the [0.30.0] heading — while the migration entry said v0.30.0
+          defaulted it to None and the troubleshooting page told such a reader
+          to pass it, which raises TypeError there. Five rounds missed it
+          because every round checked the PR against itself and the false
+          premise was uniform across the spec, both guides, the migration entry
+          and the backlog. Internal consistency is structurally blind to a
+          premise nothing in the diff contradicts; catching it needed git log
+          and the release headings, which no brief before round 6 asked for.
+          Recorded as a gap in how the loop was run, not in the artifact
         outcome: ok
       - file: .claude/skills/ship/SKILL.md
         section: "Repeat-site check"
