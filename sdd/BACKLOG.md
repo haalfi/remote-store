@@ -1368,16 +1368,18 @@ open item as neglect.
 ## 6. The repo does not mislead the next person
 
 **Promise:** the artifacts maintainers coordinate through — this file, the
-ripple-check, the revisit pins, the generated inventories — say what is
-actually true.
+ripple-check, the revisit pins, the generated inventories, the unreleased
+CHANGELOG the release body is built from — say what is actually true.
 
-**Closes when:** the backlog files are structurally linted (ID-235); the
+**Closes when:** the backlog files are structurally linted (ID-235);
+CHANGELOG `[Unreleased]` is linted for duplicate entries, stub shape and the
+audience rule (ID-252); the
 ripple-check's six measured blind spots are answered (BK-346); the
 hand-maintained inventories ID-245 names are generated — four bullets, of which
 the checker inventory has shipped; `check_formal_trace` proves
 assertion rather than citation (ID-207); and both open revisit pins have fired
 and named successors (ID-150, ID-249).
-**Bounded to those five deliberately.** "No artifact asserts what no mechanism
+**Bounded to those six deliberately.** "No artifact asserts what no mechanism
 can check" is the promise and cannot be a closing condition: this section's own
 preamble records that detecting the remaining class needs semantic comparison of
 prose, which research § 1 marks as having no general oracle. Nor is "no figure
@@ -1474,6 +1476,71 @@ the commit that writes it lands, so cite the generator instead.
   gate an `sdd/`-only change actually runs. This item is a live instance of its
   own subject — the deletions that produced this file's current shape are
   exactly the event the second pass exists to catch.
+
+- [ ] **ID-252 — CHANGELOG `[Unreleased]` is unlinted, so a duplicated entry shipped and contradicts itself**
+  spec: — · effort: S · audience: contributor.tooling
+  Three properties of the section are stated as rules and checked by nobody:
+  entries are unique per ID, each is a one-line `- <ID>: <Title>` stub
+  ([`CLAUDE-REFERENCE.md`](CLAUDE-REFERENCE.md#detailed-checklist) rows
+  **CHANGELOG entry**, both presentations), and an entry exists exactly for the
+  items whose `audience` is user-facing
+  ([`traces/_schema.yml`](traces/_schema.yml) derived rule). Sibling of ID-235
+  above in shape and script family, different artifact; independent of it, so
+  either may ship first.
+  **The first property failed on master.** `BK-355` and `BK-354` each appear
+  twice under `[Unreleased]`, and the lower copy of each is the pre-BK-357
+  wording — so the section states both that SFTP-030 records one exception and
+  that it "still records two", and calls BK-357 filed-and-open two lines below
+  the entry that closes it. Derivation: `git show 47f1b16 --numstat --
+  CHANGELOG.md` returns **3 insertions, 0 deletions**, so the BK-357 PR added
+  amended copies above and left the originals in place.
+  **It is a recurrence, one merge apart.** The immediately preceding CHANGELOG
+  commit (`04f6123`, BUG-259) records catching the identical resolution on its
+  own branch by hand: "resolving the CHANGELOG conflict as 'keep both sides'
+  duplicated BK-354 … A conflict where one side is a revision of the other is
+  not a keep-both." Found by a reviewer once, missed by the next merge — which
+  is the argument for a check rather than another convention.
+  **Nothing mechanical looks at this file's content.** `CHANGELOG` appears in
+  `scripts/` only in `docs/check_links.py`, `gen_pages.py`,
+  `check_no_tracker_refs.py` and `mkdocs_hooks.py`, all link or render concerns,
+  and in `.github/workflows/ci.yml` only inside `DOCS_PAT`. The whole defense is
+  `.github/PULL_REQUEST_TEMPLATE.md:24` and review attention.
+  **Claim spaces, all three derived** ([Rule 3](DRIFT-RULES.md#claim-space)):
+  the entries parse out of the section itself, and the audience side off the
+  `spec: · effort: · audience:` line each `BACKLOG-DONE.md` § Unreleased entry
+  already carries. Measured 2026-08-29 by parsing both: 19 entries against 39
+  items, 13 items carrying a `user.*` audience and all 13 present, no
+  non-user-facing item present. So the audience rule holds by discipline today,
+  which is ID-235's situation exactly, and the duplicate is what discipline
+  already missed.
+  **Two questions the item does not presuppose.**
+  - *Shape, and whether it can be enforced as written.* Nine of the 19 entries
+    are release-grade prose rather than stubs — 88 to 4,910 characters, the nine
+    over 1 kB being BUG-259, BK-357, both BK-354 copies, both BK-355 copies,
+    BUG-247, BUG-248 and BUG-243 — so a strict gate fails on master the day it
+    lands. Condense them (which `CONTRIBUTING.md` Phase 1 does at release time
+    anyway), check only the machine-decidable half (one line, `- <ID>: ` prefix),
+    or measure and report per [Rule 5](DRIFT-RULES.md#mandatory-path). Not a
+    detail of the duplicate check but its cause: at one line each, two BK-355
+    entries are unmissable; at 2.3 kB each they sat four lines apart unseen.
+  - *Which side governs when the two sets differ*
+    ([Rule 4](DRIFT-RULES.md#authority)), decided in writing before the check
+    exists. The live instance is `ID-245`, which has an entry and no
+    `BACKLOG-DONE.md` counterpart because the item is still open in this file
+    with one bullet shipped (`40e5b74`). So "every entry has a completed item"
+    is false as stated, and the partially-shipped case needs a rule — its home
+    is `CONTRIBUTING.md` § Release Phase 1, whose existing check runs
+    completed-item → entry only.
+  **Bound to state in the check** ([Rule 7](DRIFT-RULES.md#miss-rate)): it keys
+  on the ID at line start, so it catches a duplicated entry and cannot catch a
+  single entry whose *content* went stale — the wider defect BUG-259's commit
+  message describes. It says nothing about whether a title is right, and nothing
+  about released sections. A `Drift-gate::` block puts it in
+  [`GATE-INVENTORY.md`](GATE-INVENTORY.md).
+  **Wiring, per the trap BK-333 documents:** `CHANGELOG.md` matches `ci.yml`'s
+  `DOCS_PAT` and not `CODE_PAT`, so a CHANGELOG-only diff runs `docs-gate` and
+  not `lint` — reach both, or the check is unreachable for the diff class that
+  invalidates it.
 
 - [ ] **BK-346 — The ripple-check table answers questions adjacent to the ones asked**
   spec: — · effort: S/M · audience: contributor.process
