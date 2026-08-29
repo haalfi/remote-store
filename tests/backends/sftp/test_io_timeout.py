@@ -15,11 +15,41 @@ caller doing ``unwrap(SFTPClient).get_channel().settimeout(n)`` loses the
 setting on the first transparent reconnect, which is precisely when a flaky
 link needs it.
 
+**It arms by default**, at ``120.0`` seconds, which splits this file's
+``_make_backend`` call sites three ways. Most **pin a value** — a short one, so a
+test that waits out a bound stays cheap. A few **omit the argument**, inheriting
+the shipped default, and a few **pass ``None``**, asserting the opt-out itself.
+Nothing here omits the argument in order to mean "unbounded" — see ``_INHERIT``
+below for why that distinction has to be spelled out.
+
+No count is given, deliberately. A tally of call sites is invalidated by adding
+a test, which is the one thing this file exists to have done to it — and it was
+invalidated exactly that way once: a count corrected in review went stale one
+commit later, when the test below it was added. A figure whose only guard is
+that a reader will notice is a figure that goes wrong between readers. Derive it
+if you need it, by extracting the ``io_timeout=`` argument from every
+``_make_backend(`` call here and resolving ``io_timeout=io_timeout`` through
+its local.
+
 This file pins both halves of SFTP-030: what ``io_timeout`` covers, and what it
 does not. The second half is not an afterthought — SFTP-030 states one exception
 and one silent case, and a clause asserting a paramiko behaviour is the kind of
 claim this work has got wrong by reading rather than running, so each is
 *characterised by a test* rather than asserted.
+
+The enumerations below describe the faults this file was built around. They are
+not a partition of it: tests have been added since, and no claim is made here
+about what they exhaust. Four attempts at such a claim were each refuted by a
+test the attempt had not considered, so the file no longer makes one — read the
+tests for what is covered.
+
+One test is worth naming here anyway, because SFTP-030 rests on it:
+``test_a_transfer_slower_than_the_bound_is_not_interrupted`` covers a transfer
+merely *slower* than the bound, which must complete. Stalling cannot reach that
+claim — the claim is about what happens when the bytes keep coming — so it is
+driven by ``_StallRelay.throttle_download`` instead. It is the half of SFTP-030
+that tells a slow-link caller to change nothing, and it became load-bearing when
+the bound became the default.
 
 **Five faults it covers**, because they fail by different mechanisms and none
 implies the others:
@@ -99,11 +129,22 @@ def _close_tracked_backends() -> Iterator[None]:
             backend.close()
 
 
-def _make_backend(port: int, *, io_timeout: float | None = None, base_path: str = "/") -> Any:
+_INHERIT = object()
+"""Sentinel for ``_make_backend``: pass no ``io_timeout``, so the shipped default applies.
+
+``None`` cannot serve as that sentinel, because ``None`` is itself a meaningful
+value — the opt-out that restores an unbounded channel. Omitting the argument
+and passing ``None`` selected the same behaviour while the default *was*
+``None``; since BK-356 they select opposite ones, so the two spellings have to
+be distinguishable here.
+"""
+
+
+def _make_backend(port: int, *, io_timeout: Any = _INHERIT, base_path: str = "/") -> Any:
     from remote_store.backends._sftp import HostKeyPolicy, SFTPBackend
 
     kwargs: dict[str, Any] = {}
-    if io_timeout is not None:
+    if io_timeout is not _INHERIT:
         kwargs["io_timeout"] = io_timeout
     backend = SFTPBackend(
         host="127.0.0.1",
@@ -160,6 +201,14 @@ class _StallRelay:
     bound fires before the SSH out-window can drain. An earlier version of this
     docstring claimed the upload case reached ``Channel.sendall`` via window
     exhaustion; it does not.
+
+    ``throttle_download()`` is the opposite instrument: the pump keeps
+    forwarding, in small pieces with a pause between them, so the link is slow
+    but never silent. It exists because stalling cannot demonstrate that a bound
+    on silence does not fire on a transfer merely slower than itself — the claim
+    is about what happens when the bytes keep coming. (``resume()`` also ends in
+    a successful transfer, by lifting a stall rather than by shaping one; it is
+    how a test drives a reconnect.)
     """
 
     def __init__(self, target_port: int) -> None:
@@ -168,6 +217,8 @@ class _StallRelay:
         self._stall_up = threading.Event()
         # Single-element holder so the pump thread sees updates; None = no budget.
         self._down_budget: list[int | None] = [None]
+        # Same holder trick; None = forward at full speed.
+        self._down_throttle: list[tuple[float, int] | None] = [None]
         self._stop = threading.Event()
         self._listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -202,11 +253,21 @@ class _StallRelay:
         """
         self._down_budget[0] = nbytes
 
+    def throttle_download(self, gap: float, piece: int) -> None:
+        """Forward server→client in *piece*-sized pieces, pausing *gap* between them.
+
+        Slow, never silent. *gap* must stay under the bound under test or this
+        becomes a stall with extra steps; what it makes slow is the transfer as
+        a whole, which is the thing the bound is *not* on.
+        """
+        self._down_throttle[0] = (gap, piece)
+
     def resume(self) -> None:
         """Deliver again, so a reconnect through this relay can succeed."""
         self._stall_down.clear()
         self._stall_up.clear()
         self._down_budget[0] = None
+        self._down_throttle[0] = None
 
     def _accept_loop(self) -> None:
         while not self._stop.is_set():
@@ -220,11 +281,12 @@ class _StallRelay:
                 client.close()
                 continue
             self._socks.extend((client, upstream))
-            for src, dst, gate, budget in (
-                (client, upstream, self._stall_up, [None]),
-                (upstream, client, self._stall_down, self._down_budget),
+            up_throttle: list[tuple[float, int] | None] = [None]
+            for src, dst, gate, budget, throttle in (
+                (client, upstream, self._stall_up, [None], up_throttle),
+                (upstream, client, self._stall_down, self._down_budget, self._down_throttle),
             ):
-                thread = threading.Thread(target=self._pump, args=(src, dst, gate, budget), daemon=True)
+                thread = threading.Thread(target=self._pump, args=(src, dst, gate, budget, throttle), daemon=True)
                 thread.start()
                 self._threads.append(thread)
 
@@ -234,6 +296,7 @@ class _StallRelay:
         dst: socket.socket,
         gate: threading.Event,
         budget: list[int | None],
+        throttle: list[tuple[float, int] | None],
     ) -> None:
         while not self._stop.is_set():
             try:
@@ -252,8 +315,15 @@ class _StallRelay:
                 # Keep draining the source so it never blocks on a full socket
                 # buffer, but deliver nothing: the far side simply goes quiet.
                 continue
+            plan = throttle[0]
             try:
-                dst.sendall(chunk)
+                if plan is None:
+                    dst.sendall(chunk)
+                else:
+                    gap, piece = plan
+                    for start in range(0, len(chunk), piece):
+                        dst.sendall(chunk[start : start + piece])
+                        time.sleep(gap)
             except OSError:
                 return
 
@@ -405,11 +475,42 @@ def test_non_positive_io_timeout_rejected(bad: float) -> None:
 
 
 @pytest.mark.spec("SFTP-030")
-def test_default_leaves_channel_unbounded(sftp_server: tuple[int, str] | None) -> None:
-    """Default is ``None``: no bound is armed, so no existing caller changes behaviour."""
+def test_default_arms_the_bound_on_the_channel(sftp_server: tuple[int, str] | None) -> None:
+    """A caller who configures nothing gets a bounded channel, at the documented value.
+
+    The literal is asserted rather than read back off the signature. Reading the
+    default from ``inspect.signature`` would pass against any value the
+    constructor happened to carry, so it would assert that a default exists and
+    nothing about *which* one. The value is also repeated in prose across the
+    source, the spec, the guides, the migration entry, the backlog and this
+    file, and no gate compares any of those against the signature — so this
+    assertion is what a silent change to the default has to get past, and the
+    prose sweep is a reviewer's job rather than this test's. No list of those
+    sites is given: SFTP-030 records why, having carried one that was short
+    twice.
+
+    It asserts on the *live channel*, not on the stored attribute, because that
+    is what the guarantee is: ``settimeout()`` in ``_connect``, which is also
+    what makes it survive a reconnect.
+    """
     if sftp_server is None:
         pytest.skip("paramiko not installed")
     backend = _make_backend(sftp_server[0])
+    assert _channel_timeout(backend) == pytest.approx(120.0)
+
+
+@pytest.mark.spec("SFTP-030")
+def test_explicit_none_leaves_the_channel_unbounded(sftp_server: tuple[int, str] | None) -> None:
+    """``io_timeout=None`` is the opt-out, and it reaches the live channel.
+
+    This is the escape the migration guide sends a reader to when their server
+    legitimately goes quiet for longer than the default, so it is asserted
+    rather than described. ``0`` is *not* this escape — it raises ``ValueError``
+    (SFTP-005), pinned by ``test_non_positive_io_timeout_rejected`` above.
+    """
+    if sftp_server is None:
+        pytest.skip("paramiko not installed")
+    backend = _make_backend(sftp_server[0], io_timeout=None)
     assert _channel_timeout(backend) is None
 
 
@@ -525,17 +626,22 @@ def test_version_exchange_is_bounded(mute_server: _MuteSubsystemServer) -> None:
 
 
 @pytest.mark.spec("SFTP-030")
-def test_version_exchange_unbounded_without_io_timeout(
+def test_version_exchange_unbounded_when_opted_out(
     mute_server: _MuteSubsystemServer,
 ) -> None:
-    """The default really is unbounded here, so the test above is not vacuous.
+    """Opted out, the wait really is unbounded, so the test above is not vacuous.
 
-    A positive control: without ``io_timeout`` the same mute peer does not fail
-    within the window the bounded case returns in. Without this, a connect that
-    happened to fail for an unrelated reason would make the bounded assertion
-    pass while proving nothing.
+    A positive control: with ``io_timeout=None`` the same mute peer does not
+    fail within the window the bounded case returns in. Without this, a connect
+    that happened to fail for an unrelated reason would make the bounded
+    assertion pass while proving nothing.
+
+    The opt-out is passed explicitly. Since BK-356 the *default* is a bound, so
+    omitting the argument would arm 120 s here and this control would be
+    asserting the absence of a failure it had merely put out of reach of the
+    8 s window — vacuous in exactly the way it exists to prevent.
     """
-    backend = _make_backend(mute_server.port)
+    backend = _make_backend(mute_server.port, io_timeout=None)
     done = threading.Event()
 
     def _probe() -> None:
@@ -544,7 +650,7 @@ def test_version_exchange_unbounded_without_io_timeout(
         done.set()
 
     threading.Thread(target=_probe, daemon=True).start()
-    assert not done.wait(timeout=8.0), "expected the unbounded default to still be blocked"
+    assert not done.wait(timeout=8.0), "expected the opted-out channel to still be blocked"
 
 
 @pytest.mark.spec("SFTP-030")
@@ -578,6 +684,65 @@ def test_stalled_open_raises_backend_unavailable(stall_relay: _StallRelay) -> No
     # enough to admit any bound would make the assertion vacuous, since the
     # pytest.raises above already catches an outright hang.
     assert elapsed < io_timeout * 3, f"read took {elapsed:.1f}s; expected ~{io_timeout}s"
+
+
+@pytest.mark.spec("SFTP-030")
+def test_a_transfer_slower_than_the_bound_is_not_interrupted(stall_relay: _StallRelay) -> None:
+    """A transfer that outlives the bound completes, because bytes keep arriving.
+
+    This is the half of SFTP-030 that stalling cannot reach: no arrangement of
+    stopped bytes shows that a bound on silence does not fire on a transfer
+    merely slower than itself. The relay is throttled instead of stalled: the
+    pump keeps forwarding, in pieces, with a pause between them that stays under
+    the bound.
+
+    **It is the claim the default flip made load-bearing.** Before, a caller
+    opted in and picked their own number. Now it is what tells every existing
+    user on a slow link to do nothing — the migration guide says a fetch that
+    runs for an hour never trips a 120 s bound, and the troubleshooting page
+    says a slow transfer is not a hung one. If those are wrong, the symptom is
+    every slow-link SFTP user meeting ``BackendUnavailable`` mid-transfer on
+    upgrade. ``settimeout()`` is a per-recv bound rather than a cumulative one,
+    which is exactly the class of paramiko-behaviour claim this file exists to
+    run rather than read.
+
+    **Non-vacuity is asserted twice, because one assertion covers only half of
+    it.** The elapsed time must *exceed* the bound, or the transfer never got
+    slow enough to prove anything — and the bound must be *armed on the live
+    channel*, or the test says nothing about the bound at all. Without the
+    second, deleting ``settimeout()`` from ``_connect`` leaves this green: a
+    throttled transfer completes slowly on an unbounded channel too, which is
+    not the claim. Relying on the rest of the file as the control is the
+    argument this file rejects in
+    ``test_version_exchange_unbounded_when_opted_out``, which was made to pass
+    ``io_timeout=None`` explicitly rather than lean on a neighbour.
+    """
+    io_timeout = 1.0
+    gap = 0.3  # comfortably inside the bound, so the link is slow and never silent
+    backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
+    name = f"slow_{uuid.uuid4().hex[:8]}.bin"
+    payload = bytes(range(256)) * 1024  # 256 KiB, non-uniform so a wrong answer shows
+    backend.write(name, payload)
+    # The write above connects, so this costs no round trip. It is what makes
+    # the assertions below statements about the bound rather than about a slow
+    # transfer on a channel that may have had no bound at all.
+    assert _channel_timeout(backend) == pytest.approx(io_timeout), (
+        "the bound must be armed on the live channel, or this test proves nothing about it"
+    )
+
+    stall_relay.throttle_download(gap, 32 * 1024)
+    start = time.monotonic()
+    got = backend.read_bytes(name)
+    elapsed = time.monotonic() - start
+
+    assert got == payload, "a throttled transfer must deliver the file intact, not a prefix"
+    assert elapsed > io_timeout, (
+        f"the read finished in {elapsed:.1f}s at a {io_timeout}s bound, so it never "
+        "outlived the bound and this test proves nothing — raise the payload or lower "
+        "the piece size, which multiplies the gaps. Do NOT raise the gap itself: "
+        "throttle_download requires it to stay under the bound, and above it this "
+        "becomes a stall test"
+    )
 
 
 @pytest.mark.spec("SFTP-030")
@@ -730,11 +895,13 @@ def test_write_stalling_mid_stream_costs_one_bound(stall_relay: _StallRelay, op:
     paramiko swallowing the timeout. Unguarded that is a second, invisible bound.
 
     ``write_atomic`` is parametrised in rather than trusted to the shared helper.
-    It was the last ``_handle`` call site with no test that would notice the
-    guard being removed: its own tests exit the handle cleanly and fail at the
-    promote, so they never run the close on a stalled channel. That is the gap
-    shape which let ``copy`` ship unguarded a round earlier — a site covered by
-    being listed rather than by being run.
+    It had no test that would notice the guard being removed: its own tests exit
+    the handle cleanly and fail at the promote, so they never run the close on a
+    stalled channel. That is the gap shape which let ``copy`` ship unguarded a
+    round earlier — a site covered by being listed rather than by being run.
+    It was not the last such site: SFTP-030 names two ``_handle`` call sites that
+    are still covered by being listed rather than run, and says why each is
+    deliberately left that way.
     """
     io_timeout = 2.0
     backend = _make_backend(stall_relay.port, io_timeout=io_timeout)

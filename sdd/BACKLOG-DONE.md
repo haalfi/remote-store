@@ -169,6 +169,179 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-356 — `io_timeout` should default to a real bound, not `None`**
+  spec: SFTP-030, SFTP-005 · effort: S · audience: user.api, user.api_docs, user.site
+  BK-354 shipped `io_timeout` defaulting to `None`, so the stall it exists to
+  bound stayed unbounded unless a caller opted in. The default was chosen for
+  compatibility and the reporter's objection to it was recorded rather than
+  answered ([issue #970](https://github.com/haalfi/remote-store/issues/970):
+  "'no bound at all' is a surprising default given `_is_connection_dead` already
+  assumes one"). It stood unrebutted, and it was wrong on the library's own
+  terms rather than on taste: `ReadOnlyHttpBackend` already defaults
+  `timeout=30.0` and that bound reaches reads (`src/remote_store/backends/_http.py`,
+  `__init__` signature), so SFTP was the outlier rather than the pioneer; and the
+  SFTP recovery path (`_is_connection_dead` → `_map_exception` → cleared client)
+  was written presuming a bound exists, so shipping the machinery without its
+  trigger left SFTP-030 internally contradictory.
+  **Shipped at `120.0`.** The asymmetry picks the value, not a benchmark:
+  raising it costs detection latency only, which is cheap because the bound is
+  on silence *between* bytes and a slow link is unaffected at any value, while
+  lowering it converts a healthy-but-quiet server — an antivirus or dedup
+  appliance scanning a large file on `open()` — into intermittent
+  `BackendUnavailable`, which reads as network flakiness and is harder to
+  diagnose than the hang it replaces. So the value was sized against the longest
+  *pause* a healthy server takes on one operation, not against transfer
+  duration. The item's own argument quoted 120 s as a fraction of #970's 70-min
+  transfer; review round 1 refuted the figure twice over — the arithmetic is
+  2.9%, not the 2.8% the item stated, and the ratio measures a silence bound
+  against total runtime, which is the yardstick SFTP-030 and both guides tell
+  callers not to use, so it discriminates 120 s from no other value. It is
+  dropped rather than corrected. `120.0` is also the value the SFTP guide and
+  the troubleshooting page already used in their worked examples before it
+  became the default, so the value a reader was shown and the one they got
+  stopped disagreeing — and both examples then moved off it, since illustrating
+  an option with its own default illustrates nothing.
+  **Breaking, and shipped as such**, with `io_timeout=None` as the opt-out —
+  which the migration entry leads with, because the reader who needs it is
+  exactly the one with a legitimately slow or quiet server. `0` is not the
+  opt-out: it raises `ValueError` (SFTP-005), since paramiko reads it as
+  non-blocking.
+  **The two ordering blockers were discharged before this landed.** BK-355 made
+  releasing a stalled stream cost one bound rather than two, so the flip did not
+  ship a doubling with it; BK-357 mattered more, because with `io_timeout=None`
+  the `stat` inside paramiko's `_get_size` blocked forever and a `SEEK_END` seek
+  was a hang — a real bound would have converted that hang into a **silently
+  wrong size of `0`**, a wrong answer shipped by flipping a default. The seek
+  raises instead, so the flip introduced no such case.
+  **What the tests pin, rather than what the prose claims.** The default reaches
+  the live channel (`test_default_arms_the_bound_on_the_channel`, asserting the
+  literal `120.0` rather than reading it back off the signature, which would
+  assert that a default exists and nothing about which one — the prose sites are
+  swept by review, since no gate compares them to the signature);
+  `io_timeout=None` still leaves it unbounded
+  (`test_explicit_none_leaves_the_channel_unbounded`); and the version-exchange
+  positive control now passes that opt-out explicitly
+  (`test_version_exchange_unbounded_when_opted_out`) — omitting the argument
+  would have armed 120 s and made the control vacuous. `_make_backend` grew an
+  `_INHERIT` sentinel for the same reason: `None` and "argument omitted" used to
+  select the same behaviour and now select opposite ones.
+  **And the half no stall test could reach**, added in review round 2: a
+  transfer *slower* than the bound completes, because bytes keep arriving
+  (`test_a_transfer_slower_than_the_bound_is_not_interrupted`). Stalling cannot
+  reach that claim — it is about what happens when the bytes keep coming — so
+  the clause telling every existing slow-link caller to change nothing was the
+  one assertion in SFTP-030 that nothing executed: tolerable while the option
+  was opt-in, and load-bearing the moment it became the default. `_StallRelay` gained a `throttle_download` mode
+  for it: slow, never silent. Measured at a 1 s bound with a 0.3 s inter-piece
+  gap over 256 KiB, the read completes intact in ~4 s, and the test asserts the
+  elapsed time *exceeds* the bound so it cannot pass vacuously.
+  **One finding was filed rather than fixed**: a stalled operation raises
+  `BackendUnavailable` with an empty message and emits no log record. It is
+  BK-354's defect, unchanged here, but this flip promotes it from an opt-in edge
+  case to the shipped failure surface — so it is BK-359.
+  **What the closing round cost and returned.** Three passes — unprimed,
+  whole-file and measuring — returned ten findings and no bug. Nine were claims
+  a changed file makes that its own state falsifies, and the two that mattered
+  were both defects the *fix passes* had created: the `_make_backend` census
+  round 1 corrected went stale when round 2 added a call site beneath it, and
+  the CHANGELOG stubs used the backlog titles, which are problem statements — so
+  the published line said SFTP "has no way to bound a read that stalls",
+  three lines below the entry saying the bound now defaults on. Neither sat in a
+  `+` line of the commit that falsified it, which is why two diff-anchored
+  rounds passed over both. The measuring pass also *refuted* a reading-based
+  finding: the new throttle test was flagged as a likely CI flake, and measured
+  at a 3.6x margin that is sleep-dominated, 6/6 passing under 6x CPU
+  oversubscription and 284 passing under `-n auto`. Two reviewers disagreed on
+  fact and the one that ran it settled it.
+  **Round 4 then found eight more, every one in round 3's own output** — the
+  first round to find *nothing but* defects the previous fix pass had created,
+  where round 3's ten had included three that were not. The sharpest was a test:
+  `test_a_transfer_slower_than_the_bound_is_not_interrupted` passed with the
+  bound unarmed, because asserting a success and asserting the transfer outlived
+  the bound never observes a channel timeout — so the test carrying SFTP-030's
+  load-bearing claim was silent about the bound. It now asserts the armed value
+  on the live channel first. The others were a docstring that claimed a two-way
+  partition the file does not have, a tolerated-divergence register that cited
+  Rule 5 while linking Rule 6's anchor and satisfied neither, and that register's
+  "every site is listed here" mitigation, which was five sites short when
+  written — a checklist a reader trusts and that is one entry short is worse than
+  no checklist, so it was replaced by a derivation, as the census had been one
+  round earlier.
+  **Round 5 found seven more, again all in round 4's fixes**, and two of them
+  are the ones worth carrying forward. The first: round 4 had "corrected" the
+  `io_timeout=0` rationale into a claim that `settimeout(0)` fails every
+  operation "since it is a property of the channel and not of a direction",
+  which is false. Measured against paramiko rather than argued, because the two
+  passes disagreed — `BufferedPipe.read` and `Channel._wait_for_send_window`
+  each raise only when the operation would have to block, so `settimeout(0)` is
+  non-blocking mode and a send into an open window succeeds. The narrow claim in
+  the source comment, which round 4 had corrected *away from*, was the better of
+  the two. All four sites now state the reachable fact: every SFTP request waits
+  on a reply, so every operation fails at once.
+  The second: **the repeat-site check fired, one round later than it should
+  have.** Two claim classes were refuted in rounds 3, 4 and 5 — an enumeration
+  of the sites restating the default (census stale → checklist five short → "no
+  list is given" printed above a list three short) and a universal about this
+  test file's tests ("the only test asserting a success" → "the only *relay*
+  test" → "every other test makes the bytes stop", false in seven cases). Each
+  round narrowed the claim; each narrowing was refuted by a case it had not
+  considered. Round 5 stopped narrowing and deleted both classes, which is what
+  the check prescribes: they assert nothing a reader acts on, and every version
+  of them was false.
+  **Round 6, the last, found the two defects that actually reached a user.**
+  `io_timeout` has never been released — added in this same unreleased cycle,
+  with every CHANGELOG mention above the `[0.30.0]` heading — yet the migration
+  entry said v0.30.0 defaulted it to `None`, and the troubleshooting page told
+  that reader to pass `io_timeout=300`, which raises `TypeError` on a version
+  without the parameter. The real v0.30.0 → v0.31.0 delta is that SFTP gains a
+  bound where there was none *and no way to set one*. **Five rounds missed it
+  because every round checked this PR against itself**, and the false premise was
+  uniform across the spec, both guides, the migration entry and the backlog:
+  internal consistency cannot catch a premise nothing in the diff contradicts.
+  Catching it needed `git log` and the CHANGELOG's release headings, which no
+  brief before the last one asked for. That is a gap in how the loop was run.
+  The same round found the enumeration claim class back a fourth time and
+  deleted the premise rather than narrowing it again, and three record defects
+  from round 5 editing pages without revisiting the artifacts that quote them.
+  **Round 7 added two lenses and both paid.** An **external-premise** pass —
+  checking every claim against a source outside the diff rather than against the
+  PR's own artifacts — found the false version premise round 6 removed from the
+  migration guide *surviving in `CHANGELOG.md`*, on the line tagged Breaking, in
+  the artifact that publishes to the docs site; and refuted "that is the v0.30.0
+  behaviour exactly" by executing it against the repo's own stub server. A
+  **reader** pass, never run before, produced four findings on the troubleshooting
+  page that no correctness lens reaches — chief among them that the page tells a
+  reader to look for "an empty message" while `RemoteStoreError.__str__` appends
+  `path=` and `backend=`, so the only string that reader can match on does not
+  match. It also showed the **repeat-site remedy had been applied too narrowly**:
+  the "what is unique about this file's tests" class was deleted where it had
+  been *found*, and a fifth instance sat in `_StallRelay`'s docstring, written in
+  round 2 and never edited, refuted by a method 54 lines below it. Sweeping a
+  refuted class across the file, not just fixing the instances a round surfaced,
+  is the lesson. The unprimed pass returned **one** finding — the first
+  convergence signal the loop produced.
+  **What the loop cost, and what it never found.** Seven rounds, 46 findings, and
+  **no defect in shipped behaviour**: the implementation is one line, unchanged
+  since the first commit, executed against the base branch in both directions by
+  two measuring passes. Every finding was in prose or in a test's own claims
+  about itself, and the overwhelming majority were introduced by fix passes
+  rather than by the original change: rounds 4 and 5 found nothing else at all,
+  and round 3 found only three that were not — two pre-existing spec and guide
+  paragraphs, and one observation about the PR as a whole. The instrument that
+  kept paying was the whole-file lens: none of the fix-pass defects sat in a `+`
+  line of the commit that falsified it. Derivation of the count: top-level review
+  comments on PR #978, via
+  `gh api "…/pulls/978/comments?per_page=100&page=1" --jq '[.[] | select(.in_reply_to_id == null)] | length'`.
+  **The `per_page` is load-bearing and was missing from an earlier draft of this
+  sentence**, which review round 7 ran and got 18 — the default page size against
+  a PR carrying far more comments than that, and the exact spelling
+  `/rvw-pr` Step 4 lists as a forbidden instrument. The figure was right and its
+  stated derivation was not, which is worse than none: a reader who re-runs it
+  concludes a true number was invented. Across rounds of 5, 3, 10, 8, 7, 6 and 7
+  — the last being consolidated postings, not the 17 raw findings four passes
+  returned. Re-run at round 7 rather than incremented: the first draft of this
+  sentence said 55, from adding the raw count.
+
 - [x] **BK-357 — A `SEEK_END` seek hides its own stall, so the futile-close guard cannot arm**
   spec: SIO-011, SIO-010, SFTP-030 · effort: M · audience: user.api, user.api_docs, user.site
   `SFTPFile.seek(offset, SEEK_END)` resolved the position through paramiko's

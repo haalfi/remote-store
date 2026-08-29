@@ -195,8 +195,9 @@ be edited to point elsewhere.
 <a id="predictable-failure"></a>
 ## 1. Failures are predictable
 
-**Promise:** a caller catches one exception type, and an absent or denied
-store answers the same way on every backend.
+**Promise:** a caller catches one exception type, an absent or denied store
+answers the same way on every backend, and the failure they catch says which
+failure it was.
 
 **Closes when:** the root of an absent container meets BE-029 on every
 backend (BUG-254); a listing does not truncate silently when its container is
@@ -204,9 +205,14 @@ deleted mid-scan (BUG-255) or when a folder vanishes part-way through a
 recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 (BUG-256); a constructor does not leak its driver's exception
 (BUG-245) and neither does a stream (BK-358); one operation does not answer by
-payload size (BUG-253); and a newly
+payload size (BUG-253); a caller who meets a failure can tell *which* failure it
+was, rather than an empty message and no log record (BK-359); and a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
-(BK-345). The spec contradiction is adjudicated — BUG-248, closed by
+(BK-345). BK-359 is why the Promise above carries a third clause, added with it
+rather than left implicit: an error that is
+the right *type* on every backend but says nothing is predictable to a checker
+and not to the person reading their log, and this section is where that reader
+is served. The spec contradiction is adjudicated — BUG-248, closed by
 [ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md) — the
 never-leak invariant holds on the S3 listing path, closed by BUG-249 with
 BUG-246, the last adapter answers the contract against an absent container,
@@ -257,6 +263,60 @@ backend. Graph is on both sides of this paragraph and that is not a bookkeeping
 error: it meets the rows it was brought to and misses the bound that arrived
 after, which is what a clause growing a new sentence does to a backend that was
 compliant the day before.
+
+- [ ] **BK-360 — What a stalled non-atomic SFTP `write` leaves at the destination is undocumented**
+  spec: SFTP-030, SFTP-014 · effort: S · audience: user.api_docs, user.site
+  `io_timeout` bounds writes as well as reads (SFTP-030: "the bound covers writes
+  as well as reads, and a stalled write reaches it on the receive side"), and
+  BK-356 made that bound the default — so a stalled write now raises for callers
+  who configured nothing. What the remote path holds afterwards is documented for
+  the *atomic* path only: SFTP-014 and the SFTP guide's atomic-write caveat say
+  the destination is untouched and an orphan temp file may remain. For plain
+  `write`, which streams to the destination path directly, no artifact says
+  whether the path is absent, empty, or carries a prefix of the payload, nor
+  whether a retry needs `overwrite=True`.
+  The nearest guidance lives in `docs-src/guides/transfer-operations.md` ("When
+  retrying, pass `overwrite=True` to replace the partial file"), which is a
+  different subsystem and is not linked from the SFTP pages.
+  **Found by BK-356's review round 7, by the reader lens** — the first pass on
+  that PR to ask whether a reader can act rather than whether the text is true.
+  The reviewer explicitly declined to assert the answer, and so does this item:
+  SFTP-030 does not settle it either, which is the point. Establish the behaviour
+  by running it, then state it once in the SFTP guide beside the atomic caveat.
+  Until then `docs-src/guides/troubleshooting.md` tells the reader to treat the
+  path as being in an unknown state and re-write it, which is safe and vague.
+
+- [ ] **BK-359 — A stalled SFTP operation raises `BackendUnavailable` with an empty message and no log record**
+  spec: SFTP-030, SFTP-023 · effort: S · audience: user.api
+  `_map_exception` builds the error as `BackendUnavailable(str(exc), ...)`, and
+  paramiko raises `socket.timeout()` with no arguments, so the message is the
+  empty string. Measured on a real channel at `io_timeout=2.0`, with a relay
+  silencing server→client mid-`read_bytes`: `e.args == ('',)`,
+  `str(e) == " | path='delivery.csv' | backend='sftp'"`, `__context__` a bare
+  `TimeoutError()`, and — at `logging.DEBUG` — **no `remote_store` log record at
+  all** between the SFTP `Request: open` and the raise. The only lines are
+  paramiko's own transport traffic.
+  **Pre-existing from BK-354; promoted by BK-356.** While `io_timeout` defaulted
+  to `None`, the only caller who could reach this had set the option themselves
+  and knew what it meant. Flipping the default to `120.0` makes it the shipped
+  failure surface for a silent peer, so the first person to meet it is now
+  someone who configured nothing — the reader with the least context to decode an
+  empty message. Two sentences BK-356 shipped are what make that awkward: the
+  troubleshooting page's "a silent peer raises `BackendUnavailable` after two
+  minutes", and the migration entry's "It now raises `BackendUnavailable` after
+  120 s of silence" — read precisely when a user has least context. That page
+  now documents the empty message and the missing log record for this shape
+  itself, so it describes the defect rather than contradicting it; what it
+  cannot do is give the reader something to search their logs for. The raised
+  object carries none of
+  "silent", "timeout" or the bound, so a user reading their own error log cannot
+  tell it from any other `BackendUnavailable`, a refused connect included.
+  The recovery half is correct and was measured alongside: the client is dropped
+  and the next operation reconnects and reads normally. What is missing is the
+  message, not the behaviour — so the fix is a mapped error that names the
+  stall and the bound, and a decision about whether the backend logs it.
+  Found by BK-356's review round 2, which reached it by running the failure
+  rather than reading the mapping.
 
 - [ ] **BUG-254 — Five backend classes breach BE-029's root row against an absent container**
   spec: BE-004, BE-021, BE-029 · effort: S · audience: user.api
@@ -1129,49 +1189,6 @@ here as legitimately as "built".
     motivating example, and it is filed where declining CompositeStore cannot
     retire it. Keep it in view when designing here — identity-derived keys are
     the wide fix for it, and this is where that scheme gets decided.
-
-- [ ] **BK-356 — `io_timeout` should default to a real bound, not `None`**
-  spec: SFTP-030, SFTP-005 · effort: S · audience: user.api
-  BK-354 shipped `io_timeout` defaulting to `None`, so the stall it exists to
-  bound is still unbounded unless a caller opts in. The default was chosen for
-  compatibility and the reporter's objection to it was recorded rather than
-  answered (issue #970: "'no bound at all' is a surprising default given
-  `_is_connection_dead` already assumes one"). It stands unrebutted.
-  **Why the default is wrong on the library's own terms, not just on taste.**
-  `ReadOnlyHttpBackend` already defaults `timeout=30.0`, which reaches reads, so SFTP
-  is the outlier rather than the pioneer — a user meets a bounded read on HTTP
-  and an unbounded one on SFTP with no principle separating them. And the SFTP
-  recovery path (`_is_connection_dead` → `_map_exception` → cleared client) was
-  written presuming a bound exists; shipping the machinery without its trigger
-  is an internal contradiction that BK-354 documented instead of closing.
-  **Decided: `120.0`.** It is the value the SFTP guide and troubleshooting page
-  already use in their worked examples, so the docs and the default stop
-  disagreeing. Against the longest transfer #970 reports (2.0 GiB, ~70 min) a
-  120 s silence bound is 2.8% of runtime — a stall is caught inside two minutes
-  while leaving room for a server that legitimately goes quiet, e.g. an
-  antivirus or dedup appliance scanning a large file on `open()`.
-  The asymmetry is what picks the value: too high costs detection latency,
-  which is cheap because the bound is on silence *between* bytes and a slow
-  link is unaffected at any value; too low converts a healthy-but-quiet server
-  into intermittent `BackendUnavailable`, which reads as network flakiness and
-  is harder to diagnose than the hang it replaces.
-  **Breaking, and shipped as such.** Pre-1.0 (`0.30.0`, Development Status ::
-  4 - Beta) with an established `docs-src/reference/migration.md` — v0.29.0
-  made Azure's `hns` a *required* argument, a harder break than changing a
-  default that keeps an opt-out. The migration entry must lead with the opt-out
-  (`io_timeout=None` restores the old behaviour), because the reader who needs
-  it is exactly the one with a legitimately slow or quiet server. Note `0` is
-  not the opt-out: it raises `ValueError` (SFTP-005), since paramiko reads it
-  as non-blocking.
-  **No longer blocked, and the ordering argument is now discharged.** BK-355
-  landed first, so releasing a stalled stream costs one bound rather than two and
-  the flip does not ship a doubling with it. BK-357 then landed too, which is the
-  half that mattered most here: with `io_timeout=None` the `stat` inside
-  paramiko's `_get_size` blocks forever, so a `SEEK_END` seek was a hang, and a
-  real bound would have converted that hang into a **silently wrong size of
-  `0`** — a wrong answer shipped by flipping a default. The seek now raises
-  instead, so the flip no longer introduces that case and this item can be taken
-  on its own merits.
 
 ---
 
