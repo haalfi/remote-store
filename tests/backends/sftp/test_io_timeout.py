@@ -37,11 +37,13 @@ and one silent case, and a clause asserting a paramiko behaviour is the kind of
 claim this work has got wrong by reading rather than running, so each is
 *characterised by a test* rather than asserted.
 
-The enumerations below cover **faults**, not the file. Tests that stage no fault
-— construction validation, the ones asserting the bound reaches the channel, the
-healthy-channel seek cases — are not listed and are not omissions.
+The enumerations below describe the faults this file was built around. They are
+not a partition of it: tests have been added since, and no claim is made here
+about what they exhaust. Four attempts at such a claim were each refuted by a
+test the attempt had not considered, so the file no longer makes one — read the
+tests for what is covered.
 
-One of those unlisted tests is worth naming here because SFTP-030 rests on it:
+One test is worth naming here anyway, because SFTP-030 rests on it:
 ``test_a_transfer_slower_than_the_bound_is_not_interrupted`` covers a transfer
 merely *slower* than the bound, which must complete. Stalling cannot reach that
 claim — the claim is about what happens when the bytes keep coming — so it is
@@ -478,13 +480,13 @@ def test_default_arms_the_bound_on_the_channel(sftp_server: tuple[int, str] | No
     The literal is asserted rather than read back off the signature. Reading the
     default from ``inspect.signature`` would pass against any value the
     constructor happened to carry, so it would assert that a default exists and
-    nothing about *which* one — and the value is repeated in prose well outside
-    this file: the constructor's own docstring, SFTP-001's signature block,
-    SFTP-030, the SFTP guide, the troubleshooting page and the migration entry.
-    No gate compares any of those against the signature, so this assertion is
-    what a silent change to the default has to get past. Sweeping the prose
-    sites is a reviewer's job rather than this test's, and this docstring does
-    not claim otherwise.
+    nothing about *which* one. The value is also repeated in prose across the
+    source, the spec, the guides, the migration entry, the backlog and this
+    file, and no gate compares any of those against the signature — so this
+    assertion is what a silent change to the default has to get past, and the
+    prose sweep is a reviewer's job rather than this test's. No list of those
+    sites is given: SFTP-030 records why, having carried one that was short
+    twice.
 
     It asserts on the *live channel*, not on the stored attribute, because that
     is what the guarantee is: ``settimeout()`` in ``_connect``, which is also
@@ -892,11 +894,13 @@ def test_write_stalling_mid_stream_costs_one_bound(stall_relay: _StallRelay, op:
     paramiko swallowing the timeout. Unguarded that is a second, invisible bound.
 
     ``write_atomic`` is parametrised in rather than trusted to the shared helper.
-    It was the last ``_handle`` call site with no test that would notice the
-    guard being removed: its own tests exit the handle cleanly and fail at the
-    promote, so they never run the close on a stalled channel. That is the gap
-    shape which let ``copy`` ship unguarded a round earlier — a site covered by
-    being listed rather than by being run.
+    It had no test that would notice the guard being removed: its own tests exit
+    the handle cleanly and fail at the promote, so they never run the close on a
+    stalled channel. That is the gap shape which let ``copy`` ship unguarded a
+    round earlier — a site covered by being listed rather than by being run.
+    It was not the last such site: SFTP-030 names two ``_handle`` call sites that
+    are still covered by being listed rather than run, and says why each is
+    deliberately left that way.
     """
     io_timeout = 2.0
     backend = _make_backend(stall_relay.port, io_timeout=io_timeout)

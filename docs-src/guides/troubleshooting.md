@@ -160,17 +160,17 @@ from remote_store.backends import SFTPBackend
 backend = SFTPBackend(host="files.example.com", username="deploy")
 ```
 
-*You are on a version before `io_timeout` defaulted to a bound* (see the
-[migration guide](../reference/migration.md)). There is no opt-out to drop and
-the default is `None`, so set a value explicitly — or upgrade, and get one
-without asking:
+*You are on a version that predates `io_timeout` altogether.* The option does not
+exist there, so there is nothing to set: an open channel is unbounded and cannot
+be bounded. Upgrading is the only route — see the
+[migration guide](../reference/migration.md).
+
+On a current version, pass a value to move off the default, for a server that
+legitimately goes quiet for minutes:
 
 ```python
 backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=300)
 ```
-
-That value is also how you move off the default on a current version, for a
-server that legitimately goes quiet for minutes.
 
 **2. It is the one genuinely unbounded wait.** A server that opens the SSH
 channel and then never answers the `sftp` subsystem request hangs regardless:

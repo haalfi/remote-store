@@ -10,9 +10,10 @@ changes that require action when upgrading.
 
 **SFTP reads and writes are now bounded by default:**
 
-`SFTPBackend(io_timeout=...)` bounds a read or write that stalls on an
-already-open channel. It defaulted to `None` — no bound — and now defaults to
-`120.0` seconds. A caller who configures nothing is affected.
+In v0.30.0, an SFTP read or write that stalled on an already-open channel had no
+bound and no way to set one. v0.31.0 adds `SFTPBackend(io_timeout=...)` and
+defaults it to `120.0` seconds, so every caller is affected whether or not they
+configure anything.
 
 **To restore the previous behaviour, pass `None`:**
 
@@ -20,8 +21,9 @@ already-open channel. It defaulted to `None` — no bound — and now defaults t
 backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=None)
 ```
 
-Reach for that if your server legitimately goes silent for more than two minutes
-mid-operation and you would rather wait than fail. Note `0` is **not** the
+That is the v0.30.0 behaviour exactly. Reach for it if your server legitimately
+goes silent for more than two minutes mid-operation and you would rather wait
+than fail. Note `0` is **not** the
 opt-out — it raises `ValueError`, because paramiko reads it as non-blocking
 rather than as a bound, and every SFTP operation waits on a reply, so all of
 them would fail at once.

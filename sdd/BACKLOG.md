@@ -279,12 +279,14 @@ compliant the day before.
   and knew what it meant. Flipping the default to `120.0` makes it the shipped
   failure surface for a silent peer, so the first person to meet it is now
   someone who configured nothing — the reader with the least context to decode an
-  empty message. Three sentences BK-356 shipped are what make that awkward: the
-  troubleshooting page's retained symptom "No exception, no log line" (there is
-  now an exception, but still no log line, and it says nothing); its new "a
-  silent peer raises `BackendUnavailable` after two minutes"; and the migration
-  entry's "It now raises `BackendUnavailable` after 120 s of silence" — read
-  precisely when a user has least context. The raised object carries none of
+  empty message. Two sentences BK-356 shipped are what make that awkward: the
+  troubleshooting page's "a silent peer raises `BackendUnavailable` after two
+  minutes", and the migration entry's "It now raises `BackendUnavailable` after
+  120 s of silence" — read precisely when a user has least context. That page
+  now documents the empty message and the missing log record for this shape
+  itself, so it describes the defect rather than contradicting it; what it
+  cannot do is give the reader something to search their logs for. The raised
+  object carries none of
   "silent", "timeout" or the bound, so a user reading their own error log cannot
   tell it from any other `BackendUnavailable`, a refused connect included.
   The recovery half is correct and was measured alongside: the client is dropped

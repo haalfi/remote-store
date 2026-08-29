@@ -253,9 +253,9 @@ if evidence changes; these are retired.
   at a 3.6x margin that is sleep-dominated, 6/6 passing under 6x CPU
   oversubscription and 284 passing under `-n auto`. Two reviewers disagreed on
   fact and the one that ran it settled it.
-  **Round 4 then found eight more, every one in round 3's own output**, which is
-  the fourth consecutive round whose findings were created by the corrections of
-  the round before. The sharpest was a test:
+  **Round 4 then found eight more, every one in round 3's own output** — the
+  second round in a row to find nothing but defects the previous fix pass had
+  created. The sharpest was a test:
   `test_a_transfer_slower_than_the_bound_is_not_interrupted` passed with the
   bound unarmed, because asserting a success and asserting the transfer outlived
   the bound never observes a channel timeout — so the test carrying SFTP-030's

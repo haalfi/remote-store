@@ -68,11 +68,11 @@ phases:
     name: Spec
     steps:
       - file: sdd/specs/009-sftp-backend.md
-        section: "SFTP-030, SFTP-005, SFTP-023, SFTP-001"
+        section: "SFTP-030, SFTP-005, SFTP-010, SFTP-001"
         read_type: gate
         extract: >-
           Four sites assert the default, not one. SFTP-001's signature block and
-          SFTP-030's clause were the expected two; SFTP-023's tier-2 prose ("with
+          SFTP-030's clause were the expected two; SFTP-010's tier-2 prose ("with
           its default of None this path is unreachable for a merely silent
           peer") and SFTP-005's rejection text were only found by reading the
           whole file for the word "default"
@@ -308,7 +308,7 @@ phases:
           observes a channel timeout. Deleting settimeout() from _connect left
           it green. One line closes it, and the argument I had written against
           it — that the rest of the file is the control — is the argument this
-          same file rejects one test earlier, where the version-exchange control
+          same file rejects in test_version_exchange_unbounded_when_opted_out, where the version-exchange control
           was made to pass io_timeout=None explicitly rather than lean on a
           neighbour. I applied the standard in round 1 and failed to apply it to
           the test I wrote in round 2
