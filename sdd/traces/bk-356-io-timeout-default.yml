@@ -37,9 +37,10 @@ expected_ripples:
 # incorporates round 4, 192996b incorporates round 5, e28d4c5 incorporates
 # round 6, and b1e3d9b incorporates round 7.
 # Value is 7 — rounds, not commits, which is why ef3edad and b692e12
-# count once between them, and why every per-round bookkeeping commit — the ones
-# that only name a SHA or append to the trace and the register, whatever their
-# subject line — counts for nothing. Stated as a class rather than a list
+# count once between them, and why nothing that carries no review outcome counts:
+# neither a per-round bookkeeping commit — one that only names a SHA or appends
+# to the trace and the register, whatever its subject line — nor a merge of
+# master into the branch. Stated as a class rather than a list
 # because the branch grows one per round and a closed list cannot keep up:
 # round 5 caught the listed form two members short, and round 7 caught the first
 # attempt at the class two short again, because it quoted a commit subject that
