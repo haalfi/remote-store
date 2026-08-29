@@ -1575,10 +1575,31 @@ the commit that writes it lands, so cite the generator instead.
   two lines go, and the check is written against a file that already reads
   correctly. Deliberately not fixed in the PR that filed this item, on the
   author's decision to scope that PR to the tooling gap alone.
-  **Nothing mechanical looks at this file's content.** `CHANGELOG` appears in
-  `scripts/` only in `docs/check_links.py`, `gen_pages.py`,
-  `check_no_tracker_refs.py` and `mkdocs_hooks.py`, all link or render concerns,
-  and in `.github/workflows/ci.yml` only inside `DOCS_PAT`. The whole defense is
+  **One mechanism now looks at this file's content, and it is not this one.**
+  As filed, nothing did: `CHANGELOG` appeared in `scripts/` only in
+  `docs/check_links.py`, `gen_pages.py`, `check_no_tracker_refs.py` and
+  `mkdocs_hooks.py`, all link or render concerns, and in
+  `.github/workflows/ci.yml` only inside `DOCS_PAT`. **BUG-262 added a fifth
+  reader that parses the section rather than rendering it** —
+  `scripts/check_breaking_migration_link.py`, in both `lint` and `docs-gate` —
+  so that premise is now false as written, and three things this item specifies
+  for itself already exist:
+  - the machine-decidable grammar below (one line, `- <ID>: ` prefix) is what
+    its `_ENTRY_RE` implements, over the same `[Unreleased]` window;
+  - the wiring below (both targets, per the BK-333 trap) is the wiring it
+    shipped, so that question is settled by precedent rather than open;
+  - its `marked_entries()` is a reusable enumerator over this claim space,
+    exposed precisely so a caller can tell "no violations" from "matched
+    nothing" — the distinction a duplicate-entry check needs too.
+  **What survives is this item's whole subject.** That gate keys on the
+  `**Breaking**` marker and answers one question about the entries it finds; it
+  says nothing about duplicates, about an entry whose content went stale, or
+  about the entry-versus-completed-item correspondence, which is what this item
+  is for. So the defect stands and the cost of fixing it dropped: the parser
+  exists, and the open question is whether to import it or restate it — the same
+  question PR #983's `scripts/_changelog.py` was written to answer, which is
+  where that decision belongs.
+  The whole defense against *this* item's defect is still
   `.github/PULL_REQUEST_TEMPLATE.md:24` and review attention.
   **Claim spaces, all three derived** ([Rule 3](DRIFT-RULES.md#claim-space)):
   the entries parse out of the section itself, and the audience side off the

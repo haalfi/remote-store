@@ -249,8 +249,16 @@ if evidence changes; these are retired.
   **Bounds stated in the module docstring** ([Rule 7](DRIFT-RULES.md#miss-rate)),
   because the unchecked remainder here is larger than the checked part. It
   cannot tell whether the linked section says anything about this entry — a link
-  to the right heading with the wrong content passes. It sees only the current
-  window, since Phase 2 condensation drops the marker. And it cannot reach the
+  to the right heading with the wrong content passes. **It goes blind during
+  Phase 1**, not merely after release: `CONTRIBUTING.md` § Release Phase 1
+  condenses `[Unreleased]` in place, and the operative exclusion is the entry
+  *shape* becoming title-first rather than the marker being dropped — a condensed
+  entry that kept `**Breaking**` would still be invisible, because the ID no
+  longer leads the line. So it enumerates zero entries from Phase 1 condensation
+  until Phase 2 renames the heading, which is exactly while Phase 1's own
+  migration-guide item is being verified; the success line reports the
+  enumerated count so that state reads differently from a clean pass. And it
+  cannot reach the
   softer half at all: BUG-261 re-derived that set at **6** unmarked entries a
   caller must act on, against 4 marked ones, and no marker decides them, so
   `CONTRIBUTING.md` § Release Phase 1 keeps that judgement. A test pins the
@@ -262,7 +270,7 @@ if evidence changes; these are retired.
   literal `**Breaking**`, and an unanchored substring test read that as the
   marker. Fixed at the rule rather than by rewording the stub — the convention
   puts the marker at the head of the entry body (`- BK-357: **Breaking** — …`),
-  so the match is anchored there, which is also what the release skill reads.
+  so the match is anchored there.
   Pinned by `test_an_entry_that_merely_mentions_the_marker_is_not_marked`.
   **Review round 1 found the same class twice more, both fail-open.** The entry
   grammar required the ID to end in digits, so a marked entry using the live
@@ -290,6 +298,38 @@ if evidence changes; these are retired.
   the script, not `collect_violations`, so what `lint` and `docs-gate` run was
   otherwise unexercised. A missing `## [Unreleased]` heading — which Phase 2
   produces — now raises rather than reporting success over nothing.
+  **Review round 2 found the guard against going blind was itself blind.** The
+  test that derived an "independent" expected set from the live CHANGELOG used a
+  regex copied from the implementation — `_ENTRY_RE` concatenated with the
+  marker clause — so it went blind on exactly the inputs the parser did: both
+  round-1 fail-opens would have compared two empty lists and passed. That is
+  [Rule 8](DRIFT-RULES.md#independence) ("independent authors do not produce
+  independent errors"), and it was not even two authors. It now derives by
+  position, splitting on the first `": "` with no ID grammar at all. The same
+  round removed the duplication that caused the round-1 fail-open in the first
+  place: `_MARKED_RE` restated `_ENTRY_RE`'s ID clause, so the suffix fix had to
+  widen two places, and widening one would silently narrow the enumeration. The
+  marker is now tested by position against the entry match, leaving one home for
+  the grammar.
+  **Two claims in the round-1 fixes were wrong, both about the corpus.** The
+  link matcher accepted a repo-relative `docs-src/reference/migration.md` on the
+  grounds that the corpus used both spellings; it uses one (`rg -o
+  '\]\([^)]*migration[^)]*\)' CHANGELOG.md` returns 7 hits, all the published
+  URL), and the relative form would 404 on the site, because this file is
+  dual-published to `reference/changelog.md` — so the gate would have blessed a
+  link `check_links` and `mkdocs --strict` reject. And the comment justifying
+  the anchored marker claimed it matched "where the release skill reads it":
+  `rg -i breaking .claude/` returns nothing, so the release skill neither reads
+  nor mentions the marker. Both corrected; the second was an invented
+  corroboration for a decision that already had two real ones.
+  **Two more, smaller.** The remediation's example hard-coded
+  `#v0300-to-v0310`, which is the one error the gate is blind to by its own
+  first bound — a copied anchor naming the previous release passes — so it now
+  shows `#vPREV-to-vNEXT` and says the anchor is this release's pair. And a test
+  asserted `[Unreleased]` always carries a marked entry, which fails on two
+  normal states: a release window with no breaking change, and Phase 1 after
+  condensation — the blind window this item's own docstring declares as
+  accepted. It skips there instead, so the suite does not contradict the bound.
 
 - [x] **BUG-261 — Two breaking changes are on master with no upgrade path, and the obligation is stated where their authors never read**
   spec: — · effort: S · audience: user.api_docs, user.site, contributor.tooling

@@ -14,10 +14,27 @@ audience:
 expected_ripples:
   - sdd/backlogid.json
   - sdd/GATE-INVENTORY.md
-# Named from `git log --oneline origin/master..HEAD`: 168e80a implements and
-# does not count; the commit carrying review round 1 does. Value is 1, and the
-# `fix` phase below records what that round found.
-review_rounds: 1
+surprising_ripples:
+  # The gate's remediation names CONTRIBUTING.md § Release Phase 1, and that
+  # bullet stated only the section obligation — so an author who satisfied it
+  # exactly got a red gate pointing back at the line they had satisfied. No
+  # ripple-check row reaches it: the Breaking change row was updated in both
+  # presentations and that felt complete, because nothing asks whether a new
+  # gate's *remediation target* states the rule the gate enforces.
+  - CONTRIBUTING.md
+  # BUG-262 falsified a load-bearing premise in open item ID-252 ("Nothing
+  # mechanical looks at this file's content", naming four scripts): this gate is
+  # a fifth reader and the first that parses the section rather than rendering
+  # it. Found by review, not by the closure sweep — that sweep fires on the ID
+  # being closed, and ID-252 cites no ID here; it is the *measurement* the new
+  # code contradicts. Same shape as BUG-261's BUG-254 / BUG-256 misses.
+  - sdd/BACKLOG.md
+# Named from `gh api repos/haalfi/remote-store/pulls/985/commits`, which returns
+# exactly two: 168e80a implements and does not count; f8f8b82 ("fix: address PR
+# #985 review") incorporates round 1 and counts. Round 2's own fix commit makes
+# it 2. Naming the list rather than the total is what _schema.yml asks for, and
+# an earlier version of this comment named only one of the two.
+review_rounds: 2
 phases:
   - id: orient
     name: Orient on what BUG-261 left open
@@ -118,7 +135,7 @@ phases:
         extract: "35 → 36 mechanisms after `hatch run gen-gate-inventory`; the Drift-gate:: block is what registers it"
         outcome: ok
   - id: fix
-    name: Review round 1
+    name: Review rounds 1 and 2
     steps:
       - file: sdd/traces/_schema.yml
         section: "id (pattern)"
@@ -169,4 +186,44 @@ phases:
           using a stub-shaped released entry and by exposing marked_entries() so
           a test can assert the parser saw what it should have seen, including
           one case that derives the expected set from the live CHANGELOG.
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rule 8 (independence)"
+        read_type: gate
+        extract: >-
+          Round 2, and the finding worth carrying. The test that was supposed to
+          catch the parser going blind derived its expected set with a regex
+          copied from the implementation — _ENTRY_RE concatenated with the
+          marker clause — so it went blind on exactly the same inputs. Both
+          round-1 fail-opens would have produced two empty lists and compared
+          equal. Rule 8 names this ("independent authors do not produce
+          independent errors"), and here it was not even two authors. Rebuilt to
+          derive by position, splitting on the first ": " with no ID grammar at
+          all, so a narrowed grammar is visible to it.
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "doc: dual marker, migration links"
+        read_type: gate
+        extract: >-
+          Round 2. The link matcher accepted a repo-relative
+          docs-src/reference/migration.md as well as the site URL, on a claim
+          that the corpus used both. It does not: `rg -o
+          '\]\([^)]*migration[^)]*\)' CHANGELOG.md` returns 7 hits, all the
+          published URL. Worse, the file carries `doc: dual
+          dest=reference/changelog.md`, so a repo-relative href resolves under
+          reference/ and 404s on the site — the gate would have blessed a link
+          that check_links and mkdocs --strict reject, letting lint pass and
+          docs-gate fail on the same rule in the same PR.
+        outcome: ok
+      - file: .claude/skills/release/
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Round 2. The comment above the marker test claimed the anchoring
+          matched "where the release skill reads it". `rg -i breaking .claude/`
+          returns no matches at all — the release skill neither reads nor
+          mentions the marker. An invented corroboration, and the kind a later
+          reader would go looking for to check the two still agree. Removed from
+          both copies; the convention and the false positive already carried the
+          argument.
         outcome: ok

@@ -31,8 +31,10 @@ Checked: entries under ``## [Unreleased]`` whose body *opens* with
 ``**Breaking**``, matched as ``- <ID>: **Breaking**``. The marker is
 anchored rather than searched for, so an entry that merely mentions the
 marker in its prose is not treated as carrying it. The link is matched as
-a Markdown link whose target names the guide, for the same reason: a bare
-mention of the path in prose is not a link.
+a Markdown link to the **published** guide URL, for two reasons: a bare
+mention of the path in prose is not a link, and a repo-relative path would
+break on the site, since this file is dual-published to
+``reference/changelog.md`` and the href would resolve under ``reference/``.
 
 **Not** checked, and stated rather than implied
 ([`DRIFT-RULES.md` Rule 7](../sdd/DRIFT-RULES.md#miss-rate)):
@@ -99,19 +101,30 @@ _RELEASE_HEADING_RE = re.compile(r"^## \[")
 # valid, so the two agree on what a coordinate looks like.
 _ENTRY_RE = re.compile(r"^- ([A-Z][A-Z0-9-]*-\d+[a-z]*): ")
 
-# The marker is *anchored* to the start of the entry body, which is where the
-# convention puts it (`- BK-357: **Breaking** — ...`) and where the release
-# skill reads it. A substring test instead of an anchored one treats an entry
-# that merely *discusses* the marker as carrying it -- this gate's own CHANGELOG
-# stub was the first false positive, on its first run.
-_MARKED_RE = re.compile(r"^- [A-Z][A-Z0-9-]*-\d+[a-z]*: \*\*Breaking\*\*")
+# The marker opens the entry *body*, which is where the convention puts it
+# (`- BK-357: **Breaking** — ...`). Tested by position against the entry match
+# rather than by a second regex, for two reasons. A substring test treats an
+# entry that merely *discusses* the marker as carrying it -- this gate's own
+# CHANGELOG stub was the first false positive, on its first run. And a second
+# regex restating the ID grammar is what made the suffix fix have to widen two
+# places: widen one and the enumeration silently narrows, no violation, exit 0 --
+# the same fail-open class this gate exists to prevent, rebuilt inside it.
+_MARKER = "**Breaking**"
 
-# A Markdown link whose target names the guide, in either spelling the corpus
-# uses: the published site URL, or a repo-relative path. Matching the *link*
-# rather than the bare path is the same rule as the anchored marker above --
-# these entries run to kilobytes of prose, so a passing mention of the path is
-# a real shape, and it is not a link.
-_LINK_RE = re.compile(r"\[[^\]]*\]\([^)]*reference/migration[^)]*\)")
+# A Markdown link to the *published* guide. Two things are load-bearing.
+# Matching the link rather than the bare path is the same rule as the marker:
+# these entries run to kilobytes of prose, so a passing mention of the path is a
+# real shape and it is not a link. And the target must be the site URL, the only
+# spelling this file uses -- `rg -o '\]\([^)]*migration[^)]*\)' CHANGELOG.md`
+# returns 7 hits, every one `https://docs.remotestore.dev/...`. A repo-relative
+# `docs-src/reference/migration.md` would be worse than merely unattested:
+# CHANGELOG.md carries a `doc: dual dest=reference/changelog.md` marker, so it
+# renders at `reference/changelog.md`, where that href resolves to
+# `reference/docs-src/reference/migration.md` and does not exist -- a broken link
+# on the published site, which `check_links` and `mkdocs build --strict` reject.
+# Accepting it would let an author pass `lint` and fail `docs-gate` on the same
+# rule in the same PR.
+_LINK_RE = re.compile(r"\[[^\]]*\]\(https://docs\.remotestore\.dev/[^)]*reference/migration/[^)]*\)")
 
 
 @dataclass(frozen=True)
@@ -154,7 +167,7 @@ def marked_entries(changelog: Path) -> list[Entry]:
     found: list[Entry] = []
     for offset, line in enumerate(lines[start:end], start=start):
         match = _ENTRY_RE.match(line)
-        if not match or not _MARKED_RE.match(line):
+        if not match or not line[match.end() :].startswith(_MARKER):
             continue
         found.append(Entry(offset + 1, match.group(1), bool(_LINK_RE.search(line))))
     return found
@@ -169,7 +182,9 @@ _REMEDIATION = (
     "Every [Unreleased] entry marked **Breaking** must link the section that "
     "carries its upgrade path, e.g.\n"
     "  Upgrade path in the [migration guide]"
-    "(https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).\n"
+    "(https://docs.remotestore.dev/stable/reference/migration/#vPREV-to-vNEXT).\n"
+    "  The anchor is this release's own version pair. A copied anchor naming the\n"
+    "  previous release passes this gate -- see its first stated bound.\n"
     "Write the section in docs-src/reference/migration.md under the "
     "'## vPREV to vNEXT' heading for this release (append to it if it exists), "
     "then link it from the entry. Both halves are stated in CONTRIBUTING.md "

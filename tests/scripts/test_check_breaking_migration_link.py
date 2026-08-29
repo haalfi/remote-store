@@ -14,7 +14,6 @@ difference between "no violations" and "matched nothing".
 from __future__ import annotations
 
 import importlib.util
-import re
 import sys
 from pathlib import Path
 
@@ -118,11 +117,28 @@ def test_a_bare_mention_of_the_path_is_not_a_link(tmp_path: Path) -> None:
     assert [v.entry_id for v in _mod.collect_violations(changelog)] == ["BK-360"]
 
 
-def test_a_relative_markdown_link_satisfies_the_rule(tmp_path: Path) -> None:
-    """An entry authored against the repo tree, not the published site."""
+def test_a_repo_relative_link_is_a_violation(tmp_path: Path) -> None:
+    """The one spelling that looks right and breaks the published site.
+
+    CHANGELOG.md carries a ``doc: dual dest=reference/changelog.md`` marker, so
+    it renders at ``reference/changelog.md`` — where this href resolves to
+    ``reference/docs-src/reference/migration.md``, which does not exist.
+    Accepting it would let an author pass ``lint`` and fail ``docs-gate`` on the
+    same rule in the same PR, so the gate rejects it here instead.
+    """
     changelog = _changelog(
         tmp_path,
         "- BK-360: **Breaking** — something. See [the guide](docs-src/reference/migration.md).",
+    )
+    assert [v.entry_id for v in _mod.collect_violations(changelog)] == ["BK-360"]
+
+
+def test_a_versioned_published_link_satisfies_the_rule(tmp_path: Path) -> None:
+    """The site URL is required, but not pinned to ``/stable/``."""
+    changelog = _changelog(
+        tmp_path,
+        "- BK-360: **Breaking** — x. See "
+        "[the guide](https://docs.remotestore.dev/0.31.0/reference/migration/#v0300-to-v0310).",
     )
     assert _mod.collect_violations(changelog) == []
 
@@ -204,10 +220,27 @@ def test_main_returns_one_and_names_the_entry(tmp_path: Path, capsys: pytest.Cap
     assert "Upgrade path in the [migration guide]" in err, "the remediation must show the shape it wants"
 
 
-def test_main_fails_loud_when_it_cannot_find_its_subject(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_main_fails_loud_when_the_file_is_absent(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     """A gate that cannot find its subject must not print success."""
     assert _mod.main(["--repo-root", str(tmp_path)]) == 1
     assert "cannot read" in capsys.readouterr().err
+
+
+def test_main_fails_loud_when_the_unreleased_heading_is_gone(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The exit-1 path a release operator is most likely to meet.
+
+    Release Phase 2 renames ``## [Unreleased]`` before adding a fresh one, so
+    this is a real state of the file rather than a corrupted one — and it is the
+    branch whose stderr wording someone reads mid-release. Tested through
+    ``main()`` because that is what ``lint`` and ``docs-gate`` run.
+    """
+    (tmp_path / "CHANGELOG.md").write_text(
+        "# Changelog\n\n## [0.31.0] - 2026-09-01\n\n- BK-100: **Breaking** — x\n", encoding="utf-8"
+    )
+    assert _mod.main(["--repo-root", str(tmp_path)]) == 1
+    assert "no '## [Unreleased]' section" in capsys.readouterr().err
 
 
 # --------------------------------------------------------------------------- #
@@ -219,22 +252,44 @@ def test_the_repository_satisfies_its_own_gate() -> None:
     assert _mod.collect_violations(_REPO_ROOT / "CHANGELOG.md") == []
 
 
-def test_the_parser_agrees_with_an_independent_count_of_the_real_changelog() -> None:
+def test_the_parser_agrees_with_a_differently_derived_set_over_the_real_changelog() -> None:
     """Distinguish "no violations" from "matched nothing" against the live file.
 
     Every other case here uses a synthetic fixture, so a parser that matched
-    zero entries -- a wrong grammar, a collapsed section boundary, the Phase 1
-    condensed shape -- would satisfy all of them at once. This derives the
-    expected set with its own regex over the same window and asserts the two
-    agree, so the gate cannot go blind on the real tree and stay green.
+    zero entries -- a collapsed section boundary, a narrowed grammar, the
+    Phase 1 condensed shape -- would satisfy all of them at once.
+
+    **The derivation here uses no ID grammar at all**, which is the point.
+    An earlier version of this case re-implemented ``_ENTRY_RE`` verbatim and so
+    went blind on exactly the inputs the implementation went blind on: both
+    fail-opens review round 1 found -- the suffixed ID and the compound prefix --
+    would have produced two empty lists and passed. That is
+    [DRIFT-RULES Rule 8](../../sdd/DRIFT-RULES.md#independence): "verify
+    independence of derivation path; never assume it ... Independent authors do
+    not produce independent errors" -- and it was not even two authors.
+
+    So the expected set is built by *position*: take the lines in the window
+    that contain the marker at all, and keep the ones where it opens the entry
+    body, splitting on the first ``": "`` rather than matching an ID. Whatever
+    the ID looks like, this sees the entry.
     """
     lines = (_REPO_ROOT / "CHANGELOG.md").read_text(encoding="utf-8").splitlines()
     start = lines.index("## [Unreleased]")
     end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("## [")), len(lines))
-    expected = [
-        m.group(1)
-        for m in (re.match(r"^- ([A-Z][A-Z0-9-]*-\d+[a-z]*): \*\*Breaking\*\*", ln) for ln in lines[start:end])
-        if m
-    ]
-    assert expected, "the fixture assumption is gone: [Unreleased] carries no marked entries at all"
+
+    expected: list[str] = []
+    for line in lines[start:end]:
+        if not line.startswith("- ") or "**Breaking**" not in line:
+            continue
+        head, sep, body = line.partition(": ")
+        if sep and body.startswith("**Breaking**"):
+            expected.append(head[2:])
+
+    if not expected:
+        pytest.skip(
+            "[Unreleased] carries no entry opening with the marker. That is a normal "
+            "state -- a release window with no breaking change, or Phase 1 after "
+            "condensation -- and the module docstring declares the second as an "
+            "accepted blind window, so it must not be a failure here."
+        )
     assert [e.entry_id for e in _mod.marked_entries(_REPO_ROOT / "CHANGELOG.md")] == expected
