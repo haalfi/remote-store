@@ -1,10 +1,10 @@
 # Research: arc42 as an architecture-level specification layer
 
 **Date:** 2026-08-28
-**Backlog items:** none — the question arrived directly, and § 4 explains why it
-leaves none behind
-**Status:** Research complete — disposition filed in
-[`BACKLOG-DONE.md` § Decided against](../BACKLOG-DONE.md#decided-against)
+**Backlog items:** none — the question arrived directly, and § 4.1 explains why
+it leaves none behind
+**Status:** Research complete — all four dispositions refused; this document is
+the record
 
 ---
 
@@ -387,18 +387,27 @@ triggers and ripples rather than chapters.
 **Adopt nothing. File nothing.** The four candidates are rejected above, and the
 rejections are the substance of this document.
 
-### 4.1 Where the decision is registered
+### 4.1 Where the decision lives
 
-[`BACKLOG.md` § How this file works](../BACKLOG.md#how-this-file-works) gives a
-refused idea the same register entry a removed one gets: a line in
-[`BACKLOG-DONE.md` § Decided against](../BACKLOG-DONE.md#decided-against) with a
-`—` where the ID would be, carrying the diagnosis and not only the verdict. That
-entry is where a future reader meets this decision; this document is what it
-points at.
+**This document is the whole record.** No backlog item is filed, and that is the
+admission test operating rather than an omission: an item that fits no section's
+promise has no demonstrated value, and on today's evidence none of the four fits
+one.
 
-No backlog item is filed, and that is the admission test operating rather than an
-omission. An item that fits no section's promise has no demonstrated value; on
-today's evidence none of the four fits one.
+Nothing is registered in [`BACKLOG-DONE.md` § Decided
+against](../BACKLOG-DONE.md#decided-against) either. That section exists for
+ideas *removed from* `BACKLOG.md`, plus refusals at admission, and its entries
+are the durable half of a decision whose argument lived somewhere transient — a
+review thread, an issue, a conversation. This decision's argument is not
+transient: it is here, with its derivations, under a path
+[`AUTHORING.md`](../AUTHORING.md) fixes and the docs bridge publishes. A register
+line pointing at this file would be a second description of a decision already
+fully written down, which is the shape § 3 spends its length rejecting.
+
+The cost of that choice, stated because it is real: a reader sweeping the
+register will not meet this refusal, and may re-open the question without
+finding the argument. § 4.2's re-file triggers are written to be legible to
+someone arriving that way.
 
 ### 4.2 What would change the answer
 

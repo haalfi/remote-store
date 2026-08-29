@@ -59,44 +59,6 @@ if evidence changes; these are retired.
   entry because BK-354's PR closes #970, retiring the reporter's own record of the
   ask. Re-file under a new ID if an idle-connection death is ever observed.
 
-- [x] **— arc42 as an architecture-level specification layer** *(refused at admission; never had an ID)*
-  The ask was whether arc42's twelve sections should become an architecture-level
-  spec layer that agents read before proposing a change. Four dispositions were
-  evaluated against the trace corpus at `47f1b16` — the full skeleton, and the
-  three sections that looked thin on a first reading (§ 2 constraints, § 10
-  quality requirements, § 12 glossary). All four refused. Full argument, and
-  every figure with its derivation, in
-  [research](research/research-arc42-evaluation.md).
-  **Diagnosis, carried across because the verdict alone is not re-decidable.**
-  Ten of the twelve sections already have an authoritative home, and four of
-  those (cross-cutting concepts, decisions, quality requirements, risks) are held
-  by artifacts that are normative, identified and gated rather than descriptive.
-  So what arc42 would add is a second prose description of ground already held —
-  the shape [`DRIFT-RULES.md` Rule 1](DRIFT-RULES.md#one-driver) rejects, by a
-  derivation [Rule 8](DRIFT-RULES.md#independence) says would not fail
-  independently, into a `docs/` tree ADR-0006 makes generated and gitignored.
-  The one dense architecture-adjacent tag cluster — the custom-backend guide at
-  5 `misleading` over 11 reads — argues the same way: it is a *second* prose
-  statement of spec 003 drifting from it, already held by
-  `check_custom_backend_guide.py` and BK-332, and its residue is the semantic
-  class no gate reaches. A third statement adds to that class.
-  Refused rather than filed because none fits a section's promise: § 10's
-  requirements already execute as mechanisms rather than prose (research § 2.2
-  row 10 carries the list; it is not restated here, because restating it is how
-  this entry's first two drafts went wrong); § 2's conventions are the nine
-  process documents `CONTRIBUTING.md` § Authoritative Document Format scopes,
-  read in a declared order, with the one measured drift site held by the gate and
-  BK-332; and § 12 is refused on a keyword pass over all 241 negative tags that
-  finds no reader blocked on vocabulary.
-  **Three rounds of PR review corrected the reasoning, never a verdict** — two
-  sections argued from an under-read of this repo, and a citation table whose
-  normalisation was wrong in the direction that flattered the conclusion. Each
-  correction ran toward making adoption look better supported than it was, and
-  all four Rejects survived. Re-file under a new ID on the triggers research
-  § 4.2 names — the first vocabulary-driven `unclear` tag for § 12, guide tags
-  failing to fall after BK-332 runs for § 2, and for § 10 a quality this repo
-  cares about that no mechanism expresses at all.
-
 - [x] **— `ext.cache` stampede guard** *(refused at admission; never had an ID)*
   BK-290 left the stampede — concurrent identical misses each hitting the backend
   — as an out-of-scope follow-up and named ID-218 as its owner. That attribution
