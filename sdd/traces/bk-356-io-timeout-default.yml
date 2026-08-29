@@ -33,8 +33,8 @@ expected_ripples:
 # `git log --oneline origin/master..HEAD`, a4feee9 implements and does not
 # count; ef3edad and b692e12 incorporate review round 1, fb6fbb3 incorporates
 # round 2, 422d119 incorporates round 3 (the closing panel), 1e265fd
-# incorporates round 4, and the round-5 fix commit is named here once it
-# exists. Value is 5 — rounds, not commits, which is why ef3edad and b692e12
+# incorporates round 4, and 192996b incorporates round 5.
+# Value is 5 — rounds, not commits, which is why ef3edad and b692e12
 # count once between them, and why every "Name the round-N fix commit in the
 # trace" commit counts for nothing. That class is stated as a class rather than
 # listed: review round 5 caught the listed form two members short, because the
@@ -267,6 +267,36 @@ phases:
           the same defect shape as the stale census, in the paragraph written to
           record why that defect is tolerated. Replaced by a derivation, which
           is what the census fix had already chosen one round earlier
+        outcome: ok
+      - file: .venv/lib/python3.11/site-packages/paramiko/buffered_pipe.py
+        section: "BufferedPipe.read; Channel._wait_for_send_window"
+        read_type: verify
+        extract: >-
+          Round 5's two passes disagreed on fact — one wanted the source comment
+          brought into line with the spec's new settimeout(0) rationale, the
+          other said that rationale is false — so it was measured against
+          paramiko rather than argued. Both raise only when the operation would
+          have to block (empty read buffer, full send window), so settimeout(0)
+          is non-blocking mode, not "fails immediately regardless of direction",
+          and a send into an open window succeeds. My round-4 "correction" had
+          replaced a narrow true claim with a wide false one, and the source
+          comment I corrected away from was the better of the two. The lesson is
+          the one this test file's own docstring states: a paramiko-behaviour
+          claim is got wrong by reading rather than running
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Repeat-site check"
+        read_type: gate
+        extract: >-
+          Two claim classes were refuted in rounds 3, 4 and 5 — an enumeration of
+          the sites restating the default, and a universal about what this test
+          file's tests do. Each round narrowed the claim and each narrowing was
+          refuted by a case it had not considered. The check says a third reading
+          is not more likely to be exhaustive than the first two and prescribes
+          dropping the carve-out rather than re-scoping it. Applied in round 5:
+          both claim classes deleted rather than narrowed a fourth time. Read one
+          round later than it should have been — the condition for firing was
+          already met at round 4
         outcome: ok
       - file: tests/backends/sftp/test_io_timeout.py
         section: "test_a_transfer_slower_than_the_bound_is_not_interrupted"

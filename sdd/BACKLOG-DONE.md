@@ -267,12 +267,40 @@ if evidence changes; these are retired.
   written — a checklist a reader trusts and that is one entry short is worse than
   no checklist, so it was replaced by a derivation, as the census had been one
   round earlier.
-  **What the loop cost, and what it never found.** Four rounds, 26 findings, and
+  **Round 5 found seven more, again all in round 4's fixes**, and two of them
+  are the ones worth carrying forward. The first: round 4 had "corrected" the
+  `io_timeout=0` rationale into a claim that `settimeout(0)` fails every
+  operation "since it is a property of the channel and not of a direction",
+  which is false. Measured against paramiko rather than argued, because the two
+  passes disagreed — `BufferedPipe.read` and `Channel._wait_for_send_window`
+  each raise only when the operation would have to block, so `settimeout(0)` is
+  non-blocking mode and a send into an open window succeeds. The narrow claim in
+  the source comment, which round 4 had corrected *away from*, was the better of
+  the two. All four sites now state the reachable fact: every SFTP request waits
+  on a reply, so every operation fails at once.
+  The second: **the repeat-site check fired, one round later than it should
+  have.** Two claim classes were refuted in rounds 3, 4 and 5 — an enumeration
+  of the sites restating the default (census stale → checklist five short → "no
+  list is given" printed above a list three short) and a universal about this
+  test file's tests ("the only test asserting a success" → "the only *relay*
+  test" → "every other test makes the bytes stop", false in seven cases). Each
+  round narrowed the claim; each narrowing was refuted by a case it had not
+  considered. Round 5 stopped narrowing and deleted both classes, which is what
+  the check prescribes: they assert nothing a reader acts on, and every version
+  of them was false.
+  **What the loop cost, and what it never found.** Five rounds, 33 findings, and
   **no defect in shipped behaviour**: the implementation is one line, unchanged
   since the first commit, executed against the base branch in both directions by
   two measuring passes. Every finding was in prose or in a test's own claims
-  about itself, and the majority were introduced by fix passes rather than by the
-  original change.
+  about itself, and the overwhelming majority were introduced by fix passes
+  rather than by the original change: rounds 4 and 5 found nothing else at all,
+  and round 3 found only three that were not — two pre-existing spec and guide
+  paragraphs, and one observation about the PR as a whole. The instrument that
+  kept paying was the whole-file lens: none of the fix-pass defects sat in a `+`
+  line of the commit that falsified it. Derivation of the count: 33 top-level
+  review comments on PR #978 (`gh api …/pulls/978/comments --jq '[.[] |
+  select(.in_reply_to_id == null)] | length'`), across rounds of 5, 3, 10, 8
+  and 7.
 
 - [x] **BK-357 — A `SEEK_END` seek hides its own stall, so the futile-close guard cannot arm**
   spec: SIO-011, SIO-010, SFTP-030 · effort: M · audience: user.api, user.api_docs, user.site
