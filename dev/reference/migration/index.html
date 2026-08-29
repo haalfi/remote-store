@@ -11015,6 +11015,361 @@ a request that can fail, and their streams are byte-for-byte unchanged. The
 failure also arrives one <code>io_timeout</code> sooner than before on a stalled
 connection, because the release of a condemned stream no longer pays the bound a
 second time.</p>
+<p><strong>Flat-namespace backends now raise <code>InvalidPath</code> for a wrong-typed path:</strong></p>
+<p>A backend that stores keys rather than nodes — the S3 family, Azure on a flat
+(non-hierarchical) account, and the SQL backends — cannot ask the store whether
+a path is a directory; it has to derive that from a prefix listing. For a long
+time those backends did not, so a file operation aimed at a folder either raised
+<code>NotFound</code> or, worse, reported success. The hierarchical backends (Local, SFTP,
+Memory, Azure on a hierarchical-namespace account, OneDrive) already raised
+<a href="../api/errors/"><code>InvalidPath</code></a> for the same calls. They now all agree:</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Old answer (flat namespace)</th>
+<th>New</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>read</code>, <code>read_bytes</code>, <code>read_seekable</code> on a folder</td>
+<td><code>NotFound</code>, or an empty read of the bare prefix</td>
+<td><code>InvalidPath</code></td>
+</tr>
+<tr>
+<td><code>delete</code> on a folder</td>
+<td>silent no-op</td>
+<td><code>InvalidPath</code></td>
+</tr>
+<tr>
+<td><code>get_file_info</code> on a folder</td>
+<td><code>NotFound</code></td>
+<td><code>InvalidPath</code></td>
+</tr>
+<tr>
+<td><code>delete_folder</code> on a file</td>
+<td><code>NotFound</code></td>
+<td><code>InvalidPath</code></td>
+</tr>
+<tr>
+<td><code>get_folder_info</code> on a file</td>
+<td>counted the file as its own content</td>
+<td><code>InvalidPath</code></td>
+</tr>
+<tr>
+<td><code>move</code> / <code>copy</code> from a folder source</td>
+<td>succeeded</td>
+<td><code>InvalidPath</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>What to change.</strong> <code>InvalidPath</code> and <code>NotFound</code> are both <code>RemoteStoreError</code>
+subclasses, so an <code>except RemoteStoreError</code> clause is unaffected. Two narrower
+cases need action:</p>
+<ul>
+<li>An <code>except NotFound</code> clause standing in for "wrong type" no longer fires
+  there. Catch <code>InvalidPath</code> instead.</li>
+<li>Code that relied on <code>delete(folder)</code> doing nothing, or on a folder-source
+  <code>move</code> / <code>copy</code> reporting success, now gets an error. Those calls were
+  reporting an operation that had not happened: use <code>delete_folder</code> for a
+  folder, and <code>move</code> / <code>copy</code> on files.</li>
+<li><strong><code>missing_ok=True</code> does not suppress it.</strong> A type mismatch outranks the
+  tolerance, so <code>delete(folder, missing_ok=True)</code> and
+  <code>delete_folder(file, missing_ok=True)</code> raise <code>InvalidPath</code> too — the tolerance
+  is for a <em>missing</em> path, not a wrong-typed one. This is the case most likely
+  to newly raise in code you already have: a cleanup loop written as
+  <code>store.delete(p, missing_ok=True)</code> is exactly the idiom that used to get the
+  silent no-op above, and passing <code>missing_ok=True</code> to be tolerant does not
+  exempt it. Hierarchical backends already behaved this way; the flat-namespace
+  ones now match.</li>
+</ul>
+<p><strong>Scope:</strong> the operations above, which are the ones that can <em>fail</em> on a
+wrong-typed path. On a flat namespace a write to a key that shadows a prefix
+still succeeds, so there was no error there to reclassify, and for a wrong-typed
+path that is <strong>not the root</strong>, <code>write</code>, <code>write_atomic</code>, <code>open_atomic</code> and the
+<code>move</code> / <code>copy</code> destination are unchanged. The root is the carve-out and it is
+not a small one: all four now refuse it outright, and a root-destination <code>move</code>
+on <code>S3Boto3Backend</code> used to return cleanly <em>and delete the source</em>. That is the
+next section.</p>
+<p><strong><code>""</code> and <code>"."</code> name the store root on every backend that lists:</strong></p>
+<p>The store root is a folder, it always exists, and both spellings address it.
+Several backends previously disagreed: <code>is_file("")</code> raised rather than
+answering <code>False</code>, <code>get_folder_info(".")</code> raised on Local, Memory and SFTP, and
+an SFTP store's root did not exist at all until its first write.</p>
+<p><strong>Scope:</strong> backends declaring <code>Capability.LIST</code>. "The root is a folder"
+presupposes a backend that <em>has</em> folders, and <code>LIST</code> is how a backend declares
+it enumerates them. <a href="../api/backends/http/"><code>ReadOnlyHttpBackend</code></a> declares no
+<code>LIST</code> — it exposes a flat set of addressable objects with no root to speak of,
+resolves the empty key to its base URL and reads that — so the table below does
+not describe it, and nothing about it changed.</p>
+<p>The table below describes a store whose bucket, container, drive or directory is
+<strong>present</strong>. What the root answers when it is <em>not</em> is the subject of a later
+section, and the first row does not survive that case on three backends.</p>
+<table>
+<thead>
+<tr>
+<th>Call on the store root</th>
+<th>Answer from v0.31.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>exists("")</code>, <code>is_folder("")</code></td>
+<td><code>True</code></td>
+</tr>
+<tr>
+<td><code>is_file("")</code></td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td><code>get_folder_info("")</code></td>
+<td>aggregates the whole store; zero on an empty one</td>
+</tr>
+<tr>
+<td><code>read</code>, <code>get_file_info</code>, <code>delete</code> on the root</td>
+<td><code>InvalidPath</code> — the root is a folder, not a file</td>
+</tr>
+<tr>
+<td><code>write</code>, <code>write_atomic</code>, <code>open_atomic</code> on the root</td>
+<td><code>InvalidPath</code>, decided from the key before any request is issued</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Three backends answer the first row differently once the container is
+missing</strong>, and the guide says so rather than promising past them. Two of the
+three are unfinished; the third is deliberate:</p>
+<ul>
+<li>On <code>S3Backend</code> and <code>S3PyArrowBackend</code>, <code>exists("")</code> and <code>is_folder("")</code> answer
+  <strong><code>False</code></strong> for a bucket that is not there. Those two go to the wire for the
+  root probe and read a missing bucket as "the root is not there". Unfinished:
+  expect it to change.</li>
+<li>On <a href="../api/aio/backends/graph/"><code>GraphBackend</code></a>, <code>exists("")</code> answers <code>False</code>
+  for a drive that is deleted or misconfigured. That one is <strong>by design</strong> — the
+  backend suppresses every <code>404</code> on a probe, and the absent-drive section below
+  builds a detection recipe on exactly that answer. It is not going to change.</li>
+</ul>
+<p><code>get_folder_info("")</code> has its own gap, on a third set of backends, described in
+the absent-container section below. The practical consequence is the one worth
+carrying away: <strong><code>exists("")</code> is not a portable "is my store there?"</strong>, and it
+is not being made into one. See that section for what to call instead.</p>
+<p>The last row changed behaviour rather than an error type. A write addressed at
+the root used to reach the storage system: on SFTP with no <code>base_path</code> it left
+the store's own container directory as a regular <strong>file</strong>, and <code>open_atomic</code>
+returned cleanly having done it. Every spelling that addresses the root is now
+refused — <code>""</code>, <code>"."</code>, <code>"./"</code>, <code>".//"</code>, <code>"./."</code> and <code>"/"</code> — and so is the root as
+a <code>move</code> or <code>copy</code> <strong>destination</strong>, which on <code>S3Boto3Backend</code> used to return
+cleanly <em>and delete the source</em>. Writes to a path <em>under</em> the root are unaffected
+and still create the container where that is the backend's documented behaviour.</p>
+<p><strong><code>max_depth</code> is inert without <code>recursive=True</code> on the <code>Backend</code> ABC:</strong></p>
+<p>Calling a backend's <code>list_files()</code> <strong>directly</strong> with <code>max_depth=</code> and
+<code>recursive=False</code> now yields the immediate children for every value of
+<code>max_depth</code>, identical to omitting it. Some backends previously expanded the
+traversal instead.</p>
+<p><a href="../api/store/"><code>Store.list_files()</code></a> is unaffected and needs no change: it
+normalises <code>max_depth</code> into <code>recursive</code> before delegating, so depth still takes
+full control there. Only code holding a <a href="../api/backend/"><code>Backend</code></a> and calling
+it without going through <code>Store</code> needs to pass <code>recursive=True</code> alongside
+<code>max_depth</code>.</p>
+<p><strong>S3 failures that arrived as the wrong type now arrive as the right one:</strong></p>
+<p>Two classes of S3 failure reached callers misclassified. Both change which
+<code>except</code> clause fires, and neither is a new restriction.</p>
+<p><em>A denied operation is <code>PermissionDenied</code>, not <code>NotFound</code>.</em> On <code>S3Backend</code> and
+<code>S3PyArrowBackend</code> a 403 was read as absence on <code>delete</code>, the <code>move</code> / <code>copy</code>
+source, <code>delete_folder</code> and <code>get_folder_info</code> — and <code>delete(missing_ok=True)</code>
+swallowed it entirely and returned. All of them now raise <code>PermissionDenied</code>,
+the tolerant delete included: <code>missing_ok</code> forgives a missing file, not a
+refused one, and a delete that silently did nothing against a denied bucket
+reported success for work that never happened.</p>
+<p><em>A listing failure is a <code>RemoteStoreError</code>, not a raw <code>botocore.ClientError</code>.</em>
+<code>S3Boto3Backend</code>'s <code>list_files()</code>, <code>list_folders()</code> and <code>iter_children()</code> called
+the paginator without the error mapping the rest of the class uses, so botocore's
+own exception reached the caller untouched and an <code>except RemoteStoreError</code>
+clause caught every backend but this one. <code>glob()</code> reaches the wire through
+<code>list_files</code> and was affected the same way. If you wrote an
+<code>except botocore.exceptions.ClientError</code> for these three listings specifically,
+it no longer fires — catch <code>RemoteStoreError</code>.</p>
+<p><strong>An absent root or container reads as an absent path, not as an error:</strong></p>
+<p>When the directory, bucket, container or table holding your data is not there, a
+store now answers as it would for a store with nothing in it. It used to raise,
+with a type that varied by backend: <code>InvalidPath("Path escapes root directory")</code>
+from a <code>LocalBackend</code> whose root had been deleted, <code>BackendUnavailable</code> from
+<code>SQLBlobBackend</code> against a dropped table, and a <code>NotFound</code>-versus-clean-return
+disagreement between the two deletes elsewhere. This affects <code>LocalBackend</code> with
+a deleted root, and <code>S3Boto3Backend</code>, <code>AzureBackend</code>, <code>AsyncAzureBackend</code> and
+<code>SQLBlobBackend</code> with a missing bucket, container or table.</p>
+<table>
+<thead>
+<tr>
+<th>Call</th>
+<th>Answer from v0.31.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>delete(p, missing_ok=True)</code>, <code>delete_folder(p, missing_ok=True)</code></td>
+<td>return cleanly</td>
+</tr>
+<tr>
+<td><code>delete(p)</code>, <code>delete_folder(p)</code></td>
+<td><code>NotFound</code></td>
+</tr>
+<tr>
+<td><code>read</code>, <code>read_bytes</code>, <code>read_seekable</code>, <code>get_file_info</code>, <code>get_folder_info</code>, <code>move</code> / <code>copy</code> source</td>
+<td><code>NotFound</code></td>
+</tr>
+<tr>
+<td><code>exists</code>, <code>is_file</code>, <code>is_folder</code></td>
+<td><code>False</code></td>
+</tr>
+<tr>
+<td><code>list_files</code>, <code>list_folders</code>, <code>iter_children</code>, <code>glob</code></td>
+<td>empty</td>
+</tr>
+<tr>
+<td><code>exists("")</code>, <code>is_folder("")</code> on the store root</td>
+<td><code>True</code> — the root is a folder whether or not the container is</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The root has not caught up everywhere, and the guide says so rather than
+promising it.</strong> Against a container that is missing, the root should answer
+exactly as it does for an empty one. Three backends give the wrong answer, in
+two opposite directions:</p>
+<table>
+<thead>
+<tr>
+<th>Backend</th>
+<th>What still diverges at the root</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>S3Boto3Backend</code>, <code>AzureBackend</code>, <code>AsyncAzureBackend</code></td>
+<td><code>get_folder_info("")</code> raises <code>NotFound</code> instead of aggregating to zero — the root probes are short-circuited, but <code>get_folder_info</code> is routed through a listing whose 404 is not tolerated there</td>
+</tr>
+<tr>
+<td><code>S3Backend</code>, <code>S3PyArrowBackend</code></td>
+<td><code>exists("")</code> and <code>is_folder("")</code> answer <code>False</code> instead of <code>True</code> — the root probe goes to the wire and reads a missing bucket as "the root is not there"</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>exists("")</code> row above holds for the backends this section names; the second
+row of the table is where that divergence sits, and those two backends are not in
+that list. Treat both as unfinished rather than as the contract: keep a
+<code>NotFound</code> handler if you aggregate the root of a store that may not exist, and
+do not use <code>exists("")</code> as a portable "is my store there?". What to use instead
+is below — and read its own list of exceptions rather than this section's,
+because they are not the same backends.</p>
+<p><strong>What to change.</strong> An <code>except</code> clause that caught the old error to detect a
+store that is not there no longer fires. <a href="../api/store/"><code>Store.ping()</code></a> —
+<code>Backend.check_health()</code> if you hold a backend directly — is the operation whose
+job is to report an unreachable store, and it answers on four of the five
+backends above: <code>NotFound</code> for a deleted <code>LocalBackend</code> root and for a missing
+<code>S3Boto3Backend</code> bucket or <code>AzureBackend</code> / <code>AsyncAzureBackend</code> container. On
+<code>LocalBackend</code> it also reports a root path occupied by something that is not a
+directory, which no other operation can see: the root answers as a folder by
+definition, so nothing else observes what is actually there.</p>
+<p><strong><code>ping()</code> is not yet that check on three backends</strong>, and this holds whether or
+not the backend is one the table above names — the paragraphs that redirected
+you here from the root probes point at this list, not at that one:</p>
+<table>
+<thead>
+<tr>
+<th>Backend</th>
+<th>Why <code>ping()</code> reports healthy anyway</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SQLBlobBackend</code>, <code>SQLQueryBackend</code></td>
+<td>Both check connectivity with a bare <code>SELECT 1</code>, which never looks at the table — so a dropped table, and a discarded in-memory store, both report healthy</td>
+</tr>
+<tr>
+<td><code>S3PyArrowBackend</code></td>
+<td>Its probe asks the object store for the bucket's file info and discards the answer, so a "no such bucket" reply never becomes an error</td>
+</tr>
+</tbody>
+</table>
+<p>Both rows are the same shape: the probe issues a request and does not inspect
+what comes back.</p>
+<p>On the SQL pair, a <code>write()</code> is what surfaces the absence — it still raises
+<code>BackendUnavailable</code>. On <code>S3PyArrowBackend</code> there is nothing to reach for
+instead, so treat "is my store there?" as unanswered on that backend until this
+closes. All of it is a gap in <code>ping()</code> rather than a rule about <code>write()</code>: expect
+it to close, and reach for <code>ping()</code> first everywhere else.</p>
+<p><strong><code>write()</code> is not a portable substitute for it either.</strong> The contract
+deliberately leaves <code>write</code> against an absent container to each backend, and
+they differ in both directions: a write under a deleted <code>LocalBackend</code> root
+recreates the root and succeeds, where the <code>SQLBlobBackend</code> case above raises.</p>
+<p><strong>One case is about <code>close()</code> rather than a missing container.</strong> Disposing an
+in-memory SQLite engine destroys the database rather than releasing a connection
+to it, so on a <code>SQLBlobBackend</code> over in-memory SQLite every operation after
+<code>close()</code> now reports an empty store — including the tolerant deletes, which used
+to raise. If you relied on a tolerant delete raising after <code>close()</code> to catch a
+use-after-close, track the closed state yourself.</p>
+<p><strong>An absent OneDrive or SharePoint drive reads as an absent path:</strong></p>
+<p><a href="../api/aio/backends/graph/"><code>GraphBackend</code></a> and its sync adapter used to answer
+with <code>BackendUnavailable</code> whenever Graph reported <code>404 resourceNotFound</code> — the
+drive-identity code, which any item-by-path URL can return because every such URL
+embeds the drive. A deleted or misconfigured drive therefore failed as a backend
+identity error even on the operations the backend contract decides otherwise. It
+now answers those the way the backend contract decides an absent container:</p>
+<table>
+<thead>
+<tr>
+<th>Call against an absent drive</th>
+<th>Answer from v0.31.0</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>delete(p, missing_ok=True)</code>, <code>delete_folder(p, missing_ok=True)</code></td>
+<td>return cleanly</td>
+</tr>
+<tr>
+<td><code>delete(p)</code>, <code>delete_folder(p)</code>, <code>read</code>, <code>read_bytes</code>, <code>get_file_info</code>, <code>get_folder_info</code>, <code>move</code> / <code>copy</code> source</td>
+<td><code>NotFound</code></td>
+</tr>
+<tr>
+<td><code>list_files</code>, <code>list_folders</code>, <code>iter_children</code></td>
+<td>empty</td>
+</tr>
+<tr>
+<td><code>exists</code>, <code>is_file</code>, <code>is_folder</code></td>
+<td><code>False</code> (unchanged)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>What to change.</strong> If you told a dead drive from a missing item by catching
+<code>BackendUnavailable</code> on a read, that no longer works. Three checks still
+distinguish the two, in this order:</p>
+<ol>
+<li><code>Store.ping()</code> — the operation designed for the question, and the first
+   of the two that still raise <code>BackendUnavailable</code>.</li>
+<li>A <code>write()</code> — the second, so a misconfigured drive still surfaces as a
+   configuration error on the first write against a freshly configured store,
+   which is what a caller runs first. Its mid-upload chunk requests are
+   item-scoped by design, so a drive that disappears <em>during</em> a large upload
+   answers <code>NotFound</code>.</li>
+<li><code>exists("")</code> — a probe rather than an escalation, so it answers <code>False</code>
+   rather than raising, and it is sound <strong>only on a store with no <code>base_path</code></strong>.
+   On a scoped store it addresses the <code>base_path</code> folder instead, where <code>False</code>
+   means "drive gone <em>or</em> <code>base_path</code> folder missing" and distinguishes nothing.</li>
+</ol>
+<p>Resolving the drive itself is unchanged: a store whose drive cannot be resolved
+at all still fails as a configuration error before any operation runs.</p>
+<p><strong>Both replacements are bounded by what your tier reports.</strong> Some tiers, consumer
+OneDrive among them, answer a nonexistent drive with <code>itemNotFound</code> rather than
+<code>resourceNotFound</code>. There, <code>ping()</code> and <code>write()</code> distinguish nothing either —
+and nothing did before this release, because the escalation never fired.</p>
+<p><strong><code>GraphBackend(base_path=".")</code> now means the drive root.</strong> It used to scope the
+whole store under a drive folder literally named <code>.</code> and send every write there.
+<code>"./"</code>, <code>".//"</code> and any interior <code>.</code> segment normalise the same way, so
+<code>base_path="a/./b"</code> scopes to <code>a/b</code>. A drive folder genuinely named <code>.</code> can no
+longer be named by <code>base_path</code>; it stays reachable as an ordinary key under a
+<code>base_path</code> that is not itself a root spelling. Every other <code>base_path</code> value is
+unaffected.</p>
 <h2 id="v0291-to-v0300">v0.29.1 to v0.30.0<a class="headerlink" href="#v0291-to-v0300" title="Permanent link">&para;</a></h2>
 <p><strong>SFTP <code>write()</code> / <code>write_atomic()</code> no longer return a <code>last_modified</code> timestamp:</strong></p>
 <p>To cut per-operation round trips, the SFTP backend dropped the post-write
