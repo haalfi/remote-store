@@ -331,6 +331,7 @@ compliant the day before.
   | S3, S3-PyArrow | `FolderInfo(file_count=0)` | **`False`** | **`False`** |
   | S3-Boto3, Azure (sync and async) | **raises `NotFound`** | `True` | `True` |
   | SQLBlob | `FolderInfo(file_count=0)` | `True` | `True` |
+
   SQLBlob's row is what compliance looks like; BUG-246 brought it there.
   **Seven class-cells breach**, across three columns and five classes — counted
   by expanding each grouped row over its classes: the first row's two bold
@@ -373,6 +374,7 @@ compliant the day before.
   | S3, S3-Boto3, Azure (sync and async), Local | raises `NotFound` |
   | S3-PyArrow, SQLBlob, **SQLQuery** | returns cleanly |
   | ReadOnlyHttp | raises `BackendUnavailable` — wrong type, not a missing raise |
+
   Both SQL backends inherit the same bare `SELECT 1` on
   `_SQLAlchemyBaseBackend`: it verifies connectivity and never looks at the table
   or the queried relation, so a dropped table and a discarded in-memory store both
@@ -406,6 +408,7 @@ compliant the day before.
   | --- | --- |
   | S3, S3-PyArrow | yields 0 items, then returns cleanly |
   | S3-Boto3, Azure, Async Azure | raises `NotFound` after the first page — fixed by BUG-246 |
+
   Measured for `list_files` on a page of keys; re-measured for all five listings
   on both page shapes (keys-only and prefixes-only) once the bound moved onto the
   page, which is the parametrisation
