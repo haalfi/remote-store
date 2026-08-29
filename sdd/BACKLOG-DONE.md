@@ -169,6 +169,97 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-261 — Two breaking changes are on master with no upgrade path, and the obligation is stated where their authors never read**
+  spec: — · effort: S · audience: user.api_docs, user.site, contributor.tooling
+  **The item's own figure had moved before the work started, which is the first
+  thing this entry records.** It was filed at three `**Breaking**`
+  `[Unreleased]` entries with one migration section between them. Re-derived at
+  implementation: `rg -n 'Breaking' CHANGELOG.md` returns **5** hits, **4** of
+  them in `[Unreleased]` — BK-356, BK-357, BUG-248, BK-324 — and the fifth
+  inline in the 0.29.0 body. BK-356 landed after the item was filed and wrote
+  its own `migration.md` section, so the rate at the start of this work was **2
+  of 4**, not 1 of 3. The uncovered two were the ones the item named: BUG-248
+  and BK-324.
+  **Shipped:** both, plus a third section the item's softer half asked to be
+  adjudicated rather than assumed. Under the existing
+  `## v0.30.0 to v0.31.0` heading, five subsections now stand where the two SFTP
+  ones did: the flat-namespace wrong-type `InvalidPath` roster, the root-path
+  answers (`""` / `"."` on every backend, including the write refusal BUG-259
+  landed), the `max_depth`-without-`recursive` rule for direct `Backend`
+  callers, one shared section covering BUG-247, BUG-246 and BUG-243 — an absent
+  root or container reading as absence, with `Store.ping()` named as the
+  replacement for the `except` clause that stops firing — and the absent-drive
+  reclassification with its three-check detection order and the
+  `GraphBackend(base_path=".")` renormalisation.
+  **The three unmarked entries were adjudicated as owing a section, not
+  waived.** BUG-247 and BUG-246 move an absent root or container from
+  `InvalidPath` / `BackendUnavailable` to `NotFound` / `False` / empty, and
+  BUG-243 makes a tolerant delete return after `close()` on an in-memory
+  `SQLBlobBackend` where it used to raise. All three break an existing `except`
+  clause, which is the test `CONTRIBUTING.md` § Release Phase 1 states. One
+  shared section rather than three, because they are one behavioural theme and
+  three copies of "your `except` clause stops firing" is the shape that goes
+  stale unevenly.
+  **`Store.ping()`, not `check_health()`, is what that section tells a user to
+  call** — a correction made against the source, not the item. `check_health()`
+  is the `Backend` method; `Store` exposes it as `ping()`
+  (`src/remote_store/_store.py:824`), and every prior artifact describing this
+  work, this item included, named the backend method.
+  **Of the item's three dispositions, the *ruling* shipped and the other two did
+  not.** `CONTRIBUTING.md` § Release Phase 1 no longer says a breaking PR "may
+  write its own section"; it says the PR owes it, and points at the new
+  ripple-check **Breaking change** row as where an author meets that obligation.
+  The Phase 1 line keeps the two jobs a checklist is actually placed to do:
+  backstop what arrived without a section, and decide the softer half. The row
+  lands in **both** ripple presentations, per `check_ripple_parity.py`, directly
+  after **CHANGELOG entry** in each.
+  **A third placement was considered and left out.**
+  `.github/PULL_REQUEST_TEMPLATE.md` already carries a `Breaking change` type
+  checkbox and a conditional `CHANGELOG.md updated (if user-facing)` checklist
+  line, so an author who ticks that box still meets nothing saying what it owes,
+  and one parallel line there is the highest-leverage placement left. Not taken:
+  the ruling as scoped was two artifacts, and a third restatement is another
+  copy to keep in step for a rule whose authority is now the ripple-check row.
+  Worth a new ID if the row proves not to reach authors.
+  - *Tooling* (a gate deriving the expected `## v<current> to v<next minor>`
+    heading from the `[Unreleased]` markers and `bump-my-version`'s
+    `current_version`) was **declined for this PR, not decided against.** The
+    diagnosis stands and the wiring trap BK-333 records still applies — both
+    files sit in `ci.yml`'s `DOCS_PAT`, not `CODE_PAT`. Re-file under a new ID
+    if the ruling misses.
+  - *Marker survival* (keeping `**Breaking**` through Phase 2's condensation, so
+    anything can audit history rather than only the current window) likewise
+    declined here: it changes the convention of all 38 released sections
+    (`rg -c '^## \[' CHANGELOG.md` returns 39, one of them `[Unreleased]`),
+    which is a larger blast radius than the item's close condition needs.
+  **The row's shape prejudges BK-346's shared question, and says so.** BK-346
+  carries N-rows-versus-widened-rows for its four row-wanting instances and has
+  not answered it; this is a new row. Chosen because widening **CHANGELOG
+  entry** would leave an author asking "I am making a breaking change" to
+  recognise themselves in a row named for something else — the exact adjacency
+  failure BK-346 catalogues. If BK-346 settles on widened rows, this row folds
+  into that answer; the migration sections do not depend on it either way.
+  **The shallow-checkout instrument survived, and its output moved.** The item
+  warns that the graft SHA differs per checkout and that the check is the
+  command, never the SHA: it recorded `21d2329` from the trace and `0f43910`
+  from its own checkout, and this one grafts at `0742baf` and `7931c7d`
+  (`cat .git/shallow`). `git rev-parse --is-shallow-repository` is still `true`;
+  `git merge-base --is-ancestor 0742baf 7931c7d` succeeds, so the v0.30.0
+  release commit is a descendant of the graft and the window after it is whole.
+  `git rev-list --count 7931c7d..HEAD` is **49** (the item recorded 46), and
+  `git log --oneline 7931c7d..HEAD -- docs-src/reference/migration.md` returns
+  **two** commits, `165bd00` for BK-356 and `47f1b16` for BK-357, where the item
+  recorded one. Both figures moved for the same reason the rate did.
+  **What the published guide still cannot do**, unchanged by this work:
+  `scripts/check_no_tracker_refs.py` scans every `.md` under `docs-src/` and
+  fails any `PREFIX-NNN`, so no section can cite the entry it answers. The five
+  new subsections are therefore written by what a caller observes, and
+  per-entry accountability lives on the `sdd/` side — here and in the trace.
+  Same file and same window as **ID-252**, which lints the `[Unreleased]`
+  section's own integrity and never reads `migration.md`; that item is
+  unaffected by this closure and its cross-reference was repaired in the same
+  commit.
+
 - [x] **BK-356 — `io_timeout` should default to a real bound, not `None`**
   spec: SFTP-030, SFTP-005 · effort: S · audience: user.api, user.api_docs, user.site
   BK-354 shipped `io_timeout` defaulting to `None`, so the stall it exists to

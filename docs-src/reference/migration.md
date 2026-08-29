@@ -112,6 +112,166 @@ failure also arrives one `io_timeout` sooner than before on a stalled
 connection, because the release of a condemned stream no longer pays the bound a
 second time.
 
+**Flat-namespace backends now raise `InvalidPath` for a wrong-typed path:**
+
+A backend that stores keys rather than nodes — the S3 family, Azure on a flat
+(non-hierarchical) account, and the SQL backends — cannot ask the store whether
+a path is a directory; it has to derive that from a prefix listing. For a long
+time those backends did not, so a file operation aimed at a folder either raised
+`NotFound` or, worse, reported success. The hierarchical backends (Local, SFTP,
+Memory, Azure on a hierarchical-namespace account, OneDrive) already raised
+[`InvalidPath`](api/errors.md) for the same calls. They now all agree:
+
+| Operation | Old answer (flat namespace) | New |
+|-----------|-----------------------------|-----|
+| `read`, `read_bytes`, `read_seekable` on a folder | `NotFound`, or an empty read of the bare prefix | `InvalidPath` |
+| `delete` on a folder | silent no-op | `InvalidPath` |
+| `get_file_info` on a folder | `NotFound` | `InvalidPath` |
+| `delete_folder` on a file | `NotFound` | `InvalidPath` |
+| `get_folder_info` on a file | counted the file as its own content | `InvalidPath` |
+| `move` / `copy` from a folder source | succeeded | `InvalidPath` |
+
+**What to change.** `InvalidPath` and `NotFound` are both `RemoteStoreError`
+subclasses, so an `except RemoteStoreError` clause is unaffected. Two narrower
+cases need action:
+
+- An `except NotFound` clause standing in for "wrong type" no longer fires
+  there. Catch `InvalidPath` instead.
+- Code that relied on `delete(folder)` doing nothing, or on a folder-source
+  `move` / `copy` reporting success, now gets an error. Those calls were
+  reporting an operation that had not happened: use `delete_folder` for a
+  folder, and `move` / `copy` on files.
+
+**Scope:** the operations above, which are the ones that can *fail* on a
+wrong-typed path. On a flat namespace a write to a key that shadows a prefix
+still succeeds, so there was no error there to reclassify, and `write`,
+`write_atomic`, `open_atomic` and the `move` / `copy` destination are unchanged.
+
+**`""` and `"."` name the store root on every backend:**
+
+The store root is a folder, it always exists, and both spellings address it.
+Several backends previously disagreed: `is_file("")` raised rather than
+answering `False`, `get_folder_info(".")` raised on Local, Memory and SFTP, and
+an SFTP store's root did not exist at all until its first write.
+
+| Call on the store root | Answer from v0.31.0 |
+|------------------------|---------------------|
+| `exists("")`, `is_folder("")` | `True` |
+| `is_file("")` | `False` |
+| `get_folder_info("")` | aggregates the whole store; zero on an empty one |
+| `read`, `get_file_info`, `delete` on the root | `InvalidPath` — the root is a folder, not a file |
+| `write`, `write_atomic`, `open_atomic` on the root | `InvalidPath`, decided from the key before any request is issued |
+
+The last row changed behaviour rather than an error type. A write addressed at
+the root used to reach the storage system: on SFTP with no `base_path` it left
+the store's own container directory as a regular **file**, and `open_atomic`
+returned cleanly having done it. Every spelling that addresses the root is now
+refused — `""`, `"."`, `"./"`, `".//"`, `"./."` and `"/"` — and so is the root as
+a `move` or `copy` **destination**, which on `S3Boto3Backend` used to return
+cleanly *and delete the source*. Writes to a path *under* the root are unaffected
+and still create the container where that is the backend's documented behaviour.
+
+**`max_depth` is inert without `recursive=True` on the `Backend` ABC:**
+
+Calling a backend's `list_files()` **directly** with `max_depth=` and
+`recursive=False` now yields the immediate children for every value of
+`max_depth`, identical to omitting it. Some backends previously expanded the
+traversal instead.
+
+[`Store.list_files()`](api/store.md) is unaffected and needs no change: it
+normalises `max_depth` into `recursive` before delegating, so depth still takes
+full control there. Only code holding a [`Backend`](api/backend.md) and calling
+it without going through `Store` needs to pass `recursive=True` alongside
+`max_depth`.
+
+**An absent root or container reads as an absent path, not as an error:**
+
+When the directory, bucket, container or table holding your data is not there, a
+store now answers as it would for a store with nothing in it. It used to raise,
+with a type that varied by backend: `InvalidPath("Path escapes root directory")`
+from a `LocalBackend` whose root had been deleted, `BackendUnavailable` from
+`SQLBlobBackend` against a dropped table, and a `NotFound`-versus-clean-return
+disagreement between the two deletes elsewhere. This affects `LocalBackend` with
+a deleted root, and `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` and
+`SQLBlobBackend` with a missing bucket, container or table.
+
+| Call | Answer from v0.31.0 |
+|------|---------------------|
+| `delete(p, missing_ok=True)`, `delete_folder(p, missing_ok=True)` | return cleanly |
+| `delete(p)`, `delete_folder(p)` | `NotFound` |
+| `read`, `read_bytes`, `read_seekable`, `get_file_info`, `get_folder_info`, `move` / `copy` source | `NotFound` |
+| `exists`, `is_file`, `is_folder` | `False` |
+| `list_files`, `list_folders`, `iter_children`, `glob` | empty |
+| the store root | as an empty store: `exists("")` is `True`, `get_folder_info("")` aggregates to zero |
+
+**What to change.** An `except` clause that caught the old error to detect a
+store that is not there no longer fires. Use [`Store.ping()`](api/store.md) —
+`Backend.check_health()` if you hold a backend directly. That is the operation
+whose job is to report an unreachable store, and on `LocalBackend` it now also
+reports a root path occupied by something that is not a directory, which no
+other operation can see: the root answers as a folder by definition, so nothing
+else observes what is actually there.
+
+**Do not substitute `write()` for that check.** The contract deliberately leaves
+`write` against an absent container to each backend, and they differ: a write
+under a deleted `LocalBackend` root recreates the root and succeeds, while a
+write against a dropped `SQLBlobBackend` table still raises `BackendUnavailable`.
+
+**One case is about `close()` rather than a missing container.** Disposing an
+in-memory SQLite engine destroys the database rather than releasing a connection
+to it, so on a `SQLBlobBackend` over in-memory SQLite every operation after
+`close()` now reports an empty store — including the tolerant deletes, which used
+to raise. If you relied on a tolerant delete raising after `close()` to catch a
+use-after-close, track the closed state yourself.
+
+**An absent OneDrive or SharePoint drive reads as an absent path:**
+
+[`GraphBackend`](api/aio/backends/graph.md) and its sync adapter used to answer
+with `BackendUnavailable` whenever Graph reported `404 resourceNotFound` — the
+drive-identity code, which any item-by-path URL can return because every such URL
+embeds the drive. A deleted or misconfigured drive therefore failed as a backend
+identity error even on the operations the backend contract decides otherwise. It
+now answers those the way every other backend answers an absent container:
+
+| Call against an absent drive | Answer from v0.31.0 |
+|------------------------------|---------------------|
+| `delete(p, missing_ok=True)`, `delete_folder(p, missing_ok=True)` | return cleanly |
+| `delete(p)`, `delete_folder(p)`, `read`, `read_bytes`, `get_file_info`, `get_folder_info`, `move` / `copy` source | `NotFound` |
+| `list_files`, `list_folders`, `iter_children` | empty |
+| `exists`, `is_file`, `is_folder` | `False` (unchanged) |
+
+**What to change.** If you told a dead drive from a missing item by catching
+`BackendUnavailable` on a read, that no longer works. Three checks still
+distinguish the two, in this order:
+
+1. `Store.ping()` — the operation designed for the question, and the first
+   of the two that still raise `BackendUnavailable`.
+2. A `write()` — the second, so a misconfigured drive still surfaces as a
+   configuration error on the first write against a freshly configured store,
+   which is what a caller runs first. Its mid-upload chunk requests are
+   item-scoped by design, so a drive that disappears *during* a large upload
+   answers `NotFound`.
+3. `exists("")` — a probe rather than an escalation, so it answers `False`
+   rather than raising, and it is sound **only on a store with no `base_path`**.
+   On a scoped store it addresses the `base_path` folder instead, where `False`
+   means "drive gone *or* `base_path` folder missing" and distinguishes nothing.
+
+Resolving the drive itself is unchanged: a store whose drive cannot be resolved
+at all still fails as a configuration error before any operation runs.
+
+**Both replacements are bounded by what your tier reports.** Some tiers, consumer
+OneDrive among them, answer a nonexistent drive with `itemNotFound` rather than
+`resourceNotFound`. There, `ping()` and `write()` distinguish nothing either —
+and nothing did before this release, because the escalation never fired.
+
+**`GraphBackend(base_path=".")` now means the drive root.** It used to scope the
+whole store under a drive folder literally named `.` and send every write there.
+`"./"`, `".//"` and any interior `.` segment normalise the same way, so
+`base_path="a/./b"` scopes to `a/b`. A drive folder genuinely named `.` can no
+longer be named by `base_path`; it stays reachable as an ordinary key under a
+`base_path` that is not itself a root spelling. Every other `base_path` value is
+unaffected.
+
 ## v0.29.1 to v0.30.0
 
 **SFTP `write()` / `write_atomic()` no longer return a `last_modified` timestamp:**

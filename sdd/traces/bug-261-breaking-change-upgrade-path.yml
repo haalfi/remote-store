@@ -1,0 +1,209 @@
+id: BUG-261
+title: "Two breaking changes are on master with no upgrade path, and the obligation is stated where their authors never read"
+trigger: >-
+  Entries in CHANGELOG.md's [Unreleased] section carried a **Breaking** marker
+  with no matching section in docs-src/reference/migration.md, and the rule
+  requiring one lived only in CONTRIBUTING.md's release checklist — read by the
+  releaser, not by the author of the breaking PR. The ripple-check table, which
+  that author does read before starting, had no row for a breaking change.
+source_items:
+  - BUG-261
+  - BK-357
+  - BUG-248
+  - BK-324
+  - BUG-247
+  - BUG-246
+  - BUG-243
+audience:
+  - user.api_docs
+  - user.site
+  - contributor.tooling
+expected_ripples:
+  - sdd/backlogid.json
+surprising_ripples:
+  # The item's own body named ID-252 as reading the same CHANGELOG section, so
+  # closing it falsified a present-tense "both stand" sentence three sections
+  # away. Found by the completing-work sweep, not by any ripple-check row —
+  # which is BK-346 instance 6's class exactly.
+  - sdd/BACKLOG.md
+# review_rounds is filled post-merge from the commits on this branch; naming the
+# commits is required by _schema.yml's review_rounds description. At authoring
+# time the branch carries one implementation commit and no review has run, so
+# the field is omitted rather than asserted as 0.
+phases:
+  - id: orient
+    name: Orient on the item and re-derive its figures
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "5 (A release cannot ship a surprise) / BUG-261"
+        read_type: gate
+        extract: >-
+          Close condition (write the two missing migration sections), the three
+          dispositions, and the shallow-checkout warning about deriving the rate
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: gate
+        extract: >-
+          Re-derive the **Breaking** count rather than trusting the item.
+          `rg -n 'Breaking' CHANGELOG.md` returns 5, four in [Unreleased]
+          (BK-356, BK-357, BUG-248, BK-324) against the item's three — BK-356
+          landed after filing. Confirms the item's own advice that a figure is
+          re-run, not recalled.
+        outcome: ok
+      - file: docs-src/reference/migration.md
+        section: "v0.30.0 to v0.31.0"
+        read_type: gate
+        extract: >-
+          The section already covers BK-356 and BK-357, so the rate was 2 of 4
+          at the start of the work, not the 1 of 3 the item states. The two
+          uncovered entries were still the two the item named.
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Release Phase 1"
+        read_type: gate
+        extract: >-
+          The obligation as written — "a PR making the break **may** write its
+          own section" — and the bump table it leans on for the version pair
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index / Release & meta"
+        read_type: gate
+        extract: >-
+          Confirm the diagnosed absence: rows for Bug fix, CHANGELOG entry and
+          Version number, none for a breaking change
+        outcome: ok
+  - id: design
+    name: Settle the dispositions with the user
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "5 / BUG-261 (Three dispositions) and 6 / BK-346"
+        read_type: reference
+        extract: >-
+          The row's shape is BK-346's unanswered shared question. Put ruling
+          versus tooling versus marker-survival, the row shape, and the softer
+          half's three unmarked candidates to the user as one interview.
+          Answers: ruling only; a new "Breaking change" row; one shared section
+          for BUG-247, BUG-246 and BUG-243.
+        outcome: ok
+  - id: docs
+    name: Write the upgrade paths
+    steps:
+      - file: sdd/adrs/0038-absent-container-outranks-drive-identity.md
+        section: "Decision, Consequences"
+        read_type: gate
+        extract: >-
+          BUG-248's per-scope answers, the four callers keeping the escalation,
+          and the check_health → write → exists("") order with the base_path
+          bound on the third
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021, BE-025, BE-029, BE-017"
+        read_type: gate
+        extract: >-
+          BK-324's roster for the two type-mismatch rows (read, read_bytes,
+          read_seekable, delete, get_file_info, delete_folder, get_folder_info,
+          move/copy source) and why the write half is excluded on a flat
+          namespace; BE-029's root answers and the write-to-root refusal
+        outcome: ok
+      - file: sdd/specs/037-depth-limited-listing.md
+        section: "DEPTH-003"
+        read_type: reference
+        extract: >-
+          max_depth is inert at recursive=False on the Backend ABC, and Store
+          normalises before delegating — so the break reaches direct Backend
+          callers only
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BUG-247, BUG-246, BUG-243, BK-324"
+        read_type: reference
+        extract: >-
+          Which backends each absence fix reaches, and that SQLBlob's write
+          keeps the BackendUnavailable escalation because BE-021 § Reach
+          declines to decide write
+        outcome: ok
+      - file: tests/backends/sqlblob/test_absent_table.py
+        section: "test_write_still_reports_a_backend_failure"
+        read_type: verify
+        extract: >-
+          Confirm write still raises against a dropped table before telling
+          users not to use write as a reachability probe. Paired with
+          tests/backends/local/test_absent_root.py, where the same call
+          recreates the root and succeeds — the two together are why the guide
+          says the answer is backend-specific rather than naming one.
+        outcome: ok
+      - file: src/remote_store/_store.py
+        section: "Store.ping()"
+        read_type: verify
+        extract: >-
+          Retrospective: the item, both backlog entries and the ADR all name
+          `check_health()`, which is the Backend method. Store exposes it as
+          `ping()`. Writing the section straight from those artifacts would have
+          told users to call a method the Store facade does not have — caught by
+          opening the source, not by re-reading the prose.
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules"
+        read_type: gate
+        extract: >-
+          Rule 6 (sourced code examples) is why the new subsections carry tables
+          rather than fences: a before/after pair against a released version
+          cannot execute in CI
+        outcome: ok
+  - id: wire
+    name: Move the obligation to where the author reads
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Release Phase 1"
+        read_type: gate
+        extract: >-
+          Promote the permission to an obligation on the breaking PR; keep the
+          line as backstop and as owner of the softer half
+        outcome: ok
+      - file: scripts/check_ripple_parity.py
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          A row must land in both presentations, under the same section and in
+          the same relative order — a Detailed-only row that is not a sync/async
+          expansion fails the gate
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index and Detailed checklist / Release & meta"
+        read_type: gate
+        extract: >-
+          Add the Breaking change row after CHANGELOG entry in both, naming both
+          artifacts, the knowable version pair, and the no-tracker-ID bound on
+          the published guide
+        outcome: ok
+  - id: verify
+    name: Ripple-check and close
+    steps:
+      - file: scripts/check_no_tracker_refs.py
+        section: "_TRACKER_RE, _EXTERNAL_PREFIXES"
+        read_type: verify
+        extract: >-
+          The new docs-src prose cites no PREFIX-NNN coordinate; class names and
+          Graph's own error codes are not tracker shapes
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works / Completing work"
+        read_type: gate
+        extract: >-
+          Delete from BACKLOG.md, add to BACKLOG-DONE.md under ## Unreleased in
+          the same commit, then sweep every site asserting the item is tracked
+          and fix by tense
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "5 (Closes when) and 6 (ID-252)"
+        read_type: verify
+        extract: >-
+          Two present-tense sentences went stale on closure: section 5's Closes
+          when named BUG-261 as an open condition, and ID-252 said the two
+          surfaces "both stand". Both repaired in the same commit.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Detailed checklist / Bug fix, CHANGELOG entry, Backlog item touched"
+        read_type: verify
+        extract: "BACKLOG item moved, CHANGELOG stub added, trace shipped in the same PR"
+        outcome: ok
