@@ -418,8 +418,10 @@ compliant the day before.
   scoped to a stale enumeration reaches five of six surfaces. That section already
   carries this item's bound in published prose — a table naming all three
   backends measured above, `SQLBlobBackend` and `SQLQueryBackend` on the bare
-  `SELECT 1` and `S3PyArrowBackend` on the same miss one layer out, plus a
-  statement that "is my store there?" is unanswered on `S3PyArrowBackend` today —
+  `SELECT 1` and `S3PyArrowBackend` on a `get_file_info(bucket)` whose result
+  `check_health` discards (`_s3_pyarrow.py:188-190`), which is the same shape
+  stated without this file's shorthand, plus a statement that "is my store
+  there?" is unanswered on `S3PyArrowBackend` today —
   so closing this item edits that table rather than discovering it. It stops at
   the three: `ReadOnlyHttpBackend`'s wrong-type raise is not published anywhere,
   because no migration section names that backend.

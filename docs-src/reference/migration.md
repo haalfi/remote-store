@@ -302,16 +302,17 @@ you here from the root probes point at this list, not at that one:
 
 | Backend | Why `ping()` reports healthy anyway |
 |---|---|
-| `SQLBlobBackend`, `SQLQueryBackend` | Both verify connectivity with a bare `SELECT 1` that never looks at the table, so a dropped table and a discarded in-memory store report healthy |
-| `S3PyArrowBackend` | Its probe misses an absent bucket for the same reason one layer out |
+| `SQLBlobBackend`, `SQLQueryBackend` | Both check connectivity with a bare `SELECT 1`, which never looks at the table — so a dropped table, and a discarded in-memory store, both report healthy |
+| `S3PyArrowBackend` | Its probe asks the object store for the bucket's file info and discards the answer, so a "no such bucket" reply never becomes an error |
 
-On the SQL pair, a `write()` is what surfaces the absence: it still raises
-`BackendUnavailable`. On `S3PyArrowBackend` there is no substitute to recommend —
-`ping()` reports healthy, and what `write()` does against an absent bucket there
-is not something this project has measured, so this guide does not prescribe it.
-Treat "is my store there?" as unanswered on that backend for now. All of this is
-a gap in `ping()` rather than a rule about `write()`: expect it to close, and
-reach for `ping()` first everywhere else.
+Both rows are the same shape: the probe issues a request and does not inspect
+what comes back.
+
+On the SQL pair, a `write()` is what surfaces the absence — it still raises
+`BackendUnavailable`. On `S3PyArrowBackend` there is nothing to reach for
+instead, so treat "is my store there?" as unanswered on that backend until this
+closes. All of it is a gap in `ping()` rather than a rule about `write()`: expect
+it to close, and reach for `ping()` first everywhere else.
 
 **`write()` is not a portable substitute for it either.** The contract
 deliberately leaves `write` against an absent container to each backend, and
