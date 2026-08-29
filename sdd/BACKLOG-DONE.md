@@ -45,6 +45,52 @@ a decision *about* a diagnosis is still a decision and deleting both is how the
 same idea returns with the argument had from scratch. Re-file under a **new** ID
 if evidence changes; these are retired.
 
+- [x] **— A gate binding a `**Breaking**` entry to a migration section** *(refused as BUG-261's second disposition; never had an ID)*
+  BUG-261 offered it as one of three dispositions: if any `[Unreleased]` entry
+  contains `**Breaking**`, `docs-src/reference/migration.md` must carry a
+  `## v<current> to v<next minor>` heading, both halves derived
+  ([Rule 3](DRIFT-RULES.md#claim-space)) — the entries parsed from the section,
+  the current version from the `pyproject.toml` field `bump-my-version` owns,
+  the next from `CONTRIBUTING.md` § When to bump. Wiring, if it is ever built:
+  both files sit in `ci.yml`'s `DOCS_PAT` and not `CODE_PAT`, so a
+  CHANGELOG-only diff runs `docs-gate` and not `lint` — the trap BK-333
+  documents, and reaching only one leaves the check unreachable for the diff
+  class that invalidates it.
+  **Refused because its measurable subset is the half already least likely to
+  go wrong, and its bounds are wide.** A gate keys on the marker, so it measures
+  the marked entries only; BUG-261's own re-derivation found **6** softer-half
+  candidates against 4 marked ones, and none of the six is reachable by any
+  marker — the miss rate is larger than the catch. It can also only check that a
+  *section for the version pair* exists, never that the section covers the entry
+  in question, because `scripts/check_no_tracker_refs.py` forbids the published
+  guide from citing the entry it answers. So a green gate would mean "some
+  section exists for this release", which BK-357 already satisfied while BUG-248
+  and BK-324 went uncovered — the exact defect BUG-261 was filed for would have
+  passed it. The ruling that shipped instead puts the obligation in the
+  ripple-check row the author reads before starting, which reaches both halves.
+  Re-file under a new ID if a marked entry ships without a section again; that
+  is the observation this refusal is betting against, and it is checkable at any
+  release's Phase 1.
+
+- [x] **— Keeping the `**Breaking**` marker through CHANGELOG condensation** *(refused as BUG-261's third disposition; never had an ID)*
+  BUG-261's third disposition, and a real observation: the marker exists **only**
+  while a section is unreleased, because `CONTRIBUTING.md` § Release Phase 2
+  condenses `[Unreleased]` into `### Added` / `### Changed` prose and drops it.
+  That is why 38 released sections carry one bold `**Breaking**` between them
+  (`rg -c '^## \[' CHANGELOG.md` returns 39, one of them `[Unreleased]`), and it
+  means nothing can audit breaking changes across history — only the current
+  window.
+  **Refused on blast radius against demonstrated need.** Preserving the marker
+  changes the shape of every released section and the release skill that writes
+  them, and the only use named for it is a hypothetical retrospective audit that
+  nobody has asked to run. Under [§ Admission test](BACKLOG.md#how-this-file-works)
+  that is an idea with no demonstrated value, so it is refused rather than filed
+  and carried. The narrower need it would serve — knowing whether *this* release's
+  breaking entries have upgrade paths — is answered by Phase 1 while the section
+  is still unreleased and the marker is still there. Re-file under a new ID if an
+  audit of historical breaking changes is ever actually wanted; the diagnosis
+  above is what it would start from.
+
 - [x] **— SFTP `keepalive_interval`** *(refused at admission; never had an ID)*
   The second of the two asks in [issue #970](https://github.com/haalfi/remote-store/issues/970),
   which the reporter themself scoped as "secondary, and clearly lower priority"
@@ -168,6 +214,187 @@ if evidence changes; these are retired.
 ---
 
 ## Unreleased
+
+- [x] **BUG-261 — Two breaking changes are on master with no upgrade path, and the obligation is stated where their authors never read**
+  spec: — · effort: S · audience: user.api_docs, user.site, contributor.tooling
+  **The item's own figure had moved before the work started, which is the first
+  thing this entry records.** It was filed at three `**Breaking**`
+  `[Unreleased]` entries with one migration section between them. Re-derived at
+  implementation: `rg -n 'Breaking' CHANGELOG.md` returns **5** hits, **4** of
+  them in `[Unreleased]` — BK-356, BK-357, BUG-248, BK-324 — and the fifth
+  inline in the 0.29.0 body. BK-356 landed after the item was filed and wrote
+  its own `migration.md` section, so the rate at the start of this work was **2
+  of 4**, not 1 of 3. The uncovered two were the ones the item named: BUG-248
+  and BK-324.
+  **Shipped:** both, plus a third section the item's softer half asked to be
+  adjudicated rather than assumed. Under the existing
+  `## v0.30.0 to v0.31.0` heading, **six** new subsections join the SFTP
+  material already there. Derivation, and **the instrument had to be fixed
+  before the figure was right**: counting the bold `**…:**` leads between that
+  heading and the next with a single-line pattern returns 9 here and 3 on
+  master, and both undercount by one — BK-356's "If your server legitimately
+  pauses for minutes…" lead wraps across two source lines, so `^\*\*.*:\*\*$`
+  never matches it. Re-run with a multiline pattern
+  (`(?ms)^\*\*(?:(?!\*\*).)*?:\*\*$`) over `git show
+  origin/master:docs-src/reference/migration.md` and over the working copy: **4**
+  pre-existing leads and **10** now, so **6** are new. The 6 was right and the
+  9/3 pair was not, which is the failure mode
+  [principle 9](../CLAUDE.md#principles) names — re-reading the sentence does
+  not catch a silently undercounting instrument, and the two wrapped-lead
+  siblings (lines 18 and 29 on master) are structurally the same kind of lead,
+  so "the first carrying a second lead for its opt-out" was counting one of a
+  pair. The
+  six are the flat-namespace wrong-type `InvalidPath` roster; the root-path
+  answers for `""` / `"."`, scoped to backends declaring `Capability.LIST` and
+  carrying the write refusal BUG-259 landed; the
+  `max_depth`-without-`recursive` rule for direct `Backend` callers; the two S3
+  misclassifications (BUG-242, BUG-249); one shared section covering BUG-247,
+  BUG-246 and BUG-243 — an absent root or container reading as absence, with
+  `Store.ping()` named as the replacement for the `except` clause that stops
+  firing, bounded on the three backends where `ping()` does not yet answer; and
+  the absent-drive reclassification
+  with its three-check detection order and the `GraphBackend(base_path=".")`
+  renormalisation. The count was **five** on the first push; the S3 subsection
+  is round 1's.
+  **The softer half's candidate set was re-derived, not inherited — and the
+  item's three were six.** Round 1 caught the first draft taking BUG-247,
+  BUG-246 and BUG-243 verbatim from the item after having just re-derived the
+  marker count, which is the same drift caught the same way. Derivation:
+  parsing `[Unreleased]` for `- <ID>: ` lines returns **19** entries, **4**
+  carrying `**Breaking**`; classifying the remaining 15 against Phase 1's test —
+  a behaviour change a caller must act on — yields **6**. The item named three:
+  - BUG-247, BUG-246, BUG-243 — an absent root or container moving from
+    `InvalidPath` / `BackendUnavailable` to `NotFound` / `False` / empty, plus a
+    tolerant delete returning after `close()` on an in-memory `SQLBlobBackend`
+    where it used to raise. One shared section rather than three, because they
+    are one behavioural theme and three copies of "your `except` clause stops
+    firing" is the shape that goes stale unevenly.
+  - **BUG-259**, which the item missed and which two of the new subsections were
+    already documenting without saying so: the root-write refusal and the
+    `GraphBackend(base_path=".")` renormalisation, a stored configuration value
+    whose meaning changed.
+  - **BUG-249** and **BUG-242**, which nothing in this PR covered until round 1:
+    a raw `botocore.ClientError` from three `S3Boto3Backend` listings becoming a
+    `RemoteStoreError`, and a 403 read as `NotFound` on `S3Backend` /
+    `S3PyArrowBackend` becoming `PermissionDenied` — including
+    `delete(missing_ok=True)`, which swallowed it. Both break an `except` clause
+    as squarely as the three named. Now a sixth subsection.
+  The **nine** excluded are the 15 minus the 6, so the four `**Breaking**` ones
+  are not among them — they were never in the set being partitioned. Named in
+  full, because a total a reader cannot check is worth nothing: BK-355 and
+  BK-354 (a faster failure path and an additive parameter), ID-245 and BUG-258
+  (tooling and a typing-only conformance fix), the four documentation entries
+  BK-331, BK-320, BUG-235 and BK-317, and **BUG-261 itself**, whose own stub is
+  one of the 19 the count was taken over. The first draft of this sentence named
+  twelve items for a total of nine by folding the four `**Breaking**` entries in
+  and dropping BUG-261 — caught in round 2, and it is the same defect twice over:
+  a list that neither reproduces its total nor excludes what the derivation
+  excluded.
+  **None of the six is marked `**Breaking**`, and that is the rule working.**
+  The softer half owes the section, not the marker, so a `migration.md` section
+  whose entry reads `**Fix**` is not a counterexample to the new row — round 1
+  read it as one, correctly, because the row said "both artifacts" without
+  saying the implication runs one way. Both presentations now state it.
+  **`Store.ping()`, not `check_health()`, is what that section tells a user to
+  call** — a correction made against the source, not the item. `check_health()`
+  is the `Backend` method; `Store` exposes it as `ping()`
+  (`src/remote_store/_store.py:824`), and every prior artifact describing this
+  work, this item included, named the backend method.
+  **The root section is scoped by capability, not by "every backend".** BE-029's
+  own `Applies to:` clause binds backends declaring `Capability.LIST` and names
+  `ReadOnlyHttpBackend` (`{READ, METADATA, LAZY_READ}`,
+  `src/remote_store/backends/_http.py:43`) as the counterexample, on the
+  reasoning that naming backends instead would reintroduce the undeclared
+  divergence the clause removes. BK-324's CHANGELOG entry carries the flat "on
+  every backend" phrasing and the first draft inherited it, which is
+  [principle 5](../CLAUDE.md#principles) the wrong way round: the guide is where
+  a user acts on it.
+  **Two open items bound what the guide is allowed to promise, and round 1 found
+  the guide promising past both.** **BUG-256** measures `check_health()`
+  returning cleanly on `SQLBlobBackend` against a dropped table, so naming
+  `ping()` as *the* replacement was wrong on one of the five backends the
+  absent-container section lists — and the draft then forbade the `write()`
+  fallback that item records as the reason BUG-246's advice used `write()` in the
+  first place. **BUG-254** measures `get_folder_info("")` raising `NotFound` on
+  `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend` against an absent
+  container, three of those same five, so the root row promised a v0.31.0 answer
+  three of them do not give. The guide now states both bounds instead, which is
+  the option that keeps it true today; the two items carry the paragraphs their
+  closure deletes.
+  **Their enumerations moved, and both were repaired here.** BUG-256's "five
+  documentation surfaces" is six with the new section, and BUG-254 acquired a
+  published-docs consequence it did not carry. A fix scoped to a stale
+  enumeration reaches five of six surfaces, which is why the count is the
+  ripple, not the prose.
+  **Three rounds converged on one failure mode, worth naming because it is not
+  the obvious one.** Each round's miss was a bound written against *the backends
+  a passage enumerates* rather than *the backends a passage is read by*. Round 1
+  named `ping()` as the replacement without bounding it at all. Round 2 bounded
+  it on `SQLBlobBackend` — correct for the five backends that section lists, and
+  wrong the moment two other passages redirected `S3Backend` and
+  `S3PyArrowBackend` readers into it. Round 3 widened it to the three backends
+  BUG-256 actually measures, independent of any section's roster, and made both
+  redirects say the destination's exceptions are a different list. The same
+  shape produced the root-row miss: "two of these do not hold yet" was true of
+  the backends that section names and false once `GraphBackend` — LIST-capable,
+  and answering `exists("")` as `False` for a dead drive by design, which this
+  PR's own absent-drive recipe depends on — is counted. A roster is a scope for
+  the prose that carries it, never for the reader who arrives from elsewhere.
+  **Of the item's three dispositions, the *ruling* shipped and the other two did
+  not.** `CONTRIBUTING.md` § Release Phase 1 no longer says a breaking PR "may
+  write its own section"; it says the PR owes it, and points at the new
+  ripple-check **Breaking change** row as where an author meets that obligation.
+  The Phase 1 line keeps the two jobs a checklist is actually placed to do:
+  backstop what arrived without a section, and decide the softer half. The row
+  lands in **both** ripple presentations, per `check_ripple_parity.py`, directly
+  after **CHANGELOG entry** in each.
+  **A third placement was considered and left out.**
+  `.github/PULL_REQUEST_TEMPLATE.md` already carries a `Breaking change` type
+  checkbox and a conditional `CHANGELOG.md updated (if user-facing)` checklist
+  line, so an author who ticks that box still meets nothing saying what it owes,
+  and one parallel line there is the highest-leverage placement left. Not taken:
+  the ruling as scoped was two artifacts, and a third restatement is another
+  copy to keep in step for a rule whose authority is now the ripple-check row.
+  The same reasoning retires it rather than deferring it, as below.
+  **The other two dispositions are refused, not deferred, and each has its own
+  [§ Decided against](#decided-against) entry** carrying its diagnosis. Round 2
+  caught the first draft calling them "declined for this PR, not decided
+  against" while closing the item `[x]` with no successor ID — which is
+  [§ Completing work](BACKLOG.md#how-this-file-works)'s *partially done* branch
+  wearing the *fully done* mark, and that branch asks for a new ID. Settled the
+  other way on the author's decision: BUG-261 closes fully done, the two ideas
+  are refused with their arguments preserved, and no ID is consumed, which is
+  what the `—`-prefixed form in that section exists for.
+  **The row's shape prejudges BK-346's shared question, and says so.** BK-346
+  carries N-rows-versus-widened-rows for its four row-wanting instances and has
+  not answered it; this is a new row. Chosen because widening **CHANGELOG
+  entry** would leave an author asking "I am making a breaking change" to
+  recognise themselves in a row named for something else — the exact adjacency
+  failure BK-346 catalogues. If BK-346 settles on widened rows, this row folds
+  into that answer; the migration sections do not depend on it either way.
+  **The shallow-checkout instrument survived, and its output moved.** The item
+  warns that the graft SHA differs per checkout and that the check is the
+  command, never the SHA: it recorded `21d2329` from the trace and `0f43910`
+  from its own checkout, and this one grafts at `0742baf` and `7931c7d`
+  (`cat .git/shallow`). `git rev-parse --is-shallow-repository` is still `true`;
+  `git merge-base --is-ancestor 0742baf 7931c7d` succeeds, so the v0.30.0
+  release commit is a descendant of the graft and the window after it is whole.
+  `git rev-list --count 7931c7d..HEAD` is **49** (the item recorded 46), and
+  `git log --oneline 7931c7d..HEAD -- docs-src/reference/migration.md` returns
+  **two** commits, `165bd00` for BK-356 and `47f1b16` for BK-357, where the item
+  recorded one. Both figures moved for the same reason the rate did.
+  **What the published guide still cannot do**, unchanged by this work:
+  `scripts/check_no_tracker_refs.py` scans every `.md` under `docs-src/` and
+  fails any `PREFIX-NNN`, so no section can cite the entry it answers. All
+  **six** new subsections are therefore written by what a caller observes, and
+  per-entry accountability lives on the `sdd/` side — here and in the trace.
+  The count is load-bearing rather than decorative here, since it names which
+  sections the constraint is claimed over; it said five until round 2, having
+  been written against the five-subsection draft.
+  Same file and same window as **ID-252**, which lints the `[Unreleased]`
+  section's own integrity and never reads `migration.md`; that item is
+  unaffected by this closure and its cross-reference was repaired in the same
+  commit.
 
 - [x] **BK-356 — `io_timeout` should default to a real bound, not `None`**
   spec: SFTP-030, SFTP-005 · effort: S · audience: user.api, user.api_docs, user.site

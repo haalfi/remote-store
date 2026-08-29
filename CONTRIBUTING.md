@@ -489,7 +489,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] Specs vs code: spot-check shipped features match their specs (`pytest -m spec` as proxy)
 - [ ] Examples: `hatch run examples` passes; manually review notebooks if API surface changed
 - [ ] Guides: new/changed backend guides are accurate
-- [ ] `docs-src/reference/migration.md`: every `[Unreleased]` entry marked **Breaking**, and any entry whose behaviour change a caller must act on, has a `## vPREV to vX.Y.Z` section. A PR making the break may write its own section ahead of the release and several have — the bump table above fixes the version pair for a pre-1.0 breaking change, so it is knowable before Phase 2 stamps it. This line is the backstop for the ones that did not, and the place to correct a pair a PR guessed wrong
+- [ ] `docs-src/reference/migration.md`: every `[Unreleased]` entry marked **Breaking**, and any entry whose behaviour change a caller must act on, has a `## vPREV to vX.Y.Z` section. **The PR making the break owes that section, and writes it in the same PR** — the bump table above fixes the version pair for a pre-1.0 breaking change, so it is knowable at authoring time, long before Phase 2 stamps it; the ripple-check's [**Breaking change**](sdd/CLAUDE-REFERENCE.md#detailed-checklist) row is where an author meets that obligation. This line is the backstop for the ones that arrive without it, and the place to correct a pair a PR guessed wrong. The softer half — an entry a caller must act on that carries no **Breaking** marker — is a judgment no marker decides and stays this checklist's to make
 - [ ] DEVELOPMENT_STORY.md: add a section for this release (pre-1.0 only)
 
 <a id="phase-2"></a>
