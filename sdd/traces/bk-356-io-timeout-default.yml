@@ -32,7 +32,7 @@ expected_ripples:
 # Derivation, per the review_rounds description in _schema.yml: on
 # `git log --oneline origin/master..HEAD`, a4feee9 implements and does not
 # count; ef3edad and b692e12 incorporate review round 1, fb6fbb3 incorporates
-# round 2, and the round-3 fix commit is named below once it exists. Value is
+# round 2, and 422d119 incorporates round 3, the closing panel. Value is
 # 3 — rounds, not commits, which is why ef3edad and b692e12 count once between
 # them. Each SHA is written after the commit it names exists rather than
 # predicted, which is why the naming lags by a commit: the schema calls a
