@@ -153,8 +153,12 @@ cases need action:
 
 **Scope:** the operations above, which are the ones that can *fail* on a
 wrong-typed path. On a flat namespace a write to a key that shadows a prefix
-still succeeds, so there was no error there to reclassify, and `write`,
-`write_atomic`, `open_atomic` and the `move` / `copy` destination are unchanged.
+still succeeds, so there was no error there to reclassify, and for a wrong-typed
+path that is **not the root**, `write`, `write_atomic`, `open_atomic` and the
+`move` / `copy` destination are unchanged. The root is the carve-out and it is
+not a small one: all four now refuse it outright, and a root-destination `move`
+on `S3Boto3Backend` used to return cleanly *and delete the source*. That is the
+next section.
 
 **`""` and `"."` name the store root on every backend that lists:**
 
@@ -170,9 +174,9 @@ it enumerates them. [`ReadOnlyHttpBackend`](api/backends/http.md) declares no
 resolves the empty key to its base URL and reads that — so the table below does
 not describe it, and nothing about it changed.
 
-The table below describes a store whose bucket, container or directory is
+The table below describes a store whose bucket, container, drive or directory is
 **present**. What the root answers when it is *not* is the subject of a later
-section, and two of the answers here do not yet survive that case.
+section, and the first row does not survive that case on three backends.
 
 | Call on the store root | Answer from v0.31.0 |
 |------------------------|---------------------|
@@ -182,15 +186,23 @@ section, and two of the answers here do not yet survive that case.
 | `read`, `get_file_info`, `delete` on the root | `InvalidPath` — the root is a folder, not a file |
 | `write`, `write_atomic`, `open_atomic` on the root | `InvalidPath`, decided from the key before any request is issued |
 
-**Two of these do not hold yet against a container that is missing**, and the
-guide says so rather than promising them. On `S3Backend` and
-`S3PyArrowBackend`, `exists("")` and `is_folder("")` answer **`False`** for a
-bucket that is not there: those two go to the wire for the root probe and read a
-missing bucket as "the root is not there". `get_folder_info("")` has its own
-gap on a different set of backends, described in the absent-container section
-below. Both are unfinished rather than the contract, and the practical
-consequence is that "is my store there?" is not yet portable across the root
-probes — see that section for what to call instead.
+**Three backends answer the first row differently once the container is
+missing**, and the guide says so rather than promising past them. Two of the
+three are unfinished; the third is deliberate:
+
+- On `S3Backend` and `S3PyArrowBackend`, `exists("")` and `is_folder("")` answer
+  **`False`** for a bucket that is not there. Those two go to the wire for the
+  root probe and read a missing bucket as "the root is not there". Unfinished:
+  expect it to change.
+- On [`GraphBackend`](api/aio/backends/graph.md), `exists("")` answers `False`
+  for a drive that is deleted or misconfigured. That one is **by design** — the
+  backend suppresses every `404` on a probe, and the absent-drive section below
+  builds a detection recipe on exactly that answer. It is not going to change.
+
+`get_folder_info("")` has its own gap, on a third set of backends, described in
+the absent-container section below. The practical consequence is the one worth
+carrying away: **`exists("")` is not a portable "is my store there?"**, and it
+is not being made into one. See that section for what to call instead.
 
 The last row changed behaviour rather than an error type. A write addressed at
 the root used to reach the storage system: on SFTP with no `base_path` it left
@@ -266,11 +278,13 @@ two opposite directions:
 | `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` | `get_folder_info("")` raises `NotFound` instead of aggregating to zero — the root probes are short-circuited, but `get_folder_info` is routed through a listing whose 404 is not tolerated there |
 | `S3Backend`, `S3PyArrowBackend` | `exists("")` and `is_folder("")` answer `False` instead of `True` — the root probe goes to the wire and reads a missing bucket as "the root is not there" |
 
-The row above holds for the backends this section names; the second row of the
-table is where the divergence sits, and those two are not in that list. Treat
-both as unfinished rather than as the contract: keep a `NotFound` handler if you
-aggregate the root of a store that may not exist, and do not use `exists("")` as
-a portable "is my store there?" — the next paragraph says what to use instead.
+The `exists("")` row above holds for the backends this section names; the second
+row of the table is where that divergence sits, and those two backends are not in
+that list. Treat both as unfinished rather than as the contract: keep a
+`NotFound` handler if you aggregate the root of a store that may not exist, and
+do not use `exists("")` as a portable "is my store there?". What to use instead
+is below — and read its own list of exceptions rather than this section's,
+because they are not the same backends.
 
 **What to change.** An `except` clause that caught the old error to detect a
 store that is not there no longer fires. [`Store.ping()`](api/store.md) —
@@ -282,12 +296,22 @@ backends above: `NotFound` for a deleted `LocalBackend` root and for a missing
 directory, which no other operation can see: the root answers as a folder by
 definition, so nothing else observes what is actually there.
 
-**On `SQLBlobBackend`, `ping()` is not yet that check.** The SQL backends verify
-connectivity with a bare `SELECT 1` that never looks at the table, so a dropped
-table and a discarded in-memory store both report healthy. There, a `write()` is
-what surfaces the absence — it still raises `BackendUnavailable`. That is a gap
-in `ping()` rather than a rule about `write()`: expect it to close, and reach
-for `ping()` first on every other backend here.
+**`ping()` is not yet that check on three backends**, and this holds whether or
+not the backend is one the table above names — the paragraphs that redirected
+you here from the root probes point at this list, not at that one:
+
+| Backend | Why `ping()` reports healthy anyway |
+|---|---|
+| `SQLBlobBackend`, `SQLQueryBackend` | Both verify connectivity with a bare `SELECT 1` that never looks at the table, so a dropped table and a discarded in-memory store report healthy |
+| `S3PyArrowBackend` | Its probe misses an absent bucket for the same reason one layer out |
+
+On the SQL pair, a `write()` is what surfaces the absence: it still raises
+`BackendUnavailable`. On `S3PyArrowBackend` there is no substitute to recommend —
+`ping()` reports healthy, and what `write()` does against an absent bucket there
+is not something this project has measured, so this guide does not prescribe it.
+Treat "is my store there?" as unanswered on that backend for now. All of this is
+a gap in `ping()` rather than a rule about `write()`: expect it to close, and
+reach for `ping()` first everywhere else.
 
 **`write()` is not a portable substitute for it either.** The contract
 deliberately leaves `write` against an absent container to each backend, and

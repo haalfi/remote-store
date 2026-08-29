@@ -35,12 +35,12 @@ surprising_ripples:
 # review_rounds description. c691866 implements and does not count. c337327
 # corrects a figure I found while drafting the PR body, not review feedback, so
 # it does not count either. fdfba64 incorporates review round 1 and counts; the
-# commit carrying round 2 is the second. Value is 2 at the time of writing, and
-# the field is set rather than omitted because two rounds have run and are
-# documented as phases below — an earlier draft justified omitting it by saying
-# no review had run, which was false in the same file 130 lines further down.
-# Raise it if a later round lands another fix commit.
-review_rounds: 2
+# commit carrying round 2 is the second, and round 3's is the third. Value is 3
+# at the time of writing, and the field is set rather than omitted because the
+# rounds have run and are documented as phases below — an earlier draft
+# justified omitting it by saying no review had run, which was false in the same
+# file 130 lines further down. Raise it if a later round lands another commit.
+review_rounds: 3
 phases:
   - id: orient
     name: Orient on the item and re-derive its figures
@@ -219,7 +219,7 @@ phases:
         extract: "BACKLOG item moved, CHANGELOG stub added, trace shipped in the same PR"
         outcome: ok
   - id: fix
-    name: Review rounds 1 and 2
+    name: Review rounds 1, 2 and 3
     steps:
       - file: sdd/BACKLOG.md
         section: "1 / BUG-256, BUG-254"
@@ -314,4 +314,43 @@ phases:
           § Decided against using the `—`-prefixed form that section defines for
           a refused idea that never had an ID, so the diagnoses survive with no
           open item and no ID consumed.
+        outcome: ok
+      - file: src/remote_store/aio/backends/_graph/backend.py
+        section: "_GRAPH_CAPABILITIES, exists"
+        read_type: gate
+        extract: >-
+          Round 3, and the read that settles the round's sharpest finding.
+          GraphBackend declares Capability.LIST, so it is inside the root
+          section's own scope, and its exists() suppresses every 404 including a
+          drive-identity resourceNotFound — so a dead drive probes as False. The
+          root section said two backends diverge; three do. The third is
+          deliberate rather than unfinished, and this PR's own absent-drive
+          recipe 3 depends on it, so the fix distinguishes the two kinds instead
+          of lengthening a list.
+        outcome: ok
+      - file: src/remote_store/backends/_s3_pyarrow.py
+        section: "_ALL_CAPABILITIES, check_health"
+        read_type: verify
+        extract: >-
+          Round 3. Retrospective, and a claim caught before it shipped: a draft
+          of the widened ping() bound said S3PyArrowBackend "is read-only in this
+          respect and has no such fallback". It declares every capability except
+          ATOMIC_MOVE and USER_METADATA, so it has WRITE — and BUG-256 does not
+          measure write there against an absent bucket either way. The published
+          text now says the question is unanswered on that backend rather than
+          prescribing a substitute nobody has measured.
+        outcome: ok
+      - file: sdd/specs/003-backend-adapter-contract.md
+        section: "BE-021 (The root is decided by BE-029, not here)"
+        read_type: gate
+        extract: >-
+          Round 3. The flat-namespace section's scope sentence said the write
+          half is "unchanged", drawing on BE-021's hierarchical-only rule but
+          stopping before the clause that carves the root out of it: write on the
+          root and the move/copy destination are decided by BE-029 and raise
+          InvalidPath from the key. The next section of the same guide documents
+          exactly that change, including the S3Boto3Backend root-destination move
+          that used to delete the source — so two passages three paragraphs apart
+          contradicted each other, and the reader who stops at the first is the
+          one with the data-loss shape.
         outcome: ok

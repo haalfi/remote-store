@@ -359,14 +359,30 @@ compliant the day before.
   No spec decision is needed first — BE-029 states the answer. What the fix owes
   is the *reason* each backend misses it, since the two directions have different
   causes, plus a conformance cell so a sixth backend cannot inherit either.
-  **This item now has a published-docs consequence, acquired in BUG-261.**
-  `docs-src/reference/migration.md` § v0.30.0 to v0.31.0 documents the
-  `get_folder_info("")` half of the second row — `NotFound` on `S3Boto3Backend`,
-  `AzureBackend` and `AsyncAzureBackend` against an absent container — as
-  unfinished, and tells a caller to keep a `NotFound` handler for it. That was
-  the alternative to promising a row three of the five backends that section
-  names do not deliver. So closing this item also deletes that paragraph, and
-  the `exists("")` / `is_folder("")` row it sits under stays as written.
+  **This item now has a published-docs consequence, acquired in BUG-261, and it
+  covers both breaching columns rather than one.** `docs-src/reference/migration.md`
+  § v0.30.0 to v0.31.0 publishes the root row to users and therefore had to
+  publish its exceptions too. Four passages exist only while this item is open,
+  and closing it deletes or rewrites **all four** — a sweep that stops at the
+  first leaves the guide telling users a store is unfinished in a way it no
+  longer is:
+  1. The root section's "Three backends answer the first row differently"
+     paragraph — the `exists("")` / `is_folder("")` cells on `S3Backend` and
+     `S3PyArrowBackend`. Its third bullet is `GraphBackend` and is **not** this
+     item's: that answer is deliberate and stays.
+  2. The absent-container section's two-row divergence table. Row 1 is the
+     `get_folder_info("")` cells on `S3Boto3Backend`, `AzureBackend` and
+     `AsyncAzureBackend`; row 2 is the same `S3Backend` / `S3PyArrowBackend`
+     cells as (1).
+  3. The "Treat both as unfinished" paragraph under that table, including its
+     `NotFound`-handler advice.
+  4. The two redirects that only make sense while the divergence exists — one in
+     the root section, one under the divergence table — both saying `exists("")`
+     is not a portable "is my store there?".
+  Together these are the same **seven** class-cells this item counts, so the
+  guide and the item are now scoped alike. The first version of this note named
+  only the `get_folder_info` half and said the `exists` row "stays as written",
+  which was the fix-reaches-half-the-surfaces defect this note exists to prevent.
   **Filed on a wrong premise and corrected in the same PR:** the first version of
   this item said nothing decided the question and asked for a spec decision. That
   was read off BE-021 § Reach alone, which decides operations and is silent about
@@ -400,8 +416,13 @@ compliant the day before.
   added that section; it is counted here rather than left to the grep because the
   figure is the derivation ([principle 9](../CLAUDE.md#principles)) and a fix
   scoped to a stale enumeration reaches five of six surfaces. That section already
-  carries the `SQLBlobBackend` bound in published prose, so closing this item
-  edits it rather than discovering it.
+  carries this item's bound in published prose — a table naming all three
+  backends measured above, `SQLBlobBackend` and `SQLQueryBackend` on the bare
+  `SELECT 1` and `S3PyArrowBackend` on the same miss one layer out, plus a
+  statement that "is my store there?" is unanswered on `S3PyArrowBackend` today —
+  so closing this item edits that table rather than discovering it. It stops at
+  the three: `ReadOnlyHttpBackend`'s wrong-type raise is not published anywhere,
+  because no migration section names that backend.
   The caller this hurts is the one doing the obvious thing — using `ping()` at
   startup to check the store is really there — and getting "yes" for a store that
   is not. It is also the operation an absent-container caller is *sent* to by the

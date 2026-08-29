@@ -251,7 +251,8 @@ if evidence changes; these are retired.
   misclassifications (BUG-242, BUG-249); one shared section covering BUG-247,
   BUG-246 and BUG-243 — an absent root or container reading as absence, with
   `Store.ping()` named as the replacement for the `except` clause that stops
-  firing, bounded on `SQLBlobBackend`; and the absent-drive reclassification
+  firing, bounded on the three backends where `ping()` does not yet answer; and
+  the absent-drive reclassification
   with its three-check detection order and the `GraphBackend(base_path=".")`
   renormalisation. The count was **five** on the first push; the S3 subsection
   is round 1's.
@@ -325,6 +326,20 @@ if evidence changes; these are retired.
   published-docs consequence it did not carry. A fix scoped to a stale
   enumeration reaches five of six surfaces, which is why the count is the
   ripple, not the prose.
+  **Three rounds converged on one failure mode, worth naming because it is not
+  the obvious one.** Each round's miss was a bound written against *the backends
+  a passage enumerates* rather than *the backends a passage is read by*. Round 1
+  named `ping()` as the replacement without bounding it at all. Round 2 bounded
+  it on `SQLBlobBackend` — correct for the five backends that section lists, and
+  wrong the moment two other passages redirected `S3Backend` and
+  `S3PyArrowBackend` readers into it. Round 3 widened it to the three backends
+  BUG-256 actually measures, independent of any section's roster, and made both
+  redirects say the destination's exceptions are a different list. The same
+  shape produced the root-row miss: "two of these do not hold yet" was true of
+  the backends that section names and false once `GraphBackend` — LIST-capable,
+  and answering `exists("")` as `False` for a dead drive by design, which this
+  PR's own absent-drive recipe depends on — is counted. A roster is a scope for
+  the prose that carries it, never for the reader who arrives from elsewhere.
   **Of the item's three dispositions, the *ruling* shipped and the other two did
   not.** `CONTRIBUTING.md` § Release Phase 1 no longer says a breaking PR "may
   write its own section"; it says the PR owes it, and points at the new
