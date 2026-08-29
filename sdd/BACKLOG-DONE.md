@@ -67,9 +67,10 @@ if evidence changes; these are retired.
   [research](research/research-arc42-evaluation.md) § 2.2 finds thin here
   (§ 2 constraints, § 10 quality requirements, § 12 glossary). All four refused.
   **Diagnosis, carried across because the verdict alone is not re-decidable.**
-  Nine of the twelve sections already have an authoritative home, and three of
-  those (cross-cutting concepts, decisions, risks) are held by artifacts that are
-  normative, identified and gated rather than descriptive. The corpus
+  Ten of the twelve sections already have an authoritative home, and four of
+  those (cross-cutting concepts, decisions, quality requirements, risks) are held
+  by artifacts that are normative, identified and gated rather than descriptive.
+  The corpus
   measures what a twelfth prose document would be worth:
   `docs-src/explanation/architecture.md`, the one document of that class already
   here, is cited **once** across 287 traces (`rg -c
@@ -80,12 +81,20 @@ if evidence changes; these are retired.
   `check_custom_backend_guide.py` and BK-332, and its residue is the semantic
   class no gate reaches. A third statement adds to that class.
   Refused rather than filed because none fits a section's promise: § 10's
-  requirement already executes as the `benchmark.yml` baseline gate with its
-  local-only scope registered in BK-309's entry, § 2's ground is held by the gate
-  and BK-332, and § 12 has zero measured cost. Re-file under a new ID on the
-  triggers research § 4.2 names — the first vocabulary-driven `unclear` tag for
-  § 12, guide tags failing to fall after BK-332 runs for § 2, a regression the
-  local baseline cannot see for § 10.
+  requirements already execute across all nine dimensions `README.md` § Quality &
+  Testing names — `benchmark.yml`, `mutation.yml`, `drift-guard.yml`,
+  `codeql.yml`, `ci-full.yml`, the coverage floor, Dafny, Hypothesis, the
+  conformance suite — with the benchmark gate's local-only scope registered in
+  BK-309's entry; § 2's conventions are the nine process documents
+  `CONTRIBUTING.md` § Authoritative Document Format scopes, read in a declared
+  order, with the one measured drift site held by the gate and BK-332; and § 12
+  has zero measured cost. **Two of the four were argued from an under-read of
+  this repo before PR review corrected them** — both in the direction of making
+  adoption look better than the evidence supports, so the verdicts survived.
+  Re-file under a new ID on the triggers research § 4.2 names — the first
+  vocabulary-driven `unclear` tag for § 12, guide tags failing to fall after
+  BK-332 runs for § 2, and for § 10 a quality this repo cares about that no
+  mechanism expresses at all.
 
 - [x] **— `ext.cache` stampede guard** *(refused at admission; never had an ID)*
   BK-290 left the stampede — concurrent identical misses each hitting the backend

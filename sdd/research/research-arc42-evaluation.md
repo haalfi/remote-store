@@ -97,8 +97,8 @@ for what section N answers has an authoritative place to look.
 
 | arc42 section | Where the answer lives here | Status |
 |---|---|---|
-| 1. Introduction and goals | [`README.md`](../../README.md) (what it does, audience, when not to use it), [`FEATURES.md`](../../FEATURES.md) | Covered, except quality goals |
-| 2. Constraints | [`sdd/DESIGN.md`](../DESIGN.md), [ADR-0003](../adrs/0003-fsspec-is-implementation-detail.md), [ADR-0008](../adrs/0008-extension-architecture.md), `pyproject.toml` | Distributed, no single home |
+| 1. Introduction and goals | [`README.md`](../../README.md) — what it does, audience, when not to use it — and its § Quality & Testing, which states the quality intent per dimension; [`FEATURES.md`](../../FEATURES.md) | Covered |
+| 2. Constraints | **Conventions:** the nine root-level `sdd/` process documents [`CONTRIBUTING.md` § Authoritative Document Format](../../CONTRIBUTING.md#authoritative-document-format) scopes, applied in a declared order ([`CLAUDE.md` § Documentation framework](../../CLAUDE.md#documentation-framework)). **Technical:** [ADR-0003](../adrs/0003-fsspec-is-implementation-detail.md), [ADR-0008](../adrs/0008-extension-architecture.md), [`sdd/DESIGN.md`](../DESIGN.md), `pyproject.toml` | Covered — a declared framework, not a scatter |
 | 3. Context and scope | `README.md`, [spec 003](../specs/003-backend-adapter-contract.md), [`explanation/security-model.md`](../../docs-src/explanation/security-model.md) | Covered |
 | 4. Solution strategy | [ADR-0001](../adrs/0001-architecture-store-registry-backends.md), [`explanation/architecture.md`](../../docs-src/explanation/architecture.md) | Covered |
 | 5. Building-block view | ADR-0001, `explanation/architecture.md`, [`CLAUDE-REFERENCE.md`](../CLAUDE-REFERENCE.md) repo layout | Covered |
@@ -106,22 +106,31 @@ for what section N answers has an authoritative place to look.
 | 7. Deployment view | [`infra/`](../../infra), [`packaging/`](../../packaging) | Largely inapplicable |
 | 8. Cross-cutting concepts | [spec 004](../specs/004-path-model.md), [spec 005](../specs/005-error-model.md), [spec 020](../specs/020-credential-hygiene.md), [spec 025](../specs/025-retry-policy.md), [`sdd/formal/`](../formal), the conformance suite | Stronger than the template asks |
 | 9. Architecture decisions | [`sdd/adrs/`](../adrs) plus a generated [`DIGEST.md`](../adrs/DIGEST.md) with a gated supersession graph | Stronger |
-| 10. Quality requirements | [`benchmarks/`](../../benchmarks) baseline + regression gate; [`explanation/performance.md`](../../docs-src/explanation/performance.md) reports | See § 3.4 — the requirement is executable, not prose |
+| 10. Quality requirements | [`README.md` § Quality & Testing](../../README.md) names nine verified dimensions; each is enforced by a mechanism, not asserted — `benchmarks/` baseline gate, `mutation.yml`, `drift-guard.yml`, `codeql.yml`, `ci-full.yml` (inventoried in [`CI-OPERATIONS.md`](../CI-OPERATIONS.md)), the 95% coverage floor, the Dafny layer, Hypothesis, the conformance suite | Stronger — the requirements execute rather than being read |
 | 11. Risks and technical debt | [`BACKLOG.md`](../BACKLOG.md), [`BACKLOG-DONE.md`](../BACKLOG-DONE.md), [`sdd/audits/`](../audits) | Stronger |
 | 12. Glossary | Absent | Absent, and § 3.4 finds no cost |
 
-Nine of the twelve have an authoritative home. Section 2 is distributed across
-several, section 7 has little subject matter in a library, and section 12 is
-genuinely absent.
+Ten of the twelve have an authoritative home — every row above except 7, which
+has little subject matter in a library, and 12, which is genuinely absent.
 
-The three rows marked stronger are not close. arc42 § 8 and § 9 are prose a reader
-consults; specs 004, 005, 020 and 025 are normative clauses with stable
-`PREFIX-NNN` identifiers, traced to conformance tests by
-[`check_spec_marks.py`](../../scripts/check_spec_marks.py), with a Dafny layer
-under `sdd/formal/` for the core contract. arc42 § 11 asks for a list of known
-debt; `BACKLOG.md` is a promise-structured register with an admission test, an
-authority rule, and a drain file that records refusals so the same argument is
-not had twice.
+The four rows marked stronger are not close.
+
+- **§ 8 and § 9** are prose a reader consults in arc42; specs 004, 005, 020 and
+  025 are normative clauses with stable `PREFIX-NNN` identifiers, traced to
+  conformance tests by
+  [`check_spec_marks.py`](../../scripts/check_spec_marks.py), with a Dafny layer
+  under `sdd/formal/` for the core contract.
+- **§ 10** asks for measurable quality scenarios a reader converts into tests.
+  Here the conversion has already happened in the other direction: each of the
+  nine dimensions README names is a mechanism that fails a job. `mutation.yml`
+  and `drift-guard.yml` run on their own schedules and open rolling issues;
+  `codeql.yml`, `ci-full.yml` and `benchmark.yml` have runbooks in
+  [`CI-OPERATIONS.md`](../CI-OPERATIONS.md), whose inventory
+  `check_ci_inventory.py` gates against `.github/workflows/`. A scenario that
+  runs weekly and files its own issue is not improved by also being a paragraph.
+- **§ 11** asks for a list of known debt; `BACKLOG.md` is a promise-structured
+  register with an admission test, an authority rule, and a drain file that
+  records refusals so the same argument is not had twice.
 
 ---
 
@@ -155,9 +164,10 @@ spec-kit precedent did not have to state it.** The corpus records what readers
 read. **A document that does not exist cannot be tagged.** So the filter is
 strong evidence for "should we restructure, merge or delete a document we have",
 and it is *structurally blind* to "is an artifact missing". Three of the four
-candidate dispositions in § 3.4 are missing-artifact claims, and reading their
-zero tags as a verdict would be the same error as reading a shallow clone's zero
-commits as a quiet period.
+candidate dispositions in § 3.4 were advanced *as* missing-artifact claims — two
+of them wrongly, as § 3.4 records — and reading their zero tags as a verdict
+would be the same error as reading a shallow clone's zero commits as a quiet
+period.
 
 So a **second instrument** carries the missing-artifact half: for each candidate,
 ask whether the thing arc42 would document already exists in a *non-prose* form —
@@ -279,32 +289,52 @@ the class nothing can check.
 
 ### 3.4 Candidates against the evidence
 
-Four dispositions were evaluated. The middle three are the sections § 2.2 marks
-thin; the fourth is the maximal reading, evaluated because a reject of the parts
-does not by itself reject the whole.
+Four dispositions were put to evaluation: the full skeleton, and the three
+sections that looked thin here on a first reading — § 2, § 10, § 12. The full
+skeleton is evaluated separately because a reject of the parts does not by itself
+reject the whole.
+
+**Two of those three were thin only in the reading, not in the repo**, which
+§ 2.2 now records: § 2's conventions are a declared nine-document framework, and
+§ 10's requirements execute. Both were corrected by opening the source — the
+[`CONTRIBUTING.md`](../../CONTRIBUTING.md#authoritative-document-format) scope
+list and `README.md` § Quality & Testing — after a first pass had judged them from
+the section names. That is the same defect twice, and § 3.4's § 10 note and
+§ 4.3's closing paragraph both turn on it.
 
 | Candidate | Trace evidence | Second instrument | Verdict |
 |---|---|---|---|
-| § 10 — quality requirements as measurable scenarios | Zero tags; and the filter is blind here (§ 3.1) | The requirement **exists and executes**: [`benchmarks/baseline/local-baseline.json`](../../benchmarks/baseline) compared at `threshold 2.0`, `min-abs 0.0005`, wired into [`benchmark.yml`](../../.github/workflows/benchmark.yml) as a weekly correctness-plus-regression gate. Its local-only scope and rationale are registered in BK-309's `BACKLOG-DONE.md` entry, the [Rule 6](../DRIFT-RULES.md#tolerated) form | **Reject** |
-| § 2 — a single constraints home | The 5 guide tags are drift between two prose statements of one contract; spec 003's 7 are the normative doc being amended, not a missing home (§ 3.3) | Held twice: [`check_custom_backend_guide.py`](../../scripts/check_custom_backend_guide.py) in `lint` and `docs-gate`, plus **BK-332** on a Rule 9 cadence | **Reject** — the evidence argues the other way |
+| § 10 — quality requirements as measurable scenarios | Zero tags; and the filter is blind here (§ 3.1) | The requirements **exist and execute**, across all nine dimensions README names — not only performance. `benchmarks/baseline/local-baseline.json` at `threshold 2.0` / `min-abs 0.0005` in [`benchmark.yml`](../../.github/workflows/benchmark.yml); `mutation.yml` and `drift-guard.yml` on their own schedules with rolling issues; `codeql.yml`; `ci-full.yml`; the 95% coverage floor; the Dafny layer and conformance suite. The benchmark gate's local-only scope is registered in BK-309's `BACKLOG-DONE.md` entry, the [Rule 6](../DRIFT-RULES.md#tolerated) form | **Reject** |
+| § 2 — a single constraints home | The 5 guide tags are drift between two prose statements of one contract; spec 003's 7 are the normative doc being amended, not a missing home (§ 3.3) | The conventions already have a home *and a declared read order* — the nine process documents `CONTRIBUTING.md` scopes. The one measured drift site is held twice more: [`check_custom_backend_guide.py`](../../scripts/check_custom_backend_guide.py) in `lint` and `docs-gate`, plus **BK-332** on a Rule 9 cadence | **Reject** — the evidence argues the other way |
 | § 12 — glossary | Zero tags; a keyword pass over all 241 negative tags for terminology, vocabulary, naming and ambiguity returns no instance of a reader blocked on vocabulary | No non-prose form exists, so this candidate genuinely survives instrument two — and has no evidence of cost to justify it | **Reject**, revisitable (§ 4.2) |
 | Full twelve-section skeleton | `architecture.md`, the one document of this class, is cited once in 287 traces (§ 3.2) | Rules 1 and 8; `AUTHORING.md` Rule 2; ADR-0006 | **Reject** |
 
 Two rows deserve their reasoning stated rather than compressed into a verdict.
 
-**§ 10 is the row this evaluation got wrong first.** The pre-evidence reading of
-§ 2.2 was that quality requirements were the strongest candidate, because
-`benchmarks/` measures and no prose states a target. Opening the workflow
-falsified it: a committed baseline, a stated threshold, a stated floor, a stated
-scope and a registered bound are more than arc42 § 10 asks for, and they fail a
-job rather than advising a reader. What is absent is the *restatement*, and
-[principle 8](../../CLAUDE.md#principles) puts a threshold's authoritative home at
-the gate that runs it. The residue is real and already registered: only the local
-backend is timing-gated, because the Docker backends have no runner-captured
-baseline. That is a coverage bound with an owner, not a missing document. This
-correction is recorded rather than quietly fixed because it is the same failure
-[research § 4.1](research-spec-kit-comparison.md) named — concluding from a
-summary view of an instrument instead of opening it.
+**§ 10 is the row this evaluation got wrong twice, and the second miss is the
+instructive one.** The pre-evidence reading was that quality requirements were
+the strongest candidate, because `benchmarks/` measures and no prose states a
+target. Opening `benchmark.yml` falsified that: a committed baseline, a stated
+threshold, a stated floor, a stated scope and a registered bound are more than
+arc42 § 10 asks for, and they fail a job rather than advising a reader.
+
+**The correction was then itself under-scoped**, and review caught it. Having
+opened the benchmark workflow, the row was rewritten to cite *only* the benchmark
+workflow — as though performance were the whole of § 10. `README.md` § Quality &
+Testing enumerates **nine** verified dimensions, of which benchmarks is one, and
+[`CI-OPERATIONS.md`](../CI-OPERATIONS.md)'s gated inventory carries five more
+`.github/workflows/` rows besides `benchmark.yml`. So the first fix
+repaired the sentence a reviewer would have pointed at and left the class it
+belonged to open — the failure mode
+[`BACKLOG.md` § Item authority](../BACKLOG.md#how-this-file-works) describes, met
+here in a research doc rather than an item.
+
+What is absent in both readings is the *restatement*, and
+[principle 8](../../CLAUDE.md#principles) puts a quality bar's authoritative home
+at the mechanism that enforces it. The residue is real and already registered:
+only the local backend is timing-gated, because the Docker backends have no
+runner-captured baseline. That is a coverage bound with an owner, not a missing
+document.
 
 **The full skeleton was evaluated on its own terms, not dismissed as the sum of
 the parts.** The maximal case is that the sections are worth more together than
@@ -360,9 +390,13 @@ Stated so a reversal needs new evidence rather than a new opinion.
   extending what `check_custom_backend_guide.py` already does structurally into
   the semantic half its docstring declares out of reach — not authorship beside
   it.
-- **§ 10 (quality requirements)** reverses if a regression ships in a backend the
-  local baseline cannot see. The remedy would be a runner-captured baseline for
-  the Docker backends, which is a gate change, not a document.
+- **§ 10 (quality requirements)** reverses if a defect ships past all nine
+  enforced dimensions and the post-mortem finds that a *stated* scenario would
+  have caught it where the mechanisms did not. The near case is a performance
+  regression in a backend the local baseline cannot see; the remedy there is a
+  runner-captured baseline for the Docker backends, which is a gate change and
+  not a document. A reversal needs the harder version: a quality this repo cares
+  about that no mechanism expresses at all.
 
 ### 4.3 What this document does not claim
 
@@ -375,12 +409,25 @@ and insufficient for any claim about how well arc42 serves its own users.
 **The verdict is about this repository at this maturity, and says nothing about
 arc42 generally.** Every "stronger" row in § 2.2 is stronger because something was
 built there: 50 specs with stable IDs, 38 ADRs with a gated digest, a formal
-layer, a promise-structured backlog, 22 `check_*.py` cross-artifact gates
+layer, a promise-structured backlog, nine quality dimensions each wired to a
+mechanism, and 22 `check_*.py` cross-artifact gates
 (`ls scripts/check_*.py scripts/docs/check_*.py`). A repository
 without those would find arc42's sections a considerable improvement on nothing,
 and the same filter run there would return the opposite answer. What is being
 rejected is a second description of ground already held normatively — not the
 template.
+
+**Two of the four dispositions were argued from an under-read of this repo before
+review corrected them** (§ 3.4). That is worth stating as a limit on the method
+and not only as a fixed defect: the mapping in § 2.2 is a *reading* of where each
+answer lives, and a reading can be short in a direction its own author cannot
+see. Both misses ran the same way — judging a section from its name against a
+sample of its homes, rather than from the repo's own enumerations
+(`CONTRIBUTING.md` § Scope, `README.md` § Quality & Testing,
+`CI-OPERATIONS.md`'s gated inventory). Both made the rejected candidate look
+*more* attractive than the evidence supports, so the direction of the error was
+toward adopting, and the verdict survived correction in both rows. A future
+reading that reverses one should check that enumeration first.
 
 **§ 3.2's measure is agent-facing and bounded.** It counts what leaves a trace,
 which is contributor and agent work. `docs-src/explanation/` is written for docs
