@@ -6,6 +6,40 @@ Breaking changes and upgrade paths between `remote-store` versions.
 
 ## v0.30.0 to v0.31.0
 
+**SFTP reads and writes are now bounded by default:**
+
+In v0.30.0, an SFTP read or write that stalled on an already-open channel had no bound and no way to set one. v0.31.0 adds `SFTPBackend(io_timeout=...)` and defaults it to `120.0` seconds, so every caller is affected whether or not they configure anything.
+
+**If your server legitimately pauses for minutes, raise the bound rather than removing it:**
+
+```
+backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=300)
+```
+
+That is the usual answer for an antivirus or dedup appliance that goes quiet on `open()` of a large file: you keep the protection and move the threshold past your server's longest legitimate pause.
+
+**To remove the bound entirely, pass `None`:**
+
+```
+backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=None)
+```
+
+That restores the unbounded channel, and only that — the other v0.31.0 change on this backend, in the next section, applies whatever you pass here. Note `0` is **not** the opt-out — it raises `ValueError`, because paramiko reads it as non-blocking rather than as a bound, and every SFTP operation waits on a reply, so all of them would fail at once.
+
+**What changes if you do nothing.** An operation against a peer that completes the SSH handshake and then stops sending used to block forever, with no exception and no log line. It now raises [`BackendUnavailable`](https://docs.remotestore.dev/stable/reference/api/errors/index.md) after 120 s of silence, and the backend drops the dead client so the next operation reconnects.
+
+```
+# Before (v0.30.0): the call never returns
+store.read_bytes("delivery.csv")
+
+# After (v0.31.0): raises BackendUnavailable after 120 s of silence
+store.read_bytes("delivery.csv")
+```
+
+**The bound is on silence between bytes, not on the transfer.** A large file over a slow link is unaffected however long it takes — a multi-gigabyte fetch that runs for an hour never trips a 120 s bound, because bytes keep arriving. What trips it is a flow that stops making progress. So a legitimately slow transfer needs no change; a server that pauses for a long time on a single operation (an antivirus or dedup appliance scanning a large file when you open it) is the case to size the value against. See the [SFTP guide](https://docs.remotestore.dev/stable/guides/backends/sftp/#bounding-a-stalled-transfer) for tuning.
+
+**Scope:** SFTP only. No other backend's timeouts change. [`ReadOnlyHttpBackend`](https://docs.remotestore.dev/stable/reference/api/backends/http/index.md) already defaulted `timeout=30.0`, and this brings SFTP into line with it rather than introducing a new kind of limit.
+
 **Seeking to the end of an SFTP stream raises where it used to answer `0`:**
 
 `SFTPBackend`'s streams resolve `seek(offset, os.SEEK_END)` by asking the server for the file's size. That request used to go out through paramiko, which discards its failure and reports a size of `0` — so on a stalled connection, or against a server that refuses to stat an open handle, the seek returned `0` for a file of any size and raised nothing. The backend now issues the request itself, so the failure surfaces.

@@ -11566,7 +11566,7 @@ connection/authentication parameters.
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">host_keys_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>  <span class="c1"># defaults to ~/.ssh/known_hosts</span>
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">config</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>         <span class="c1"># may contain "known_host_keys"</span>
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>                  <span class="c1"># connect phase only (see SFTP-030)</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">io_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>    <span class="c1"># bound on a stalled open channel</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">io_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mf">120.0</span><span class="p">,</span>   <span class="c1"># bound on a stalled open channel</span>
 <a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="n">connect_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="c1"># extra SSHClient.connect() kwargs</span>
 <a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="p">)</span>
 </code></pre></div>
@@ -11609,8 +11609,14 @@ on staleness is also supported (see SFTP-010).</p>
 <p><strong>Invariant:</strong> <code>host</code> must be a non-empty string. Passing an empty or whitespace-only
 host raises <code>ValueError</code> at construction time. <code>io_timeout</code>, when not <code>None</code>, must
 be a positive number of seconds; <code>0</code> and negatives raise <code>ValueError</code> — paramiko
-reads <code>0</code> as non-blocking, which would fail every read immediately rather than
-bound it.
+reads <code>0</code> as non-blocking rather than as a bound, and every SFTP request waits
+on a reply, so every operation fails at once — writes included, via the
+acknowledgement read that follows them. (<code>settimeout(0)</code> does not fail an
+operation that need not block: paramiko raises only when the read buffer is
+empty or the send window is full. Every SFTP operation reaches one of those.)
+<code>None</code> is therefore the only way to ask for an unbounded channel, and <code>0</code> is not
+a spelling of it: the two look interchangeable to a caller reaching for
+"no limit" from a default that is now a real bound (SFTP-030).
 <strong>Postconditions:</strong> No network validation of host reachability at construction time.</p>
 <hr />
 <h2 id="connection">Connection<a class="headerlink" href="#connection" title="Permanent link">&para;</a></h2>
@@ -11675,8 +11681,11 @@ is given deliberately: every signal named here is enumerated, mapped and
 tested, so any example drawn from the list would illustrate the opposite of the
 claim. Note also that this tier only <em>handles</em> a <code>socket.timeout</code>; nothing here
 causes one. A read that stalls on an open channel raises nothing at all unless
-SFTP-030's <code>io_timeout</code> arms the bound, so with its default of <code>None</code> this path
-is unreachable for a merely silent peer. Operations outside the default
+SFTP-030's <code>io_timeout</code> arms the bound — which it now does by default, so a
+merely silent peer reaches this path on a store configured with nothing. A
+caller who opts out with <code>io_timeout=None</code> puts it back out of reach for that
+fault, and the other signals in the set are unaffected either way. Operations
+outside the default
 <code>_errors()</code> scope must still route through this mapping for the guarantee to
 hold: the listing operations route their failure through <code>_map_exception</code>, and
 <code>open_atomic</code>'s streamed-write phase — which yields the handle outside
@@ -11844,11 +11853,70 @@ and <code>docs-src/guides/async.md</code>.</p>
 <code>channel_timeout</code>; the last bounds how long the client waits for a channel to
 <em>open</em>, not traffic on an opened one. Blocking I/O on the open channel is
 governed by <code>Channel.timeout</code>, which paramiko initialises to <code>None</code>.</p>
-<p><code>io_timeout</code> (default <code>None</code>, meaning unbounded — no behaviour change for
-callers that do not set it; <code>0</code> and negatives raise <code>ValueError</code>, see SFTP-005)
-is applied via <code>Channel.settimeout()</code> in <code>_connect</code>, and <strong>every</strong> reconnect
-re-arms it on its new channel because it is applied there rather than at
-construction.</p>
+<p><code>io_timeout</code> (default <code>120.0</code>; <code>None</code> means unbounded and is the opt-out; <code>0</code>
+and negatives raise <code>ValueError</code>, see SFTP-005) is applied via
+<code>Channel.settimeout()</code> in <code>_connect</code>, and <strong>every</strong> reconnect re-arms it on its
+new channel because it is applied there rather than at construction.</p>
+<p><strong>Why the default is a bound rather than <code>None</code>.</strong> The option shipped defaulting
+to <code>None</code>, which left the stall it exists to bound unbounded unless a caller
+opted in. Two things in this library made that the wrong resting state rather
+than a conservative one. <code>ReadOnlyHttpBackend</code> already defaults <code>timeout=30.0</code>
+and that bound reaches reads, so a user met a bounded read on HTTP and an
+unbounded one on SFTP with no principle separating them. And the recovery path
+below — <code>_is_connection_dead</code> → <code>_map_exception</code> → cleared client — was written
+presuming a bound exists; shipping the machinery without its trigger left the
+clause internally contradictory.</p>
+<p><strong>Why <code>120.0</code>.</strong> The asymmetry picks it, not a benchmark. Raising the value
+costs detection latency only, which is cheap: the bound is on silence <em>between</em>
+bytes, so a slow link is unaffected at any value. Lowering it converts a
+healthy-but-quiet server — an antivirus or dedup appliance scanning a large file
+on <code>open()</code> — into intermittent <code>BackendUnavailable</code>, which reads as network
+flakiness and is harder to diagnose than the hang it replaces. So the value is
+chosen against the longest <em>pause</em> a healthy server is expected to take on one
+operation, not against transfer duration — a stall surfaces inside two minutes,
+while a server that goes quiet on <code>open()</code> of a large file is left room. The
+originating issue's transfer times (214 MB in ~20 min, 2.0 GiB in ~70 min) do
+not constrain the choice and are not what it was sized against: expressing the
+bound as a fraction of them would use exactly the yardstick this clause tells
+callers not to use, and no fraction of a transfer time discriminates one silence
+bound from another. <code>120.0</code> is also the value the SFTP guide and the
+troubleshooting page already used in their worked examples before it became the
+default, so the value a reader was being shown and the one they got stop
+disagreeing. <strong>Both</strong> worked examples have since moved off it, because
+illustrating an option with its own default illustrates nothing; the pages state
+the default in prose and in the options table instead, which is where a reader
+looks for it.</p>
+<p><strong>It is a behaviour change for a caller who sets nothing</strong>, and shipped as one:
+an operation that previously blocked forever now raises <code>BackendUnavailable</code>
+after two minutes of silence. <code>io_timeout=None</code> restores the old behaviour.</p>
+<p><strong>The value is restated in prose across the source, this spec, the guides, the
+migration entry, the backlog and the tests, and nothing gates that.</strong> The
+constructor's signature is the source of the value;
+<code>test_default_arms_the_bound_on_the_channel</code> pins the constructor against a
+literal, so a silent change to the default fails there. No check compares any
+prose site to the signature, so that sweep is a reviewer's job.</p>
+<p><strong>No enumeration of those sites is given, deliberately.</strong> A list is the obvious
+mitigation and the wrong one: it is a second derived artifact over the same
+fact, so it goes stale exactly as the prose does, and a checklist a reader
+trusts and that is one entry short is worse than no checklist, because it stops
+the search. This clause carried such a list twice and it was short both times.
+Derive the set instead — <code>rg -n 'io_timeout' src docs-src sdd tests</code>, read the
+hits that state a value.</p>
+<p>Both halves are registered rather than assumed away.
+<a href="../../drift-rules/#mandatory-path"><code>DRIFT-RULES.md</code> Rule 5</a> asks why the check is
+not gating: a gate would have to parse a default out of a signature and match it
+against prose in four file formats, while the claim space is one number that
+changes about once per major behavioural decision.
+<a href="../../drift-rules/#tolerated"><code>Rule 6</code></a> asks for an owner and a rationale on what
+that leaves tolerated: <strong>owner BK-356</strong>, rationale as above.
+<a href="../../content-rules/"><code>CONTENT-RULES.md</code> Rule 5</a> is the authority the duplication
+actually diverges from — source-code facts stay in source — and the divergence
+is narrower than it looks: the options table and the migration entry have to
+state values to do their jobs, and what is genuinely tolerated is the narrative
+restatements beside them. The cost is real and was paid inside this item's own
+review, twice: a derived figure in a test docstring went stale one commit after
+review corrected it, and the enumeration this paragraph used to carry was
+incomplete when written.</p>
 <p><strong>It is armed before the SFTP session exists, not after.</strong> <code>_connect</code> opens the
 channel, arms the bound, then invokes the <code>sftp</code> subsystem and constructs the
 <code>SFTPClient</code>. That order is load-bearing: <code>SFTPClient.__init__</code> performs the
@@ -11868,6 +11936,15 @@ raises <code>socket.timeout</code>. Since it is <code>settimeout()</code>, the b
 well as reads, and a stalled write reaches it on the receive side like a read
 does. The distinct fault it covers is a request that never reaches the server,
 as against a reply that never returns.</p>
+<p>The "unaffected however long it takes" half is asserted by
+<code>test_a_transfer_slower_than_the_bound_is_not_interrupted</code>, which throttles a
+relay rather than stalling it — slow, never silent — and asserts both that the
+transfer completes intact and that it <em>outlived</em> the bound, so it cannot pass by
+finishing early. Named here for the reason the silent-close case below is: the
+<code>SFTP-030</code> marker says a test pins this clause, not which of its claims, and
+this is the claim that tells a slow-link caller to change nothing. It was
+unexecuted while the default was <code>None</code> and load-bearing from the moment the
+default became a bound.</p>
 <p>Note which round-trip a stalled write fails on, because it depends on <em>when</em> the
 peer went silent, not on which method was called. A stall already in effect when
 the call starts never reaches the payload: <code>write()</code> issues an existence <code>stat</code>
@@ -12047,7 +12124,9 @@ settled: a session-setup stall is arguably a connect failure and could be
 retried like one.</p>
 <p><strong>Rationale:</strong> Without this, a silent peer blocks forever while holding whatever
 pooled resource the operation runs on, and emits no signal — while the recovery
-machinery for exactly that fault already exists and merely lacks a trigger.
+machinery for exactly that fault already exists. That machinery lacked a trigger
+for as long as the default was <code>None</code>; arming it on every store is what the
+default above is for.
 <code>unwrap(SFTPClient).get_channel().settimeout()</code> is not a substitute: a
 transparent reconnect builds a fresh channel with <code>timeout=None</code>, so a
 caller-applied bound evaporates precisely after a recovered drop. Keeping the

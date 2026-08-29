@@ -58,27 +58,29 @@ pkey = SFTPUtils.load_private_key(pem_string)
 
 ## Options
 
-| Option            | Type            | Default              | Description                                                                                                                                        |
-| ----------------- | --------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `host`            | `str`           | *(required)*         | SFTP server hostname                                                                                                                               |
-| `port`            | `int`           | `22`                 | SSH port                                                                                                                                           |
-| `username`        | `str`           | `None`               | SSH username                                                                                                                                       |
-| `password`        | `str`           | `None`               | SSH password                                                                                                                                       |
-| `pkey`            | `paramiko.PKey` | `None`               | Private key for key-based auth                                                                                                                     |
-| `base_path`       | `str`           | `"/"`                | Root path on the remote server                                                                                                                     |
-| `host_key_policy` | `HostKeyPolicy` | `STRICT`             | Host key verification mode (see below)                                                                                                             |
-| `known_host_keys` | `str`           | `None`               | Known-hosts string (code-level override)                                                                                                           |
-| `host_keys_path`  | `str`           | `~/.ssh/known_hosts` | Path to known_hosts file                                                                                                                           |
-| `config`          | `dict`          | `None`               | Config dict (may contain `known_host_keys`)                                                                                                        |
-| `timeout`         | `int`           | `10`                 | Connect-phase timeout in seconds (connect, banner, auth, channel open)                                                                             |
-| `io_timeout`      | `float`         | `None`               | Seconds a blocking read or write on the open channel may stall before failing. `None` (the default) means no bound; `0` and negatives are rejected |
-| `connect_kwargs`  | `dict`          | `None`               | Extra kwargs passed to `SSHClient.connect()`                                                                                                       |
+| Option            | Type            | Default              | Description                                                                                                                             |
+| ----------------- | --------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `host`            | `str`           | *(required)*         | SFTP server hostname                                                                                                                    |
+| `port`            | `int`           | `22`                 | SSH port                                                                                                                                |
+| `username`        | `str`           | `None`               | SSH username                                                                                                                            |
+| `password`        | `str`           | `None`               | SSH password                                                                                                                            |
+| `pkey`            | `paramiko.PKey` | `None`               | Private key for key-based auth                                                                                                          |
+| `base_path`       | `str`           | `"/"`                | Root path on the remote server                                                                                                          |
+| `host_key_policy` | `HostKeyPolicy` | `STRICT`             | Host key verification mode (see below)                                                                                                  |
+| `known_host_keys` | `str`           | `None`               | Known-hosts string (code-level override)                                                                                                |
+| `host_keys_path`  | `str`           | `~/.ssh/known_hosts` | Path to known_hosts file                                                                                                                |
+| `config`          | `dict`          | `None`               | Config dict (may contain `known_host_keys`)                                                                                             |
+| `timeout`         | `int`           | `10`                 | Connect-phase timeout in seconds (connect, banner, auth, channel open)                                                                  |
+| `io_timeout`      | `float`         | `120.0`              | Seconds a blocking read or write on the open channel may stall before failing. Pass `None` for no bound; `0` and negatives are rejected |
+| `connect_kwargs`  | `dict`          | `None`               | Extra kwargs passed to `SSHClient.connect()`                                                                                            |
 
 ### Bounding a stalled transfer
 
-`timeout` covers only the connect phase. Once the channel is open, paramiko places no bound on reads, so a peer that completes the handshake and then stops sending mid-transfer blocks indefinitely — holding whatever pool slot or worker the transfer was running on, with no error to act on.
+`timeout` covers only the connect phase. Once the channel is open, paramiko places no bound of its own on reads, so a peer that completes the handshake and then stops sending mid-transfer would block indefinitely — holding whatever pool slot or worker the transfer was running on, with no error to act on. `io_timeout` is what stops that, and it is armed for you.
 
 `io_timeout` bounds the silence *between* bytes rather than the transfer as a whole, which is what makes it usable on slow links: a multi-gigabyte fetch that takes an hour is unaffected, while a flow that goes quiet for longer than the bound raises [`BackendUnavailable`](https://docs.remotestore.dev/stable/reference/api/errors/index.md).
+
+**It is on by default, at 120 seconds.** You get the bound without asking for it, so nothing you write hangs forever on a silent peer. What you configure is whether that value suits your server:
 
 ```
 from remote_store.backends import SFTPBackend
@@ -86,34 +88,42 @@ from remote_store.backends import SFTPBackend
 backend = SFTPBackend(
     host="files.example.com",
     username="deploy",
-    io_timeout=120,
+    io_timeout=300,   # a server that legitimately goes quiet for longer
 )
 ```
+
+**Size it against the longest legitimate pause your server can produce, not against total transfer time.** Raising it costs only how quickly a stall is noticed, which is cheap — the bound is on silence between bytes, so a slow transfer is unaffected at any value. Lowering it is the riskier direction: a server that goes quiet for legitimate reasons, such as an antivirus or dedup appliance scanning a large file when you open it, starts failing intermittently, which looks like network flakiness and is harder to diagnose than the hang the bound replaced.
+
+To turn the bound off entirely, pass `None`:
+
+```
+backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=None)
+```
+
+`0` is **not** how you ask for that — it is rejected with `ValueError`, because paramiko reads `0` as non-blocking rather than as a bound, and every SFTP operation waits on a reply, so all of them would fail at once.
 
 It is an ordinary option, so it is equally settable from a declarative config:
 
 ```
 BackendConfig(
     type="sftp",
-    options={"host": "files.example.com", "username": "deploy", "io_timeout": 120},
+    options={"host": "files.example.com", "username": "deploy", "io_timeout": 300},
 )
 ```
+
+**Opting out declaratively takes an explicit null, not an omitted key** — leaving `io_timeout` out selects the default, as it does in Python. In YAML that is `io_timeout: null`; TOML has no null literal, so a TOML-configured store that needs an unbounded channel has to construct the backend in code.
 
 The bound is re-applied on every reconnect, including the transparent ones the backend performs after a dropped connection, and it covers most of the SFTP session setup as well as later transfers. Setting it through the [escape hatch](#escape-hatch) instead does not survive those reconnects, because each one opens a fresh channel.
 
 Two limits, different in kind
 
-**A wedged SSH daemon is not bounded at all.** A server that opens the SSH channel and then never answers the `sftp` subsystem request still hangs, regardless of `io_timeout`: paramiko waits for that reply on an untimed event, so no channel timeout applies, and every reconnect re-enters that window. It needs a wedged SSH daemon rather than a wedged SFTP subsystem, so it is rarer than the stall this option does cover — but if a peer hangs with `io_timeout` set, this is the shape to suspect.
+**A wedged SSH daemon is not bounded at all.** A server that opens the SSH channel and then never answers the `sftp` subsystem request still hangs, regardless of `io_timeout`: paramiko waits for that reply on an untimed event, so no channel timeout applies, and every reconnect re-enters that window. It needs a wedged SSH daemon rather than a wedged SFTP subsystem, so it is rarer than the stall this option does cover — but if a peer hangs despite the bound, this is the shape to suspect.
 
 **Releasing a handle that never failed is bounded but silent.** Closing a stream you have not read to a failure on a stalled connection waits one `io_timeout` and then returns normally: paramiko catches that timeout inside its own close, so nothing is raised, `remote-store` logs nothing, and the dead connection stays cached for the next operation to wait on again. You see the delay, not the cause — paramiko's own DEBUG logging shows the close going out, but nothing there names the stall either. A stream whose read *did* fail costs nothing extra: that close is skipped.
 
 A stall that surfaces is reported, and no stall is retried: the connect-phase `RetryPolicy` does not cover one, so a partially consumed stream is never silently restarted underneath you. A streamed **read** raises rather than returning short, so a truncated transfer is never mistaken for a complete one — discard the handle and start again, since the bytes already delivered are a valid prefix but the handle is dead. The backend drops the dead client, so the next operation reconnects.
 
 Seeking to the end of a stream (`stream.seek(0, os.SEEK_END)`) asks the server for the file's size, so it is bounded and reported like any other operation on the channel. Worth knowing because you may not be the one writing the seek: `read_seekable()` hands the stream to analytical readers such as PyArrow, and a reader that sizes a file internally reaches it the same way — for files large enough to stream. The [PyArrow adapter](https://docs.remotestore.dev/stable/guides/pyarrow-adapter/index.md) materialises anything at or below its `materialization_threshold` and never seeks the stream at all.
-
-Choosing a value
-
-Size it against the longest legitimate pause your server can produce — an antivirus or dedup appliance may go quiet for a while on `open()` of a large file — not against total transfer time. `0` does not mean "no bound": it is rejected at construction, because paramiko reads it as non-blocking, which would fail every operation instantly. Use `None` for no bound.
 
 ## Preflight host-key discovery
 
@@ -219,7 +229,7 @@ Either composes cleanly with the library's `[sftp]` floor of `paramiko>=3.0`. To
 - **Lazy connect** — no network call happens during construction. The SSH/SFTP connection is established on the first operation.
 - **Auto-reconnect** — if the connection goes stale between operations, the backend reconnects transparently.
 - **Retry** — transient SSH errors (`SSHException`, `OSError`, `EOFError`) are retried up to 3 times with exponential backoff (2 s min, 10 s max). Retry covers establishing the SSH connection only; nothing after that is restarted, and a stall bounded by `io_timeout` is reported to the caller unless it is one of the silent cases above.
-- **Stall detection** — off by default; set [`io_timeout`](#bounding-a-stalled-transfer) to bound a read or write that stops making progress on an open channel.
+- **Stall detection** — on by default: [`io_timeout`](#bounding-a-stalled-transfer) bounds a read or write that stops making progress on an open channel at 120 s. Tune it, or pass `None` to opt out.
 - **Single connection, not thread-safe** — each `SFTPBackend` instance holds one paramiko `SFTPClient`. Calling it from multiple threads simultaneously (e.g. via `SyncBackendAdapter` + `asyncio.gather`) races on the shared socket. Create one `SFTPBackend` per thread for parallel workloads.
 
 ## Capabilities
@@ -276,7 +286,7 @@ SFTPBackend(
     host_keys_path: str | None = None,
     config: dict[str, Any] | None = None,
     timeout: int = 10,
-    io_timeout: float | None = None,
+    io_timeout: float | None = 120.0,
     connect_kwargs: dict[str, Any] | None = None,
     retry: RetryPolicy | None = None,
 )
@@ -305,7 +315,7 @@ Parameters:
 - **`host_keys_path`** (`str | None`, default: `None` ) – Path to known_hosts file (default: ~/.ssh/known_hosts).
 - **`config`** (`dict[str, Any] | None`, default: `None` ) – Optional config dict (may contain known_host_keys).
 - **`timeout`** (`int`, default: `10` ) – SSH connection timeout in seconds. Bounds the connect phase only — it is passed as paramiko's timeout / banner_timeout / auth_timeout / channel_timeout, the last of which bounds channel open, not traffic on an opened channel.
-- **`io_timeout`** (`float | None`, default: `None` ) – Seconds a single blocking read or write on the open SFTP channel may go without progress before it fails, or None (default) for no bound. Applied with Channel.settimeout() on every connect and every reconnect, and armed before the SFTP session setup, so a peer that completes the SSH handshake and then falls silent is bounded there too. This is silence between bytes, not a deadline for the whole transfer: a large file over a slow link is unaffected however long it takes, while a peer that stops sending mid-transfer raises BackendUnavailable instead of blocking forever. Must be positive when set; 0 is rejected because paramiko reads it as non-blocking. A streamed read raises rather than returning short, so a truncated transfer is never mistaken for a complete one. Seeking to the end of a stream (seek(0, SEEK_END)) asks the server for the file size, so a stall there raises like any other. Every stall that surfaces is reported, and none is retried: the retry policy wraps the SSH connect call alone, so a partially consumed stream is never silently restarted — and a stall during session setup is reported too, rather than retried as a connect failure would be.
+- **`io_timeout`** (`float | None`, default: `120.0` ) – Seconds a single blocking read or write on the open SFTP channel may go without progress before it fails. Defaults to 120.0; pass None for no bound. Applied with Channel.settimeout() on every connect and every reconnect, and armed before the SFTP session setup, so a peer that completes the SSH handshake and then falls silent is bounded there too. This is silence between bytes, not a deadline for the whole transfer: a large file over a slow link is unaffected however long it takes, while a peer that stops sending mid-transfer raises BackendUnavailable instead of blocking forever. That asymmetry is what picks the default: raising it costs only detection latency, since a slow link is unaffected at any value, while lowering it turns a healthy-but-quiet server — an antivirus or dedup appliance scanning a large file on open() — into intermittent BackendUnavailable, which reads as network flakiness and is harder to diagnose than the hang it replaces. Must be positive when set; 0 is rejected because paramiko reads it as non-blocking, so it is not the way to ask for no bound — None is. A streamed read raises rather than returning short, so a truncated transfer is never mistaken for a complete one. Seeking to the end of a stream (seek(0, SEEK_END)) asks the server for the file size, so a stall there raises like any other. Every stall that surfaces is reported, and none is retried: the retry policy wraps the SSH connect call alone, so a partially consumed stream is never silently restarted — and a stall during session setup is reported too, rather than retried as a connect failure would be.
 - **`connect_kwargs`** (`dict[str, Any] | None`, default: `None` ) – Extra kwargs passed to SSHClient.connect().
 
 ### check_health

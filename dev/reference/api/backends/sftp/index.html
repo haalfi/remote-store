@@ -11087,7 +11087,7 @@ paramiko. Explicit host key verification and Azure Key Vault PEM support.</p>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">host_keys_path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">config</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">timeout</span><span class="p">:</span> <span class="n"><span title="int">int</span></span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">io_timeout</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>    <span class="n">io_timeout</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="mf">120.0</span><span class="p">,</span>
 <a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>    <span class="n">connect_kwargs</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="n">retry</span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            RetryPolicy
 
@@ -11237,21 +11237,29 @@ channel <em>open</em>, not traffic on an opened channel.</p>
         <li class="doc-section-item field-body">
             <b><code>io_timeout</code></b>
               (<code><span title="float">float</span> | None</code>, default:
-                  <code>None</code>
+                  <code>120.0</code>
 )
           –
           <div class="doc-md-description">
             <p>Seconds a single blocking read or write on the open SFTP
-channel may go without progress before it fails, or <code>None</code>
-(default) for no bound. Applied with <code>Channel.settimeout()</code> on
+channel may go without progress before it fails. Defaults to
+<code>120.0</code>; pass <code>None</code> for no bound. Applied with
+<code>Channel.settimeout()</code> on
 every connect <em>and every reconnect</em>, and armed before the SFTP
 session setup, so a peer that completes the SSH handshake and then
 falls silent is bounded there too. This is silence between bytes,
 not a deadline for the whole transfer: a large file over a slow
 link is unaffected however long it takes, while a peer that stops
 sending mid-transfer raises <code>BackendUnavailable</code> instead of
-blocking forever. Must be positive when set; <code>0</code> is rejected
-because paramiko reads it as non-blocking. A streamed <code>read</code>
+blocking forever. That asymmetry is what picks the default: raising
+it costs only detection latency, since a slow link is unaffected at
+any value, while lowering it turns a healthy-but-quiet server — an
+antivirus or dedup appliance scanning a large file on <code>open()</code> —
+into intermittent <code>BackendUnavailable</code>, which reads as network
+flakiness and is harder to diagnose than the hang it replaces.
+Must be positive when set; <code>0</code> is rejected
+because paramiko reads it as non-blocking, so it is not the way to
+ask for no bound — <code>None</code> is. A streamed <code>read</code>
 raises rather than returning short, so a truncated transfer is
 never mistaken for a complete one. Seeking to the end of a stream
 (<code>seek(0, SEEK_END)</code>) asks the server for the file size, so a
