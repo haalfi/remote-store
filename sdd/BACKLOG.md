@@ -1195,14 +1195,16 @@ here as legitimately as "built".
 <a id="no-release-surprises"></a>
 ## 5. A release cannot ship a surprise
 
-**Promise:** nothing reaches a user that we did not test, publish, or watch.
+**Promise:** nothing reaches a user that we did not test, publish, watch, or
+give them a way to absorb.
 
 **Closes when:** every checker a diff can invalidate is reachable from a gate
 that diff actually triggers (BK-333); every extra's drift smoke exercises the
 packages it pins (BUG-250) and catches the drift that is visible only to a type
 checker (ID-250); **every install channel we intend to offer is
-published and working** (ID-018); and every upstream that can break us on its
-own schedule has a standing watch (ID-229, ID-225).
+published and working** (ID-018); every upstream that can break us on its
+own schedule has a standing watch (ID-229, ID-225); and every breaking change
+carries a published upgrade path by the time it ships (BUG-261).
 
 Clause 3 is stated as *intend to offer* rather than *already advertised*
 deliberately: ID-018 creates a channel rather than repairing a dead one, so the
@@ -1211,6 +1213,101 @@ narrower wording would be vacuously true while the item stays open.
 conda-forge reviewer, so no work in this repo can close section 5 — a real
 property of the section, not a defect in it, and stated so nobody reads the
 open item as neglect.
+
+- [ ] **BUG-261 — Two breaking changes are on master with no upgrade path, and the obligation is stated where their authors never read**
+  spec: — · effort: S · audience: user.api_docs, user.site, contributor.tooling
+  Three `[Unreleased]` entries carry `**Breaking**` — BK-357, BUG-248, BK-324
+  (derivation: `rg -n 'Breaking' CHANGELOG.md` returns 4 hits, 3 of them in that
+  section and the fourth inline in the 0.29.0 body). One of the three has a
+  migration section. `docs-src/reference/migration.md` § v0.30.0 to v0.31.0
+  covers BK-357's `SEEK_END` seek and nothing else, so a user upgrading past
+  `GraphBackend`'s absent-drive reclassification (BUG-248) or the
+  flat-namespace wrong-type `InvalidPath` (BK-324) gets no upgrade path at all.
+  **The work:** write both under the existing v0.30.0 to v0.31.0 heading, then
+  adjudicate the rule's softer half — `CONTRIBUTING.md` § Release Phase 1 also
+  owes a section to "any entry whose behaviour change a caller must act on",
+  and three unmarked entries are candidates a marker cannot decide: BUG-247 and
+  BUG-246 move an absent root or container from `InvalidPath` /
+  `BackendUnavailable` to `NotFound` / `False` / empty, so an existing `except`
+  clause stops firing, and BUG-243's own text says a caller who relied on a
+  tolerant delete raising after `close()` must now track the closed state.
+  **Why it happened is the part worth fixing.** The obligation lives in
+  `CONTRIBUTING.md` § Release Phase 1 — a checklist opened at release time, by
+  the releaser, not by the author of the breaking PR — and it is written as a
+  permission (a PR "**may** write its own section ahead of the release") backed
+  by a backstop. Nothing meets that author earlier: the
+  [ripple-check](CLAUDE-REFERENCE.md#detailed-checklist) § Release & meta has
+  rows for **Bug fix**, **CHANGELOG entry** and **Version number** and **no row
+  for a breaking change**, so an author who consults it before starting is told
+  to write a CHANGELOG stub and nothing about the migration guide.
+  **First recorded in [`traces/bk-357-seek-end-size-probe.yml`](traces/bk-357-seek-end-size-probe.yml)**,
+  whose `surprising_ripples` names `CONTRIBUTING.md` and says Phase 1 lists
+  CHANGELOG, BACKLOG-DONE, FEATURES, README, guides and DEVELOPMENT_STORY and
+  not `migration.md`, "so the upgrade note for a breaking change had no owner in
+  the checklist. Found by asking where to put this change's note, not by any
+  row." That trace filed no `discovery_followups`, so this item is where the
+  diagnosis lands.
+  **This cycle's rate is 1 of 3, which is not the same claim as an unused
+  path.** Three PRs marked an entry `**Breaking**` and one touched
+  `migration.md`, and the same trace records a prior where the author side did
+  the work: BK-302, a feature PR, added its own `## v0.28.0 to v0.29.0` section
+  four days before v0.29.0 shipped — which is also what `CONTRIBUTING.md:492`
+  means by "several have". Carried from the trace, not re-derived: that commit
+  predates this checkout's graft (`git cat-file -e 6f5cfff` fails), and what is
+  checkable here is the section it left behind, which `migration.md` still
+  carries. The defect is that nothing *asks*, not that nobody ever does it.
+  **Derive that rate shallow-safely, because the obvious command lies here.**
+  `git rev-parse --is-shallow-repository` returns `true` in this checkout, and
+  the same trace records the measured consequence: an earlier round argued from
+  `git log -- docs-src/reference/migration.md` returning two commits, when full
+  history has 11 — which is how BK-302 was missed. The graft's SHA differs per
+  checkout (the trace names `21d2329`; this one grafts at `0f43910`), so the
+  check is the command, never the SHA. The window here survives that, and the
+  survival is the derivation: `git merge-base --is-ancestor <graft> 7931c7d`
+  succeeds, so the v0.30.0 release commit is a descendant of the graft and the
+  46 commits after it are whole; `git log --oneline 7931c7d..HEAD --
+  docs-src/reference/migration.md` then returns exactly one, 47f1b16 for BK-357.
+  A window that started before the graft would have needed a different
+  instrument — the three entries' own merge commits, say.
+  **Three dispositions, not one, and they are not exclusive.**
+  - *Ruling.* Promote the permission to an obligation and add the ripple-check
+    row. Cheapest, and it puts the rule where the author already looks — the
+    version pair is knowable at authoring time, since `CONTRIBUTING.md`
+    § When to bump fixes a pre-1.0 breaking change at a minor bump, which is
+    how BK-357 wrote `v0.30.0 to v0.31.0` before any release stamped it. The
+    row's *shape* is the shared question BK-346 carries (N rows versus widened
+    rows); this item names it rather than answering it, and BK-346's answer
+    governs. **That is a dependency of this disposition, not of the item**, so
+    the cross-section rule in [§ How this file works](#how-this-file-works) does
+    not bite and section 5's `Closes when` names no BK-346: the item closes by
+    writing the two migration sections, with or without a row ever existing.
+    Stated because a reader of section 5 alone would otherwise have to open
+    section 6 to find that out.
+  - *Tooling.* A gate over the same rule: if any `[Unreleased]` entry contains
+    `**Breaking**`, `migration.md` must carry `## v<current> to v<next minor>`,
+    with both halves **derived** ([Rule 3](DRIFT-RULES.md#claim-space)) —
+    entries from the section, current version from the `pyproject.toml` field
+    `bump-my-version` owns, next from the bump table. Localizes to the entry IDs
+    and the expected heading ([Rule 2](DRIFT-RULES.md#localize)). Wire per the
+    BK-333 trap: both files sit in `ci.yml`'s `DOCS_PAT`, not `CODE_PAT`.
+  - *Marker survival.* The marker exists **only** while the section is
+    unreleased — Phase 2's condensation into `### Added` / `### Changed`
+    prose drops it, which is why the 38 released sections carry one bold
+    `**Breaking**` between them. Keeping it through condensation is what would
+    let anything audit history rather than only the current window.
+  **Bounds any of the three inherits** ([Rule 7](DRIFT-RULES.md#miss-rate)):
+  the softer half of the rule is a judgment no marker decides, so a gate
+  measures the marked subset and its miss rate is the unmarked candidates
+  above. And it can check that the *section* exists, never that it covers each
+  breaking entry: `scripts/check_no_tracker_refs.py` scans every `.md` under
+  `docs-src/` and fails any `PREFIX-NNN`, so the published migration guide
+  cannot cite the entry it answers, and per-entry accountability would have to
+  live on the `sdd/` side.
+  Same file and same window as **ID-252** in section 6, which lints the
+  `[Unreleased]` section's own integrity; the surfaces overlap rather than
+  coincide (that item never reads `migration.md`), so they stay separate and a
+  shared entry parser is an implementation convenience, not the reason either
+  exists.
 
 - [ ] **ID-250 — The drift smoke never type-checks, so a signature-only narrowing reaches PRs as a red gate**
   spec: — · effort: M · audience: infra.ci
@@ -1385,16 +1482,18 @@ open item as neglect.
 ## 6. The repo does not mislead the next person
 
 **Promise:** the artifacts maintainers coordinate through — this file, the
-ripple-check, the revisit pins, the generated inventories — say what is
-actually true.
+ripple-check, the revisit pins, the generated inventories, the unreleased
+CHANGELOG the release body is built from — say what is actually true.
 
-**Closes when:** the backlog files are structurally linted (ID-235); the
+**Closes when:** the backlog files are structurally linted (ID-235);
+CHANGELOG `[Unreleased]` is linted for duplicate entries, stub shape and the
+audience rule (ID-252); the
 ripple-check's six measured blind spots are answered (BK-346); the
 hand-maintained inventories ID-245 names are generated — four bullets, of which
 the checker inventory has shipped; `check_formal_trace` proves
 assertion rather than citation (ID-207); and both open revisit pins have fired
 and named successors (ID-150, ID-249).
-**Bounded to those five deliberately.** "No artifact asserts what no mechanism
+**Bounded to those six deliberately.** "No artifact asserts what no mechanism
 can check" is the promise and cannot be a closing condition: this section's own
 preamble records that detecting the remaining class needs semantic comparison of
 prose, which research § 1 marks as having no general oracle. Nor is "no figure
@@ -1491,6 +1590,95 @@ the commit that writes it lands, so cite the generator instead.
   gate an `sdd/`-only change actually runs. This item is a live instance of its
   own subject — the deletions that produced this file's current shape are
   exactly the event the second pass exists to catch.
+
+- [ ] **ID-252 — CHANGELOG `[Unreleased]` is unlinted, so a duplicated entry shipped and contradicts itself**
+  spec: — · effort: S · audience: contributor.tooling
+  Three properties of the section are stated as rules and checked by nobody:
+  entries are unique per ID, each is a one-line `- <ID>: <Title>` stub
+  ([`CLAUDE-REFERENCE.md`](CLAUDE-REFERENCE.md#detailed-checklist) rows
+  **CHANGELOG entry**, both presentations), and an entry exists exactly for the
+  items whose `audience` is user-facing
+  ([`traces/_schema.yml`](traces/_schema.yml) derived rule). Sibling of ID-235
+  above in shape and script family, different artifact; independent of it, so
+  either may ship first.
+  **The first property failed on master.** `BK-355` and `BK-354` each appear
+  twice under `[Unreleased]`, and the lower copy of each is the pre-BK-357
+  wording — so the section states both that SFTP-030 records one exception and
+  that it "still records two", and calls BK-357 filed-and-open two lines below
+  the entry that closes it. Derivation: `git show 47f1b16 --numstat --
+  CHANGELOG.md` returns **3 insertions, 0 deletions**, so the BK-357 PR added
+  amended copies above and left the originals in place.
+  **It is a recurrence, one merge apart.** The immediately preceding CHANGELOG
+  commit (`04f6123`, BUG-259) records catching the identical resolution on its
+  own branch by hand: "resolving the CHANGELOG conflict as 'keep both sides'
+  duplicated BK-354 … A conflict where one side is a revision of the other is
+  not a keep-both." Found by a reviewer once, missed by the next merge — which
+  is the argument for a check rather than another convention.
+  **The repair precedes the check and is not part of it.** Deleting the two
+  stale lines needs no mechanism to exist first, and until it happens a
+  duplicate-ID check is red on master from its first commit. It is also owed
+  ahead of any tooling on its own terms: `CHANGELOG.md` carries a
+  `doc: dual dest=reference/changelog.md` marker, so the contradiction is live
+  on the docs site, and [principle 3](../CLAUDE.md#principles) does not wait for
+  a gate. So this item does not own it: whichever change lands first — the
+  check, a release's Phase 1 condensation, or any PR touching the section — the
+  two lines go, and the check is written against a file that already reads
+  correctly. Deliberately not fixed in the PR that filed this item, on the
+  author's decision to scope that PR to the tooling gap alone.
+  **Nothing mechanical looks at this file's content.** `CHANGELOG` appears in
+  `scripts/` only in `docs/check_links.py`, `gen_pages.py`,
+  `check_no_tracker_refs.py` and `mkdocs_hooks.py`, all link or render concerns,
+  and in `.github/workflows/ci.yml` only inside `DOCS_PAT`. The whole defense is
+  `.github/PULL_REQUEST_TEMPLATE.md:24` and review attention.
+  **Claim spaces, all three derived** ([Rule 3](DRIFT-RULES.md#claim-space)):
+  the entries parse out of the section itself, and the audience side off the
+  `spec: · effort: · audience:` line each `BACKLOG-DONE.md` § Unreleased entry
+  already carries. Measured 2026-08-29 by parsing both — splitting each
+  `audience:` line on `,`/`·` and testing each tag for a `user.` prefix, which
+  is the schema's predicate rather than a substring search: 19 entries (17
+  distinct, the two duplicates being the defect above) against 39 items, of
+  which **16** carry a `user.*` tag; all 16 have an entry and no other item
+  does. So the audience rule holds by discipline today, which is ID-235's
+  situation exactly, and the duplicate is what discipline already missed.
+  **That figure was 13 in the first draft, and how it was wrong is worth the
+  line.** 13 is exactly the count of items tagged `user.api*`; the three it
+  drops are the three whose only user tag is something else — BK-320 and
+  BUG-235 (`user.site`) and BK-317 (`user.discoverability.llm`). The parse ran
+  the right predicate and the sentence was written from a hand count of its
+  output, so it read as a narrower predicate that nobody had chosen. A figure
+  in an item arguing for derived claim spaces is the last place to count by
+  eye.
+  **Two questions the item does not presuppose.**
+  - *Shape, and whether it can be enforced as written.* Nine of the 19 entries
+    are release-grade prose rather than stubs — 88 to 4,910 characters, the nine
+    over 1 kB being BUG-259, BK-357, both BK-354 copies, both BK-355 copies,
+    BUG-247, BUG-248 and BUG-243 — so a strict gate fails on master the day it
+    lands. Condense them (which `CONTRIBUTING.md` Phase 1 does at release time
+    anyway), check only the machine-decidable half (one line, `- <ID>: ` prefix),
+    or measure and report per [Rule 5](DRIFT-RULES.md#mandatory-path). Not a
+    detail of the duplicate check but its cause: at one line each, two BK-355
+    entries are unmissable; at 2.3 kB each they sat four lines apart unseen.
+  - *Which side governs when the two sets differ*
+    ([Rule 4](DRIFT-RULES.md#authority)), decided in writing before the check
+    exists. The live instance is `ID-245`, which has an entry and no
+    `BACKLOG-DONE.md` counterpart because the item is still open in this file
+    with one bullet shipped (`40e5b74`). So "every entry has a completed item"
+    is false as stated, and the partially-shipped case needs a rule — its home
+    is `CONTRIBUTING.md` § Release Phase 1, whose existing check runs
+    completed-item → entry only.
+  **Bound to state in the check** ([Rule 7](DRIFT-RULES.md#miss-rate)): it keys
+  on the ID at line start, so it catches a duplicated entry and cannot catch a
+  single entry whose *content* went stale — the wider defect BUG-259's commit
+  message describes. It says nothing about whether a title is right, and nothing
+  about released sections. A `Drift-gate::` block puts it in
+  [`GATE-INVENTORY.md`](GATE-INVENTORY.md).
+  **Wiring, per the trap BK-333 documents:** `CHANGELOG.md` matches `ci.yml`'s
+  `DOCS_PAT` and not `CODE_PAT`, so a CHANGELOG-only diff runs `docs-gate` and
+  not `lint` — reach both, or the check is unreachable for the diff class that
+  invalidates it.
+  Reads the same section as **BUG-261** in section 5, which is about what a
+  `**Breaking**` entry owes the migration guide; the surfaces overlap and do not
+  coincide, so both stand.
 
 - [ ] **BK-346 — The ripple-check table answers questions adjacent to the ones asked**
   spec: — · effort: S/M · audience: contributor.process
