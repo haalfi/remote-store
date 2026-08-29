@@ -106,7 +106,7 @@ for what section N answers has an authoritative place to look.
 | 7. Deployment view | [`infra/`](../../infra), [`packaging/`](../../packaging) | Largely inapplicable |
 | 8. Cross-cutting concepts | [spec 004](../specs/004-path-model.md), [spec 005](../specs/005-error-model.md), [spec 020](../specs/020-credential-hygiene.md), [spec 025](../specs/025-retry-policy.md), [`sdd/formal/`](../formal), the conformance suite | Stronger than the template asks |
 | 9. Architecture decisions | [`sdd/adrs/`](../adrs) plus a generated [`DIGEST.md`](../adrs/DIGEST.md) with a gated supersession graph | Stronger |
-| 10. Quality requirements | [`README.md` § Quality & Testing](../../README.md) names nine verified dimensions; each is enforced by a mechanism, not asserted — `benchmarks/` baseline gate, `mutation.yml`, `drift-guard.yml`, `codeql.yml`, `ci-full.yml` (inventoried in [`CI-OPERATIONS.md`](../CI-OPERATIONS.md)), the 95% coverage floor, the Dafny layer, Hypothesis, the conformance suite | Stronger — the requirements execute rather than being read |
+| 10. Quality requirements | [`README.md` § Quality & Testing](../../README.md) names the dimensions this project verifies — spec-driven development, design by contract, examples and snippets, unit tests, dependency drift, property-based testing, formal verification, mutation testing, benchmarks. Each is carried by a mechanism rather than a paragraph: `benchmark.yml`'s baseline gate, `mutation.yml`, `drift-guard.yml`, the Dafny layer, Hypothesis, `tests/test_snippets.py`, the conformance suite, the coverage floor | Stronger — the requirements execute rather than being read |
 | 11. Risks and technical debt | [`BACKLOG.md`](../BACKLOG.md), [`BACKLOG-DONE.md`](../BACKLOG-DONE.md), [`sdd/audits/`](../audits) | Stronger |
 | 12. Glossary | Absent | Absent, and § 3.4 finds no cost |
 
@@ -116,15 +116,21 @@ has little subject matter in a library, and 12, which is genuinely absent.
 The four rows marked stronger are not close.
 
 - **§ 8 and § 9** are prose a reader consults in arc42; specs 004, 005, 020 and
-  025 are normative clauses with stable `PREFIX-NNN` identifiers, traced to
-  conformance tests by
+  025 are normative clauses with stable `PREFIX-NNN` identifiers, mechanically
+  wired to tests by
   [`check_spec_marks.py`](../../scripts/check_spec_marks.py), with a Dafny layer
-  under `sdd/formal/` for the core contract.
+  under `sdd/formal/` for the core contract. **That gate's own stated bound is
+  citation, not assertion** — it proves every shipped spec ID is cited by a
+  `@pytest.mark.spec` marker somewhere under `tests/`, and does not prove the
+  marked test asserts the clause, is enabled, or cites the right ID. So the
+  claim here is that the clauses are *identified and tracked*, which is what
+  arc42 § 8 and § 9 do not ask for at all; it is not a claim that each is
+  proven.
 - **§ 10** asks for measurable quality scenarios a reader converts into tests.
-  Here the conversion has already happened in the other direction: each of the
-  nine dimensions README names is a mechanism that fails a job. `mutation.yml`
-  and `drift-guard.yml` run on their own schedules and open rolling issues;
-  `codeql.yml`, `ci-full.yml` and `benchmark.yml` have runbooks in
+  Here the conversion has already happened in the other direction: the
+  dimensions README names are carried by mechanisms that fail a job.
+  `mutation.yml` and `drift-guard.yml` run on their own schedules and open
+  rolling issues; `benchmark.yml` and `ci-full.yml` have runbooks in
   [`CI-OPERATIONS.md`](../CI-OPERATIONS.md), whose inventory
   `check_ci_inventory.py` gates against `.github/workflows/`. A scenario that
   runs weekly and files its own issue is not improved by also being a paragraph.
@@ -188,32 +194,47 @@ It is cited **once** in the entire trace corpus (`rg -c
 'docs-src/explanation/architecture\.md' sdd/traces` returns one file with one
 hit, `bk-246-tracker-id-cleanup.yml`, where it was edited rather than consulted).
 
-Counting citations by artifact class with one consistent method — `rg -c
-'<prefix>' sdd/traces`, which counts every mention in a trace, not only step
-references:
+Counting citations by artifact class, **per document rather than per class**,
+because a class total over 50 files against a single file is not a comparison.
+One consistent method: `rg -c '<anchored pattern>' sdd/traces`, which counts
+every mention in a trace rather than only step references, over patterns
+anchored so they match the documents themselves and not the directory or its
+docs-site mirrors.
 
-| Artifact class | Mentions in `sdd/traces` | Files |
-|---|---:|---:|
-| `sdd/specs/` | 359 | 147 |
-| `sdd/adrs/` | 93 | 32 |
-| `docs-src/explanation/` (every page under it) | 60 | 49 |
-| `docs-src/explanation/architecture.md` | 1 | 1 |
+| Artifact class | Pattern | Mentions | Documents | Per document |
+|---|---|---:|---:|---:|
+| Specs | `sdd/specs/[0-9]` | 351 | 50 | **7.0** |
+| Explanation pages | the six `docs-src/explanation/*.md` names | 16 | 6 | **2.7** |
+| ADRs | `sdd/adrs/[0-9]` | 79 | 38 | **2.1** |
+| `architecture.md` alone | its own path | 1 | 1 | 1.0 |
 
-**Read the method, not just the ranking.** This counts mentions, which is a
-looser measure than the report's `reads` column (steps citing a reference); for
-`architecture.md` the two agree at 1, and for the classes the mention count is
-the reproducible one. It is a measure of what contributors and agents working in
-this repo consult, and says nothing about end users of the docs site, who are the
-audience `docs-src/explanation/` is written for and who leave no traces. The claim
-is therefore bounded: **narrative architecture prose is the least-consulted
-artifact class in the agent-facing corpus**, not that it is unread by everyone.
+**This is weaker than the earlier draft of this section claimed, and the
+correction is the point.** An unanchored count normalised by *citing traces*
+rather than by documents put explanation pages last; anchoring the patterns and
+dividing by the document count does not. Read straight:
 
-That bound does not weaken the conclusion, because arc42's case is specifically an
-*agent-behaviour* case. The pitch is that agents consult these documents before
-proposing changes. In the one instance where this repo already runs that
-experiment, they do not, and the artifacts they do consult — specs, the backlog,
-the ripple-check, source — are the ones with identifiers, gates and obligations
-attached.
+- **Specs dominate.** At 7.0 mentions per document they are consulted roughly
+  three times as often as either narrative class.
+- **Explanation pages and ADRs are comparable** (2.7 against 2.1). Narrative
+  prose is *not* the least-consulted class here, and any sentence saying so is
+  unsupported.
+- **`architecture.md` at 1 is below its own class mean of 2.7**, but that is
+  **n = 1** — stated because the framing flatters it, the way
+  [BK-332](../BACKLOG.md) states its own.
+
+Two further bounds. The count is mentions, looser than the report's `reads`
+column; for `architecture.md` the two agree at 1. And it measures what
+contributors and agents in this repo consult, saying nothing about docs-site
+readers, who are `docs-src/explanation/`'s actual audience and leave no traces.
+
+**What this section can and cannot carry.** It cannot carry "agents ignore
+narrative architecture prose" — the corrected figures do not support it. What it
+carries is narrower: agents reach for identified, gated artifacts at several
+times the rate they reach for prose of any kind, and the single existing
+document of arc42's exact shape is at the bottom of its own class. That is
+suggestive rather than decisive, and the full-skeleton reject in § 3.4 does not
+rest on it: Rules 1 and 8, `AUTHORING.md` Rule 2 and ADR-0006 are structural and
+hold whatever these counts say.
 
 ### 3.3 The one cluster that looks arc42-shaped, and what it actually is
 
@@ -298,38 +319,45 @@ reject the whole.
 § 2.2 now records: § 2's conventions are a declared nine-document framework, and
 § 10's requirements execute. Both were corrected by opening the source — the
 [`CONTRIBUTING.md`](../../CONTRIBUTING.md#authoritative-document-format) scope
-list and `README.md` § Quality & Testing — after a first pass had judged them from
-the section names. That is the same defect twice, and § 3.4's § 10 note and
-§ 4.3's closing paragraph both turn on it.
+list and `README.md` § Quality & Testing — after a first pass had judged them
+from the section names. § 4.3 collects that defect with the two others review
+found, because all three are one failure mode rather than three mistakes.
 
 | Candidate | Trace evidence | Second instrument | Verdict |
 |---|---|---|---|
-| § 10 — quality requirements as measurable scenarios | Zero tags; and the filter is blind here (§ 3.1) | The requirements **exist and execute**, across all nine dimensions README names — not only performance. `benchmarks/baseline/local-baseline.json` at `threshold 2.0` / `min-abs 0.0005` in [`benchmark.yml`](../../.github/workflows/benchmark.yml); `mutation.yml` and `drift-guard.yml` on their own schedules with rolling issues; `codeql.yml`; `ci-full.yml`; the 95% coverage floor; the Dafny layer and conformance suite. The benchmark gate's local-only scope is registered in BK-309's `BACKLOG-DONE.md` entry, the [Rule 6](../DRIFT-RULES.md#tolerated) form | **Reject** |
+| § 10 — quality requirements as measurable scenarios | Zero tags; and the filter is blind here (§ 3.1) | The requirements **exist and execute**, across the dimensions README names — not only performance. `benchmarks/baseline/local-baseline.json` at `threshold 2.0` / `min-abs 0.0005` in [`benchmark.yml`](../../.github/workflows/benchmark.yml); `mutation.yml` and `drift-guard.yml` on their own schedules with rolling issues; `ci-full.yml`; the coverage floor; the Dafny layer, Hypothesis, `tests/test_snippets.py` and the conformance suite. The benchmark gate's local-only scope is registered in BK-309's `BACKLOG-DONE.md` entry, the [Rule 6](../DRIFT-RULES.md#tolerated) form | **Reject** |
 | § 2 — a single constraints home | The 5 guide tags are drift between two prose statements of one contract; spec 003's 7 are the normative doc being amended, not a missing home (§ 3.3) | The conventions already have a home *and a declared read order* — the nine process documents `CONTRIBUTING.md` scopes. The one measured drift site is held twice more: [`check_custom_backend_guide.py`](../../scripts/check_custom_backend_guide.py) in `lint` and `docs-gate`, plus **BK-332** on a Rule 9 cadence | **Reject** — the evidence argues the other way |
-| § 12 — glossary | Zero tags; a keyword pass over all 241 negative tags for terminology, vocabulary, naming and ambiguity returns no instance of a reader blocked on vocabulary | No non-prose form exists, so this candidate genuinely survives instrument two — and has no evidence of cost to justify it | **Reject**, revisitable (§ 4.2) |
-| Full twelve-section skeleton | `architecture.md`, the one document of this class, is cited once in 287 traces (§ 3.2) | Rules 1 and 8; `AUTHORING.md` Rule 2; ADR-0006 | **Reject** |
+| § 12 — glossary | **Decided here.** A keyword pass over all 241 negative tags for terminology, vocabulary, naming and ambiguity returns no reader blocked on vocabulary. § 3.1's blindness does not apply: a missing glossary leaves no tag *on the glossary*, but it surfaces as an `unclear` tag on whatever document the reader did open and could not parse — which the corpus records | No non-prose form exists, so this is the one candidate instrument two does not decide | **Reject**, revisitable (§ 4.2) |
+| Full twelve-section skeleton | Suggestive only, and § 3.2 says so: specs are cited ~3× more per document than prose of either kind, and `architecture.md` sits below its own class mean — but at n = 1 | **Decided here.** Rules [1](../DRIFT-RULES.md#one-driver) and [8](../DRIFT-RULES.md#independence); `AUTHORING.md` Rule 2; ADR-0006 makes the conventional `docs/` location generated and gitignored | **Reject** |
 
 Two rows deserve their reasoning stated rather than compressed into a verdict.
 
-**§ 10 is the row this evaluation got wrong twice, and the second miss is the
-instructive one.** The pre-evidence reading was that quality requirements were
-the strongest candidate, because `benchmarks/` measures and no prose states a
-target. Opening `benchmark.yml` falsified that: a committed baseline, a stated
-threshold, a stated floor, a stated scope and a registered bound are more than
-arc42 § 10 asks for, and they fail a job rather than advising a reader.
+**§ 10 is the row this evaluation got wrong three times**, and each miss is a
+different shape of the same defect.
 
-**The correction was then itself under-scoped**, and review caught it. Having
-opened the benchmark workflow, the row was rewritten to cite *only* the benchmark
-workflow — as though performance were the whole of § 10. `README.md` § Quality &
-Testing enumerates **nine** verified dimensions, of which benchmarks is one, and
-[`CI-OPERATIONS.md`](../CI-OPERATIONS.md)'s gated inventory carries five more
-`.github/workflows/` rows besides `benchmark.yml`. So the first fix
-repaired the sentence a reviewer would have pointed at and left the class it
-belonged to open — the failure mode
-[`BACKLOG.md` § Item authority](../BACKLOG.md#how-this-file-works) describes, met
-here in a research doc rather than an item.
+*First*, the pre-evidence reading called quality requirements the strongest
+candidate, because `benchmarks/` measures and no prose states a target. Opening
+`benchmark.yml` falsified that: a committed baseline, a stated threshold, a
+stated floor, a stated scope and a registered bound are more than arc42 § 10
+asks for, and they fail a job rather than advising a reader.
 
-What is absent in both readings is the *restatement*, and
+*Second*, that correction was itself under-scoped. Having opened the benchmark
+workflow, the row was rewritten to cite *only* the benchmark workflow — as
+though performance were the whole of § 10. It repaired the sentence a reviewer
+would have pointed at and left the class it belonged to open, the failure mode
+[`BACKLOG.md` § Item authority](../BACKLOG.md#how-this-file-works) describes,
+met here in a research doc rather than an item.
+
+*Third*, the widened replacement was written from `CI-OPERATIONS.md`'s workflow
+inventory rather than from `README.md` § Quality & Testing — so it offered a
+nine-item list of *mechanisms* as though it enumerated the nine *dimensions*.
+It did not: `codeql.yml` answers to no README dimension, while design by
+contract and examples-and-snippets, two of the nine, had no entry. The total
+reached nine by adding one non-dimension and dropping two, which is exactly why
+the arithmetic did not flag it. The row now names the dimensions from README and
+lists mechanisms as illustration, claiming no bijection.
+
+What is absent in all three readings is the *restatement*, and
 [principle 8](../../CLAUDE.md#principles) puts a quality bar's authoritative home
 at the mechanism that enforces it. The residue is real and already registered:
 only the local backend is timing-gated, because the Docker backends have no
@@ -417,20 +445,32 @@ and the same filter run there would return the opposite answer. What is being
 rejected is a second description of ground already held normatively — not the
 template.
 
-**Two of the four dispositions were argued from an under-read of this repo before
-review corrected them** (§ 3.4). That is worth stating as a limit on the method
-and not only as a fixed defect: the mapping in § 2.2 is a *reading* of where each
-answer lives, and a reading can be short in a direction its own author cannot
-see. Both misses ran the same way — judging a section from its name against a
-sample of its homes, rather than from the repo's own enumerations
-(`CONTRIBUTING.md` § Scope, `README.md` § Quality & Testing,
-`CI-OPERATIONS.md`'s gated inventory). Both made the rejected candidate look
-*more* attractive than the evidence supports, so the direction of the error was
-toward adopting, and the verdict survived correction in both rows. A future
-reading that reverses one should check that enumeration first.
+**Three rounds of review corrected the reasoning under this document, and never
+a verdict.** Stated as a limit on the method rather than as a list of fixed
+defects, because the pattern is one thing:
+
+1. § 2's row was judged from the section name against a sample of its homes,
+   missing the nine-document framework `CONTRIBUTING.md` § Scope enumerates.
+2. § 10's row was judged the same way, then *re-*judged from the workflow
+   inventory instead of from `README.md` § Quality & Testing — so the widened
+   replacement named a set that was not the dimensions it claimed to be naming.
+3. § 3.2's table compared class totals against a single file, and the first
+   attempt to normalise it divided by *citing traces* rather than by documents,
+   which reversed the result. Anchoring the patterns and dividing by document
+   count removed the "least-consulted class" claim entirely.
+
+Every one is the same defect: **a sentence naming a source it did not reopen at
+the moment of writing.** All three ran in the same direction — making the
+rejected candidate look better supported than it was — which is why the four
+Rejects survived. That is luck about direction, not a property of the method.
+A future reading that wants to reverse one of these should start from the
+enumerations, not from this document's summary of them: `CONTRIBUTING.md`
+§ Scope, `README.md` § Quality & Testing, `CI-OPERATIONS.md`'s gated inventory,
+and, for anything counted per class, the document count rather than the trace
+count.
 
 **§ 3.2's measure is agent-facing and bounded.** It counts what leaves a trace,
 which is contributor and agent work. `docs-src/explanation/` is written for docs
-site readers, who leave none. A low citation count there is evidence about the
-agent-behaviour claim arc42 is being evaluated on, and is not evidence that the
+site readers, who leave none. Its citation rate is evidence about the
+agent-behaviour claim arc42 is being evaluated on, and is not evidence that any
 page fails its own audience.
