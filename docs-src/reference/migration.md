@@ -15,18 +15,28 @@ bound and no way to set one. v0.31.0 adds `SFTPBackend(io_timeout=...)` and
 defaults it to `120.0` seconds, so every caller is affected whether or not they
 configure anything.
 
-**To restore the previous behaviour, pass `None`:**
+**If your server legitimately pauses for minutes, raise the bound rather than
+removing it:**
+
+```python
+backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=300)
+```
+
+That is the usual answer for an antivirus or dedup appliance that goes quiet on
+`open()` of a large file: you keep the protection and move the threshold past
+your server's longest legitimate pause.
+
+**To remove the bound entirely, pass `None`:**
 
 ```python
 backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=None)
 ```
 
-That is the v0.30.0 behaviour exactly. Reach for it if your server legitimately
-goes silent for more than two minutes mid-operation and you would rather wait
-than fail. Note `0` is **not** the
-opt-out — it raises `ValueError`, because paramiko reads it as non-blocking
-rather than as a bound, and every SFTP operation waits on a reply, so all of
-them would fail at once.
+That restores the unbounded channel, and only that — the other v0.31.0 change on
+this backend, in the next section, applies whatever you pass here. Note `0` is
+**not** the opt-out — it raises `ValueError`, because paramiko reads it as
+non-blocking rather than as a bound, and every SFTP operation waits on a reply,
+so all of them would fail at once.
 
 **What changes if you do nothing.** An operation against a peer that completes
 the SSH handshake and then stops sending used to block forever, with no

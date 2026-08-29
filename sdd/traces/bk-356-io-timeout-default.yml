@@ -18,6 +18,7 @@ audience:
   - user.site
 discovery_followups:
   - BK-359
+  - BK-360
 # sdd/backlogid.json is deliberately absent: the ripple-check anticipates it
 # after a BACKLOG move, and `hatch run gen-backlogid` was run, but it produced
 # no change — the generator stores the max *done* ID per prefix and
@@ -33,17 +34,20 @@ expected_ripples:
 # `git log --oneline origin/master..HEAD`, a4feee9 implements and does not
 # count; ef3edad and b692e12 incorporate review round 1, fb6fbb3 incorporates
 # round 2, 422d119 incorporates round 3 (the closing panel), 1e265fd
-# incorporates round 4, 192996b incorporates round 5, and e28d4c5
-# incorporates round 6.
-# Value is 6 — rounds, not commits, which is why ef3edad and b692e12
-# count once between them, and why every "Name the round-N fix commit in the
-# trace" commit counts for nothing. That class is stated as a class rather than
-# listed: review round 5 caught the listed form two members short, because the
-# branch grows one such commit per round and a closed list cannot. Each SHA is
+# incorporates round 4, 192996b incorporates round 5, e28d4c5 incorporates
+# round 6, and the round-7 fix commit is named here once it exists.
+# Value is 7 — rounds, not commits, which is why ef3edad and b692e12
+# count once between them, and why every per-round bookkeeping commit — the ones
+# that only name a SHA or append to the trace and the register, whatever their
+# subject line — counts for nothing. Stated as a class rather than a list
+# because the branch grows one per round and a closed list cannot keep up:
+# round 5 caught the listed form two members short, and round 7 caught the first
+# attempt at the class two short again, because it quoted a commit subject that
+# had changed. The test is what the commit does, not what it is called. Each SHA is
 # written after the commit it names exists rather than predicted, which is why
 # the naming lags by a commit: the schema calls a plausible SHA that resolves
 # to nothing worse than no derivation at all.
-review_rounds: 6
+review_rounds: 7
 
 phases:
   - id: orient
@@ -270,20 +274,61 @@ phases:
           is what the census fix had already chosen one round earlier
         outcome: ok
       - file: .venv/lib/python3.11/site-packages/paramiko/buffered_pipe.py
-        section: "BufferedPipe.read; Channel._wait_for_send_window"
+        section: "BufferedPipe.read"
         read_type: verify
         extract: >-
           Round 5's two passes disagreed on fact — one wanted the source comment
           brought into line with the spec's new settimeout(0) rationale, the
           other said that rationale is false — so it was measured against
-          paramiko rather than argued. Both raise only when the operation would
-          have to block (empty read buffer, full send window), so settimeout(0)
-          is non-blocking mode, not "fails immediately regardless of direction",
-          and a send into an open window succeeds. My round-4 "correction" had
-          replaced a narrow true claim with a wide false one, and the source
-          comment I corrected away from was the better of the two. The lesson is
-          the one this test file's own docstring states: a paramiko-behaviour
-          claim is got wrong by reading rather than running
+          paramiko rather than argued. This half: PipeTimeout is raised only when
+          the read buffer is empty and the timeout is 0, so a recv with data
+          buffered returns it. My round-4 "correction" had replaced a narrow true
+          claim with a wide false one, and the source comment I corrected away
+          from was the better of the two. The lesson is the one this test file's
+          own docstring states: a paramiko-behaviour claim is got wrong by
+          reading rather than running
+        outcome: ok
+      - file: .venv/lib/python3.11/site-packages/paramiko/channel.py
+        section: "Channel._wait_for_send_window"
+        read_type: verify
+        extract: >-
+          The other half of the same measurement, in the other file — split into
+          its own step because round 7 caught the single step naming this symbol
+          while citing buffered_pipe.py, which does not contain it. socket.timeout
+          is raised only when the out-window is full and the timeout is 0, so a
+          send into an open window succeeds and never consults it. Together with
+          the step above: settimeout(0) is non-blocking mode, not "fails
+          immediately regardless of direction"
+        outcome: ok
+      - file: docs-src/guides/troubleshooting.md
+        section: "SFTP transfer stalls (Symptom, routing, causes)"
+        read_type: verify
+        extract: >-
+          Round 7's reader lens, run for the first time, and the only pass in the
+          loop to ask whether a reader can act rather than whether the text is
+          true. Four findings on one page, none reachable by a correctness lens:
+          the page told a reader to look for "an empty message" while
+          RemoteStoreError.__str__ appends path= and backend=, so the only string
+          a BK-359 sufferer can match on did not match; the reader whose call
+          correctly failed after two minutes matched none of the three causes,
+          all framed for the hang; "a current version" was never resolved to a
+          number, and the number sat inside the branch needed to choose it; and
+          the tuning snippet remedied neither of its section's stated causes.
+          The lens reaches `unclear`, never `misleading` — its own definition says
+          so — which is why it took until round 7 to run and why it found a class
+          six rounds of correctness review could not
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "[Unreleased] (BK-356 stub)"
+        read_type: verify
+        extract: >-
+          Round 7's external-premise lens found the false version premise round 6
+          removed from the migration guide still standing here, on the line
+          tagged Breaking, in the artifact that publishes to the docs site. Six
+          rounds had read past it because every artifact agreed with it. The
+          lesson is the lens, not the line: a premise uniformly false across a
+          diff is invisible to any pass that checks the diff against itself, and
+          nothing before round 7 was pointed outside it
         outcome: ok
       - file: CHANGELOG.md
         section: "[Unreleased] vs [0.30.0]"

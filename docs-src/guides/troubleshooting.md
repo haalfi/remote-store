@@ -124,15 +124,27 @@ identify which list the server narrowed.
 
 **Symptom, one of two.** Either an SFTP read or write **never returns** — no
 exception, no log line, and whatever worker or pool slot it was running on stays
-occupied — or it **returns after about two minutes** raising
-`BackendUnavailable` with an empty message and nothing in the log to explain it.
+occupied — or it **fails after about two minutes** with a traceback whose last
+line carries no message of its own:
 
-Both come from the same fault, a peer that goes silent mid-operation. Which one
-you see depends on whether the bound below is armed: the second is what a
-current version does by default, and it is the intended behaviour rather than a
-new failure. If a healthy server of yours legitimately pauses for longer than
-two minutes, skip to **Choosing a value** at the end of this section; if the
-call never returns at all, read on.
+```
+remote_store._errors.BackendUnavailable:  | path='delivery.csv' | backend='sftp'
+```
+
+There is nothing in `remote_store`'s log to accompany it. To confirm the
+diagnosis, enable paramiko's own DEBUG logging and look for a request going out
+with no reply coming back.
+
+Both symptoms come from the same fault: a peer that goes silent mid-operation.
+Which one you see depends on whether the bound below is armed, which on v0.31.0
+and later it is by default. Pick your branch:
+
+- **It failed after ~2 minutes and your server has no legitimate pause that
+  long.** The bound did its job — go to **4. The bound worked** below.
+- **It failed after ~2 minutes and your server does legitimately pause that
+  long.** Raise the bound: see **Choosing a value** at the end of this section.
+- **It never returned at all.** The bound is not doing its job; work through
+  causes 1 to 3.
 
 **Cause.** `SFTPBackend`'s `timeout` bounds the *connect* phase only. It is
 passed to paramiko as `timeout` / `banner_timeout` / `auth_timeout` /
@@ -144,10 +156,10 @@ dropped connection: a drop raises and is recovered from, whereas silence looks
 exactly like a very slow transfer.
 
 **What stops it.** [`io_timeout`](backends/sftp.md#bounding-a-stalled-transfer)
-bounds that silence, and it is **on by default at 120 s** — so on a current
-version a silent peer raises `BackendUnavailable` after two minutes and the
-backend reconnects on the next operation, rather than hanging. If you are seeing
-an unbounded hang, work through the three causes below.
+bounds that silence, and on **v0.31.0 and later it is on by default at 120 s** —
+so a silent peer raises `BackendUnavailable` after two minutes and the backend
+reconnects on the next operation, rather than hanging. If you are seeing an
+unbounded hang, work through the three causes below.
 
 **1. The bound is off**, which happens two ways.
 
@@ -160,17 +172,10 @@ from remote_store.backends import SFTPBackend
 backend = SFTPBackend(host="files.example.com", username="deploy")
 ```
 
-*You are on a version that predates `io_timeout` altogether.* The option does not
-exist there, so there is nothing to set: an open channel is unbounded and cannot
-be bounded. Upgrading is the only route — see the
+*You are on a version before v0.31.0.* `io_timeout` does not exist there, so
+there is nothing to set: an open channel is unbounded and cannot be bounded.
+Upgrading is the only route — see the
 [migration guide](../reference/migration.md).
-
-On a current version, pass a value to move off the default, for a server that
-legitimately goes quiet for minutes:
-
-```python
-backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=300)
-```
 
 **2. It is the one genuinely unbounded wait.** A server that opens the SSH
 channel and then never answers the `sftp` subsystem request hangs regardless:
@@ -183,6 +188,25 @@ do nothing.
 on the transfer as a whole, so a multi-gigabyte fetch that legitimately takes an
 hour never trips it — and equally, never looks hung to `io_timeout`. Time the
 transfer rather than assuming a stall.
+
+**4. The bound worked**, and what to do with the failure. If the call failed
+after ~2 minutes against a peer that really did go silent, nothing is
+misconfigured. The operation is **not retried** — the connect-phase
+`RetryPolicy` does not cover a stall — so recovery is yours to drive:
+
+- A streamed read raises rather than returning short, so the bytes you already
+  received are a valid prefix and the handle is dead. Discard it and start the
+  read again; do not try to resume it.
+- The backend drops the dead client, so the **next** operation reconnects on its
+  own. The store stays usable — you do not need to rebuild it.
+- On a stalled `write_atomic` or `open_atomic`, the destination is untouched but
+  an orphan temp file may remain — see the
+  [atomic write caveat](backends/sftp.md#capabilities) in the SFTP guide. What a
+  stalled plain `write` leaves at the destination path is not currently
+  documented; treat the path as being in an unknown state and re-write it.
+
+If this is happening often against a server you believe is healthy, the bound is
+probably too tight for it — see **Choosing a value** below.
 
 **Choosing a value.** Size it against the longest legitimate pause your server
 can produce (an antivirus or dedup appliance may go quiet on `open()` of a large

@@ -254,8 +254,8 @@ if evidence changes; these are retired.
   oversubscription and 284 passing under `-n auto`. Two reviewers disagreed on
   fact and the one that ran it settled it.
   **Round 4 then found eight more, every one in round 3's own output** — the
-  second round in a row to find nothing but defects the previous fix pass had
-  created. The sharpest was a test:
+  first round to find *nothing but* defects the previous fix pass had created,
+  where round 3's ten had included three that were not. The sharpest was a test:
   `test_a_transfer_slower_than_the_bound_is_not_interrupted` passed with the
   bound unarmed, because asserting a success and asserting the transfer outlived
   the bound never observes a channel timeout — so the test carrying SFTP-030's
@@ -303,7 +303,24 @@ if evidence changes; these are retired.
   The same round found the enumeration claim class back a fourth time and
   deleted the premise rather than narrowing it again, and three record defects
   from round 5 editing pages without revisiting the artifacts that quote them.
-  **What the loop cost, and what it never found.** Six rounds, 39 findings, and
+  **Round 7 added two lenses and both paid.** An **external-premise** pass —
+  checking every claim against a source outside the diff rather than against the
+  PR's own artifacts — found the false version premise round 6 removed from the
+  migration guide *surviving in `CHANGELOG.md`*, on the line tagged Breaking, in
+  the artifact that publishes to the docs site; and refuted "that is the v0.30.0
+  behaviour exactly" by executing it against the repo's own stub server. A
+  **reader** pass, never run before, produced four findings on the troubleshooting
+  page that no correctness lens reaches — chief among them that the page tells a
+  reader to look for "an empty message" while `RemoteStoreError.__str__` appends
+  `path=` and `backend=`, so the only string that reader can match on does not
+  match. It also showed the **repeat-site remedy had been applied too narrowly**:
+  the "what is unique about this file's tests" class was deleted where it had
+  been *found*, and a fifth instance sat in `_StallRelay`'s docstring, written in
+  round 2 and never edited, refuted by a method 54 lines below it. Sweeping a
+  refuted class across the file, not just fixing the instances a round surfaced,
+  is the lesson. The unprimed pass returned **one** finding — the first
+  convergence signal the loop produced.
+  **What the loop cost, and what it never found.** Seven rounds, 46 findings, and
   **no defect in shipped behaviour**: the implementation is one line, unchanged
   since the first commit, executed against the base branch in both directions by
   two measuring passes. Every finding was in prose or in a test's own claims
@@ -312,10 +329,18 @@ if evidence changes; these are retired.
   and round 3 found only three that were not — two pre-existing spec and guide
   paragraphs, and one observation about the PR as a whole. The instrument that
   kept paying was the whole-file lens: none of the fix-pass defects sat in a `+`
-  line of the commit that falsified it. Derivation of the count: 39 top-level
-  review comments on PR #978 (`gh api …/pulls/978/comments --jq '[.[] |
-  select(.in_reply_to_id == null)] | length'`), across rounds of 5, 3, 10, 8,
-  7 and 6.
+  line of the commit that falsified it. Derivation of the count: top-level review
+  comments on PR #978, via
+  `gh api "…/pulls/978/comments?per_page=100&page=1" --jq '[.[] | select(.in_reply_to_id == null)] | length'`.
+  **The `per_page` is load-bearing and was missing from an earlier draft of this
+  sentence**, which review round 7 ran and got 18 — the default page size against
+  a PR carrying far more comments than that, and the exact spelling
+  `/rvw-pr` Step 4 lists as a forbidden instrument. The figure was right and its
+  stated derivation was not, which is worse than none: a reader who re-runs it
+  concludes a true number was invented. Across rounds of 5, 3, 10, 8, 7, 6 and 7
+  — the last being consolidated postings, not the 17 raw findings four passes
+  returned. Re-run at round 7 rather than incremented: the first draft of this
+  sentence said 55, from adding the raw count.
 
 - [x] **BK-357 — A `SEEK_END` seek hides its own stall, so the futile-close guard cannot arm**
   spec: SIO-011, SIO-010, SFTP-030 · effort: M · audience: user.api, user.api_docs, user.site

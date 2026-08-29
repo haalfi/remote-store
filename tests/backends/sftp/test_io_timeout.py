@@ -202,12 +202,13 @@ class _StallRelay:
     docstring claimed the upload case reached ``Channel.sendall`` via window
     exhaustion; it does not.
 
-    ``throttle_download()`` is the opposite instrument and the only one here
-    that produces a *success*: the pump keeps forwarding, in small pieces with a
-    pause between them, so the link is slow but never silent. It exists because
-    every other mode makes the bytes stop, and a bound on silence has to be shown
-    not to fire on a transfer that merely takes longer than it — which no amount
-    of stalling can demonstrate.
+    ``throttle_download()`` is the opposite instrument: the pump keeps
+    forwarding, in small pieces with a pause between them, so the link is slow
+    but never silent. It exists because stalling cannot demonstrate that a bound
+    on silence does not fire on a transfer merely slower than itself — the claim
+    is about what happens when the bytes keep coming. (``resume()`` also ends in
+    a successful transfer, by lifting a stall rather than by shaping one; it is
+    how a test drives a reconnect.)
     """
 
     def __init__(self, target_port: int) -> None:
@@ -649,7 +650,7 @@ def test_version_exchange_unbounded_when_opted_out(
         done.set()
 
     threading.Thread(target=_probe, daemon=True).start()
-    assert not done.wait(timeout=8.0), "expected the unbounded default to still be blocked"
+    assert not done.wait(timeout=8.0), "expected the opted-out channel to still be blocked"
 
 
 @pytest.mark.spec("SFTP-030")

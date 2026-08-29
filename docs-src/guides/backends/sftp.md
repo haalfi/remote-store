@@ -129,6 +129,11 @@ BackendConfig(
 )
 ```
 
+**Opting out declaratively takes an explicit null, not an omitted key** — leaving
+`io_timeout` out selects the default, as it does in Python. In YAML that is
+`io_timeout: null`; TOML has no null literal, so a TOML-configured store that
+needs an unbounded channel has to construct the backend in code.
+
 The bound is re-applied on every reconnect, including the transparent ones the
 backend performs after a dropped connection, and it covers most of the SFTP
 session setup as well as later transfers. Setting it through the
