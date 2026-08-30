@@ -70,6 +70,13 @@ expected_ripples:
   - CONTRIBUTING.md
   - pyproject.toml
 surprising_ripples:
+  # No ripple-check row says that adding a gate over the CHANGELOG requires
+  # amending the trace schema's derived rule -- but the schema is where that
+  # rule is owned, so declaring the gate's direction (Rule 4) and naming the
+  # half nothing mechanises had to land there. Found by an unprimed pass
+  # reading `git diff --name-only` against this file's own ripple lists, in
+  # the field whose comment claims it was derived that way.
+  - sdd/traces/_schema.yml
   # CHANGELOG.md is the gate's subject, and the gate could not be green on
   # master until six entries were condensed. No ripple-check row says that
   # adding a gate over an artifact can require editing that artifact first --
@@ -268,15 +275,24 @@ phases:
         extract: >-
           The round's worst finding, and it was outside the diff. Phase 1
           condenses [Unreleased] *in place* and Phase 2 is what renames the
-          heading, so the released shape lives under [Unreleased] for that whole
-          span -- and Phase 3 runs `hatch run all` over it. Reconstructed that
-          tree and ran the gate: 70 lines of violations, every condensed line a
-          stray, every completed item entry-less, and a remediation telling the
-          release manager to do Phase 2 early. The gate this item exists to add
-          would have blocked the release it serves. It was the file's own stated
-          bound ("released sections carry ### groupings ... none of the three
-          rules applies to them") that hid it: the bound named the shape and
-          assumed the heading tracked it.
+          heading, so between them the released shape lives under [Unreleased].
+          Reconstructed that tree -- last released section's body under
+          `## [Unreleased]`, BACKLOG-DONE.md untouched -- and ran the rules: 68
+          violations, 48 strays and 20 entry-less items, with a remediation
+          telling the release manager to do Phase 2 early. It was the file's own
+          stated bound ("released sections carry ### groupings ... none of the
+          three rules applies to them") that hid it: the bound named the shape
+          and assumed the heading tracked it.
+          **This step said two wrong things when first written, both corrected
+          in round 6 and kept here.** It read "70 lines of violations", which
+          was my repro script's output-line count -- violations plus a blank, a
+          summary and the remediation -- copied into a sentence about
+          violations. And it concluded "Phase 3 runs `hatch run all` over it, so
+          the gate would have blocked the release it serves", which reading the
+          phases in order refutes: Phase 2 renames both headings and makes the
+          release commit before Phase 3 validates, and the Phase 1 edits are
+          uncommitted until then, so no mandated run meets the state. The
+          section field says Phase 3 was read. It was read and mis-ordered.
         outcome: misleading
       - file: scripts/check_breaking_migration_link.py
         section: "module docstring"

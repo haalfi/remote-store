@@ -75,19 +75,36 @@ Bounds (Rule 7)
 * It reads the ``[Unreleased]`` heading only. Released sections carry
   ``### Added`` groupings and condensed prose by design, and none of the three
   rules applies to them.
-* **It stands down inside the release window, loudly.** ``CONTRIBUTING.md``
-  § Release Phase 1 condenses ``[Unreleased]`` into that same released shape
-  *in place*, and Phase 2 is what renames the heading — so from Phase 1 until
-  Phase 2 the released shape lives under ``[Unreleased]``, and Phase 3 runs
-  ``hatch run all`` over it. All three rules key on ``- <ID>:`` lines, which
-  that shape does not have: run anyway, this gate reported every condensed
-  line as a stray and every completed item as entry-less, and its remediation
-  told the release manager to do Phase 2 early. It now detects a ``###``
-  grouping in the section and reports the window instead of failing, which is
-  the same survival ``check_breaking_migration_link.py`` gets by reporting a
-  count. The cost is that a stray ``###`` mid-cycle disables all three rules —
-  so the stand-down prints on every run, including green ones, rather than
-  being inferred from silence.
+* **Two of the rules stand down inside the release window, loudly.**
+  ``CONTRIBUTING.md`` § Release Phase 1 condenses ``[Unreleased]`` into the
+  released shape *in place*; Phase 2 renames the heading. So between them the
+  released shape lives under ``[Unreleased]``, and there the stray-line half of
+  the shape rule reports every condensed line, while the audience rule reports
+  every completed item as entry-less. Reconstruct it by putting the most recent
+  released section's body verbatim under ``## [Unreleased]`` and leaving
+  ``BACKLOG-DONE.md`` alone: **68** violations, 48 strays and 20 entry-less
+  items, with a remediation telling the release manager to do Phase 2 early. A
+  ``###`` grouping in the section now stands those two down and says so, which
+  is the survival ``check_breaking_migration_link.py`` gets by reporting a
+  count.
+
+  **What this window is not.** It is not on the mandated gate path. Phase 2
+  renames both headings and makes the release commit *before* Phase 3 runs
+  ``hatch run all``, and the Phase 1 edits are uncommitted until then, so no
+  checklist step and no hook ever meets this state. Only a release manager
+  running ``lint`` or ``all`` by hand mid-Phase-1 does. An earlier version of
+  this bullet claimed Phase 3 met it and called the gate a blocker of its own
+  release; reading the phases in order refutes that, and the narrower reason is
+  the one that has to carry the cost below.
+
+  **The cost, and why it is only this much.** Uniqueness and the prose budget
+  keep running over whatever still parses as an entry, so a stray ``###``
+  mid-cycle does not switch the duplicate check — the defect this module exists
+  for — off. Deriving the completed-item side is unconditional too, so a
+  renamed ``## Unreleased`` still raises rather than passing. What a stray
+  ``###`` costs is the stray-line rule and the audience rule, and the note
+  prints on every run, including green ones, rather than being inferred from
+  silence.
 * The audience rule reaches exactly as far as the ``audience:`` lines under
   ``BACKLOG-DONE.md`` § Unreleased. An item whose line is missing is reported
   as unevaluable rather than passed.
@@ -115,9 +132,8 @@ Bounds (Rule 7)
 Exit codes
 ==========
 
-* ``0`` — the section is unique, stub-shaped, and covers every completed
-  user-facing item; or the release window is open and the gate stood down.
-  Notes may still be printed, and the stand-down always is.
+* ``0`` — every rule that could be evaluated was, and passed. Notes may be
+  printed; a stand-down always is, and names which rules did not run.
 * ``1`` — one line per violation to stderr, plus remediation.
 
 Drift-gate::
@@ -165,11 +181,14 @@ _SECTION_RE = re.compile(r"^## \[")
 # The prefix class is `[A-Z][A-Z0-9-]*`, spelled to equal
 # `check_breaking_migration_link.py`'s `_ENTRY_RE`, the only other parser of
 # this section. It was `[A-Z]+`, which excluded the compound form that gate
-# admits: `- SQL-BLOB-020: ...` was a valid entry there and a stray line here,
-# so one `hatch run lint` returned two verdicts about one line — the failure
-# mode the comment below says this module exists to avoid one level up. The
-# wider class is the safe direction of the two: it fails open on a prefix
-# neither gate has seen, where the narrow one failed a legitimate entry.
+# admits. **No such entry exists today** — `gen_backlogid.py` allocates only
+# `(BK|BUG|ID|AF|BL)`, so `- SQL-BLOB-020: ...` is a constructed case, and the
+# sibling says as much where it widened first. Constructed, the two disagree:
+# a valid entry there, a stray line here, one `hatch run lint` and two verdicts
+# about one line. That is a latent divergence rather than a reported failure,
+# and it is worth closing because the cost is a character class and the sibling
+# had already paid it. The wider class is also the safe direction: it fails open
+# on a prefix neither gate has seen, where the narrow one failed a real entry.
 #
 # No `text` group: this gate keys on identity and length, never on entry
 # content. A parsed-but-unread field is what the `prose_length` docstring
@@ -310,8 +329,9 @@ class DoneItem:
 # structural lint (ID-235), which checks this file's shape.
 #
 # The suffix and parenthetical match `gen_backlogid.py`; the prefix class is
-# deliberately wider. IDs here may carry a letter suffix (`BK-139d`, `ID-118b`,
-# `ID-013b` are live) and a bullet may read `**BK-167b (partial) — ...`.
+# deliberately wider. IDs may carry a letter suffix — `BACKLOG-DONE.md` carries
+# `BK-139d`, `ID-118b` and `ID-013b`, though all three sit outside § Unreleased,
+# so nothing exercises the suffix today and a bullet may read `**BK-167b (partial) — ...`.
 # Spelling the ID `[A-Z]+-\d+` looked right and was wrong three times over — it
 # failed a legitimate suffixed stub as a stray line; with no anchor after the
 # digits it silently truncated `BK-139a` to `BK-139` here; and its prefix class
@@ -335,7 +355,15 @@ _ANY_ITEM_RE = re.compile(r"^- \[[x ~]\] \*\*")
 # rule silently if none of it began with `user.`. The docstring credited
 # "only the first match" with preventing that; what prevented it was a
 # convention, and a convention is not a guard.
-_AUDIENCE_RE = re.compile(r"^\s*(?:spec:.*?·\s*)?(?:effort:.*?·\s*)?audience:\s*(?P<tags>.+?)\s*$")
+#
+# The prefix is `.*·` and not `spec:…· effort:…·`, because a long `spec:` list
+# wraps and carries `· audience:` onto a continuation line: ID-210's metadata
+# runs over three lines in `BACKLOG-DONE.md` and would have been reported as
+# carrying no `audience:` line at all. Widening it does not reopen the body-prose
+# case above: `·` is not a character prose uses, and without one the pattern
+# still requires `audience:` at the start of the line, which "This item's
+# audience: …" is not.
+_AUDIENCE_RE = re.compile(r"^\s*(?:.*·\s*)?audience:\s*(?P<tags>.+?)\s*$")
 
 
 def parse_done_unreleased(backlog_done: Path) -> list[DoneItem]:
@@ -504,9 +532,13 @@ def _check_shape(entries: list[Entry], stray: list[tuple[int, str]]) -> list[Vio
     return violations
 
 
-def _check_audience(entries: list[Entry], backlog_done: Path, backlog: Path) -> tuple[list[Violation], list[str]]:
-    """Return (violations, advisory notes). See the authority note in the docstring."""
-    items = parse_done_unreleased(backlog_done)
+def _check_audience(entries: list[Entry], items: list[DoneItem], backlog: Path) -> tuple[list[Violation], list[str]]:
+    """Return (violations, advisory notes). See the authority note in the docstring.
+
+    Takes already-parsed *items* rather than a path, so that deriving them and
+    comparing them are separate steps: the caller derives unconditionally, and
+    calls this only when the CHANGELOG side is in a shape worth comparing.
+    """
     entry_ids = {entry.item_id for entry in entries}
 
     violations: list[Violation] = []
@@ -543,43 +575,67 @@ def _check_audience(entries: list[Entry], backlog_done: Path, backlog: Path) -> 
 
 # The stand-down is a note, so it rides the same channel as the advisory half
 # and needs no third return value from `collect`. `main` keys on this prefix to
-# keep from printing "unique, stub-shaped and complete" about a section it did
-# not read — the one sentence a stood-down run must not say.
+# keep from printing "unique, stub-shaped and complete" about a section only
+# partly read — the one sentence a stood-down run must not say.
 _STOOD_DOWN = "stood down: "
 
 
 def _release_window_note(section: Section) -> str:
     """The stand-down line, printed rather than inferred from silence.
 
-    Named "stood down" and not "passed" on purpose: the caller reports zero
-    violations here because it checked nothing, and a reader who cannot tell
-    those apart has no way to notice a stray ``###`` switching the gate off
-    mid-cycle.
+    Named "stood down" and not "passed" on purpose, and it names *which* rules
+    stood down: a reader who cannot tell "checked and clean" from "did not
+    check" has no way to notice a stray ``###`` switching anything off.
     """
-    remaining = len(section.entries)
+    kept = len(section.entries)
     return (
-        f"{_STOOD_DOWN}[Unreleased] carries a `###` grouping, the shape "
-        "CONTRIBUTING.md § Release Phase 1 condenses it into and Phase 2 renames. All three rules "
-        f"key on `- <ID>:` lines, so none was evaluated ({remaining} line(s) still in stub shape). "
-        "Outside a release, this means a `###` heading reached [Unreleased] by mistake: remove it "
-        "and the rules come back."
+        f"{_STOOD_DOWN}[Unreleased] carries a `###` grouping, the shape CONTRIBUTING.md § Release "
+        "Phase 1 condenses it into. The stray-line rule and the audience rule key on entries "
+        f"leading with an ID, which condensed prose does not, so both stood down. Uniqueness and "
+        f"the prose budget still ran, over the {kept} line(s) that still parse as entries. Outside "
+        "a release this means a `###` heading reached [Unreleased] by mistake: remove it and the "
+        "other two rules come back."
     )
 
 
 def collect(repo_root: Path = _REPO_ROOT) -> tuple[list[Violation], list[str]]:
+    """Run every rule that is still derivable, and say which are not.
+
+    Returns ``(violations, notes)``. A ``###`` grouping under ``[Unreleased]``
+    is the shape Phase 1 condenses into, and it makes exactly two of the rules
+    unanswerable: the stray-line half of the shape rule (every condensed line
+    is a stray) and the audience rule (a condensed entry no longer leads with
+    an ID, so every completed item reads as entry-less). Those stand down and
+    say so.
+
+    **The other two keep running, and the derivation always does.** An earlier
+    version returned early on ``grouped`` and stood the whole gate down, which
+    was wrong twice: uniqueness and the budget answer perfectly well over the
+    entries that still parse — and skipping ``parse_done_unreleased`` skipped
+    its ``DerivationError`` too, so a ``BACKLOG-DONE.md`` with no
+    ``## Unreleased`` heading exited 0. Phase 2 renames that exact heading, so
+    the bound this module states most loudly was void in the one window the
+    early return was added for.
+    """
     section = parse_unreleased(repo_root / "CHANGELOG.md")
     if not section.found:
         return [Violation("CHANGELOG.md", 1, "no `## [Unreleased]` heading (was it renamed early?)")], []
 
-    if section.grouped:
-        return [], [_release_window_note(section)]
-
     violations = _check_unique(section.entries)
-    violations.extend(_check_shape(section.entries, section.stray))
-    audience_violations, notes = _check_audience(
-        section.entries, repo_root / "sdd" / "BACKLOG-DONE.md", repo_root / "sdd" / "BACKLOG.md"
-    )
-    violations.extend(audience_violations)
+    # The stray half of the shape rule is the only half the grouping defeats;
+    # the budget is a property of each parsed entry and survives.
+    violations.extend(_check_shape(section.entries, [] if section.grouped else section.stray))
+
+    # Derived even when the comparison is suppressed: this call is what raises
+    # on an underivable claim, and that must not depend on the CHANGELOG's shape.
+    done_items = parse_done_unreleased(repo_root / "sdd" / "BACKLOG-DONE.md")
+    notes: list[str] = []
+    if section.grouped:
+        notes.append(_release_window_note(section))
+    else:
+        audience_violations, notes = _check_audience(section.entries, done_items, repo_root / "sdd" / "BACKLOG.md")
+        violations.extend(audience_violations)
+
     violations.sort(key=lambda v: (v.path, v.line))
     return violations, notes
 

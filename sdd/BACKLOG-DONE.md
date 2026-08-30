@@ -356,8 +356,8 @@ if evidence changes; these are retired.
   rebuilt three lines from where the argument is written.
 
 - [x] **ID-252 — CHANGELOG `[Unreleased]` was unlinted, so a duplicated entry shipped and contradicted itself**
-  spec: — · effort: S · audience: contributor.tooling, user.site
-  **The `user.site` tag was added under review, and it is the tag that costs
+  spec: — · effort: S · audience: user.site, contributor.tooling
+  **The `user.site` tag was added in round 5, and it is the tag that costs
   something.** The first version read `contributor.tooling` alone, which made the
   CHANGELOG entry not owed — and the entry is owed by the gate this very item
   adds, so the tag was the only thing standing between the item and its own rule.
@@ -420,27 +420,51 @@ if evidence changes; these are retired.
   times over: it failed a legitimate `BK-139a` stub as a stray line, silently
   truncated the same ID on the completed side, and — narrower than the sibling
   gate's `[A-Z][A-Z0-9-]*` — called `- SQL-BLOB-020: …` a stray line that the
-  sibling calls a valid entry, so one `hatch run lint` returned two verdicts about
-  one line. `gen_backlogid.py` keeps a closed prefix set because it *allocates*
+  sibling calls a valid entry. That case is **constructed, not observed**: no
+  such entry exists, because `gen_backlogid.py` allocates only
+  `(BK|BUG|ID|AF|BL)`, and the sibling says so where it widened first. Built,
+  the two disagree and one `hatch run lint` returns two verdicts about one line;
+  the divergence is latent, and worth closing at the price of a character class. `gen_backlogid.py` keeps a closed prefix set because it *allocates*
   IDs; these patterns *recognise* them, where a closed set fails a real line.
-  **What the loop cost, and what it bought.** Nine review passes across six
-  rounds. The class that kept recurring early was a universal asserted over a
+  **What the loop cost, and what it bought.** Eleven review passes across six
+  rounds — six of the passes were closing gates, and the last two of those are
+  the reason the release-window bullet says what it says. The class that kept recurring early was a universal asserted over a
   space measured on two backends — refuted four rounds running until the remedy
   stopped being "narrow it again" and became "delete it and name what was
-  measured". **The last round was the one that paid**, and it paid on ground the
-  earlier five never walked: a gate that fails the release it serves. Phase 1 of
-  `CONTRIBUTING.md` condenses `[Unreleased]` *in place* and Phase 2 is what
-  renames the heading, so the released shape lives under `[Unreleased]` for that
-  whole span — and Phase 3 runs `hatch run all` over it. Reconstructed and run,
-  this gate returned 70 lines of violations there and told the release manager to
-  do Phase 2 early. `check_breaking_migration_link.py` had already named that
-  window and survived it by reporting a count; this gate, written after it and
-  against it, neither documented nor survived it. It now stands down on a `###`
-  grouping and says so on every run. Two more the same round: a `[~]` bullet did
-  not end the completed item above it, so that item wore another's `audience:`
-  tags, and the entry grammar was narrower than the sibling's, so one line drew
-  two verdicts from one `hatch run lint`. Every rule this gate has changed under
-  review, and each change was found by reading — the runs only confirmed them.
+  measured".
+  **The release window took three rounds to get right, and the two failed
+  attempts are the record worth keeping.** Round 5 found that Phase 1 condenses
+  `[Unreleased]` *in place* while Phase 2 renames the heading, so between them
+  the released shape lives under `[Unreleased]` — and there this gate reported
+  every condensed line as a stray and every completed item as entry-less, with a
+  remediation telling the release manager to do Phase 2 early. Reconstructed by
+  putting the last released section's body under `## [Unreleased]` and leaving
+  `BACKLOG-DONE.md` alone: **68** violations, 48 strays and 20 entry-less items.
+  `check_breaking_migration_link.py` had already named that window and survived
+  it by reporting a count; this gate had not.
+  **Round 6 refuted the fix's justification and the fix's shape at once.** The
+  claim written in round 5 — that Phase 3 runs `hatch run all` over that state,
+  so the gate blocks its own release — is false, and reading the phases in order
+  is all it takes: Phase 2 renames both headings and makes the release commit
+  *before* Phase 3 validates, and the Phase 1 edits are uncommitted until then,
+  so no checklist step and no hook ever meets the state. Only a hand-run `lint`
+  mid-Phase-1 does. The fix was worse than the premise it rested on: it returned
+  early on the grouping and stood the *whole* gate down. Uniqueness and the
+  prose budget answer perfectly well over the stubs that still parse, so a stray
+  `###` was switching off the duplicate check this module exists for — and the
+  early return skipped `parse_done_unreleased`, taking its `DerivationError`
+  with it, so a renamed `## Unreleased` exited 0 in the one window the
+  stand-down was added for. Measured both ways: `main()` returned 0 with that
+  heading renamed and with the file deleted. Only the stray-line and audience
+  rules stand down now.
+  Two more from round 5: a `[~]` bullet did not end the completed item above it,
+  so that item wore another's `audience:` tags; and the entry grammar was
+  narrower than the sibling's — a latent divergence rather than a reported one,
+  since `gen_backlogid.py` allocates only `(BK|BUG|ID|AF|BL)`, so the compound
+  prefix the two disagree over is constructed, and the sibling had already said
+  so where it widened first. Every rule this gate has changed under review, and
+  the pattern across six rounds is that reading found them and running decided
+  them.
 
 - [x] **BUG-261 — Two breaking changes are on master with no upgrade path, and the obligation is stated where their authors never read**
   spec: — · effort: S · audience: user.api_docs, user.site, contributor.tooling
@@ -620,7 +644,7 @@ if evidence changes; these are retired.
   been written against the five-subsection draft.
   Same file and same window as **ID-252**, which lints the `[Unreleased]`
   section's own integrity and never reads `migration.md`. That item has since
-  closed; the two gates now run side by side in `lint` and `docs-gate`, and
+  closed; it and this gate now run side by side in `lint` and `docs-gate`, and
   share an entry grammar so that one section cannot draw two verdicts.
 
 - [x] **BK-356 — `io_timeout` should default to a real bound, not `None`**

@@ -327,7 +327,7 @@ compliant the day before.
   the predicate that strips `.` from `base_path` is the same one that strips it
   from every key: `GraphBackend._key_segments` delegates to
   `_flat_ns._addressable_segments`, and `native_path` /
-  `_parent_reference_path` / the write and source guards all route through it.
+  `_parent_ref_path` / the write and source guards all route through it.
   Measured with `base_path="reports"`:
   | key | addresses |
   | --- | --- |
@@ -1610,9 +1610,21 @@ the commit that writes it lands, so cite the generator instead.
   the checklist line are two copies of one direction
   ([Rule 4](DRIFT-RULES.md#authority)).
   **A third artifact moves with them now:** `check_changelog_unreleased.py`
-  stands down once a `###` grouping reaches `[Unreleased]`, which is precisely
-  the state this step produces. Whoever writes the step owns that hand-off, and
-  the gate's release-window bound is where it is stated.
+  stands its stray-line and audience rules down once a `###` grouping reaches
+  `[Unreleased]`, which is precisely the state this step produces. Whoever
+  writes the step owns that hand-off, and the gate's release-window bound is
+  where it is stated.
+  **A fourth thing to settle, found the same way:**
+  `.claude/skills/release/SKILL.md` Phase 4 says to follow "the section order in
+  `sdd/CLAUDE-REFERENCE.md` § Ripple-check table > Detailed checklist". That
+  checklist's headings are Spec & contract / Code surface / Tests / Docs /
+  Release & meta — no CHANGELOG section order lives there, and
+  `rg "Added|Internal|Documentation" sdd/CLAUDE-REFERENCE.md` returns two
+  unrelated hits. Meanwhile [`CLAUDE.md` principle 4](../CLAUDE.md#principles)
+  names "CHANGELOG section order" as an authoritative reference that lives in
+  one place. It lives in none. The citation was thin before ID-252 and ID-252
+  removed the last word that made it plausible, so whoever writes the expansion
+  step also decides where that order is written down.
 
 - [ ] **BK-346 — The ripple-check table answers questions adjacent to the ones asked**
   spec: — · effort: S/M · audience: contributor.process

@@ -130,13 +130,21 @@ properties:
 
       **One direction, not a biconditional** (`DRIFT-RULES.md` Rule 4,
       declared here because this file owns the rule). "Required" is the half
-      that governs: a `user.` item with no entry is a defect.
-      An entry with no such item is not, because two legitimate cases produce
-      one — an item still open in `BACKLOG.md` that shipped a single bullet,
-      and the `contributor.process` clause above, which earns an entry without
-      a `user.` tag. `scripts/check_changelog_unreleased.py` enforces exactly
-      that direction, and registers the first case against `BACKLOG.md` rather
-      than reporting it.
+      that governs: an item that owes an entry and has none is a defect. An
+      entry with no such item is not, because an item still open in
+      `BACKLOG.md` may have shipped a single bullet.
+
+      **Only part of the required half is mechanised.**
+      `scripts/check_changelog_unreleased.py` reads the `user.` prefix, which
+      is decidable. The `contributor.process` clause is equally required and is
+      **not checked by anything**: whether a change "introduces a user-facing
+      framework / spec" is a judgement, so an item tagged only
+      `contributor.process` that does introduce one, and ships no entry, passes
+      every gate. That is a reviewer's to catch, and naming it here is the only
+      thing keeping it from reading as covered — the gate's own Bounds list and
+      `CONTRIBUTING.md` § Release Phase 1 both defer to this rule. The gate
+      registers the open-item case against `BACKLOG.md` rather than reporting
+      it.
 
   discovery_followups:
     type: array

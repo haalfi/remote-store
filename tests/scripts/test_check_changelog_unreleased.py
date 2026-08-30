@@ -96,8 +96,15 @@ class TestCleanBaseline:
         leading with no ID, both of which the shape rule would report. Neither
         may be, and the `###` must not trip the release-window stand-down
         either: the parser stops at the next `## [`."""
-        violations, _ = _mod.collect(_tree(tmp_path, _ENTRIES, _ITEMS))
+        tree = _tree(tmp_path, _ENTRIES, _ITEMS)
+        violations, notes = _mod.collect(tree)
         assert violations == []
+        # `violations == []` alone is vacuous for the second half: drop the
+        # `_SECTION_RE` break and the released `### Changed` sets grouped=True,
+        # the two rules stand down, and this still passes. The note and the flag
+        # are what catch that mutant.
+        assert notes == []
+        assert _mod.parse_unreleased(tree / "CHANGELOG.md").grouped is False
 
 
 class TestUniqueness:
@@ -178,11 +185,16 @@ class TestShape:
     def test_a_compound_prefix_entry_is_an_entry(self, tmp_path: Path) -> None:
         """One line, one verdict, across both parsers of this section.
 
-        `check_breaking_migration_link.py` admits `[A-Z][A-Z0-9-]*-\\d+`, and its
-        own tests pin the compound form. Spelling this gate's prefix `[A-Z]+`
-        made `- SQL-BLOB-020: …` a valid entry there and a stray line here, so a
-        single `hatch run lint` returned two answers about one line — the
-        disagreement both modules say they exist to prevent one level up.
+        `check_breaking_migration_link.py` admits `[A-Z][A-Z0-9-]*-\\d+[a-z]*`,
+        and its own tests pin the compound form. Spelling this gate's prefix
+        `[A-Z]+` made `- SQL-BLOB-020: …` a valid entry there and a stray line
+        here — a single `hatch run lint` answering one line two ways, which is
+        the disagreement both modules say they exist to prevent one level up.
+
+        The case is constructed and stays that way: `gen_backlogid.py` allocates
+        only `(BK|BUG|ID|AF|BL)`, so no such entry can be written today, and the
+        sibling's own comment says as much. This pins the agreement rather than
+        a live defect, which is the cheaper time to pin it.
         """
         entries = "- SQL-BLOB-020: a compound-prefix entry\n- BK-101: fine\n"
         section = _mod.parse_unreleased(_tree(tmp_path, entries, _ITEMS) / "CHANGELOG.md")
@@ -195,6 +207,49 @@ class TestReleaseWindow:
     Phase 2 is what renames the heading — so the released shape lives under
     `[Unreleased]` for that whole span, and Phase 3 runs `hatch run all` over
     it. A gate that fails there blocks the release it serves."""
+
+    def test_uniqueness_still_runs_under_a_grouping(self, tmp_path: Path) -> None:
+        """The duplicate check is what this module exists for, and a `###` must
+        not switch it off.
+
+        A partly-condensed section is the normal in-progress Phase 1 state: some
+        entries expanded, the rest still stubs. Standing the whole gate down
+        there meant a keep-both merge re-duplicating an ID among the survivors
+        went unreported -- the exact ID-252 defect, inside the window.
+        """
+        entries = "### Fixed\n\n- Condensed prose.\n" + _ENTRIES + "- BK-100: a duplicate among the survivors\n"
+        violations, notes = _mod.collect(_tree(tmp_path, entries, _ITEMS))
+        assert [v.line for v in violations] == [_line_of(tmp_path, "a duplicate among the survivors")]
+        assert notes[0].startswith(_mod._STOOD_DOWN)
+
+    def test_the_budget_still_runs_under_a_grouping(self, tmp_path: Path) -> None:
+        """The other rule a parsed entry answers on its own."""
+        long_entry = "- BK-100: " + "x" * _mod._MAX_ENTRY_CHARS + "\n"
+        entries = "### Fixed\n\n- Condensed prose.\n" + long_entry + "- BK-101: fine\n"
+        violations, _ = _mod.collect(_tree(tmp_path, entries, _ITEMS))
+        assert len(violations) == 1
+        assert "characters of prose" in violations[0].message
+
+    def test_a_grouping_does_not_silence_an_underivable_claim(self, tmp_path: Path) -> None:
+        """The regression the first version of the stand-down shipped.
+
+        Returning early on `grouped` skipped `parse_done_unreleased`, and with
+        it the DerivationError that the Bounds list calls this module's loudest
+        promise. Phase 2 renames `## Unreleased` in exactly this file, so the
+        one window the stand-down was added for was the window where the guard
+        was void: measured, `main()` returned 0 with the heading renamed *and*
+        with the file deleted.
+        """
+        condensed = "### Fixed\n\n- Condensed prose, no leading ID.\n"
+        tree = _tree(tmp_path, condensed, _ITEMS)
+        done = tree / "sdd" / "BACKLOG-DONE.md"
+        done.write_text(done.read_text(encoding="utf-8").replace("## Unreleased", "## v0.31.0"), encoding="utf-8")
+        with pytest.raises(_mod.DerivationError, match="no `## Unreleased` heading"):
+            _mod.collect(tree)
+
+        done.unlink()
+        with pytest.raises(_mod.DerivationError, match="cannot read"):
+            _mod.collect(tree)
 
     def test_a_grouped_section_stands_down_instead_of_failing(self, tmp_path: Path) -> None:
         """Reproduces the release window: run against it before this behaviour
@@ -229,15 +284,23 @@ class TestReleaseWindow:
         violations, _ = _mod.collect(_tree(tmp_path, "### Fixed\n\n- prose, no ID.\n", _ITEMS))
         assert violations == []
 
-    def test_the_rules_come_back_once_the_grouping_goes(self, tmp_path: Path) -> None:
-        """The stand-down is keyed on the grouping, not latched: a section that
-        never had one is checked, and this is what a mid-cycle stray `###`
-        costs until it is removed."""
-        entries = _ENTRIES + "- BK-100: a duplicate the stand-down would have hidden\n"
-        with_heading, _ = _mod.collect(_tree(tmp_path, "### Added\n\n" + entries, _ITEMS))
+    def test_what_the_grouping_actually_costs(self, tmp_path: Path) -> None:
+        """Exactly two rules, and they come back when the grouping goes.
+
+        This is the whole price of a stray `###` mid-cycle, pinned as a
+        difference rather than asserted in prose: the stray line and the
+        entry-less user-facing item are both reported without the heading and
+        neither is reported with it. An earlier version of this test pinned the
+        heading as hiding a *duplicate* too, which was the over-broad stand-down
+        it was written against.
+        """
+        entries = "- A wrapped line that leads with no ID.\n- BK-101: tooling\n"
+        with_heading, notes = _mod.collect(_tree(tmp_path, "### Added\n\n" + entries, _ITEMS))
         assert with_heading == []
+        assert notes[0].startswith(_mod._STOOD_DOWN)
+
         without_heading, _ = _mod.collect(_tree(tmp_path, entries, _ITEMS))
-        assert [v.line for v in without_heading] == [_line_of(tmp_path, "would have hidden")]
+        assert sorted(v.message.split()[0] for v in without_heading) == ["BK-100", "not"]
 
 
 class TestAudienceRule:
@@ -449,8 +512,14 @@ class TestCannotFailSilently:
 
 class TestAgainstTheRepo:
     def test_the_repo_passes_its_own_gate(self) -> None:
-        violations, _ = _mod.collect(_REPO_ROOT)
+        violations, notes = _mod.collect(_REPO_ROOT)
         assert violations == []
+        # No note, and specifically no stand-down: a stray `###` under
+        # [Unreleased] would switch two rules off across `lint`, `docs-gate`
+        # and `all` while every one of them stayed green, and the only other
+        # detector is a human reading a passing run's stdout -- which the
+        # module docstring itself argues readers learn to skip.
+        assert notes == []
 
     def test_main_returns_zero_on_the_repo(self, capsys) -> None:
         assert _mod.main(["--repo-root", str(_REPO_ROOT)]) == 0
