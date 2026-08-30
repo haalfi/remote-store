@@ -687,6 +687,57 @@ def test_stalled_open_raises_backend_unavailable(stall_relay: _StallRelay) -> No
 
 
 @pytest.mark.spec("SFTP-030")
+@pytest.mark.spec("SFTP-023")
+def test_a_stall_says_what_it_was_and_logs_it(stall_relay: _StallRelay, caplog: pytest.LogCaptureFixture) -> None:
+    """The raised error names the stall and the bound, and leaves one log record.
+
+    BK-359. The sibling above pins that a stall *raises within the bound*; this
+    pins what the caller is then holding. Both halves were measured absent on a
+    real channel before the fix: ``e.args == ('',)``, so ``str(e)`` rendered as
+    ``" | path='delivery.csv' | backend='sftp'"``, and at ``logging.DEBUG`` no
+    ``remote_store`` record at all between the SFTP ``Request: open`` and the
+    raise — only paramiko's own transport traffic.
+
+    It is driven through the relay rather than by handing ``_map_exception`` a
+    constructed ``TimeoutError`` (which ``test_config.py`` does) because the
+    claim is about what paramiko really raises on a silent peer. A unit test
+    asserting the mapping of an exception the driver never constructs that way
+    would pass while the shipped failure stayed blank — which is the shape of
+    mistake BK-359 itself came from: the mapping was read, not run.
+
+    The record count is asserted, not merely its presence. One failure must
+    leave one line: the cleanup and classification paths re-enter the mapping,
+    and a per-call-site log would report a single stall several times, which is
+    worse than silence for anyone matching on it.
+    """
+    io_timeout = 2.0
+    backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
+    name = f"saying_{uuid.uuid4().hex[:8]}.bin"
+    backend.write(name, b"x" * (256 * 1024))
+
+    stall_relay.stall_download()
+
+    with caplog.at_level(logging.DEBUG, logger="remote_store"):
+        # Cleared after connecting, as in the silent-close test below: the
+        # AUTO_ADD warning and the connect lines are not what is under test.
+        caplog.clear()
+        with pytest.raises(BackendUnavailable) as excinfo:
+            backend.read_bytes(name)
+
+    message = excinfo.value.args[0]
+    assert message, f"the stall reached the caller blank: {excinfo.value!r}"
+    assert "stalled" in message, f"the message does not name the fault: {message!r}"
+    assert f"io_timeout={io_timeout}" in message, (
+        f"the message does not name the bound that fired: {message!r} — a reader deciding "
+        "whether their server legitimately pauses that long needs the number"
+    )
+
+    ours = [r for r in caplog.records if r.name.startswith("remote_store")]
+    assert len(ours) == 1, f"expected one remote_store record for one stall, got {[r.getMessage() for r in ours]}"
+    assert ours[0].levelno == logging.WARNING, f"logged at {ours[0].levelname}, expected WARNING"
+
+
+@pytest.mark.spec("SFTP-030")
 def test_a_transfer_slower_than_the_bound_is_not_interrupted(stall_relay: _StallRelay) -> None:
     """A transfer that outlives the bound completes, because bytes keep arriving.
 

@@ -1,0 +1,178 @@
+id: BK-359
+title: "A stalled SFTP operation raises BackendUnavailable with an empty message and no log record"
+trigger: >-
+  BK-356 made io_timeout default to 120.0, so a silent SFTP peer became the
+  shipped failure surface for callers who had configured nothing — and the error
+  they met carried args == ('',), rendering as " | path='delivery.csv' |
+  backend='sftp'", with no remote_store log record anywhere on the path.
+source_items:
+  - BK-359
+  - BK-356
+  - BK-354
+audience:
+  - user.api
+  - user.site
+  - user.api_docs
+discovery_followups:
+  - BK-361
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+surprising_ripples: []
+# review_rounds is filled at the close of the /ship loop, from the commits on
+# this branch (`git log --oneline origin/master..HEAD`): the implementation
+# commit does not count, each commit that exists because a review round found
+# something does. Left at 0 until the loop closes rather than guessed.
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BK-359"
+        read_type: gate
+        extract: "The measured symptom and the two halves owed: the message and the log record"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "1. Failures are predictable"
+        read_type: gate
+        extract: >-
+          The Promise's third clause — the failure a caller catches says which
+          failure it was — is the one this item was filed against, and the
+          Closes-when sentence naming BK-359 has to move when it closes
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-023, SFTP-030, SFTP-010"
+        read_type: gate
+        extract: >-
+          What the mapping already promises (type, client invalidation,
+          recovery) and what it does not promise at all (anything about the
+          message or a log line)
+        outcome: ok
+      - file: sdd/specs/005-error-model.md
+        section: "ERR-009"
+        read_type: reference
+        extract: >-
+          "str() and repr() produce meaningful messages" — the general clause
+          this defect breaches, which made it worth asking whether other
+          backends breach it too. Needed no amendment: the clause was already
+          right and the SFTP mapping was wrong
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Pre-work index"
+        read_type: gate
+        extract: >-
+          Triggered rows: Error type (error model, every backend's mapping,
+          troubleshooting guide), Bug fix, Backlog item touched, Spec section
+        outcome: ok
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_map_exception, _is_connection_dead"
+        read_type: gate
+        extract: >-
+          Both dead-connection arms build BackendUnavailable(str(exc)). Drove
+          all nine signals _is_connection_dead matches through the mapping in a
+          throwaway script rather than reading which could be empty — four
+          arrived blank, not the one the item named. The item's title was a
+          correct diagnosis of a wider class, which is why the fix keys on an
+          empty str(exc) rather than on the timeout type
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "_StallRelay, test_stalled_open_raises_backend_unavailable"
+        read_type: reference
+        extract: >-
+          A live TCP relay that stops delivering on command already exists, so
+          the failing test could be driven by the real fault instead of a
+          constructed TimeoutError
+        outcome: ok
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: sdd/000-process.md
+        section: "Rule 6 (bug-fix pipeline)"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing test → fix, in one commit"
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPMapException"
+        read_type: reference
+        extract: >-
+          The existing home of _map_exception unit tests. Added the empty-shape
+          cases, the bound-naming case, the opted-out case, the
+          do-not-overwrite-real-detail counterpart, and the two logging cases;
+          all observed failing before the fix
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "SFTP-030 stall tests"
+        read_type: reference
+        extract: >-
+          Added the live-relay assertion on message and log record. Observed
+          failing against a real stalled channel: BackendUnavailable('') — the
+          same shape the item measured
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_unavailable, _map_exception"
+        read_type: reference
+        extract: >-
+          One helper all four BackendUnavailable arms pass through, so the
+          message rule and the log rule cannot disagree between arms. The
+          IncompatiblePeer arms pass their remediation hint through it rather
+          than around it, which is what makes the SFTP-023 clause say "every"
+          without a carve-out
+        outcome: ok
+  - id: docs
+    name: Documentation
+    steps:
+      - file: docs-src/guides/troubleshooting.md
+        section: "SFTP transfer stalls"
+        read_type: reference
+        extract: >-
+          The page printed the blank traceback as the symptom and stated there
+          was nothing in remote_store's log. Both were true when written and
+          false after the fix — the ripple that most needed finding, and the
+          reason the Error-type row names the troubleshooting guide
+        outcome: ok
+      - file: docs-src/reference/migration.md
+        section: "v0.30.0 to v0.31.0"
+        read_type: reference
+        extract: >-
+          Same unreleased window as BK-356, so the entry describing the new
+          raise gains what the raise now says rather than getting an entry of
+          its own
+        outcome: ok
+      - file: docs-src/guides/backends/sftp.md
+        section: "Bounding a stalled transfer"
+        read_type: reference
+        extract: "One clause: the raise names the stall and the value that fired"
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Detailed checklist"
+        read_type: verify
+        extract: "Error type, Bug fix, Backlog item touched, CHANGELOG entry rows"
+        outcome: ok
+      - file: docs-src/guides/retry.md
+        section: "SFTP"
+        read_type: verify
+        extract: >-
+          Checked rather than changed: "not retried is not the same as
+          unreported" and the silent-close sentence are both still true, since
+          the futile close never reaches _map_exception
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030 (silent-stall paragraph)"
+        read_type: verify
+        extract: >-
+          "no remote_store log record" for the silent close stays true and its
+          test stays green — it is the control that says the new WARNING fires
+          on the raise path and nowhere else
+        outcome: ok

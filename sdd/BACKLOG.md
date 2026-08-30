@@ -205,14 +205,19 @@ deleted mid-scan (BUG-255) or when a folder vanishes part-way through a
 recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 (BUG-256); a constructor does not leak its driver's exception
 (BUG-245) and neither does a stream (BK-358); one operation does not answer by
-payload size (BUG-253); a caller who meets a failure can tell *which* failure it
-was, rather than an empty message and no log record (BK-359); and a newly
+payload size (BUG-253); a caller who meets a failure on **any** backend can tell
+*which* failure it was, rather than an empty message (BK-361); and a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
 (BK-345). BK-359 is why the Promise above carries a third clause, added with it
 rather than left implicit: an error that is
 the right *type* on every backend but says nothing is predictable to a checker
 and not to the person reading their log, and this section is where that reader
-is served. The spec contradiction is adjudicated — BUG-248, closed by
+is served. That clause is now met on SFTP and nowhere else by construction —
+BK-359 closed the backend whose stall BK-356 had just made the default failure
+surface, and BK-361 carries the same question to the five sites that still build
+their `BackendUnavailable` from a driver message that may be empty. A promise
+clause honoured on one backend is the shape this section exists to catch.
+The spec contradiction is adjudicated — BUG-248, closed by
 [ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md) — the
 never-leak invariant holds on the S3 listing path, closed by BUG-249 with
 BUG-246, the last adapter answers the contract against an absent container,
@@ -286,37 +291,31 @@ compliant the day before.
   Until then `docs-src/guides/troubleshooting.md` tells the reader to treat the
   path as being in an unknown state and re-write it, which is safe and vague.
 
-- [ ] **BK-359 — A stalled SFTP operation raises `BackendUnavailable` with an empty message and no log record**
-  spec: SFTP-030, SFTP-023 · effort: S · audience: user.api
-  `_map_exception` builds the error as `BackendUnavailable(str(exc), ...)`, and
-  paramiko raises `socket.timeout()` with no arguments, so the message is the
-  empty string. Measured on a real channel at `io_timeout=2.0`, with a relay
-  silencing server→client mid-`read_bytes`: `e.args == ('',)`,
-  `str(e) == " | path='delivery.csv' | backend='sftp'"`, `__context__` a bare
-  `TimeoutError()`, and — at `logging.DEBUG` — **no `remote_store` log record at
-  all** between the SFTP `Request: open` and the raise. The only lines are
-  paramiko's own transport traffic.
-  **Pre-existing from BK-354; promoted by BK-356.** While `io_timeout` defaulted
-  to `None`, the only caller who could reach this had set the option themselves
-  and knew what it meant. Flipping the default to `120.0` makes it the shipped
-  failure surface for a silent peer, so the first person to meet it is now
-  someone who configured nothing — the reader with the least context to decode an
-  empty message. Two sentences BK-356 shipped are what make that awkward: the
-  troubleshooting page's "a silent peer raises `BackendUnavailable` after two
-  minutes", and the migration entry's "It now raises `BackendUnavailable` after
-  120 s of silence" — read precisely when a user has least context. That page
-  now documents the empty message and the missing log record for this shape
-  itself, so it describes the defect rather than contradicting it; what it
-  cannot do is give the reader something to search their logs for. The raised
-  object carries none of
-  "silent", "timeout" or the bound, so a user reading their own error log cannot
-  tell it from any other `BackendUnavailable`, a refused connect included.
-  The recovery half is correct and was measured alongside: the client is dropped
-  and the next operation reconnects and reads normally. What is missing is the
-  message, not the behaviour — so the fix is a mapped error that names the
-  stall and the bound, and a decision about whether the backend logs it.
-  Found by BK-356's review round 2, which reached it by running the failure
-  rather than reading the mapping.
+- [ ] **BK-361 — Five non-SFTP mappings still build `BackendUnavailable` from a message that may be empty**
+  spec: ERR-009 · effort: S · audience: user.api
+  BK-359 fixed the SFTP mapping, which was the one measured to go blank. The
+  same `BackendUnavailable(str(exc), ...)` construction survives at **five**
+  sites across four files — `backends/_azure_common.py:173`,
+  `backends/_s3_boto3.py:971` and `:975`, `backends/_s3_pyarrow.py:650`, and the
+  shared helper `_errors.py:193`. Derived with
+  `rg -n 'BackendUnavailable\(str\(exc\)' src/`, run after BK-359 landed: six
+  hits, of which one is prose inside `backends/_sftp.py`'s own docstring
+  explaining why that backend stopped doing it.
+  **What is not known is the part worth doing:** whether any driver on those
+  paths raises an argument-less exception the way paramiko raises
+  `socket.timeout()`. On SFTP that was established by running it, not by
+  reading the mapping, and the same is owed here — botocore and the Azure SDK
+  build their own exception types and may always carry a message, in which case
+  the right answer is a test pinning that rather than a fallback nobody reaches.
+  Measure first, then decide; the SFTP fallback is a shape to copy only if the
+  measurement says the hole exists.
+  This is [ERR-009](specs/005-error-model.md)'s clause — `str()` produces a
+  meaningful message — asked of the backends BK-359 did not touch, and it is
+  what stops this section's third promise clause being true on one backend and
+  unexamined on four.
+  **Filed by BK-359's `/ship` run**, which scoped itself to one backend
+  deliberately rather than widening a one-backend fix into four backends' specs
+  and tests.
 
 - [ ] **BUG-263 — The migration guide promises a drive folder named `.` stays reachable as a key; no key spelling reaches it**
   spec: GR-058 · effort: XS · audience: user.site

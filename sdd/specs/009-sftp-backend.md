@@ -308,6 +308,31 @@ exception keeps its own branch first: `IncompatiblePeer` (a connect-time
 `SSHException`) is mapped with a diagnostic hint before the generic `SSHException`
 mapping, so the hint is not lost.
 
+**Every one of them also carries a non-empty message, and leaves exactly one
+`WARNING` record on the `remote_store.backends._sftp` logger.** Both halves are
+one method's job (`_unavailable`), which is why they are stated in one clause:
+the arms that could disagree are the same arms.
+
+The message is the driver's own whenever the driver has one. Four of the signals
+above reach the mapping with no arguments — `TimeoutError` (which `socket.timeout`
+is), `EOFError`, `SFTPError` and a bare `SSHException` — and for those
+`BackendUnavailable(str(exc))` carried the empty string, which
+[ERR-009](005-error-model.md) forbids and which no reader can act on. A stall
+names the fault and the bound that fired (`io_timeout=<value>s`), and names no
+bound when `io_timeout is None`, since a half-open socket reaches this arm with
+the option off and claiming a limit the caller never set would be false. The
+others name the signal's own class. A signal that *did* explain itself is never
+overwritten: this is a fallback for silence, not a house style for messages.
+
+The record is emitted where the *conclusion* is reached rather than at each raise
+site, so the cleanup and classification paths that re-enter the mapping do not
+multiply one failure into several lines. It follows that `check_health` logs one
+`WARNING` per failed probe, so a `Store.ping()` poll against a down server logs
+once per poll — the level a genuinely unreachable backend warrants, and stated
+here because it is the visible consequence of the clause rather than an
+oversight. A routine errno is **not** logged: a missing or denied path is an
+answer, not a fault.
+
 ### SFTP-024: No Native Exception Leakage
 
 **Invariant:** No paramiko, socket, or OS exception raised *by the backend* — an
@@ -520,6 +545,13 @@ to every route, and stood while two tests in the suite reached it through plain
 **Postconditions:** A stalled operation *that fails* raises `BackendUnavailable`,
 via the existing `_is_connection_dead` / `_map_exception` path (SFTP-023), which
 also clears the cached client so the next operation reconnects (SFTP-010 tier 2).
+The error names the stall and the bound that fired, and the failure leaves one
+`WARNING` record — both per SFTP-023, which owns those clauses for every signal
+rather than for this one. Named here anyway because the stall is the case a
+caller who configured nothing now meets: while the message was empty, this
+Postcondition was satisfied by an error indistinguishable from a refused
+connect, and the two artifacts that tell an upgrading user what to expect (the
+troubleshooting page, the migration entry) had nothing to point them at.
 
 **The qualifier is load-bearing.** Every mechanism below — the classification guards, the handle guard, the
 stream wrapper's futile-close guard, and the client invalidation the

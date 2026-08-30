@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- BK-359: **Fix** — a stalled or dropped SFTP operation now says which failure it was, instead of raising `BackendUnavailable` with an empty message and no log record
 - BUG-262: Gate that every unreleased `**Breaking**` entry links its upgrade path in the migration guide
 - ID-252: Gate the CHANGELOG `[Unreleased]` section: one entry per item, each a single line within a prose budget, and one for every completed user-facing item
 - BUG-261: Publish the missing upgrade paths in the migration guide, and move the obligation to write one onto the PR making the breaking change

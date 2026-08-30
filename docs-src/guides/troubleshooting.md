@@ -124,16 +124,22 @@ identify which list the server narrowed.
 
 **Symptom, one of two.** Either an SFTP read or write **never returns** — no
 exception, no log line, and whatever worker or pool slot it was running on stays
-occupied — or it **fails after about two minutes** with a traceback whose last
-line carries no message of its own:
+occupied — or it **fails after about two minutes**:
 
 ```
-remote_store._errors.BackendUnavailable:  | path='delivery.csv' | backend='sftp'
+remote_store._errors.BackendUnavailable: SFTP channel stalled: no data within io_timeout=120.0s | path='delivery.csv' | backend='sftp'
 ```
 
-There is nothing in `remote_store`'s log to accompany it. To confirm the
-diagnosis, enable paramiko's own DEBUG logging and look for a request going out
-with no reply coming back.
+The failure also leaves one `WARNING` on the `remote_store.backends._sftp`
+logger, which is what to search your own logs for:
+
+```
+WARNING remote_store.backends._sftp: SFTP channel stalled: no data within io_timeout=120.0s (path='delivery.csv')
+```
+
+The number in both is the bound that fired, so it tells you which value to
+reconsider. To confirm the diagnosis from the other side, enable paramiko's own
+DEBUG logging and look for a request going out with no reply coming back.
 
 Both symptoms come from the same fault: a peer that goes silent mid-operation.
 Which one you see depends on whether the bound below is armed, which on v0.31.0

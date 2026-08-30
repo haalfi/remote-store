@@ -215,6 +215,42 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-359 — A stalled SFTP operation raises `BackendUnavailable` with an empty message and no log record**
+  spec: SFTP-030, SFTP-023 · effort: S · audience: user.api
+  `_map_exception` built the error as `BackendUnavailable(str(exc), ...)`, and
+  paramiko raises `socket.timeout()` with no arguments, so the message was the
+  empty string. Measured on a real channel at `io_timeout=2.0`, with a relay
+  silencing server→client mid-`read_bytes`: `e.args == ('',)`,
+  `str(e) == " | path='delivery.csv' | backend='sftp'"`, and — at
+  `logging.DEBUG` — no `remote_store` log record at all between the SFTP
+  `Request: open` and the raise.
+  **Pre-existing from BK-354; promoted by BK-356.** Flipping the default to
+  `120.0` made it the shipped failure surface for a silent peer, so the first
+  person to meet it was one who had configured nothing.
+  **The defect class was wider than the item's title.** Driving all nine signals
+  `_is_connection_dead` matches through the mapping showed **four** arriving with
+  no message of their own, not one: `TimeoutError` (which `socket.timeout` is),
+  `EOFError`, `paramiko.SFTPError` and a bare `paramiko.SSHException`. The other
+  five carry a real message. Fixing only the timeout arm would have left the
+  same complaint reachable by three other routes, so the fallback is keyed on an
+  empty `str(exc)` rather than on the timeout type.
+  **Shipped:** one `_unavailable` helper through which every `BackendUnavailable`
+  that `_map_exception` returns now passes. A stall names the fault and the bound
+  that fired (`SFTP channel stalled: no data within io_timeout=120.0s`), and
+  names no bound under `io_timeout=None`, where the arm is still reachable via a
+  half-open socket. Other message-less signals name their own class. A signal
+  that already explained itself is never overwritten — the failure being fixed
+  was silence, not noise. The same helper logs one `WARNING`, at the point the
+  backend concludes the connection is unusable rather than at each raise site,
+  so one failure leaves one line; a routine errno stays unlogged.
+  **What was deliberately not done:** the same construction at five sites across
+  four other files, which is **BK-361**. Whether any of those drivers raises
+  argument-less is unmeasured, and on SFTP that question was settled by running
+  it rather than by reading the mapping.
+  Found by BK-356's review round 2, which reached it by running the failure
+  rather than reading the mapping — and closed the same way: the fix is asserted
+  against the live stall relay, not only against a constructed `TimeoutError`.
+
 - [x] **BUG-262 — The breaking-change upgrade-path rule is review-enforced, and the gate the diagnosis proposed would not have caught it**
   spec: — · effort: S · audience: contributor.tooling, user.api_docs
   BUG-261 moved the obligation onto the PR making the break and left nothing
