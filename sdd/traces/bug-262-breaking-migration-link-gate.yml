@@ -32,9 +32,10 @@ surprising_ripples:
 # Named from `gh api repos/haalfi/remote-store/pulls/985/commits`, which returns
 # exactly two: 168e80a implements and does not count; f8f8b82 ("fix: address PR
 # #985 review") incorporates round 1 and counts. Round 2's own fix commit makes
-# it 2. Naming the list rather than the total is what _schema.yml asks for, and
-# an earlier version of this comment named only one of the two.
-review_rounds: 2
+# it 2, and round 3's fix commit makes it 3. Naming the list rather than the
+# total is what _schema.yml asks for, and an earlier version of this comment
+# named only one of the two.
+review_rounds: 3
 phases:
   - id: orient
     name: Orient on what BUG-261 left open
@@ -135,7 +136,7 @@ phases:
         extract: "35 → 36 mechanisms after `hatch run gen-gate-inventory`; the Drift-gate:: block is what registers it"
         outcome: ok
   - id: fix
-    name: Review rounds 1 and 2
+    name: Review rounds 1, 2 and 3
     steps:
       - file: sdd/traces/_schema.yml
         section: "id (pattern)"
@@ -226,4 +227,19 @@ phases:
           reader would go looking for to check the two still agree. Removed from
           both copies; the convention and the false positive already carried the
           argument.
+        outcome: ok
+      - file: scripts/docs/check_links.py
+        section: "_resolve_docs_site_path, _find_broken_docs_site_links"
+        read_type: gate
+        extract: >-
+          Round 3, and the finding that changed what the gate does. The resolver
+          returns parts.path only, so the fragment of an absolute docs-site URL
+          is discarded and never compared to anything; mkdocs --strict does not
+          resolve external URLs either. So nothing in the repo validated the
+          anchor, and an entry linking #v9999-to-v9999 satisfied this gate with
+          no section written — the delegated obligation escaping through the
+          check meant to enforce it. Also the source of two smaller
+          disagreements: the resolver strips the trailing slash, so requiring it
+          here would reject a URL check_links calls valid, and it skips
+          numbered-version URLs entirely, which this gate accepts.
         outcome: ok

@@ -47,6 +47,14 @@ def _changelog(tmp_path: Path, unreleased: str, released: str = "") -> Path:
     return path
 
 
+def _migration(tmp_path: Path, headings: tuple[str, ...] = ("v0.30.0 to v0.31.0",)) -> Path:
+    """A migration guide exposing *headings*, so fragments have something to resolve against."""
+    path = tmp_path / "docs-src" / "reference" / "migration.md"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("# Migration Guide\n\n" + "\n\n".join(f"## {h}\n\nbody" for h in headings) + "\n", "utf-8")
+    return path
+
+
 # --------------------------------------------------------------------------- #
 # The pair the gate was written for
 # --------------------------------------------------------------------------- #
@@ -55,16 +63,17 @@ def _changelog(tmp_path: Path, unreleased: str, released: str = "") -> Path:
 def test_a_marked_entry_carrying_the_link_passes(tmp_path: Path) -> None:
     """BK-357's shape: marked, and its entry names the section."""
     changelog = _changelog(tmp_path, f"- BK-357: **Breaking** — seeking now raises. Upgrade path in the {_LINK}.")
-    assert _mod.collect_violations(changelog) == []
+    assert _mod.collect_violations(changelog, _migration(tmp_path)) == []
     assert [e.entry_id for e in _mod.marked_entries(changelog)] == ["BK-357"], "the entry must be seen, not skipped"
 
 
 def test_a_marked_entry_without_the_link_is_a_violation(tmp_path: Path) -> None:
     """BUG-248's shape: the defect the gate was written for."""
     changelog = _changelog(tmp_path, "- BUG-248: **Breaking** — an absent drive now reads as an absent path")
-    violations = _mod.collect_violations(changelog)
-    assert [v.entry_id for v in violations] == ["BUG-248"]
-    assert violations[0].line == 5, "the reported line must point at the entry, not the section"
+    violations = _mod.collect_violations(changelog, _migration(tmp_path))
+    assert [e.entry_id for e, _ in violations] == ["BUG-248"]
+    assert violations[0][0].line == 5, "the reported line must point at the entry, not the section"
+    assert violations[0][1] == "links no migration section"
 
 
 # --------------------------------------------------------------------------- #
@@ -80,13 +89,13 @@ def test_a_suffixed_id_is_still_matched(tmp_path: Path) -> None:
     An ID-ends-in-digits grammar skips those entries and exits 0.
     """
     changelog = _changelog(tmp_path, "- BK-139e: **Breaking** — a split item's second half")
-    assert [v.entry_id for v in _mod.collect_violations(changelog)] == ["BK-139e"]
+    assert [e.entry_id for e, _ in _mod.collect_violations(changelog, _migration(tmp_path))] == ["BK-139e"]
 
 
 def test_a_compound_prefix_is_still_matched(tmp_path: Path) -> None:
     """`check_no_tracker_refs.py` treats `SQL-BLOB-020` as a coordinate; so does this."""
     changelog = _changelog(tmp_path, "- SQL-BLOB-020: **Breaking** — a compound-prefix tracker")
-    assert [v.entry_id for v in _mod.collect_violations(changelog)] == ["SQL-BLOB-020"]
+    assert [e.entry_id for e, _ in _mod.collect_violations(changelog, _migration(tmp_path))] == ["SQL-BLOB-020"]
 
 
 def test_an_entry_that_merely_mentions_the_marker_is_not_marked(tmp_path: Path) -> None:
@@ -114,7 +123,7 @@ def test_a_bare_mention_of_the_path_is_not_a_link(tmp_path: Path) -> None:
         tmp_path,
         "- BK-360: **Breaking** — X now raises. The docs-src/reference/migration.md section is not written yet.",
     )
-    assert [v.entry_id for v in _mod.collect_violations(changelog)] == ["BK-360"]
+    assert [e.entry_id for e, _ in _mod.collect_violations(changelog, _migration(tmp_path))] == ["BK-360"]
 
 
 def test_a_repo_relative_link_is_a_violation(tmp_path: Path) -> None:
@@ -130,7 +139,7 @@ def test_a_repo_relative_link_is_a_violation(tmp_path: Path) -> None:
         tmp_path,
         "- BK-360: **Breaking** — something. See [the guide](docs-src/reference/migration.md).",
     )
-    assert [v.entry_id for v in _mod.collect_violations(changelog)] == ["BK-360"]
+    assert [e.entry_id for e, _ in _mod.collect_violations(changelog, _migration(tmp_path))] == ["BK-360"]
 
 
 def test_a_versioned_published_link_satisfies_the_rule(tmp_path: Path) -> None:
@@ -140,7 +149,68 @@ def test_a_versioned_published_link_satisfies_the_rule(tmp_path: Path) -> None:
         "- BK-360: **Breaking** — x. See "
         "[the guide](https://docs.remotestore.dev/0.31.0/reference/migration/#v0300-to-v0310).",
     )
-    assert _mod.collect_violations(changelog) == []
+    assert _mod.collect_violations(changelog, _migration(tmp_path)) == []
+
+
+def test_a_link_to_a_heading_that_does_not_exist_is_a_violation(tmp_path: Path) -> None:
+    """The miss that would let the whole obligation through the gate.
+
+    Nothing else in the repo validates this fragment: ``check_links``
+    discards it for an absolute docs-site URL (``_resolve_docs_site_path``
+    returns ``parts.path`` only) and ``mkdocs build --strict`` does not resolve
+    external URLs. Without this check an author could satisfy the rule with a
+    link to a section nobody wrote — the defect BUG-261 and BUG-262 exist to
+    close, reached *through* the gate instead of around it.
+    """
+    changelog = _changelog(
+        tmp_path,
+        "- BK-360: **Breaking** — x. Upgrade path in the "
+        "[migration guide](https://docs.remotestore.dev/stable/reference/migration/#v9999-to-v9999).",
+    )
+    violations = _mod.collect_violations(changelog, _migration(tmp_path))
+    assert [e.entry_id for e, _ in violations] == ["BK-360"]
+    assert violations[0][1] == "links #v9999-to-v9999, which is not a heading in migration.md", (
+        "the message must name the missing anchor, not the wrong defect"
+    )
+
+
+def test_the_slug_rule_matches_the_headings_it_is_derived_from(tmp_path: Path) -> None:
+    """The narrow slug rule, pinned against the shapes the guide actually uses."""
+    migration = _migration(tmp_path, headings=("v0.30.0 to v0.31.0", "v0.29.1 to v0.30.0"))
+    assert _mod.migration_anchors(migration) == {"v0300-to-v0310", "v0291-to-v0300"}
+
+
+def test_the_live_guide_exposes_every_anchor_the_live_changelog_links() -> None:
+    """The slug rule is only trustworthy because the real files check it every run.
+
+    This gate re-implements a narrow slug rule rather than importing
+    ``check_links._extract_anchors``, which would pull a git-invoking module
+    tree into ``lint``. What keeps that honest is this: the anchors the live
+    CHANGELOG links are resolved against the live guide, so a wrong rule fails
+    here rather than passing something through.
+    """
+    entries = _mod.marked_entries(_REPO_ROOT / "CHANGELOG.md")
+    anchors = _mod.migration_anchors(_REPO_ROOT / "docs-src" / "reference" / "migration.md")
+    linked = [e for e in entries if e.anchor]
+    if not linked:
+        pytest.skip("[Unreleased] carries no marked entry with an anchored link")
+    assert {e.anchor for e in linked} <= anchors
+
+
+def test_the_trailing_slash_is_optional_because_check_links_normalises_it(tmp_path: Path) -> None:
+    """Two gates must not disagree about the same URL.
+
+    ``check_links._resolve_docs_site_path`` does ``parts.path.strip("/")``, so it
+    accepts both spellings. Rejecting the slashless one here would fail a link
+    the repo's own link checker has just declared valid, and report it as
+    "links no migration section" — a message naming the wrong defect.
+    """
+    changelog = _changelog(
+        tmp_path,
+        "- BK-360: **Breaking** — x. See "
+        "[the guide](https://docs.remotestore.dev/stable/reference/migration#v0300-to-v0310).",
+    )
+    assert _mod.collect_violations(changelog, _migration(tmp_path)) == []
 
 
 def test_an_unmarked_entry_is_ignored_however_breaking_it_reads(tmp_path: Path) -> None:
@@ -169,7 +239,7 @@ def test_a_released_unlinked_entry_is_out_of_scope(tmp_path: Path) -> None:
         released="- BK-100: **Breaking** — no link here",
     )
     assert [e.entry_id for e in _mod.marked_entries(changelog)] == ["BK-360"], "the released entry must be out of scope"
-    assert _mod.collect_violations(changelog) == []
+    assert _mod.collect_violations(changelog, _migration(tmp_path)) == []
 
 
 def test_every_unlinked_entry_is_reported_not_just_the_first(tmp_path: Path) -> None:
@@ -180,7 +250,7 @@ def test_every_unlinked_entry_is_reported_not_just_the_first(tmp_path: Path) -> 
         + _LINK
         + ".",
     )
-    assert [v.entry_id for v in _mod.collect_violations(changelog)] == ["BUG-248", "BK-324"]
+    assert [e.entry_id for e, _ in _mod.collect_violations(changelog, _migration(tmp_path))] == ["BUG-248", "BK-324"]
 
 
 # --------------------------------------------------------------------------- #
@@ -208,12 +278,14 @@ def test_an_unreadable_changelog_raises_rather_than_passing(tmp_path: Path) -> N
 
 def test_main_returns_zero_and_reports_the_count(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     _changelog(tmp_path, f"- BK-357: **Breaking** — x. See the {_LINK}.")
+    _migration(tmp_path)
     assert _mod.main(["--repo-root", str(tmp_path)]) == 0
     assert "1 marked entry/entries" in capsys.readouterr().out
 
 
 def test_main_returns_one_and_names_the_entry(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     _changelog(tmp_path, "- BUG-248: **Breaking** — no link")
+    _migration(tmp_path)
     assert _mod.main(["--repo-root", str(tmp_path)]) == 1
     err = capsys.readouterr().err
     assert "BUG-248 is marked **Breaking**" in err
@@ -239,6 +311,7 @@ def test_main_fails_loud_when_the_unreleased_heading_is_gone(
     (tmp_path / "CHANGELOG.md").write_text(
         "# Changelog\n\n## [0.31.0] - 2026-09-01\n\n- BK-100: **Breaking** — x\n", encoding="utf-8"
     )
+    _migration(tmp_path)
     assert _mod.main(["--repo-root", str(tmp_path)]) == 1
     assert "no '## [Unreleased]' section" in capsys.readouterr().err
 
@@ -249,7 +322,7 @@ def test_main_fails_loud_when_the_unreleased_heading_is_gone(
 
 
 def test_the_repository_satisfies_its_own_gate() -> None:
-    assert _mod.collect_violations(_REPO_ROOT / "CHANGELOG.md") == []
+    assert _mod.collect_violations(_REPO_ROOT / "CHANGELOG.md", _REPO_ROOT / "docs-src/reference/migration.md") == []
 
 
 def test_the_parser_agrees_with_a_differently_derived_set_over_the_real_changelog() -> None:

@@ -36,12 +36,26 @@ mention of the path in prose is not a link, and a repo-relative path would
 break on the site, since this file is dual-published to
 ``reference/changelog.md`` and the href would resolve under ``reference/``.
 
+The fragment **is** checked, against the ``## `` headings
+``docs-src/reference/migration.md`` actually exposes. Nothing else in the
+repo does: `check_links` discards the fragment of an absolute docs-site
+URL (``_resolve_docs_site_path`` returns ``parts.path`` only) and
+``mkdocs build --strict`` does not resolve external URLs. Without it the
+gate could be satisfied by a link to a heading nobody wrote -- which is
+the whole obligation slipping through the check meant to enforce it.
+
 **Not** checked, and stated rather than implied
 ([`DRIFT-RULES.md` Rule 7](../sdd/DRIFT-RULES.md#miss-rate)):
 
 * Whether the linked section says anything *useful*, or says anything
-  about this entry at all. A link to the right heading with the wrong
-  content passes.
+  about this entry at all. The heading now has to exist, but a link to a
+  real heading with the wrong content -- last release's pair, say --
+  passes.
+* The link must sit on the **same physical line as the ID**: the match
+  runs over one line, so an entry wrapped with its link on a
+  continuation line reads as unlinked. One-line stubs are the documented
+  convention (`sdd/CLAUDE-REFERENCE.md`, "CHANGELOG entry" row), so this
+  is narrow, but it fails without naming its cause.
 * **The condensed form of the section, which is a live blind window and
   not merely "released sections".** `CONTRIBUTING.md` § Release **Phase
   1** condenses ``[Unreleased]`` in place -- stubs become
@@ -64,11 +78,12 @@ break on the site, since this file is dual-published to
 Exit codes
 ==========
 
-* ``0`` -- every marked entry carries a migration-guide link.
-* ``1`` -- one or more do not; one line per entry to stderr, plus
-  remediation. Also ``1`` if the ``[Unreleased]`` heading is missing or
-  the file cannot be read: a gate that cannot find its subject fails
-  loud rather than reporting success over nothing.
+* ``0`` -- every marked entry links a real section of the guide.
+* ``1`` -- one or more do not; one line per entry to stderr naming which
+  of the two failures it is, plus remediation. Also ``1`` if the
+  ``[Unreleased]`` heading is missing, or either file cannot be read: a
+  gate that cannot find its subject fails loud rather than reporting
+  success over nothing.
 
 Drift-gate::
 
@@ -124,7 +139,25 @@ _MARKER = "**Breaking**"
 # on the published site, which `check_links` and `mkdocs build --strict` reject.
 # Accepting it would let an author pass `lint` and fail `docs-gate` on the same
 # rule in the same PR.
-_LINK_RE = re.compile(r"\[[^\]]*\]\(https://docs\.remotestore\.dev/[^)]*reference/migration/[^)]*\)")
+# The trailing slash is optional, because `check_links` treats both spellings as
+# the same page: `_resolve_docs_site_path` does `parts.path.strip("/")` and
+# `_normalize_docs_dest("reference/migration.md")` yields `reference/migration`.
+# Requiring it here would reject a URL the repo's own link checker has just
+# declared valid, and report it as "links no migration section" -- a failure
+# naming the wrong defect.
+_LINK_RE = re.compile(r"\[[^\]]*\]\((https://docs\.remotestore\.dev/[^)]*reference/migration/?(?:#([^)]*))?)\)")
+
+# A `## ` heading in the migration guide, and the slug it renders as. The rule
+# is narrow because the headings are: lowercase, drop characters that are
+# neither alphanumeric nor space nor hyphen, then spaces to hyphens -- so
+# `## v0.30.0 to v0.31.0` becomes `v0300-to-v0310`. It is not a general slug
+# engine and does not try to be; `check_links._extract_anchors` is, but reaching
+# for it would import a git-invoking module tree into `lint` to answer one
+# question. What keeps this honest is that the four live links in CHANGELOG.md
+# are checked against it on every run: get the rule wrong and this gate fails on
+# master immediately, rather than passing something.
+_HEADING_RE = re.compile(r"^## +(.+?)\s*$")
+_SLUG_STRIP_RE = re.compile(r"[^a-z0-9 -]")
 
 
 @dataclass(frozen=True)
@@ -134,10 +167,26 @@ class Entry:
     line: int
     entry_id: str
     linked: bool
+    #: The fragment the entry links, if it links one at all. ``None`` when the
+    #: entry carries no link; ``""`` when it links the page with no anchor.
+    anchor: str | None = None
 
 
 class ChangelogUnreadable(RuntimeError):
     """The gate could not find its subject. Never reported as a pass."""
+
+
+def _slug(heading: str) -> str:
+    return _SLUG_STRIP_RE.sub("", heading.lower()).strip().replace(" ", "-")
+
+
+def migration_anchors(migration: Path) -> set[str]:
+    """Fragment IDs the migration guide's ``## `` headings expose."""
+    try:
+        text = migration.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise ChangelogUnreadable(f"cannot read {migration}: {exc}") from exc
+    return {_slug(m.group(1)) for line in text.splitlines() if (m := _HEADING_RE.match(line))}
 
 
 def marked_entries(changelog: Path) -> list[Entry]:
@@ -169,13 +218,32 @@ def marked_entries(changelog: Path) -> list[Entry]:
         match = _ENTRY_RE.match(line)
         if not match or not line[match.end() :].startswith(_MARKER):
             continue
-        found.append(Entry(offset + 1, match.group(1), bool(_LINK_RE.search(line))))
+        link = _LINK_RE.search(line)
+        anchor = (link.group(2) or "") if link else None
+        found.append(Entry(offset + 1, match.group(1), link is not None, anchor))
     return found
 
 
-def collect_violations(changelog: Path) -> list[Entry]:
-    """The marked entries that carry no migration-guide link."""
-    return [e for e in marked_entries(changelog) if not e.linked]
+def collect_violations(changelog: Path, migration: Path) -> list[tuple[Entry, str]]:
+    """Marked entries that carry no usable link, each with why it is a violation.
+
+    Two failures, deliberately reported apart. An entry with no link at all is
+    the defect this gate was written for. An entry whose link names a fragment
+    the guide does not expose is the one that would otherwise slip *through* the
+    gate: nothing else in the repo validates it -- `check_links` discards the
+    fragment of an absolute docs-site URL (`_resolve_docs_site_path` returns
+    `parts.path` only) and `mkdocs build --strict` does not resolve external
+    URLs -- so without this, an entry could satisfy the rule while the section
+    it points at was never written.
+    """
+    anchors = migration_anchors(migration)
+    out: list[tuple[Entry, str]] = []
+    for entry in marked_entries(changelog):
+        if not entry.linked:
+            out.append((entry, "links no migration section"))
+        elif entry.anchor and entry.anchor not in anchors:
+            out.append((entry, f"links #{entry.anchor}, which is not a heading in {migration.name}"))
+    return out
 
 
 _REMEDIATION = (
@@ -204,31 +272,36 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     changelog = args.repo_root / "CHANGELOG.md"
+    migration = args.repo_root / "docs-src" / "reference" / "migration.md"
     try:
+        # `entries` is for the count in both lines below; `violations` comes
+        # from collect_violations rather than being re-derived here, so the
+        # definition of "violation" lives in exactly one place -- the same rule
+        # the _MARKER comment above argues for, applied to the predicate.
         entries = marked_entries(changelog)
+        violations = collect_violations(changelog, migration)
     except ChangelogUnreadable as exc:
         print(str(exc), file=sys.stderr)
         return 1
 
-    violations = [e for e in entries if not e.linked]
     if not violations:
         # The count is part of the success line, not decoration: this gate
         # enumerates zero entries once Phase 1 condenses the section, and a
         # bare "passed" would read identically to a real pass.
         print(
             f"check_breaking_migration_link: {len(entries)} marked entry/entries "
-            f"under [Unreleased], all linking their upgrade path."
+            f"under [Unreleased], all linking a real section of their upgrade path."
         )
         return 0
 
-    for v in violations:
+    for entry, why in violations:
         print(
-            f"CHANGELOG.md:{v.line}: {v.entry_id} is marked **Breaking** and links no migration section",
+            f"CHANGELOG.md:{entry.line}: {entry.entry_id} is marked **Breaking** and {why}",
             file=sys.stderr,
         )
     print(
         f"\ncheck_breaking_migration_link: {len(violations)} of {len(entries)} "
-        f"marked entry/entries link no upgrade path.",
+        f"marked entry/entries do not reach their upgrade path.",
         file=sys.stderr,
     )
     print(_REMEDIATION, file=sys.stderr)

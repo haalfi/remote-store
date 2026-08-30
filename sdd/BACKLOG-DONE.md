@@ -330,6 +330,30 @@ if evidence changes; these are retired.
   normal states: a release window with no breaking change, and Phase 1 after
   condensation — the blind window this item's own docstring declares as
   accepted. It skips there instead, so the suite does not contradict the bound.
+  **Review round 3 closed the miss that mattered most, rather than only stating
+  it.** The gate validated that an entry *carried* a link and never that the
+  link went anywhere: `check_links` discards the fragment of an absolute
+  docs-site URL (`_resolve_docs_site_path` returns `parts.path` only) and
+  `mkdocs build --strict` does not resolve external URLs, so
+  `…/migration/#v9999-to-v9999` passed `lint` and `docs-gate` with no section
+  written at all. That is the whole delegated obligation slipping *through* the
+  check meant to enforce it — the same defect BUG-261 and BUG-262 exist to
+  close, reached through the gate instead of around it. The fragment is now
+  resolved against the `## ` headings `migration.md` exposes.
+  **The slug rule is narrow on purpose, and the live files are what keep it
+  honest.** Importing `check_links._extract_anchors` would pull a git-invoking
+  module tree into `lint` to answer one question, so this derives the slug
+  itself — lowercase, drop what is neither alphanumeric nor space nor hyphen,
+  spaces to hyphens. A test resolves every anchor the live CHANGELOG links
+  against the live guide, so a wrong rule fails on master immediately instead of
+  passing something through.
+  **Two smaller round-3 findings, both about two gates disagreeing.** The link
+  pattern required a trailing slash where `check_links` normalises it away
+  (`parts.path.strip("/")`), so a valid URL would have been rejected with a
+  message naming the wrong defect; the slash is now optional and pinned. And
+  `main()` re-implemented `collect_violations`'s predicate instead of calling
+  it — the same two-places-to-widen shape the `_MARKER` comment argues against,
+  rebuilt three lines from where the argument is written.
 
 - [x] **BUG-261 — Two breaking changes are on master with no upgrade path, and the obligation is stated where their authors never read**
   spec: — · effort: S · audience: user.api_docs, user.site, contributor.tooling
