@@ -264,28 +264,6 @@ error: it meets the rows it was brought to and misses the bound that arrived
 after, which is what a clause growing a new sentence does to a backend that was
 compliant the day before.
 
-- [ ] **BK-360 — What a stalled non-atomic SFTP `write` leaves at the destination is undocumented**
-  spec: SFTP-030, SFTP-014 · effort: S · audience: user.api_docs, user.site
-  `io_timeout` bounds writes as well as reads (SFTP-030: "the bound covers writes
-  as well as reads, and a stalled write reaches it on the receive side"), and
-  BK-356 made that bound the default — so a stalled write now raises for callers
-  who configured nothing. What the remote path holds afterwards is documented for
-  the *atomic* path only: SFTP-014 and the SFTP guide's atomic-write caveat say
-  the destination is untouched and an orphan temp file may remain. For plain
-  `write`, which streams to the destination path directly, no artifact says
-  whether the path is absent, empty, or carries a prefix of the payload, nor
-  whether a retry needs `overwrite=True`.
-  The nearest guidance lives in `docs-src/guides/transfer-operations.md` ("When
-  retrying, pass `overwrite=True` to replace the partial file"), which is a
-  different subsystem and is not linked from the SFTP pages.
-  **Found by BK-356's review round 7, by the reader lens** — the first pass on
-  that PR to ask whether a reader can act rather than whether the text is true.
-  The reviewer explicitly declined to assert the answer, and so does this item:
-  SFTP-030 does not settle it either, which is the point. Establish the behaviour
-  by running it, then state it once in the SFTP guide beside the atomic caveat.
-  Until then `docs-src/guides/troubleshooting.md` tells the reader to treat the
-  path as being in an unknown state and re-write it, which is safe and vague.
-
 - [ ] **BK-359 — A stalled SFTP operation raises `BackendUnavailable` with an empty message and no log record**
   spec: SFTP-030, SFTP-023 · effort: S · audience: user.api
   `_map_exception` builds the error as `BackendUnavailable(str(exc), ...)`, and

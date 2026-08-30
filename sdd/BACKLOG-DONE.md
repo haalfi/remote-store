@@ -215,6 +215,39 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-360 — What a stalled non-atomic SFTP `write` leaves at the destination is undocumented**
+  spec: SFTP-030, SFTP-014 · effort: S · audience: user.api_docs, user.site
+  Established by running it, not by reading the mapping. **Four** destination
+  states are reachable, and which one a caller gets turns on *when* the peer
+  went silent and *which direction* was silenced, never on which method was
+  called: **absent** (`overwrite=False`, the existence `stat` fails ahead of the
+  open), **untouched** (`overwrite=True`, client→server silenced before the call
+  — the `CMD_OPEN` never arrives), **empty** (`overwrite=True`, server→client
+  silenced before the call — the server truncates and only its reply is lost),
+  and **a prefix** (silence mid-body). Counted from the parametrisation of
+  `test_stalled_write_leaves_one_of_four_destination_states`, which pins one row
+  each.
+  **The empty row is the finding.** It destroys a pre-existing file and replaces
+  it with nothing, and it differs from *untouched* only in a direction no caller
+  can observe — so a stalled `write` cannot be read as a no-op, which is what
+  the absent documentation left a reader free to assume. The consequences
+  stated: a retry needs `overwrite=True` (three rows leave the path occupied),
+  and the prefix is not a resume point (its length follows the chunk size and
+  the SSH window).
+  **`copy` was bound by the clause and the item did not name it.** It opens its
+  destination with the identical `self._sftp.file(dst, "w")`, so the same rows
+  apply to `dst`; found by enumerating the subjects the clause's words pick out
+  rather than the files the diff touched. `move` is bound too and answers
+  differently — `posix_rename` re-raises on a dead connection before the
+  copy-and-delete fallback, so both paths are untouched.
+  Stated in SFTP-030 § What a stalled non-atomic `write` leaves at the
+  destination (with the matrix), in the SFTP guide beside the atomic caveat
+  (with the rule), in the `write` and `copy` docstrings, and in the
+  troubleshooting page, whose "not currently documented; treat the path as being
+  in an unknown state" bullet this replaces. SFTP-014's caveat — the contrast
+  the rule is read against — is now asserted by a test rather than quoted.
+  Found by BK-356's review round 7, by the reader lens.
+
 - [x] **BUG-262 — The breaking-change upgrade-path rule is review-enforced, and the gate the diagnosis proposed would not have caught it**
   spec: — · effort: S · audience: contributor.tooling, user.api_docs
   BUG-261 moved the obligation onto the PR making the break and left nothing

@@ -1,0 +1,181 @@
+id: BK-360
+title: "What a stalled non-atomic SFTP `write` leaves at the destination is undocumented"
+trigger: >-
+  BK-356 made io_timeout's bound the default, so a stalled write now raises for
+  callers who configured nothing. What the remote path held afterwards was
+  documented for the atomic path only — SFTP-014 and the SFTP guide say the
+  destination is untouched and an orphan temp may remain — while for plain
+  write, which streams to the destination directly, no artifact said whether the
+  path was absent, empty, or carried a prefix, nor whether a retry needed
+  overwrite=True. The troubleshooting page told the reader to treat the path as
+  being in an unknown state, which is safe and vague.
+source_items:
+  - BK-360
+  - BK-356
+audience:
+  - user.api_docs
+  - user.site
+# docs-src/_data/graph/graph.json is deliberately absent. The ripple-check
+# anticipates it after a public-docstring change and `hatch run gen-graph` was
+# run, but it produced no diff: the graph carries signatures and gating, not
+# docstring prose, and this change altered only prose. This field records what
+# was mechanically touched, not what was anticipated.
+expected_ripples:
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+surprising_ripples:
+  # Neither was anticipated by the ripple-check table, and both were reached by
+  # enumerating the subjects the clause's *words* pick out rather than the files
+  # the diff touched.
+  #
+  # copy() opens its destination with the identical self._sftp.file(dst, "w")
+  # and streams into it, so every row of the new matrix applies to dst. The item
+  # named only write(), the diff had no reason to open _sftp.py's copy(), and a
+  # clause stating the rule for write alone would have been false by omission
+  # for a capable operation. Measured, then pinned by its own test.
+  - src/remote_store/backends/_sftp.py
+  # The troubleshooting page carried the sentence "not currently documented" that
+  # this item closes. Leaving it would have had the repo say undocumented on one
+  # page while documenting it on another (CLAUDE.md principle 3). It is also the
+  # page BK-359 is editing in parallel, so the edit was held to one bullet.
+  - docs-src/guides/troubleshooting.md
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-360 (item)"
+        read_type: gate
+        extract: "Establish the behaviour by running it, then state it beside the atomic caveat; the item deliberately declines to assert the answer"
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030"
+        read_type: gate
+        extract: >-
+          The bound covers writes as well as reads, and which round-trip a
+          stalled write fails on depends on when the peer went silent. Named the
+          moment but not the residue, which is the gap this item fills
+        outcome: unclear
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-014"
+        read_type: gate
+        extract: "The atomic caveat's two claims — destination untouched, orphan temp may remain — are the contrast the new rule is stated against"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Pre-work index"
+        read_type: gate
+        extract: >-
+          Triggered rows: Spec section (spec-marked tests), Public method
+          signature (docstring Args/Returns/Raises), Backlog item touched
+          (trace), CHANGELOG entry, Tracker ID in published prose — the last
+          being why no BK/SFTP coordinate reaches the docstrings or docs-src
+        outcome: ok
+
+  - id: reproduce
+    name: Establish the behaviour by running it
+    steps:
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "_StallRelay, _make_backend"
+        read_type: reference
+        extract: >-
+          The harness already stages a real silent peer per direction —
+          stall_upload silences client→server, stall_download silences
+          server→client. Reused rather than rebuilt; the direction split turned
+          out to be the axis that decides the answer
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "write, _open_write"
+        read_type: reference
+        extract: >-
+          The destination is opened "w", so the server truncates on open. That
+          is what makes the empty state reachable, and reading it is what
+          predicted the direction split the run then confirmed
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "copy, move, _move_fallback"
+        read_type: reference
+        extract: >-
+          copy shares write's destination-open shape, so the clause binds it;
+          move re-raises on a dead connection before its copy-and-delete
+          fallback, so it does not. Both then run rather than concluded
+        outcome: ok
+      - file: tests/backends/sftp/_helpers.py
+        section: "start_sftp_server"
+        read_type: reference
+        extract: >-
+          Inspect the destination through a second backend wired straight to the
+          server, past the relay: what is asserted is what the caller's next
+          connection finds, not what the condemned channel would report
+        outcome: ok
+
+  - id: tests
+    name: Pin the measured states
+    steps:
+      - file: sdd/TESTING.md
+        section: "Assertion depth"
+        read_type: gate
+        extract: >-
+          Assert the shape, not the sizes — the prefix length follows the chunk
+          size and the SSH window, so a measured byte count would be a derived
+          figure going stale. The empty case asserts 0 exactly, because that is
+          the claim
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "(module docstring)"
+        read_type: reference
+        extract: >-
+          The file states no count of its own tests and says why; the three
+          tests added here follow that and introduce no tally. The intact and
+          empty rows differ only by stall direction, which makes them each
+          other's control
+        outcome: ok
+
+  - id: docs
+    name: State it once, in each layer's own register
+    steps:
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030 (new subsection), SFTP-014 (cross-reference)"
+        read_type: reference
+        extract: "The matrix and its derivation go in the spec as the authoritative home; SFTP-014 gains the pointer a reader comparing the two operations needs"
+        outcome: ok
+      - file: docs-src/guides/backends/sftp.md
+        section: "Capabilities / atomic write caveat"
+        read_type: reference
+        extract: >-
+          The reader gets the actionable rule, not the matrix: the silence
+          direction decides the answer but no caller can observe it, so it is
+          load-bearing for the spec and useless to a user
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules"
+        read_type: gate
+        extract: "No tracker ID or spec coordinate in docstrings or docs-src prose; the guide states the rule without citing SFTP-030 or BK-360"
+        outcome: ok
+
+  - id: verify
+    name: Ripple-check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Detailed checklist"
+        read_type: verify
+        extract: "Spec section, Public method signature, Backlog item touched, CHANGELOG entry, Tracker ID in published prose"
+        outcome: ok
+      - file: docs-src/guides/transfer-operations.md
+        section: "Error semantics"
+        read_type: verify
+        extract: >-
+          Checked and deliberately left: its partial-file note is about a local
+          file on a failed download, a genuinely different subsystem as the item
+          said. Its silence about upload/transfer, which route through
+          store.write() and so inherit this rule on SFTP, is a real asymmetry
+          but one about every backend's write rather than SFTP's — filed rather
+          than widened into this PR
+        outcome: ok
+      - file: docs-src/guides/write-integrity.md
+        section: "(full)"
+        read_type: verify
+        extract: "Checked: scoped to hashes and write metadata, not stall recovery. No ripple"
+        outcome: ok

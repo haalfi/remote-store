@@ -335,8 +335,37 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
 
 !!! warning "Atomic write caveat"
     Atomic writes use a temp file (`.~tmp.<name>.<uuid>`) and rename. If the
-    connection drops between write and rename, the orphan temp file will remain
-    on the server.
+    connection drops between write and rename, the destination is untouched but
+    the orphan temp file will remain on the server.
+
+!!! danger "What a failed plain `write` leaves behind"
+    `write()` streams straight to the destination path — there is no temp file —
+    so a write that fails part-way through has already changed that path. After
+    a `BackendUnavailable` from `write()`, the destination may be **absent**,
+    **empty**, or hold **an unpredictable prefix** of what you sent, and it may
+    be any of those whether or not a file was there before. The error does not
+    tell you which.
+
+    Three things follow, and the first is the one that surprises people:
+
+    - **Your previous file may be gone.** A failed `write(..., overwrite=True)`
+      can leave the path empty, having truncated the old content without
+      replacing it. Do not treat a failed write as a no-op.
+    - **Retry with `overwrite=True`.** The path is usually still occupied, so a
+      plain retry raises `AlreadyExists` instead of retrying.
+    - **Do not resume from what is there.** The prefix length depends on
+      buffering you cannot see, so appending to it corrupts the file. Discard
+      and re-write from the start.
+
+    `copy()` writes its destination the same way, so the same applies to `dst`
+    (the source is untouched). `move()` does not: it renames, so a failure
+    leaves both paths as they were. Parent directories created for the write
+    remain behind in every case.
+
+    **Use `write_atomic()` when this matters** (see the caveat above, and
+    [atomicity semantics](../../explanation/concurrency.md)). It writes to a
+    temp file and renames, so a reader never sees a partial file and a failure
+    leaves your existing file exactly as it was — at the cost of the orphan temp.
 
 !!! note "Move fallback"
     `move()` tries `posix_rename` (atomic), then standard `rename()`, then

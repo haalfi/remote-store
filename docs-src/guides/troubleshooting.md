@@ -201,9 +201,13 @@ misconfigured. The operation is **not retried** — the connect-phase
   own. The store stays usable — you do not need to rebuild it.
 - On a stalled `write_atomic` or `open_atomic`, the destination is untouched but
   an orphan temp file may remain — see the
-  [atomic write caveat](backends/sftp.md#capabilities) in the SFTP guide. What a
-  stalled plain `write` leaves at the destination path is not currently
-  documented; treat the path as being in an unknown state and re-write it.
+  [atomic write caveat](backends/sftp.md#capabilities) in the SFTP guide.
+- On a stalled plain `write` (or `copy`), the destination path **has** changed:
+  it may be absent, empty, or hold an unpredictable prefix, and an
+  `overwrite=True` write may have truncated your existing file without
+  replacing it. Retry with `overwrite=True` and re-write from the start; do not
+  append to what is there. A stalled `move` leaves both paths as they were. The
+  [full rule](backends/sftp.md#capabilities) is in the SFTP guide.
 
 If this is happening often against a server you believe is healthy, the bound is
 probably too tight for it — see **Choosing a value** below.

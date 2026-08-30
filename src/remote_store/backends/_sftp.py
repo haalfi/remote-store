@@ -931,10 +931,17 @@ class SFTPBackend(Backend):
         """Write *content* to *path*, streaming it over the SFTP channel.
 
         The bytes are streamed straight to the destination file (no
-        temp-and-rename), so a dropped connection mid-write can leave a partial
-        or truncated file there — use ``write_atomic`` when readers must never
-        see a half-written file. Missing parent directories are created first
-        (one ``stat`` per ancestor).
+        temp-and-rename), so a failed write has already changed that path. On
+        ``BackendUnavailable`` the destination may be **absent**, **empty**, or
+        hold an **unpredictable prefix** of *content*, and the error does not say
+        which: an ``overwrite=True`` write can truncate the existing file without
+        replacing it, so a failure is not a no-op. Retry with ``overwrite=True``
+        (the path is usually still occupied) and re-write from the start rather
+        than appending to what is there — the prefix length depends on buffering
+        the caller cannot observe. Use ``write_atomic`` when the existing file
+        must survive a failure, or when readers must never see a half-written
+        file. Missing parent directories are created first (one ``stat`` per
+        ancestor) and are **not** removed when the write fails.
 
         The returned ``WriteResult`` carries ``size`` (counted during upload)
         and ``source="native"``, but every rich field — ``last_modified``,
@@ -1000,7 +1007,11 @@ class SFTPBackend(Backend):
         temp file in the destination directory, then promoted with
         ``posix_rename`` (atomic on POSIX-compliant servers). Servers without
         ``posix_rename`` fall back to a plain ``rename`` (non-atomic overwrite:
-        the target is removed first), and the temp file is cleaned up on failure.
+        the target is removed first). On failure the destination is left exactly
+        as it was, and the temp file is cleaned up **best-effort**: the cleanup
+        is deliberately skipped when the failure is itself a dropped connection,
+        so a stall leaves an orphan ``.~tmp.<name>.<uuid8>`` beside the target
+        rather than stalling again on an unlink the server cannot answer.
 
         As in ``write``, the returned ``WriteResult`` carries ``size`` and
         ``source="native"`` but leaves every rich field (``last_modified`` /
@@ -1541,9 +1552,12 @@ class SFTPBackend(Backend):
         """Copy the file *src* to *dst* by streaming through the client.
 
         SFTP has no server-side copy, so the bytes round-trip through the client
-        (download then upload); this is not atomic — an interruption can leave a
-        partial file at *dst*. ``src == dst`` is a no-op; missing parent
-        directories of *dst* are created first.
+        (download then upload). The destination is opened and streamed to
+        directly, exactly as in ``write``, so this is not atomic: an interruption
+        leaves *dst* absent, empty, or holding an unpredictable prefix of *src*,
+        and retrying needs ``overwrite=True``. *src* is untouched either way.
+        ``src == dst`` is a no-op; missing parent directories of *dst* are
+        created first and are not removed when the copy fails.
 
         Raises:
             NotFound: If *src* does not exist.

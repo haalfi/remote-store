@@ -239,6 +239,11 @@ error-handling path — so the orphan-temp caveat above holds and the original e
 propagates without a multi-second reconnect stall. An abnormal exit of an
 `open_atomic` block (including a `GeneratorExit` / `KeyboardInterrupt`) removes the
 temp file under the same best-effort guard.
+**The contrast this caveat is read for** — what plain `write` leaves at the
+destination path when it fails the same way — is
+[SFTP-030 § What a stalled non-atomic `write` leaves at the destination](#stalled-write-destination).
+A reader choosing between the two operations is comparing the two, and stating
+only this half is what left that choice undecidable.
 
 ### SFTP-015: Atomic Write Overwrite Semantics
 
@@ -705,3 +710,69 @@ transparent reconnect builds a fresh channel with `timeout=None`, so a
 caller-applied bound evaporates precisely after a recovered drop. Keeping the
 knob distinct from `timeout` matters because that name already carries four
 connect-phase meanings.
+
+<a id="stalled-write-destination"></a>
+#### What a stalled non-atomic `write` leaves at the destination
+
+Everything above says when a stalled write *fails*. This says what it leaves
+behind, which is a separate question and was undocumented while the clause above
+was not — the gap BK-360 closes.
+
+`write` streams to the destination path itself, so unlike `write_atomic` there
+is nowhere else for a half-delivered payload to land. Four states are reachable,
+and which one a caller gets is decided by *when* the peer went silent and *which
+direction* was silenced — never by which method was called:
+
+| silence began | direction silenced | `overwrite` | destination afterwards |
+| --- | --- | --- | --- |
+| before the call | either | `False` | **absent** — the existence `stat` fails ahead of the open, so nothing is created |
+| before the call | client→server | `True` | **untouched** — the `CMD_OPEN` never reaches the server, so a pre-existing file is not even truncated |
+| before the call | server→client | `True` | **empty** — the server receives the open and truncates; only its reply is lost |
+| mid-body | either | either | **a prefix** — however many bytes the server took before the silence |
+
+Three consequences follow, and each is why the table is here rather than left to
+a reader's inference.
+
+**The old content is not safe.** The *empty* row destroys a pre-existing file
+and replaces it with nothing. It differs from *untouched* only in which
+direction the silence went, which no caller can observe — and, while BK-359
+stands, the raised `BackendUnavailable` carries no message to distinguish them
+either. So the only sound reading is that a stalled `write` may have destroyed
+the destination.
+
+**A retry needs `overwrite=True`.** Three of the four rows leave the path
+occupied, and a plain retry would meet `AlreadyExists` rather than the failure
+it is retrying.
+
+**The prefix is not a resume point.** Its length is a function of the chunk size
+and the SSH window, not of anything the caller controls or is told, so a caller
+that seeks past it and appends will corrupt the file. Discard and re-write. This
+is the same conclusion the streamed-read paragraph above reaches from the other
+side of the transfer, and for the same reason.
+
+`copy` is bound by the same rows: it opens its destination with the identical
+`self._sftp.file(dst, "w")` and streams into it, so a stall part-way through
+leaves a prefix at `dst` while the source stays intact. `move` is not: it
+promotes by `posix_rename` and re-raises on a dead connection before reaching
+its copy-and-delete fallback, so a stalled `move` leaves both paths untouched.
+In every row, parent directories `_ensure_parent_dirs` created on the way in
+remain behind — a failed write is not a rollback.
+
+**Derivation.** The table was produced by running each row against a real
+silent peer through the `_StallRelay` harness, with the destination read back
+through a second backend wired straight to the server rather than through the
+condemned channel; the rows are pinned by
+`test_stalled_write_leaves_one_of_four_destination_states` and
+`test_stalled_copy_leaves_a_prefix_at_the_destination_too` in
+`tests/backends/sftp/test_io_timeout.py`. The sizes measured are deliberately
+not recorded here: the prefix length moves with the chunk size and the window,
+so a figure would be a derived artifact going stale exactly as the enumeration
+this clause already declines to keep does. The tests assert the *shape* — a
+strictly partial prefix — for the same reason.
+
+**The atomic contrast this is stated against is asserted, not quoted.**
+[SFTP-014](#sftp-014-atomic-write-simulated)'s caveat claims a lost connection
+leaves the destination untouched and an orphan temp behind; a rule about
+`write`'s destination is only useful if that contrast holds, so both halves are
+run for `write_atomic` and `open_atomic` by
+`test_a_stalled_atomic_write_leaves_the_destination_absent_and_an_orphan_temp`.
