@@ -1020,6 +1020,11 @@ class SFTPBackend(Backend):
         reader ever sees a half-written file — not that a reported failure means
         the write did not happen.
 
+        On a server **without** ``posix-rename@openssh.com`` the destination is
+        not protected at all: the fallback removes it before renaming onto it, so
+        a stall in that window leaves the destination gone with the payload
+        stranded in the orphan temp.
+
         As in ``write``, the returned ``WriteResult`` carries ``size`` and
         ``source="native"`` but leaves every rich field (``last_modified`` /
         ``etag`` / ``version_id`` / ``digest``) ``None``.
@@ -1502,7 +1507,10 @@ class SFTPBackend(Backend):
         rename did not happen: if the stall swallowed the *reply* to
         ``posix_rename``, the server performed the move and the caller is told it
         failed. Re-check both paths before retrying — a blind retry of a move
-        that actually succeeded raises ``NotFound`` on a source that is gone.
+        that actually succeeded raises ``NotFound`` on a source that is gone. On
+        a server without ``posix-rename@openssh.com`` there is a further state:
+        the fallback removes the destination before renaming onto it, so a stall
+        in that window leaves the destination gone (the source survives).
 
         Raises:
             NotFound: If *src* does not exist.

@@ -726,50 +726,57 @@ Everything above says when a stalled operation *fails*. This says what it leaves
 behind, which is a separate question and was undocumented while the clause above
 was not — the gap BK-360 closes.
 
-**A timeout reports a lost reply, not an unperformed operation.** `io_timeout`
-fires on a receive that made no progress, so what the caller learns is that no
-answer came back — never that the request failed to arrive. Which of the two it
-was depends on which direction went silent:
+**A timeout reports one round-trip's lost reply.** `io_timeout` fires on a
+receive that made no progress, so what the caller learns is that no answer came
+back for the request outstanding at that moment — never that the request failed
+to arrive. Two things follow, and the second is the one two review rounds of
+this clause each got wrong:
 
-- **client→server silenced** — the request never reached the server, so nothing
-  happened and the destination is exactly as it was.
-- **server→client silenced** — the request arrived and the server performed it.
-  Only the answer was lost.
+- **Everything the operation did *before* that round-trip already happened.**
+  Those replies came back; the silence started later. A stall in a write's body
+  has already truncated the destination on the open, whichever direction goes
+  quiet.
+- **For the round-trip itself, the direction decides.** Client→server silenced,
+  the request never arrived and it did not happen. Server→client silenced, the
+  server performed it and only the answer was lost.
 
-**A caller cannot tell these apart**, and while BK-359 stands the raised
-`BackendUnavailable` carries no message to help. So **every** operation below has
-a state in which it did what it was asked and reported failure anyway. That is
-the shape callers must plan for, and it is not what "the write failed" suggests.
+**A caller can observe neither**, and while BK-359 stands the raised
+`BackendUnavailable` carries no message to help. So several operations below have
+a state in which they did what they were asked and reported failure anyway.
 
-Which round-trip's reply is lost then decides the residue:
+Applying that to each operation's round-trips gives the reachable residue. The
+source of a `copy` is never affected and is omitted:
 
-| operation | round-trip whose reply is lost | destination afterwards |
-| --- | --- | --- |
-| `write` | the existence `stat` (`overwrite=False`) or an ancestor `stat` | **untouched** — the open is never reached |
-| `write` | the `CMD_OPEN` (`overwrite=True`) | **empty** — the server truncated; the old content is gone and nothing replaced it |
-| `write` | a body write | **a prefix** — however many bytes the server took |
-| `copy` | the destination `CMD_OPEN` | **empty**, as for `write` |
-| `copy` | a body write | **a prefix** of the source at `dst`; the source is untouched either way |
-| `move` | the `posix_rename` | **the move completed** — source gone, destination in place |
-| `write_atomic` / `open_atomic` | a body write | **untouched**, with an orphan temp holding the partial payload |
-| `write_atomic` / `open_atomic` | the promote `posix_rename` | **the write completed** — the destination holds the new content and no temp remains |
+| operation | reachable residue at the destination |
+| --- | --- |
+| `write` | **untouched** · **absent** · **empty** (the open truncated it; the old content is gone and nothing replaced it) · **a prefix** |
+| `copy` | the same four; a pre-armed stall dies on the source `stat`, so `empty` needs the silence to begin at the destination open |
+| `move` | **untouched** · **absent** · **the move completed** (source gone) · **the destination destroyed while the source survives** — fallback servers only |
+| `write_atomic` / `open_atomic` | **untouched** or **absent**, usually with an orphan temp · **the write completed**, no temp · **the destination destroyed with the payload stranded in the temp** — fallback servers only |
 
-Four consequences follow, and each is why the table is here rather than left to
+Five consequences follow, and each is why the table is here rather than left to
 a reader's inference.
 
-**Reported failure does not mean unchanged.** The last three rows each carry out
-the caller's intent and then raise. For `move` and the atomic writes this is the
-*whole* operation succeeding under a failure report, which is a sharper hazard
-than a partial write: a caller that reruns a failed `move` meets `NotFound` on a
-source that is already gone.
+**Reported failure does not mean unchanged.** For `move` and the atomic writes
+the *whole* operation can succeed and then raise: a caller that reruns a failed
+`move` meets `NotFound` on a source that is already gone.
 
-**The old content is not safe on the non-atomic path.** The `empty` row destroys
-a pre-existing file and replaces it with nothing. `write_atomic` is the escape
-— its `untouched` row is what the capability is bought for — but only against a
-failure in the body, not against a lost promote reply.
+**The old content is not safe on the non-atomic path.** The `empty` residue
+destroys a pre-existing file and replaces it with nothing.
 
-**A retry needs `overwrite=True`.** Most rows leave the path occupied, and a
-plain retry would meet `AlreadyExists` rather than the failure it is retrying.
+**`write_atomic` is the escape, and its bound is the promote.** Its `untouched`
+residue is what the capability is bought for, and it holds against a failure in
+the body — not against a lost promote reply, and not on a server without
+`posix-rename@openssh.com`.
+
+**The last row of each fallback line is the worst state here**, and it is
+`_rename_fallback` / `_move_fallback`: those remove the destination and then
+rename onto it, so a silence beginning at the `rename` leaves the destination
+gone with nothing put in its place. It is pre-existing behaviour rather than
+anything this clause introduced, it is reachable only on a server lacking
+`posix-rename@openssh.com`, and it is tracked as **BUG-264** along with the
+second `io_timeout` bound it costs — the suppressed `remove` swallows its own
+timeout, which the one-bound paragraph above does not currently allow for.
 
 **The prefix is not a resume point.** Its length is a function of the chunk size
 and the SSH window, not of anything the caller controls or is told, so a caller
@@ -777,37 +784,47 @@ that seeks past it and appends will corrupt the file. Discard and re-write. This
 is the same conclusion the streamed-read paragraph above reaches from the other
 side of the transfer, and for the same reason.
 
-**Which round-trip a stall reaches is not the same question as what each row
-does**, and conflating the two is how an earlier revision of this clause
-over-claimed. The `empty` outcome belongs to the open, at any depth; but a stall
-already in effect when the call starts lands on the *first* round-trip the
+**Which round-trip a stall *reaches* is a separate question from what that
+round-trip does.** The `empty` residue belongs to the open at any depth; but a
+stall already in effect when the call starts lands on the *first* round-trip the
 operation makes, and `_ensure_parent_dirs` stats every ancestor before the open.
-So a pre-armed stall reaches the open only for a root-level target — at any
-nesting it is absorbed by an ancestor `stat` and the destination survives. Both
+So a pre-armed stall reaches a `write`'s open only for a root-level target — at
+any nesting an ancestor `stat` absorbs it and the destination survives. Both
 halves are pinned, at depth 0 and depth 1, so the bound cannot be re-encoded
 accidentally by a fixture that happens to use bare filenames.
 
 In every row, parent directories `_ensure_parent_dirs` created on the way in
 remain behind — a failed write is not a rollback.
 
-**Derivation.** Every row was produced by running it against a real silent peer
-through the `_StallRelay` harness, with the destination read back through a
-second backend wired straight to the server rather than through the condemned
-channel. Rows whose stall must begin at a specific round-trip are staged by
-silencing the relay from inside the call that issues it, so the moment is
-deterministic rather than raced against a timer. They are pinned by
+**Derivation, and why it is an enumeration rather than an argument.** Two
+successive revisions of this clause each proposed a *scope criterion* for the
+residue — first "which method was called", then "which direction was silenced" —
+and each was refuted in review by a state the argument had not considered. A
+third reading is not more likely to be exhaustive than the first two, so the
+condition space was parametrised and generated instead: operation x the
+round-trip at which silence begins x direction x `overwrite` x whether the
+destination pre-existed x whether the server offers `posix-rename@openssh.com`.
+**164 combinations ran and 156 were pruned as unreachable**, every one against a
+real silent peer through the `_StallRelay` harness, with the destination read
+back through a second backend wired straight to the server rather than through
+the condemned channel, and with the raised type recorded per case so that a
+combination where no stall fired could not be mistaken for a residue
+measurement. Those counts are the harness's own totals from that run. The
+enumeration is not itself in the suite — it costs minutes, and its value was in
+producing this table once. What ships is a spanning subset, one case per distinct
+residue state, in
 `test_stalled_write_leaves_one_of_four_destination_states`,
 `test_stalled_copy_leaves_a_prefix_at_the_destination_too`,
 `test_a_lost_reply_can_complete_the_operation_it_reports_as_failed` and
 `test_a_stalled_atomic_write_preserves_the_destination_and_leaves_an_orphan_temp`
-in `tests/backends/sftp/test_io_timeout.py`. The sizes measured are deliberately
-not recorded here: the prefix length moves with the chunk size and the window,
-so a figure would be a derived artifact going stale exactly as the enumeration
-this clause already declines to keep does. The tests assert the *shape* — a
-strictly partial prefix — for the same reason.
+in `tests/backends/sftp/test_io_timeout.py`. Byte counts are deliberately absent:
+the prefix length moves with the chunk size and the window, so a figure would be
+a derived artifact going stale exactly as the enumeration this clause already
+declines to keep does. The tests assert the *shape* — a strictly partial prefix —
+for the same reason.
 
 **This clause amends [SFTP-014](#sftp-014-atomic-write-simulated)'s caveat
 rather than merely citing it.** That caveat's "the destination is untouched"
-holds for a failure *before* the promote and is false for a lost promote reply,
-which was found by running the contrast this clause is stated against instead of
-quoting it.
+holds for a failure *before* the promote and is false both for a lost promote
+reply and on the fallback path, which was found by running the contrast this
+clause is stated against instead of quoting it.

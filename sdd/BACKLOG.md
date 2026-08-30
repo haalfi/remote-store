@@ -264,6 +264,36 @@ error: it meets the rows it was brought to and misses the bound that arrived
 after, which is what a clause growing a new sentence does to a backend that was
 compliant the day before.
 
+- [ ] **BUG-264 — `_rename_fallback` destroys the destination and strands the payload when the promote stalls**
+  spec: SFTP-014, SFTP-030 · effort: M · audience: user.api
+  On a server without `posix-rename@openssh.com`, `_rename_fallback` and
+  `_move_fallback` both `remove(dst)` and then `rename(tmp, dst)`. A silence
+  beginning at that `rename` leaves the destination **gone** with nothing put in
+  its place — for `write_atomic` / `open_atomic` the payload is stranded in the
+  orphan `.~tmp.<name>.<uuid8>`; for `move` the source survives. Measured at
+  `io_timeout=2.0` with `posix_rename` forced to raise `OSError`, client→server
+  silenced at the `rename`: destination `absent`, one orphan temp for the atomic
+  paths and an intact source for `move`.
+  **This is the one residue state where the caller loses data outright**, and it
+  is reached through the operation the library recommends for safety. It also
+  contradicts SFTP-014's caveat as a whole — the destination is neither untouched
+  nor promoted.
+  **A second, independent half: it costs two `io_timeout` bounds, not one.** The
+  `remove` runs under `contextlib.suppress(OSError)`, so its own timeout is
+  swallowed and the following `rename` re-enters the same stalled channel.
+  Measured 4.00 s at a 2.0 s bound. SFTP-030's one-bound paragraph enumerates
+  three mechanisms that prevent exactly this and does not cover the suppressed
+  `remove`, so that paragraph is currently wrong for this path.
+  **Fixing the first half needs a decision, not just a patch:** the
+  remove-then-rename ordering is what makes a non-atomic overwrite possible on a
+  server lacking the extension, so removing the window may mean accepting that
+  such servers cannot overwrite atomically and saying so, rather than silently
+  narrowing it. Note the fallback carries `# pragma: no cover`, so nothing in the
+  suite executes it today.
+  **Found by BK-360's review round 2, by a measuring pass**, and confirmed by
+  BK-360's residue enumeration. BK-360 documents the resulting state in SFTP-030
+  and the SFTP guide; it does not fix it.
+
 - [ ] **BK-359 — A stalled SFTP operation raises `BackendUnavailable` with an empty message and no log record**
   spec: SFTP-030, SFTP-023 · effort: S · audience: user.api
   `_map_exception` builds the error as `BackendUnavailable(str(exc), ...)`, and

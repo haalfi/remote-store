@@ -17,6 +17,7 @@ audience:
   - user.site
 discovery_followups:
   - BK-364
+  - BUG-264
 # docs-src/_data/graph/graph.json is deliberately absent. The ripple-check
 # anticipates it after a public-docstring change and `hatch run gen-graph` was
 # run, but it produced no diff: the graph carries signatures and gating, not
@@ -200,6 +201,43 @@ phases:
           "the destination is untouched" was asserted where nothing had existed.
           Retrospective: all three were mine, written in the same pass as the
           prose they were meant to hold up
+        outcome: ok
+
+  - id: classify
+    name: Round 2 — stop arguing the criterion, enumerate its space
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Stop rule / Repeat-site check"
+        read_type: gate
+        extract: >-
+          Two consecutive rounds refuted the same condition — what determines the
+          residue. Round 1 killed "which method was called"; round 2 killed its
+          replacement, "which direction was silenced", with a counterexample that
+          was already sitting in round 1's own probe output (a mid-body upload
+          stall destroys a pre-existing file). The rule says stop arguing and
+          generate the product, and it was right: a third reading would have been
+          no more exhaustive than the first two
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_rename_fallback, _move_fallback"
+        read_type: reference
+        extract: >-
+          The enumeration's own first run missed this window because its moment
+          list had no at_fallback_rename, and it silently mis-staged copy's
+          mid-body case as a no-op. Both showed up only because the outcome
+          column was added — a row that never raised was being read as a residue
+          measurement. Filed as BUG-264 rather than fixed: closing the window is
+          a design decision about what overwrite means on a server without
+          posix-rename
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Assertion depth"
+        read_type: gate
+        extract: >-
+          The enumeration is too slow to ship, so what ships is a spanning subset
+          — one case per distinct residue state, including the two nothing
+          previously reached (the fallback's destroyed destination, and the
+          empty-at-open claim at depth 1)
         outcome: ok
 
   - id: verify

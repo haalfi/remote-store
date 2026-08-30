@@ -1467,33 +1467,126 @@ def test_stalled_copy_leaves_a_prefix_at_the_destination_too(
     assert observer.read_bytes(src) == payload, "the source must be untouched by a failed copy"
 
 
-def _silence_at(relay: _StallRelay, backend: Any, method: str, predicate: Any) -> None:
-    """Silence server→client at the moment *method* issues its request.
+def _silence_at(relay: _StallRelay, backend: Any, method: str, predicate: Any, *, direction: str = "download") -> None:
+    """Silence *direction* at the moment *method* issues its request.
 
-    The stall arrives with the request already on the wire, so the server
-    receives and performs it and only the reply is lost. That is the half of
-    SFTP-030's rule a relay armed *before* a call cannot stage: arming early
-    lands on whichever round-trip the operation makes first, which is never the
-    one under test here.
+    The stall arrives with the request already on the wire, which is what makes
+    the two directions mean different things at that instant: silencing
+    ``download`` lets the request reach the server, which performs it and loses
+    only the reply, while ``upload`` stops the request arriving at all. A relay
+    armed *before* the call cannot stage either — it lands on whichever
+    round-trip the operation makes first, which is never the one under test.
 
     Wrapping the live ``SFTPClient`` method is what makes the moment
     deterministic. The alternative — a byte budget on the relay — has to be
     re-tuned whenever a round-trip is added or removed upstream, and fails by
     silently stalling somewhere else rather than by failing.
     """
-    original = getattr(backend.unwrap(__import__("paramiko").SFTPClient), method)
+    import paramiko
+
+    client = backend.unwrap(paramiko.SFTPClient)
+    original = getattr(client, method)
 
     def stalling(*args: Any, **kwargs: Any) -> Any:
         if predicate(*args, **kwargs):
-            relay.stall_download()
+            getattr(relay, f"stall_{direction}")()
         return original(*args, **kwargs)
 
-    setattr(backend.unwrap(__import__("paramiko").SFTPClient), method, stalling)
+    setattr(client, method, stalling)
+
+
+def _break_posix_rename(backend: Any) -> None:
+    """Make the live client behave like a server without ``posix-rename@openssh.com``.
+
+    The extension is near-universal, so the fallback carries a ``no cover``
+    pragma and no fixture server omits it. Forcing the client's own
+    ``posix_rename`` to raise a plain ``OSError`` reproduces what such a server
+    returns, which is what routes ``_promote`` and ``move`` into their
+    remove-then-rename fallbacks.
+    """
+    import paramiko
+
+    def unsupported(*_args: Any, **_kwargs: Any) -> Any:
+        raise OSError("Operation unsupported")
+
+    backend.unwrap(paramiko.SFTPClient).posix_rename = unsupported
 
 
 @pytest.mark.spec("SFTP-014")
 @pytest.mark.spec("SFTP-030")
-@pytest.mark.parametrize("op", ["move", "write_atomic", "open_atomic", "copy_open"])
+@pytest.mark.parametrize("op", ["move", "write_atomic", "open_atomic"])
+def test_the_rename_fallback_destroys_the_destination_when_the_promote_stalls(
+    stall_relay: _StallRelay, sftp_server: tuple[int, str] | None, op: str
+) -> None:
+    """The worst residue state in SFTP-030's table, and the one nothing else reaches.
+
+    On a server without ``posix-rename@openssh.com``, both ``_rename_fallback``
+    and ``_move_fallback`` `remove` the destination and *then* `rename` onto it.
+    Silence the client→server direction at that `rename` and the removal has
+    already happened while the rename never arrives: the destination is **gone**
+    and nothing has replaced it. For the atomic paths the caller's payload is
+    stranded in the orphan temp; for ``move`` the source survives, so the data
+    still exists somewhere — but the file the caller had at the destination does
+    not.
+
+    This is tracked as a defect rather than fixed here (see the backlog): the
+    remove-then-rename ordering is what makes a non-atomic overwrite possible at
+    all on such a server, so closing the window is a design decision, not a
+    patch. What this test does is stop the state being undocumented and
+    unexercised — the fallback carries a ``no cover`` pragma, so nothing else in
+    the suite executes it.
+
+    It is also the row that most needs pinning: it is reached through
+    ``write_atomic``, the operation the library recommends when a failure must
+    not damage the destination.
+    """
+    if sftp_server is None:
+        pytest.skip("paramiko not installed")
+
+    observer = _make_backend(sftp_server[0], io_timeout=30.0)
+    backend = _make_backend(stall_relay.port, io_timeout=2.0)
+    tag = uuid.uuid4().hex[:8]
+    src, dst = f"fbsrc_{tag}.bin", f"fbdst_{tag}.bin"
+    old, new = b"OLD" * 100, b"NEW" * 100
+    if op == "move":
+        observer.write(src, new)
+    observer.write(dst, old, overwrite=True)
+    backend.check_health()
+
+    _break_posix_rename(backend)
+    # The remove completes; the silence begins at the rename that follows it.
+    _silence_at(stall_relay, backend, "rename", lambda *_a, **_k: True, direction="upload")
+
+    def _run() -> None:
+        if op == "move":
+            backend.move(src, dst, overwrite=True)
+        elif op == "open_atomic":
+            with backend.open_atomic(dst, overwrite=True) as handle:
+                handle.write(new)
+        else:
+            backend.write_atomic(dst, new, overwrite=True)
+
+    with pytest.raises(BackendUnavailable):
+        _run()
+
+    assert not observer.exists(dst), (
+        "the fallback removed the destination and the rename never arrived, so the destination "
+        "must be gone — if it is now present the fallback has been reordered and SFTP-030's "
+        "fallback row, plus the backlog item tracking it, change with it"
+    )
+    if op == "move":
+        assert observer.read_bytes(src) == new, "move's source survives, so the data is not lost outright"
+    else:
+        orphans = [entry for entry in observer.list_files("") if f".~tmp.{dst}." in str(entry)]
+        assert orphans, (
+            "the payload must be stranded in the orphan temp — that is the only copy left "
+            "once the destination has been removed"
+        )
+
+
+@pytest.mark.spec("SFTP-014")
+@pytest.mark.spec("SFTP-030")
+@pytest.mark.parametrize("op", ["move", "write_atomic", "open_atomic", "copy_open", "copy_open_nested"])
 def test_a_lost_reply_can_complete_the_operation_it_reports_as_failed(
     stall_relay: _StallRelay, sftp_server: tuple[int, str] | None, op: str
 ) -> None:
@@ -1533,6 +1626,10 @@ def test_a_lost_reply_can_complete_the_operation_it_reports_as_failed(
     backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
     tag = uuid.uuid4().hex[:8]
     src, dst = f"lostsrc_{tag}.bin", f"lostdst_{tag}.bin"
+    if op == "copy_open_nested":
+        # Same case one directory down, which is what turns "the empty residue
+        # belongs to the open at any depth" from a sentence into an assertion.
+        dst = f"lostnest_{tag}/{dst}"
     old, new = b"OLD" * 100, b"NEW" * 100
     backend.check_health()  # connect while the relay is still delivering
 
@@ -1541,10 +1638,11 @@ def test_a_lost_reply_can_complete_the_operation_it_reports_as_failed(
             observer.write(src, old)
             _silence_at(stall_relay, backend, "posix_rename", lambda *_a, **_k: True)
             backend.move(src, dst)
-        elif op == "copy_open":
+        elif op.startswith("copy_open"):
+            leaf = dst.rsplit("/", 1)[-1]
             observer.write(src, new)
             observer.write(dst, old, overwrite=True)
-            _silence_at(stall_relay, backend, "file", lambda p, m="r", *_a, **_k: "w" in m and p.endswith(dst))
+            _silence_at(stall_relay, backend, "file", lambda p, m="r", *_a, **_k: "w" in m and p.endswith(leaf))
             backend.copy(src, dst, overwrite=True)
         else:
             observer.write(dst, old, overwrite=True)
@@ -1565,10 +1663,12 @@ def test_a_lost_reply_can_complete_the_operation_it_reports_as_failed(
             "and SFTP-030's move row goes with it"
         )
         assert observer.read_bytes(dst) == old, "the moved bytes must be at the destination, unchanged"
-    elif op == "copy_open":
+    elif op.startswith("copy_open"):
         assert observer.read_bytes(dst) == b"", (
-            "the destination open reached the server, so the target must be truncated to empty "
-            "regardless of the target's depth"
+            "the destination open reached the server, so the target must be truncated to empty. "
+            "Parametrised at depth 0 and depth 1 because the claim is that this residue belongs "
+            "to the open rather than to the target's depth — the depth-dependent half is which "
+            "round-trip a *pre-armed* stall reaches, which the sibling test pins"
         )
     else:
         assert observer.read_bytes(dst) == new, (

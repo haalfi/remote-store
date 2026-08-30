@@ -7,7 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BK-360: Document what a stalled SFTP operation leaves behind: a timeout reports a lost reply, so `write`/`copy` may leave the destination untouched, emptied or partial, and `move`/`write_atomic` may have completed despite raising
+- BK-360: Document what a stalled SFTP operation leaves behind: a timeout reports one round-trip's lost reply, so `write`/`copy` may leave the destination unchanged, emptied or partial, and `move`/`write_atomic` may have completed despite raising
 - BUG-262: Gate that every unreleased `**Breaking**` entry links its upgrade path in the migration guide
 - ID-252: Gate the CHANGELOG `[Unreleased]` section: one entry per item, each a single line within a prose budget, and one for every completed user-facing item
 - BUG-261: Publish the missing upgrade paths in the migration guide, and move the obligation to write one onto the PR making the breaking change

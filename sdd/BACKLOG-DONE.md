@@ -219,34 +219,40 @@ if evidence changes; these are retired.
   spec: SFTP-030, SFTP-014 · effort: S · audience: user.api_docs, user.site
   Established by running it, not by reading the mapping — and the answer is
   wider than the item's question.
-  **The governing fact is that a timeout reports a lost reply, never an
-  unperformed operation.** `io_timeout` fires on a receive that made no
-  progress, so a client→server silence means the request never arrived and
-  nothing happened, while a server→client silence means the server *did the
-  work* and only the answer was lost. The two are indistinguishable to the
-  caller, and while BK-359 stands the raised error says nothing either.
-  So every operation has a state in which it did what it was asked and reported
-  `BackendUnavailable` anyway. Sorted by which round-trip's reply is lost:
-  `write` leaves the destination **untouched** (a `stat`), **empty** (the
-  `CMD_OPEN` truncated it, old content gone) or **a prefix** (a body write);
-  `copy` the same at `dst` with the source safe; `move` **completed**; and
-  `write_atomic`/`open_atomic` either untouched-with-an-orphan-temp (a body
-  write) or **completed with no temp** (the promote). Eight rows, counted from
-  the residue table in SFTP-030, each pinned by a test.
-  **Two findings this turned up beyond the item's scope.** `move` and the atomic
-  writes *succeeding under a failure report* is a sharper hazard than a partial
-  write — a blind retry of a `move` that landed meets `NotFound` on a source
-  already gone — and it falsified SFTP-014's unqualified "the destination is
-  untouched", which held only for a failure before the promote and now carries a
-  scope. Both were reached by running the contrast the rule is stated against
-  rather than quoting it.
+  **The governing fact is that a timeout reports one round-trip's lost reply.**
+  Everything the operation did *before* that round-trip already happened; for
+  the round-trip itself, a client→server silence means the request never arrived
+  and a server→client silence means the server performed it and only the answer
+  was lost. A caller can observe neither, and while BK-359 stands the raised
+  error says nothing either. So several operations have a state in which they
+  did what they were asked and reported `BackendUnavailable` anyway.
+  **The rule was reached by enumeration, not argument.** Two successive
+  revisions each proposed a scope criterion — "which method was called", then
+  "which direction was silenced" — and review refuted each with a state the
+  argument had not considered. So the condition space was parametrised and
+  generated: operation x the round-trip at which silence begins x direction x
+  `overwrite` x whether the destination pre-existed x whether the server offers
+  `posix-rename@openssh.com`. **164 combinations ran and 156 were pruned as
+  unreachable**, the harness's own totals from that run, with the raised type
+  recorded per case so a combination where no stall fired could not be mistaken
+  for a residue measurement. The residue table in SFTP-030 is written from that
+  output; a spanning subset, one case per distinct state, ships as tests.
+  **Three findings beyond the item's scope.** `move` and the atomic writes
+  *succeeding under a failure report* is a sharper hazard than a partial write —
+  a blind retry of a `move` that landed meets `NotFound` on a source already
+  gone. That falsified SFTP-014's unqualified "the destination is untouched",
+  which now carries a scope. And the `_rename_fallback` remove-then-rename window
+  destroys the destination outright on servers without `posix-rename`, which is
+  documented here and tracked for fixing as **BUG-264** along with the second
+  `io_timeout` bound its suppressed `remove` costs.
   **`copy` was bound by the clause and the item did not name it**, found by
   enumerating the subjects the clause's words pick out rather than the files the
   diff touched.
-  **One bound worth keeping straight:** the `empty` outcome belongs to the open
+  **One bound worth keeping straight:** the `empty` residue belongs to the open
   at any depth, but a *pre-armed* stall reaches the open only for a root-level
-  target — `_ensure_parent_dirs` stats every ancestor first — so it is pinned at
-  depth 0 and depth 1 rather than left to a fixture's choice of filename.
+  target — `_ensure_parent_dirs` stats every ancestor first — so both halves are
+  pinned at depth 0 and depth 1 rather than left to a fixture's choice of
+  filename.
   Stated in SFTP-030 § What a stalled operation leaves behind (table plus
   derivation), in the SFTP guide, in the `write` / `copy` / `move` /
   `write_atomic` docstrings, and in the troubleshooting page, whose "not

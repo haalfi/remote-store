@@ -346,14 +346,15 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
     every operation here has a state where it did what you asked and raised
     `BackendUnavailable` anyway.
 
-    What that means per operation:
+    What that means per operation. Each cell lists every state measured, and
+    you cannot tell from the error which one you are in:
 
     | Operation | What a `BackendUnavailable` may have left |
     | --- | --- |
-    | `write()` | The destination untouched, **emptied**, or holding an unpredictable prefix |
-    | `copy()` | The same, at `dst`; the source is never affected |
-    | `move()` | **The move completed** — the source is gone |
-    | `write_atomic()` / `open_atomic()` | The destination untouched (plus an orphan temp), or **the write completed** |
+    | `write()` | The destination unchanged, absent, **emptied**, or holding an unpredictable prefix |
+    | `copy()` | The same four, at `dst`; the source is never affected |
+    | `move()` | The paths unchanged, **the move completed** (source gone), or — on servers without `posix-rename` — **the destination destroyed** with the source still there |
+    | `write_atomic()` / `open_atomic()` | The destination unchanged, often with an orphan temp; **the write completed**; or — on servers without `posix-rename` — **the destination destroyed** with your data left in the temp file |
 
     So:
 
@@ -371,7 +372,8 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
     half-written file** (see the caveat above, and
     [atomicity semantics](../../explanation/concurrency.md)): it never leaves a
     partial file at the destination. What it does not promise is that a reported
-    failure means nothing happened.
+    failure means nothing happened, and on a server without `posix-rename` it
+    does not protect your existing file either.
 
     Parent directories created for a write remain behind in every case — a
     failed write is not a rollback.
