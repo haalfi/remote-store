@@ -4,6 +4,28 @@
 **Backlog items:** — (no item; BK-361 was filed *from* this record's validation pass, not by it)
 **Status:** Research complete — the argument and its evidence are settled as of the date above. Point-in-time snapshot per [`sdd/000-process.md` § Document types](../000-process.md): the external telemetry it cites is 2025–2026 vintage and the repo counts in the appendix drift, so read every figure against this date. Sourcing is uneven by design and § 4 marks which rows were read from the primary and which were not.
 
+## TL;DR
+
+Cheap generation moves the binding constraint from writing code to understanding
+it, and understanding is the one input that can only be acquired while the work
+is happening.
+
+Everything else in this record is that claim's chain:
+
+1. Generation got cheap; every stage downstream of it jams.
+2. The worst-jammed stage is canonicalization — working a solution into the
+   system's definitive form.
+3. That stage is both the one agents cannot do and the one that determines how
+   well agents do everything else.
+4. Its currency is understanding, which is repayable only forward: you can
+   rebuild it later, never retroactively for the decision you already made.
+5. So the control is workflow ordering, not later cleanup. Remediation is not
+   too weak; it arrives too late.
+
+Links 3 and 4 are this record's own contribution. Links 1 and 2 are Tao
+transposed; the debt vocabulary is Storey's. § 3 argues 1 to 3, § 2.3 argues 4,
+§ 6 turns 5 into proposals, and § 5 marks where the transposition breaks.
+
 ## Context
 
 Terence Tao's public lecture at the International Congress of Mathematicians 2026,
