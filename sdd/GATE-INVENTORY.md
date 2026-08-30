@@ -2,7 +2,7 @@
 
 <!-- doc: repo-only -->
 
-Derived from 36 declared mechanism(s) by `scripts/gen_gate_inventory.py`. Do not edit by hand; run `hatch run gen-gate-inventory`.
+Derived from 37 declared mechanism(s) by `scripts/gen_gate_inventory.py`. Do not edit by hand; run `hatch run gen-gate-inventory`.
 
 Which artifact pairs this repo checks, which single-artifact rules it
 asserts, and what its reports surface. *Kind*, the subject column and
@@ -11,7 +11,7 @@ in* and *Enforcement* are derived from `pyproject.toml`, `.github/workflows/`, `
 so no column is maintained here. What this inventory does not catch —
 including what *Enforcement* does not mean — is the last section below.
 
-## Pair gates (24)
+## Pair gates (25)
 
 | Mechanism | Compares | Domain | Runs in | Enforcement |
 |---|---|---|---|---|
