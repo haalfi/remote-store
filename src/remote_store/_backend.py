@@ -271,7 +271,13 @@ class Backend(abc.ABC):
         """Yield a writable file object backed by a temporary location.
 
         On successful exit the temp file is atomically promoted to *path*.
-        On exception the temp file is removed and *path* is untouched.
+        On an exception raised by the caller's own code, the temp file is removed
+        and *path* is untouched. **Neither half is guaranteed when the failure is
+        the backend's connection**: a backend whose cleanup would re-enter the
+        same failed connection may leave the temp behind, and a promote whose
+        reply is lost may have been performed. What every backend does guarantee
+        is that no reader observes a partially written *path*. Each backend
+        documents its own behaviour on a lost connection.
 
         Args:
             path: Backend-relative key.

@@ -328,13 +328,13 @@ compliant the day before.
   rejected. Measured per trigger against a server that answers the extended
   request: `EACCES` reaches both fallbacks; `EXDEV` reaches `_move_fallback`
   only, since `write_atomic` puts its temp in the target's own directory; a
-  **directory target reaches neither** — both are guarded ahead of the fallback.
-  `_move_fallback`'s own docstring names a directory target as a trigger and is
-  wrong about it; correcting that docstring belongs with this fix. Reproduced on a server that
-  advertises and answers the extended request and fails this one, with nothing
-  patched client-side: destination gone, payload in the temp. That widens who is
-  exposed from a legacy-server edge case to any store where a rename can fail for
-  a mundane reason.
+  **directory target reaches neither** — the promote path is guarded by
+  `_raise_if_dir` and `move` by its eager destination `stat`, which are different
+  guards and were conflated at one point in BK-360's own review.
+  Reproduced on a server that advertises and answers the extended request and
+  fails this one, with nothing patched client-side: destination gone, payload in
+  the temp. That widens who is exposed from a legacy-server edge case to any
+  store where a rename can fail for a mundane reason.
   **It is the residue state that leaves the caller worst off**, and it is reached
   through the operation the library recommends for safety. Under a *stall* the
   payload usually survives — in the orphan temp for the atomic paths, or in the

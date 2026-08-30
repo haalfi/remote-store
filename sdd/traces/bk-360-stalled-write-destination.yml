@@ -20,16 +20,19 @@ discovery_followups:
   - BUG-264
   - BUG-265
   - BUG-266
-# docs-src/_data/graph/graph.json is deliberately absent. The ripple-check
-# anticipates it after a public-docstring change and `hatch run gen-graph` was
-# run, but it produced no diff: the graph carries signatures and gating, not
-# docstring prose, and this change altered only prose. This field records what
-# was mechanically touched, not what was anticipated.
+# docs-src/_data/graph/graph.json was absent from this list for four rounds and
+# is here now, which is worth recording rather than quietly adding. The graph
+# carries Store and Backend ABC docstrings but not backend-implementation prose,
+# so `gen-graph` produced no diff while the change touched only
+# `backends/_sftp.py` — and then produced one the moment round 5 pushed the fix
+# up to `_store.py` and `_backend.py`. The ripple-check row anticipates the file;
+# what it cannot tell you is which docstrings the graph actually models.
 expected_ripples:
   - CHANGELOG.md
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
   - sdd/backlogid.json
+  - docs-src/_data/graph/graph.json
 surprising_ripples:
   # Neither was anticipated by the ripple-check table, and both were reached by
   # enumerating the subjects the clause's *words* pick out rather than the files
@@ -51,11 +54,12 @@ surprising_ripples:
 # `git log --oneline origin/master..HEAD`, 0e39855 implements and does not
 # count; a12ee23 incorporates review round 1, 0bf25ae round 2, e9ddbff round 3
 # (a four-member panel: unprimed, measuring, whole-file, neglected-surface),
-# and the commit this trace ships in incorporates round 4 (the three closing
-# gates: unprimed, measuring, whole-file). Value is 4 — rounds, not commits,
+# 5f206a3 round 4, and the commit this trace ships in incorporates round 5
+# (both rounds ran the three closing gates: unprimed, measuring, whole-file).
+# Value is 5 — rounds, not commits,
 # counted from the round each commit answers rather than from a commit tally,
 # which would over-report if one round ever needed two pushes.
-review_rounds: 4
+review_rounds: 5
 
 phases:
   - id: orient
@@ -362,6 +366,51 @@ phases:
           root cause across all four rounds — ship only mechanism claims a test
           or a single visible conditional backs, and delete the rest rather than
           correcting them again
+        outcome: ok
+
+  - id: audit_close
+    name: Round 5 — the closing gates, quieter and more precise
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "move (destination stat) vs _promote (_raise_if_dir)"
+        read_type: verify
+        extract: >-
+          The measuring member instrumented both and found move never calls
+          _raise_if_dir at all — its directory guard is the eager destination
+          stat, which fires before posix_rename. Round 4's correction had
+          collapsed the two into one guard, which also mis-assigned the
+          two-bound cost: under the stated antecedent the promote path pays one
+          bound because _raise_if_dir's dead-stat re-raise fires, and it is move
+          that pays two. Both corrected per operation
+        outcome: misleading
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "SFTPFile.pipelined"
+        read_type: reference
+        extract: >-
+          The closure gained a mechanism reason rather than only an unbroken
+          attack: paramiko's SFTPFile.pipelined is False by default and the
+          backend never calls set_pipelined, so writes are strictly sequential
+          and a holed, non-prefix residue is unreachable
+        outcome: ok
+      - file: src/remote_store/_backend.py
+        section: "Backend.open_atomic"
+        read_type: verify
+        extract: >-
+          The ABC and Store.open_atomic still promised the temp removed and the
+          partial write discarded — the same miss as round 3's open_atomic
+          docstring, one level up, and on the surface rendered in the public API
+          reference. Neither was covered by any filed item
+        outcome: ok
+      - file: docs-src/guides/backends/sftp.md
+        section: "danger admonition"
+        read_type: verify
+        extract: >-
+          Two of my own round-4 edits were wrong in opposite directions: the one
+          surviving trigger example could not produce the state it illustrated
+          (rename ignores the destination's permissions, and the same permission
+          governs the suppressed remove), and the BUG-266 hedge weakened a claim
+          a shipped test pins, because BUG-266 raises PermissionDenied and the
+          table is scoped to BackendUnavailable. Example deleted, hedge reverted
         outcome: ok
 
   - id: verify

@@ -309,8 +309,12 @@ class Store:
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
         """Context manager that yields a writable binary stream.
 
-        The file is committed atomically on successful exit; on exception
-        the partial write is discarded.
+        The file is committed atomically on successful exit; on an exception
+        raised by your own code the partial write is discarded. A failure in the
+        backend's connection is weaker: no reader ever observes a partially
+        written file, but a temp artifact may survive and a commit whose
+        acknowledgement was lost may already have been applied. Re-check the
+        path rather than assuming a failed call changed nothing.
 
         Args:
             path: Store-relative file path.

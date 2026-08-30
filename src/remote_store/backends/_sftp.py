@@ -2216,7 +2216,7 @@ class SFTPBackend(Backend):
 
         This method is not pragma'd either, for the same reason one level down:
         ``posix_rename`` can fail for a non-dead reason on any server (a
-        permission error, a directory target), so the ``rename`` below and its
+        permission error, say), so the ``rename`` below and its
         own dead-connection guard are reachable without needing a server that
         lacks ``posix-rename@openssh.com``. Only ``_copy_and_delete`` genuinely
         requires one.

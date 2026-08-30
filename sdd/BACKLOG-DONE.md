@@ -247,10 +247,15 @@ if evidence changes; these are retired.
   gone. SFTP-014 turned out never to have stated the untouched-destination half a
   reader decides on, so it now states it *and* bounds it. And the
   `_rename_fallback` / `_move_fallback` remove-then-rename window destroys the
-  destination outright — reachable whenever `posix_rename` raises a non-dead
-  `OSError`, not only on servers lacking the extension — documented here and
-  tracked for fixing as **BUG-264** along with the second `io_timeout` bound its
-  suppressed `remove` costs.
+  destination outright — reachable on any server, not only those lacking the
+  extension, whenever `posix_rename` fails for a reason `_is_connection_dead`
+  does not recognise and the operation's own directory guard has not already
+  rejected the target. Review corrected that scope twice: first from "fallback
+  servers only", then again when three named example triggers turned out to
+  include two unreachable ones, after which the examples were deleted rather
+  than corrected a third time. Documented here and tracked for fixing as
+  **BUG-264**, along with the second `io_timeout` bound `move`'s fallback costs
+  and, as **BUG-266**, a non-dead failure that removes the temp as well.
   **Two cross-artifact contradictions were absorbed** rather than left to a
   follow-up, both being clauses a shipped test now refutes: AW-004's unqualified
   "no orphaned temporary files are left behind" gained its named SFTP divergence,

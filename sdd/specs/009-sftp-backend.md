@@ -236,9 +236,10 @@ rather than from any clause, which is why it is written down now with its bound.
 Two failures fall outside it. A stall whose lost reply is the promote
 `posix_rename` itself leaves the rename *performed*: the destination holds the
 new content, no temp remains, and the caller is told `BackendUnavailable`. And
-the `_rename_fallback` path — entered whenever `posix_rename` raises a non-dead
-`OSError`, not only on servers lacking the extension — removes the destination
-before renaming onto it, so a stall in that window destroys it and strands the
+the `_rename_fallback` path — entered when `posix_rename` raises an `OSError`
+that `_is_connection_dead` does not recognise and `_raise_if_dir` has not
+rejected the target, so not only on servers lacking the extension — removes the
+destination before renaming onto it, so a stall in that window destroys it and strands the
 payload in the temp (**BUG-264**). So "atomic" here guarantees no reader sees a
 half-written file; it guarantees neither that a reported failure means the write
 did not happen, nor that an existing destination survives. Measured, not
@@ -264,6 +265,11 @@ only this half is what left that choice undecidable.
 
 **Invariant:** `write_atomic(path, content, overwrite=False)` raises `AlreadyExists`
 if the target already exists. With `overwrite=True`, the existing file is replaced.
+**On success.** A failure can leave it replaced, unchanged, or removed with
+nothing in its place — see
+[SFTP-030 § What a stalled operation leaves behind](#stalled-write-destination),
+and BUG-266 for the removed case, which is the one this invariant reads as
+excluding.
 
 ### SFTP-016: delete_folder Recursive
 
@@ -577,13 +583,18 @@ Read the Postconditions as scoped to the failures that surface; the exception
 list is not a footnote to them.
 
 The caller-visible wall clock for a stalled operation is one bound, not
-several — **with one known exception, recorded below rather than assumed away**:
-the promote fallback pays two, and BUG-264 tracks it. All three mechanisms here
-key on `_is_connection_dead(exc)`, so when the *first* failure is a non-dead
-`OSError` — which is how `_rename_fallback` / `_move_fallback` are entered at all
-— none of them fires and the fallback runs on into the stalled channel. Measured
-4.00 s at a 2.0 s bound. The gap is that predicate, not a missing entry in the
-list below.
+several — **with one known exception, recorded below rather than assumed away**,
+and BUG-264 tracks it. The exception is `move`: it has no `_raise_if_dir` step,
+so when `posix_rename` fails with a non-dead `OSError` nothing here fires and
+`_move_fallback` runs on into the stalled channel — measured 4.00 s at a 2.0 s
+bound. **The promote path is not the exception under that antecedent**: there
+mechanism 2 fires, because `_raise_if_dir`'s classification stat re-enters the
+silent channel and re-raises, so `_rename_fallback` is never entered and the
+cost is one bound (measured 2.00 s). `_rename_fallback` does pay two, but only
+when the silence begins *later* — at its own suppressed `remove`, with the
+channel healthy through the classification stat. Stated at this length because
+an earlier revision attributed the 4.00 s to the promote path under the first
+antecedent, where it is 2.00 s.
 
 A failed operation re-enters the channel two ways — to classify the
 failure (`_raise_if_dir`, `_has_file_ancestor`) and to release resources — and
@@ -822,9 +833,13 @@ the body — not against a lost promote reply, and not on the fallback path.
 silence beginning at the `rename` leaves the destination gone with nothing put in
 its place. **It is not confined to servers lacking `posix-rename@openssh.com`.**
 The route in is a `posix_rename` failure that `_is_connection_dead` does not
-recognise, on a target `_raise_if_dir` has not already rejected — a strictly
-larger set than "the server lacks the extension", and that condition is the
-whole of the claim. **No example triggers are named here**, deliberately:
+recognise, on a target the operation's own directory guard has not already
+rejected — `_raise_if_dir` for the promote path, and for `move` the eager
+destination `stat`, which fires before `posix_rename` is attempted at all.
+The two are **not** the same guard and `move` never calls `_raise_if_dir`;
+collapsing them is how an earlier revision of this sentence mis-assigned the
+two-bound cost recorded above. That condition, per operation, is the whole of
+the claim — a strictly larger set than "the server lacks the extension". **No example triggers are named here**, deliberately:
 naming them requires knowing what every guard between `posix_rename` and the
 fallback does, an earlier revision named three of which two were unreachable,
 and the two guards involved (`_raise_if_dir` here, the destination `stat` in
@@ -859,11 +874,12 @@ harness, with the destination read back through a second backend wired straight
 to the server rather than through the condemned channel, and states whose silence
 must begin at a specific round-trip are staged by silencing the relay from inside
 the call that issues it, so the moment is deterministic rather than raced against
-a timer. The rest follow from the closure and are **argued, not measured** —
-chiefly `copy`'s untouched, absent and complete states, and `write_atomic`'s
-absent state, each of which is mechanically the same event as a `write` state
-that does have one. Saying which is which costs a sentence, and every previous
-revision of this paragraph claimed more coverage than it had.
+a timer. The rest follow from the closure and are **argued, not measured**. The
+list is exhaustive rather than hedged, because a hedge is how the previous
+revisions of this paragraph each claimed more coverage than they had: `copy`'s
+untouched, absent and complete; `move`'s untouched and absent; and
+`write_atomic`'s absent — six of the eighteen named states, each mechanically
+the same event as a `write` or `move` state that does have a test.
 
 A generated enumeration over the condition space — operation x the round-trip at
 which silence begins x direction x `overwrite` x whether the destination
