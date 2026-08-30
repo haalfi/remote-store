@@ -20,6 +20,15 @@ store.ping()  # raises on failure, silent on success
 - **Liveness probes** — Kubernetes `livenessProbe` or similar health endpoints.
 - **Connection validation** — verify config after loading from TOML/YAML.
 
+!!! note "A polling probe against a down backend writes a log line per poll"
+    A backend that concludes it is unreachable logs one `WARNING` as it raises,
+    so a probe on a 10-second period against a server that is down produces six
+    lines a minute for as long as it stays down. That is the intended level for
+    a genuinely unreachable backend, but it is worth knowing before you point a
+    liveness probe at it. To keep the probe quiet without silencing the rest of
+    the library, filter on the record's `op` field — see
+    [Structured `extra` fields](observe.md#structured-extra-fields).
+
 ## Error handling
 
 `ping()` raises the same exceptions as other Store operations:

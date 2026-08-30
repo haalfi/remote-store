@@ -986,7 +986,7 @@ def test_write_stalling_mid_stream_costs_one_bound(stall_relay: _StallRelay, op:
 
 
 @pytest.mark.spec("SFTP-030")
-def test_copy_stalling_mid_stream_costs_one_bound(stall_relay: _StallRelay) -> None:
+def test_copy_stalling_mid_stream_costs_one_bound(stall_relay: _StallRelay, caplog: pytest.LogCaptureFixture) -> None:
     """``copy()`` holds *two* handles, so an unguarded exit pays two extra bounds.
 
     The only operation here with more than one open handle, which is why it is
@@ -1016,19 +1016,29 @@ def test_copy_stalling_mid_stream_costs_one_bound(stall_relay: _StallRelay) -> N
     # Enough to clear the two stats and get the transfer genuinely under way.
     stall_relay.stall_download_after(512 * 1024)
 
-    start = time.monotonic()
-    with pytest.raises(BackendUnavailable):
-        backend.copy(src, dst)
-    elapsed = time.monotonic() - start
+    with caplog.at_level(logging.DEBUG, logger="remote_store"):
+        caplog.clear()  # after the write above, so the connect records are gone
+        start = time.monotonic()
+        with pytest.raises(BackendUnavailable):
+            backend.copy(src, dst)
+        elapsed = time.monotonic() - start
 
     assert elapsed < io_timeout * 1.75, (
         f"copy took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "
         "one of the two handle closes is re-entering the stalled channel"
     )
+    # One failure, one line — asserted *here* because this is the operation with
+    # the most ways to log twice: two handles, two mapped operations, and a
+    # cleanup path that re-enters the mapping. The read-side test cannot show
+    # this, since ``read_bytes`` classifies once and stops.
+    ours = [r for r in caplog.records if r.name.startswith("remote_store")]
+    assert len(ours) == 1, f"one stalled copy emitted {len(ours)} records: {[r.getMessage() for r in ours]}"
 
 
 @pytest.mark.spec("SFTP-030")
-def test_stall_during_streamed_write_costs_one_bound(stall_relay: _StallRelay) -> None:
+def test_stall_during_streamed_write_costs_one_bound(
+    stall_relay: _StallRelay, caplog: pytest.LogCaptureFixture
+) -> None:
     """A stall part-way through a streamed write is bounded, once.
 
     This is the write-side counterpart of the streamed-read test, and what makes
@@ -1064,14 +1074,23 @@ def test_stall_during_streamed_write_costs_one_bound(stall_relay: _StallRelay) -
             stalled_at.append(time.monotonic())
             handle.write(b"w" * (8 * 1024 * 1024))
 
-    with pytest.raises(BackendUnavailable):
-        _write_until_stalled()
-    elapsed = time.monotonic() - stalled_at[0]
+    with caplog.at_level(logging.DEBUG, logger="remote_store"):
+        caplog.clear()  # the connect happens inside _write_until_stalled, so see below
+        with pytest.raises(BackendUnavailable):
+            _write_until_stalled()
+        elapsed = time.monotonic() - stalled_at[0]
 
     assert elapsed < io_timeout * 1.75, (
         f"streamed write took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "
         "the handle close is re-entering the stalled channel"
     )
+    # The write-side counterpart of the copy assertion: ``open_atomic`` maps
+    # inside ``_errors`` *and* re-enters its own handler with the mapped error,
+    # which is the shape most likely to log twice. Connect records are filtered
+    # out rather than cleared, because this test connects inside the block: the
+    # backend is built lazily and ``_write_until_stalled`` is its first operation.
+    ours = [r for r in caplog.records if r.name.startswith("remote_store") and r.__dict__.get("op") == "error_mapping"]
+    assert len(ours) == 1, f"one stalled streamed write emitted {len(ours)} records: {[r.getMessage() for r in ours]}"
 
 
 @pytest.mark.spec("SFTP-030")

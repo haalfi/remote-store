@@ -1555,8 +1555,17 @@ class TestSFTPMapException:
 
         The defect this pins (BK-359) is not that the *type* was wrong — it was
         right on every one of these — but that the message was empty, so a user
-        reading their own error log could not tell a stall from a refused
-        connect. The type is therefore not what is asserted here; the text is.
+        reading their own error log was told nothing at all about what had
+        failed. The type is therefore not what is asserted here; the text is.
+
+        A refused connect is deliberately **not** the contrast drawn here. It
+        was, in an earlier revision, and that was wrong: measured against a
+        just-released ephemeral port, a refused SFTP connect raises the base
+        ``RemoteStoreError`` (paramiko's ``NoValidConnectionsError`` is an
+        ``OSError`` with ``errno=None``, which no arm above matches), so the two
+        were always distinguishable by type. The reader's difficulty was that
+        the stall said nothing — which is what these cases assert — not that it
+        was confusable with something else.
 
         ``expect`` is the token that distinguishes this shape from the others:
         the bound's option name for a timeout (which is what the reader has to

@@ -308,16 +308,32 @@ exception keeps its own branch first: `IncompatiblePeer` (a connect-time
 `SSHException`) is mapped with a diagnostic hint before the generic `SSHException`
 mapping, so the hint is not lost.
 
-**Every one of them also carries a non-empty message, and leaves exactly one
-`WARNING` record on the `remote_store.backends._sftp` logger.** Both halves are
-one method's job (`_unavailable`), which is why they are stated in one clause:
-the arms that could disagree are the same arms.
+**Every one of them also carries a non-empty message, and emits exactly one
+`WARNING` record from the mapping.** Both halves are one method's job
+(`_unavailable`), which is why they are stated in one clause: the arms that
+could disagree are the same arms.
+
+**"One record" is a claim about this mapping, not about the logger**, and the
+distinction is load-bearing for the reader most likely to rely on it — someone
+grepping their own logs. `remote_store.backends._sftp` carries other `WARNING`
+records: `_connect` builds its tenacity retry with
+`before_sleep_log(log, logging.WARNING)` on that same logger, so a connect that
+exhausts `stop_after_attempt(3)` emits one per sleep, and `AUTO_ADD` warns once
+per connect. Measured on a refused connect at the default policy: **three**
+`WARNING` records on that logger before the mapping's own. So a failed
+operation is not a one-line event on the logger; it is a one-line event per
+concluded mapping. A reader searching for the mapping's record matches
+`op="error_mapping"` in the structured `extra`, which the retry and policy
+records do not carry.
 
 The message is the driver's own whenever the driver has one. Four of the signals
 above reach the mapping with no arguments — `TimeoutError` (which `socket.timeout`
 is), `EOFError`, `SFTPError` and a bare `SSHException` — and for those
 `BackendUnavailable(str(exc))` carried the empty string, which
-[ERR-009](005-error-model.md) forbids and which no reader can act on. A stall
+[ERR-009](005-error-model.md) forbids and which no reader can act on. **"The
+signals above" is this clause's own list**, which opens with the `SSHException`
+family; it is deliberately not `_is_connection_dead`'s set, which excludes that
+family and would therefore hold only three of the four. A stall
 names the fault and the bound that fired (`io_timeout=<value>s`), and names no
 bound when `io_timeout is None`, since a half-open socket reaches this arm with
 the option off and claiming a limit the caller never set would be false. The
@@ -326,12 +342,22 @@ overwritten: this is a fallback for silence, not a house style for messages.
 
 The record is emitted where the *conclusion* is reached rather than at each raise
 site, so the cleanup and classification paths that re-enter the mapping do not
-multiply one failure into several lines. It follows that `check_health` logs one
-`WARNING` per failed probe, so a `Store.ping()` poll against a down server logs
-once per poll — the level a genuinely unreachable backend warrants, and stated
-here because it is the visible consequence of the clause rather than an
-oversight. A routine errno is **not** logged: a missing or denied path is an
-answer, not a fault.
+multiply one failure into several lines. That is asserted where the
+multiplication could actually happen rather than where it is easiest to assert:
+`copy` holds two handles and runs two mapped operations, and `open_atomic` maps
+inside `_errors()` and then re-enters its own handler with the mapped error.
+Both are pinned against the live stall relay
+(`test_copy_stalling_mid_stream_costs_one_bound`,
+`test_stall_during_streamed_write_costs_one_bound`); a read, which classifies
+once and stops, cannot show it.
+
+It follows that `check_health` logs one `WARNING` per failed probe, so a
+`Store.ping()` poll against a down server logs once per poll — the level a
+genuinely unreachable backend warrants, and stated here because it is the
+visible consequence of the clause rather than an oversight. That record carries
+no path, because the probe has none; the line omits the `path=` suffix rather
+than rendering `path=''`. A routine errno is **not** logged: a missing or denied
+path is an answer, not a fault.
 
 ### SFTP-024: No Native Exception Leakage
 
@@ -545,13 +571,13 @@ to every route, and stood while two tests in the suite reached it through plain
 **Postconditions:** A stalled operation *that fails* raises `BackendUnavailable`,
 via the existing `_is_connection_dead` / `_map_exception` path (SFTP-023), which
 also clears the cached client so the next operation reconnects (SFTP-010 tier 2).
-The error names the stall and the bound that fired, and the failure leaves one
+The error names the stall and the bound that fired, and the mapping emits one
 `WARNING` record — both per SFTP-023, which owns those clauses for every signal
 rather than for this one. Named here anyway because the stall is the case a
 caller who configured nothing now meets: while the message was empty, this
-Postcondition was satisfied by an error indistinguishable from a refused
-connect, and the two artifacts that tell an upgrading user what to expect (the
-troubleshooting page, the migration entry) had nothing to point them at.
+Postcondition was satisfied by an error that said nothing whatever about what
+had failed, and the two artifacts that tell an upgrading user what to expect
+(the troubleshooting page, the migration entry) had nothing to point them at.
 
 **The qualifier is load-bearing.** Every mechanism below — the classification guards, the handle guard, the
 stream wrapper's futile-close guard, and the client invalidation the

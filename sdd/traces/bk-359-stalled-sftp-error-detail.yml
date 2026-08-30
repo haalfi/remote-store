@@ -14,13 +14,22 @@ audience:
   - user.site
   - user.api_docs
 discovery_followups:
-  - BK-361
+  - BUG-264
+  - BUG-265
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
-surprising_ripples: []
+surprising_ripples:
+  # Neither is reachable from the ripple-check's Error-type row, which names the
+  # error model, the backend mappings, their tests and the troubleshooting guide.
+  # A new *class of log record* is not an error type, and nothing in the table
+  # routes from "the library logs something new" to the guide that enumerates
+  # what it logs, or to the guide recommending the call that now logs per poll.
+  # Both were found by round 1, not by the table.
+  - docs-src/guides/observe.md
+  - docs-src/guides/health-check.md
 # review_rounds is filled at the close of the /ship loop, from the commits on
 # this branch (`git log --oneline origin/master..HEAD`): the implementation
 # commit does not count, each commit that exists because a review round found
@@ -75,11 +84,16 @@ phases:
         read_type: gate
         extract: >-
           Both dead-connection arms build BackendUnavailable(str(exc)). Drove
-          all nine signals _is_connection_dead matches through the mapping in a
-          throwaway script rather than reading which could be empty — four
-          arrived blank, not the one the item named. The item's title was a
-          correct diagnosis of a wider class, which is why the fix keys on an
-          empty str(exc) rather than on the timeout type
+          nine constructed instances through the mapping in a throwaway script
+          rather than reading which could be empty — four arrived blank, not the
+          one the item named. The item's title was a correct diagnosis of a
+          wider class, which is why the fix keys on an empty str(exc) rather
+          than on the timeout type. Retrospective: I first described those nine
+          as "the signals _is_connection_dead matches", which round 1 refuted —
+          that predicate deliberately excludes the SSHException family, and one
+          of the four blank shapes is in it. Nine was a count of instances I
+          chose to drive, and saying otherwise gave the figure a derivation that
+          does not resolve
         outcome: ok
       - file: tests/backends/sftp/test_io_timeout.py
         section: "_StallRelay, test_stalled_open_raises_backend_unavailable"
@@ -127,6 +141,18 @@ phases:
           than around it, which is what makes the SFTP-023 clause say "every"
           without a carve-out
         outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_connect (tenacity before_sleep_log), _create_ssh_client"
+        read_type: verify
+        extract: >-
+          Not read until round 1 named it, and it falsified the clause I had
+          already written. _connect builds before_sleep_log(log, WARNING) on the
+          same module logger and AUTO_ADD warns on every connect, so "one
+          failure, one WARNING on remote_store.backends._sftp" was false.
+          Measured on a refused connect: three WARNING records before the
+          mapping's own. The clause is now scoped to the mapping, with
+          op="error_mapping" given as what a log-searching reader filters on
+        outcome: ok
   - id: docs
     name: Documentation
     steps:
@@ -151,6 +177,26 @@ phases:
         section: "Bounding a stalled transfer"
         read_type: reference
         extract: "One clause: the raise names the stall and the value that fired"
+        outcome: ok
+      - file: docs-src/guides/observe.md
+        section: "Logging levels used, Structured extra fields"
+        read_type: reference
+        extract: >-
+          Round 1's ripple finding. The WARNING row enumerates what the library
+          logs at that level and this record fitted none of it, and the op field
+          was described as an operation name while this record's op is a phase.
+          Found while fixing it that the ERROR row was already false — nothing
+          in src/ calls log.error at all — so the table now says errors are
+          reported by the exception rather than by a record
+        outcome: misleading
+      - file: docs-src/guides/health-check.md
+        section: "Use cases"
+        read_type: reference
+        extract: >-
+          The guide sells ping() for Kubernetes livenessProbe, and the new
+          record makes a polling probe against a down backend write a line per
+          poll. The consequence was stated only in the spec; the user-facing
+          half belongs in the same commit
         outcome: ok
   - id: verify
     name: Verify

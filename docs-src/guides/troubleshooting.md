@@ -130,12 +130,17 @@ occupied — or it **fails after about two minutes**:
 remote_store._errors.BackendUnavailable: SFTP channel stalled: no data within io_timeout=120.0s | path='delivery.csv' | backend='sftp'
 ```
 
-The failure also leaves one `WARNING` on the `remote_store.backends._sftp`
-logger, which is what to search your own logs for:
+The failure also leaves a `WARNING` on the `remote_store.backends._sftp` logger,
+which is what to search your own logs for:
 
 ```
 WARNING remote_store.backends._sftp: SFTP channel stalled: no data within io_timeout=120.0s (path='delivery.csv')
 ```
+
+That logger carries other warnings too — a connect that fails is retried, and
+each retry logs one — so filter on the structured `extra` field `op` with the
+value `error_mapping` if you need only the records that report a mapped backend
+failure.
 
 The number in both is the bound that fired, so it tells you which value to
 reconsider. To confirm the diagnosis from the other side, enable paramiko's own

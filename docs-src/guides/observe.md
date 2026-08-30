@@ -162,8 +162,12 @@ logging.getLogger("remote_store").setLevel(logging.DEBUG)
 |-------|------|
 | `DEBUG` | Method entry (every Store operation) |
 | `INFO` | Mutating-operation completion (write, delete, move, copy) |
-| `WARNING` | Suppressed hook exceptions, fallback behaviour |
-| `ERROR` | Before re-raising backend errors |
+| `WARNING` | Suppressed hook exceptions, fallback behaviour, an unsafe configuration, a retry before it sleeps, and a backend failure before it is raised |
+
+Errors are reported by the exception, not by a log record: the library emits
+nothing at `ERROR`. A failed operation raises, and the reporting the library
+does on its own account — a retry about to sleep, a backend it has concluded is
+unreachable — is at `WARNING`.
 
 ### Structured `extra` fields
 
@@ -172,9 +176,14 @@ formatters or structlog processors:
 
 | Field | Description |
 |-------|-------------|
-| `op` | Operation name (`"read"`, `"write"`, ...) |
+| `op` | Operation name (`"read"`, `"write"`, ...), or the backend phase that emitted the record (`"connect"`, `"error_mapping"`) |
 | `path` | Store-relative key |
 | `backend` | Backend name (`"local"`, `"s3"`, ...) |
+
+`op="error_mapping"` marks a record reporting a backend failure the library has
+just concluded and is about to raise. It is the field to filter on when a
+logger carries other warnings you do not want — retry records on the same
+logger, for instance.
 
 ## Error Handling
 

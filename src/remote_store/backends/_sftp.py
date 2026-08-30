@@ -2419,16 +2419,26 @@ class SFTPBackend(Backend):
         then carries the empty string: measured on a real channel at
         ``io_timeout=2.0`` with a relay silencing server→client mid-read,
         ``e.args == ('',)`` and ``str(e)`` rendered as
-        ``" | path='delivery.csv' | backend='sftp'"``. Four of the shapes
-        ``_is_connection_dead`` matches do this — ``TimeoutError`` (which
+        ``" | path='delivery.csv' | backend='sftp'"``.
+
+        Four shapes do this, and the set they belong to is **the shapes this
+        mapping concludes ``BackendUnavailable`` on** — not the ones
+        ``_is_connection_dead`` matches. The two differ by exactly the
+        ``SSHException`` family, which that predicate documents itself as
+        deliberately *not* matching (it has its own arm here instead), and one
+        of the four blank shapes is a bare ``SSHException``. Naming the wider
+        set is what makes the "every arm ends here" framing above the right one
+        to state the guarantee over. The four: ``TimeoutError`` (which
         ``socket.timeout`` is), ``EOFError``, ``SFTPError`` and a bare
-        ``SSHException``; the rest carry a real message and keep it. The stall
-        is the case that matters most, because ``io_timeout`` defaults to a real
-        bound: the first caller to meet it is one who configured nothing, so a
-        blank message is the shipped failure surface rather than an expert's
-        edge case. An error that is the right type and says nothing is
-        predictable to a checker matching on type and to nobody reading a log,
-        which the error model's meaningful-``str()`` invariant forbids.
+        ``SSHException``. Signals carrying a real message keep it.
+
+        The stall is the case that matters most, because ``io_timeout``
+        defaults to a real bound: the first caller to meet it is one who
+        configured nothing, so a blank message is the shipped failure surface
+        rather than an expert's edge case. An error that is the right type and
+        says nothing is predictable to a checker matching on type and to nobody
+        reading a log, which the error model's meaningful-``str()`` invariant
+        forbids.
 
         **The fallback never overwrites detail.** It fires only when
         ``str(exc)`` is empty, so a driver that did explain itself reaches the
@@ -2452,19 +2462,24 @@ class SFTPBackend(Backend):
         # WARNING, and here rather than at each raise site: this is the point at
         # which the backend concludes the connection is unusable, and the
         # cleanup and classification paths above re-enter the *mapping* without
-        # re-entering this conclusion, so one failure leaves one record.
+        # re-entering this conclusion, so one concluded mapping leaves one
+        # record. That is a claim about this method, not about the logger: a
+        # failing connect also emits tenacity's retry warnings (``_connect``
+        # builds ``before_sleep_log(log, logging.WARNING)`` on this same logger)
+        # and the AUTO_ADD policy warning, so "one failure, one line on
+        # ``remote_store.backends._sftp``" is false and is not claimed. Measured
+        # on a refused connect: three WARNINGs before this one.
         # ``check_health`` maps through here too, so a ``Store.ping()`` poll
-        # against a down server logs once per poll — a real event at the level
-        # its own name implies, and the record BK-359 found missing.
+        # against a down server logs once per poll.
         # The logger name already says which backend this is, so the line adds
         # the path rather than repeating "SFTP" in front of a message that
-        # usually starts with it.
-        log.warning(
-            "%s (path=%r)",
-            message,
-            path,
-            extra={"op": "error_mapping", "path": path, "backend": self.name},
-        )
+        # usually starts with it — and omits it entirely when there is none,
+        # which is how ``check_health`` and the connect-time arms arrive.
+        record_extra = {"op": "error_mapping", "path": path, "backend": self.name}
+        if path:
+            log.warning("%s (path=%r)", message, path, extra=record_extra)
+        else:
+            log.warning("%s", message, extra=record_extra)
         return BackendUnavailable(message, path=path, backend=self.name)
 
     def _map_exception(self, exc: Exception, path: str) -> RemoteStoreError:
