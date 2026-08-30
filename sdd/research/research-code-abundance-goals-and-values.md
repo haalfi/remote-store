@@ -288,20 +288,13 @@ unpayable; what is unpayable is the interest, and the interest is every decision
 made while the theory was thin.
 
 An earlier draft said "not repayable at all", which the appendix contradicts.
-The distinction matters for the argument rather than only for accuracy: if
-reconstruction were impossible, prevention would be the only control because
-nothing else could work. It is possible, so prevention is the only control that
-acts *while the decisions are being made*, which is a narrower and defensible
-claim.
+The narrower claim is also the stronger one: prevention does not win because
+nothing else could work, it wins because nothing else arrives in time.
 
-This is why the preventive column is the load-bearing one, and it converges with
-the evidence rather than merely being tidier. The Anthropic RCT found the
-comprehension outcome determined by mode of use, not by tool access — that is, by
-_how the work was ordered while it was being done_, which is precisely what a
-preventive control fixes and what no subsequent remedy can reach. Naur reaches
-the same place from the other end: the theory is acquired only by active
-engagement in developing the program, which is a statement about when
-understanding forms, not about what documents exist afterwards.
+That is why the preventive column is load-bearing, and it is where the RCT above
+and Naur converge. Both are statements about *when* understanding forms — mode
+of use during the work, active engagement in developing the program — rather
+than about what remedies or documents exist afterwards.
 
 ### 2.4 Goodhart, applied
 
@@ -605,17 +598,11 @@ describe indigestion as a backlog that accumulates and can be worked off with
 policy changes. A positive feedback loop cannot be worked off later by the same
 means; it has to be damped while the team still has the capacity to damp it.
 
-Combined with the forward-only repayment argument in § 2.3, this settles the
-choice between the two postures rather than leaving it to taste. Cognitive debt
-is the one debt that compounds on its own _and_ cannot be serviced for the
-decisions already taken under it. Against a quantity with both properties,
-paydown remedies do not fail to work; they fail to arrive in time, which for a
-compounding quantity is the same outcome and a different reason. Prevention is
-the only control that acts inside the window where the outcome is still
-determined, which
-is a stronger claim than "process discipline is good practice" and is the reason
-this record treats workflow ordering as an engineering control rather than a
-cultural preference.
+Compounding is what § 2.3's forward-only argument was missing. A debt you can
+only repay forward is survivable if it holds still; one that grows while you are
+not repaying it is not. That conjunction, and not either half, is why this record
+treats workflow ordering as an engineering control rather than a cultural
+preference.
 
 **Agents cannot hold the theory, and this is structural rather than a capability
 gap.** A tempting escape from all of the above is that agents will hold the
