@@ -2467,10 +2467,14 @@ class SFTPBackend(Backend):
         # failing connect also emits tenacity's retry warnings (``_connect``
         # builds ``before_sleep_log(log, logging.WARNING)`` on this same logger)
         # and the AUTO_ADD policy warning, so "one failure, one line on
-        # ``remote_store.backends._sftp``" is false and is not claimed. Measured
-        # on a refused connect: three WARNINGs before this one.
-        # ``check_health`` maps through here too, so a ``Store.ping()`` poll
-        # against a down server logs once per poll.
+        # ``remote_store.backends._sftp``" is false and is not claimed. No total
+        # is given either: it varies with the retry and host-key policies, and
+        # three review rounds each refuted a different one written as a constant.
+        # ``check_health`` maps through here only when the probe fails in a way
+        # this mapping concludes on. A refused connect and a DNS failure do not:
+        # both are an ``OSError`` the arms above decline, so they exit at the
+        # generic arm as ``RemoteStoreError`` and reach this method zero times
+        # (BUG-265). A probe that fails by timeout does reach it.
         # The logger name already says which backend this is, so the line adds
         # the path rather than repeating "SFTP" in front of a message that
         # usually starts with it — and omits it entirely when there is none,

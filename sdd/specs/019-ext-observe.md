@@ -203,9 +203,26 @@ observation. See ADR-0010.
 - Logger variable: `log = logging.getLogger(__name__)`.
 - Format: `%`-style (lazy evaluation, ruff G004 compliant).
 - Structured context via `extra={}` dict with keys like `backend`, `op`,
-  `path` where applicable.
-- Levels: DEBUG (method entry), INFO (write/delete/move/copy completion),
-  WARNING (retries, fallbacks), ERROR (before re-raise).
+  `path` where applicable. **"Where applicable" is doing real work**: a record
+  logged without `extra=` carries none of them, and that is not confined to
+  records emitted through third-party machinery — `ext/observe.py`'s own
+  suppressed-hook warning is first-party and carries no `op`. Code reading these
+  keys uses `getattr(record, "op", None)`; a `logging.Filter` that assumes the
+  attribute raises inside `Filterer.filter`, which the logging module does not
+  route through `handleError`, so it propagates into the call that logged.
+  `op` is an operation name on Store records and the emitting phase on backend
+  records (`"connect"`, `"error_mapping"`).
+- Levels: DEBUG (method entry), INFO (an operation that completed and changed
+  something, plus connection, health and batch-summary milestones), WARNING
+  (retries, fallbacks, unsafe configuration, suppressed hook exceptions, and a
+  backend failure before it is raised).
+  **No `ERROR` clause.** This bullet named one until it was checked: no call
+  site in `src/` logs at `error`, `exception`, `critical` or `fatal`. Per
+  [`000-process.md` Rule 7](../000-process.md#intent-attribution) that makes the
+  withdrawn clause *undecided* rather than refuted — no test ever asserted a
+  level, so nothing establishes whether the absence is intent or omission. It
+  is stated as current behaviour here, and a module that wants `ERROR` should
+  amend this bullet rather than assume it.
 - Package init registers `NullHandler`:
   `logging.getLogger("remote_store").addHandler(logging.NullHandler())`.
 - Never log inside tight loops (per-chunk streaming).

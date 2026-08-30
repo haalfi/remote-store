@@ -30,11 +30,20 @@ surprising_ripples:
   # Both were found by round 1, not by the table.
   - docs-src/guides/observe.md
   - docs-src/guides/health-check.md
-# review_rounds is filled at the close of the /ship loop, from the commits on
-# this branch (`git log --oneline origin/master..HEAD`): the implementation
-# commit does not count, each commit that exists because a review round found
-# something does. Left at 0 until the loop closes rather than guessed.
-review_rounds: 0
+# Derived from `git log --oneline origin/master..HEAD`, naming the commits per
+# the schema's clause above rather than stating a bare total:
+#   ad2cb32  implements the item                        -> does not count
+#   0c85f3c  incorporates round 1 (8 findings)          -> counts
+#   8413517  incorporates round 2 (4 findings)          -> counts
+#   ab36c96  states what the message does not name      -> counts (raised by
+#            the session working BK-360, not by a round on this PR, but it
+#            exists because review found something, which is the schema's test)
+#   <this>   incorporates round 3 (15 findings)         -> counts
+# Value is 4. An earlier revision left this at 0 with a comment saying it would
+# be filled at the close; rounds 1 and 3 both refuted that, the second time
+# noting the file already narrated two rounds in prose while the field an
+# aggregator reads said none had happened.
+review_rounds: 4
 phases:
   - id: orient
     name: Orient
@@ -148,10 +157,16 @@ phases:
           Not read until round 1 named it, and it falsified the clause I had
           already written. _connect builds before_sleep_log(log, WARNING) on the
           same module logger and AUTO_ADD warns on every connect, so "one
-          failure, one WARNING on remote_store.backends._sftp" was false.
-          Measured on a refused connect: three WARNING records before the
-          mapping's own. The clause is now scoped to the mapping, with
-          op="error_mapping" given as what a log-searching reader filters on
+          failure, one WARNING on remote_store.backends._sftp" was false. The
+          clause is now scoped to the mapping, with op="error_mapping" given as
+          what a log-searching reader filters on.
+          Retrospective: this step first recorded "three WARNING records before
+          the mapping's own", which round 3 refuted twice over — three is the
+          AUTO_ADD figure and the default policy is STRICT, and a refused
+          connect never reaches the mapping at all, so there is no record for
+          the others to precede. That sentence had already been copied into the
+          spec, the source comment and the BACKLOG-DONE entry by the time it was
+          caught, which is why the sweep in round 3 was four files wide
         outcome: ok
   - id: docs
     name: Documentation

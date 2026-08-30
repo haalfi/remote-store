@@ -252,9 +252,14 @@ if evidence changes; these are retired.
   backend concludes the connection is unusable rather than at each raise site, so
   one concluded mapping leaves one record; a routine errno stays unlogged. That
   is a claim about the mapping and **not** about the logger: `_connect`'s tenacity
-  retry uses `before_sleep_log` on the same logger, and a refused connect was
-  measured emitting three `WARNING` records there before the mapping's own. The
-  single-record claim is asserted where it could break — `copy`, which holds two
+  retry uses `before_sleep_log` on the same logger, so a failure leaves other
+  records there too. **No total is stated**, because it is a product of the
+  retry policy, the host-key policy and the failure shape — three review rounds
+  each refuted a different cell of that product written as a constant, which is
+  why the spec now declines to give one. Note also that a refused connect and a
+  DNS failure never reach `_unavailable` at all (BUG-265), so they contribute
+  nothing from the mapping. The single-record claim is asserted where it could
+  break — `copy`, which holds two
   handles, and `open_atomic`, which maps and then re-enters its own handler —
   rather than on a read, which classifies once and stops.
   **What was deliberately not done:** the same defect on other backends, which is

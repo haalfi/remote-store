@@ -922,10 +922,19 @@ def test_stalled_upload_request_raises_backend_unavailable(stall_relay: _StallRe
 
     stall_relay.stall_upload()
     start = time.monotonic()
-    with pytest.raises(BackendUnavailable):
+    with pytest.raises(BackendUnavailable) as excinfo:
         backend.write(f"upload_{uuid.uuid4().hex[:8]}.bin", b"w" * 4096)
     elapsed = time.monotonic() - start
     assert elapsed < io_timeout * 3, f"write took {elapsed:.1f}s; expected ~{io_timeout}s"
+
+    # SFTP-030 § Semantics asserts that this direction and the download stall
+    # are indistinguishable to a caller — same message, same context type — and
+    # until this assertion only the download half was pinned. The claim exists
+    # to stop a reader inferring, from an error that now names the stall, that
+    # it also names which side fell silent. Asserting it on the *upload* side is
+    # what makes it a claim about both.
+    assert excinfo.value.args[0] == f"SFTP channel stalled: no data within io_timeout={io_timeout}s"
+    assert isinstance(excinfo.value.__context__, TimeoutError)
 
 
 @pytest.mark.spec("SFTP-030")

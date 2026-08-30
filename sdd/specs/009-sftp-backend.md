@@ -318,13 +318,20 @@ distinction is load-bearing for the reader most likely to rely on it — someone
 grepping their own logs. `remote_store.backends._sftp` carries other `WARNING`
 records: `_connect` builds its tenacity retry with
 `before_sleep_log(log, logging.WARNING)` on that same logger, so a connect that
-exhausts `stop_after_attempt(3)` emits one per sleep, and `AUTO_ADD` warns once
-per connect. Measured on a refused connect at the default policy: **three**
-`WARNING` records on that logger before the mapping's own. So a failed
-operation is not a one-line event on the logger; it is a one-line event per
-concluded mapping. A reader searching for the mapping's record matches
-`op="error_mapping"` in the structured `extra`, which the retry and policy
-records do not carry.
+exhausts its `stop_after_attempt` budget emits one per sleep, and `AUTO_ADD`
+warns once per connect. A failed operation is therefore not a one-line event on
+the logger; it is a one-line event per concluded mapping. A reader searching for
+the mapping's record matches `op="error_mapping"` in the structured `extra`,
+which the retry and policy records do not carry.
+
+**No total is given, deliberately.** How many records a failure leaves on that
+logger is a product of the retry policy's `max_attempts`, the host-key policy,
+and which failure shape occurred — and a stated total is one cell of that
+product presented as the whole of it. Three review rounds each refuted a
+different cell written as a total here: "one WARNING on the logger", then
+"three at the default policy" (three is the `AUTO_ADD` figure; the default is
+`STRICT`), then "two per poll" (which assumes the default `max_attempts`).
+Derive it for a configuration if you need it; do not restate it as a constant.
 
 The message is the driver's own whenever the driver has one. Four of the signals
 above reach the mapping with no arguments — `TimeoutError` (which `socket.timeout`
@@ -351,13 +358,21 @@ Both are pinned against the live stall relay
 `test_stall_during_streamed_write_costs_one_bound`); a read, which classifies
 once and stops, cannot show it.
 
-It follows that `check_health` logs one `WARNING` per failed probe, so a
-`Store.ping()` poll against a down server logs once per poll — the level a
-genuinely unreachable backend warrants, and stated here because it is the
-visible consequence of the clause rather than an oversight. That record carries
-no path, because the probe has none; the line omits the `path=` suffix rather
-than rendering `path=''`. A routine errno is **not** logged: a missing or denied
-path is an answer, not a fault.
+`check_health` maps through here, so a probe that fails **in a way this mapping
+concludes on** logs one record and a `Store.ping()` poll repeats it. That is
+narrower than "a poll against a down server", and the difference is the common
+case rather than an edge: a refused connect and a DNS failure both raise the
+base `RemoteStoreError` from the generic `OSError` arm without reaching
+`_unavailable` at all, so they log nothing from the mapping. Only a probe that
+fails by timeout reaches it. BUG-265 tracks that divergence — `check_health`'s
+own docstring promises `BackendUnavailable` for a connection that cannot be
+established — and until it closes, the clause above is true of the timeout
+shape and of no other.
+
+That record carries no path, because the probe has none; the line omits the
+`path=` suffix rather than rendering `path=''`
+(`test_a_probe_record_carries_no_path`). A routine errno is **not** logged: a
+missing or denied path is an answer, not a fault.
 
 ### SFTP-024: No Native Exception Leakage
 
@@ -552,6 +567,13 @@ context in both. Both arrive on the receive side, so they enter the same arm and
 nothing downstream of it knows which direction fell silent. A message that names
 the *fault* is not a message that names its *side*, and only the first is
 claimed.
+
+Asserted on both halves, which is the point: `test_a_stall_says_what_it_was_and_logs_it`
+drives the server→client stall and
+`test_stalled_upload_request_raises_backend_unavailable` the client→server one,
+and each pins the same literal message and a `TimeoutError` context. Pinning
+only the download half would leave the claim resting on the direction a reader
+is least likely to doubt.
 
 The "unaffected however long it takes" half is asserted by
 `test_a_transfer_slower_than_the_bound_is_not_interrupted`, which throttles a

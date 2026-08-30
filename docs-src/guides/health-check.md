@@ -20,12 +20,13 @@ store.ping()  # raises on failure, silent on success
 - **Liveness probes** — Kubernetes `livenessProbe` or similar health endpoints.
 - **Connection validation** — verify config after loading from TOML/YAML.
 
-!!! note "A polling probe against a down backend is not quiet"
-    Each failed poll writes several `WARNING` records — the connect is retried,
-    and every retry logs — so a probe on a short period against a server that
-    stays down produces a steady stream of them. Size the probe's period with
-    that in mind. Measured on SFTP against a refused port: two records per poll,
-    or three when the `AUTO_ADD` host-key policy adds its own warning.
+!!! note "On SFTP, a polling probe against a down server is not quiet"
+    `SFTPBackend` retries its connect and logs a `WARNING` before each retry, so
+    a failed probe writes more than one record and a probe on a short period
+    against a server that stays down produces a steady stream of them. How many
+    depends on the retry policy and the host-key policy you configured, so size
+    the probe's period against your own settings rather than a fixed number.
+    Other backends do not retry their probe and are quiet by comparison.
 
 ## Error handling
 
@@ -59,6 +60,8 @@ except BackendUnavailable:
     today. This is a known defect rather than intended behaviour, and the
     exception type will change when it is fixed — which is why this caveat sits
     beside the table rather than being written into it.
+
+## Per-backend strategies
 
 Each backend uses the cheapest possible read-only operation:
 

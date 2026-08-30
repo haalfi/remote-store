@@ -304,15 +304,22 @@ compliant the day before.
   **Azure is a confirmed reproduction, not a hypothesis.** A genuine
   `asyncio.TimeoutError` — obtained by running `asyncio.timeout(0.001)` around a
   sleep, not by constructing one — carries `args=()` and `str() == ''`.
-  `azure/core/pipeline/transport/_aiohttp.py` (lines 396, 482, 579 of the
-  installed 3.x) wraps it as `ServiceResponseTimeoutError(err, error=err)`, and
-  `AzureError.__init__` sets `self.message = str(message)`. That subclasses
-  `ServiceResponseError`, so `classify_azure_error`'s
-  `ServiceRequestError | ServiceResponseError` arm
+  `azure/core/pipeline/transport/_aiohttp.py` wraps it as
+  `ServiceResponseTimeoutError(err, error=err)` at lines **397, 483 and 580** of
+  the installed 3.x, and `AzureError.__init__` sets `self.message =
+  str(message)`. That subclasses `ServiceResponseError`, so
+  `classify_azure_error`'s `ServiceRequestError | ServiceResponseError` arm
   (`backends/_azure_common.py:173`) returns `BackendUnavailable('')`, rendering
   as `" | path='delivery.csv' | backend='azure'"` — character for character the
-  SFTP defect. It reaches `AsyncAzureBackend` (11 `classify_azure_error` call
-  sites) and `AzureBackend` (4). The sync side is exposed the same way but is
+  SFTP defect. **Line 395 is a fourth raise site on the same arm**, wrapping the
+  same `asyncio.TimeoutError` as `ServiceRequestTimeoutError`, which subclasses
+  `ServiceRequestError`; an earlier revision of this item cited three sites and
+  had each line number one low, so treat the set as four.
+  It reaches `AsyncAzureBackend` (**10** `classify_azure_error` call sites:
+  611, 894, 943, 1020, 1056, 1091, 1118, 1155, 1181, 1658) and `AzureBackend`
+  (**3**: 1818, 1965, 2024) — counted as call sites, with the `from ... import`
+  line excluded, which is where the earlier 11-and-4 figures came from.
+  The sync side is exposed the same way but is
   **not** reproduced: `requests`' `ConnectionError`, `ReadTimeout`,
   `ConnectTimeout` and `ChunkedEncodingError` all stringify empty when
   argument-less, and the requests transport wraps them identically, but requests

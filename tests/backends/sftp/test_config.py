@@ -1474,7 +1474,19 @@ class TestSFTPToKey:
 
 
 class TestSFTPMapException:
-    """BK-005: _map_exception edge cases (lines 431, 437, 442)."""
+    """Unit-level contract for ``_map_exception``: which type, which message, which record.
+
+    Two generations of test live here. The original set pins the classification
+    edges — passthrough, the errno arms, ``FileNotFoundError``. The SFTP-023 set
+    below it pins what a caller is *handed*: no mapped ``BackendUnavailable``
+    reaches them blank, a stall names the bound that fired, a signal that
+    explained itself is not overwritten, and every arm that concludes emits one
+    ``WARNING`` while a routine errno emits none.
+
+    No source line numbers here. This docstring carried three and all three had
+    gone stale by the time anyone read them, which is the argument against
+    restating a location that the file itself already gives.
+    """
 
     @staticmethod
     def _oserror_enoent() -> OSError:
@@ -1664,6 +1676,70 @@ class TestSFTPMapException:
 
         ours = [r for r in caplog.records if r.name.startswith("remote_store")]
         assert not ours, f"a routine ENOENT logged {[r.getMessage() for r in ours]}"
+
+    @pytest.mark.spec("SFTP-023")
+    @pytest.mark.parametrize(
+        ("message", "hint"),
+        [
+            pytest.param("Incompatible ssh peer (no acceptable host key)", "enable_ssh_rsa_compat", id="host-key"),
+            pytest.param("Incompatible ssh peer (no acceptable kex algorithm)", "scan_host_algorithms", id="kex"),
+        ],
+    )
+    def test_every_arm_that_concludes_emits_one_record(
+        self, message: str, hint: str, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """SFTP-023: the ``IncompatiblePeer`` arms log like every other concluding arm.
+
+        ``_map_exception`` reaches ``_unavailable`` from four arms, and until
+        this test only one of them — the dead-connection arm — had its record
+        pinned. The two ``IncompatiblePeer`` arms were covered by
+        ``TestSFTPIncompatiblePeerHint``, which asserts message content only, so
+        both would still pass if those arms went back to constructing
+        ``BackendUnavailable`` directly. That is precisely the regression
+        SFTP-023's "every one of them" forbids and that the helper's docstring
+        claims is structurally prevented, so it is worth one assertion rather
+        than an argument.
+
+        The remediation hint is asserted *in the record*, not only in the error:
+        routing these arms through the helper is what makes the clause true, and
+        a route that dropped the hint on the way would satisfy the count while
+        losing the thing the arm exists for.
+        """
+        import paramiko
+
+        backend = SFTPBackend(host="dummy", host_key_policy="auto")
+        with caplog.at_level(logging.DEBUG, logger="remote_store"):
+            caplog.clear()
+            mapped = backend._map_exception(paramiko.ssh_exception.IncompatiblePeer(message), "delivery.csv")
+
+        assert isinstance(mapped, BackendUnavailable)
+        assert hint in mapped.args[0], f"the remediation hint is missing from {mapped.args[0]!r}"
+
+        ours = [r for r in caplog.records if r.name.startswith("remote_store")]
+        assert len(ours) == 1, f"expected one record, got {[r.getMessage() for r in ours]}"
+        assert ours[0].levelno == logging.WARNING
+        assert getattr(ours[0], "op", None) == "error_mapping"
+        assert hint in ours[0].getMessage(), "the hint reached the caller but not the log record"
+
+    @pytest.mark.spec("SFTP-023")
+    def test_a_probe_record_carries_no_path(self, caplog: pytest.LogCaptureFixture) -> None:
+        """SFTP-023: with no path, the record omits the suffix rather than rendering ``path=''``.
+
+        This is how ``check_health`` and the connect-time arms arrive. The
+        branch is *executed* by the rest of the suite, so coverage cannot flag
+        its removal — only an assertion on the rendered line can, which is why
+        this pins the text rather than the call.
+        """
+        backend = SFTPBackend(host="dummy", host_key_policy="auto", io_timeout=120.0)
+        with caplog.at_level(logging.DEBUG, logger="remote_store"):
+            caplog.clear()
+            backend._map_exception(TimeoutError(), "")
+
+        ours = [r for r in caplog.records if r.name.startswith("remote_store")]
+        assert len(ours) == 1
+        rendered = ours[0].getMessage()
+        assert "path=" not in rendered, f"an empty path was rendered into the line: {rendered!r}"
+        assert rendered == "SFTP channel stalled: no data within io_timeout=120.0s"
 
 
 class TestSFTPTypeGuards:

@@ -137,9 +137,10 @@ which is what to search your own logs for:
 WARNING remote_store.backends._sftp: SFTP channel stalled: no data within io_timeout=120.0s (path='delivery.csv')
 ```
 
-That logger carries other warnings too — a connect that fails is retried, and
-each retry logs one — so the stall's record is one line among several rather
-than the only one you will see.
+For a stall the connect already succeeded, so nothing is retried and this is
+normally the only `WARNING` on that logger. Expect company only if the peer is
+still silent on the next operation: the dead client is dropped, so that
+operation reconnects, and a connect that then fails logs before each retry.
 
 The number in both is the bound that fired, so it tells you which value to
 reconsider. To confirm the diagnosis from the other side, enable paramiko's own

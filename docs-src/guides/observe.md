@@ -161,7 +161,7 @@ logging.getLogger("remote_store").setLevel(logging.DEBUG)
 | Level | When |
 |-------|------|
 | `DEBUG` | Method entry (every Store operation) |
-| `INFO` | An operation that completed and changed something, plus connection and health milestones (a connect, a successful `ping`) |
+| `INFO` | An operation that completed and changed something, plus connection, health and batch-summary milestones (a connect, a successful `ping`, a finished batch) |
 | `WARNING` | Suppressed hook exceptions, fallback behaviour, an unsafe configuration, a retry before it sleeps, and a backend failure before it is raised |
 
 Errors are reported by the exception, not by a log record: the library emits
@@ -183,13 +183,17 @@ formatters or structlog processors:
 `op="error_mapping"` marks a record reporting a backend failure the library has
 just concluded and is about to raise.
 
-**Not every record carries every field.** `op` is absent from records the
-library emits through third-party machinery — a retry warning, for one — so
-code that reads these fields must tolerate their absence
-(`getattr(record, "op", None)`, not `record.op`). A `logging.Filter` that
+**Not every record carries every field.** A record logged without `extra=`
+carries none of them, and that is not confined to third-party machinery: the
+suppressed-hook warning in the `WARNING` row above is emitted by this
+extension's own code and carries no `op`. Several backend and retry records are
+the same.
+
+So code that reads these fields must tolerate their absence —
+`getattr(record, "op", None)`, never `record.op`. A `logging.Filter` that
 assumes the attribute raises `AttributeError` inside `Filterer.filter`, which
 the logging module does not route through `handleError`, so it propagates into
-the call that logged.
+the call that logged and surfaces as a backend error rather than a logging one.
 
 ## Error Handling
 
