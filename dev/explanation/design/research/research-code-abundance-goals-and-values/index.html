@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/research/research-sqlalchemy-backend/">
+        <link rel="canonical" href="https://docs.remotestore.dev/dev/explanation/design/research/research-code-abundance-goals-and-values/">
       
       
-        <link rel="prev" href="../research-spec-kit-comparison/">
+        <link rel="prev" href="../research-bug-prevention-beyond-testing/">
       
       
-        <link rel="next" href="../research-store-api-refinement/">
+        <link rel="next" href="../research-dagster-extension/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>SQLAlchemy Backends & Composite Store - remote-store</title>
+        <title>Code Abundance — Tao's ICM 2026 Argument Transposed to Coding Agents - remote-store</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#research-sqlalchemy-backends-composite-store" class="md-skip">
+        <a href="#research-code-abundance-taos-icm-2026-argument-transposed-to-coding-agents" class="md-skip">
           Skip to content
         </a>
       
@@ -121,7 +121,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              SQLAlchemy Backends & Composite Store
+              Code Abundance — Tao's ICM 2026 Argument Transposed to Coding Agents
             
           </span>
         </div>
@@ -7973,10 +7973,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../research-code-abundance-goals-and-values/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Code Abundance — Tao's ICM 2026 Argument Transposed to Coding Agents
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -7992,6 +8019,208 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#tldr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TL;DR
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-the-source-argument" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. The source argument
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-the-transposition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. The transposition
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. The transposition">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21-the-working-hypothesis-for-software" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 The Working Hypothesis for software
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-the-goals-and-values-question-for-software" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 The Goals and Values Question for software
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23-three-debts-not-one" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 Three debts, not one
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-goodhart-applied" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Goodhart, applied
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-the-pipeline-with-one-extra-stage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 The pipeline, with one extra stage
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-impedance-mismatch-stage-by-stage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Impedance mismatch, stage by stage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-figures-and-their-derivations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. Figures and their derivations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-where-the-analogy-breaks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Where the analogy breaks
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-proposals" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Proposals
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-what-a-leiden-declaration-for-software-would-need-to-say" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. What a Leiden Declaration for software would need to say
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#appendix-remote-store-as-a-worked-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Appendix: remote-store as a worked example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -8869,37 +9098,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    SQLAlchemy Backends & Composite Store
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../research-sqlalchemy-backend/" class="md-nav__link">
         
   
   
@@ -8915,614 +9117,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#1-problem-statement" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Problem Statement
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="1. Problem Statement">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#the-unifying-concept-key-byte-resolution" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The unifying concept: key → byte resolution
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#why-these-belong-together" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Why these belong together
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#the-deeper-pattern" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        The deeper pattern
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-prior-art-comparable-abstractions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Prior Art &amp; Comparable Abstractions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2. Prior Art &amp; Comparable Abstractions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#21-query-results-as-data-products" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.1 Query Results as Data Products
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#22-database-as-blob-store" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.2 Database as Blob Store
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#23-tiered-federated-storage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.3 Tiered / Federated Storage
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#24-filesystem-abstractions-that-considered-sql" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.4 Filesystem Abstractions That Considered SQL
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-architecture-two-backends-shared-base" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Architecture: Two Backends, Shared Base
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. Architecture: Two Backends, Shared Base">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sqlquerybackend-read-only-query-materializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQLQueryBackend (read-only query materializer)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sqlblobbackend-read-write-key-value-store" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQLBlobBackend (read-write key-value store)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-serialization-pipeline-sqlquerybackend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Serialization Pipeline (SQLQueryBackend)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="4. Serialization Pipeline (SQLQueryBackend)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#resultserializer-abstraction" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ResultSerializer abstraction
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-bytes-pipeline" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL → Bytes pipeline
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#type-mapping-concerns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Type mapping concerns
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dependencies
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#caching" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Caching
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-resolution-model-composite-store" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Resolution Model &amp; Composite Store
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="5. Resolution Model &amp; Composite Store">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#51-resolutionplan-unified-introspection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5.1 ResolutionPlan — unified introspection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#52-compositestore-id-120" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5.2 CompositeStore (ID-120)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Architecture
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#read-resolution-deterministic-fallthrough" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Read resolution (deterministic fallthrough)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#write-semantics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Write semantics
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#list-behavior" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        LIST behavior
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#capability-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Capability model
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-capability-profile" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Capability Profile
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="6. Capability Profile">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sqlquerybackend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQLQueryBackend
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sqlblobbackend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQLBlobBackend
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#7-decisions-made-remaining-open-questions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Decisions Made &amp; Remaining Open Questions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="7. Decisions Made &amp; Remaining Open Questions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#decided" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decided
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remaining-open-questions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Remaining open questions
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#8-prioritization-next-steps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        8. Prioritization &amp; Next Steps
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="8. Prioritization &amp; Next Steps">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#v1-foundation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        v1 — Foundation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#v2-query-materializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        v2 — Query Materializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#v3-performance-advanced" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        v3 — Performance &amp; Advanced
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#immediate-next-step" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Immediate next step
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#9-key-risks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        9. Key Risks
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#10-future-directions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        10. Future Directions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="10. Future Directions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#resolution-algebra" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resolution algebra
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#compute-stores" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Compute stores
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#structured-keys" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Structured keys
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#readme-messaging" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        README messaging
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#11-references" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        11. References
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="11. References">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#existing-projects" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Existing projects
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#database-blob-storage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Database blob storage
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#serialization-performance" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Serialization &amp; performance
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#tiered-storage-precedent" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Tiered storage precedent
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -11183,22 +10777,55 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-problem-statement" class="md-nav__link">
+  <a href="#tldr" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Problem Statement
+        TL;DR
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. Problem Statement">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1-the-source-argument" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. The source argument
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-the-transposition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. The transposition
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. The transposition">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#the-unifying-concept-key-byte-resolution" class="md-nav__link">
+  <a href="#21-the-working-hypothesis-for-software" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The unifying concept: key → byte resolution
+        2.1 The Working Hypothesis for software
       
     </span>
   </a>
@@ -11206,10 +10833,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#why-these-belong-together" class="md-nav__link">
+  <a href="#22-the-goals-and-values-question-for-software" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Why these belong together
+        2.2 The Goals and Values Question for software
       
     </span>
   </a>
@@ -11217,10 +10844,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#the-deeper-pattern" class="md-nav__link">
+  <a href="#23-three-debts-not-one" class="md-nav__link">
     <span class="md-ellipsis">
       
-        The deeper pattern
+        2.3 Three debts, not one
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#24-goodhart-applied" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.4 Goodhart, applied
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#25-the-pipeline-with-one-extra-stage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.5 The pipeline, with one extra stage
       
     </span>
   </a>
@@ -11233,415 +10882,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-prior-art-comparable-abstractions" class="md-nav__link">
+  <a href="#3-impedance-mismatch-stage-by-stage" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Prior Art &amp; Comparable Abstractions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2. Prior Art &amp; Comparable Abstractions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#21-query-results-as-data-products" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.1 Query Results as Data Products
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#22-database-as-blob-store" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.2 Database as Blob Store
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#23-tiered-federated-storage" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.3 Tiered / Federated Storage
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#24-filesystem-abstractions-that-considered-sql" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2.4 Filesystem Abstractions That Considered SQL
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-architecture-two-backends-shared-base" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Architecture: Two Backends, Shared Base
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="3. Architecture: Two Backends, Shared Base">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sqlquerybackend-read-only-query-materializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQLQueryBackend (read-only query materializer)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sqlblobbackend-read-write-key-value-store" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQLBlobBackend (read-write key-value store)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-serialization-pipeline-sqlquerybackend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Serialization Pipeline (SQLQueryBackend)
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="4. Serialization Pipeline (SQLQueryBackend)">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#resultserializer-abstraction" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        ResultSerializer abstraction
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sql-bytes-pipeline" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQL → Bytes pipeline
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#type-mapping-concerns" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Type mapping concerns
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dependencies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Dependencies
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#caching" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Caching
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-resolution-model-composite-store" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Resolution Model &amp; Composite Store
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="5. Resolution Model &amp; Composite Store">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#51-resolutionplan-unified-introspection" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5.1 ResolutionPlan — unified introspection
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#52-compositestore-id-120" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5.2 CompositeStore (ID-120)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Architecture
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#read-resolution-deterministic-fallthrough" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Read resolution (deterministic fallthrough)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#write-semantics" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Write semantics
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#list-behavior" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        LIST behavior
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#capability-model" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Capability model
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-capability-profile" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Capability Profile
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="6. Capability Profile">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sqlquerybackend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQLQueryBackend
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#sqlblobbackend" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        SQLBlobBackend
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#7-decisions-made-remaining-open-questions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Decisions Made &amp; Remaining Open Questions
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="7. Decisions Made &amp; Remaining Open Questions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#decided" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decided
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#remaining-open-questions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Remaining open questions
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#8-prioritization-next-steps" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        8. Prioritization &amp; Next Steps
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="8. Prioritization &amp; Next Steps">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#v1-foundation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        v1 — Foundation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#v2-query-materializer" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        v2 — Query Materializer
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#v3-performance-advanced" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        v3 — Performance &amp; Advanced
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#immediate-next-step" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Immediate next step
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#9-key-risks" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        9. Key Risks
+        3. Impedance mismatch, stage by stage
       
     </span>
   </a>
@@ -11649,124 +10893,68 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#10-future-directions" class="md-nav__link">
+  <a href="#4-figures-and-their-derivations" class="md-nav__link">
     <span class="md-ellipsis">
       
-        10. Future Directions
+        4. Figures and their derivations
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="10. Future Directions">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#resolution-algebra" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Resolution algebra
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#compute-stores" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Compute stores
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#structured-keys" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Structured keys
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#readme-messaging" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        README messaging
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#11-references" class="md-nav__link">
+  <a href="#5-where-the-analogy-breaks" class="md-nav__link">
     <span class="md-ellipsis">
       
-        11. References
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="11. References">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#existing-projects" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Existing projects
+        5. Where the analogy breaks
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#database-blob-storage" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#6-proposals" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Database blob storage
+        6. Proposals
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#serialization-performance" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#7-what-a-leiden-declaration-for-software-would-need-to-say" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Serialization &amp; performance
+        7. What a Leiden Declaration for software would need to say
       
     </span>
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#tiered-storage-precedent" class="md-nav__link">
+      
+        <li class="md-nav__item">
+  <a href="#appendix-remote-store-as-a-worked-example" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Tiered storage precedent
+        Appendix: remote-store as a worked example
       
     </span>
   </a>
   
 </li>
-        
-      </ul>
-    </nav>
+      
+        <li class="md-nav__item">
+  <a href="#sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sources
+      
+    </span>
+  </a>
   
 </li>
       
@@ -11787,823 +10975,1168 @@
 
 
 
-<h1 id="research-sqlalchemy-backends-composite-store">Research: SQLAlchemy Backends &amp; Composite Store<a class="headerlink" href="#research-sqlalchemy-backends-composite-store" title="Permanent link">&para;</a></h1>
-<p><strong>Item ID:</strong> ID-119 (SQLAlchemy backends), ID-120 (composite store)
-<strong>Date:</strong> 2026-03-26
-<strong>Status:</strong> Research complete</p>
-<hr />
-<h2 id="1-problem-statement">1. Problem Statement<a class="headerlink" href="#1-problem-statement" title="Permanent link">&para;</a></h2>
-<h3 id="the-unifying-concept-key-byte-resolution">The unifying concept: key → byte resolution<a class="headerlink" href="#the-unifying-concept-key-byte-resolution" title="Permanent link">&para;</a></h3>
-<p>A Store is a <strong>deterministic key → byte resolver</strong>. Not storage. Not filesystem.
-Not database. A resolver. Every existing backend already works this way:</p>
-<ul>
-<li><code>LocalBackend</code>: key → filesystem path → bytes</li>
-<li><code>S3Backend</code>: key → S3 object → bytes</li>
-<li><code>ReadOnlyHttpBackend</code>: key → URL → bytes</li>
-</ul>
-<p>This framing makes two new ideas feel natural rather than bolted on:</p>
+<h1 id="research-code-abundance-taos-icm-2026-argument-transposed-to-coding-agents">Research: Code Abundance — Tao's ICM 2026 Argument Transposed to Coding Agents<a class="headerlink" href="#research-code-abundance-taos-icm-2026-argument-transposed-to-coding-agents" title="Permanent link">&para;</a></h1>
+<p><strong>Date:</strong> 2026-08-30
+<strong>Backlog items:</strong> — (no item; BK-361 was filed <em>from</em> this record's validation pass, not by it)
+<strong>Status:</strong> Research complete — the argument and its evidence are settled as of the date above. Point-in-time snapshot per <a href="../../process/"><code>sdd/000-process.md</code> § Document types</a>: the external telemetry it cites is 2025–2026 vintage and the repo counts in the appendix drift, so read every figure against this date. Sourcing is uneven by design and § 4 marks which rows were read from the primary and which were not.</p>
+<h2 id="tldr">TL;DR<a class="headerlink" href="#tldr" title="Permanent link">&para;</a></h2>
+<p>Cheap generation moves the binding constraint from writing code to understanding
+it, and understanding is the one input that can only be acquired while the work
+is happening.</p>
+<p>Everything else in this record is that claim's chain:</p>
+<ol>
+<li>Generation got cheap; every stage downstream of it jams.</li>
+<li>The worst-jammed stage is canonicalization — working a solution into the
+   system's definitive form.</li>
+<li>That stage is both the one agents cannot do and the one that determines how
+   well agents do everything else.</li>
+<li>Its currency is understanding, which is repayable only forward: you can
+   rebuild it later, never retroactively for the decision you already made.</li>
+<li>So the control is workflow ordering, not later cleanup. Remediation is not
+   too weak; it arrives too late.</li>
+</ol>
+<p>Links 3 and 4 are this record's own contribution. Links 1 and 2 are Tao
+transposed; the debt vocabulary is Storey's. § 3 argues 1 to 3, § 2.3 argues 4,
+§ 6 turns 5 into proposals, and § 5 marks where the transposition breaks.</p>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p>Terence Tao's public lecture at the International Congress of Mathematicians 2026,
+<em>Mathematics in the age of AI</em> (July 24, 2026,
+<a href="https://teorth.github.io/tao-web/slides/age-of-ai-icm-2026.pdf">slides</a>), makes an
+argument whose shape is not specific to mathematics. This record transposes it to
+software development with coding agents, tests each transposed claim against
+published evidence, marks where the analogy breaks, and derives concrete proposals.</p>
+<p>The transposition is worth doing because Tao's move is structural, not
+metaphorical. He declines to argue about capability, conditions on it, and then
+asks what the community actually wants — which turns out to be the harder and
+more neglected question. Software development has the same neglected question, an
+isomorphic production pipeline, and one extra stage that mathematics does not
+have.</p>
+<p><strong>Sourcing note.</strong> The Tao slides were read in full from the PDF. Several primary
+sources cited below were unreachable from this environment (the egress proxy
+blocks <code>arxiv.org</code>, <code>dora.dev</code>, <code>martinfowler.com</code>, <code>simonwillison.net</code>,
+<code>leidendeclaration.ai</code>, <code>flowverify.co</code>, <code>polvara.me</code>, <code>queue.acm.org</code>); those
+figures come from search-engine extractions of the primary documents, not from
+the documents themselves, and are marked accordingly in the table in § 4. Polvara's
+essay was supplied as text by the reader who raised it; see the note under that
+table. Repo counts in the appendix were derived by running the stated command.</p>
+<h2 id="1-the-source-argument">1. The source argument<a class="headerlink" href="#1-the-source-argument" title="Permanent link">&para;</a></h2>
+<p>Tao's structure, compressed to its load-bearing parts.</p>
 <ol>
 <li>
-<p><strong>SQLAlchemy backends</strong> — resolvers that map keys to SQL. <code>SQLBlobBackend</code>
-   resolves key → row lookup → bytes. <code>SQLQueryBackend</code> resolves key → query
-   execution → serialized bytes. From the caller's perspective, identical to
-   reading from S3.</p>
+<p><strong>Decompose the question.</strong> "How should the mathematical community respond to
+   modern AI?" splits into a capability subquestion and an orthogonal
+   goals-and-values subquestion. Almost all public debate lives in the first.</p>
 </li>
 <li>
-<p><strong>Composite store</strong> — a resolver that delegates to other resolvers.
-   <code>CompositeStore</code> resolves key → (try hot store, then warm, then cold) → bytes.
-   The caller sees one Store.</p>
+<p><strong>Condition, don't argue.</strong> He states an <em>AI Capability Conjecture</em> as a
+   template full of placeholders ("some AI tools will, at some expense, with some
+   supervision, accomplish some research-level tasks..."), notes that the evidence
+   is contaminated by reporting bias and undisclosed costs, and then declines to
+   adjudicate it. He adopts a <em>Working Hypothesis</em> — a reasonably strong form is
+   true — and asks the audience to reason conditionally. "Evidence for or against
+   the Working Hypothesis is orthogonal to the rest of my talk."</p>
+</li>
+<li>
+<p><strong>Ask what we actually want.</strong> The <em>Goals and Values Question</em> asks for the
+   real goals, "not just the explicit goals that we communicate to the public (or
+   to funding agencies), but also the implicit goals that we actually seek in
+   practice." Historically these goals were positively correlated, so one could
+   serve as a proxy for the others and most could stay implicit.</p>
+</li>
+<li>
+<p><strong>Goodhart breaks the correlation.</strong> Under heavy optimization the goals
+   diverge. Tao names "the inherently ungrounded nature of generative AI, as well
+   as the financial incentives of AI companies" as making this failure especially
+   likely.</p>
+</li>
+<li>
+<p><strong>Refine the goal until it is honest.</strong> He iterates the problem-solving goal
+   four times. Solve problems → and verify them → and communicate them clearly →
+   and have them digested, accepted, and incorporated into the definitive theory
+   of the field. Each refinement adds a pipeline stage: generation, verification,
+   exposition, publication, canonicalization.</p>
+</li>
+<li>
+<p><strong>Note where the pipeline jams.</strong> Cheap generation with unchanged downstream
+   capacity produces "impedance mismatches" or "proof indigestion" at every
+   stage: proofs waiting to be verified, verified proofs waiting for a readable
+   writeup, correct and readable proofs overwhelming peer review, published
+   proofs never worked into definitive form. "We will transition from an era of
+   proof scarcity to an era of proof abundance."</p>
+</li>
+<li>
+<p><strong>Recommend.</strong> Three things: normalize responsible disclosure of AI
+   assistance rather than driving it covert; shift emphasis from generation and
+   priority toward digestion; and a rule of thumb — "if the authors cannot
+   convincingly demonstrate that they can give a clear, expert-level talk on
+   their results, that is correct and properly attributed, then the result should
+   not be published."</p>
 </li>
 </ol>
-<h3 id="why-these-belong-together">Why these belong together<a class="headerlink" href="#why-these-belong-together" title="Permanent link">&para;</a></h3>
-<p>The SQLAlchemy backends are useful standalone (database as key-value store, or
-query results as portable data products). The composite store is useful standalone
-(multi-tier blob storage). Combined, they enable the full hot/warm/cold lifecycle
-without consumer code changes.</p>
-<h3 id="the-deeper-pattern">The deeper pattern<a class="headerlink" href="#the-deeper-pattern" title="Permanent link">&para;</a></h3>
-<p>Every backend is a resolution strategy. The capability system already describes
-<em>what resolution strategies are available</em>, not what a filesystem can do.
-SQLAlchemy backends and CompositeStore make this explicit — they extend the
-resolution model into databases and across backend boundaries.</p>
-<hr />
-<h2 id="2-prior-art-comparable-abstractions">2. Prior Art &amp; Comparable Abstractions<a class="headerlink" href="#2-prior-art-comparable-abstractions" title="Permanent link">&para;</a></h2>
-<h3 id="21-query-results-as-data-products">2.1 Query Results as Data Products<a class="headerlink" href="#21-query-results-as-data-products" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Project</th>
-<th>Approach</th>
-<th>Key insight for us</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Dagster IO Managers</strong></td>
-<td><code>DbIOManager</code> maps asset keys to tables by convention (<code>path[-1]</code> = table, <code>path[-2]</code> = schema). Parquet variants exist (DuckDB).</td>
-<td>Closest architectural match. Convention-based key→table, serialization on read.</td>
-</tr>
-<tr>
-<td><strong>Intake (intake-sql)</strong></td>
-<td>YAML catalog maps logical names to SQL connections/queries. Returns DataFrames via <code>pd.read_sql</code>.</td>
-<td>Config-based key→query pattern. Catalog YAML is a proven UX.</td>
-</tr>
-<tr>
-<td><strong>dbt</strong></td>
-<td><code>.sql</code> files as named models. Materialization strategies: view, table, incremental. Filename = table name.</td>
-<td>Convention-based naming. Proves "SQL as named data product" at scale.</td>
-</tr>
-<tr>
-<td><strong>Feast</strong></td>
-<td><code>FeatureView</code> → <code>DataSource</code> mapping. SQL Registry backed by SQLAlchemy.</td>
-<td>Logical name → physical source indirection via registry.</td>
-</tr>
-<tr>
-<td><strong>DuckLake</strong> (2025)</td>
-<td>SQL database as metadata catalog, Parquet files in object storage. All metadata ops are pure SQL transactions.</td>
-<td>Proves "SQL catalog + Parquet files" pattern works at scale.</td>
-</tr>
-<tr>
-<td><strong>dlt</strong></td>
-<td>SQLAlchemy source → filesystem destination (Parquet/CSV/JSON on S3/GCS/Azure).</td>
-<td>Full pipeline from SQL to serialized files.</td>
-</tr>
-<tr>
-<td><strong>aiosql / PugSQL</strong></td>
-<td>Named SQL queries in <code>.sql</code> files, loaded as callable Python methods.</td>
-<td>Clean key→query registry pattern. Comment-based naming (<code>-- name: get_users</code>).</td>
-</tr>
-</tbody>
-</table>
-<h3 id="22-database-as-blob-store">2.2 Database as Blob Store<a class="headerlink" href="#22-database-as-blob-store" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Project</th>
-<th>Approach</th>
-<th>Key insight for us</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>SQLite SQLAR format</strong></td>
-<td>Single table: <code>(name TEXT PK, mode INT, mtime INT, sz INT, data BLOB)</code>. Each row = one file, Deflate-compressed. Only ~2% larger than ZIP.</td>
-<td>Proves file-in-DB works. Minimal schema.</td>
-</tr>
-<tr>
-<td><strong>Fossil SCM</strong></td>
-<td>ALL content (source, wiki, tickets) in SQLite <code>blob</code> table. Delta-compressed.</td>
-<td>Entire VCS backed by SQLite blob storage — extreme validation of the pattern.</td>
-</tr>
-<tr>
-<td><strong>PostgreSQL BYTEA</strong></td>
-<td>Up to 1 GB per value. TOAST transparently chunks into ~2 KB. <code>EXTERNAL</code> storage avoids double-compression.</td>
-<td>Works but ~10x slower than filesystem for retrieval. Hybrid recommended for &gt;100 MB.</td>
-</tr>
-<tr>
-<td><strong>SQLite Blob API</strong> (Python 3.11+)</td>
-<td><code>connection.blobopen()</code> returns file-like <code>Blob</code> with <code>read()</code>, <code>write()</code>, <code>seek()</code>.</td>
-<td>Native file-like interface to DB blobs — maps directly to <code>Backend.read() → BinaryIO</code>.</td>
-</tr>
-<tr>
-<td><strong>django-db-file-storage</strong></td>
-<td>Drop-in Django <code>FileSystemStorage</code> replacement using DB.</td>
-<td>Proves the pattern is wanted in web frameworks. All docs warn about performance.</td>
-</tr>
-<tr>
-<td><strong>Zarr SQLiteStore</strong></td>
-<td><code>CREATE TABLE zarr_table (key TEXT PK, value BLOB)</code>. Zarr v3 proposal adds async.</td>
-<td>Key-value blob store in SQLite. ~2x faster than LocalStore at 10 KB, ~0.6x at 1 MB.</td>
-</tr>
-</tbody>
-</table>
-<h3 id="23-tiered-federated-storage">2.3 Tiered / Federated Storage<a class="headerlink" href="#23-tiered-federated-storage" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Project</th>
-<th>Approach</th>
-<th>Key insight for us</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Trino spooling protocol</strong></td>
-<td>Query results written to object storage (S3/ABFS/GCS) for parallel retrieval. ~4x speedup.</td>
-<td>DB→object-store materialization at query engine level.</td>
-</tr>
-<tr>
-<td><strong>Redash QRDS</strong></td>
-<td>Caches latest query result in PostgreSQL. Query cached results via SQLite syntax. Pluggable storage proposed.</td>
-<td>Query result caching with storage abstraction.</td>
-</tr>
-<tr>
-<td><strong>Superset</strong></td>
-<td><code>RESULTS_BACKEND</code> configurable: Redis, S3, Memcached, filesystem.</td>
-<td>Pluggable result storage backends — same pattern we'd build.</td>
-</tr>
-<tr>
-<td><strong>Data mesh output ports</strong></td>
-<td>Data products expose multiple ports: tables, files, APIs. Consumer picks format.</td>
-<td>Multi-format output is the standard pattern, not an edge case.</td>
-</tr>
-<tr>
-<td><strong>Litestream / LiteFS</strong></td>
-<td>SQLite replication to S3 / FUSE-based cluster replication.</td>
-<td>SQLite as primary store with object-store backup — tiered storage at DB level.</td>
-</tr>
-</tbody>
-</table>
-<h3 id="24-filesystem-abstractions-that-considered-sql">2.4 Filesystem Abstractions That Considered SQL<a class="headerlink" href="#24-filesystem-abstractions-that-considered-sql" title="Permanent link">&para;</a></h3>
+<p>Two further observations from the talk carry over unusually well.</p>
 <ul>
-<li><strong>fsspec</strong>: No SQL backend exists. The <code>FSMap</code> / <code>get_mapper()</code> provides key-value
-  interface over any filesystem, but nobody has built a SQL filesystem.</li>
-<li><strong>pyfilesystem2</strong>: Community requested SQL backends (issues #498, #534). Maintainer
-  said "certainly doable" but warned of "a lot of corner-cases." Never implemented.
-  The full filesystem API (mkdir, rename, permissions) is hard to map onto SQL.</li>
+<li><strong>Friction is information.</strong> An over-polished proof presents routine and
+  difficult steps as equally easy. Human-written proofs "retain some natural
+  friction that prompts the reader to slow down." Current AI exposition "dwells
+  at length on trivialities, while passing very briefly through (or even
+  obscuring) the most interesting and novel portions."</li>
+<li><strong>Canonical work is the substrate for the tools.</strong> "The success of AI tools in
+  mathematics crucially relies upon the canonical theories that human
+  mathematicians have painstakingly built over the centuries." The slowest,
+  least-automatable stage is the one the automation depends on.</li>
 </ul>
-<p><strong>Takeaway</strong>: Nobody has built this exact thing. The filesystem abstractions considered
-it and backed off due to API surface mismatch. But remote-store's capability system
-(declare what you support, gate the rest) solves exactly that problem.</p>
-<hr />
-<h2 id="3-architecture-two-backends-shared-base">3. Architecture: Two Backends, Shared Base<a class="headerlink" href="#3-architecture-two-backends-shared-base" title="Permanent link">&para;</a></h2>
-<p>The research reveals two distinct and valid use cases. After review, the decision is
-<strong>two concrete backends</strong> sharing a common base — not one backend with a mode flag.</p>
-<p><strong>Rationale</strong>: the modes have fundamentally different invariants (read-only vs
-read-write KV store), different capability sets, and will evolve independently.
-A <code>mode</code> parameter would spread <code>if mode == ...</code> branching throughout. Separate
-classes give cleaner capability contracts and independent evolution.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>_SQLAlchemyBaseBackend (ABC)
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>├── SQLQueryBackend   (Mode A — read-only query materializer)
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>└── SQLBlobBackend    (Mode B — read-write key-value blob store)
-</code></pre></div>
-<p><strong>Shared base</strong> (<code>_SQLAlchemyBaseBackend</code>) provides:
-- Engine/connection management, pooling
-- Health check (<code>check_health()</code> → <code>SELECT 1</code>)
-- Error mapping (SQLAlchemy exceptions → remote-store errors)
-- <code>unwrap()</code> → returns SQLAlchemy <code>Engine</code>
-- <code>close()</code> → dispose engine</p>
-<p><strong>Engine lifecycle:</strong>
-- Accepts either a URL string (creates and owns the engine) or a pre-existing
-  <code>sqlalchemy.Engine</code> (borrows — <code>close()</code> is a no-op). This lets web apps share
-  their connection pool.
-- <code>Store.child()</code> shares the parent's backend and therefore the same engine/pool.
-- Context manager (<code>with Store(...) as s:</code>) calls <code>close()</code> on exit, which disposes
-  owned engines. Borrowed engines are left to their owner.</p>
-<h3 id="sqlquerybackend-read-only-query-materializer">SQLQueryBackend (read-only query materializer)<a class="headerlink" href="#sqlquerybackend-read-only-query-materializer" title="Permanent link">&para;</a></h3>
-<p>Maps path keys to SQL queries. On <code>read()</code>, executes the query and serializes the
-result set to the format implied by the key extension.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">SQLQueryBackend</span><span class="p">(</span>
-<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">url</span><span class="o">=</span><span class="s2">"postgresql://..."</span><span class="p">,</span>
-<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">queries</span><span class="o">=</span><span class="p">{</span>
-<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>        <span class="s2">"reports/daily_sales.parquet"</span><span class="p">:</span> <span class="s2">"SELECT date, SUM(amount) FROM orders GROUP BY date"</span><span class="p">,</span>
-<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="s2">"reports/user_summary.csv"</span><span class="p">:</span> <span class="s2">"SELECT * FROM user_summary_mv"</span><span class="p">,</span>
-<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="p">},</span>
-<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># only explicit mappings — no view or convention fallback</span>
-<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="p">)</span>
-<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
-<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">data</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">"reports/daily_sales.parquet"</span><span class="p">)</span>  <span class="c1"># → parquet bytes</span>
-</code></pre></div>
-<p><strong>Capabilities</strong>: <code>READ</code>, <code>LIST</code>, <code>METADATA</code>, <code>GLOB</code>, <code>SEEKABLE_READ</code>. Everything
-else raises <code>CapabilityNotSupported</code>.</p>
-<p><strong>Key-to-query resolution</strong> (strict precedence):
-1. Explicit mapping (config dict) — highest priority
-2. View-based — key maps to a database view by name
-3. Convention — <code>"schema/table.ext"</code> → <code>SELECT * FROM schema.table</code></p>
-<p><strong><code>strict</code> defaults to <code>True</code></strong> (security-by-default). Only explicit mappings are
-used. Set <code>strict=False</code> to enable view and convention fallback — but note that
-convention mode (<code>schema/table.ext → SELECT * FROM schema.table</code>) can expose
-arbitrary tables to anyone with Store access. Use only with trusted callers or
-read-only database users.</p>
-<p><strong>Introspection</strong> (via unified <code>resolve()</code> — see §5.1):
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">store</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="s2">"reports/daily_sales.parquet"</span><span class="p">)</span>
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="c1"># → ResolutionPlan(kind="sql_query", source="explicit",</span>
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1">#      query="SELECT ...", format="parquet")</span>
-</code></pre></div></p>
-<h3 id="sqlblobbackend-read-write-key-value-store">SQLBlobBackend (read-write key-value store)<a class="headerlink" href="#sqlblobbackend-read-write-key-value-store" title="Permanent link">&para;</a></h3>
-<p>Uses a table as key-value storage. Each row holds one "file."</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">SQLBlobBackend</span><span class="p">(</span>
-<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="n">url</span><span class="o">=</span><span class="s2">"sqlite:///store.db"</span><span class="p">,</span>
-<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="c1"># Uses default schema: (key TEXT PK, data BLOB, size INT, modified_at TIMESTAMP, content_type TEXT)</span>
-<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">max_blob_size</span><span class="o">=</span><span class="mi">10</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,</span>  <span class="c1"># 10 MB — optional safety limit</span>
-<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="p">)</span>
-<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">store</span> <span class="o">=</span> <span class="n">Store</span><span class="p">(</span><span class="n">backend</span><span class="p">)</span>
-<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"models/v3.pkl"</span><span class="p">,</span> <span class="n">model_bytes</span><span class="p">)</span>
-<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">data</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">(</span><span class="s2">"models/v3.pkl"</span><span class="p">)</span>
-</code></pre></div>
-<p><strong>Capabilities</strong>: <code>READ</code>, <code>WRITE</code>, <code>DELETE</code>, <code>LIST</code>, <code>METADATA</code>, <code>ATOMIC_WRITE</code>,
-<code>MOVE</code>, <code>COPY</code>, <code>GLOB</code>, <code>SEEKABLE_READ</code>.</p>
-<p><strong>Schema</strong> (inspired by SQLAR + Zarr SQLiteStore):
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">remote_store_objects</span><span class="w"> </span><span class="p">(</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">    </span><span class="k">key</span><span class="w">         </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="k">CHECK</span><span class="w"> </span><span class="p">(</span><span class="k">length</span><span class="p">(</span><span class="k">key</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">),</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="k">data</span><span class="w">        </span><span class="nb">BLOB</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">    </span><span class="k">size</span><span class="w">        </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">    </span><span class="n">modified_at</span><span class="w"> </span><span class="k">TIMESTAMP</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w"> </span><span class="k">DEFAULT</span><span class="w"> </span><span class="k">CURRENT_TIMESTAMP</span><span class="p">,</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">    </span><span class="n">content_type</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="n">digest</span><span class="w">      </span><span class="nb">TEXT</span><span class="p">,</span>
-<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="n">extra</span><span class="w">       </span><span class="nb">TEXT</span><span class="w">  </span><span class="c1">-- JSON blob for backend-specific metadata</span>
-<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="p">);</span>
-</code></pre></div></p>
-<p>The <code>PRIMARY KEY</code> on <code>key</code> already creates a B-tree index that supports prefix
-range scans (<code>WHERE key LIKE 'prefix/%'</code>). No separate index needed.</p>
-<p><strong>Schema flexibility:</strong>
-- Default: auto-creates <code>remote_store_objects</code> table with the schema above.
-- <code>table_name="my_table"</code> to use a different table name (still auto-created with
-  the default schema).
-- <code>create_table=False</code> for existing tables — requires at minimum <code>(key TEXT PK,
-  data BLOB)</code>. Optional columns (<code>size</code>, <code>modified_at</code>, <code>content_type</code>, <code>digest</code>,
-  <code>extra</code>) are detected by introspection; missing columns degrade gracefully
-  (e.g., no <code>modified_at</code> → <code>FileInfo.modified_at</code> returns <code>None</code>).
-- Column name mapping is a v2 consideration if demand materializes.</p>
-<p><strong>Performance guidelines</strong>:
-- &lt;10 MB per blob: works well across all supported databases
-- 10–100 MB: use with caution; consider <code>max_blob_size</code> guard
-- &gt;100 MB: discouraged — use a blob storage backend (S3, local) instead</p>
-<p><strong>SQLite specialization</strong> (worth it — zero-infrastructure persistent store):
-- Use <code>blobopen()</code> for streaming reads (Python 3.11+). On 3.10: fall back to
-  <code>SELECT data FROM ... WHERE key = ?</code> into <code>BytesIO</code> (full materialization,
-  no streaming). This mirrors the <code>SpooledTemporaryFile</code> 3.10 compat pattern
-  already used in <code>ext/seekable.py</code>.
-- Enable WAL mode (<code>PRAGMA journal_mode=WAL</code>)
-- Set <code>PRAGMA synchronous=NORMAL</code> for better write performance
-- Use <code>GLOB</code> operator instead of <code>LIKE</code> for pattern matching</p>
-<hr />
-<h2 id="4-serialization-pipeline-sqlquerybackend">4. Serialization Pipeline (SQLQueryBackend)<a class="headerlink" href="#4-serialization-pipeline-sqlquerybackend" title="Permanent link">&para;</a></h2>
-<h3 id="resultserializer-abstraction">ResultSerializer abstraction<a class="headerlink" href="#resultserializer-abstraction" title="Permanent link">&para;</a></h3>
-<p>Serialization needs a clean boundary — not inline logic in <code>read()</code>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ResultSerializer</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span><span class="sd">"""Converts a SQL result set to bytes in a specific format."""</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">serialize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">:</span> <span class="n">CursorResult</span><span class="p">,</span> <span class="nb">format</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BinaryIO</span><span class="p">:</span> <span class="o">...</span>
-</code></pre></div>
-<p>Built-in implementations:
-- <code>ArrowSerializer</code> — default, uses PyArrow: result → Arrow Table → Parquet/CSV/IPC
-- <code>ADBCSerializer</code> — optional fast path, zero-copy Arrow-native for supported DBs</p>
-<p>Benefits: testable in isolation, swappable, enables future formats without touching
-backend logic.</p>
-<h3 id="sql-bytes-pipeline">SQL → Bytes pipeline<a class="headerlink" href="#sql-bytes-pipeline" title="Permanent link">&para;</a></h3>
+<h2 id="2-the-transposition">2. The transposition<a class="headerlink" href="#2-the-transposition" title="Permanent link">&para;</a></h2>
+<h3 id="21-the-working-hypothesis-for-software">2.1 The Working Hypothesis for software<a class="headerlink" href="#21-the-working-hypothesis-for-software" title="Permanent link">&para;</a></h3>
+<p>Stated in Tao's template form:</p>
+<blockquote>
+<p><strong>Working Hypothesis (software).</strong> Coding agents will, reasonably soon, become
+capable of performing a reasonable fraction of production software engineering
+tasks, with reasonable levels of success, quality, supervision, and cost.</p>
+</blockquote>
+<p>The first disanalogy is immediate and important: <strong>in software this hypothesis is
+much less contested, and the contamination Tao warns about is worse.</strong> Adoption
+is near-universal — the 2025 Stack Overflow Developer Survey reports 84% of
+developers using or planning to use AI tools, up from 76% in 2024 — while trust
+runs the other way, with 46% distrusting output accuracy against 29% trusting it.
+CloudBees' 2026 survey of 213 enterprise technology leaders reports AI generating
+or assisting 61% of the average enterprise codebase.</p>
+<p>So the software community has, in effect, already accepted the Working
+Hypothesis in practice without ever having the goals-and-values conversation Tao
+is asking for. That is the opposite ordering from mathematics, and it is the
+central reason the transposed argument is urgent rather than speculative.</p>
+<p>The contamination warning also lands harder. Tao notes that public capability
+evidence is "highly subject to reporting bias and non-scientific incentives, with
+some important costs and variables remaining undisclosed." Software's closest
+thing to a controlled trial found the opposite of the marketing: METR's 2025
+randomized controlled trial of 16 experienced open-source developers across 246
+real tasks measured a 19% <em>slowdown</em> with AI tools, while the same developers
+estimated a 20% speedup after the fact. METR itself now labels that result
+historical. The point is not that the result still holds; it is that a
+perception-reality gap of ~39 percentage points was measurable at all, and that
+almost no other software capability claim has been tested this way.</p>
+<h3 id="22-the-goals-and-values-question-for-software">2.2 The Goals and Values Question for software<a class="headerlink" href="#22-the-goals-and-values-question-for-software" title="Permanent link">&para;</a></h3>
+<blockquote>
+<p><strong>Goals and Values Question (software).</strong> What are the precise goals of a
+software engineering organization, and of the practice of software
+engineering? Not just the goals stated to executives, boards, or the market,
+but the implicit ones actually pursued.</p>
+</blockquote>
+<p>An honest list, matching Tao's:</p>
+<ul>
+<li>Ship working features to users.</li>
+<li>Build systems that can still be changed in five years.</li>
+<li>Understand the system well enough to operate it under failure.</li>
+<li>Keep the system secure and compliant.</li>
+<li>Build and hold a team.</li>
+<li>Train the next generation of engineers.</li>
+<li>Contribute to the shared commons (libraries, standards, published knowledge).</li>
+<li>Create artifacts of enduring craft value.</li>
+</ul>
+<p>As in mathematics, these were historically correlated. Writing the feature
+<em>was</em> how you came to understand it; the person who understood it was the person
+who could operate it; operating it was how a junior became a senior. The
+correlation was so reliable that the industry built its instruments on it — the
+truck factor estimates retained knowledge by measuring authorship footprint,
+because typing code and understanding code came bundled.</p>
+<p><strong>Agents break the bundle.</strong> This is the software-specific form of Tao's
+divergence diagram, and it has been named precisely: "The Substrate Collapse"
+(arXiv 2606.20882) argues that a truck factor over an agent-written codebase
+"still returns a number, and the number is meaningless — not approximately, but
+in the precise sense that the thing it measures, the distribution of authorship
+footprint, has stopped being correlated with the thing it was used to estimate,
+the distribution of retained theory." The mechanism is exactly Tao's: "you
+couldn't write a retry mechanism without briefly holding the failure modes in
+your head," and now you can.</p>
+<p>The deep version of this is 40 years old. Peter Naur's <em>Programming as Theory
+Building</em> (1985) holds that the program is not the artifact; the theory of the
+program — held in the heads of the people who built it — is. Code is a
+projection of the theory, and when the theory is lost the code becomes
+unmaintainable regardless of its quality. Naur's argument runs on a comparison of
+two teams building a compiler: the group that built it from scratch could extend
+it safely, and a second group handed the finished code <em>and</em> complete
+documentation could not, because the theory does not survive the translation into
+text. His conclusion, that the only way to acquire the theory is active
+engagement in developing the program, is the precise software analogue of Tao's
+canonicalization stage: the slowest, least automatable, and most valuable step.</p>
+<h3 id="23-three-debts-not-one">2.3 Three debts, not one<a class="headerlink" href="#23-three-debts-not-one" title="Permanent link">&para;</a></h3>
+<p>"Understanding" is not one quantity, and treating it as one obscures the
+remedies. Margaret-Anne Storey's <em>triple debt model</em> ("From Technical Debt to
+Cognitive and Intent Debt: Rethinking Software Health in the Age of AI", arXiv
+2603.22106 / ACM Queue, 2026) splits it into three layers that fail
+independently:</p>
+<table>
+<thead>
+<tr>
+<th>Debt</th>
+<th>Where it lives</th>
+<th>What is missing</th>
+<th>Tao's stage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Technical</td>
+<td>The code</td>
+<td>Modularity, coherence, sound dependencies</td>
+<td>Verification</td>
+</tr>
+<tr>
+<td>Cognitive</td>
+<td>People</td>
+<td>Shared understanding of how the system works</td>
+<td>Canonicalization</td>
+</tr>
+<tr>
+<td>Intent</td>
+<td>Externalized artifacts</td>
+<td>The recorded <em>why</em> — goals, constraints, decision history</td>
+<td>Exposition</td>
+</tr>
+</tbody>
+</table>
+<p>The mapping onto Tao's pipeline in § 2.5 is the useful part. It says the three
+debts are not three views of one problem but three distinct stage failures, with
+distinct remedies: <strong>technical debt is paid down by refactoring, cognitive debt
+only by engagement, and intent debt only by writing.</strong> Nothing you do to the code
+pays down the other two.</p>
+<p><strong>Intent debt is the concept Tao's framework lacks. It is not agent-specific;
+what agents change is the failure it produces.</strong> Teams have always lost the
+rationale behind their own decisions, and a new maintainer has always had to
+guess. What is different is the response to the gap. A human who cannot find the
+why usually notices that they cannot, and either asks or proceeds cautiously.
+The rationale that was never externalized is not merely unavailable to the
+agent — the agent <em>fabricates a replacement</em>. An unstated constraint is not read
+as a gap; it is filled with the most statistically plausible assumption, which is
+how a rare financial safeguard gets "optimized" away. Rationale held in a
+senior engineer's head does not count, because a model cannot read heads. This
+is a substantially harder argument for architecture decision records than the
+pedagogical one, and it is the reason <code>AGENTS.md</code>-style intent files are load
+bearing rather than courtesy documentation.</p>
+<p><strong>Why the friction mattered.</strong> Giorgio Polvara's essay <em>The Persistence of
+Theory</em> (June 19, 2026), which is where this model reached this record, supplies
+the mechanism through Brooks' distinction between accidental and essential
+complexity. Agents are an accidental-complexity killer: they remove the friction
+of syntax, setup, and library archaeology, and leave the essential difficulty of
+deciding what to build untouched. The catch is that <strong>the friction was not
+incidental to theory building; it was the process by which the theory got
+built.</strong> Fighting a library's API was how the mental model of that library
+formed. Remove the friction and the code arrives without it. This is a stronger
+claim than Tao's, whose friction argument is about a reader being prompted to
+slow down; here the friction is load-bearing for the author.</p>
+<p><strong>The measurement exists, and it is the best evidence in this record.</strong>
+Anthropic's randomized controlled trial (published January 29, 2026) put 52
+junior engineers on an unfamiliar Python library, Trio, with and without AI
+assistance. The AI group averaged 50% on the follow-up comprehension quiz against
+67% for the hand-coding group — a 17-point gap — with debugging showing the
+steepest decline, while finishing only about two minutes faster, a difference
+that did not reach significance. Speed bought nothing and cost comprehension.</p>
+<p>The interaction-pattern result matters more than the headline. Participants who
+used AI to ask conceptual questions and request explanations scored 65% or
+higher; those who delegated code generation wholesale scored below 40%. <strong>The
+tool did not determine the outcome; the mode of use did.</strong> That is the strongest
+available evidence for the "give the talk" rule in § 6, because it shows the
+comprehension cost is avoidable rather than intrinsic — and it is a
+comprehension outcome measured directly, which is precisely the instrument this
+record argues the industry lacks.</p>
+<p>Thoughtworks' Technology Radar Vol. 34 (April 2026) places <em>codebase cognitive
+debt</em> on <strong>Hold</strong>, defining it as "the growing gap between a system's
+implementation and a team's shared understanding of how and why it works" — the
+same failure, named by a practitioner body rather than a researcher.</p>
+<p><strong>One claim in the model is not supported.</strong> Polvara's presentation of the table
+holds that generative AI <em>reduces</em> technical debt by automating refactoring and
+test-writing. The evidence in § 3 says the opposite for the code layer:
+duplication up eightfold, refactored lines down from 24.1% to 9.5%, security pass
+rates flat near 55%. The essay contradicts itself here, citing the churn doubling
+and copy-paste overtaking refactoring in a later section. The three-layer split
+survives this; the claim that one layer is now self-healing does not.</p>
+<p>What replaces it should be stated at the strength the evidence carries, which is
+uneven across the three. Technical debt worsening is measured (GitClear,
+Veracode, § 3). Cognitive debt worsening is measured once, by the Anthropic RCT,
+on 52 juniors and one library. <strong>Intent debt worsening is not measured anywhere
+in this record</strong> — it is inferred from the fabrication mechanism above, and no
+study here counts unrecorded rationale before and after agents. So the honest
+form is that AI is shown to worsen one layer, indicated to worsen a second, and
+argued to worsen a third; and that the cognitive and intent layers are the novel
+ones is a claim about the model's contribution, not about the evidence.</p>
+<p><strong>The model is diagnostic, and its remedies are paydown remedies.</strong> This is its
+main limitation, and correcting it is the most useful thing this record can add
+to it. Storey and Polvara both answer the question "what do you do about the
+debt" with work performed after the debt exists: write the architecture decision
+records, run pair programming, schedule AI-free checkpoints, explain the code to
+a peer. Those are repayments. They presume the debt was taken on and is now
+being serviced.</p>
+<p>There is a third posture the model does not name: <strong>arrange the workflow so the
+debt cannot be taken on.</strong> Prevention differs from paydown in what it constrains
+— it fixes the <em>order</em> of operations rather than adding a later obligation:</p>
+<table>
+<thead>
+<tr>
+<th>Debt</th>
+<th>Paydown remedy</th>
+<th>Preventive control</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Technical</td>
+<td>Refactoring sprints, cleanup backlogs</td>
+<td>Merge gates: conformance suites, coverage floors, mutation testing</td>
+</tr>
+<tr>
+<td>Intent</td>
+<td>Write the ADR afterwards</td>
+<td>The <em>why</em> is required before the code exists — no implementation without a spec section, decision records immutable once accepted</td>
+</tr>
+<tr>
+<td>Cognitive</td>
+<td>Pair programming, AI-free checkpoints, explain-to-a-peer</td>
+<td>Mandate the engagement in the workflow itself — reproduce the bug and watch the test fail before fixing; read the change's ripple set before starting; verify behaviour by running it, never by type-checking it</td>
+</tr>
+</tbody>
+</table>
+<p><strong>For cognitive debt the distinction is not a preference. It is the whole
+game.</strong> The three debts differ in whether they can be serviced late, and this is
+the asymmetry neither source draws out. Technical debt is fully repayable:
+badly-shaped code can be refactored into good shape at any later date, by someone
+who never saw the original. Intent debt is partially repayable: rationale can be
+reconstructed after the fact, degraded and lossy, but reconstructed. <strong>Cognitive
+debt is repayable only forward, never backward.</strong> Understanding can be rebuilt
+later — the trial in the appendix rebuilds some of it, and cheaply — but no
+later action makes you have understood at the moment you needed to, and the
+decisions taken in that window were taken without it. The change merged, the
+review passed, the incident was handled or was not. So the debt is not
+unpayable; what is unpayable is the interest, and the interest is every decision
+made while the theory was thin.</p>
+<p>An earlier draft said "not repayable at all", which the appendix contradicts.
+The narrower claim is also the stronger one: prevention does not win because
+nothing else could work, it wins because nothing else arrives in time.</p>
+<p>That is why the preventive column is load-bearing, and it is where the RCT above
+and Naur converge. Both are statements about <em>when</em> understanding forms — mode
+of use during the work, active engagement in developing the program — rather
+than about what remedies or documents exist afterwards.</p>
+<h3 id="24-goodhart-applied">2.4 Goodhart, applied<a class="headerlink" href="#24-goodhart-applied" title="Permanent link">&para;</a></h3>
+<p>Every conventional engineering metric measures volume, speed, or frequency of
+human effort, and every one of them can now be inflated by an agent without
+corresponding value: lines of code, commit count, PR count, story points, and —
+newly — token spend, in the practice already named "tokenmaxxing." Tao's
+formulation applies verbatim: when a measure becomes a target it ceases to be a
+good measure, and generative AI's ungroundedness plus vendor financial incentives
+make software unusually exposed.</p>
+<p>Note that the DORA metrics themselves partially survive, because two of them
+(change failure rate, time to restore) measure outcomes rather than effort. This
+is the discriminator: <strong>metrics that measure what happened as a result of the
+work survive; metrics that measure how much work happened do not.</strong></p>
+<h3 id="25-the-pipeline-with-one-extra-stage">2.5 The pipeline, with one extra stage<a class="headerlink" href="#25-the-pipeline-with-one-extra-stage" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Tao's stage</th>
+<th>Software analogue</th>
+<th>What it produces</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Proof generation</td>
+<td>Code generation</td>
+<td>An unverified diff</td>
+</tr>
+<tr>
+<td>Proof verification</td>
+<td>Tests, types, CI, static analysis, formal methods</td>
+<td>A diff that passes its checks</td>
+</tr>
+<tr>
+<td>Proof exposition</td>
+<td>Commit messages, PR descriptions, docs, comments, ADRs</td>
+<td>A diff a reviewer can follow</td>
+</tr>
+<tr>
+<td>Proof publication</td>
+<td>Code review and merge</td>
+<td>A diff in the main branch</td>
+</tr>
+<tr>
+<td>—</td>
+<td><strong>Operation</strong></td>
+<td>A diff running in production, under someone's pager</td>
+</tr>
+<tr>
+<td>Proof canonicalization</td>
+<td>The team's shared theory: architecture, conventions, libraries, onboarding material</td>
+<td>A change absorbed into how the system is understood</td>
+</tr>
+</tbody>
+</table>
+<p>The extra stage is the largest structural difference, and it cuts against
+software. A published proof that nobody fully understands sits inertly in the
+literature; it does not wake anyone at 3am. Software does. Brent Chapman, writing
+on the on-call cost of AI-generated code (June 2026, linked in § Sources), puts
+it exactly: "the team's ratio of 'code in production' to 'code we understand
+deeply enough to debug under pressure' has shifted, and it's shifted in the wrong
+direction for incident response." Like every quotation in this record, it reached
+here through a search extraction rather than the post itself; § 4 states that
+bound for the table and it applies to quotations too.</p>
+<p>Tao asks, of mathematics, "Could we have a verified proof of a major result that
+no human understands enough to explain it?" The software version is not
+hypothetical and not rhetorical: <strong>we already run systems no one understands well
+enough to explain, and they fail.</strong></p>
+<h2 id="3-impedance-mismatch-stage-by-stage">3. Impedance mismatch, stage by stage<a class="headerlink" href="#3-impedance-mismatch-stage-by-stage" title="Permanent link">&para;</a></h2>
+<p>Tao's prediction is that under cheap generation, every downstream stage jams. In
+software this is not a prediction. Each stage has measured evidence.</p>
+<p><strong>Generation is cheap and getting cheaper.</strong> This is the premise, and it is met.</p>
+<p><strong>Verification is partially cheap, and that is a trap.</strong> Software's genuine
+advantage over mathematics is a mature stack of partial oracles: tests, types,
+CI, fuzzing, static analysis. But their coverage is narrower than it looks.
+Veracode's GenAI Code Security Report (2025, 80 curated tasks across 100+ models)
+found models chose the insecure implementation 45% of the time when given the
+choice; its Spring 2026 update reports syntax-correctness above 95% while
+security pass rates sit near 55%, roughly unchanged over two years. The deeper
+problem is the <strong>oracle problem</strong>: when the same agent writes both the code and
+its tests, the tests optimize for passing rather than for correctness, and the
+verification stage silently degrades into a second generation stage.</p>
+<p><strong>Exposition degrades in exactly the way Tao describes.</strong> His complaint about
+AI-written proofs — flawless surface, disproportionate attention to trivialities,
+no connection to prior work — has a direct measurement. A study of 23,247
+agent-authored pull requests across five agents (MSR 2026) found that among
+high-inconsistency PRs the dominant failure was "descriptions claim unimplemented
+changes" (45.4%), followed by scope understatement (22.0%) and placeholder
+descriptions (18.8%); those PRs had 51.7 percentage points lower acceptance
+(28.3% vs 80.0%) and took 3.5× longer to merge. Agents write better commit
+messages than humans at the individual-commit level and worse summaries at the
+PR level — that is, they are good at local description and bad at telling you
+what the change means, which is Tao's complaint restated.</p>
+<p><strong>Publication is the visible jam.</strong> This is where software's indigestion is
+loudest. Reported 2026 telemetry: median code review time up 441.5% across 22,000
+developers (Faros AI) against task throughput up 33.7%; AI-assisted PRs roughly
+2.5× larger and waiting ~5× longer for a reviewer across 8.1M PRs (LinearB);
+feature-branch throughput up 59% year over year while median-team <em>main branch</em>
+throughput fell (CircleCI). That last pair is the impedance mismatch in a single
+statistic: more work entering the pipe, less work leaving it.</p>
+<p>In open source the jam has already broken things. The Jazzband collective shut
+down, citing unsustainable volumes of AI-generated spam PRs and issues; Godot
+maintainers describe triaging AI slop as demoralizing; curl cancelled its bug
+bounty because it became a magnet for low-effort AI submissions. The mechanism is
+worth naming precisely, because it is more general than AI: <strong>agentic generation
+removes the effort-based backpressure that used to make low-quality submission
+self-limiting.</strong> Peer review was never designed as a filter; it worked because
+producing a submission was expensive.</p>
+<p><strong>Operation degrades.</strong> CloudBees (2026, n=213): 81% of enterprise technology
+leaders report production issues tied to AI-generated code. DORA's 2025 report
+(n≈5,000 professionals) finds AI adoption associated with increased throughput
+<em>and</em> increased delivery instability simultaneously. A Lightrun survey (April
+2026) reports 43% of AI-generated code changes requiring debugging in production.</p>
+<p><strong>Canonicalization degrades most, and quietly.</strong> GitClear's analysis of 211
+million changed lines (January 2020 – December 2024) found refactored ("moved")
+lines falling from 24.1% to 9.5% of changes, duplicated code blocks rising
+eightfold in 2024, and code revised within two weeks of commit rising from 3.1%
+to 5.7%. Read against Tao's framing, these are not code-quality statistics.
+Refactoring and consolidation <em>are</em> canonicalization: the act of working a
+solution into the definitive form of the system. A measured collapse in
+refactoring share is a measured collapse in the stage Tao calls "the most
+valuable part of the entire process."</p>
+<p>Architecture research reaches the same place from another angle: agents achieve
+structural modularity while failing at semantic cohesion, producing a "modular
+mirage" where file separation does not correspond to logical separation (arXiv
+2605.02741).</p>
+<p><strong>And the substrate dependency holds.</strong> This is the sharpest practical argument
+against letting canonicalization decay, so it is worth stating at length rather
+than as a closing line. Tao observes that AI mathematics depends on painstakingly
+canonicalized human theory. The software counterpart is reported rather than
+measured, and the distinction matters because this premise is load bearing:
+agents are described as performing markedly better on popular, well-documented
+libraries that are dense in training data, and as misusing niche or newly
+released ones, with human-oriented documentation often insufficient to close the
+gap. The § 4 row for this cites the evidence that exists — a vendor evaluation
+putting standalone agents near 60% accuracy across open-source library tasks, and
+the ReadMe.LLM line of work premised on the same failure — and neither is a
+controlled measurement of the density-to-quality relationship the argument needs.
+<strong>So premise 2 below is the weakest link in this section, and the conclusion
+inherits that.</strong> An earlier draft called it "measurable", which claimed an
+evidence class without producing an instance.</p>
+<p>Two claims chain here, and the conclusion follows from their conjunction rather
+than from either one alone.</p>
+<ol>
+<li><strong>Agents cannot do canonicalization.</strong> It is the accumulation of agreement
+   about what the right shape is, across people and across time, which is exactly
+   what an entity whose theory dies with its context window cannot accumulate.
+   § 5 argues that this is structural rather than a limitation of current models.</li>
+<li><strong>Agent quality is a function of canonicalized material.</strong> The canon is the
+   training corpus. Where a domain has been worked into a settled form the agent
+   is good at it; where it has not, the agent invents.</li>
+</ol>
+<p>So the one output agents cannot produce is the main input to how well they
+perform. <strong>The stage the agents cannot do — canonicalization, the last one in
+§ 2.5 — is the stage that determines how well the agents work.</strong> It is the
+binding constraint on the whole pipeline rather than its final chore.</p>
+<p>Two consequences follow, and both cut against what the rest of this section
+would suggest on its own.</p>
+<p><strong>Neglecting it is self-undermining.</strong> Under agents every other stage
+accelerates, and this one measurably decelerates: the refactoring share above
+fell from 24.1% to 9.5% across the window in which generation got cheap. The
+input agents depend on therefore degrades precisely as agents produce more of
+everything else. No other stage in the pipeline has that property, which is what
+makes this failure different in kind from the backlogs described above rather
+than merely larger.</p>
+<p><strong>It inverts the intuitive allocation of scarce human attention.</strong> The natural
+move under cheap generation is to spend people on whatever agents cannot do yet
+and treat that work as residue. This argument says the opposite: what agents
+cannot do is not residue, it is the multiplier on everything they can.
+Consolidating five near-duplicate implementations into one well-named abstraction
+is not cleanup. It raises the ceiling on every future agent run against that
+code, which is what makes proposal 2 in § 6 an economic claim rather than a
+matter of taste.</p>
+<p><strong>One qualification, because the argument runs on two mechanisms with very
+different levers and stating it as one overstates what a team can do.</strong> The
+global half is training-data density, and no team controls it: you cannot
+canonicalize your way into a model's weights, and a team maintaining a niche
+library is on the wrong side of that however well it works. The half a team does
+control is its local canon — the repository's own conventions, abstractions and
+recorded rationale, which reach the agent through context rather than through
+training. Both obey the same logic and answer to entirely different effort, so a
+recommendation derived from the global half would be advice nobody can take. The
+comprehension trial in the appendix is the local half appearing as evidence:
+seven sources, enumerated there, recovered the contested reasoning — not because
+the model knew this repository, but because the local canon made reconstruction
+cheap.</p>
+<h2 id="4-figures-and-their-derivations">4. Figures and their derivations<a class="headerlink" href="#4-figures-and-their-derivations" title="Permanent link">&para;</a></h2>
+<p>Per <a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#principles"><code>CLAUDE.md</code> principle 9</a>, each figure names its
+source.</p>
+<p><strong>"Extraction" means the figure comes from a search-engine extraction of the
+primary rather than from reading the primary.</strong> An earlier draft defined it as
+"the primary was unreachable", which was wrong for most of the rows carrying it
+and hid the distinction a reader needs. Two different situations produce the
+label, and only the first is a blocked door:</p>
+<ul>
+<li><strong>Attempted and refused.</strong> <code>arxiv.org</code>, <code>dora.dev</code>, <code>martinfowler.com</code>,
+  <code>simonwillison.net</code>, <code>leidendeclaration.ai</code>, <code>flowverify.co</code>, <code>polvara.me</code>,
+  <code>queue.acm.org</code> and <code>margaretstorey.com</code> were fetched and returned 403 under
+  the environment's egress policy. The DORA, arXiv, Storey and the four
+  "(secondary)" rows sit here.</li>
+<li><strong>Not attempted.</strong> The remaining seven rows — METR, Stack Overflow, CloudBees,
+  GitClear, Veracode, Anthropic and Thoughtworks — cite primaries on domains that
+  were never fetched. Nothing is known about whether they are reachable; the
+  figures were taken from search results and the primary was not opened.</li>
+</ul>
+<p>The second class is the weaker provenance of the two, because a blocked fetch at
+least establishes that the primary was sought. <strong>No row in this table was read
+from its primary document.</strong> That is worth stating plainly next to the row this
+record calls its best evidence: the Anthropic RCT figures are second-hand, and a
+reader weighting the 50%-versus-67% result should discount accordingly.</p>
+<table>
+<thead>
+<tr>
+<th>Figure</th>
+<th>Source</th>
+<th>Sample / date</th>
+<th>Access</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>19% slowdown; 20% perceived speedup</td>
+<td>METR RCT</td>
+<td>16 devs, 246 tasks, Jul 2025</td>
+<td>Extraction</td>
+</tr>
+<tr>
+<td>84% use/plan AI; 46% distrust; 66% "almost right"; 45% lose time debugging</td>
+<td>Stack Overflow Developer Survey 2025</td>
+<td>Published Dec 2025</td>
+<td>Extraction</td>
+</tr>
+<tr>
+<td>61% of enterprise codebase AI-written; 81% report production issues</td>
+<td>CloudBees State of Code Abundance</td>
+<td>n=213 leaders, May 2026, ±8%</td>
+<td>Extraction</td>
+</tr>
+<tr>
+<td>Throughput up and instability up together; seven capabilities</td>
+<td>DORA State of AI-assisted Software Development 2025</td>
+<td>~5,000 professionals</td>
+<td>Extraction</td>
+</tr>
+<tr>
+<td>Review time +441.5%; throughput +33.7%</td>
+<td>Faros AI 2026 telemetry</td>
+<td>22,000 developers</td>
+<td>Extraction (secondary)</td>
+</tr>
+<tr>
+<td>PRs 2.5× larger, 5× longer wait</td>
+<td>LinearB benchmarks</td>
+<td>8.1M PRs, 2026</td>
+<td>Extraction (secondary)</td>
+</tr>
+<tr>
+<td>Feature-branch throughput +59%, main-branch throughput down</td>
+<td>CircleCI 2026 data</td>
+<td>—</td>
+<td>Extraction (secondary)</td>
+</tr>
+<tr>
+<td>Refactoring 24.1%→9.5%; duplication 8×; churn 3.1%→5.7%</td>
+<td>GitClear AI Code Quality</td>
+<td>211M lines, Jan 2020–Dec 2024</td>
+<td>Extraction</td>
+</tr>
+<tr>
+<td>45% insecure choice; ~55% security pass rate</td>
+<td>Veracode GenAI Code Security 2025 / Spring 2026</td>
+<td>80 tasks, 100+ models</td>
+<td>Extraction</td>
+</tr>
+<tr>
+<td>1.7% high-inconsistency PRs; 45.4% claim unimplemented changes; 28.3% vs 80.0% acceptance; 3.5× merge time</td>
+<td>Message-Code Inconsistency study (arXiv 2601.04886)</td>
+<td>23,247 agentic PRs, 5 agents, 974 annotated</td>
+<td>Extraction</td>
+</tr>
+<tr>
+<td>43% of AI changes need production debugging</td>
+<td>Lightrun survey</td>
+<td>Apr 2026</td>
+<td>Extraction (secondary)</td>
+</tr>
+<tr>
+<td>50% vs 67% comprehension; 17-point gap; ~2 min faster, not significant; 65%+ conceptual-question users vs &lt;40% delegators</td>
+<td>Anthropic, "How AI assistance impacts the formation of coding skills"</td>
+<td>RCT, 52 junior engineers, published 29 Jan 2026</td>
+<td>Extraction</td>
+</tr>
+<tr>
+<td><em>Codebase cognitive debt</em> on Hold</td>
+<td>Thoughtworks Technology Radar Vol. 34</td>
+<td>Apr 2026</td>
+<td>Extraction</td>
+</tr>
+<tr>
+<td>Triple debt model</td>
+<td>Storey, arXiv 2603.22106 / ACM Queue</td>
+<td>Analytical, 2026</td>
+<td>Extraction, reached via Polvara (below)</td>
+</tr>
+<tr>
+<td>Truck-factor invalidation argument</td>
+<td>"The Substrate Collapse" (arXiv 2606.20882)</td>
+<td>Analytical, Jun 2026</td>
+<td>Extraction</td>
+</tr>
+<tr>
+<td>Modular mirage</td>
+<td>arXiv 2605.02741</td>
+<td>2026</td>
+<td>Extraction</td>
+</tr>
+<tr>
+<td>Junior employment −9–10% within six quarters at AI-adopting firms; senior flat; mechanism is slowed hiring</td>
+<td>Hosseini &amp; Lichtinger, "Generative AI as Seniority-Biased Technological Change"</td>
+<td>62M workers, 285,000 US firms, 2015–2025, published Aug 2025</td>
+<td>Extraction (not attempted)</td>
+</tr>
+<tr>
+<td>Agents near 60% accuracy across open-source library tasks; niche libraries misused</td>
+<td>Tessl coding-agent evaluation; ReadMe.LLM (arXiv 2504.09798)</td>
+<td>2025–2026; neither is a controlled density-to-quality measurement</td>
+<td>Extraction</td>
+</tr>
+<tr>
+<td>SDD artifact counts</td>
+<td>This repo</td>
+<td><code>ls</code> commands in § Appendix</td>
+<td>Direct</td>
+</tr>
+</tbody>
+</table>
+<p>One row needs its provenance stated rather than cited. Polvara's essay is
+unreachable from this environment — <code>polvara.me</code> returns 403 under organization
+egress policy, as do <code>queue.acm.org</code>, <code>arxiv.org</code> and <code>margaretstorey.com</code> — and
+search does not index it. The text used here was supplied directly by the reader
+who raised it, and its claims were checked against independently reachable
+sources before use: the Anthropic and Thoughtworks rows above were verified that
+way, and one claim in the essay was rejected on that basis (§ 2.3, under
+"One claim in the model is not supported"). Its own footer records that it was researched with an AI deep-research
+tool and edited by its author, which is a reason for the checking rather than an
+objection to the essay.</p>
+<p>Four cautions about this table. The Faros/LinearB/CircleCI/Lightrun rows are
+vendor telemetry reported through a secondary aggregator, and vendors selling
+review tooling have an interest in a review crisis. The GitClear correlation is
+temporal, not causal — 2020–2024 also contains a hiring bust and a rates cycle.
+The Anthropic RCT is vendor-published research about the vendor's own product
+category, and it is small (52 juniors, one unfamiliar library, one task); the
+mitigating fact is that its headline result cuts against the publisher's
+commercial interest, which is the rarer direction of bias. And Tao's own warning
+applies to the whole table: this is largely uncontrolled evidence gathered under
+commercial incentives. It is consistent, which is something, but consistency
+across biased sources is weaker than it feels.</p>
+<h2 id="5-where-the-analogy-breaks">5. Where the analogy breaks<a class="headerlink" href="#5-where-the-analogy-breaks" title="Permanent link">&para;</a></h2>
+<p>Faithfulness requires marking the disanalogies. Six are marked below, one per
+bold lead, and all of them change a recommendation in § 6 except the third —
+software's deletability, which reframes the stakes without moving any proposal.
+§ 2.1 marks a seventh, the adoption-ordering point, which sits there rather than
+here because it is about how the two communities arrived, not about how they
+differ.</p>
+<p><strong>Software's peer review is far weaker than mathematics'.</strong> Tao can lean on
+editors, referees, and community acceptance as a backstop that "cannot be
+optimized purely by the authors and their AI tools." Software's equivalent is
+typically one colleague, under deadline, in a private repository, with no
+external record and no referee report. Where Tao worries that AI output will
+<em>overwhelm</em> peer review, software's review was already the weak link — and the
+2026 review-bottleneck reporting behind the § 4 row for Faros, LinearB and
+CircleCI adds that reviewers approve agent-authored PRs more readily despite
+those PRs carrying more technical debt on average. That claim inherits the
+weakest provenance in the table, being vendor telemetry read through a secondary
+aggregator, and it is the evidential half of this disanalogy — so the disanalogy
+rests more on the structural argument than on the measurement. <strong>The backstop Tao relies on does
+not exist in software at comparable strength, so software cannot solve its
+version of the problem by protecting review alone. It has to build capacity that
+mathematics already had.</strong></p>
+<p><strong>Software has cheap partial oracles; mathematics does not.</strong> This is software's
+genuine advantage and it should be pressed hard. A test suite is a weaker
+guarantee than a Lean proof but incomparably cheaper than a referee, and it runs
+on every change forever. Formal methods research in 2026 is converging on using
+verifiers as ground-truth oracles precisely because AI-generated tests inherit
+the generator's blind spots. The strategic implication: software should invest in
+the stage where it has an advantage mathematics lacks, rather than importing
+mathematics' referee-centric answer wholesale.</p>
+<p><strong>Software is deletable; mathematics is cumulative.</strong> A wrong proof pollutes the
+literature permanently; wrong code can be reverted. This cuts both ways and the
+second way is worse: reverted code still ran, still leaked data, still lost
+money. Software's mistakes are cheaper to <em>remove</em> and more expensive to <em>make</em>.</p>
+<p><strong>Software's understanding loss is self-reinforcing; mathematics' is not.</strong> This
+is the disanalogy with the sharpest consequences, and it comes from the debt
+model in § 2.3. Cognitive debt feeds itself: code arrives faster than the team
+can build theory, the thinner theory makes the team less able to work
+unassisted, and the response to being less able to work unassisted is to delegate
+more. Mathematics has no comparable loop. A mathematician who understood the last
+AI-assisted proof less does not thereby become more dependent on AI for the next
+one; the proof is a terminal artifact and the field's canon is public and
+shared. A codebase is re-entered continuously by the same small group, so each
+round of delegation raises the cost of the next non-delegated round.</p>
+<p>The practical implication is that Tao's gradualism does not transfer. He can
+describe indigestion as a backlog that accumulates and can be worked off with
+policy changes. A positive feedback loop cannot be worked off later by the same
+means; it has to be damped while the team still has the capacity to damp it.</p>
+<p>Compounding is what § 2.3's forward-only argument was missing. A debt you can
+only repay forward is survivable if it holds still; one that grows while you are
+not repaying it is not. That conjunction, and not either half, is why this record
+treats workflow ordering as an engineering control rather than a cultural
+preference.</p>
+<p><strong>Agents cannot hold the theory, and this is structural rather than a capability
+gap.</strong> A tempting escape from all of the above is that agents will hold the
+theory instead. They do build one — a coding agent forms hypotheses, tests them,
+and revises its model of a system, which is recognizably theory building — but
+they are amnesiacs. The theory lives in an ephemeral context window and is
+rebuilt from scratch each session, and session summaries are lossy compressions
+of exactly the tacit content Naur says does not survive translation into text.
+Worse, agents working separately build subtly incompatible local theories of the
+same system, which is architectural drift arriving from a new direction.</p>
+<p>This is why the Working Hypothesis in § 2.1 does not rescue the argument. A
+stronger agent writes better code; it does not accumulate the cross-session,
+cross-agent shared theory that Tao's canonicalization stage consists of. The
+stage stays human by construction, not by current limitation.</p>
+<p>One qualification, from a trial run on this record's own author and reported in
+the appendix. Amnesia bounds what an agent <em>retains</em>; it does not bound how
+cheaply the theory can be <em>rebuilt</em> at the start of a session, and that cost is a
+property of the artifacts rather than of the agent. Where the recorded rationale
+sits at the points where the reasoning was contested, rebuilding is fast enough
+to change the economics of requiring it. The stage still stays human — nothing
+here accumulates across sessions — but the reconstruction cost is a design
+variable, not a constant.</p>
+<p><strong>Understanding is instrumental in software and terminal in mathematics — but
+the distinction is thinner than it first appears.</strong> Thurston's line, which Tao
+quotes — "the measure of our success is whether what we do enables people to
+understand and think more clearly" — makes understanding the product. In software
+the product is working systems, and understanding is a means. That much holds,
+and it is the honest reason teams will be tempted to skip the digestion stage:
+they can, for a while.</p>
+<p>An earlier draft of this record stopped there. That was too clean. Given the
+feedback loop above, understanding in software is not merely one input among
+others that can be traded against delivery speed: it is the variable that
+determines whether the delegation loop is stable or divergent. A means you can
+spend down to zero and still have a system is instrumental. A means whose
+depletion accelerates its own depletion is a control variable, and it has to be
+managed as one. The argument for not skipping digestion is therefore stronger
+than "change, incident response, security review, and audit all cash out
+understanding, and they arrive later than the ship date" — though they do.</p>
+<h2 id="6-proposals">6. Proposals<a class="headerlink" href="#6-proposals" title="Permanent link">&para;</a></h2>
+<p>Tao's three recommendations transpose directly. Five more are software-specific,
+following from the disanalogies above.</p>
+<p><strong>1. Normalize disclosure; do not drive it covert.</strong> Tao's worst case is authors
+using AI covertly and concealing it to avoid criticism. Open source has already
+converged on a mechanism: the <code>Assisted-by:</code> git trailer. The Linux kernel's AI
+coding assistants policy prescribes <code>Assisted-by: AGENT_NAME:MODEL_VERSION</code> and
+is explicit that agents must not add <code>Signed-off-by</code> — liability stays with the
+human. Fedora requires disclosure when a significant part of a contribution is
+taken from a tool unchanged. QEMU is moving from a blanket ban toward
+disclosure-based acceptance for mechanical changes, tests, docs, and small fixes.</p>
+<p>The operational payoff is not moral. It is that provenance metadata survives to
+the incident: at 3am it tells you whether the change you are staring at was
+reviewed deeply or approved quickly, and who to wake.</p>
+<p><strong>2. Shift emphasis from generation to digestion.</strong> Tao: decrease emphasis on
+proof generation and being first; increase emphasis on exposition, publication,
+and canonicalization. Software's version is concrete and unpopular: <strong>promote
+people for review throughput, consolidation, deletion, and documentation, not for
+PR count.</strong> Given the collapse in refactoring share, the highest-leverage
+engineering work available in 2026 is probably consolidating what agents have
+already produced. The leverage is the substrate argument in § 3: consolidation
+raises the ceiling on every subsequent agent run against that code rather than
+merely tidying the last one, which is why this is an economic claim and not a
+plea for craftsmanship. Almost no compensation system rewards it.</p>
+<p><strong>3. The talk rule, transposed.</strong> Tao: if the authors cannot give a clear,
+expert-level talk on the result, that is correct and properly attributed, do not
+publish it. Software's version:</p>
+<blockquote>
+<p><strong>If no human on the team can explain the change at review depth — why this
+approach, what it breaks, how it fails, and how they would debug it in
+production — it does not merge.</strong></p>
+</blockquote>
+<p>This is a stronger claim than "review it." It is a claim about a named person
+holding the theory. It is testable in the review conversation, it degrades
+gracefully (the answer can be "not yet"), and it is the only proposal here that
+directly defends the operation stage.</p>
+<p>Two independent supports arrived after this proposal was drafted, and both
+strengthen it. Polvara reaches the same practice from Naur rather than from Tao,
+recommending that developers be required to explain AI-generated code verbally to
+peers — the same test, derived from theory building instead of from
+mathematical publication norms, which is weak evidence that the test is the
+natural one rather than an artifact of the transposition. And the Anthropic RCT
+in § 2.3 supplies the mechanism: the comprehension gap tracked mode of use, not
+tool access, so a rule that forces explanation is not merely an audit of
+understanding after the fact. It changes how the code gets read in the first
+place, which is where the 65%-versus-40% split was decided.</p>
+<p><strong>4. Make verification adversarial, and never let one agent close the loop.</strong>
+Press software's oracle advantage, but respect the oracle problem: the agent that
+writes the implementation should not be the sole author of the property it is
+checked against. Practical forms — human-written tests with agent-written
+implementations, property-based tests over agent-generated code, formal twins
+checked against the implementation, mutation testing to verify the tests
+themselves have teeth. The general rule: <strong>the specification and the
+implementation should not have the same author, human or not.</strong></p>
+<p><strong>5. Treat the harness as the deliverable.</strong> DORA 2025's central finding is that
+AI amplifies existing capability rather than supplying it, and it names seven
+capabilities that decide the direction of amplification, including a clear AI
+stance, strong version control, small batches, and quality internal platforms.
+The corollary for teams adopting agents: the gates, hooks, checks, and
+specifications that constrain an agent are not overhead around the work — with
+cheap generation they <em>are</em> the work, because they are the only part that does
+not scale with token spend.</p>
+<p><strong>6. Preserve natural friction in exposition.</strong> Tao's most counter-intuitive
+point: over-polished writing presents routine and difficult steps as equally
+easy, removing the friction that tells a reader to slow down, and human
+"mistakes" in exposition can help. The software version is to record what was
+hard — the approaches that failed, the constraint that forced the design, the
+part that is subtle. This is what an architecture decision record is for, and
+what an agent-written PR description systematically omits, because the agent
+found nothing hard.</p>
+<p><strong>7. Defend the training pipeline explicitly.</strong> Tao lists training the next
+generation among the goals that used to be correlated with the others and warns
+they may diverge. In software the divergence is already measured. Hosseini and
+Lichtinger's <em>Generative AI as Seniority-Biased Technological Change</em> (Harvard,
+August 2025) tracks 62 million workers across 285,000 US firms and finds junior
+employment at AI-adopting firms falling 9–10% within six quarters while senior
+employment holds — and the mechanism is slowed hiring rather than layoffs, which
+is what makes it a pipeline effect rather than a headcount one. Two
+qualifications the record owes that figure: it is economy-wide rather than
+software-specific, and firm-level AI adoption is proxied by job postings for
+integrator roles, so it measures firms that advertise adoption. Under the bundled
+regime, juniors learned by doing the work agents now do. <strong>If a team wants
+seniors in five years it now has to pay for the training path deliberately,
+because the free version was a side effect of the bundle that has broken.</strong> This
+is the goal most likely to be optimized away silently, because its costs are
+immediate and its benefits arrive after the current planning horizon.</p>
+<p><strong>8. Pick metrics that survive Goodhart.</strong> Retire volume and effort proxies —
+lines, commits, PR count, story points, token spend. Keep outcome measures —
+change failure rate, time to restore, incidents per change, and the share of
+changes whose author can explain them. Accept that the truck factor, computed
+over authorship, no longer measures retained understanding, and either
+instrument comprehension directly or stop quoting the number.</p>
+<p>One caveat on this proposal, following § 2.3. Measuring comprehension is a
+second-best control, not the primary one. A measurement reports on a window that
+has already closed, and no later measurement changes the decisions taken inside
+it. A team
+that has ordered its workflow so understanding precedes action — reproduce before
+fixing, read the ripple set before starting, run it rather than type-check it —
+has already acted where the outcome was determined, and needs the measurement
+mainly to detect that the ordering has quietly stopped being followed. Reach for
+the metric to audit the control, not in place of it.</p>
+<h2 id="7-what-a-leiden-declaration-for-software-would-need-to-say">7. What a Leiden Declaration for software would need to say<a class="headerlink" href="#7-what-a-leiden-declaration-for-software-would-need-to-say" title="Permanent link">&para;</a></h2>
+<p>Tao points to the <a href="https://leidendeclaration.ai">Leiden Declaration on AI and Mathematics</a>
+(June 2026, endorsed by the International Mathematical Union) as an excellent
+starting point. It asks individual researchers to disclose AI use, take
+responsibility for correctness, and cite prior work; asks professional bodies to
+develop publication and review policy; and asks policymakers about regulation and
+public infrastructure. It does not ban AI; it demands explicit community norms.</p>
+<p>Software has no equivalent, and the pieces it would need are already scattered
+across the open source policies cited above. Assembled, the minimum clauses are:</p>
+<ol>
+<li><strong>Disclosure.</strong> AI assistance is declared on the change, in a machine-readable
+   form that survives into version control and reaches the incident responder.</li>
+<li><strong>Human liability.</strong> A named human signs off. Agents may be credited; they may
+   not be accountable.</li>
+<li><strong>Comprehension before merge.</strong> A named human can explain the change at review
+   depth. Absent that, it does not merge.</li>
+<li><strong>Independent verification.</strong> The specification and the implementation do not
+   share an author.</li>
+<li><strong>Digestion is work.</strong> Review, consolidation, deletion, and documentation are
+   first-class engineering contributions and are resourced and rewarded as such.</li>
+<li><strong>Protect the pipeline.</strong> Organizations state how engineers acquire system
+   understanding now that writing code no longer confers it.</li>
+<li><strong>Honest measurement.</strong> Effort-volume proxies are retired; outcome measures
+   and comprehension measures replace them.</li>
+</ol>
+<p>The clause software needs that mathematics does not is (3), because of the
+operation stage. The clause mathematics has that software lacks the institutions
+for is community acceptance — which is why (5) has to be an explicit resourcing
+commitment rather than an appeal to professional norms.</p>
+<h2 id="appendix-remote-store-as-a-worked-example">Appendix: remote-store as a worked example<a class="headerlink" href="#appendix-remote-store-as-a-worked-example" title="Permanent link">&para;</a></h2>
+<p>This repository is an unusually complete instance of the argument, because its
+process was built for exactly the conditions Tao describes. The mapping, and the
+gaps.</p>
+<p>Counts derived by running, from the repository root:
+<code>ls sdd/adrs/[0-9]*.md | wc -l</code> → 38; <code>ls sdd/specs/*.md | wc -l</code> → 50;
+<code>ls sdd/traces/[!_]*.yml | wc -l</code> → 279; <code>ls sdd/formal/*.dfy | wc -l</code> → 4.</p>
 <table>
 <thead>
 <tr>
 <th>Stage</th>
-<th>Options</th>
-<th>Recommendation</th>
+<th>Existing machinery</th>
+<th>Assessment</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>SQL execution</strong></td>
-<td>SQLAlchemy Core <code>connection.execute()</code></td>
-<td>Use <code>stream_results=True</code> + <code>yield_per</code> for memory-bounded reads</td>
+<td>Generation</td>
+<td><code>.claude/skills/</code>, <code>CLAUDE.md</code></td>
+<td>Constrained rather than maximized. Skills encode workflows; hooks enforce what instructions only request.</td>
 </tr>
 <tr>
-<td><strong>Result → Arrow</strong></td>
-<td>ADBC (zero-copy, fastest), ConnectorX (Rust, parallel), SQLAlchemy + PyArrow (widest support)</td>
-<td>Arrow-native paths (ADBC/ConnectorX) preferred; SQLAlchemy + PyArrow as fallback</td>
+<td>Verification</td>
+<td>Conformance suite, <code>hatch run all</code>, coverage gate, mutation lane, Dafny twins under <code>sdd/formal/</code>, TLA+ models</td>
+<td>Strongest stage. The Dafny twins and mutation testing are direct answers to proposal 4: the spec and the implementation genuinely do not share an author.</td>
 </tr>
 <tr>
-<td><strong>Arrow → bytes</strong></td>
-<td>Parquet (<code>pyarrow.parquet</code>), CSV (<code>pyarrow.csv</code>), Arrow IPC (<code>pyarrow.ipc</code>)</td>
-<td>Extension-based: <code>.parquet</code> → Parquet, <code>.csv</code> → CSV, <code>.arrow</code> → IPC</td>
+<td>Exposition</td>
+<td>ADRs, <a href="../../content-rules/"><code>sdd/CONTENT-RULES.md</code></a>, CHANGELOG discipline, docstring parity checks</td>
+<td>The 6-month test and "no pseudo-precise values in narrative" are anti-drift rules, which is the exposition-stage failure Tao describes.</td>
+</tr>
+<tr>
+<td>Publication</td>
+<td><code>/pr</code>, <code>/rvw-pr</code>, <code>/fix-pr</code>, <code>/ship</code> skills; convergence-driven review (<a href="../../adrs/0033-ship-convergence-driven-review/">ADR-0033</a>)</td>
+<td>Reviewing to convergence rather than to a round count is the explicit refusal of a Goodhart-vulnerable metric.</td>
+</tr>
+<tr>
+<td>Operation</td>
+<td>CI operations handbook, health checks, benchmark lane</td>
+<td>Present but the thinnest stage relative to the others — expected for a library rather than a service.</td>
+</tr>
+<tr>
+<td>Canonicalization</td>
+<td><a href="../../process/"><code>sdd/000-process.md</code></a> ("specs are source of truth"), the ripple-check, <a href="../../drift-rules/"><code>sdd/DRIFT-RULES.md</code></a>, 279 traces, <code>sdd/BACKLOG.md</code></td>
+<td>This is the distinctive investment. Most repositories have nothing at this stage.</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Prefer Arrow-native paths</strong> over manual batching. ADBC and ConnectorX go directly
-from wire protocol to Arrow columnar format, bypassing Python row-by-row conversion.
-Manual <code>partitions()</code> + <code>RecordBatch.from_pydict()</code> is the fallback when Arrow-native
-drivers aren't available.</p>
-<h3 id="type-mapping-concerns">Type mapping concerns<a class="headerlink" href="#type-mapping-concerns" title="Permanent link">&para;</a></h3>
-<p>SQL types don't map 1:1 to Arrow/Parquet: <code>DECIMAL</code>, <code>INTERVAL</code>, <code>JSONB</code>, <code>ARRAY</code>,
-<code>GEOGRAPHY</code> all need explicit handling. SQLAlchemy's type reflection + PyArrow's type
-coercion handles most cases, but edge cases will need documented escape hatches.</p>
-<h3 id="dependencies">Dependencies<a class="headerlink" href="#dependencies" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Required</strong>: <code>sqlalchemy</code> (already widely used, pure Python)</li>
-<li><strong>SQLQueryBackend</strong>: <code>pyarrow</code> (already an optional dep for <code>S3PyArrowBackend</code>)</li>
-<li><strong>Optional fast path</strong>: <code>adbc-driver-postgresql</code>, <code>adbc-driver-sqlite</code>, <code>connectorx</code></li>
-</ul>
-<p>Packaging: <code>pip install remote-store[sql]</code> for SQLBlobBackend (sqlalchemy only),
-<code>pip install remote-store[sql-query]</code> for SQLQueryBackend (sqlalchemy + pyarrow).</p>
-<h3 id="caching">Caching<a class="headerlink" href="#caching" title="Permanent link">&para;</a></h3>
-<p>Caching is <strong>not embedded</strong> in the backend. Use <code>ext.cache</code> (existing infrastructure).</p>
-<p>Cache key for query results (deterministic across processes):
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">cache_key</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="p">(</span><span class="n">query_text</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\0</span><span class="s2">"</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">params</span><span class="p">))</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\0</span><span class="s2">"</span> <span class="o">+</span> <span class="n">schema_version</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
-</code></pre></div></p>
-<p>Note: Python's built-in <code>hash()</code> is randomized per process (PYTHONHASHSEED) and
-must not be used for persistent or cross-process cache keys.</p>
-<p>The backend provides <code>resolve()</code> for introspection (see §5.1); ext.cache wraps
-the Store. No built-in TTL, no <code>refresh()</code> method — that's the cache extension's
-job. Future: cache keys could derive from <code>hash(plan)</code> for principled
-invalidation.</p>
-<hr />
-<h2 id="5-resolution-model-composite-store">5. Resolution Model &amp; Composite Store<a class="headerlink" href="#5-resolution-model-composite-store" title="Permanent link">&para;</a></h2>
-<h3 id="51-resolutionplan-unified-introspection">5.1 ResolutionPlan — unified introspection<a class="headerlink" href="#51-resolutionplan-unified-introspection" title="Permanent link">&para;</a></h3>
-<p>Every backend already resolves keys to bytes through different strategies.
-<code>ResolutionPlan</code> makes this explicit and inspectable:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">ResolutionPlan</span><span class="p">:</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span>          <span class="c1"># "blob", "sql_query", "sql_blob", "composite", ...</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">backend</span><span class="p">:</span> <span class="nb">str</span>       <span class="c1"># backend name</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span>           <span class="c1"># resolved key</span>
-<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">details</span><span class="p">:</span> <span class="nb">dict</span>      <span class="c1"># backend-specific (query, table, tier chain, ...)</span>
-</code></pre></div>
-<p>Every Store gains a <code>resolve()</code> method:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># SQLQueryBackend</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">store</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="s2">"reports/daily_sales.parquet"</span><span class="p">)</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1"># → ResolutionPlan(kind="sql_query", backend="postgresql",</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="c1">#      key="reports/daily_sales.parquet",</span>
-<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="c1">#      details={"source": "explicit", "query": "SELECT ...", "format": "parquet"})</span>
-<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>
-<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="c1"># SQLBlobBackend</span>
-<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="n">store</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="s2">"models/v3.pkl"</span><span class="p">)</span>
-<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="c1"># → ResolutionPlan(kind="sql_blob", backend="sqlite",</span>
-<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="c1">#      key="models/v3.pkl",</span>
-<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a><span class="c1">#      details={"table": "remote_store_objects"})</span>
-<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>
-<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="c1"># CompositeStore</span>
-<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a><span class="n">store</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="s2">"sales/2024-Q1.parquet"</span><span class="p">)</span>
-<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="c1"># → ResolutionPlan(kind="composite", backend="composite",</span>
-<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="c1">#      key="sales/2024-Q1.parquet",</span>
-<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="c1">#      details={"resolved_tier": "warm", "tried": ["hot", "warm"]})</span>
-</code></pre></div>
-<p>This replaces the separate <code>resolve_query()</code>, <code>resolve_tier()</code>, and <code>explain()</code>
-methods with one unified concept. <code>plan.details</code> carries backend-specific
-information; <code>plan.kind</code> lets callers branch on strategy without <code>isinstance</code>.</p>
-<p><strong>Implementation:</strong> <code>Backend</code> gains an optional <code>resolve(key) → ResolutionPlan</code>
-method with a sensible default (returns plan with <code>kind=backend.name</code>). Backends
-override to add meaningful details. <code>Store.resolve()</code> delegates to the backend
-and rebases the key. No ABC change required — default is backward-compatible.</p>
-<h3 id="52-compositestore-id-120">5.2 CompositeStore (ID-120)<a class="headerlink" href="#52-compositestore-id-120" title="Permanent link">&para;</a></h3>
-<p>A composition layer above stores. A <code>Store</code> subclass (not a Backend, not an
-extension) that delegates to child stores based on resolution rules.</p>
-<p><strong>Construction:</strong> <code>Store.__init__</code> requires a <code>Backend</code> instance. CompositeStore
-handles this by creating an internal <code>_MultiplexBackend</code> adapter that delegates
-to tier backends based on resolution rules, then passes it to
-<code>super().__init__()</code>. This keeps CompositeStore as a true Store subclass
-(compatible with <code>ext.cache</code>, <code>ext.observe</code>, <code>Store.child()</code>) without fragile
-<code>__init__</code> overrides.</p>
-<p><strong>Core, not extension.</strong> CompositeStore composes Stores — it's a first-class
-construct like <code>Store.child()</code>, not a decorator. Extensions (<code>ext.cache</code>,
-<code>ext.observe</code>) wrap a single Store; CompositeStore multiplexes across several.</p>
-<p><strong>Relationship to ProxyStore:</strong> <code>ProxyStore(Store)</code> delegates to a single inner
-store. CompositeStore delegates to <em>multiple</em> stores, so it does not inherit
-from ProxyStore — it subclasses Store directly and overrides the same methods.
-Each tier's store can independently be wrapped with <code>ext.cache</code> or <code>ext.observe</code>:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">composite</span> <span class="o">=</span> <span class="n">CompositeStore</span><span class="p">(</span>
-<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    <span class="n">tiers</span><span class="o">=</span><span class="p">[</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>        <span class="n">Tier</span><span class="p">(</span><span class="s2">"hot"</span><span class="p">,</span> <span class="n">store</span><span class="o">=</span><span class="n">observe</span><span class="p">(</span><span class="n">cached_sql_store</span><span class="p">)),</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>        <span class="n">Tier</span><span class="p">(</span><span class="s2">"warm"</span><span class="p">,</span> <span class="n">store</span><span class="o">=</span><span class="n">observe</span><span class="p">(</span><span class="n">s3_store</span><span class="p">)),</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="p">],</span>
-<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="p">)</span>
-<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="c1"># The CompositeStore itself can also be wrapped:</span>
-<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="n">observed</span> <span class="o">=</span> <span class="n">observe</span><span class="p">(</span><span class="n">composite</span><span class="p">)</span>
-</code></pre></div>
-<p><strong>Write-then-read visibility caveat:</strong> In fallthrough mode, a write goes to the
-primary tier. A subsequent read tries tiers in order — if the primary tier is not
-the first tier checked, or if caching hides the write, the caller may not see
-their own write immediately. <code>resolve()</code> helps diagnose this. v1 keeps it simple:
-writes always go to the first tier, reads try tiers in order, so write-then-read
-is consistent as long as the primary tier is first.</p>
-<h3 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store</span><span class="w"> </span><span class="kn">import</span> <span class="n">Store</span><span class="p">,</span> <span class="n">CompositeStore</span><span class="p">,</span> <span class="n">Tier</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="c1"># Pattern-match mode:</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">composite</span> <span class="o">=</span> <span class="n">CompositeStore</span><span class="p">(</span>
-<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="n">tiers</span><span class="o">=</span><span class="p">[</span>
-<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>        <span class="n">Tier</span><span class="p">(</span><span class="s2">"hot"</span><span class="p">,</span>     <span class="n">store</span><span class="o">=</span><span class="n">sql_store</span><span class="p">,</span>     <span class="n">match</span><span class="o">=</span><span class="s2">"hot/**"</span><span class="p">),</span>
-<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>        <span class="n">Tier</span><span class="p">(</span><span class="s2">"warm"</span><span class="p">,</span>    <span class="n">store</span><span class="o">=</span><span class="n">s3_store</span><span class="p">,</span>      <span class="n">match</span><span class="o">=</span><span class="s2">"warm/**"</span><span class="p">),</span>
-<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>        <span class="n">Tier</span><span class="p">(</span><span class="s2">"archive"</span><span class="p">,</span> <span class="n">store</span><span class="o">=</span><span class="n">glacier_store</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">"archive/**"</span><span class="p">),</span>
-<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    <span class="p">],</span>
-<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="p">)</span>
-<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="c1"># Fallthrough mode (v1 default):</span>
-<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="n">composite</span> <span class="o">=</span> <span class="n">CompositeStore</span><span class="p">(</span>
-<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a>    <span class="n">tiers</span><span class="o">=</span><span class="p">[</span>
-<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a>        <span class="n">Tier</span><span class="p">(</span><span class="s2">"hot"</span><span class="p">,</span>     <span class="n">store</span><span class="o">=</span><span class="n">sql_store</span><span class="p">),</span>
-<a id="__codelineno-10-15" name="__codelineno-10-15" href="#__codelineno-10-15"></a>        <span class="n">Tier</span><span class="p">(</span><span class="s2">"warm"</span><span class="p">,</span>    <span class="n">store</span><span class="o">=</span><span class="n">s3_store</span><span class="p">),</span>
-<a id="__codelineno-10-16" name="__codelineno-10-16" href="#__codelineno-10-16"></a>        <span class="n">Tier</span><span class="p">(</span><span class="s2">"archive"</span><span class="p">,</span> <span class="n">store</span><span class="o">=</span><span class="n">glacier_store</span><span class="p">),</span>
-<a id="__codelineno-10-17" name="__codelineno-10-17" href="#__codelineno-10-17"></a>    <span class="p">],</span>
-<a id="__codelineno-10-18" name="__codelineno-10-18" href="#__codelineno-10-18"></a><span class="p">)</span>
-</code></pre></div>
-<h3 id="read-resolution-deterministic-fallthrough">Read resolution (deterministic fallthrough)<a class="headerlink" href="#read-resolution-deterministic-fallthrough" title="Permanent link">&para;</a></h3>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>for tier in tiers:
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>    try:
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>        return tier.store.read(key)
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    except NotFound:
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>        continue
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>raise NotFound
-</code></pre></div>
-<p>Deterministic: tier order defines priority. No ambiguity.</p>
-<h3 id="write-semantics">Write semantics<a class="headerlink" href="#write-semantics" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Writes go to <strong>primary tier only</strong> (first tier, or configurable <code>write_tier</code>)</li>
-<li>No cross-tier overwrite — <code>write()</code> never touches non-primary tiers</li>
-<li>Cross-tier migration is explicit: <code>composite.migrate(key, from_tier, to_tier)</code></li>
-<li>Optional: <code>write_through=True</code> for writing to multiple tiers simultaneously</li>
-</ul>
-<h3 id="list-behavior">LIST behavior<a class="headerlink" href="#list-behavior" title="Permanent link">&para;</a></h3>
-<ul>
-<li>Default: <strong>union across all tiers</strong>, deduplicated by key (first tier wins on conflicts)</li>
-<li>Stable ordering: tier priority, then alphabetical within tier</li>
-<li>Optional: <code>composite.list_files(path, tier="hot")</code> to scope to a single tier</li>
-</ul>
-<h3 id="capability-model">Capability model<a class="headerlink" href="#capability-model" title="Permanent link">&para;</a></h3>
-<ul>
-<li><code>READ</code>, <code>SEEKABLE_READ</code> → union/fallthrough across tiers</li>
-<li><code>WRITE</code>, <code>ATOMIC_WRITE</code>, <code>MOVE</code>, <code>COPY</code>, <code>DELETE</code> → primary tier only (gated by primary tier's capabilities)</li>
-<li><code>LIST</code>, <code>GLOB</code> → union across tiers that support them</li>
-<li><code>METADATA</code> → union/fallthrough (like READ)</li>
-</ul>
-<p>Since write operations target the primary tier only, CompositeStore advertises the
-primary tier's write-side capabilities — not the intersection across all tiers.
-This avoids unnecessarily disabling MOVE/COPY/ATOMIC_WRITE when read-only tiers
-lack them.</p>
-<hr />
-<h2 id="6-capability-profile">6. Capability Profile<a class="headerlink" href="#6-capability-profile" title="Permanent link">&para;</a></h2>
-<h3 id="sqlquerybackend">SQLQueryBackend<a class="headerlink" href="#sqlquerybackend" title="Permanent link">&para;</a></h3>
+<p>Read through the debt decomposition in § 2.3, this repository is an instance of
+the <strong>preventive</strong> column rather than the paydown one, and that is the accurate
+way to describe it. It does not measure cognitive and intent debt and it does not
+service them; it orders the work so that neither is taken on. The distinction
+matters because measuring for a debt and structuring against one look identical
+from the outside — both produce an absence of the debt — and only the second
+acts while the decisions it protects are still being made.</p>
+<p>The controls are explicit and predate this record:</p>
 <table>
 <thead>
 <tr>
-<th>Capability</th>
-<th>Supported</th>
-<th>Notes</th>
+<th>Debt</th>
+<th>Control</th>
+<th>Where it is written</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>READ</code></td>
-<td>Yes</td>
-<td>Execute query, serialize, return bytes</td>
+<td>Intent</td>
+<td>No implementation without a spec section; decision records immutable once accepted, superseded rather than edited</td>
+<td><a href="../../process/"><code>sdd/000-process.md</code></a> Rules 1 and 4</td>
 </tr>
 <tr>
-<td><code>WRITE</code></td>
-<td>—</td>
-<td>Query results are read-only</td>
+<td>Intent</td>
+<td>Specs authoritative against code, so the recorded <em>why</em> cannot silently drift behind the implementation</td>
+<td><a href="../../process/"><code>sdd/000-process.md</code></a> Rule 3</td>
 </tr>
 <tr>
-<td><code>DELETE</code></td>
-<td>—</td>
-<td>Cannot delete a query</td>
+<td>Cognitive</td>
+<td>Bug fixes reproduce the failure and watch the test fail <em>before</em> the fix; features run SPEC → TEST → IMPLEMENT</td>
+<td><a href="../../process/"><code>sdd/000-process.md</code></a> Rule 6</td>
 </tr>
 <tr>
-<td><code>LIST</code></td>
-<td>Yes</td>
-<td>List registered query keys</td>
+<td>Cognitive</td>
+<td>Behaviour verified by running it, never by type-checking it; bugs reproduced before fixes are claimed</td>
+<td><a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md"><code>CLAUDE.md</code></a> principle 6</td>
 </tr>
 <tr>
-<td><code>MOVE</code></td>
-<td>—</td>
-<td>—</td>
+<td>Cognitive</td>
+<td>The change's ripple set is read <em>before</em> starting, not at verify-end</td>
+<td><a href="https://github.com/haalfi/remote-store/blob/master/sdd/CLAUDE-REFERENCE.md"><code>sdd/CLAUDE-REFERENCE.md</code></a> Pre-work index</td>
 </tr>
 <tr>
-<td><code>COPY</code></td>
-<td>—</td>
-<td>—</td>
-</tr>
-<tr>
-<td><code>ATOMIC_WRITE</code></td>
-<td>—</td>
-<td>—</td>
-</tr>
-<tr>
-<td><code>METADATA</code></td>
-<td>Yes</td>
-<td><code>size: int \| None</code> — <code>None</code> until query executes. <code>modified_at</code> from config.</td>
-</tr>
-<tr>
-<td><code>GLOB</code></td>
-<td>Yes</td>
-<td>Pattern match against registered keys (not SQL)</td>
-</tr>
-<tr>
-<td><code>SEEKABLE_READ</code></td>
-<td>Yes</td>
-<td>Serialize to buffer, return seekable <code>BytesIO</code></td>
+<td>Cognitive</td>
+<td>Figures state the command they came from, run before the sentence is written</td>
+<td><a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md"><code>CLAUDE.md</code></a> principle 9</td>
 </tr>
 </tbody>
 </table>
-<p><strong><code>FileInfo.size</code> contract change</strong> (v2 only — not needed for SQLBlobBackend):
-<code>size: int | None</code> where <code>None</code> means "unknown until materialized." This is
-first-class — do not fake or estimate. Callers that need size must handle <code>None</code>
-(or read first, which populates the cache). SQLBlobBackend always knows the size
-(<code>size INTEGER NOT NULL</code> in its schema), so this contract change is deferred to
-v2 when SQLQueryBackend ships.</p>
-<h3 id="sqlblobbackend">SQLBlobBackend<a class="headerlink" href="#sqlblobbackend" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Capability</th>
-<th>Supported</th>
-<th>Notes</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>READ</code></td>
-<td>Yes</td>
-<td><code>SELECT data FROM ... WHERE key = ?</code></td>
-</tr>
-<tr>
-<td><code>WRITE</code></td>
-<td>Yes</td>
-<td><code>INSERT</code> / <code>UPDATE</code></td>
-</tr>
-<tr>
-<td><code>DELETE</code></td>
-<td>Yes</td>
-<td><code>DELETE FROM ... WHERE key = ?</code></td>
-</tr>
-<tr>
-<td><code>LIST</code></td>
-<td>Yes</td>
-<td><code>SELECT key FROM ...</code> with prefix filter</td>
-</tr>
-<tr>
-<td><code>MOVE</code></td>
-<td>Yes</td>
-<td><code>UPDATE ... SET key = ? WHERE key = ?</code></td>
-</tr>
-<tr>
-<td><code>COPY</code></td>
-<td>Yes</td>
-<td><code>INSERT INTO ... SELECT ... FROM ... WHERE key = ?</code></td>
-</tr>
-<tr>
-<td><code>ATOMIC_WRITE</code></td>
-<td>Yes</td>
-<td><code>write_atomic()</code>: single INSERT/UPDATE. <code>open_atomic()</code>: buffer in <code>BytesIO</code>, commit via INSERT on success, discard on exception (MemoryBackend pattern).</td>
-</tr>
-<tr>
-<td><code>METADATA</code></td>
-<td>Yes</td>
-<td>All metadata columns available</td>
-</tr>
-<tr>
-<td><code>GLOB</code></td>
-<td>Yes</td>
-<td><code>LIKE</code> / <code>GLOB</code> (SQLite) pattern on key column</td>
-</tr>
-<tr>
-<td><code>SEEKABLE_READ</code></td>
-<td>Yes</td>
-<td><code>BytesIO(data)</code></td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="7-decisions-made-remaining-open-questions">7. Decisions Made &amp; Remaining Open Questions<a class="headerlink" href="#7-decisions-made-remaining-open-questions" title="Permanent link">&para;</a></h2>
-<h3 id="decided">Decided<a class="headerlink" href="#decided" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>#</th>
-<th>Question</th>
-<th>Decision</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1</td>
-<td>One backend or two?</td>
-<td><strong>Two</strong>: <code>SQLQueryBackend</code> + <code>SQLBlobBackend</code>, shared <code>_SQLAlchemyBaseBackend</code></td>
-</tr>
-<tr>
-<td>2</td>
-<td>Priority</td>
-<td><strong>SQLBlobBackend first</strong> (v1), SQLQueryBackend second (v2)</td>
-</tr>
-<tr>
-<td>3</td>
-<td>Caching</td>
-<td><strong>ext.cache only</strong> — no embedded caching in backend</td>
-</tr>
-<tr>
-<td>4</td>
-<td>CompositeStore scope</td>
-<td><strong>Core <code>Store</code> subclass</strong> (not ProxyStore subclass) — multiplexes, not delegates</td>
-</tr>
-<tr>
-<td>5</td>
-<td>FileInfo.size</td>
-<td><strong><code>size: int \| None</code></strong> — deferred to v2 (SQLBlobBackend always knows size)</td>
-</tr>
-<tr>
-<td>6</td>
-<td>SQLite specialization</td>
-<td><strong>Worth it</strong> — blobopen(), WAL, PRAGMA tuning</td>
-</tr>
-<tr>
-<td>7</td>
-<td>Serialization</td>
-<td><strong>ResultSerializer protocol</strong> — clean abstraction boundary</td>
-</tr>
-<tr>
-<td>8</td>
-<td>Strict mode</td>
-<td><strong><code>strict=True</code> default</strong> — security-by-default, no convention fallback</td>
-</tr>
-<tr>
-<td>9</td>
-<td>Engine lifecycle</td>
-<td><strong>Owned or borrowed</strong> — URL string = owned, <code>Engine</code> instance = borrowed</td>
-</tr>
-<tr>
-<td>10</td>
-<td>Schema flexibility</td>
-<td><strong>Auto-create default, introspect existing</strong> — <code>create_table=False</code> for BYO</td>
-</tr>
-</tbody>
-</table>
-<h3 id="remaining-open-questions">Remaining open questions<a class="headerlink" href="#remaining-open-questions" title="Permanent link">&para;</a></h3>
-<ol>
-<li>
-<p><strong>Config format for key→query mapping</strong> — Python dict? YAML file? SQLAlchemy
-   <code>text()</code> objects? View-only (no custom SQL)?</p>
-</li>
-<li>
-<p><strong>ADBC fast path</strong> — Worth the dependency complexity for SQLQueryBackend? ADBC
-   bypasses Python row-by-row conversion, going directly to Arrow columnar format.
-   (Deferred to v3.)</p>
-</li>
-<li>
-<p><strong>Partitioned queries</strong> — <code>store.read("sales/2024-Q1.parquet")</code> where the key
-   encodes a WHERE clause parameter. Config-driven or convention-driven?</p>
-</li>
-<li>
-<p><strong><code>FileInfo.size: int | None</code> ripple effects</strong> — Deferred to v2 (SQLBlobBackend
-   always knows size). Before implementing for SQLQueryBackend, audit all callers
-   that assume <code>size</code> is always <code>int</code>. May need a deprecation path or type guard.</p>
-</li>
-</ol>
-<hr />
-<h2 id="8-prioritization-next-steps">8. Prioritization &amp; Next Steps<a class="headerlink" href="#8-prioritization-next-steps" title="Permanent link">&para;</a></h2>
-<h3 id="v1-foundation">v1 — Foundation<a class="headerlink" href="#v1-foundation" title="Permanent link">&para;</a></h3>
+<p>Every entry in the cognitive column fixes an <em>order</em>: understand, then act. That
+is the same variable the Anthropic RCT found to be decisive, encoded as process
+rather than left to individual habit. The Pre-work index is the clearest case —
+it exists because sampled PRs consulted the ripple table only at verify-end,
+which is a diagnosis of exactly this failure and a control aimed exactly at it.</p>
+<p><strong>Naur supports this arrangement; an earlier draft of this record had him
+arguing against it.</strong> That draft invoked Naur's second compiler team — handed
+complete code and documentation, unable to extend the system — as evidence that
+the repository's written artifacts cannot convey theory. The inference was wrong.
+Group B failed because they were handed a finished artifact, not because written
+intent is worthless; Naur's own remedy is active engagement in developing the
+program. A workflow that requires reproducing the failure, reading the ripple
+set, and running the behaviour <em>is</em> that engagement, mandated. The written
+artifacts are not a substitute for it here, and the process does not ask them to
+be.</p>
+<p><strong>The traces sit on the intent layer, and the boundary is worth keeping
+straight.</strong> Trace files record what an agent actually read, tagged <code>unclear</code> or
+<code>misleading</code> where a document failed the reader, aggregated by <code>hatch run
+report-trace-outcomes</code>. That measures whether externalized rationale was findable
+and usable — an intent-layer instrument, and a good one. It is not the
+cognitive-layer control; the rules in the table above are. The schema's warning
+that "cleaned-up 'ideal' traces silently lie to the aggregator" is Tao's friction
+argument applied to process data.</p>
+<p><strong>Principle 9 is the talk rule in miniature.</strong> Requiring that a figure name the
+command it came from, derived before the sentence is written, is the same
+demand: demonstrate that you can defend the claim, or do not publish it.
+<a href="../../adrs/0037-whole-file-gate-and-derived-figures/">ADR-0037</a> records the
+measured failure modes that motivated it.</p>
+<p><strong>A comprehension trial, and what it found.</strong> After this record was drafted, its
+author was asked whether it actually held a model of what remote-store is and why
+it is built this way. The test was run in the repository's own style: state the
+model first as a falsifiable claim, then check it against source. Prior model —
+a Store facade over pluggable backends; a capability system because backends
+genuinely differ; refusal of lowest-common-denominator behaviour; mirrored
+sync and async surfaces; conformance parametrised across backends with Dafny and
+TLA+ as independent oracles. That model was formed from <code>CLAUDE.md</code>, directory
+listings and trace filenames over the course of writing this record, without
+reading a spec or a source module. It was then checked against seven sources:
+four documents — <a href="../../design/"><code>sdd/DESIGN.md</code></a>, specs
+<a href="../../specs/003-backend-adapter-contract/">003</a>,
+<a href="../../specs/004-path-model/">004</a> and
+<a href="../../specs/010-native-path-resolution/">010</a> — plus the <code>_GATING</code> table at the
+head of <code>src/remote_store/_store.py</code> and listings of <code>src/remote_store/</code> and
+<code>sdd/specs/</code>. The listings are load-bearing rather than incidental: spec 043 and
+the <code>_resolution.py</code> / <code>_proxy.py</code> modules named in the second miss below were
+never opened, and appear in that miss because the listings revealed they
+existed. Discovering that a subsystem exists and reading it are different
+acts, and the trial did only the first for that one.</p>
+<p>The skeleton survived. Three things did not, and all three were <em>why</em> questions
+rather than <em>what</em> questions:</p>
 <ul>
-<li>[ ] <code>SQLBlobBackend</code> with SQLite (full Backend contract, SQLite optimizations)</li>
-<li>[ ] <code>CompositeStore</code> (prefix-based + fallthrough, union LIST, primary-tier writes)</li>
+<li><strong>Capabilities are two kinds, not one.</strong> CAP-007 separates gates, which raise
+  <code>CapabilityNotSupported</code> and block a method or a guarded kwarg, from quality
+  flags, which describe a property of an existing method and gate nothing.
+  <code>SEEKABLE_READ</code> is one such flag; the set lives in
+  <a href="../../specs/003-backend-adapter-contract/">CAP-007</a> and is not copied here, per
+  <a href="../../content-rules/"><code>sdd/CONTENT-RULES.md</code></a> Rule 2. The prior model would have
+  produced an active error: that a backend must declare <code>SEEKABLE_READ</code> to serve
+  <code>read_seekable()</code>, when that method is available everywhere and the flag reports
+  only what it costs.</li>
+<li><strong>Path resolution was absent entirely</strong> — <code>_resolution.py</code>, <code>_proxy.py</code>, specs
+  010 and 043 — along with its motivating invariant, round-trip safety: anything a
+  Store method returns must be usable as input to another without manual
+  stripping, after <code>FileInfo.path</code> leaked the <code>root_path</code> prefix and callers
+  double-prefixed it.</li>
+<li><strong>The governing principle was mis-stated.</strong> Not "refuse
+  lowest-common-denominator behaviour" but something sharper: normalize the
+  interface hard — path validation, one error hierarchy — while refusing to
+  normalize guarantees, which stay visible as declarations the caller inspects.
+  That rule explains CAP-007 instead of treating it as a quirk.</li>
 </ul>
-<h3 id="v2-query-materializer">v2 — Query Materializer<a class="headerlink" href="#v2-query-materializer" title="Permanent link">&para;</a></h3>
+<p><strong>The finding qualifies both § 5 and the Naur reading above.</strong> It confirms the
+amnesia argument: this record was written at length about a system whose theory
+its author did not hold. But it also shows the gap closing faster than Naur's
+compiler example predicts. Group B had complete code and documentation and still
+could not extend the system; the seven sources enumerated above recovered the
+contested reasoning here — four documents, one source-file header and two
+directory listings, the listings being what surfaced the second miss —
+because these specs record <em>why</em> at the points where the why was disputed — spec
+010 opens with a section headed "The Problem" and a failing example, and CAP-007
+argues for quality flags rather than merely listing them. <strong>Documentation that
+carries reasoning is not the documentation Naur ruled out.</strong> It does not remove
+the need for engagement, and it does not survive the session; it makes the
+engagement cheap enough to be worth requiring.</p>
+<p>Two limits on the trial. Its subject is an agent, so it measures intent-layer
+transfer rather than human cognitive debt. And a self-administered comprehension
+test is graded by the same party that sat it: the three misses are the ones the
+checking surfaced, and they are a lower bound on what was missing.</p>
+<p><strong>The gaps.</strong> Measured against § 6, two proposals have no mechanism here.
+(1) Disclosure — commit messages carry backlog IDs but no <code>Assisted-by:</code> trailer,
+so AI provenance does not survive into <code>git log</code>. (7) The training pipeline — a
+single-maintainer project has no junior path to defend, which means the repo
+cannot demonstrate the hardest proposal rather than that it fails it.</p>
+<p>Proposal 8's comprehension measurement is deliberately not listed as a third gap.
+The preventive controls above address the same failure by a different route, and
+on the forward-only argument in § 2.3 they address it while the decisions it
+protects are still open. A measurement would report, after the fact, on a window
+that has already closed — useful for detecting that the ordering has lapsed,
+which is the job proposal 8 now assigns it, and useless for the merge it was
+measuring.</p>
+<p><strong>The open question is operational, not structural.</strong> The controls guarantee that
+the mandated engagement happens; what they do not by themselves fix is whose
+theory it builds, since the reproducing, ripple-reading and running can be
+performed by the agent, by the maintainer, or by both. Nothing in the process is
+missing here — this is a question about how the process is operated, and it is
+the reason "try to avoid those debts" is the right register for the claim rather
+than "eliminate". It is also the question a second maintainer would answer for
+free, by making one person's gap visible to another.</p>
+<p>These are observations, not recommendations to act. Per
+<a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md"><code>CLAUDE.md</code> § Audits</a>, disposition is the user's call.</p>
+<h2 id="sources">Sources<a class="headerlink" href="#sources" title="Permanent link">&para;</a></h2>
+<p>Tao's talk and the mathematics context:</p>
 <ul>
-<li>[ ] <code>SQLQueryBackend</code> (basic: explicit mappings + view fallback, <code>strict=True</code> default)</li>
-<li>[ ] <code>ResultSerializer</code> protocol + <code>ArrowSerializer</code> implementation</li>
-<li>[ ] <code>resolve()</code> → <code>ResolutionPlan</code> introspection API (unified across all backends)</li>
-<li>[ ] <code>FileInfo.size: int | None</code> contract change (audit ripple effects first)</li>
+<li><a href="https://teorth.github.io/tao-web/slides/age-of-ai-icm-2026.pdf">Mathematics in the age of AI, ICM 2026 slides</a></li>
+<li><a href="https://leidendeclaration.ai/">Leiden Declaration on AI and Mathematics</a> · <a href="https://en.wikipedia.org/wiki/Leiden_Declaration_on_Artificial_Intelligence_and_Mathematics">Wikipedia</a> · <a href="https://www.lms.ac.uk/news/leiden-declaration-on-ai-and-mathematics">LMS announcement</a> · <a href="https://cacm.acm.org/blogcacm/the-leiden-declaration-mathematics-ai-and-making-our-values-explicit/">CACM commentary</a></li>
+<li><a href="https://1stproof.org/">First Proof project</a> · <a href="https://www.scientificamerican.com/article/first-proof-is-ais-toughest-math-test-yet-the-results-are-mixed/">Scientific American on the results</a></li>
 </ul>
-<h3 id="v3-performance-advanced">v3 — Performance &amp; Advanced<a class="headerlink" href="#v3-performance-advanced" title="Permanent link">&para;</a></h3>
+<p>Capability and productivity evidence:</p>
 <ul>
-<li>[ ] ADBC / ConnectorX fast path for SQLQueryBackend</li>
-<li>[ ] Partitioned queries (key encodes WHERE clause parameters)</li>
-<li>[ ] CompositeStore <code>write_through=True</code> option</li>
-<li>[ ] CompositeStore <code>migrate()</code> for cross-tier data movement</li>
+<li><a href="https://metr.org/blog/2025-07-10-early-2025-ai-experienced-os-dev-study/">METR: Measuring the Impact of Early-2025 AI on Experienced Open-Source Developer Productivity</a> · <a href="https://arxiv.org/abs/2507.09089">arXiv 2507.09089</a></li>
+<li><a href="https://dora.dev/dora-report-2025/">DORA State of AI-assisted Software Development 2025</a> · <a href="https://cloud.google.com/blog/products/ai-machine-learning/announcing-the-2025-dora-report">Google Cloud announcement</a></li>
+<li><a href="https://survey.stackoverflow.co/2025/ai">Stack Overflow 2025 Developer Survey</a> · <a href="https://stackoverflow.co/company/press/archive/stack-overflow-2025-developer-survey/">trust findings</a></li>
+<li><a href="https://www.cloudbees.com/lp/2026-state-of-code-abundance-report">CloudBees 2026 State of Code Abundance</a> · <a href="https://www.cloudbees.com/newsroom/enterprise-technology-leaders-report-production-failures-from-ai-generated-code">press release</a></li>
 </ul>
-<h3 id="immediate-next-step">Immediate next step<a class="headerlink" href="#immediate-next-step" title="Permanent link">&para;</a></h3>
+<p>Pipeline degradation:</p>
 <ul>
-<li>[ ] Spike <code>SQLBlobBackend</code> with SQLite — validates Backend contract fit with
-  minimal infrastructure. A few hundred lines of code. Separate spec after spike.</li>
+<li><a href="https://www.gitclear.com/ai_assistant_code_quality_2025_research">GitClear: AI Copilot Code Quality 2025</a> · <a href="https://www.gitclear.com/the_ai_code_quality_maintainability_gap">The Maintainability Gap 2026</a></li>
+<li><a href="https://arxiv.org/abs/2601.04886">Analyzing Message-Code Inconsistency in AI Coding Agent-Authored Pull Requests</a></li>
+<li><a href="https://arxiv.org/html/2605.02741v1">AI-Generated Smells: Code and Architecture in LLM- and Agent-Driven Development</a></li>
+<li><a href="https://arxiv.org/pdf/2606.20882">The Substrate Collapse</a></li>
+<li><a href="https://www.veracode.com/resources/analyst-reports/2025-genai-code-security-report/">Veracode GenAI Code Security Report</a> · <a href="https://www.veracode.com/blog/spring-2026-genai-code-security/">Spring 2026 update</a></li>
+<li><a href="https://www.flowverify.co/blog/ai-code-review-bottleneck-2026-data">The AI Code Review Bottleneck, By the 2026 Numbers</a> · <a href="https://www.cio.com/article/4207438/the-code-review-crisis-and-how-you-should-rebuild-review-models.html">CIO: the code review crisis</a></li>
+<li><a href="https://thenewstack.io/ai-generated-code-crisis/">Open source maintainers are drowning in AI-generated pull requests</a> · <a href="https://thenewstack.io/ai-slop-open-source/">96% of codebases rely on open source, and AI slop is putting them at risk</a></li>
+<li><a href="https://greatcircle.com/blog/2026/06/09/on-call-cost-of-ai-generated-code/">The on-call cost of AI-generated code</a></li>
+<li><a href="https://labs.cloudsecurityalliance.org/research/csa-research-note-slopsquatting-ai-supply-chain-20260419-csa/">Slopsquatting research note (Cloud Security Alliance)</a></li>
 </ul>
-<hr />
-<h2 id="9-key-risks">9. Key Risks<a class="headerlink" href="#9-key-risks" title="Permanent link">&para;</a></h2>
-<table>
-<thead>
-<tr>
-<th>Risk</th>
-<th>Mitigation</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>SQLQueryBackend complexity underestimated</strong></td>
-<td>Ship SQLBlobBackend first; SQLQueryBackend gets its own spec after spike</td>
-</tr>
-<tr>
-<td><strong>CompositeStore LIST semantics unclear at scale</strong></td>
-<td>v1 = simple union + dedup; document edge cases; defer optimization</td>
-</tr>
-<tr>
-<td><strong><code>FileInfo.size: int \| None</code> ripple effects</strong></td>
-<td>Deferred to v2; SQLBlobBackend always knows size. Audit callers before v2 ships</td>
-</tr>
-<tr>
-<td><strong>Debuggability</strong></td>
-<td><code>resolve()</code> → <code>ResolutionPlan</code> is required, not nice-to-have — unified across all backends</td>
-</tr>
-<tr>
-<td><strong>Performance expectations</strong></td>
-<td>Document blob size guidelines explicitly; <code>max_blob_size</code> guard for SQLBlobBackend</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="10-future-directions">10. Future Directions<a class="headerlink" href="#10-future-directions" title="Permanent link">&para;</a></h2>
-<p>These ideas follow naturally from the resolution model but are <strong>not committed
-work</strong> — they are documented here so future decisions can be evaluated against
-a coherent vision rather than invented ad hoc.</p>
-<h3 id="resolution-algebra">Resolution algebra<a class="headerlink" href="#resolution-algebra" title="Permanent link">&para;</a></h3>
-<p>CompositeStore v1 supports fallthrough (try each tier in order). The resolution
-model generalizes to other composition strategies:</p>
+<p>Theory, norms, and practice:</p>
 <ul>
-<li><strong>Parallel reads</strong> — race multiple tiers, return first response (latency optimization)</li>
-<li><strong>Shadow reads</strong> — read from primary, also read from secondary and compare (migration validation)</li>
-<li><strong>Quorum reads</strong> — require N-of-M tiers to agree (consistency guarantee)</li>
-</ul>
-<p>These are all different <code>ResolutionPlan</code> compositions. No new abstraction
-needed — just new <code>CompositeStore</code> strategy options.</p>
-<h3 id="compute-stores">Compute stores<a class="headerlink" href="#compute-stores" title="Permanent link">&para;</a></h3>
-<p>SQLQueryBackend is a "compute store" — key → computation → bytes. SQL is one
-implementation. The pattern generalizes:</p>
-<ul>
-<li>Python callable store (key → function → bytes)</li>
-<li>REST endpoint store (key → HTTP request → bytes)</li>
-<li>Spark/DuckDB store (key → query plan → bytes)</li>
-</ul>
-<p>If a second compute-style backend materializes, extract a <code>ComputeBackend</code>
-base. Until then, SQLQueryBackend stands alone — premature abstraction is
-worse than duplication.</p>
-<h3 id="structured-keys">Structured keys<a class="headerlink" href="#structured-keys" title="Permanent link">&para;</a></h3>
-<p>Today keys are strings. Partitioned queries (open question #3) suggest
-structured keys: <code>Key(path="sales/2024-Q1", format="parquet", params={"year": 2024})</code>.
-The backend would extract params from the key to parameterize queries.</p>
-<p>The simpler v1 path: keep keys as strings, let SQLQueryBackend parse them
-against config-defined patterns. Structured keys are a v3+ consideration if
-multiple backends need parameterized resolution.</p>
-<h3 id="readme-messaging">README messaging<a class="headerlink" href="#readme-messaging" title="Permanent link">&para;</a></h3>
-<p>The "key → byte resolver" framing belongs in the README when SQLAlchemy backends
-ship. It retroactively explains why the capability system works — capabilities
-describe available resolution strategies, not filesystem features. Current
-tagline ("Write file storage code once") remains accurate but undersells the
-system once it resolves queries and composes backends.</p>
-<hr />
-<h2 id="11-references">11. References<a class="headerlink" href="#11-references" title="Permanent link">&para;</a></h2>
-<h3 id="existing-projects">Existing projects<a class="headerlink" href="#existing-projects" title="Permanent link">&para;</a></h3>
-<ul>
-<li><a href="https://docs.dagster.io/concepts/io-management/io-managers">Dagster IO Managers</a> — closest architectural match</li>
-<li><a href="https://ducklake.select/">DuckLake</a> — SQL catalog + Parquet storage at scale</li>
-<li><a href="https://github.com/intake/intake-sql">intake-sql</a> — YAML catalog for SQL sources</li>
-<li><a href="https://github.com/dlt-hub/dlt">dlt</a> — SQL source → file destination pipelines</li>
-<li><a href="https://docs.feast.dev/reference/registries/sql">Feast SQL Registry</a> — feature store with SQL metadata</li>
-<li><a href="https://github.com/nackjicholson/aiosql">aiosql</a> — named SQL queries from files</li>
-<li><a href="https://github.com/pylover/sqlalchemy-media">sqlalchemy-media</a> — file storage tracked by SQLAlchemy models</li>
-<li><a href="https://github.com/zarr-developers/zarr-python/issues/3319">Zarr SQLiteStore</a> — key-value blob store in SQLite</li>
-</ul>
-<h3 id="database-blob-storage">Database blob storage<a class="headerlink" href="#database-blob-storage" title="Permanent link">&para;</a></h3>
-<ul>
-<li><a href="https://www.sqlite.org/sqlar.html">SQLite SQLAR format</a> — file archive in SQLite</li>
-<li><a href="https://wiki.postgresql.org/wiki/BinaryFilesInDB">PostgreSQL Binary Data</a> — BYTEA vs Large Objects</li>
-<li><a href="https://docs.python.org/3/library/sqlite3.html#sqlite3.Blob">SQLite Blob API (Python 3.11+)</a> — native file-like blob access</li>
-<li><a href="https://pypi.org/project/django-db-file-storage/">django-db-file-storage</a> — DB-backed Django file storage</li>
-</ul>
-<h3 id="serialization-performance">Serialization &amp; performance<a class="headerlink" href="#serialization-performance" title="Permanent link">&para;</a></h3>
-<ul>
-<li><a href="https://arrow.apache.org/blog/2025/01/10/arrow-result-transfer/">Arrow query result transfer</a> — Arrow IPC performance</li>
-<li><a href="https://arrow.apache.org/blog/2023/01/05/introducing-arrow-adbc/">ADBC introduction</a> — Arrow-native DB connectivity</li>
-<li><a href="https://www.vldb.org/pvldb/vol15/p2994-wang.pdf">ConnectorX</a> — Rust-based parallel SQL→Arrow loading</li>
-<li><a href="https://docs.sqlalchemy.org/en/20/_modules/examples/performance/large_resultsets.html">SQLAlchemy streaming results</a></li>
-<li><a href="https://pythonspeed.com/articles/pandas-sql-chunking/">Pandas SQL chunking</a> — memory-bounded SQL reads</li>
-</ul>
-<h3 id="tiered-storage-precedent">Tiered storage precedent<a class="headerlink" href="#tiered-storage-precedent" title="Permanent link">&para;</a></h3>
-<ul>
-<li><a href="https://www.starburst.io/blog/trino-spooling-protocol/">Trino spooling protocol</a> — query results to object storage</li>
-<li><a href="https://litestream.io/">Litestream</a> — SQLite replication to S3</li>
-<li><a href="https://martinfowler.com/articles/data-mesh-principles.html">Data mesh principles</a> — data products with output ports</li>
+<li><a href="https://pages.cs.wisc.edu/~remzi/Naur.pdf">Peter Naur, Programming as Theory Building (1985)</a></li>
+<li><a href="https://queue.acm.org/detail.cfm?id=3807966">Margaret-Anne Storey, From Technical Debt to Cognitive and Intent Debt</a> · <a href="https://arxiv.org/pdf/2603.22106">arXiv 2603.22106</a></li>
+<li><a href="https://polvara.me/posts/the-persistence-of-theory-reevaluating-naur-s-programming-as-theory-building-in-the-generative-ai-era/">Giorgio Polvara, The Persistence of Theory: Reevaluating Naur's "Programming as Theory Building" in the Generative AI Era</a> (19 Jun 2026)</li>
+<li><a href="https://www.anthropic.com/research/AI-assistance-coding-skills">Anthropic, How AI assistance impacts the formation of coding skills</a> (29 Jan 2026)</li>
+<li><a href="https://www.thoughtworks.com/radar/techniques/codebase-cognitive-debt">Thoughtworks Technology Radar: Codebase cognitive debt</a> · <a href="https://www.thoughtworks.com/about-us/news/2026/combat-ai-cognitive-debt-radar-v34">Vol. 34 announcement</a></li>
+<li><a href="https://allthingsopen.org/articles/open-source-ai-contributions-assisted-by-git-trailer-standard">Assisted-by: how open source projects are drawing the line on AI contributions</a> · <a href="https://www.tomshardware.com/software/linux/linux-lays-down-the-law-on-ai-generated-code-yes-to-copilot-no-to-ai-slop-and-humans-take-the-fall-for-mistakes-after-months-of-fierce-debate-torvalds-and-maintainers-come-to-an-agreement">Linux kernel policy coverage</a> · <a href="https://lists.nongnu.org/archive/html/qemu-devel/2026-05/msg07614.html">QEMU relaxation patch</a></li>
+<li><a href="https://martinfowler.com/articles/exploring-gen-ai.html">Martin Fowler / Birgitta Böckeler, Exploring Gen AI</a> · <a href="https://martinfowler.com/articles/exploring-gen-ai/harness-engineering-memo.html">Harness Engineering</a> · <a href="https://martinfowler.com/articles/exploring-gen-ai/tdd-in-the-agent-loop.html">TDD inside the agent loop</a></li>
+<li><a href="https://simonwillison.net/2026/Feb/23/agentic-engineering-patterns/">Simon Willison, Agentic Engineering Patterns</a></li>
+<li><a href="https://www.anthropic.com/engineering/claude-code-best-practices">Anthropic: Claude Code best practices</a> · <a href="https://claude.com/blog/how-anthropic-teams-use-claude-code">How Anthropic teams use Claude Code</a></li>
+<li><a href="https://leaddev.com/ai/the-8-software-engineering-metrics-ai-broke">The 8 software engineering metrics AI broke</a></li>
+<li><a href="https://www.forbes.com/sites/josipamajic/2026/08/09/coding-jobs-vanish-for-juniors-as-ai-reshapes-career-path/">Junior developer pipeline collapse</a> · Hosseini &amp; Lichtinger, <em>Generative AI as Seniority-Biased Technological Change</em> (Harvard, Aug 2025), reached via <a href="https://www.ability.ai/blog/junior-developer-pipeline-collapse-ai">secondary reporting</a> and <a href="https://stackoverflow.blog/2025/12/26/ai-vs-gen-z/">Stack Overflow's coverage</a></li>
+<li><a href="https://tessl.io/blog/proposed-evaluation-framework-for-coding-agents">Tessl: a proposed evaluation framework for coding agents</a> · <a href="https://arxiv.org/html/2504.09798v1">ReadMe.LLM: a framework to help LLMs understand your library</a></li>
 </ul>
 
 
@@ -12640,7 +12173,7 @@ system once it resolves queries and composes backends.</p>
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../research-spec-kit-comparison/" class="md-footer__link md-footer__link--prev" aria-label="Previous: GitHub spec-kit compared against our SDD process (ID-238, BK-343)">
+          <a href="../research-bug-prevention-beyond-testing/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Bug Prevention Beyond Testing">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -12650,20 +12183,20 @@ system once it resolves queries and composes backends.</p>
                 Previous
               </span>
               <div class="md-ellipsis">
-                GitHub spec-kit compared against our SDD process (ID-238, BK-343)
+                Bug Prevention Beyond Testing
               </div>
             </div>
           </a>
         
         
           
-          <a href="../research-store-api-refinement/" class="md-footer__link md-footer__link--next" aria-label="Next: Store API Refinement">
+          <a href="../research-dagster-extension/" class="md-footer__link md-footer__link--next" aria-label="Next: Dagster Extension (ext.dagster, ID-075)">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Store API Refinement
+                Dagster Extension (ext.dagster, ID-075)
               </div>
             </div>
             <div class="md-footer__button md-icon">
