@@ -1467,7 +1467,10 @@ open item as neglect.
 ripple-check, the revisit pins, the generated inventories, the unreleased
 CHANGELOG the release body is built from — say what is actually true.
 
-**Closes when:** the backlog files are structurally linted (ID-235);
+**Closes when:** the backlog files are structurally linted (ID-235); the
+`CLAUDE.md` typography rules that are mechanically checkable are checked
+(BK-361); the two mechanisms that claim more authority than the rule they route
+on are reconciled with it (BK-362, BK-363);
 CHANGELOG `[Unreleased]` is linted for duplicate entries, stub shape and the
 audience rule — **met** by ID-252 (`check_changelog_unreleased.py`), whose
 stated bound is that it keys on the ID at line start, so a single entry whose
@@ -1478,7 +1481,7 @@ hand-maintained inventories ID-245 names are generated — four bullets, of whic
 the checker inventory has shipped; `check_formal_trace` proves
 assertion rather than citation (ID-207); and both open revisit pins have fired
 and named successors (ID-150, ID-249).
-**Bounded to those seven deliberately.** "No artifact asserts what no mechanism
+**Bounded to those nine deliberately.** "No artifact asserts what no mechanism
 can check" is the promise and cannot be a closing condition: this section's own
 preamble records that detecting the remaining class needs semantic comparison of
 prose, which research § 1 marks as having no general oracle. Nor is "no figure
@@ -1625,6 +1628,108 @@ the commit that writes it lands, so cite the generator instead.
   one place. It lives in none. The citation was thin before ID-252 and ID-252
   removed the last word that made it plausible, so whoever writes the expansion
   step also decides where that order is written down.
+
+- [ ] **BK-361 — Typography rules are asserted in `CLAUDE.md` and enforced by nobody**
+  spec: — · effort: S/M · audience: contributor.tooling
+  [`CLAUDE.md` § Response style](../CLAUDE.md#response-style) states four
+  typography rules: em dashes used sparingly, never `--` as an em dash
+  substitute, `—` as the table N/A value rather than `--` or `No`, and a closed
+  list of contexts where `--` survives. Nothing checks any of them.
+  `scripts/check_tla_no_emdash.py` is the nearest thing and reads only
+  `sdd/formal/tla/**/*.tla`, so it reaches none of the prose the rules govern.
+  The promise this sits under is the one at stake: an authority doc asserting a
+  convention the corpus does not follow misleads the next person who reads it as
+  a description of the corpus.
+
+  **Measured over the 318 tracked `.md` files** (`git ls-files '*.md'`, scanned
+  with fenced blocks and HTML comments stripped and the rule's own exemption
+  list applied):
+  - **9 uses of `--` or `---` as an em dash, across 7 files.** Three are in
+    user-facing pages: `docs-src/guides/backends/sql-query.md`,
+    `docs-src/guides/glob-pattern-matching.md`, and
+    `docs-src/reference/api/backends/sql-query.md`.
+  - **73 table cells reading `No` or `no` where the rule requires `—`, across 17
+    files.** Twelve sit in three specs — `014-pyarrow-filesystem-adapter.md`,
+    `031-ext-dagster.md`, `045-write-result.md` — and those are capability
+    tables, the exact shape the rule names.
+  - **23 numeric ranges written `192--214`, across 4 files.** Left unclassified
+    on purpose: the exemption covers spaced spec-ID ranges, and whether an
+    unspaced line-number range is the same thing is a decision this item does
+    not pre-make.
+
+  **Two of the four rules are mechanical; two are not.** The `--` substitute and
+  the table N/A value have exact definitions. "Sparingly" has no threshold, and
+  measuring one first shows why inventing it would fail: per-file em dash density
+  across the 51 `sdd/research/` records over 500 words runs from 0.3 to 40.9 per
+  1000 words, a 136× spread over files nobody has called wrong. Scope a first
+  pass to the two absolute rules and leave density review-enforced.
+
+  **Constraints for whoever implements this.** A line-based scanner over-reports:
+  the scan above produced one false positive at `sdd/BACKLOG-DONE.md:3560`, where
+  a backtick span wraps two lines and hides a CLI flag from a per-line filter.
+  Multi-line backtick and comment handling is a requirement, not a refinement.
+  The exemption list is a closed set living in `CLAUDE.md`, so the check either
+  reads it there or restates it — the second is a second description and is what
+  [`DRIFT-RULES.md`](DRIFT-RULES.md#rules) governs, which applies here in full
+  because this adds a cross-artifact check. And note the wiring trap BK-333
+  documents: a checker reading `.md` under `sdd/` must reach a gate that an
+  `sdd/`-only diff actually triggers, which is the failure `check_tla_no_emdash`
+  already demonstrates.
+
+  **Open question:** whether the 73 cells and 9 substitutions are corrected in
+  the same change or baselined the way `check_formal_trace` baselines its two
+  known gaps. The corpus fix is the larger half of the effort, and it is the half
+  that decides whether the gate can land green.
+
+- [ ] **BK-362 — A `repo-only` marker does not stop the docs bridge claiming the file**
+  spec: — · effort: S · audience: contributor.tooling
+  [`AUTHORING.md`](AUTHORING.md#file-classification) Rule 1 says a per-file
+  marker overrides the directory default, and for classification it does. The nav
+  and the design index do not consult it: they are generated from the `glob` in
+  each `sdd_kinds` entry of [`docs-src/_path_rules.yml`](../docs-src/_path_rules.yml),
+  so a file matching `research-*.md` is claimed for the nav even when its marker
+  says `repo-only` and the bridge therefore emits no page.
+  **Measured, not predicted.** Adding a repo-only `research-*.md` produced four
+  strict-build failures — one `nav` reference and three links, from `SUMMARY.md`,
+  `explanation/design/index.md` and `explanation/design/research/index.md` —
+  each naming a page the bridge had correctly declined to emit. The file was
+  reverted; the tooling gap was not, which is why this item exists rather than a
+  paragraph in a merged PR description.
+  **The gate that should catch it does not.** `check_docs_framework.py` passes in
+  that state, reporting all seven of G-01..G-07 green, because classification is
+  in fact correct; only `docs-build --strict` aborts. So the fast checker is
+  wired and blind, which is the shape BK-333 documents for gate routing,
+  arriving here as a checker that runs and does not look.
+  **A precedented fix exists and is per-file.** `sdd/adrs/DIGEST.md` carries both
+  a `repo-only` marker and a `skip_stems` entry, and the pair is what works. That
+  is the disposition to weigh against: teach the generator to read markers, or
+  keep `skip_stems` and document the pairing where an author will meet it. The
+  second is cheaper and silently fails the next author who does not know.
+
+- [ ] **BK-363 — Two coordination artefacts demand a trace the authority does not owe**
+  spec: — · effort: S · audience: contributor.process
+  [`CLAUDE.md` § Trace authoring](../CLAUDE.md#trace-authoring) owes a trace when
+  work *implements* an item or closes it by implementing it, and carves out an
+  item decided against, one absorbed, and a pure advisory annotation. Two
+  artefacts that route on the same rule are stricter than it.
+  - `.claude/skills/pr/SKILL.md` step 3 extracts `^([A-Z]+-\d+[a-z]?)[:\s]` from
+    every commit subject and stops when any ID lacks `sdd/traces/<id>-*.yml`,
+    with no exemption for an item that is *filed* rather than implemented. The
+    commit filing BK-361 is subject-prefixed `BK-361:` per
+    [§ Backlog](../CLAUDE.md#backlog), so the gate would block a PR the authority
+    says owes nothing.
+  - [`CLAUDE-REFERENCE.md`](CLAUDE-REFERENCE.md) "Backlog item touched" carries
+    the narrower form: it exempts only an item decided against or absorbed, and
+    omits both the filed-without-implementation case and the advisory annotation.
+  **Same promise as BK-361, opposite polarity.** BK-361 is an authority asserting
+  what no mechanism checks; this is a mechanism enforcing more than the authority
+  asserts. Both make a coordination artefact say something untrue, which is what
+  this section is for.
+  **What it does not decide.** Whether the fix is an exemption in the gate keyed
+  on the diff containing no implementation, a convention that a filing commit
+  carries no ID prefix — which would contradict § Backlog — or an accepted
+  divergence registered under [`DRIFT-RULES.md` Rule 6](DRIFT-RULES.md#tolerated).
+  The first is the only one that leaves both artefacts true.
 
 - [ ] **BK-346 — The ripple-check table answers questions adjacent to the ones asked**
   spec: — · effort: S/M · audience: contributor.process
