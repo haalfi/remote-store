@@ -161,7 +161,7 @@ logging.getLogger("remote_store").setLevel(logging.DEBUG)
 | Level | When |
 |-------|------|
 | `DEBUG` | Method entry (every Store operation) |
-| `INFO` | Mutating-operation completion (write, delete, move, copy) |
+| `INFO` | An operation that completed and changed something, plus connection and health milestones (a connect, a successful `ping`) |
 | `WARNING` | Suppressed hook exceptions, fallback behaviour, an unsafe configuration, a retry before it sleeps, and a backend failure before it is raised |
 
 Errors are reported by the exception, not by a log record: the library emits
@@ -181,9 +181,15 @@ formatters or structlog processors:
 | `backend` | Backend name (`"local"`, `"s3"`, ...) |
 
 `op="error_mapping"` marks a record reporting a backend failure the library has
-just concluded and is about to raise. It is the field to filter on when a
-logger carries other warnings you do not want — retry records on the same
-logger, for instance.
+just concluded and is about to raise.
+
+**Not every record carries every field.** `op` is absent from records the
+library emits through third-party machinery — a retry warning, for one — so
+code that reads these fields must tolerate their absence
+(`getattr(record, "op", None)`, not `record.op`). A `logging.Filter` that
+assumes the attribute raises `AttributeError` inside `Filterer.filter`, which
+the logging module does not route through `handleError`, so it propagates into
+the call that logged.
 
 ## Error Handling
 

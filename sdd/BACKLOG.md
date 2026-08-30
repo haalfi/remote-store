@@ -368,8 +368,14 @@ compliant the day before.
   methods; `docs-src/guides/health-check.md` § Error handling maps
   `BackendUnavailable` to "Network error, DNS failure, or timeout" and shows a
   caller catching it. A caller who followed that guide does not catch a refused
-  connect at all. A DNS failure (`socket.gaierror`) is the same shape and is
-  likely the same answer, unmeasured.
+  connect at all.
+  **DNS is the same answer, and it is now measured rather than presumed:**
+  against an RFC 2606 `.invalid` host, `check_health()` raises
+  `RemoteStoreError("[Errno -2] Name or service not known")` with a
+  `socket.gaierror` context. So two of the three shapes that row names raise the
+  base class, and only the timeout raises what it promises — which is why the
+  guide now carries a caveat pointing here rather than a corrected row: writing
+  current behaviour into the table would document a defect as the contract.
   **Why it is not BK-359's to fix.** Changing which exception type a refused
   connect raises is a behaviour change for anyone whose `except` clauses match
   the current one, so it needs the breaking-change treatment rather than a

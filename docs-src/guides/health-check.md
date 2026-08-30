@@ -20,14 +20,12 @@ store.ping()  # raises on failure, silent on success
 - **Liveness probes** — Kubernetes `livenessProbe` or similar health endpoints.
 - **Connection validation** — verify config after loading from TOML/YAML.
 
-!!! note "A polling probe against a down backend writes a log line per poll"
-    A backend that concludes it is unreachable logs one `WARNING` as it raises,
-    so a probe on a 10-second period against a server that is down produces six
-    lines a minute for as long as it stays down. That is the intended level for
-    a genuinely unreachable backend, but it is worth knowing before you point a
-    liveness probe at it. To keep the probe quiet without silencing the rest of
-    the library, filter on the record's `op` field — see
-    [Structured `extra` fields](observe.md#structured-extra-fields).
+!!! note "A polling probe against a down backend is not quiet"
+    Each failed poll writes several `WARNING` records — the connect is retried,
+    and every retry logs — so a probe on a short period against a server that
+    stays down produces a steady stream of them. Size the probe's period with
+    that in mind. Measured on SFTP against a refused port: two records per poll,
+    or three when the `AUTO_ADD` host-key policy adds its own warning.
 
 ## Error handling
 
@@ -37,7 +35,7 @@ store.ping()  # raises on failure, silent on success
 |-----------|---------|
 | `PermissionDenied` | Invalid credentials or insufficient permissions |
 | `NotFound` | Bucket, container, or root directory does not exist |
-| `BackendUnavailable` | Network error, DNS failure, or timeout |
+| `BackendUnavailable` | Network error, DNS failure, or timeout — but see the caveat below |
 
 ```python
 from remote_store import BackendUnavailable, NotFound, PermissionDenied
@@ -52,7 +50,15 @@ except BackendUnavailable:
     log.error("Backend unreachable for %s", store)
 ```
 
-## Per-backend strategies
+!!! warning "On SFTP, an unreachable server may not raise `BackendUnavailable`"
+    Measured against a refused port and against a DNS failure, `SFTPBackend`
+    raises the base [`RemoteStoreError`](../reference/api/errors.md) rather than
+    `BackendUnavailable`; only a timeout raises `BackendUnavailable`. A caller
+    catching `BackendUnavailable` alone therefore misses the two commonest ways
+    a server is unreachable. Catch `RemoteStoreError` if you need to cover them
+    today. This is a known defect rather than intended behaviour, and the
+    exception type will change when it is fixed — which is why this caveat sits
+    beside the table rather than being written into it.
 
 Each backend uses the cheapest possible read-only operation:
 

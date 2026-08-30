@@ -187,16 +187,34 @@ phases:
           was described as an operation name while this record's op is a phase.
           Found while fixing it that the ERROR row was already false — nothing
           in src/ calls log.error at all — so the table now says errors are
-          reported by the exception rather than by a record
+          reported by the exception rather than by a record.
+          Retrospective, and this one is mine rather than the document's: the
+          fix pass also added a recipe telling readers to filter on the op
+          field, written from reading the logging module rather than running it.
+          Round 2 executed it. A logging.Filter reading record.op raises
+          AttributeError inside Filterer.filter, which logging does not route
+          through handleError, so it propagates through tenacity's
+          before_sleep_log into _connect and is mapped — turning a working store
+          into one that raises RemoteStoreError("'LogRecord' object has no
+          attribute 'op'") on connect. Strictly worse than the blank message
+          this item exists to fix. The recipe is withdrawn; the field's
+          documentation now states that records may lack it and that getattr is
+          required
         outcome: misleading
       - file: docs-src/guides/health-check.md
-        section: "Use cases"
+        section: "Use cases, Error handling"
         read_type: reference
         extract: >-
-          The guide sells ping() for Kubernetes livenessProbe, and the new
-          record makes a polling probe against a down backend write a line per
-          poll. The consequence was stated only in the spec; the user-facing
-          half belongs in the same commit
+          The guide sells ping() for Kubernetes livenessProbe, so the log-volume
+          consequence belonged here and not only in the spec. Retrospective: the
+          arithmetic I wrote was wrong on every figure, and round 2 measured it.
+          A poll against a refused port raises RemoteStoreError, emits two
+          WARNING records (three under AUTO_ADD), and none of them carries
+          op="error_mapping" — the canonical down-server path never reaches
+          _unavailable at all. So the note claimed a per-poll record that is not
+          emitted and a filter that suppresses nothing, reintroducing in a guide
+          the same over-reach the same commit had just retracted from SFTP-023.
+          Rewritten to what was measured
         outcome: ok
   - id: verify
     name: Verify
