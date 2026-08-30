@@ -1023,10 +1023,10 @@ class SFTPBackend(Backend):
 
         The destination is also unprotected on the **rename-fallback** path,
         which removes it before renaming onto it: a stall in that window leaves
-        the destination gone with the payload stranded in the orphan temp. That
-        path is entered whenever ``posix_rename`` raises a non-dead ``OSError``
-        — a permission error or a directory target reach it on a server that
-        offers the extension, so it is not confined to servers that lack it.
+        the destination gone. That path is entered when ``posix_rename`` fails
+        for a reason ``_is_connection_dead`` does not recognise and the target
+        is not a directory, so it is not confined to servers lacking the
+        extension.
 
         As in ``write``, the returned ``WriteResult`` carries ``size`` and
         ``source="native"`` but leaves every rich field (``last_modified`` /
@@ -1524,8 +1524,8 @@ class SFTPBackend(Backend):
         There is a further state on the **rename-fallback** path, which removes
         the destination before renaming onto it: a stall in that window leaves
         the destination gone while the source survives. That path is entered
-        whenever ``posix_rename`` raises a non-dead ``OSError`` — a permission
-        error, a directory target, or a cross-filesystem rename — so it is not
+        when ``posix_rename`` fails for a reason ``_is_connection_dead`` does
+        not recognise and the destination is not a directory, so it is not
         confined to servers lacking ``posix-rename@openssh.com``.
 
         Raises:

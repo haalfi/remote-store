@@ -264,6 +264,52 @@ error: it meets the rows it was brought to and misses the bound that arrived
 after, which is what a clause growing a new sentence does to a backend that was
 compliant the day before.
 
+- [ ] **BUG-266 — A non-dead rename failure in the atomic fallback removes the destination *and* the temp, losing both copies**
+  spec: SFTP-014, AW-003 · effort: M · audience: user.api
+  Distinct from BUG-264, which is about a *stall* in the same window and where the
+  payload survives in the orphan temp. Here nothing survives.
+  Measured against the in-process server with `posix_rename` unsupported and the
+  fallback `rename` failing for a **non-dead** reason (`EACCES`, and again with
+  `EIO`), for both `write_atomic` and `open_atomic`: `_rename_fallback` removes the
+  destination, the `rename` fails, and `write_atomic`'s `except BaseException`
+  handler then computes `connection_lost = False` and *successfully* unlinks the
+  temp. Observed `remove()` calls were the destination followed by the temp, and
+  the directory was left empty. `PermissionDenied` is raised, so the caller is
+  correctly told the write failed — and their pre-existing file is gone with no
+  copy of the replacement anywhere.
+  **The cleanup guard is doing exactly what it was designed to do**, which is why
+  this is a design question rather than a typo: it skips the unlink only when the
+  failure is a dropped connection, on the reasoning that a live connection can
+  afford the tidy-up. That reasoning does not account for the fallback having
+  already destroyed the destination before the failure, which makes the temp the
+  only remaining copy.
+  **`AW-003`** ("If `overwrite=True`, the atomic rename replaces the existing
+  file") is unqualified against this path and is the cross-backend clause to
+  amend, on the same terms AW-004 was amended by BK-360.
+  **Found by BK-360's review round 4, by a measuring pass.** BK-360 softened the
+  recoverability claims in the guide and in BUG-264 rather than asserting a temp
+  the caller may not have; it does not fix this.
+
+- [ ] **BUG-265 — `022-streaming-atomic-writes.md` carries three `open_atomic` invariants that shipped tests refute**
+  spec: SAW-004, SAW-005, SAW-009 · effort: S · audience: contributor.process
+  BK-360 amended AW-004 for the SFTP dropped-connection divergence and corrected
+  `open_atomic`'s docstring, but the spec that governs `open_atomic` was not told:
+  - **SAW-004** "On exception, target path is unchanged (no partial file)" —
+    refuted by `test_the_rename_fallback_destroys_the_destination_when_the_promote_stalls[open_atomic]`
+    (destination gone) and `test_a_lost_reply_can_complete_the_operation_it_reports_as_failed[open_atomic]`
+    (destination replaced), both shipped and passing.
+  - **SAW-005** "Temp artifact is cleaned up on both success and failure" — the
+    same clause AW-004 was amended for, refuted by
+    `test_a_stalled_atomic_write_preserves_the_destination_and_leaves_an_orphan_temp[open_atomic]`.
+  - **SAW-009**'s per-backend prose, "On failure, `sftp.remove()` cleans up" —
+    contradicted by the deliberate skip AW-004 now records.
+  The divergence is already established in code, in `open_atomic`'s docstring and
+  in AW-004; only this spec is stale, so the work is to carry the same scoping
+  across rather than to decide anything new. Left out of BK-360 deliberately: that
+  item's review had already absorbed two cross-spec surfaces, and the evidence
+  there was that each absorption was where the next defect came from.
+  **Found by BK-360's review round 4, by a measuring pass.**
+
 - [ ] **BUG-264 — `_rename_fallback` destroys the destination and strands the payload when the promote stalls**
   spec: SFTP-014, SFTP-030 · effort: M · audience: user.api
   Under `overwrite=True`, `_rename_fallback` and `_move_fallback` each
@@ -277,18 +323,27 @@ compliant the day before.
   fallbacks guard the `remove` on it, and with `overwrite=False` the prior stat
   raises `AlreadyExists` before either fallback is reached.
   **It is not confined to servers lacking `posix-rename@openssh.com`.** The route
-  in is `posix_rename` raising a *non-dead* `OSError` — a permission error, a
-  directory target, or an `EXDEV` cross-filesystem rename all qualify — which
-  `_move_fallback`'s own docstring already says. Reproduced on a server that
+  in is a `posix_rename` failure `_is_connection_dead` does not recognise, on a
+  target `_raise_if_dir` (or, for `move`, the destination `stat`) has not already
+  rejected. Measured per trigger against a server that answers the extended
+  request: `EACCES` reaches both fallbacks; `EXDEV` reaches `_move_fallback`
+  only, since `write_atomic` puts its temp in the target's own directory; a
+  **directory target reaches neither** — both are guarded ahead of the fallback.
+  `_move_fallback`'s own docstring names a directory target as a trigger and is
+  wrong about it; correcting that docstring belongs with this fix. Reproduced on a server that
   advertises and answers the extended request and fails this one, with nothing
   patched client-side: destination gone, payload in the temp. That widens who is
   exposed from a legacy-server edge case to any store where a rename can fail for
   a mundane reason.
   **It is the residue state that leaves the caller worst off**, and it is reached
-  through the operation the library recommends for safety. (Not the only one that
-  destroys data: `write`'s `empty` state leaves no copy anywhere, whereas here the
-  payload survives in the temp or the source. The distinction is recoverability,
-  not severity.)
+  through the operation the library recommends for safety. Under a *stall* the
+  payload usually survives — in the orphan temp for the atomic paths, or in the
+  source for `move` — because `_is_connection_dead` is true and the cleanup unlink
+  is skipped. **That consolation does not hold for a non-dead failure**: BUG-266
+  records a measured case where the fallback removes the destination, the rename
+  fails for a non-dead reason, and the cleanup then successfully removes the temp
+  too, so neither copy remains. So this item should not be fixed on the assumption
+  that the temp is a recovery path.
   **A second, independent half: it costs two `io_timeout` bounds, not one.** The
   `remove` runs under `contextlib.suppress(OSError)`, so its own timeout is
   swallowed and the following `rename` re-enters the same stalled channel.

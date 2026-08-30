@@ -355,12 +355,12 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
     | `write()` | The destination unchanged, absent, **emptied**, holding an unpredictable prefix, or **written in full** |
     | `copy()` | The same five, at `dst`; the source is never affected |
     | `move()` | The paths unchanged, **the move completed** (source gone), or **the destination destroyed** with the source still there |
-    | `write_atomic()` / `open_atomic()` | The destination unchanged, often with an orphan temp; **the write completed**; or **the destination destroyed** with your data left in the temp file |
+    | `write_atomic()` / `open_atomic()` | The destination unchanged, often with an orphan temp; **the write completed**; or **the destination destroyed**, usually with your data left in an orphan temp file |
 
     The destroyed-destination cases come from a rename fallback that removes the
-    destination before renaming onto it. It is not confined to old servers: any
-    rename that fails for a mundane reason — a permission error, a directory in
-    the way, a cross-filesystem `move` — takes that path.
+    destination before renaming onto it. It is not confined to old servers: a
+    rename that fails for an ordinary reason, such as a permissions problem on
+    the destination, takes that path too.
 
     So:
 

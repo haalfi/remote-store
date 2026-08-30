@@ -18,6 +18,8 @@ audience:
 discovery_followups:
   - BK-364
   - BUG-264
+  - BUG-265
+  - BUG-266
 # docs-src/_data/graph/graph.json is deliberately absent. The ripple-check
 # anticipates it after a public-docstring change and `hatch run gen-graph` was
 # run, but it produced no diff: the graph carries signatures and gating, not
@@ -47,12 +49,13 @@ surprising_ripples:
 
 # Derivation, per the review_rounds description in _schema.yml: on
 # `git log --oneline origin/master..HEAD`, 0e39855 implements and does not
-# count; a12ee23 incorporates review round 1, 0bf25ae round 2, and the commit
-# this trace ships in incorporates round 3 (a four-member panel: unprimed,
-# measuring, whole-file, neglected-surface). Value is 3 — rounds, not commits,
+# count; a12ee23 incorporates review round 1, 0bf25ae round 2, e9ddbff round 3
+# (a four-member panel: unprimed, measuring, whole-file, neglected-surface),
+# and the commit this trace ships in incorporates round 4 (the three closing
+# gates: unprimed, measuring, whole-file). Value is 4 — rounds, not commits,
 # counted from the round each commit answers rather than from a commit tally,
 # which would over-report if one round ever needed two pushes.
-review_rounds: 3
+review_rounds: 4
 
 phases:
   - id: orient
@@ -271,12 +274,17 @@ phases:
         section: "_move_fallback (docstring)"
         read_type: reference
         extract: >-
-          "Fallback servers only" was false and the repo already said so: the
-          route in is a non-dead OSError from posix_rename, which a permission
-          error or directory target produces on a server that offers the
-          extension. Reproduced against a server answering the extended request
-          with a failure, nothing patched client-side. The scope had been
-          asserted in five places from one reading
+          "Fallback servers only" was false: the route in is a posix_rename
+          failure _is_connection_dead does not recognise. Retrospective: the
+          correction then named three example triggers taken from this docstring
+          rather than run, and round 4 measured two of them unreachable — a
+          directory target is rejected by _raise_if_dir and by move's own stat
+          before either fallback, and EXDEV cannot arise for _rename_fallback
+          because the temp sits in the target's own directory. The docstring
+          cited as authority is itself wrong on the directory case. Fixing an
+          asserted-from-one-reading claim by asserting a second reading is the
+          shape this trace records twice; the examples are now gone and the
+          clause states the code condition alone
         outcome: misleading
       - file: sdd/specs/007-atomic-writes.md
         section: "AW-004"
@@ -306,6 +314,54 @@ phases:
           left untouched" — refuted by three tests this PR adds. write_atomic
           was rewritten in the same hunk and its sibling, which shares _promote,
           was never opened
+        outcome: ok
+
+  - id: report
+    name: Round 4 — the closing gates, and the fix pass is the defect source
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_promote, move (destination stat)"
+        read_type: verify
+        extract: >-
+          Round 3's correction named three example triggers for the fallback and
+          two were unreachable: _raise_if_dir runs before _rename_fallback for
+          exactly this reason and move stats its destination first, so a
+          directory target reaches neither; EXDEV cannot reach _rename_fallback
+          because the temp is created in the target's own directory. Measured
+          with both fallbacks instrumented — 0 calls for the directory case.
+          audit-020 had already recorded the guard as live-verified
+        outcome: misleading
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030 (one-bound paragraph; residue derivation)"
+        read_type: verify
+        extract: >-
+          Two self-inflicted contradictions from the same commit: the residue
+          clause said the two-bound cost is something the one-bound paragraph
+          "does not currently allow for" while that commit rewrote the paragraph
+          to allow for it, and "the named states are measured: each was run" was
+          true of 12 of 18. Both are the fix pass contradicting itself rather
+          than the code
+        outcome: ok
+      - file: sdd/specs/022-streaming-atomic-writes.md
+        section: "SAW-004, SAW-005, SAW-009"
+        read_type: verify
+        extract: >-
+          Three more unqualified invariants that shipped tests refute, on the
+          spec governing open_atomic — the surface AW-004's amendment did not
+          reach. Filed as BUG-265 rather than absorbed: the round's own evidence
+          is that each absorbed surface was where the next defect came from
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Stop rule / Divergence check"
+        read_type: gate
+        extract: >-
+          Fired: round 4's findings are in text round 3's fix pass added, and a
+          false trigger inside a danger note is worse than the incomplete claim
+          it replaced. Escalated with the evidence rather than patching a fourth
+          trigger list. The re-plan that came back is the one that addresses the
+          root cause across all four rounds — ship only mechanism claims a test
+          or a single visible conditional backs, and delete the rest rather than
+          correcting them again
         outcome: ok
 
   - id: verify

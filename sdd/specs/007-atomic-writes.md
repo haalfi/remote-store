@@ -27,19 +27,25 @@ Atomic writes ensure that a file is either fully written or not written at all. 
 
 **Scoped to a failure the backend can still act on.** Cleanup is an operation
 against the same store, so it presupposes a usable connection. A backend whose
-failure *is* the connection dying cannot honour this clause, and must not try:
-the unlink would re-enter a dead channel and stall again inside the error path,
-delaying the original error for as long as the backend waits. Such a backend
-leaves an orphan and says so in its own spec section.
+failure *is* the connection dying may be unable to honour this clause. Whether
+it should still attempt the unlink is the backend's own call and turns on
+whether the attempt would re-enter the *same* failed connection: an
+HTTP-per-request client can often complete a delete that a wedged SSH channel
+cannot. Either way the orphan is possible, and a backend in that position says
+so in its own spec section.
 
-**The named divergence is SFTP.** `SFTPBackend.write_atomic` / `open_atomic`
-deliberately skip the cleanup unlink when the failure is itself a
-dropped-connection signal, so a stalled atomic write leaves a
-`.~tmp.<name>.<uuid8>` behind — asserted by
+**Two backends do, and they diverge differently.** `SFTPBackend.write_atomic` /
+`open_atomic` **deliberately skip** the cleanup unlink when the failure is itself
+a dropped-connection signal, because it would re-enter the same dead channel and
+stall again inside the error path — so a stalled atomic write leaves a
+`.~tmp.<name>.<uuid8>` behind, asserted by
 `test_a_stalled_atomic_write_preserves_the_destination_and_leaves_an_orphan_temp`.
-See [009-sftp-backend.md](009-sftp-backend.md) SFTP-014 for the caveat and
+`AzureBackend` **attempts** the delete under a suppressing guard and may simply
+fail, which [012-azure-backend.md](012-azure-backend.md) already records as an
+inherent limitation of simulated atomicity over a network.
+See [009-sftp-backend.md](009-sftp-backend.md) SFTP-014 for the SFTP caveat and
 SFTP-030 for what the destination itself holds. Stated here rather than left to
-that spec because this clause is the cross-backend one, and an unqualified
+those specs because this clause is the cross-backend one, and an unqualified
 invariant that a shipped test contradicts is a spec defect however narrowly the
 divergence is scoped.
 

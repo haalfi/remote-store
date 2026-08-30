@@ -1297,7 +1297,7 @@ def test_seek_to_end_on_a_stalled_channel_costs_one_bound(stall_relay: _StallRel
     ],
     ids=["absent", "intact", "truncated-to-empty", "nested-target-absorbed", "holds-a-prefix"],
 )
-def test_stalled_write_leaves_one_of_four_destination_states(
+def test_stalled_write_leaves_one_of_the_named_destination_states(
     stall_relay: _StallRelay,
     sftp_server: tuple[int, str] | None,
     direction: str,
@@ -1307,7 +1307,7 @@ def test_stalled_write_leaves_one_of_four_destination_states(
     depth: int,
     expected: str,
 ) -> None:
-    """A stalled non-atomic ``write`` leaves one of four states, decided by which reply was lost.
+    """A stalled non-atomic ``write`` leaves one of the states SFTP-030 names, decided by which reply was lost.
 
     ``write`` streams to the destination path itself — no temp-and-rename — so
     unlike ``write_atomic`` there is nowhere else for a half-delivered payload
@@ -1346,6 +1346,14 @@ def test_stalled_write_leaves_one_of_four_destination_states(
     Which state a given caller met is therefore *not derivable from the error*,
     which is what makes the documented rule "assume any of them, retry with
     ``overwrite=True``" the only safe advice rather than a conservative one.
+
+    **These are named states, not an enumeration**, and the name of this test says
+    so deliberately. It read "one of four states" until a later round found a
+    fifth — a write whose silence falls on its last acknowledgement, covered by
+    ``test_a_stalled_write_can_have_delivered_the_payload_in_full``. SFTP-030 now
+    states a closure instead (the residue is any prefix of the operation's
+    effects, up to and including all of them), so a state absent from this
+    parametrisation is not thereby unreachable.
 
     Asserted on shape, not on sizes. The prefix length is a function of the
     chunk size and the SSH window and would go stale as either moves; what is
@@ -1765,6 +1773,7 @@ def test_a_lost_reply_can_complete_the_operation_it_reports_as_failed(
 
 @pytest.mark.spec("SFTP-014")
 @pytest.mark.spec("SFTP-030")
+@pytest.mark.spec("AW-004")
 @pytest.mark.parametrize("op", ["write_atomic", "open_atomic"])
 def test_a_stalled_atomic_write_preserves_the_destination_and_leaves_an_orphan_temp(
     stall_relay: _StallRelay, sftp_server: tuple[int, str] | None, op: str

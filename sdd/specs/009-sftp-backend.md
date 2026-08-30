@@ -821,15 +821,18 @@ the body — not against a lost promote reply, and not on the fallback path.
 `_move_fallback`: those remove the destination and then rename onto it, so a
 silence beginning at the `rename` leaves the destination gone with nothing put in
 its place. **It is not confined to servers lacking `posix-rename@openssh.com`.**
-The route in is `posix_rename` raising a *non-dead* `OSError`, which is a
-strictly larger set — a permission error, a directory target, or an `EXDEV`
-cross-filesystem rename all reach it on a server that offers the extension, as
-`_move_fallback`'s own docstring already states. Measured on a server that
-advertises and answers the extended request and fails this one: destination gone,
-payload in the orphan temp. It is pre-existing behaviour rather than anything
+The route in is a `posix_rename` failure that `_is_connection_dead` does not
+recognise, on a target `_raise_if_dir` has not already rejected — a strictly
+larger set than "the server lacks the extension", and that condition is the
+whole of the claim. **No example triggers are named here**, deliberately:
+naming them requires knowing what every guard between `posix_rename` and the
+fallback does, an earlier revision named three of which two were unreachable,
+and the two guards involved (`_raise_if_dir` here, the destination `stat` in
+`move`) are the kind of detail a reader should check in the code rather than
+trust from prose. It is pre-existing behaviour rather than anything
 this clause introduced, and it is tracked as **BUG-264** along with the
 second `io_timeout` bound it costs — the suppressed `remove` swallows its own
-timeout, which the one-bound paragraph above does not currently allow for.
+timeout, which is the exception the one-bound paragraph above records.
 
 **The prefix is not a resume point.** Its length is a function of the chunk size
 and the SSH window, not of anything the caller controls or is told, so a caller
@@ -850,12 +853,17 @@ In every case, parent directories `_ensure_parent_dirs` created on the way in
 remain behind — a failed write is not a rollback.
 
 **Derivation.** The closure above is argued from the mechanism. The named states
-are measured: each was run against a real silent peer through the `_StallRelay`
+are **not uniformly pinned, and the difference is stated rather than blurred**:
+those with a test were run against a real silent peer through the `_StallRelay`
 harness, with the destination read back through a second backend wired straight
-to the server rather than through the condemned channel. States whose silence
+to the server rather than through the condemned channel, and states whose silence
 must begin at a specific round-trip are staged by silencing the relay from inside
 the call that issues it, so the moment is deterministic rather than raced against
-a timer.
+a timer. The rest follow from the closure and are **argued, not measured** —
+chiefly `copy`'s untouched, absent and complete states, and `write_atomic`'s
+absent state, each of which is mechanically the same event as a `write` state
+that does have one. Saying which is which costs a sentence, and every previous
+revision of this paragraph claimed more coverage than it had.
 
 A generated enumeration over the condition space — operation x the round-trip at
 which silence begins x direction x `overwrite` x whether the destination
@@ -868,7 +876,8 @@ its failure is what the closure replaces. It earns its mention because the state
 it *did* reach are sound and are among those named above.
 
 The tests behind the named states are
-`test_stalled_write_leaves_one_of_four_destination_states`,
+`test_stalled_write_leaves_one_of_the_named_destination_states`,
+`test_a_stalled_write_can_have_delivered_the_payload_in_full`,
 `test_stalled_copy_leaves_a_prefix_at_the_destination_too`,
 `test_a_lost_reply_can_complete_the_operation_it_reports_as_failed`,
 `test_the_rename_fallback_destroys_the_destination_when_the_promote_stalls` and
