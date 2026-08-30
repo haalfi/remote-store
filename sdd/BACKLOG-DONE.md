@@ -355,6 +355,120 @@ if evidence changes; these are retired.
   it — the same two-places-to-widen shape the `_MARKER` comment argues against,
   rebuilt three lines from where the argument is written.
 
+- [x] **ID-252 — CHANGELOG `[Unreleased]` was unlinted, so a duplicated entry shipped and contradicted itself**
+  spec: — · effort: S · audience: user.site, contributor.tooling
+  **The `user.site` tag was added in round 5, and it is the tag that costs
+  something.** The first version read `contributor.tooling` alone, which made the
+  CHANGELOG entry not owed — and the entry is owed by the gate this very item
+  adds, so the tag was the only thing standing between the item and its own rule.
+  Re-derived rather than argued —
+  `python -c "import pathlib,subprocess as s; print(len(s.run(['git','show','67a5285:CHANGELOG.md'],capture_output=True).stdout) - len(pathlib.Path('CHANGELOG.md').read_bytes()))"`
+  — this takes **12,756 bytes** out of `CHANGELOG.md`, a file carrying `<!-- doc: dual dest=reference/changelog.md -->`
+  and therefore published at `docs.remotestore.dev/reference/changelog/`, which is
+  what [`traces/_schema.yml`](traces/_schema.yml) defines `user.site` to mean. A
+  tag whose only effect is to exempt the work from its own gate is the wrong tag.
+  **The repair had already happened, by the route the item predicted.** The item
+  scoped the deletion of the two stale lines out of itself and said whichever
+  change landed first would do it; `165bd00` collapsed the duplicate BK-354 and
+  BK-355 entries into stubs three commits later. So this work began against a
+  section that already read correctly, and the duplicate rule could not be tested
+  against master. It was tested against history instead: run over `165bd00~1`,
+  `check_changelog_unreleased.py` reports 12 violations — both duplicates, each
+  naming the line of the copy it duplicates, and the ten entries that state had
+  over the budget.
+  **The shape rule is enforced by length, and the entries were condensed to meet
+  it.** Every entry was already one physical line, so a line-count rule would
+  have passed on a 4,910-character paragraph — length is the machine-decidable
+  half of "one-line stub", and length is what hid the duplicate: at one line each
+  two copies of BK-355 are unmissable, at 2.3 kB each they sat four lines apart
+  unseen. Six entries were condensed, the six over the budget, taking the longest
+  from 4,910 characters down to a stub. **The budget measures prose, not bytes**:
+  Markdown link targets are discounted, because a URL's length is a property of
+  the docs site rather than a choice the author made, and counting it priced a
+  breaking entry out of the migration link it owes. Measured as `raw - prose_length`
+  over every linked entry: **75 characters** discounted, uniformly, and without it
+  two of the four `**Breaking**` entries bust the budget on the link alone. **What the longest
+  survivor now measures is deliberately not restated here**: that figure went
+  stale twice during this work, so the constant's own comment carries the command
+  to re-derive it instead.
+  **Nothing was lost by condensing, and that had to be checked rather than
+  assumed.** The first justification written for it — that release Phase 1
+  re-expands the stubs — is not true as stated: `CONTRIBUTING.md` names no source
+  for that prose and the release skill has no expansion step. The durable homes
+  are the ones that actually hold the detail: each item's own entry in this file,
+  and `docs-src/reference/migration.md` for anything a caller must act on, which
+  BUG-261 published. A sweep of all six condensed entries against both confirmed
+  it. The unsourced expansion step is filed as ID-253.
+  **The audience rule's authority direction is decided in writing**
+  ([Rule 4](DRIFT-RULES.md#authority)), because the two sets are not required to
+  be equal. The completed-item side governs: a user-facing completed item with no
+  entry fails; an entry with no completed item does not. Two legitimate cases
+  produce the latter — an item still open with one bullet shipped, and the
+  schema's escape clause for a `contributor.process` change introducing a
+  user-facing framework. **The first is registered rather than merely tolerated**
+  ([Rule 6](DRIFT-RULES.md#tolerated)): an entry whose ID is open in
+  `BACKLOG.md` is *silent*, because a note printing on every green run until that
+  item closes is how a passing gate's output becomes something readers skip. Only
+  an ID the backlog knows nowhere draws one.
+  **Derived, both sides** ([Rule 3](DRIFT-RULES.md#claim-space)): entries parse
+  out of the section, the audience side off the `spec: · effort: · audience:`
+  line each entry here already carries, split on `,`/`·` and tested for a `user.`
+  prefix — the schema's predicate, not a substring search. The ID grammar
+  borrows its suffix and parenthetical from `gen_backlogid.py`, which reads the
+  same file, and its **prefix class from `check_breaking_migration_link.py`**,
+  which reads the same CHANGELOG section. Spelling it `[A-Z]+-\d+` was wrong three
+  times over: it failed a legitimate `BK-139a` stub as a stray line, silently
+  truncated the same ID on the completed side, and — narrower than the sibling
+  gate's `[A-Z][A-Z0-9-]*` — called `- SQL-BLOB-020: …` a stray line that the
+  sibling calls a valid entry. That case is **constructed, not observed**: no
+  such entry exists, because `gen_backlogid.py` allocates only
+  `(BK|BUG|ID|AF|BL)`, and the sibling says so where it widened first. Built,
+  the two disagree and one `hatch run lint` returns two verdicts about one line;
+  the divergence is latent, and worth closing at the price of a character class. `gen_backlogid.py` keeps a closed prefix set because it *allocates*
+  IDs; these patterns *recognise* them, where a closed set fails a real line.
+  **What the loop cost, and what it bought.** Thirteen review passes across
+  seven rounds, derived from the round comments on the PR, which name each
+  gate's members: 1+1+1+3+3+2+2+2. Ten of the thirteen were closing gates, and
+  the last three are the reason the release-window bullet says what it says. The class that kept recurring early was a universal asserted over a
+  space measured on two backends — refuted four rounds running until the remedy
+  stopped being "narrow it again" and became "delete it and name what was
+  measured".
+  **The release window took three rounds to get right, and the two failed
+  attempts are the record worth keeping.** Round 5 found that Phase 1 condenses
+  `[Unreleased]` *in place* while Phase 2 renames the heading, so between them
+  the released shape lives under `[Unreleased]` — and there this gate reported
+  every condensed line as a stray and every user-facing completed item as
+  entry-less, with a
+  remediation telling the release manager to do Phase 2 early. Reconstructed by
+  putting the last released section's body under `## [Unreleased]` and leaving
+  `BACKLOG-DONE.md` alone: **68** violations — 48 strays, and 20 entry-less
+  items out of the 43 the section holds, not "every" one of them.
+  `check_breaking_migration_link.py` had already named that window and survived
+  it by reporting a count; this gate had not.
+  **Round 6 refuted the fix's justification and the fix's shape at once.** The
+  claim written in round 5 — that Phase 3 runs `hatch run all` over that state,
+  so the gate blocks its own release — is false, and reading the phases in order
+  is all it takes: Phase 2 renames both headings and makes the release commit
+  *before* Phase 3 validates, and the Phase 1 edits are uncommitted until then,
+  so no checklist step and no hook ever meets the state. Only a hand-run `lint`
+  mid-Phase-1 does. The fix was worse than the premise it rested on: it returned
+  early on the grouping and stood the *whole* gate down. Uniqueness and the
+  prose budget answer perfectly well over the stubs that still parse, so a stray
+  `###` was switching off the duplicate check this module exists for — and the
+  early return skipped `parse_done_unreleased`, taking its `DerivationError`
+  with it, so a renamed `## Unreleased` exited 0 in the one window the
+  stand-down was added for. Measured both ways: `main()` returned 0 with that
+  heading renamed and with the file deleted. Only the stray-line and audience
+  rules stand down now.
+  Two more from round 5: a `[~]` bullet did not end the completed item above it,
+  so that item wore another's `audience:` tags; and the entry grammar was
+  narrower than the sibling's — a latent divergence rather than a reported one,
+  since `gen_backlogid.py` allocates only `(BK|BUG|ID|AF|BL)`, so the compound
+  prefix the two disagree over is constructed, and the sibling had already said
+  so where it widened first. Every rule this gate has changed under review, and
+  the pattern across six rounds is that reading found them and running decided
+  them.
+
 - [x] **BUG-261 — Two breaking changes are on master with no upgrade path, and the obligation is stated where their authors never read**
   spec: — · effort: S · audience: user.api_docs, user.site, contributor.tooling
   **The item's own figure had moved before the work started, which is the first
@@ -532,9 +646,9 @@ if evidence changes; these are retired.
   sections the constraint is claimed over; it said five until round 2, having
   been written against the five-subsection draft.
   Same file and same window as **ID-252**, which lints the `[Unreleased]`
-  section's own integrity and never reads `migration.md`; that item is
-  unaffected by this closure and its cross-reference was repaired in the same
-  commit.
+  section's own integrity and never reads `migration.md`. That item has since
+  closed; it and this gate now run side by side in `lint` and `docs-gate`, and
+  share an entry grammar so that one section cannot draw two verdicts.
 
 - [x] **BK-356 — `io_timeout` should default to a real bound, not `None`**
   spec: SFTP-030, SFTP-005 · effort: S · audience: user.api, user.api_docs, user.site

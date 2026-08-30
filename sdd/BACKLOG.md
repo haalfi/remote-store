@@ -318,6 +318,38 @@ compliant the day before.
   Found by BK-356's review round 2, which reached it by running the failure
   rather than reading the mapping.
 
+- [ ] **BUG-263 — The migration guide promises a drive folder named `.` stays reachable as a key; no key spelling reaches it**
+  spec: GR-058 · effort: XS · audience: user.site
+  `docs-src/reference/migration.md` § *`GraphBackend(base_path=".")` now means
+  the drive root* tells a caller whose drive holds a folder literally named `.`
+  that it "stays reachable as an ordinary key under a `base_path` that is not
+  itself a root spelling". It is not reachable under any `base_path`, because
+  the predicate that strips `.` from `base_path` is the same one that strips it
+  from every key: `GraphBackend._key_segments` delegates to
+  `_flat_ns._addressable_segments`, and `native_path` /
+  `_parent_ref_path` / the write and source guards all route through it.
+  Measured with `base_path="reports"`:
+  | key | addresses |
+  | --- | --- |
+  | `./x` | `/drives/D/root:/reports/x:` |
+  | `.` | `/drives/D/root:/reports:` |
+  | `x/./y` | `/drives/D/root:/reports/x/y:` |
+
+  So the folder is unaddressable, not relocated — which is a strictly larger
+  break than the section describes, and the sentence sends a caller looking for
+  a workaround that does not exist.
+  **The fix is the sentence, not the code.** `_addressable_segments`' own
+  docstring records why the two predicates must stay identical (a draft that
+  widened one broke the `to_key(native_path(key)) == key` identity on 4 of 7
+  measured keys), so the guide should say the folder can no longer be addressed
+  and name what a caller does instead — rename it before upgrading.
+  The neighbouring claim, "Every other `base_path` value is unaffected", was
+  checked and **holds**: the only behavioural difference between the old `if s`
+  split and `if s and s != "."` is dot segments, and the preceding sentence
+  already covers those. Recorded so the next reader does not re-litigate it.
+  Found by ID-252's closing review reading outside its own diff; shipped by
+  BUG-261.
+
 - [ ] **BUG-254 — Five backend classes breach BE-029's root row against an absent container**
   spec: BE-004, BE-021, BE-029 · effort: S · audience: user.api
   BE-029 already decides this and is not qualified by whether the container
@@ -1437,13 +1469,16 @@ CHANGELOG the release body is built from — say what is actually true.
 
 **Closes when:** the backlog files are structurally linted (ID-235);
 CHANGELOG `[Unreleased]` is linted for duplicate entries, stub shape and the
-audience rule (ID-252); the
-ripple-check's six measured blind spots are answered (BK-346); the
+audience rule — **met** by ID-252 (`check_changelog_unreleased.py`), whose
+stated bound is that it keys on the ID at line start, so a single entry whose
+*content* went stale is still nobody's to catch; the
+CHANGELOG expansion step Phase 1 depends on is written down or dropped
+(ID-253); the ripple-check's six measured blind spots are answered (BK-346); the
 hand-maintained inventories ID-245 names are generated — four bullets, of which
 the checker inventory has shipped; `check_formal_trace` proves
 assertion rather than citation (ID-207); and both open revisit pins have fired
 and named successors (ID-150, ID-249).
-**Bounded to those six deliberately.** "No artifact asserts what no mechanism
+**Bounded to those seven deliberately.** "No artifact asserts what no mechanism
 can check" is the promise and cannot be a closing condition: this section's own
 preamble records that detecting the remaining class needs semantic comparison of
 prose, which research § 1 marks as having no general oracle. Nor is "no figure
@@ -1541,117 +1576,55 @@ the commit that writes it lands, so cite the generator instead.
   own subject — the deletions that produced this file's current shape are
   exactly the event the second pass exists to catch.
 
-- [ ] **ID-252 — CHANGELOG `[Unreleased]` is unlinted, so a duplicated entry shipped and contradicts itself**
-  spec: — · effort: S · audience: contributor.tooling
-  Three properties of the section are stated as rules and checked by nobody:
-  entries are unique per ID, each is a one-line `- <ID>: <Title>` stub
-  ([`CLAUDE-REFERENCE.md`](CLAUDE-REFERENCE.md#detailed-checklist) rows
-  **CHANGELOG entry**, both presentations), and an entry exists exactly for the
-  items whose `audience` is user-facing
-  ([`traces/_schema.yml`](traces/_schema.yml) derived rule). Sibling of ID-235
-  above in shape and script family, different artifact; independent of it, so
-  either may ship first.
-  **The first property failed on master.** `BK-355` and `BK-354` each appear
-  twice under `[Unreleased]`, and the lower copy of each is the pre-BK-357
-  wording — so the section states both that SFTP-030 records one exception and
-  that it "still records two", and calls BK-357 filed-and-open two lines below
-  the entry that closes it. Derivation: `git show 47f1b16 --numstat --
-  CHANGELOG.md` returns **3 insertions, 0 deletions**, so the BK-357 PR added
-  amended copies above and left the originals in place.
-  **It is a recurrence, one merge apart.** The immediately preceding CHANGELOG
-  commit (`04f6123`, BUG-259) records catching the identical resolution on its
-  own branch by hand: "resolving the CHANGELOG conflict as 'keep both sides'
-  duplicated BK-354 … A conflict where one side is a revision of the other is
-  not a keep-both." Found by a reviewer once, missed by the next merge — which
-  is the argument for a check rather than another convention.
-  **The repair precedes the check and is not part of it.** Deleting the two
-  stale lines needs no mechanism to exist first, and until it happens a
-  duplicate-ID check is red on master from its first commit. It is also owed
-  ahead of any tooling on its own terms: `CHANGELOG.md` carries a
-  `doc: dual dest=reference/changelog.md` marker, so the contradiction is live
-  on the docs site, and [principle 3](../CLAUDE.md#principles) does not wait for
-  a gate. So this item does not own it: whichever change lands first — the
-  check, a release's Phase 1 condensation, or any PR touching the section — the
-  two lines go, and the check is written against a file that already reads
-  correctly. Deliberately not fixed in the PR that filed this item, on the
-  author's decision to scope that PR to the tooling gap alone.
-  **One mechanism now looks at this file's content, and it is not this one.**
-  As filed, nothing did: `CHANGELOG` appeared in `scripts/` only in
-  `docs/check_links.py`, `gen_pages.py`, `check_no_tracker_refs.py` and
-  `mkdocs_hooks.py`, all link or render concerns, and in
-  `.github/workflows/ci.yml` only inside `DOCS_PAT`. **BUG-262 added a fifth
-  reader that parses the section rather than rendering it** —
-  `scripts/check_breaking_migration_link.py`, in both `lint` and `docs-gate` —
-  so that premise is now false as written, and three things this item specifies
-  for itself already exist:
-  - the machine-decidable grammar below (one line, `- <ID>: ` prefix) is what
-    its `_ENTRY_RE` implements, over the same `[Unreleased]` window;
-  - the wiring below (both targets, per the BK-333 trap) is the wiring it
-    shipped, so that question is settled by precedent rather than open;
-  - its `marked_entries()` is a reusable enumerator over this claim space,
-    exposed precisely so a caller can tell "no violations" from "matched
-    nothing" — the distinction a duplicate-entry check needs too.
-  **What survives is this item's whole subject.** That gate keys on the
-  `**Breaking**` marker and answers one question about the entries it finds; it
-  says nothing about duplicates, about an entry whose content went stale, or
-  about the entry-versus-completed-item correspondence, which is what this item
-  is for. So the defect stands and the cost of fixing it dropped: the parser
-  exists, and the open question is whether to import it or restate it — the same
-  question PR #983's `scripts/_changelog.py` was written to answer, which is
-  where that decision belongs.
-  The whole defense against *this* item's defect is still
-  `.github/PULL_REQUEST_TEMPLATE.md:24` and review attention.
-  **Claim spaces, all three derived** ([Rule 3](DRIFT-RULES.md#claim-space)):
-  the entries parse out of the section itself, and the audience side off the
-  `spec: · effort: · audience:` line each `BACKLOG-DONE.md` § Unreleased entry
-  already carries. Measured 2026-08-29 by parsing both — splitting each
-  `audience:` line on `,`/`·` and testing each tag for a `user.` prefix, which
-  is the schema's predicate rather than a substring search: 19 entries (17
-  distinct, the two duplicates being the defect above) against 39 items, of
-  which **16** carry a `user.*` tag; all 16 have an entry and no other item
-  does. So the audience rule holds by discipline today, which is ID-235's
-  situation exactly, and the duplicate is what discipline already missed.
-  **That figure was 13 in the first draft, and how it was wrong is worth the
-  line.** 13 is exactly the count of items tagged `user.api*`; the three it
-  drops are the three whose only user tag is something else — BK-320 and
-  BUG-235 (`user.site`) and BK-317 (`user.discoverability.llm`). The parse ran
-  the right predicate and the sentence was written from a hand count of its
-  output, so it read as a narrower predicate that nobody had chosen. A figure
-  in an item arguing for derived claim spaces is the last place to count by
-  eye.
-  **Two questions the item does not presuppose.**
-  - *Shape, and whether it can be enforced as written.* Nine of the 19 entries
-    are release-grade prose rather than stubs — 88 to 4,910 characters, the nine
-    over 1 kB being BUG-259, BK-357, both BK-354 copies, both BK-355 copies,
-    BUG-247, BUG-248 and BUG-243 — so a strict gate fails on master the day it
-    lands. Condense them (which `CONTRIBUTING.md` Phase 1 does at release time
-    anyway), check only the machine-decidable half (one line, `- <ID>: ` prefix),
-    or measure and report per [Rule 5](DRIFT-RULES.md#mandatory-path). Not a
-    detail of the duplicate check but its cause: at one line each, two BK-355
-    entries are unmissable; at 2.3 kB each they sat four lines apart unseen.
-  - *Which side governs when the two sets differ*
-    ([Rule 4](DRIFT-RULES.md#authority)), decided in writing before the check
-    exists. The live instance is `ID-245`, which has an entry and no
-    `BACKLOG-DONE.md` counterpart because the item is still open in this file
-    with one bullet shipped (`40e5b74`). So "every entry has a completed item"
-    is false as stated, and the partially-shipped case needs a rule — its home
-    is `CONTRIBUTING.md` § Release Phase 1, whose existing check runs
-    completed-item → entry only.
-  **Bound to state in the check** ([Rule 7](DRIFT-RULES.md#miss-rate)): it keys
-  on the ID at line start, so it catches a duplicated entry and cannot catch a
-  single entry whose *content* went stale — the wider defect BUG-259's commit
-  message describes. It says nothing about whether a title is right, and nothing
-  about released sections. A `Drift-gate::` block puts it in
-  [`GATE-INVENTORY.md`](GATE-INVENTORY.md).
-  **Wiring, per the trap BK-333 documents:** `CHANGELOG.md` matches `ci.yml`'s
-  `DOCS_PAT` and not `CODE_PAT`, so a CHANGELOG-only diff runs `docs-gate` and
-  not `lint` — reach both, or the check is unreachable for the diff class that
-  invalidates it.
-  Read the same section as **BUG-261**, since
-  [shipped](BACKLOG-DONE.md), which was about what a `**Breaking**` entry owes
-  the migration guide. The surfaces overlapped and did not coincide — that item
-  never read this file's `[Unreleased]` section for its own integrity — so this
-  one is unaffected by its closure and still stands.
+- [ ] **ID-253 — Nobody documented performs the CHANGELOG expansion step release Phase 1 depends on**
+  spec: — · effort: S · audience: contributor.process
+  `CONTRIBUTING.md` § Release Phase 1 said the `[Unreleased]` stubs are
+  "expanded to prose at release time (release skill Phase 1)", and the
+  ripple-check row **CHANGELOG entry** said the release skill "organises into
+  sections and expands to prose". Neither named what the prose is written
+  *from*, and `.claude/skills/release/SKILL.md` has no expansion step:
+  `rg -n 'CHANGELOG' .claude/skills/release/SKILL.md` returns 3 hits — the
+  Phase 1 completeness cross-check, the Phase 4 release-body template, and a
+  link — and the only one that transforms the section condenses it **further**,
+  for the GitHub release body. Phase 1's line was self-referential: it pointed
+  at the checklist that contains it.
+  **Both authorities now say the step is manual and untooled** — ID-252 amended
+  them rather than leave them asserting a delegation that does not exist — so
+  what is open is no longer a false claim but a missing capability: the step is
+  real (38 released sections carry expanded prose), performed by hand, and
+  written down nowhere.
+  **Found by ID-252 leaning on it.** That item condensed six `[Unreleased]`
+  entries to stubs and justified the condensation with "Phase 1 re-expands, so
+  nothing is lost"; review refuted the premise. The condensation survived on a
+  different argument — the detail's homes are `BACKLOG-DONE.md` and, for
+  anything a caller must act on, the migration guide — and a sweep of the six
+  entries against both is what established it. **That sweep is the evidence
+  this item is worth fixing rather than deleting**: the expansion step is doing
+  real work in people's reasoning, and if it does not exist, every condensation
+  is taken on trust.
+  **What it does not decide.** Whether to write the step into the release skill,
+  naming `BACKLOG-DONE.md` § Unreleased as the source, or to accept that a
+  released section carries the stubs it was written with and drop the expansion
+  from the checklist entirely. Establishing who has been doing it by hand is
+  step one. Both authorities move together whichever way it goes — the row and
+  the checklist line are two copies of one direction
+  ([Rule 4](DRIFT-RULES.md#authority)).
+  **A third artifact moves with them now:** `check_changelog_unreleased.py`
+  stands its stray-line and audience rules down once a `###` grouping reaches
+  `[Unreleased]`, which is precisely the state this step produces. Whoever
+  writes the step owns that hand-off, and the gate's release-window bound is
+  where it is stated.
+  **A fourth thing to settle, found the same way:**
+  `.claude/skills/release/SKILL.md` Phase 4 says to follow "the section order in
+  `sdd/CLAUDE-REFERENCE.md` § Ripple-check table > Detailed checklist". That
+  checklist's headings are Spec & contract / Code surface / Tests / Docs /
+  Release & meta — no CHANGELOG section order lives there, and
+  `rg "Added|Internal|Documentation" sdd/CLAUDE-REFERENCE.md` returns two
+  unrelated hits. Meanwhile [`CLAUDE.md` principle 4](../CLAUDE.md#principles)
+  names "CHANGELOG section order" as an authoritative reference that lives in
+  one place. It lives in none. The citation was thin before ID-252 and ID-252
+  removed the last word that made it plausible, so whoever writes the expansion
+  step also decides where that order is written down.
 
 - [ ] **BK-346 — The ripple-check table answers questions adjacent to the ones asked**
   spec: — · effort: S/M · audience: contributor.process
