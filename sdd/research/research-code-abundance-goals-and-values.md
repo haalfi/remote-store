@@ -189,10 +189,12 @@ distinct remedies: **technical debt is paid down by refactoring, cognitive debt
 only by engagement, and intent debt only by writing.** Nothing you do to the code
 pays down the other two.
 
-**Intent debt is the concept Tao's framework lacks, and it is agent-specific.**
-Tao's exposition worry is that a human reader will be misled by
-over-polished prose. Intent debt is worse in a way mathematics has no analogue
-for: the rationale that was never externalized is not merely unavailable to the
+**Intent debt is the concept Tao's framework lacks. It is not agent-specific;
+what agents change is the failure it produces.** Teams have always lost the
+rationale behind their own decisions, and a new maintainer has always had to
+guess. What is different is the response to the gap. A human who cannot find the
+why usually notices that they cannot, and either asks or proceeds cautiously.
+The rationale that was never externalized is not merely unavailable to the
 agent — the agent _fabricates a replacement_. An unstated constraint is not read
 as a gap; it is filled with the most statistically plausible assumption, which is
 how a rare financial safeguard gets "optimized" away. Rationale held in a
@@ -241,9 +243,17 @@ test-writing. The evidence in § 3 says the opposite for the code layer:
 duplication up eightfold, refactored lines down from 24.1% to 9.5%, security pass
 rates flat near 55%. The essay contradicts itself here, citing the churn doubling
 and copy-paste overtaking refactoring in a later section. The three-layer split
-survives this; the claim that one layer is now self-healing does not. Read
-correctly, AI makes _all three_ debts worse, and only the cognitive and intent
-layers are novel.
+survives this; the claim that one layer is now self-healing does not.
+
+What replaces it should be stated at the strength the evidence carries, which is
+uneven across the three. Technical debt worsening is measured (GitClear,
+Veracode, § 3). Cognitive debt worsening is measured once, by the Anthropic RCT,
+on 52 juniors and one library. **Intent debt worsening is not measured anywhere
+in this record** — it is inferred from the fabrication mechanism above, and no
+study here counts unrecorded rationale before and after agents. So the honest
+form is that AI is shown to worsen one layer, indicated to worsen a second, and
+argued to worsen a third; and that the cognitive and intent layers are the novel
+ones is a claim about the model's contribution, not about the evidence.
 
 **The model is diagnostic, and its remedies are paydown remedies.** This is its
 main limitation, and correcting it is the most useful thing this record can add
@@ -269,11 +279,20 @@ the asymmetry neither source draws out. Technical debt is fully repayable:
 badly-shaped code can be refactored into good shape at any later date, by someone
 who never saw the original. Intent debt is partially repayable: rationale can be
 reconstructed after the fact, degraded and lossy, but reconstructed. **Cognitive
-debt is not repayable at all, because there is no later action that makes you
-have understood something at the moment you needed to.** The window in which the
-theory could have been built was the window in which the work was done. Once it
-closes, what remains is not a debt to be serviced but a fact about the system:
-nobody holds its theory.
+debt is repayable only forward, never backward.** Understanding can be rebuilt
+later — the trial in the appendix rebuilds some of it, and cheaply — but no
+later action makes you have understood at the moment you needed to, and the
+decisions taken in that window were taken without it. The change merged, the
+review passed, the incident was handled or was not. So the debt is not
+unpayable; what is unpayable is the interest, and the interest is every decision
+made while the theory was thin.
+
+An earlier draft said "not repayable at all", which the appendix contradicts.
+The distinction matters for the argument rather than only for accuracy: if
+reconstruction were impossible, prevention would be the only control because
+nothing else could work. It is possible, so prevention is the only control that
+acts *while the decisions are being made*, which is a narrower and defensible
+claim.
 
 This is why the preventive column is the load-bearing one, and it converges with
 the evidence rather than merely being tidier. The Anthropic RCT found the
@@ -586,12 +605,14 @@ describe indigestion as a backlog that accumulates and can be worked off with
 policy changes. A positive feedback loop cannot be worked off later by the same
 means; it has to be damped while the team still has the capacity to damp it.
 
-Combined with the non-repayability argument in § 2.3, this settles the choice
-between the two postures rather than leaving it to taste. Cognitive debt is the
-one debt that compounds on its own _and_ cannot be serviced retroactively.
-Against a quantity with both properties, paydown remedies are not a weaker
-option than preventive controls — they are not an option. Prevention is the only
-control that acts inside the window where the outcome is still determined, which
+Combined with the forward-only repayment argument in § 2.3, this settles the
+choice between the two postures rather than leaving it to taste. Cognitive debt
+is the one debt that compounds on its own _and_ cannot be serviced for the
+decisions already taken under it. Against a quantity with both properties,
+paydown remedies do not fail to work; they fail to arrive in time, which for a
+compounding quantity is the same outcome and a different reason. Prevention is
+the only control that acts inside the window where the outcome is still
+determined, which
 is a stronger claim than "process discipline is good practice" and is the reason
 this record treats workflow ordering as an engineering control rather than a
 cultural preference.
@@ -744,7 +765,8 @@ instrument comprehension directly or stop quoting the number.
 
 One caveat on this proposal, following § 2.3. Measuring comprehension is a
 second-best control, not the primary one. A measurement reports on a window that
-has already closed, and cognitive debt cannot be serviced once it has. A team
+has already closed, and no later measurement changes the decisions taken inside
+it. A team
 that has ordered its workflow so understanding precedes action — reproduce before
 fixing, read the ripple set before starting, run it rather than type-check it —
 has already acted where the outcome was determined, and needs the measurement
@@ -808,7 +830,7 @@ way to describe it. It does not measure cognitive and intent debt and it does no
 service them; it orders the work so that neither is taken on. The distinction
 matters because measuring for a debt and structuring against one look identical
 from the outside — both produce an absence of the debt — and only the second
-survives the non-repayability argument.
+acts while the decisions it protects are still being made.
 
 The controls are explicit and predate this record:
 
@@ -924,9 +946,11 @@ cannot demonstrate the hardest proposal rather than that it fails it.
 
 Proposal 8's comprehension measurement is deliberately not listed as a third gap.
 The preventive controls above address the same failure by a different route, and
-on the non-repayability argument in § 2.3 they address it at the only point where
-it can be addressed. A measurement would report, after the fact, on a window that
-has already closed.
+on the forward-only argument in § 2.3 they address it while the decisions it
+protects are still open. A measurement would report, after the fact, on a window
+that has already closed — useful for detecting that the ordering has lapsed,
+which is the job proposal 8 now assigns it, and useless for the merge it was
+measuring.
 
 **The open question is operational, not structural.** The controls guarantee that
 the mandated engagement happens; what they do not by themselves fix is whose
