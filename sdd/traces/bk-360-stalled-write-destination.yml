@@ -15,6 +15,8 @@ source_items:
 audience:
   - user.api_docs
   - user.site
+discovery_followups:
+  - BK-364
 # docs-src/_data/graph/graph.json is deliberately absent. The ripple-check
 # anticipates it after a public-docstring change and `hatch run gen-graph` was
 # run, but it produced no diff: the graph carries signatures and gating, not
@@ -155,6 +157,51 @@ phases:
         extract: "No tracker ID or spec coordinate in docstrings or docs-src prose; the guide states the rule without citing SFTP-030 or BK-360"
         outcome: ok
 
+  - id: fix
+    name: Round 1 — the rule was stated wider than it was run
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "move, write_atomic, _promote"
+        read_type: reference
+        extract: >-
+          Round 1 refused the inference that a dead-connection re-raise before
+          the fallback means the destination is safe: it proves the *client*
+          did no more damage, not that the server did nothing. Run instead, by
+          silencing the return path from inside the call that issues the rename
+          — move's rename and the atomic promote both land, so the operation
+          completes and reports failure. This falsified two sentences the first
+          push shipped and SFTP-014's own caveat
+        outcome: misleading
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-014 (Caveat)"
+        read_type: reference
+        extract: >-
+          "If the connection drops between write and rename, the orphan temp
+          file remains" reads as covering every stalled atomic write and covers
+          only a failure before the promote. Amended rather than cited, which is
+          what quoting a contrast instead of running it had hidden
+        outcome: misleading
+      - file: src/remote_store/backends/_sftp.py
+        section: "_ensure_parent_dirs"
+        read_type: reference
+        extract: >-
+          Every ancestor is stat'd before the open, so a pre-armed stall reaches
+          the open only at depth 0 — the destructive row was being demonstrated
+          by a fixture's bare filename without saying so. The outcome itself is
+          depth-independent, which needed a separate run at the open to separate
+          from the reach question
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Assertion depth"
+        read_type: gate
+        extract: >-
+          Three assertions were weaker than the claims resting on them: a prefix
+          check bounded at the first chunk could not see corruption past it, and
+          "the destination is untouched" was asserted where nothing had existed.
+          Retrospective: all three were mine, written in the same pass as the
+          prose they were meant to hold up
+        outcome: ok
+
   - id: verify
     name: Ripple-check
     steps:
@@ -171,8 +218,11 @@ phases:
           file on a failed download, a genuinely different subsystem as the item
           said. Its silence about upload/transfer, which route through
           store.write() and so inherit this rule on SFTP, is a real asymmetry
-          but one about every backend's write rather than SFTP's — filed rather
-          than widened into this PR
+          but one about every backend's write rather than SFTP's. Retrospective:
+          this step first said "filed rather than widened into this PR" while no
+          item existed anywhere — review round 1 caught the claim, and BK-364
+          was written to make it true. A trace asserting an action is a figure
+          like any other and owed the same check before the sentence was written
         outcome: ok
       - file: docs-src/guides/write-integrity.md
         section: "(full)"

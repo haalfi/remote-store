@@ -217,35 +217,41 @@ if evidence changes; these are retired.
 
 - [x] **BK-360 — What a stalled non-atomic SFTP `write` leaves at the destination is undocumented**
   spec: SFTP-030, SFTP-014 · effort: S · audience: user.api_docs, user.site
-  Established by running it, not by reading the mapping. **Four** destination
-  states are reachable, and which one a caller gets turns on *when* the peer
-  went silent and *which direction* was silenced, never on which method was
-  called: **absent** (`overwrite=False`, the existence `stat` fails ahead of the
-  open), **untouched** (`overwrite=True`, client→server silenced before the call
-  — the `CMD_OPEN` never arrives), **empty** (`overwrite=True`, server→client
-  silenced before the call — the server truncates and only its reply is lost),
-  and **a prefix** (silence mid-body). Counted from the parametrisation of
-  `test_stalled_write_leaves_one_of_four_destination_states`, which pins one row
-  each.
-  **The empty row is the finding.** It destroys a pre-existing file and replaces
-  it with nothing, and it differs from *untouched* only in a direction no caller
-  can observe — so a stalled `write` cannot be read as a no-op, which is what
-  the absent documentation left a reader free to assume. The consequences
-  stated: a retry needs `overwrite=True` (three rows leave the path occupied),
-  and the prefix is not a resume point (its length follows the chunk size and
-  the SSH window).
-  **`copy` was bound by the clause and the item did not name it.** It opens its
-  destination with the identical `self._sftp.file(dst, "w")`, so the same rows
-  apply to `dst`; found by enumerating the subjects the clause's words pick out
-  rather than the files the diff touched. `move` is bound too and answers
-  differently — `posix_rename` re-raises on a dead connection before the
-  copy-and-delete fallback, so both paths are untouched.
-  Stated in SFTP-030 § What a stalled non-atomic `write` leaves at the
-  destination (with the matrix), in the SFTP guide beside the atomic caveat
-  (with the rule), in the `write` and `copy` docstrings, and in the
-  troubleshooting page, whose "not currently documented; treat the path as being
-  in an unknown state" bullet this replaces. SFTP-014's caveat — the contrast
-  the rule is read against — is now asserted by a test rather than quoted.
+  Established by running it, not by reading the mapping — and the answer is
+  wider than the item's question.
+  **The governing fact is that a timeout reports a lost reply, never an
+  unperformed operation.** `io_timeout` fires on a receive that made no
+  progress, so a client→server silence means the request never arrived and
+  nothing happened, while a server→client silence means the server *did the
+  work* and only the answer was lost. The two are indistinguishable to the
+  caller, and while BK-359 stands the raised error says nothing either.
+  So every operation has a state in which it did what it was asked and reported
+  `BackendUnavailable` anyway. Sorted by which round-trip's reply is lost:
+  `write` leaves the destination **untouched** (a `stat`), **empty** (the
+  `CMD_OPEN` truncated it, old content gone) or **a prefix** (a body write);
+  `copy` the same at `dst` with the source safe; `move` **completed**; and
+  `write_atomic`/`open_atomic` either untouched-with-an-orphan-temp (a body
+  write) or **completed with no temp** (the promote). Eight rows, counted from
+  the residue table in SFTP-030, each pinned by a test.
+  **Two findings this turned up beyond the item's scope.** `move` and the atomic
+  writes *succeeding under a failure report* is a sharper hazard than a partial
+  write — a blind retry of a `move` that landed meets `NotFound` on a source
+  already gone — and it falsified SFTP-014's unqualified "the destination is
+  untouched", which held only for a failure before the promote and now carries a
+  scope. Both were reached by running the contrast the rule is stated against
+  rather than quoting it.
+  **`copy` was bound by the clause and the item did not name it**, found by
+  enumerating the subjects the clause's words pick out rather than the files the
+  diff touched.
+  **One bound worth keeping straight:** the `empty` outcome belongs to the open
+  at any depth, but a *pre-armed* stall reaches the open only for a root-level
+  target — `_ensure_parent_dirs` stats every ancestor first — so it is pinned at
+  depth 0 and depth 1 rather than left to a fixture's choice of filename.
+  Stated in SFTP-030 § What a stalled operation leaves behind (table plus
+  derivation), in the SFTP guide, in the `write` / `copy` / `move` /
+  `write_atomic` docstrings, and in the troubleshooting page, whose "not
+  currently documented; treat the path as being in an unknown state" bullet this
+  replaces.
   Found by BK-356's review round 7, by the reader lens.
 
 - [x] **BUG-262 — The breaking-change upgrade-path rule is review-enforced, and the gate the diagnosis proposed would not have caught it**

@@ -931,17 +931,17 @@ class SFTPBackend(Backend):
         """Write *content* to *path*, streaming it over the SFTP channel.
 
         The bytes are streamed straight to the destination file (no
-        temp-and-rename), so a failed write has already changed that path. On
-        ``BackendUnavailable`` the destination may be **absent**, **empty**, or
-        hold an **unpredictable prefix** of *content*, and the error does not say
-        which: an ``overwrite=True`` write can truncate the existing file without
-        replacing it, so a failure is not a no-op. Retry with ``overwrite=True``
-        (the path is usually still occupied) and re-write from the start rather
-        than appending to what is there — the prefix length depends on buffering
-        the caller cannot observe. Use ``write_atomic`` when the existing file
-        must survive a failure, or when readers must never see a half-written
-        file. Missing parent directories are created first (one ``stat`` per
-        ancestor) and are **not** removed when the write fails.
+        temp-and-rename), so a failed write may already have changed that path.
+        A ``BackendUnavailable`` means no reply came back, not that the server
+        never acted: the destination may be **untouched**, **emptied** (the
+        server truncated on open and the old content is gone), or holding an
+        **unpredictable prefix** of *content*, and the error does not say which.
+        Retry with ``overwrite=True`` (the path is usually still occupied) and
+        re-write from the start rather than appending to what is there — the
+        prefix length depends on buffering the caller cannot observe. Use
+        ``write_atomic`` when readers must never see a half-written file.
+        Missing parent directories are created first (one ``stat`` per ancestor)
+        and are **not** removed when the write fails.
 
         The returned ``WriteResult`` carries ``size`` (counted during upload)
         and ``source="native"``, but every rich field — ``last_modified``,
@@ -1007,11 +1007,18 @@ class SFTPBackend(Backend):
         temp file in the destination directory, then promoted with
         ``posix_rename`` (atomic on POSIX-compliant servers). Servers without
         ``posix_rename`` fall back to a plain ``rename`` (non-atomic overwrite:
-        the target is removed first). On failure the destination is left exactly
-        as it was, and the temp file is cleaned up **best-effort**: the cleanup
-        is deliberately skipped when the failure is itself a dropped connection,
-        so a stall leaves an orphan ``.~tmp.<name>.<uuid8>`` beside the target
-        rather than stalling again on an unlink the server cannot answer.
+        the target is removed first).
+
+        A failure *before* the promote leaves the destination untouched, and the
+        temp file is cleaned up **best-effort**: the cleanup is deliberately
+        skipped when the failure is itself a dropped connection, so a stall
+        leaves an orphan ``.~tmp.<name>.<uuid8>`` beside the target rather than
+        stalling again on an unlink the server cannot answer. A stall whose lost
+        reply is the **promote itself** is different: the rename was performed,
+        so the destination holds the new content and no temp remains, while the
+        caller is told ``BackendUnavailable``. What is guaranteed is that no
+        reader ever sees a half-written file — not that a reported failure means
+        the write did not happen.
 
         As in ``write``, the returned ``WriteResult`` carries ``size`` and
         ``source="native"`` but leaves every rich field (``last_modified`` /
@@ -1491,6 +1498,12 @@ class SFTPBackend(Backend):
         servers and ``ATOMIC_MOVE`` is not declared. ``src == dst`` is a no-op;
         missing parent directories of *dst* are created first.
 
+        A ``BackendUnavailable`` here means no reply came back, not that the
+        rename did not happen: if the stall swallowed the *reply* to
+        ``posix_rename``, the server performed the move and the caller is told it
+        failed. Re-check both paths before retrying — a blind retry of a move
+        that actually succeeded raises ``NotFound`` on a source that is gone.
+
         Raises:
             NotFound: If *src* does not exist.
             InvalidPath: If *src* or *dst* is the store root, or names a
@@ -1554,9 +1567,9 @@ class SFTPBackend(Backend):
         SFTP has no server-side copy, so the bytes round-trip through the client
         (download then upload). The destination is opened and streamed to
         directly, exactly as in ``write``, so this is not atomic: an interruption
-        leaves *dst* absent, empty, or holding an unpredictable prefix of *src*,
-        and retrying needs ``overwrite=True``. *src* is untouched either way.
-        ``src == dst`` is a no-op; missing parent directories of *dst* are
+        leaves *dst* untouched, emptied, or holding an unpredictable prefix of
+        *src*, and retrying needs ``overwrite=True``. *src* is untouched either
+        way. ``src == dst`` is a no-op; missing parent directories of *dst* are
         created first and are not removed when the copy fails.
 
         Raises:

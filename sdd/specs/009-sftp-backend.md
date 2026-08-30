@@ -230,6 +230,14 @@ the same directory as the target, then renames to the target via `posix_rename`.
 **Caveat:** If the connection drops between write and rename, the orphan temp file
 remains. This is **simulated** atomicity, not true atomicity — the capability is
 declared to enable the write-then-rename pattern, but the caveat must be documented.
+**The caveat covers a failure before the promote, and only that.** A stall whose
+lost reply is the promote `posix_rename` itself leaves the rename *performed* —
+the destination holds the new content, no temp remains, and the caller is told
+`BackendUnavailable`. So "atomic" here guarantees no reader sees a half-written
+file; it does not guarantee that a reported failure means the write did not
+happen. Measured, not inferred:
+[SFTP-030 § What a stalled operation leaves behind](#stalled-write-destination)
+carries the full table and the derivation.
 **Postconditions:** On success, the temp file is gone and the target contains the
 new content. On failure, the backend makes a **best-effort** temp-file cleanup that
 never reconnects: when the failure is itself a dropped-connection signal (or the
@@ -241,7 +249,7 @@ propagates without a multi-second reconnect stall. An abnormal exit of an
 temp file under the same best-effort guard.
 **The contrast this caveat is read for** — what plain `write` leaves at the
 destination path when it fails the same way — is
-[SFTP-030 § What a stalled non-atomic `write` leaves at the destination](#stalled-write-destination).
+[SFTP-030 § What a stalled operation leaves behind](#stalled-write-destination).
 A reader choosing between the two operations is comparing the two, and stating
 only this half is what left that choice undecidable.
 
@@ -712,37 +720,56 @@ knob distinct from `timeout` matters because that name already carries four
 connect-phase meanings.
 
 <a id="stalled-write-destination"></a>
-#### What a stalled non-atomic `write` leaves at the destination
+#### What a stalled operation leaves behind
 
-Everything above says when a stalled write *fails*. This says what it leaves
+Everything above says when a stalled operation *fails*. This says what it leaves
 behind, which is a separate question and was undocumented while the clause above
 was not — the gap BK-360 closes.
 
-`write` streams to the destination path itself, so unlike `write_atomic` there
-is nowhere else for a half-delivered payload to land. Four states are reachable,
-and which one a caller gets is decided by *when* the peer went silent and *which
-direction* was silenced — never by which method was called:
+**A timeout reports a lost reply, not an unperformed operation.** `io_timeout`
+fires on a receive that made no progress, so what the caller learns is that no
+answer came back — never that the request failed to arrive. Which of the two it
+was depends on which direction went silent:
 
-| silence began | direction silenced | `overwrite` | destination afterwards |
-| --- | --- | --- | --- |
-| before the call | either | `False` | **absent** — the existence `stat` fails ahead of the open, so nothing is created |
-| before the call | client→server | `True` | **untouched** — the `CMD_OPEN` never reaches the server, so a pre-existing file is not even truncated |
-| before the call | server→client | `True` | **empty** — the server receives the open and truncates; only its reply is lost |
-| mid-body | either | either | **a prefix** — however many bytes the server took before the silence |
+- **client→server silenced** — the request never reached the server, so nothing
+  happened and the destination is exactly as it was.
+- **server→client silenced** — the request arrived and the server performed it.
+  Only the answer was lost.
 
-Three consequences follow, and each is why the table is here rather than left to
+**A caller cannot tell these apart**, and while BK-359 stands the raised
+`BackendUnavailable` carries no message to help. So **every** operation below has
+a state in which it did what it was asked and reported failure anyway. That is
+the shape callers must plan for, and it is not what "the write failed" suggests.
+
+Which round-trip's reply is lost then decides the residue:
+
+| operation | round-trip whose reply is lost | destination afterwards |
+| --- | --- | --- |
+| `write` | the existence `stat` (`overwrite=False`) or an ancestor `stat` | **untouched** — the open is never reached |
+| `write` | the `CMD_OPEN` (`overwrite=True`) | **empty** — the server truncated; the old content is gone and nothing replaced it |
+| `write` | a body write | **a prefix** — however many bytes the server took |
+| `copy` | the destination `CMD_OPEN` | **empty**, as for `write` |
+| `copy` | a body write | **a prefix** of the source at `dst`; the source is untouched either way |
+| `move` | the `posix_rename` | **the move completed** — source gone, destination in place |
+| `write_atomic` / `open_atomic` | a body write | **untouched**, with an orphan temp holding the partial payload |
+| `write_atomic` / `open_atomic` | the promote `posix_rename` | **the write completed** — the destination holds the new content and no temp remains |
+
+Four consequences follow, and each is why the table is here rather than left to
 a reader's inference.
 
-**The old content is not safe.** The *empty* row destroys a pre-existing file
-and replaces it with nothing. It differs from *untouched* only in which
-direction the silence went, which no caller can observe — and, while BK-359
-stands, the raised `BackendUnavailable` carries no message to distinguish them
-either. So the only sound reading is that a stalled `write` may have destroyed
-the destination.
+**Reported failure does not mean unchanged.** The last three rows each carry out
+the caller's intent and then raise. For `move` and the atomic writes this is the
+*whole* operation succeeding under a failure report, which is a sharper hazard
+than a partial write: a caller that reruns a failed `move` meets `NotFound` on a
+source that is already gone.
 
-**A retry needs `overwrite=True`.** Three of the four rows leave the path
-occupied, and a plain retry would meet `AlreadyExists` rather than the failure
-it is retrying.
+**The old content is not safe on the non-atomic path.** The `empty` row destroys
+a pre-existing file and replaces it with nothing. `write_atomic` is the escape
+— its `untouched` row is what the capability is bought for — but only against a
+failure in the body, not against a lost promote reply.
+
+**A retry needs `overwrite=True`.** Most rows leave the path occupied, and a
+plain retry would meet `AlreadyExists` rather than the failure it is retrying.
 
 **The prefix is not a resume point.** Its length is a function of the chunk size
 and the SSH window, not of anything the caller controls or is told, so a caller
@@ -750,29 +777,37 @@ that seeks past it and appends will corrupt the file. Discard and re-write. This
 is the same conclusion the streamed-read paragraph above reaches from the other
 side of the transfer, and for the same reason.
 
-`copy` is bound by the same rows: it opens its destination with the identical
-`self._sftp.file(dst, "w")` and streams into it, so a stall part-way through
-leaves a prefix at `dst` while the source stays intact. `move` is not: it
-promotes by `posix_rename` and re-raises on a dead connection before reaching
-its copy-and-delete fallback, so a stalled `move` leaves both paths untouched.
+**Which round-trip a stall reaches is not the same question as what each row
+does**, and conflating the two is how an earlier revision of this clause
+over-claimed. The `empty` outcome belongs to the open, at any depth; but a stall
+already in effect when the call starts lands on the *first* round-trip the
+operation makes, and `_ensure_parent_dirs` stats every ancestor before the open.
+So a pre-armed stall reaches the open only for a root-level target — at any
+nesting it is absorbed by an ancestor `stat` and the destination survives. Both
+halves are pinned, at depth 0 and depth 1, so the bound cannot be re-encoded
+accidentally by a fixture that happens to use bare filenames.
+
 In every row, parent directories `_ensure_parent_dirs` created on the way in
 remain behind — a failed write is not a rollback.
 
-**Derivation.** The table was produced by running each row against a real
-silent peer through the `_StallRelay` harness, with the destination read back
-through a second backend wired straight to the server rather than through the
-condemned channel; the rows are pinned by
-`test_stalled_write_leaves_one_of_four_destination_states` and
-`test_stalled_copy_leaves_a_prefix_at_the_destination_too` in
-`tests/backends/sftp/test_io_timeout.py`. The sizes measured are deliberately
+**Derivation.** Every row was produced by running it against a real silent peer
+through the `_StallRelay` harness, with the destination read back through a
+second backend wired straight to the server rather than through the condemned
+channel. Rows whose stall must begin at a specific round-trip are staged by
+silencing the relay from inside the call that issues it, so the moment is
+deterministic rather than raced against a timer. They are pinned by
+`test_stalled_write_leaves_one_of_four_destination_states`,
+`test_stalled_copy_leaves_a_prefix_at_the_destination_too`,
+`test_a_lost_reply_can_complete_the_operation_it_reports_as_failed` and
+`test_a_stalled_atomic_write_preserves_the_destination_and_leaves_an_orphan_temp`
+in `tests/backends/sftp/test_io_timeout.py`. The sizes measured are deliberately
 not recorded here: the prefix length moves with the chunk size and the window,
 so a figure would be a derived artifact going stale exactly as the enumeration
 this clause already declines to keep does. The tests assert the *shape* — a
 strictly partial prefix — for the same reason.
 
-**The atomic contrast this is stated against is asserted, not quoted.**
-[SFTP-014](#sftp-014-atomic-write-simulated)'s caveat claims a lost connection
-leaves the destination untouched and an orphan temp behind; a rule about
-`write`'s destination is only useful if that contrast holds, so both halves are
-run for `write_atomic` and `open_atomic` by
-`test_a_stalled_atomic_write_leaves_the_destination_absent_and_an_orphan_temp`.
+**This clause amends [SFTP-014](#sftp-014-atomic-write-simulated)'s caveat
+rather than merely citing it.** That caveat's "the destination is untouched"
+holds for a failure *before* the promote and is false for a lost promote reply,
+which was found by running the contrast this clause is stated against instead of
+quoting it.
