@@ -11,7 +11,7 @@ in* and *Enforcement* are derived from `pyproject.toml`, `.github/workflows/`, `
 so no column is maintained here. What this inventory does not catch —
 including what *Enforcement* does not mean — is the last section below.
 
-## Pair gates (25)
+## Pair gates
 
 | Mechanism | Compares | Domain | Runs in | Enforcement |
 |---|---|---|---|---|
@@ -41,7 +41,7 @@ including what *Enforcement* does not mean — is the last section below.
 | `scripts/gen_graph.py` | the source tree under src/remote_store/, plus the version and optional-dependency tables in pyproject.toml ↔ docs-src/_data/graph/graph.json | realization | `all`, `gen-graph`, `gen-graph-check`, `preflight` | gating |
 | `scripts/gen_graph_viz.py` | docs-src/_data/graph/graph.json, plus the Repository URL in pyproject.toml that the page's source links are built from ↔ docs-src/explanation/graph_viz.html | realization ↔ explanation | `all`, `gen-graph-viz`, `gen-graph-viz-check`, `preflight` | gating |
 
-## Rule checks, no pair (11)
+## Rule checks, no pair
 
 Checks whose subject is a rule rather than one artifact pair — either
 because they guard a single artifact, or because they bundle several
@@ -62,7 +62,7 @@ yield no row for them at all.
 | `scripts/docs/check_links.py` | both context7 manifests stay within Context7's per-field list and rule-length maxima, which it silently rejects a manifest for exceeding | explanation | `all`, `check-links`, `docs-gate` | gating |
 | `scripts/docs/check_links.py` | every <a id> anchor in any git-tracked Markdown file off the consumer denylist is unique within its file and adjacent to a heading, whether or not a link points into it | explanation | `all`, `check-links`, `docs-gate` | gating |
 
-## Reports, no assertion (2)
+## Reports, no assertion
 
 These measure rather than assert. Nothing here is true or false of an
 artifact, so neither of the columns above fits: putting a description in
@@ -73,7 +73,7 @@ a *Rule asserted* cell would claim a check that is not being made.
 | `scripts/drift_report.py` | the current per-extra dependency-drift state, as a rolling GitHub issue it opens, updates or closes; it acts on that state rather than asserting anything, and exits 0 either way | process | `drift-guard.yml:report` | scheduled |
 | `scripts/report_trace_outcomes.py` | which documents readers recorded as unclear or misleading, ranked by tag rate over reads across the trace corpus | process | `report-trace-outcomes` | advisory |
 
-## What this inventory does not catch (13)
+## What this inventory does not catch
 
 Stated here rather than in the generator, because a bound is read by
 whoever this table would mislead, and they read this table.

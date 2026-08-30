@@ -632,8 +632,14 @@ class TestRendering:
     def test_bounds_are_rendered_into_the_generated_file(self) -> None:
         mechanisms, _problems = _mod.collect()
         rendered = _mod.render(mechanisms)
-        assert f"## What this inventory does not catch ({len(_mod._BOUNDS)})" in rendered
+        assert "## What this inventory does not catch" in rendered
         assert all(bound in rendered for bound in _mod._BOUNDS)
+        # The heading carries no count, by review decision: a count over a list
+        # the reader is looking at is only ever copied wrong elsewhere. Losing a
+        # bound is still caught, by `test_the_bound_count_is_pinned` below --
+        # which is where that guard always lived, since a dropped bound
+        # regenerates the heading along with the list and `--check` stays green.
+        assert "does not catch (" not in rendered
 
     @pytest.mark.spec("ID-245")
     def test_the_bound_count_is_pinned(self) -> None:
