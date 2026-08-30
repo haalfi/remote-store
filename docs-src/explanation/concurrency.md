@@ -83,7 +83,7 @@ SFTP tries three strategies in order: `posix_rename` (atomic), standard `rename(
 
 - **Verify after move.** After `move()`, check that the source no longer exists. If it does, delete it or alert.
 - **Write + delete instead of move.** If atomicity matters, write the data to the destination first, verify, then delete the source. This gives you explicit control over each step.
-- **Use `write_atomic()` for the write step.** `write_atomic()` uses temp-file-and-rename on backends that support it, ensuring the destination is written atomically even if `move()` is not.
+- **Use `write_atomic()` for the write step.** `write_atomic()` uses temp-file-and-rename on backends that support it, ensuring the destination is written atomically even if `move()` is not. On SFTP this guarantees no reader sees a half-written file; it does **not** guarantee that a reported failure left your existing destination alone — see the [SFTP backend guide](../guides/backends/sftp.md#capabilities).
 
 ## Summary table
 
@@ -103,7 +103,7 @@ SFTP tries three strategies in order: `posix_rename` (atomic), standard `rename(
 
 \* Local `move()` uses `shutil.move()`, which delegates to `os.rename()` on the same filesystem (atomic) but falls back to copy+delete across filesystems. Only `write_atomic()` uses `os.replace()`.
 
-\*\* SFTP `move()` is atomic when `posix_rename` or `rename()` succeeds; falls back to copy+delete as a last resort. `write_atomic()` has an orphan-file risk if the connection drops between write and rename (see the [SFTP backend guide](../guides/backends/sftp.md)).
+\*\* SFTP `move()` is atomic when `posix_rename` or `rename()` succeeds; falls back to copy+delete as a last resort. `write_atomic()` is atomic for *readers* — no one ever sees a half-written file — but a stalled connection is not a rollback: besides the well-known orphan-file risk, the operation may have completed despite raising, and on the rename-fallback path it can leave the destination removed with the payload stranded in the temp. What a failure leaves behind, per operation, is in the [SFTP backend guide](../guides/backends/sftp.md#capabilities).
 
 ## See also
 

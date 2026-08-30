@@ -45,6 +45,15 @@ surprising_ripples:
   # page BK-359 is editing in parallel, so the edit was held to one bullet.
   - docs-src/guides/troubleshooting.md
 
+# Derivation, per the review_rounds description in _schema.yml: on
+# `git log --oneline origin/master..HEAD`, 0e39855 implements and does not
+# count; a12ee23 incorporates review round 1, 0bf25ae round 2, and the commit
+# this trace ships in incorporates round 3 (a four-member panel: unprimed,
+# measuring, whole-file, neglected-surface). Value is 3 — rounds, not commits,
+# counted from the round each commit answers rather than from a commit tally,
+# which would over-report if one round ever needed two pushes.
+review_rounds: 3
+
 phases:
   - id: orient
     name: Orient
@@ -130,10 +139,13 @@ phases:
         section: "(module docstring)"
         read_type: reference
         extract: >-
-          The file states no count of its own tests and says why; the three
-          tests added here follow that and introduce no tally. The intact and
-          empty rows differ only by stall direction, which makes them each
-          other's control
+          The file states no count of its own tests and says why; the tests added
+          here follow that and introduce no tally. The intact and empty rows
+          differ only by stall direction, which makes them each other's control.
+          Retrospective: this step said "the three tests added here" and the
+          count kept moving as rounds added more — the file's own reason for
+          refusing a tally applied to the trace describing it, which is why the
+          number is gone rather than corrected
         outcome: ok
 
   - id: docs
@@ -238,6 +250,62 @@ phases:
           — one case per distinct residue state, including the two nothing
           previously reached (the fallback's destroyed destination, and the
           empty-at-open claim at depth 1)
+        outcome: ok
+
+  - id: audit
+    name: Round 3 — a four-member panel, and the enumeration itself falls
+    steps:
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030 (residue subsection)"
+        read_type: reference
+        extract: >-
+          The measuring member found the generated enumeration short: a write
+          whose silence lands on its last body acknowledgement leaves the
+          destination holding the payload entire, and the harness had no moment
+          for it. Third list, third refutation — so the clause stops enumerating
+          and states a closure (the residue is any prefix of the operation's
+          effects, up to and including all of them), keeping the states as named
+          illustrations. Verified by running it before rewriting
+        outcome: misleading
+      - file: src/remote_store/backends/_sftp.py
+        section: "_move_fallback (docstring)"
+        read_type: reference
+        extract: >-
+          "Fallback servers only" was false and the repo already said so: the
+          route in is a non-dead OSError from posix_rename, which a permission
+          error or directory target produces on a server that offers the
+          extension. Reproduced against a server answering the extended request
+          with a failure, nothing patched client-side. The scope had been
+          asserted in five places from one reading
+        outcome: misleading
+      - file: sdd/specs/007-atomic-writes.md
+        section: "AW-004"
+        read_type: verify
+        extract: >-
+          The cross-backend no-orphan invariant was unqualified and a test this
+          PR ships now contradicts it. Previously undecidable under principle 5
+          (no test had asserted it against SFTP on a dropped connection); this
+          work decided it, so the clause gains its named divergence here rather
+          than being left to the SFTP spec
+        outcome: ok
+      - file: docs-src/explanation/concurrency.md
+        section: "Mitigations; atomicity table footnote"
+        read_type: verify
+        extract: >-
+          Two reviewers disagreed on whether this page was affected; read it
+          directly rather than accepting either. It recommended write_atomic for
+          keeping a destination intact and framed orphan litter as the only
+          hazard — and the new SFTP guidance links here, so a reader following
+          the link met the claim it was sent to correct
+        outcome: misleading
+      - file: src/remote_store/backends/_sftp.py
+        section: "open_atomic (docstring)"
+        read_type: verify
+        extract: >-
+          Still promised "on any exception the temp file is removed and path is
+          left untouched" — refuted by three tests this PR adds. write_atomic
+          was rewritten in the same hunk and its sibling, which shares _promote,
+          was never opened
         outcome: ok
 
   - id: verify

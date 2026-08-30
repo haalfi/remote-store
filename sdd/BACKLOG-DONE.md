@@ -226,25 +226,36 @@ if evidence changes; these are retired.
   was lost. A caller can observe neither, and while BK-359 stands the raised
   error says nothing either. So several operations have a state in which they
   did what they were asked and reported `BackendUnavailable` anyway.
-  **The rule was reached by enumeration, not argument.** Two successive
-  revisions each proposed a scope criterion — "which method was called", then
-  "which direction was silenced" — and review refuted each with a state the
-  argument had not considered. So the condition space was parametrised and
-  generated: operation x the round-trip at which silence begins x direction x
-  `overwrite` x whether the destination pre-existed x whether the server offers
-  `posix-rename@openssh.com`. **164 combinations ran and 156 were pruned as
-  unreachable**, the harness's own totals from that run, with the raised type
-  recorded per case so a combination where no stall fired could not be mistaken
-  for a residue measurement. The residue table in SFTP-030 is written from that
-  output; a spanning subset, one case per distinct state, ships as tests.
+  **Three enumerations were caught short before the answer stopped being a
+  list.** Two revisions proposed a scope criterion — "which method was called",
+  then "which direction was silenced" — and review refuted each with a state the
+  argument had not considered. The third parametrised the condition space and
+  generated it (**164 combinations ran, 156 pruned as unreachable**, the
+  harness's own totals, with the raised type recorded per case so a combination
+  where no stall fired could not be mistaken for a measurement) — and review
+  found *that* short too: a `write` whose silence falls on its last body
+  acknowledgement leaves the destination holding the payload entire, a moment the
+  enumeration had no row for.
+  So SFTP-030 now states a **closure** instead: the residue is any prefix of the
+  operation's effects, up to and including all of them. That is a property of the
+  mechanism rather than a survey of outputs, so there is no fourth list to catch
+  short; the per-operation states are kept as named illustrations, explicitly not
+  exhaustive.
   **Three findings beyond the item's scope.** `move` and the atomic writes
   *succeeding under a failure report* is a sharper hazard than a partial write —
   a blind retry of a `move` that landed meets `NotFound` on a source already
-  gone. That falsified SFTP-014's unqualified "the destination is untouched",
-  which now carries a scope. And the `_rename_fallback` remove-then-rename window
-  destroys the destination outright on servers without `posix-rename`, which is
-  documented here and tracked for fixing as **BUG-264** along with the second
-  `io_timeout` bound its suppressed `remove` costs.
+  gone. SFTP-014 turned out never to have stated the untouched-destination half a
+  reader decides on, so it now states it *and* bounds it. And the
+  `_rename_fallback` / `_move_fallback` remove-then-rename window destroys the
+  destination outright — reachable whenever `posix_rename` raises a non-dead
+  `OSError`, not only on servers lacking the extension — documented here and
+  tracked for fixing as **BUG-264** along with the second `io_timeout` bound its
+  suppressed `remove` costs.
+  **Two cross-artifact contradictions were absorbed** rather than left to a
+  follow-up, both being clauses a shipped test now refutes: AW-004's unqualified
+  "no orphaned temporary files are left behind" gained its named SFTP divergence,
+  and `concurrency.md` stopped framing orphan litter as the only atomic-write
+  hazard on a page the new SFTP guidance links to.
   **`copy` was bound by the clause and the item did not name it**, found by
   enumerating the subjects the clause's words pick out rather than the files the
   diff touched.

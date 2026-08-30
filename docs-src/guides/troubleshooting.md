@@ -201,12 +201,14 @@ misconfigured. The operation is **not retried** — the connect-phase
   own. The store stays usable — you do not need to rebuild it.
 - **The failure does not tell you the operation did not happen.** A timeout means
   no reply came back; if the silence was on the return path, the server did the
-  work and only the answer was lost. A stalled `move` may have moved the file, and
-  a stalled `write_atomic` may have written it. A stalled plain `write` or `copy`
-  may have left the destination untouched, emptied, or holding an unpredictable
-  prefix. Re-check the state rather than assuming a rollback, retry with
-  `overwrite=True`, and never append to a partial file. The
-  [full per-operation table](backends/sftp.md#capabilities) is in the SFTP guide.
+  work and only the answer was lost. **Any amount of the operation may have
+  happened, from none of it to all of it.** A stalled `move` may have moved the
+  file, a stalled `write_atomic` may have written it, and a stalled `write` or
+  `copy` may have left the destination untouched, emptied, holding an
+  unpredictable prefix, or holding the payload in full. Re-check the state rather
+  than assuming a rollback, retry with `overwrite=True`, and never append to a
+  partial file. The [per-operation detail](backends/sftp.md#capabilities) is in
+  the SFTP guide.
 
 If this is happening often against a server you believe is healthy, the bound is
 probably too tight for it — see **Choosing a value** below.

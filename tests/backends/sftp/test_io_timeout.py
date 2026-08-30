@@ -856,6 +856,12 @@ def test_stalled_upload_request_raises_backend_unavailable(stall_relay: _StallRe
     fails before any payload byte is sent — measured: ``SFTPFile.write`` entered
     0 times either way.
 
+    Note the landing site is stated for a **root-level** target. At any nesting
+    ``_ensure_parent_dirs`` stats each ancestor first, so a pre-armed stall lands
+    there instead — the conclusion below (no payload byte is sent) holds at any
+    depth, but the named round-trip does not, and this docstring's own warning
+    about generalising a measurement applies to that sentence too.
+
     That is a fact about *when* the peer went silent, not about ``write()``. A
     stall that begins mid-body does reach ``SFTPFile.write`` through plain
     ``write``, which the mid-stream test below covers. Stated carefully because
@@ -1584,6 +1590,77 @@ def test_the_rename_fallback_destroys_the_destination_when_the_promote_stalls(
         )
 
 
+@pytest.mark.spec("SFTP-030")
+def test_a_stalled_write_can_have_delivered_the_payload_in_full(
+    stall_relay: _StallRelay, sftp_server: tuple[int, str] | None
+) -> None:
+    """The state that made SFTP-030 stop enumerating and state a closure instead.
+
+    Silence the return path at the **last** body write and the server has taken
+    every byte; only the final acknowledgement is lost. The destination holds the
+    payload entire and the caller is told ``BackendUnavailable``, so a stalled
+    ``write`` is not merely "partial or nothing" — it spans the whole range from
+    untouched to complete.
+
+    Three prior attempts to enumerate the reachable residue each missed a state,
+    this one included: the generated enumeration behind the second attempt had
+    ``mid_body`` moments that always left a further chunk to send, so it binned
+    every body stall as a prefix and never staged the final write. SFTP-030 now
+    states the closure — the residue is any prefix of the operation's effects, up
+    to and including all of them — and treats its per-operation states as named
+    illustrations. This test is the illustration for the upper end of that range,
+    and its existence is the argument for the closure.
+
+    Staged with a payload inside paramiko's ``MAX_REQUEST_SIZE`` (32768) so the
+    body is one ``CMD_WRITE``: the stream silences the link from inside its only
+    ``read()``, after the open's reply is already back. Sized deliberately rather
+    than incidentally — at two writes the same arrangement yields a prefix, which
+    is the sibling test's row, and that contrast is what makes this a statement
+    about the *last* acknowledgement rather than about body writes generally.
+
+    **Scoped to ``write``.** ``copy`` reaches the same state by the same
+    mechanism — its destination is written with the identical
+    ``file(dst, "w")`` and stream — but it has no caller-supplied stream to
+    silence from, so staging it needs a byte budget on the relay, which this file
+    avoids: a budget has to be re-tuned whenever a round-trip moves and fails by
+    stalling somewhere else rather than by failing. An attempt to parametrise it
+    in here silenced ``copy``'s *source* open instead and left the destination
+    untouched, which is the failure mode that argument describes.
+    """
+    if sftp_server is None:
+        pytest.skip("paramiko not installed")
+
+    observer = _make_backend(sftp_server[0], io_timeout=30.0)
+    backend = _make_backend(stall_relay.port, io_timeout=2.0)
+    dst = f"fulldst_{uuid.uuid4().hex[:8]}.bin"
+    payload = bytes(range(256)) * 125  # 32000 B: one CMD_WRITE, under MAX_REQUEST_SIZE
+    observer.write(dst, b"OLD" * 100, overwrite=True)
+    backend.check_health()
+
+    class _StallsOnTheAcknowledgement:
+        """Hands over the whole payload, then silences the return path."""
+
+        def __init__(self) -> None:
+            self._done = False
+
+        def read(self, size: int = -1) -> bytes:
+            if self._done:
+                return b""
+            self._done = True
+            stall_relay.stall_download()
+            return payload
+
+    with pytest.raises(BackendUnavailable):
+        backend.write(dst, _StallsOnTheAcknowledgement(), overwrite=True)
+
+    got = observer.read_bytes(dst)
+    assert got == payload, (
+        f"expected the destination to hold the payload in full ({len(payload)} bytes), got {len(got)}; "
+        "if this is now short, the completed-write state is no longer reachable this way and "
+        "SFTP-030's named states change — the closure it argues does not"
+    )
+
+
 @pytest.mark.spec("SFTP-014")
 @pytest.mark.spec("SFTP-030")
 @pytest.mark.parametrize("op", ["move", "write_atomic", "open_atomic", "copy_open", "copy_open_nested"])
@@ -1605,10 +1682,10 @@ def test_a_lost_reply_can_complete_the_operation_it_reports_as_failed(
 
     - **move** — the reply to ``posix_rename`` is lost, so the rename stands.
     - **write_atomic** / **open_atomic** — the reply to the *promote* rename is
-      lost, so the new content is in place and no temp survives. This is the
-      row that falsifies SFTP-014's unqualified "the destination is untouched",
-      which held only for a failure before the promote and is why that caveat
-      now carries a scope.
+      lost, so the new content is in place and no temp survives. SFTP-014 never
+      stated the untouched-destination half at all — a reader took it from the
+      word "atomic" — so this row is why that clause now states it *and* bounds
+      it to a failure before the promote.
     - **copy_open** — the reply to the destination ``CMD_OPEN`` is lost, so
       ``dst`` is truncated to empty. It also pins that the ``empty`` outcome
       belongs to the open rather than to a target's depth: the sibling test's
@@ -1694,11 +1771,12 @@ def test_a_stalled_atomic_write_preserves_the_destination_and_leaves_an_orphan_t
 ) -> None:
     """The contrast the non-atomic rule is stated beside, executed rather than quoted.
 
-    SFTP-014's caveat makes two claims about a connection lost mid-write — the
-    destination is untouched, and an orphan temp file may remain — and the SFTP
-    guide repeats both. They are the reference point a reader uses to decide
-    between ``write`` and ``write_atomic``, so a rule about ``write``'s
-    destination is only as useful as the contrast is true.
+    SFTP-014's caveat stated one claim about a connection lost mid-write — that
+    an orphan temp file may remain — while the half a reader actually decides on,
+    that an existing destination survives, went unwritten and was taken from the
+    word "atomic". Both are the reference point for choosing between ``write``
+    and ``write_atomic``, so a rule about ``write``'s destination is only as
+    useful as that contrast is true and stated.
 
     Both are asserted here on a real stall, for both atomic entry points:
     ``open_atomic`` yields its handle outside ``_errors`` and cleans up under

@@ -933,11 +933,12 @@ class SFTPBackend(Backend):
         The bytes are streamed straight to the destination file (no
         temp-and-rename), so a failed write may already have changed that path.
         A ``BackendUnavailable`` means no reply came back, not that the server
-        never acted: the destination may be **untouched**, **emptied** (the
-        server truncated on open and the old content is gone), or holding an
-        **unpredictable prefix** of *content*, and the error does not say which.
-        Retry with ``overwrite=True`` (the path is usually still occupied) and
-        re-write from the start rather than appending to what is there — the
+        never acted. **Any amount of the write may have happened, from none of it
+        to all of it**, and the error does not say which: the destination may be
+        untouched, emptied (the server truncated on open and the old content is
+        gone), holding an unpredictable prefix of *content*, or holding it in
+        full. Retry with ``overwrite=True`` (the path is usually still occupied)
+        and re-write from the start rather than appending to what is there — the
         prefix length depends on buffering the caller cannot observe. Use
         ``write_atomic`` when readers must never see a half-written file.
         Missing parent directories are created first (one ``stat`` per ancestor)
@@ -1020,10 +1021,12 @@ class SFTPBackend(Backend):
         reader ever sees a half-written file — not that a reported failure means
         the write did not happen.
 
-        On a server **without** ``posix-rename@openssh.com`` the destination is
-        not protected at all: the fallback removes it before renaming onto it, so
-        a stall in that window leaves the destination gone with the payload
-        stranded in the orphan temp.
+        The destination is also unprotected on the **rename-fallback** path,
+        which removes it before renaming onto it: a stall in that window leaves
+        the destination gone with the payload stranded in the orphan temp. That
+        path is entered whenever ``posix_rename`` raises a non-dead ``OSError``
+        — a permission error or a directory target reach it on a server that
+        offers the extension, so it is not confined to servers that lack it.
 
         As in ``write``, the returned ``WriteResult`` carries ``size`` and
         ``source="native"`` but leaves every rich field (``last_modified`` /
@@ -1105,8 +1108,18 @@ class SFTPBackend(Backend):
 
         Writes stream to a hidden temp file in the destination directory; on
         clean exit it is promoted with ``posix_rename`` (atomic on POSIX
-        servers, falling back to ``rename``), and on any exception the temp file
-        is removed and *path* is left untouched.
+        servers, falling back to ``rename``). On an exception raised by the
+        caller's own code, the temp file is removed and *path* is left untouched.
+
+        **A dropped connection is the exception to both halves**, on the same
+        terms as ``write_atomic``, whose docstring carries the detail. The temp
+        cleanup is deliberately skipped when the failure is itself a
+        dropped-connection signal, so an orphan ``.~tmp.<name>.<uuid8>`` remains;
+        a stall whose lost reply is the promote leaves the rename *performed*, so
+        *path* holds the new content; and on the rename-fallback path *path* can
+        be removed with the payload stranded in the temp. No reader ever sees a
+        half-written file, which is what the atomicity buys — but a reported
+        failure means neither that nothing happened nor that *path* survived.
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
@@ -1507,10 +1520,13 @@ class SFTPBackend(Backend):
         rename did not happen: if the stall swallowed the *reply* to
         ``posix_rename``, the server performed the move and the caller is told it
         failed. Re-check both paths before retrying — a blind retry of a move
-        that actually succeeded raises ``NotFound`` on a source that is gone. On
-        a server without ``posix-rename@openssh.com`` there is a further state:
-        the fallback removes the destination before renaming onto it, so a stall
-        in that window leaves the destination gone (the source survives).
+        that actually succeeded raises ``NotFound`` on a source that is gone.
+        There is a further state on the **rename-fallback** path, which removes
+        the destination before renaming onto it: a stall in that window leaves
+        the destination gone while the source survives. That path is entered
+        whenever ``posix_rename`` raises a non-dead ``OSError`` — a permission
+        error, a directory target, or a cross-filesystem rename — so it is not
+        confined to servers lacking ``posix-rename@openssh.com``.
 
         Raises:
             NotFound: If *src* does not exist.
@@ -1575,10 +1591,11 @@ class SFTPBackend(Backend):
         SFTP has no server-side copy, so the bytes round-trip through the client
         (download then upload). The destination is opened and streamed to
         directly, exactly as in ``write``, so this is not atomic: an interruption
-        leaves *dst* untouched, emptied, or holding an unpredictable prefix of
-        *src*, and retrying needs ``overwrite=True``. *src* is untouched either
-        way. ``src == dst`` is a no-op; missing parent directories of *dst* are
-        created first and are not removed when the copy fails.
+        may leave *dst* untouched, emptied, holding an unpredictable prefix of
+        *src*, or holding it in full, and retrying needs ``overwrite=True``.
+        *src* is untouched either way. ``src == dst`` is a no-op; missing parent
+        directories of *dst* are created first and are not removed when the copy
+        fails.
 
         Raises:
             NotFound: If *src* does not exist.

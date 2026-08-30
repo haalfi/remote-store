@@ -346,15 +346,21 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
     every operation here has a state where it did what you asked and raised
     `BackendUnavailable` anyway.
 
-    What that means per operation. Each cell lists every state measured, and
-    you cannot tell from the error which one you are in:
+    The general rule is that **any amount of the operation may have happened,
+    from none of it to all of it**, and the error does not tell you which. The
+    states below are the ones worth naming, not a complete list:
 
     | Operation | What a `BackendUnavailable` may have left |
     | --- | --- |
-    | `write()` | The destination unchanged, absent, **emptied**, or holding an unpredictable prefix |
-    | `copy()` | The same four, at `dst`; the source is never affected |
-    | `move()` | The paths unchanged, **the move completed** (source gone), or — on servers without `posix-rename` — **the destination destroyed** with the source still there |
-    | `write_atomic()` / `open_atomic()` | The destination unchanged, often with an orphan temp; **the write completed**; or — on servers without `posix-rename` — **the destination destroyed** with your data left in the temp file |
+    | `write()` | The destination unchanged, absent, **emptied**, holding an unpredictable prefix, or **written in full** |
+    | `copy()` | The same five, at `dst`; the source is never affected |
+    | `move()` | The paths unchanged, **the move completed** (source gone), or **the destination destroyed** with the source still there |
+    | `write_atomic()` / `open_atomic()` | The destination unchanged, often with an orphan temp; **the write completed**; or **the destination destroyed** with your data left in the temp file |
+
+    The destroyed-destination cases come from a rename fallback that removes the
+    destination before renaming onto it. It is not confined to old servers: any
+    rename that fails for a mundane reason — a permission error, a directory in
+    the way, a cross-filesystem `move` — takes that path.
 
     So:
 
@@ -370,10 +376,10 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
 
     **`write_atomic()` is still the right choice when readers must never see a
     half-written file** (see the caveat above, and
-    [atomicity semantics](../../explanation/concurrency.md)): it never leaves a
-    partial file at the destination. What it does not promise is that a reported
-    failure means nothing happened, and on a server without `posix-rename` it
-    does not protect your existing file either.
+    [atomicity semantics](../../explanation/concurrency.md)): no reader ever
+    observes a partial file at the destination. What it does not promise is that
+    a reported failure means nothing happened, nor that your existing file
+    survives one.
 
     Parent directories created for a write remain behind in every case — a
     failed write is not a rollback.
