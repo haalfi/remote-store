@@ -2,7 +2,7 @@
 
 <!-- doc: repo-only -->
 
-Derived from 35 declared mechanism(s) by `scripts/gen_gate_inventory.py`. Do not edit by hand; run `hatch run gen-gate-inventory`.
+Derived from 36 declared mechanism(s) by `scripts/gen_gate_inventory.py`. Do not edit by hand; run `hatch run gen-gate-inventory`.
 
 Which artifact pairs this repo checks, which single-artifact rules it
 asserts, and what its reports surface. *Kind*, the subject column and
@@ -11,11 +11,12 @@ in* and *Enforcement* are derived from `pyproject.toml`, `.github/workflows/`, `
 so no column is maintained here. What this inventory does not catch —
 including what *Enforcement* does not mean — is the last section below.
 
-## Pair gates (23)
+## Pair gates (24)
 
 | Mechanism | Compares | Domain | Runs in | Enforcement |
 |---|---|---|---|---|
 | `scripts/check_api_docs.py` | the graph IR in docs-src/_data/graph/graph.json ↔ the API reference pages under docs-src/reference/api/ | realization ↔ explanation | `all`, `gen-api-check`, `preflight` | gating |
+| `scripts/check_breaking_migration_link.py` | CHANGELOG.md [Unreleased] **Breaking** entries ↔ the docs-src/reference/migration.md link each one carries | process | `all`, `check-breaking-migration-link`, `docs-gate`, `lint` | gating |
 | `scripts/check_capability_parity.py` | the Capability enum in src/remote_store/_capabilities.py ↔ the Capability datatype and CapabilityName arms in sdd/formal/BackendContract.dfy | realization ↔ intent-formalized | `all`, `ci.yml:verify-formal`, `lint` | gating |
 | `scripts/check_ci_full_matrix.py` | ci.yml's ALL_PYTHONS interpreter list ↔ ci-full.yml's test-full matrix | process | `all`, `lint` | gating |
 | `scripts/check_ci_inventory.py` | the scheduled-family workflows under .github/workflows/ ↔ the workflow inventory in sdd/CI-OPERATIONS.md | process | `all`, `lint` | gating |

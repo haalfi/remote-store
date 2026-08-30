@@ -215,6 +215,146 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-262 — The breaking-change upgrade-path rule is review-enforced, and the gate the diagnosis proposed would not have caught it**
+  spec: — · effort: S · audience: contributor.tooling, user.api_docs
+  BUG-261 moved the obligation onto the PR making the break and left nothing
+  checking it. This closes that half.
+  **The gate BUG-261 proposed was refused, and re-proposing it would repeat the
+  measurement that refused it.** That disposition keyed on the release heading:
+  if any `[Unreleased]` entry carries `**Breaking**`, `migration.md` must hold
+  `## v<current> to v<next minor>`. In the v0.31.0 window BK-357 wrote that
+  heading while BUG-248 and BK-324 shipped uncovered beneath it, so the check
+  passes with **two of the four** marked entries undocumented — it would have been green on the
+  exact defect BUG-261 was filed for. The obligation is per **entry**; the
+  heading is per **release**; a per-release check cannot decide a per-entry rule.
+  **Shipped: the per-entry form.** Every `[Unreleased]` entry marked
+  `**Breaking**` must link the migration guide in its own text. That is
+  decidable from the entry alone, it runs the citation in the only direction
+  available (`check_no_tracker_refs.py` bars `PREFIX-NNN` from all of
+  `docs-src/`, so the guide cannot name the entry, but the entry can name the
+  guide), and it hands a reader of the entry somewhere to go. The convention
+  already existed: BK-357's entry and the released v0.30.0 bullets carry exactly
+  this link, so the gate formalises a practice rather than inventing one.
+  **Measured before and after, which is what made it worth building.** At
+  filing, `1 of 4` marked entries linked the guide — BK-357 did; BK-356,
+  BUG-248 and BK-324 did not. The three missing links ship with the gate, so
+  master lands green rather than red on the first commit.
+  `scripts/check_breaking_migration_link.py`, wired into both `lint` and
+  `docs-gate` per the trap BK-333 records — `CHANGELOG.md` matches `ci.yml`'s
+  `DOCS_PAT` and not `CODE_PAT`, so a CHANGELOG-only diff reaches `docs-gate`
+  alone and a lint-only wiring would be unreachable for the diff class that
+  invalidates the check. Guard at
+  `tests/scripts/test_check_breaking_migration_link.py`; a `Drift-gate::` block
+  puts it in [`GATE-INVENTORY.md`](GATE-INVENTORY.md).
+  **Bounds stated in the module docstring** ([Rule 7](DRIFT-RULES.md#miss-rate)),
+  because the unchecked remainder here is larger than the checked part. It
+  cannot tell whether the linked section says anything about this entry — a link
+  to the right heading with the wrong content passes. **It goes blind during
+  Phase 1**, not merely after release: `CONTRIBUTING.md` § Release Phase 1
+  condenses `[Unreleased]` in place, and the operative exclusion is the entry
+  *shape* becoming title-first rather than the marker being dropped — a condensed
+  entry that kept `**Breaking**` would still be invisible, because the ID no
+  longer leads the line. So it enumerates zero entries from Phase 1 condensation
+  until Phase 2 renames the heading, which is exactly while Phase 1's own
+  migration-guide item is being verified; the success line reports the
+  enumerated count so that state reads differently from a clean pass. And it
+  cannot reach the
+  softer half at all: BUG-261 re-derived that set at **6** unmarked entries a
+  caller must act on, against 4 marked ones, and no marker decides them, so
+  `CONTRIBUTING.md` § Release Phase 1 keeps that judgement. A test pins the
+  non-firing case so a later sweep does not "finish the job" by making the gate
+  guess.
+  **The gate found a defect in itself on its first full run**, which is the
+  cheapest evidence it works. `hatch run all` failed on this item's own
+  CHANGELOG stub: the stub *describes* the rule, so its prose contains the
+  literal `**Breaking**`, and an unanchored substring test read that as the
+  marker. Fixed at the rule rather than by rewording the stub — the convention
+  puts the marker at the head of the entry body (`- BK-357: **Breaking** — …`),
+  so the match is anchored there.
+  Pinned by `test_an_entry_that_merely_mentions_the_marker_is_not_marked`.
+  **Review round 1 found the same class twice more, both fail-open.** The entry
+  grammar required the ID to end in digits, so a marked entry using the live
+  suffixed form — `sdd/traces/_schema.yml` states `PREFIX-[0-9]+[a-z]?`, and
+  `BACKLOG-DONE.md` carries BK-139d, ID-118b, BK-167a/b, ID-013b, ID-151b/c,
+  ID-147b, ID-143b — was skipped and the gate exited 0. And the link test was a
+  bare substring search over the line, so an entry that merely *mentions*
+  `reference/migration.md` in prose passed: the unanchored-substring defect the
+  marker fix had just closed, one line below the comment explaining why
+  anchoring matters, on the other half of the same rule. Both are now anchored
+  and both carry a test.
+  **The stated bound was wrong on the phase, in the direction that hides the
+  blind window.** It said Phase 2 condensation drops the marker.
+  `CONTRIBUTING.md` § Release **Phase 1** condenses `[Unreleased]` in place, and
+  the operative exclusion is not the marker at all but the entry *shape*: a
+  condensed entry leads with a title (`- **SFTP write() …** (BK-313):`), so the
+  ID no longer leads the line and nothing matches. The gate therefore enumerates
+  zero entries from Phase 1 condensation until Phase 2 renames the heading —
+  which is exactly while Phase 1's own migration-guide checklist item is being
+  verified. Fixed two ways: the docstring states the shape and the window, and
+  the success line now reports how many entries were enumerated, so a blind pass
+  reads differently from a clean one.
+  **`main()`, `--repo-root` and both failure paths now have tests**, per the 20
+  sibling files in `tests/scripts/` that cover `main()`; `pyproject.toml` wires
+  the script, not `collect_violations`, so what `lint` and `docs-gate` run was
+  otherwise unexercised. A missing `## [Unreleased]` heading — which Phase 2
+  produces — now raises rather than reporting success over nothing.
+  **Review round 2 found the guard against going blind was itself blind.** The
+  test that derived an "independent" expected set from the live CHANGELOG used a
+  regex copied from the implementation — `_ENTRY_RE` concatenated with the
+  marker clause — so it went blind on exactly the inputs the parser did: both
+  round-1 fail-opens would have compared two empty lists and passed. That is
+  [Rule 8](DRIFT-RULES.md#independence) ("independent authors do not produce
+  independent errors"), and it was not even two authors. It now derives by
+  position, splitting on the first `": "` with no ID grammar at all. The same
+  round removed the duplication that caused the round-1 fail-open in the first
+  place: `_MARKED_RE` restated `_ENTRY_RE`'s ID clause, so the suffix fix had to
+  widen two places, and widening one would silently narrow the enumeration. The
+  marker is now tested by position against the entry match, leaving one home for
+  the grammar.
+  **Two claims in the round-1 fixes were wrong, both about the corpus.** The
+  link matcher accepted a repo-relative `docs-src/reference/migration.md` on the
+  grounds that the corpus used both spellings; it uses one (`rg -o
+  '\]\([^)]*migration[^)]*\)' CHANGELOG.md` returns 7 hits, all the published
+  URL), and the relative form would 404 on the site, because this file is
+  dual-published to `reference/changelog.md` — so the gate would have blessed a
+  link `check_links` and `mkdocs --strict` reject. And the comment justifying
+  the anchored marker claimed it matched "where the release skill reads it":
+  `rg -i breaking .claude/` returns nothing, so the release skill neither reads
+  nor mentions the marker. Both corrected; the second was an invented
+  corroboration for a decision that already had two real ones.
+  **Two more, smaller.** The remediation's example hard-coded
+  `#v0300-to-v0310`, which is the one error the gate is blind to by its own
+  first bound — a copied anchor naming the previous release passes — so it now
+  shows `#vPREV-to-vNEXT` and says the anchor is this release's pair. And a test
+  asserted `[Unreleased]` always carries a marked entry, which fails on two
+  normal states: a release window with no breaking change, and Phase 1 after
+  condensation — the blind window this item's own docstring declares as
+  accepted. It skips there instead, so the suite does not contradict the bound.
+  **Review round 3 closed the miss that mattered most, rather than only stating
+  it.** The gate validated that an entry *carried* a link and never that the
+  link went anywhere: `check_links` discards the fragment of an absolute
+  docs-site URL (`_resolve_docs_site_path` returns `parts.path` only) and
+  `mkdocs build --strict` does not resolve external URLs, so
+  `…/migration/#v9999-to-v9999` passed `lint` and `docs-gate` with no section
+  written at all. That is the whole delegated obligation slipping *through* the
+  check meant to enforce it — the same defect BUG-261 and BUG-262 exist to
+  close, reached through the gate instead of around it. The fragment is now
+  resolved against the `## ` headings `migration.md` exposes.
+  **The slug rule is narrow on purpose, and the live files are what keep it
+  honest.** Importing `check_links._extract_anchors` would pull a git-invoking
+  module tree into `lint` to answer one question, so this derives the slug
+  itself — lowercase, drop what is neither alphanumeric nor space nor hyphen,
+  spaces to hyphens. A test resolves every anchor the live CHANGELOG links
+  against the live guide, so a wrong rule fails on master immediately instead of
+  passing something through.
+  **Two smaller round-3 findings, both about two gates disagreeing.** The link
+  pattern required a trailing slash where `check_links` normalises it away
+  (`parts.path.strip("/")`), so a valid URL would have been rejected with a
+  message naming the wrong defect; the slash is now optional and pinned. And
+  `main()` re-implemented `collect_violations`'s predicate instead of calling
+  it — the same two-places-to-widen shape the `_MARKER` comment argues against,
+  rebuilt three lines from where the argument is written.
+
 - [x] **BUG-261 — Two breaking changes are on master with no upgrade path, and the obligation is stated where their authors never read**
   spec: — · effort: S · audience: user.api_docs, user.site, contributor.tooling
   **The item's own figure had moved before the work started, which is the first

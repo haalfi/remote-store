@@ -79,7 +79,7 @@ Read this before starting. One line per trigger.
 | Bug fix                       | BACKLOG item, CHANGELOG stub under `[Unreleased]`, failing test **before** fix, spec if invariant contradicted |
 | Backlog item touched          | Live trace at `sdd/traces/<id>-<slug>.yml` ([CLAUDE.md § Trace authoring](../CLAUDE.md#trace-authoring)) — not owed for an item decided against or absorbed, which carry a `BACKLOG-DONE.md` register entry instead; schema at `sdd/traces/_schema.yml`; `audience` drives the CHANGELOG-required rule |
 | CHANGELOG entry               | One-line `- <ID>: <Title>` at top of `[Unreleased]`; release skill expands and groups |
-| Breaking change               | `**Breaking**` on the CHANGELOG stub **and** a `## vPREV to vNEXT` section in `docs-src/reference/migration.md`, both in the PR making the break — the version pair is knowable before any release stamps it ([CONTRIBUTING § When to bump](../CONTRIBUTING.md#versioning)). A fix that breaks an `except` clause without earning the marker owes the **section alone**, so a section with no marker is expected, not a breach |
+| Breaking change               | `**Breaking**` on the CHANGELOG stub **and** a `## vPREV to vNEXT` section in `docs-src/reference/migration.md`, both in the PR making the break — the version pair is knowable before any release stamps it ([CONTRIBUTING § When to bump](../CONTRIBUTING.md#versioning)). A fix that breaks an `except` clause without earning the marker owes the **section alone**, so a section with no marker is expected, not a breach. `check_breaking_migration_link.py` enforces the marked half: the entry must link the section, and the anchor must be a heading the guide really has |
 | Version number                | `bump-my-version` (drives `pyproject` file list), then `hatch run gen-graph`; full checklist in [CONTRIBUTING § Phase 2](../CONTRIBUTING.md#phase-2) |
 | Source/test/spec counts       | README badge + CI coverage report (no manual table) |
 | New authoritative process doc in `sdd/` | [CLAUDE.md § Documentation framework](../CLAUDE.md#documentation-framework) (if part of the trio), [CONTRIBUTING § Authoritative Document Format](../CONTRIBUTING.md#authoritative-document-format) (Scope subsection within), sibling authority back-references, `.claude/agents/*.md` FOUNDATION lists, the `/rvw-pr` and `/audit` step lists if the doc is review-enforced, `docs-src/explanation/design/_nav.yml` plus that section's `_index.tmpl`, and this ripple-check |
@@ -286,6 +286,15 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | whose entry reads `**Fix**` is the rule working rather    |
 |                            | than a counterexample to it. Only the reverse — a marked  |
 |                            | entry with no section — is the breach this row prevents.  |
+|                            | `check_breaking_migration_link.py` (in `lint` and         |
+|                            | `docs-gate`) enforces the marked half mechanically: the   |
+|                            | entry must carry a link to the migration guide, and the   |
+|                            | anchor must resolve to a `## ` heading that guide really  |
+|                            | has — nothing else validates that fragment, so without it |
+|                            | the rule can be satisfied by a link to a section nobody   |
+|                            | wrote. It cannot check that the linked section covers     |
+|                            | *this* entry, and cannot see the softer half at all —     |
+|                            | see its docstring for the full bound list.                |
 | **Version number**         | Run `bump-my-version` (manages the files listed in        |
 |                            | `[[tool.bumpversion.files]]` in `pyproject.toml`);        |
 |                            | then `hatch run gen-graph` to re-stamp `graph.json`.      |
