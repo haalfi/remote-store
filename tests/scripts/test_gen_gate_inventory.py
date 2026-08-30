@@ -636,7 +636,7 @@ class TestRendering:
         assert all(bound in rendered for bound in _mod._BOUNDS)
         # The heading carries no count, by review decision: a count over a list
         # the reader is looking at is only ever copied wrong elsewhere. Losing a
-        # bound is still caught, by `test_the_bound_count_is_pinned` below --
+        # bound is still caught, by `test_the_bound_count_is_pinned` below —
         # which is where that guard always lived, since a dropped bound
         # regenerates the heading along with the list and `--check` stays green.
         assert "does not catch (" not in rendered
