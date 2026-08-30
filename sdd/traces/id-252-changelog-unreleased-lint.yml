@@ -28,9 +28,17 @@ discovery_followups:
 # so the SHAs those rounds were named by (bd44f28, 0414dfe, e9687bb, 4717a3e,
 # 43c3d41) resolve to nothing on a fresh clone. Naming them here would be the
 # plausible-looking SHA the schema's own clause warns about, so they are
-# recorded as history rather than as a derivation, and the field counts the
-# **one** review-fix commit this branch actually carries: the closing gate's,
-# which is also the round that changed the most.
+# recorded as history rather than as a derivation. The field counts the
+# review-fix commits this branch *does* carry, and names them: 3b21663 (closing
+# gate 3), 17eb561 and 3265867 (two review comments on the gate inventory),
+# 0481112 (closing gate 4) and the commit carrying this line (closing gate 5).
+# 82dd431 is excluded deliberately: it fixes a CI formatter break that 17eb561
+# introduced, so it answers a check rather than a review. a173267 and 4361797
+# are the implementation and the rebase regeneration.
+#
+# It read 1 for two rounds, written when only the first of these existed and
+# not re-derived when four more landed — the increment this comment's own next
+# paragraph forbids, committed in the field that forbids it.
 #
 # **Re-derived on every edit, never incremented.** Three earlier versions of
 # this comment were wrong: one opened "Two review passes" and was falsified by a
@@ -40,19 +48,31 @@ discovery_followups:
 # derivation. All three were caught by a whole-file pass, in the field whose own
 # clause exists to prevent exactly this.
 #
-# **Nine passes over six rounds** is the loop's own shape, and it is not this
-# field: round 1 (unprimed), round 2 (measuring), round 3 (reader, a three-member
-# panel of which two died on a rate limit, so one pass), two closing gates, and a
-# third closing gate after the rebase running unprimed and whole-file. What each
-# drew against this item's own artifacts: round 1, two (the parser failing open,
-# an unused helper); round 2, nothing; round 3, the budget rule fighting the
-# migration link a breaking stub owes; closing gate 1, two that changed rules
-# (the budget's stale derivation, the advisory note's missing register); closing
-# gate 2, two more (ID patterns disagreeing, the open-item predicate pinned for
-# one status of two); closing gate 3, three that changed rules — the gate failing
-# the release window it has to survive, a `[~]` bullet not ending the item above
-# it, and an entry grammar narrower than the sibling parser's.
-review_rounds: 1
+# **Thirteen passes over seven rounds** is the loop's own shape, and it is not
+# this field. Derived from the round comments on PR #983, which name each gate's
+# members: round 1 (unprimed, 1), round 2 (measuring, 1), round 3 (reader, a
+# three-member panel of which two died on a rate limit, so 1), closing gate 1
+# (unprimed + whole-file + measuring, 3), closing gate 2 (the same three, 3),
+# and after the rebase closing gates 3, 4 and 5 (unprimed + whole-file, 2 each).
+# 1+1+1+3+3+2+2+2 = 13.
+#
+# This read "nine over six" for a round, counting closing gates 1 and 2 as two
+# passes each when their own PR comments name three. Corrected in one artifact
+# and not the other, which left "eleven" in BACKLOG-DONE.md disagreeing with
+# "nine" here inside a single commit — the sibling-sweep failure this trace
+# already records twice.
+#
+# What each round drew against this item's own artifacts: round 1, two (the
+# parser failing open, an unused helper); round 2, nothing; round 3, the budget
+# rule fighting the migration link a breaking stub owes; closing gate 1, two
+# that changed rules (the budget's stale derivation, the advisory note's missing
+# register); closing gate 2, two more (ID patterns disagreeing, the open-item
+# predicate pinned for one status of two); closing gate 3, three (the release
+# window, a `[~]` bullet not ending the item above it, an entry grammar narrower
+# than the sibling's); closing gate 4, the premise of closing gate 3's fix and
+# the fix itself; closing gate 5, `_AUDIENCE_RE` reopening the body-prose hole
+# and the derivation sitting behind a second branch.
+review_rounds: 5
 expected_ripples:
   # Anticipated by the ripple-check: DRIFT-RULES by the "new or changed
   # cross-artifact check" row, BACKLOG/BACKLOG-DONE by "backlog item touched",
@@ -69,9 +89,15 @@ expected_ripples:
   - sdd/CLAUDE-REFERENCE.md
   - CONTRIBUTING.md
   - pyproject.toml
+  # Not anticipated in prose either, and caught by re-running
+  # `git diff --name-only`: two review comments asked for the gate inventory's
+  # counts to go, which is a change to the *generator* and its tests, not to the
+  # generated file that GATE-INVENTORY.md above stands for.
+  - scripts/gen_gate_inventory.py
+  - tests/scripts/test_gen_gate_inventory.py
 surprising_ripples:
   # No ripple-check row says that adding a gate over the CHANGELOG requires
-  # amending the trace schema's derived rule -- but the schema is where that
+  # amending the trace schema's derived rule — but the schema is where that
   # rule is owned, so declaring the gate's direction (Rule 4) and naming the
   # half nothing mechanises had to land there. Found by an unprimed pass
   # reading `git diff --name-only` against this file's own ripple lists, in
@@ -102,7 +128,7 @@ phases:
         extract: >-
           Parsed the section rather than reading it: 18 entries, no duplicates.
           The repair the item predicted had already happened by the route it
-          predicted -- 165bd00 collapsed both duplicates into stubs three
+          predicted — 165bd00 collapsed both duplicates into stubs three
           commits after the item was filed. The item's own figures (19 entries,
           17 distinct) were therefore stale before the work began, which is why
           every figure in the shipped entry was re-derived rather than carried.
@@ -146,7 +172,7 @@ phases:
           the completed-item to entry direction only. So prose under [Unreleased]
           is work in the wrong section, and the existing check's direction is the
           one to gate. Retrospective: the expansion half was taken at face value
-          and is not true as written -- the line names no source for the prose
+          and is not true as written — the line names no source for the prose
           and the release skill has no expansion step, which review round 1
           found after the condensation had been justified by it. Filed as
           ID-253; the condensation stands because the detail's real homes are
@@ -176,7 +202,7 @@ phases:
           320-character budget" and "taking the longest to 287", which asserts a
           threshold selecting entries before that threshold existed, and quotes a
           figure two later commits moved. Three artifacts had the number removed
-          and this one kept it -- the fourth copy, found by the second closing
+          and this one kept it — the fourth copy, found by the second closing
           gate. A third gate, after the rebase onto BUG-262, found the
           replacement sentence stale in turn: it named a fit ("just above the
           longest survivor") that the re-applied condensation had moved, so the
@@ -189,7 +215,7 @@ phases:
           carried two gates over the section. The second was dropped, so the
           module was folded back in: one consumer is not a library. What the
           fold cost was invisible until a whole-file pass read the result as one
-          artifact -- the entry grammar had drifted narrower than
+          artifact — the entry grammar had drifted narrower than
           check_breaking_migration_link.py's, so one CHANGELOG line drew two
           verdicts from one lint run. Sharing a file was never what kept them
           agreeing; saying so in both patterns' comments is.
@@ -229,7 +255,7 @@ phases:
           Round 1's only bug, and the sharper half is which of the two gates it
           hit. parse_done_unreleased returned [] both for "no completed items"
           and for "no ## Unreleased heading", so the audience rule evaluated an
-          empty set while the gate printed success -- and Phase 2 renames that
+          empty set while the gate printed success — and Phase 2 renames that
           exact heading, so the silent case sat on the release path. The sibling
           gate written in the same PR already raised on an underivable claim and
           had a test for it; this one did not, so the PR shipped both the rule
@@ -245,7 +271,7 @@ phases:
         extract: >-
           Round 1 found the condensation had deleted the
           GraphBackend(base_path=".") semantics change from its only user-facing
-          home. The sibling sweep it prompted -- every backticked identifier in
+          home. The sibling sweep it prompted — every backticked identifier in
           each of the six pre-condensation entries, differenced against the new
           stub, that item's BACKLOG-DONE entry and the whole migration guide --
           is what found the second and worse defect: the migration table asserted
@@ -276,8 +302,8 @@ phases:
           The round's worst finding, and it was outside the diff. Phase 1
           condenses [Unreleased] *in place* and Phase 2 is what renames the
           heading, so between them the released shape lives under [Unreleased].
-          Reconstructed that tree -- last released section's body under
-          `## [Unreleased]`, BACKLOG-DONE.md untouched -- and ran the rules: 68
+          Reconstructed that tree — last released section's body under
+          `## [Unreleased]`, BACKLOG-DONE.md untouched — and ran the rules: 68
           violations, 48 strays and 20 entry-less items, with a remediation
           telling the release manager to do Phase 2 early. It was the file's own
           stated bound ("released sections carry ### groupings ... none of the
@@ -285,8 +311,8 @@ phases:
           and assumed the heading tracked it.
           **This step said two wrong things when first written, both corrected
           in round 6 and kept here.** It read "70 lines of violations", which
-          was my repro script's output-line count -- violations plus a blank, a
-          summary and the remediation -- copied into a sentence about
+          was my repro script's output-line count — violations plus a blank, a
+          summary and the remediation — copied into a sentence about
           violations. And it concluded "Phase 3 runs `hatch run all` over it, so
           the gate would have blocked the release it serves", which reading the
           phases in order refutes: Phase 2 renames both headings and makes the
@@ -298,9 +324,9 @@ phases:
         section: "module docstring"
         read_type: reference
         extract: >-
-          The sibling had already named this exact window -- "from the moment
+          The sibling had already named this exact window — "from the moment
           Phase 1 condenses until Phase 2 renames the heading, this gate
-          enumerates zero entries" -- and survives it by reporting a count. This
+          enumerates zero entries" — and survives it by reporting a count. This
           gate was written after it, against it, and neither documented nor
           survived it. Reading a sibling for what it *shares* is not the same as
           reading it for what it *warns about*, and only the second was done.
@@ -310,7 +336,7 @@ phases:
         read_type: verify
         extract: >-
           The tag read contributor.tooling alone, which made a CHANGELOG entry
-          not owed -- by the very gate this item adds. Re-derived: the branch
+          not owed — by the very gate this item adds. Re-derived: the branch
           takes 12,756 bytes out of a file published at
           docs.remotestore.dev/reference/changelog/, which is what user.site
           means. A tag whose only effect is to exempt the work from its own rule
@@ -327,6 +353,6 @@ phases:
           reports/x and "x/./y" addresses reports/x/y, so no key spelling reaches
           it. The neighbouring claim ("every other base_path value is
           unaffected") was checked and holds. Filed as BUG-263 rather than fixed
-          here -- it is BUG-261's section, not this item's.
+          here — it is BUG-261's section, not this item's.
         outcome: misleading
 

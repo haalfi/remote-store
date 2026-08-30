@@ -205,8 +205,15 @@ class TestShape:
 class TestReleaseWindow:
     """CONTRIBUTING.md § Release Phase 1 condenses `[Unreleased]` in place, and
     Phase 2 is what renames the heading — so the released shape lives under
-    `[Unreleased]` for that whole span, and Phase 3 runs `hatch run all` over
-    it. A gate that fails there blocks the release it serves."""
+    `[Unreleased]` for that whole span.
+
+    **Not on the mandated gate path**, which an earlier version of this
+    docstring claimed: Phase 2 renames both headings and makes the release
+    commit before Phase 3 runs `hatch run all`, and the Phase 1 edits are
+    uncommitted until then. Only a release manager running `lint` by hand
+    mid-Phase-1 meets this state. The module docstring was corrected a round
+    before this file was, which is why the two disagreed for one commit.
+    """
 
     def test_uniqueness_still_runs_under_a_grouping(self, tmp_path: Path) -> None:
         """The duplicate check is what this module exists for, and a `###` must
@@ -215,7 +222,7 @@ class TestReleaseWindow:
         A partly-condensed section is the normal in-progress Phase 1 state: some
         entries expanded, the rest still stubs. Standing the whole gate down
         there meant a keep-both merge re-duplicating an ID among the survivors
-        went unreported -- the exact ID-252 defect, inside the window.
+        went unreported — the exact ID-252 defect, inside the window.
         """
         entries = "### Fixed\n\n- Condensed prose.\n" + _ENTRIES + "- BK-100: a duplicate among the survivors\n"
         violations, notes = _mod.collect(_tree(tmp_path, entries, _ITEMS))
@@ -229,6 +236,27 @@ class TestReleaseWindow:
         violations, _ = _mod.collect(_tree(tmp_path, entries, _ITEMS))
         assert len(violations) == 1
         assert "characters of prose" in violations[0].message
+
+    def test_a_renamed_changelog_heading_does_not_silence_one_either(self, tmp_path: Path) -> None:
+        """The same regression, in the other branch, found one round later.
+
+        Moving `parse_done_unreleased` past the `grouped` branch left it behind
+        `not section.found`. Phase 2 renames *both* headings, so a half-done
+        Phase 2 reaches this one: measured, the run reported "no `## [Unreleased]`
+        heading" and said nothing about the completed-item side being
+        underivable. The derivation now runs ahead of every branch, which is the
+        only placement its bound can be stated unconditionally from.
+        """
+        tree = _tree(tmp_path, _ENTRIES, _ITEMS)
+        changelog = tree / "CHANGELOG.md"
+        changelog.write_text(
+            changelog.read_text(encoding="utf-8").replace("## [Unreleased]", "## [0.31.0] - 2026-09-01"),
+            encoding="utf-8",
+        )
+        done = tree / "sdd" / "BACKLOG-DONE.md"
+        done.write_text(done.read_text(encoding="utf-8").replace("## Unreleased", "## v0.31.0"), encoding="utf-8")
+        with pytest.raises(_mod.DerivationError, match="no `## Unreleased` heading"):
+            _mod.collect(tree)
 
     def test_a_grouping_does_not_silence_an_underivable_claim(self, tmp_path: Path) -> None:
         """The regression the first version of the stand-down shipped.
@@ -265,6 +293,10 @@ class TestReleaseWindow:
         assert violations == []
         assert len(notes) == 1
         assert notes[0].startswith(_mod._STOOD_DOWN)
+        # The note's only figure. Mutating `kept = len(section.entries)` to a
+        # constant survived every other test in this class, so the one number a
+        # release manager reads off a stood-down run was unpinned.
+        assert "over the 0 line(s)" in notes[0]
 
     def test_the_stand_down_is_printed_and_not_called_a_pass(self, tmp_path: Path, capsys) -> None:
         """The cost of standing down is that a stray `###` switches three rules
@@ -274,7 +306,10 @@ class TestReleaseWindow:
         rc = _mod.main(["--repo-root", str(_tree(tmp_path, condensed, _ITEMS))])
         out = capsys.readouterr().out
         assert rc == 0
-        assert "stood down" in out
+        # Keyed on the constant, not the words: the body says "so all three
+        # stood down" too, so a substring check passed even with the label
+        # renamed — and the label is what `main` branches on.
+        assert _mod._STOOD_DOWN in out
         assert "unique, stub-shaped and complete" not in out
 
     def test_the_audience_rule_stands_down_with_the_rest(self, tmp_path: Path) -> None:
@@ -285,22 +320,30 @@ class TestReleaseWindow:
         assert violations == []
 
     def test_what_the_grouping_actually_costs(self, tmp_path: Path) -> None:
-        """Exactly two rules, and they come back when the grouping goes.
+        """Exactly three reported things, and they come back when it goes.
 
         This is the whole price of a stray `###` mid-cycle, pinned as a
-        difference rather than asserted in prose: the stray line and the
-        entry-less user-facing item are both reported without the heading and
-        neither is reported with it. An earlier version of this test pinned the
-        heading as hiding a *duplicate* too, which was the over-broad stand-down
-        it was written against.
+        difference rather than asserted in prose: a stray line, an entry-less
+        user-facing item, and the register note for an ID the backlog knows
+        nowhere are each reported without the heading and none with it. The
+        third is the one the note undercounted for a round — it lives inside
+        the same function as the comparison, so suppressing one suppressed it.
+
+        An earlier version pinned the heading as hiding a *duplicate* too, which
+        was the over-broad stand-down this test was rewritten against.
         """
-        entries = "- A wrapped line that leads with no ID.\n- BK-101: tooling\n"
+        entries = "- A wrapped line that leads with no ID.\n- BK-101: tooling\n- ID-999: an ID nothing knows\n"
         with_heading, notes = _mod.collect(_tree(tmp_path, "### Added\n\n" + entries, _ITEMS))
         assert with_heading == []
-        assert notes[0].startswith(_mod._STOOD_DOWN)
+        assert [n for n in notes if not n.startswith(_mod._STOOD_DOWN)] == []
 
-        without_heading, _ = _mod.collect(_tree(tmp_path, entries, _ITEMS))
-        assert sorted(v.message.split()[0] for v in without_heading) == ["BK-100", "not"]
+        without_heading, without_notes = _mod.collect(_tree(tmp_path, entries, _ITEMS))
+        assert [v.line for v in without_heading] == [
+            _line_of(tmp_path, "A wrapped line that leads with no ID"),
+            _mod.parse_done_unreleased(tmp_path / "sdd" / "BACKLOG-DONE.md")[0].line,
+        ]
+        assert len(without_notes) == 1
+        assert "ID-999" in without_notes[0]
 
 
 class TestAudienceRule:
@@ -326,6 +369,46 @@ class TestAudienceRule:
         violations, _ = _mod.collect(_tree(tmp_path, "- BK-100: fine\n", items))
         assert len(violations) == 1
         assert "no `audience:` line" in violations[0].message
+
+    def test_body_prose_quoting_the_metadata_grammar_is_not_a_metadata_line(self, tmp_path: Path) -> None:
+        """The `·`-separated case, which the `·`-free test below cannot reach.
+
+        `_AUDIENCE_RE`'s prefix was widened to `.*·` so a wrapped `spec:` list
+        still carries `· audience:` on a continuation line. The justification
+        written for it — "`·` is not a character prose uses" — is false in the
+        one file the pattern is ever applied to: ID-252's own entry writes
+        ``the audience side off the `spec: · effort: · audience:` `` in its body,
+        one of 44 matches under § Unreleased and the only non-metadata one.
+
+        Measured before the fix: that line parsed to ``audience=('`',)``, which
+        is not user-facing, so a `user.api` item with no CHANGELOG entry drew
+        **zero** violations — both the "carries no `audience:` line" finding and
+        the entry-less finding silenced at once. Code spans are stripped first
+        now; a backticked `·` quotes the grammar rather than being it.
+        """
+        items = (
+            "- [x] **BK-100 — an item whose body names the metadata grammar**\n"
+            "  the audience side off the `spec: · effort: · audience:` line it carries.\n"
+            "  spec: — · effort: S · audience: user.api\n"
+        )
+        parsed = _mod.parse_done_unreleased(_tree(tmp_path, "- BK-101: unrelated\n", items) / "sdd" / "BACKLOG-DONE.md")
+        assert [(i.item_id, i.audience) for i in parsed] == [("BK-100", ("user.api",))]
+
+        violations, _ = _mod.collect(_tree(tmp_path, "- BK-101: unrelated\n", items))
+        assert len(violations) == 1
+        assert "BK-100 is user-facing (user.api)" in violations[0].message
+
+    def test_a_wrapped_metadata_line_still_parses(self, tmp_path: Path) -> None:
+        """The case the widening exists for, and the reason the fix is a strip
+        rather than a narrowing: ID-210's `spec:` list runs three lines in
+        BACKLOG-DONE.md and carries `· audience:` on the third."""
+        items = (
+            "- [x] **BK-100 — an item with a long spec list**\n"
+            "  spec: ASYNC-004, ASYNC-005, ASYNC-006, ASYNC-007, ASYNC-008,\n"
+            "  ASYNC-012, ASYNC-013 · audience: infra.test\n"
+        )
+        parsed = _mod.parse_done_unreleased(_tree(tmp_path, "- BK-101: unrelated\n", items) / "sdd" / "BACKLOG-DONE.md")
+        assert [(i.item_id, i.audience) for i in parsed] == [("BK-100", ("infra.test",))]
 
     def test_body_prose_mentioning_audience_is_not_a_metadata_line(self, tmp_path: Path) -> None:
         """The silent direction of the same defect, and the one the previous
@@ -517,7 +600,7 @@ class TestAgainstTheRepo:
         # No note, and specifically no stand-down: a stray `###` under
         # [Unreleased] would switch two rules off across `lint`, `docs-gate`
         # and `all` while every one of them stayed green, and the only other
-        # detector is a human reading a passing run's stdout -- which the
+        # detector is a human reading a passing run's stdout — which the
         # module docstring itself argues readers learn to skip.
         assert notes == []
 

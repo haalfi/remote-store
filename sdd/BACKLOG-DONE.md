@@ -426,9 +426,10 @@ if evidence changes; these are retired.
   the two disagree and one `hatch run lint` returns two verdicts about one line;
   the divergence is latent, and worth closing at the price of a character class. `gen_backlogid.py` keeps a closed prefix set because it *allocates*
   IDs; these patterns *recognise* them, where a closed set fails a real line.
-  **What the loop cost, and what it bought.** Eleven review passes across six
-  rounds — six of the passes were closing gates, and the last two of those are
-  the reason the release-window bullet says what it says. The class that kept recurring early was a universal asserted over a
+  **What the loop cost, and what it bought.** Thirteen review passes across
+  seven rounds, derived from the round comments on the PR, which name each
+  gate's members: 1+1+1+3+3+2+2+2. Ten of the thirteen were closing gates, and
+  the last three are the reason the release-window bullet says what it says. The class that kept recurring early was a universal asserted over a
   space measured on two backends — refuted four rounds running until the remedy
   stopped being "narrow it again" and became "delete it and name what was
   measured".
@@ -436,10 +437,12 @@ if evidence changes; these are retired.
   attempts are the record worth keeping.** Round 5 found that Phase 1 condenses
   `[Unreleased]` *in place* while Phase 2 renames the heading, so between them
   the released shape lives under `[Unreleased]` — and there this gate reported
-  every condensed line as a stray and every completed item as entry-less, with a
+  every condensed line as a stray and every user-facing completed item as
+  entry-less, with a
   remediation telling the release manager to do Phase 2 early. Reconstructed by
   putting the last released section's body under `## [Unreleased]` and leaving
-  `BACKLOG-DONE.md` alone: **68** violations, 48 strays and 20 entry-less items.
+  `BACKLOG-DONE.md` alone: **68** violations — 48 strays, and 20 entry-less
+  items out of the 43 the section holds, not "every" one of them.
   `check_breaking_migration_link.py` had already named that window and survived
   it by reporting a count; this gate had not.
   **Round 6 refuted the fix's justification and the fix's shape at once.** The
