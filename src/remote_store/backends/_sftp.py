@@ -2451,6 +2451,16 @@ class SFTPBackend(Backend):
         if message is None:
             message = str(exc)
         if not message:
+            # The stall literal below is mirrored in more places than either
+            # remediation hint further down, and two of them are exact-equality
+            # assertions: ``test_a_stall_says_what_it_was_and_logs_it`` and
+            # ``test_stalled_upload_request_raises_backend_unavailable`` (both in
+            # ``tests/backends/sftp/test_io_timeout.py``) fail on a reword, and
+            # ``test_a_probe_record_carries_no_path`` pins the rendered line. The
+            # three published copies do **not** fail — ``guides/backends/sftp.md``,
+            # ``reference/migration.md`` and ``guides/troubleshooting.md`` (twice)
+            # quote it as what a reader greps for. Reword this string and those
+            # three pages together, or the message stops matching its own docs.
             if isinstance(exc, TimeoutError):  # socket.timeout is TimeoutError (3.10+)
                 message = (
                     f"SFTP channel stalled: no data within io_timeout={self._io_timeout}s"
@@ -2474,13 +2484,21 @@ class SFTPBackend(Backend):
         # this mapping concludes on. A refused connect and a DNS failure do not:
         # both are an ``OSError`` the arms above decline, so they exit at the
         # generic arm as ``RemoteStoreError`` and reach this method zero times
-        # (BUG-265). A probe that fails by timeout does reach it.
+        # (BUG-265). Which observable failures reach which arm is not enumerated
+        # here or in the spec — see BUG-266; four attempts to state it in a
+        # sentence were each refuted.
         # The logger name already says which backend this is, so the line adds
         # the path rather than repeating "SFTP" in front of a message that
-        # usually starts with it — and omits it entirely when there is none,
-        # which is how ``check_health`` and the connect-time arms arrive.
-        record_extra = {"op": "error_mapping", "path": path, "backend": self.name}
+        # usually starts with it. An empty path is dropped from the record
+        # *and* the line, rather than carried as ``path=''``: a structured
+        # consumer reads ``record.path``, so emitting the key with an empty
+        # value would hand it a field that looks answered and is not. This
+        # follows ``_store.py``'s ``ping`` record, which omits the key outright.
+        # ``check_health`` is how an empty path arrives; the connect-time arms
+        # are reached through an ordinary operation and carry its key.
+        record_extra: dict[str, Any] = {"op": "error_mapping", "backend": self.name}
         if path:
+            record_extra["path"] = path
             log.warning("%s (path=%r)", message, path, extra=record_extra)
         else:
             log.warning("%s", message, extra=record_extra)

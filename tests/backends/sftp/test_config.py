@@ -1722,13 +1722,49 @@ class TestSFTPMapException:
         assert hint in ours[0].getMessage(), "the hint reached the caller but not the log record"
 
     @pytest.mark.spec("SFTP-023")
-    def test_a_probe_record_carries_no_path(self, caplog: pytest.LogCaptureFixture) -> None:
-        """SFTP-023: with no path, the record omits the suffix rather than rendering ``path=''``.
+    def test_the_generic_sshexception_arm_emits_one_record(self, caplog: pytest.LogCaptureFixture) -> None:
+        """SFTP-023: the fourth concluding arm, which the parametrised test above does not reach.
 
-        This is how ``check_health`` and the connect-time arms arrive. The
-        branch is *executed* by the rest of the suite, so coverage cannot flag
-        its removal — only an assertion on the rendered line can, which is why
-        this pins the text rather than the call.
+        ``_map_exception`` reaches ``_unavailable`` from four arms. The
+        dead-connection arm is pinned by ``test_the_mapping_leaves_a_log_record``
+        and the two ``IncompatiblePeer`` arms by the test above; this is the
+        remaining one, taken by a ``ChannelException`` or any mid-operation
+        ``SSHException``. Its *message* was already pinned by
+        ``test_message_less_signal_still_names_the_failure[ssh-exception]``, but
+        nothing pinned its record — so reverting just this arm to construct
+        ``BackendUnavailable`` directly left the whole suite green while breaking
+        SFTP-023's "every one of them" for the entire ``SSHException`` family.
+
+        Split out rather than folded into the parametrisation above because that
+        one asserts a remediation hint, which this arm does not carry.
+        """
+        import paramiko
+
+        backend = SFTPBackend(host="dummy", host_key_policy="auto")
+        with caplog.at_level(logging.DEBUG, logger="remote_store"):
+            caplog.clear()
+            mapped = backend._map_exception(paramiko.SSHException("Server connection dropped"), "delivery.csv")
+
+        assert isinstance(mapped, BackendUnavailable)
+        ours = [r for r in caplog.records if r.name.startswith("remote_store")]
+        assert len(ours) == 1, f"expected one record, got {[r.getMessage() for r in ours]}"
+        assert ours[0].levelno == logging.WARNING
+        assert getattr(ours[0], "op", None) == "error_mapping"
+
+    @pytest.mark.spec("SFTP-023")
+    def test_a_probe_record_carries_no_path(self, caplog: pytest.LogCaptureFixture) -> None:
+        """SFTP-023: with no path, the record drops the key rather than carrying ``path=''``.
+
+        This is how ``check_health`` arrives. Both halves are asserted because
+        they fail independently: the rendered line is what a plain formatter
+        shows, and ``record.path`` is what a structlog processor or JSON
+        formatter reads. An earlier revision omitted the suffix but still set
+        ``"path": ""`` in ``extra``, so the line looked right while a structured
+        consumer got a field that appeared answered and was not — and this test,
+        which then asserted only the text, passed.
+
+        The branch is *executed* by the rest of the suite, so coverage cannot
+        flag its removal; only these assertions can.
         """
         backend = SFTPBackend(host="dummy", host_key_policy="auto", io_timeout=120.0)
         with caplog.at_level(logging.DEBUG, logger="remote_store"):
@@ -1740,6 +1776,8 @@ class TestSFTPMapException:
         rendered = ours[0].getMessage()
         assert "path=" not in rendered, f"an empty path was rendered into the line: {rendered!r}"
         assert rendered == "SFTP channel stalled: no data within io_timeout=120.0s"
+        assert "path" not in ours[0].__dict__, "the record carries an empty path a structured consumer would read"
+        assert getattr(ours[0], "op", None) == "error_mapping"
 
 
 class TestSFTPTypeGuards:

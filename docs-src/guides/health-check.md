@@ -20,14 +20,6 @@ store.ping()  # raises on failure, silent on success
 - **Liveness probes** — Kubernetes `livenessProbe` or similar health endpoints.
 - **Connection validation** — verify config after loading from TOML/YAML.
 
-!!! note "On SFTP, a polling probe against a down server is not quiet"
-    `SFTPBackend` retries its connect and logs a `WARNING` before each retry, so
-    a failed probe writes more than one record and a probe on a short period
-    against a server that stays down produces a steady stream of them. How many
-    depends on the retry policy and the host-key policy you configured, so size
-    the probe's period against your own settings rather than a fixed number.
-    Other backends do not retry their probe and are quiet by comparison.
-
 ## Error handling
 
 `ping()` raises the same exceptions as other Store operations:
@@ -51,15 +43,16 @@ except BackendUnavailable:
     log.error("Backend unreachable for %s", store)
 ```
 
-!!! warning "On SFTP, an unreachable server may not raise `BackendUnavailable`"
+!!! warning "On SFTP, some unreachable servers raise the base `RemoteStoreError`"
     Measured against a refused port and against a DNS failure, `SFTPBackend`
     raises the base [`RemoteStoreError`](../reference/api/errors.md) rather than
-    `BackendUnavailable`; only a timeout raises `BackendUnavailable`. A caller
-    catching `BackendUnavailable` alone therefore misses the two commonest ways
-    a server is unreachable. Catch `RemoteStoreError` if you need to cover them
-    today. This is a known defect rather than intended behaviour, and the
-    exception type will change when it is fixed — which is why this caveat sits
-    beside the table rather than being written into it.
+    `BackendUnavailable`. Other unreachable-server shapes — a stall, a failed
+    SSH handshake, a rejected credential — do raise `BackendUnavailable`, so the
+    two types do not divide along any line a caller can predict. Catch
+    `RemoteStoreError` if you need to cover all of them today. This is a known
+    defect rather than intended behaviour, and the exception type will change
+    when it is fixed — which is why this caveat sits beside the table rather
+    than being written into it.
 
 ## Per-backend strategies
 

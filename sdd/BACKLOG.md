@@ -338,9 +338,12 @@ compliant the day before.
   same construction spelled with the base class is at **7** sites in 5 files:
   `rg -n 'RemoteStoreError\(str\(exc\)' src/` → `backends/_azure_common.py:198`
   and `:199`, `backends/_s3_boto3.py:972`, `backends/_s3_pyarrow.py:651`,
-  `_errors.py:194`, and `backends/_sftp.py:2537` and `:2591`. The last two are
-  the fall-through arms of the very `_map_exception` BK-359 rewrote, so SFTP is
-  not finished either — reading that item's title would suggest otherwise.
+  `_errors.py:194`, and **two in `backends/_sftp.py`** — the `OSError` and final
+  fall-through arms of `_map_exception`, cited without line numbers because that
+  method is what BK-359 was editing and two successive revisions of this item
+  cited numbers its own diff had already shifted. Those two are the fall-through
+  arms of the very `_map_exception` BK-359 rewrote, so SFTP is not finished
+  either — reading that item's title would suggest otherwise.
   Two of these are reachable and were driven through the real code:
   `_classify_by_message(OSError(''))` returns `RemoteStoreError('')`, and an
   empty `OSError` through `S3PyArrowBackend._pyarrow_errors` does the same. Note
@@ -359,7 +362,7 @@ compliant the day before.
   base-class half; the Azure half was measured after the item was challenged for
   asserting rather than checking.
 
-- [ ] **BUG-265 — A refused SFTP connect raises `RemoteStoreError`, which contradicts eleven docstrings and the health-check guide**
+- [ ] **BUG-265 — A refused SFTP connect raises `RemoteStoreError`, which contradicts fifteen docstrings and the health-check guide**
   spec: SFTP-023 · effort: S · audience: user.api, user.site
   Measured against a just-released ephemeral port (the deterministic-refusal
   trick `tests/backends/sftp/test_config.py` already uses):
@@ -371,8 +374,14 @@ compliant the day before.
   its generic `OSError` arm.
   **What that contradicts.** `check_health`'s own docstring promises
   "`BackendUnavailable`: If the SSH/SFTP connection cannot be established"
-  (`backends/_sftp.py`), and the same `Raises:` line appears on ten further
-  methods; `docs-src/guides/health-check.md` § Error handling maps
+  (`backends/_sftp.py`), and the same `Raises:` line appears on **fourteen**
+  further methods — 15 in total, derived by walking the module's AST for
+  functions whose docstring contains that exact line: `check_health`, `exists`,
+  `is_file`, `is_folder`, `read`, `read_bytes`, `write`, `write_atomic`,
+  `open_atomic`, `delete`, `delete_folder`, `get_file_info`, `get_folder_info`,
+  `move`, `copy`. An earlier revision said eleven, carried over unchecked while
+  its neighbour's figures were being re-derived;
+  `docs-src/guides/health-check.md` § Error handling maps
   `BackendUnavailable` to "Network error, DNS failure, or timeout" and shows a
   caller catching it. A caller who followed that guide does not catch a refused
   connect at all.
@@ -392,6 +401,56 @@ compliant the day before.
   this mapping — so the first work here is the failing test.
   **Found by BK-359's round-1 reviewer** as a `Possible:` it could not run, and
   confirmed by running it.
+
+- [ ] **BUG-266 — No artifact maps an observable SFTP failure onto the arm that handles it, and four prose attempts were each refuted**
+  spec: SFTP-023, SFTP-030 · effort: M · audience: user.site, library.maintainer
+  `_map_exception` dispatches on exception *type*, and SFTP-023 states the arms
+  that way — correctly, and pinned by tests. What no artifact states correctly is
+  the other direction: given a failure a reader can observe (a refused port, a
+  wedged daemon, a silent peer, a rejected credential, a DNS failure), which arm
+  does it reach and what does the caller get.
+  **Four attempts to summarise that in a sentence were each refuted by
+  measurement**, all during BK-359's review loop: "a failed probe logs once per
+  poll"; "two records per poll, three under `AUTO_ADD`"; "a failed probe writes
+  more than one record" (zero under `RetryPolicy.disabled()`); and "only a probe
+  that fails by timeout reaches the mapping" — refuted by a bad SSH banner, an
+  accept-then-hangup and an `AuthenticationException`, all three of which reach
+  `_unavailable` through the `SSHException` arm with one `op="error_mapping"`
+  record.
+  **The diagnosis is that the space has axes a sentence cannot carry**: the
+  observable failure, the mapping arm, the retry policy's `max_attempts`, and
+  the host-key policy. Each refuted attempt stated one cell of that product as
+  though it were the whole table.
+  **Disposition:** write it once as a parametrised test enumerating
+  observable-failure x arm, asserting the resulting type, message shape and
+  record count, then let the spec and the guides point at the test rather than
+  restate it. The harness exists — `_StallRelay` plus the in-process server
+  already drive stalls in both directions, and BK-359's review produced working
+  probes for a refused port, a DNS failure, a bad banner and an
+  accept-then-hangup. Sized M because the enumeration, not the assertion, is the
+  work.
+  **Filed by BK-359's round 4**, after that loop's repeat-site check fired:
+  three rounds refuting one condition means enumerate the space rather than
+  restate it a fourth time.
+
+- [ ] **BUG-267 — OBS-008 demands an `ERROR` level that nothing emits and nothing asserts**
+  spec: OBS-008 · effort: XS · audience: contributor.process
+  OBS-008's Levels bullet read "ERROR (before re-raise)" as an invariant over
+  "all library modules". No call site in `src/` logs at `error`, `exception`,
+  `critical` or `fatal` — verified by grep across the package — and none of the
+  four `@pytest.mark.spec("OBS-008")` tests in `tests/ext/test_observe.py`
+  asserts a level at all.
+  That is [`000-process.md` Rule 7](000-process.md#intent-attribution)'s
+  **Unenforced** row: prose demanded it, nothing enforced it, so the claim is
+  undecided and **nothing moves yet**. BK-359 first resolved it by deleting the
+  clause and writing current behaviour into the spec, which is the code being
+  made right by prose inside a review fix pass; that item's round 4 caught it
+  and suspended the clause instead, pointing here.
+  **The decision owed** is one of two: either the library should report before
+  re-raising, and the deliverable is that call site plus the level assertion
+  Rule 2 wants; or it should not, and the clause is withdrawn on the ordinary
+  path with the reason recorded. Either way it is decided once rather than
+  inherited.
 
 - [ ] **BUG-263 — The migration guide promises a drive folder named `.` stays reachable as a key; no key spelling reaches it**
   spec: GR-058 · effort: XS · audience: user.site

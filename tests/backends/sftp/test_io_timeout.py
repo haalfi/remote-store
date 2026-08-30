@@ -731,6 +731,13 @@ def test_a_stall_says_what_it_was_and_logs_it(stall_relay: _StallRelay, caplog: 
         f"the message does not name the bound that fired: {message!r} — a reader deciding "
         "whether their server legitimately pauses that long needs the number"
     )
+    # Equality, not just substrings, and the context type — because SFTP-030's
+    # indistinguishability clause rests on this test and its upload-side sibling
+    # asserting the *same* things. While this side checked substrings only, a
+    # reword on one side alone would have kept both green and made the two
+    # directions distinguishable, which is what that clause says cannot happen.
+    assert message == f"SFTP channel stalled: no data within io_timeout={io_timeout}s"
+    assert isinstance(excinfo.value.__context__, TimeoutError)
 
     ours = [r for r in caplog.records if r.name.startswith("remote_store")]
     assert len(ours) == 1, f"expected one remote_store record for one stall, got {[r.getMessage() for r in ours]}"

@@ -360,17 +360,27 @@ once and stops, cannot show it.
 
 `check_health` maps through here, so a probe that fails **in a way this mapping
 concludes on** logs one record and a `Store.ping()` poll repeats it. That is
-narrower than "a poll against a down server", and the difference is the common
-case rather than an edge: a refused connect and a DNS failure both raise the
-base `RemoteStoreError` from the generic `OSError` arm without reaching
-`_unavailable` at all, so they log nothing from the mapping. Only a probe that
-fails by timeout reaches it. BUG-265 tracks that divergence — `check_health`'s
-own docstring promises `BackendUnavailable` for a connection that cannot be
-established — and until it closes, the clause above is true of the timeout
-shape and of no other.
+narrower than "a poll against a down server": a refused connect and a DNS
+failure raise the base `RemoteStoreError` from the generic `OSError` arm without
+reaching `_unavailable` at all, so they log nothing from the mapping. BUG-265
+tracks that divergence — `check_health`'s own docstring promises
+`BackendUnavailable` for a connection that cannot be established.
 
-That record carries no path, because the probe has none; the line omits the
-`path=` suffix rather than rendering `path=''`
+**Which real-world failures land on which arm is not enumerated here**, and the
+omission is deliberate. The arms are stated above by exception *type*, which is
+what this mapping actually dispatches on and what the tests pin; the map from a
+failure a reader can observe (a refused port, a wedged daemon, a rejected
+credential) onto those types is a second question with its own axes, and four
+successive attempts to summarise it in one sentence were each refuted by
+measurement — the last of them, "only a probe that fails by timeout reaches
+it", by a bad SSH banner, an accept-then-hangup and an auth failure, all three
+of which reach `_unavailable` through the `SSHException` arm. BUG-266 carries
+that table, to be written once against a parametrised test rather than as
+prose.
+
+The record carries the path it was mapped with, and omits the key entirely when
+there is none — so a `check_health` record has no `path` at all rather than
+`path=''`, in either the structured `extra` or the rendered line
 (`test_a_probe_record_carries_no_path`). A routine errno is **not** logged: a
 missing or denied path is an answer, not a fault.
 

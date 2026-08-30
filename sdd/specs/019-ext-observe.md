@@ -216,13 +216,17 @@ observation. See ADR-0010.
   something, plus connection, health and batch-summary milestones), WARNING
   (retries, fallbacks, unsafe configuration, suppressed hook exceptions, and a
   backend failure before it is raised).
-  **No `ERROR` clause.** This bullet named one until it was checked: no call
-  site in `src/` logs at `error`, `exception`, `critical` or `fatal`. Per
-  [`000-process.md` Rule 7](../000-process.md#intent-attribution) that makes the
-  withdrawn clause *undecided* rather than refuted — no test ever asserted a
-  level, so nothing establishes whether the absence is intent or omission. It
-  is stated as current behaviour here, and a module that wants `ERROR` should
-  amend this bullet rather than assume it.
+  **The `ERROR` clause is suspended, not withdrawn.** This bullet read
+  "ERROR (before re-raise)" until it was checked: no call site in `src/` logs at
+  `error`, `exception`, `critical` or `fatal`, and none of the four
+  `@pytest.mark.spec("OBS-008")` tests asserts a level. That is
+  [`000-process.md` Rule 7](../000-process.md#intent-attribution)'s *Unenforced*
+  row — prose demanded a level, nothing enforced it, so **nothing moves yet**:
+  the divergence is not resolved by deleting the clause, which would make the
+  code right by prose inside a review fix pass rather than deciding it on the
+  ordinary path. **BUG-267** carries the decision, and the levels above are
+  therefore a description of what is emitted today rather than a settled
+  invariant over the `ERROR` question.
 - Package init registers `NullHandler`:
   `logging.getLogger("remote_store").addHandler(logging.NullHandler())`.
 - Never log inside tight loops (per-chunk streaming).
