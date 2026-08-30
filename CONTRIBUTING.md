@@ -480,9 +480,9 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 
 ### Phase 1: Content freeze
 
-- [ ] CHANGELOG.md `[Unreleased]` is complete — every completed item has a stub line (see ripple-check row **CHANGELOG entry**)
+- [ ] CHANGELOG.md `[Unreleased]` is complete — every completed item has a stub line (see ripple-check row **CHANGELOG entry**). `scripts/check_changelog_unreleased.py` (in `lint` and `docs-gate`) already holds this per PR: one entry per ID, each a single `- <ID>: <text>` line within its prose budget, and an entry for every completed user-facing item under `sdd/BACKLOG-DONE.md` § Unreleased. What it cannot decide is whether a stub *says the right thing*, which is what this line is still for
 - [ ] CHANGELOG completeness cross-check: `gh api repos/haalfi/remote-store/releases/generate-notes -f tag_name=vX.Y.Z -f previous_tag_name=vPREV -f target_commitish=master --jq .body` lists every merged PR since `vPREV` — confirm each **user-facing** PR maps to a CHANGELOG `[Unreleased]` entry (internal/tooling/dependabot PRs need none). Safety net over the per-PR CHANGELOG discipline; the generated text is **discarded**, not used for the release body (which stays CHANGELOG-derived — Phase 4)
-- [ ] CHANGELOG.md `[Unreleased]` condensed — stubs expanded to prose at release time (release skill Phase 1)
+- [ ] CHANGELOG.md `[Unreleased]` condensed — stubs expanded to prose at release time. **By hand: no tooling performs this**, and this checklist names no source for the expanded prose, so do not read "release skill Phase 1" as a delegation — that skill has no expansion step. Closing that gap is a tracked backlog item. Once a `###` grouping lands here, `check_changelog_unreleased.py` stands down and says so on every run, and stays stood down until Phase 2 renames the heading
 - [ ] `sdd/BACKLOG-DONE.md`: all shipping items moved here under the `## Unreleased` heading, each marked `[x]` (Phase 2 versions the heading)
 - [ ] `FEATURES.md` updated for this release: backends, extensions, capabilities, extras — this is the only time FEATURES.md is edited (do NOT update the version header; `bump-my-version` handles it in Phase 2)
 - [ ] README.md: backends table, installation extras, API table, badges are current

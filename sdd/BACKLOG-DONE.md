@@ -356,12 +356,17 @@ if evidence changes; these are retired.
   rebuilt three lines from where the argument is written.
 
 - [x] **ID-252 — CHANGELOG `[Unreleased]` was unlinted, so a duplicated entry shipped and contradicted itself**
-  spec: — · effort: S · audience: contributor.tooling
-  No CHANGELOG entry, and that is the rule rather than an omission: the audience
-  is `contributor.tooling` alone, and [`traces/_schema.yml`](traces/_schema.yml)'s
-  derived rule requires an entry only for a `user.` audience. The gate this item
-  adds is what now enforces that rule, so shipping it in violation of the rule
-  would have been its own first failure.
+  spec: — · effort: S · audience: contributor.tooling, user.site
+  **The `user.site` tag was added under review, and it is the tag that costs
+  something.** The first version read `contributor.tooling` alone, which made the
+  CHANGELOG entry not owed — and the entry is owed by the gate this very item
+  adds, so the tag was the only thing standing between the item and its own rule.
+  Re-derived rather than argued —
+  `python -c "import pathlib,subprocess as s; print(len(s.run(['git','show','67a5285:CHANGELOG.md'],capture_output=True).stdout) - len(pathlib.Path('CHANGELOG.md').read_bytes()))"`
+  — this takes **12,756 bytes** out of `CHANGELOG.md`, a file carrying `<!-- doc: dual dest=reference/changelog.md -->`
+  and therefore published at `docs.remotestore.dev/reference/changelog/`, which is
+  what [`traces/_schema.yml`](traces/_schema.yml) defines `user.site` to mean. A
+  tag whose only effect is to exempt the work from its own gate is the wrong tag.
   **The repair had already happened, by the route the item predicted.** The item
   scoped the deletion of the two stale lines out of itself and said whichever
   change landed first would do it; `165bd00` collapsed the duplicate BK-354 and
@@ -380,8 +385,9 @@ if evidence changes; these are retired.
   from 4,910 characters down to a stub. **The budget measures prose, not bytes**:
   Markdown link targets are discounted, because a URL's length is a property of
   the docs site rather than a choice the author made, and counting it priced a
-  breaking entry out of the migration link it owes — measured at 112 characters a
-  link, enough to push two of the four breaking entries over. **What the longest
+  breaking entry out of the migration link it owes. Measured as `raw - prose_length`
+  over every linked entry: **75 characters** discounted, uniformly, and without it
+  two of the four `**Breaking**` entries bust the budget on the link alone. **What the longest
   survivor now measures is deliberately not restated here**: that figure went
   stale twice during this work, so the constant's own comment carries the command
   to re-derive it instead.
@@ -407,17 +413,34 @@ if evidence changes; these are retired.
   **Derived, both sides** ([Rule 3](DRIFT-RULES.md#claim-space)): entries parse
   out of the section, the audience side off the `spec: · effort: · audience:`
   line each entry here already carries, split on `,`/`·` and tested for a `user.`
-  prefix — the schema's predicate, not a substring search. The ID grammar matches
-  `gen_backlogid.py`'s, suffix and parenthetical included, because they read the
-  same file: spelling it `[A-Z]+-\d+` failed a legitimate `BK-139a` stub as a
-  stray line and silently truncated the same ID on the completed side.
-  **What the loop cost, and what it bought.** Seven review passes across five
-  rounds, and the class that kept recurring was a universal asserted over a space
-  measured on two backends — refuted four rounds running until the remedy stopped
-  being "narrow it again" and became "delete it and name what was measured". The
-  gate's own rules changed twice under review: the budget learned to discount
-  link targets, and the advisory note gained its register. Both were found by
-  reading, not by running.
+  prefix — the schema's predicate, not a substring search. The ID grammar
+  borrows its suffix and parenthetical from `gen_backlogid.py`, which reads the
+  same file, and its **prefix class from `check_breaking_migration_link.py`**,
+  which reads the same CHANGELOG section. Spelling it `[A-Z]+-\d+` was wrong three
+  times over: it failed a legitimate `BK-139a` stub as a stray line, silently
+  truncated the same ID on the completed side, and — narrower than the sibling
+  gate's `[A-Z][A-Z0-9-]*` — called `- SQL-BLOB-020: …` a stray line that the
+  sibling calls a valid entry, so one `hatch run lint` returned two verdicts about
+  one line. `gen_backlogid.py` keeps a closed prefix set because it *allocates*
+  IDs; these patterns *recognise* them, where a closed set fails a real line.
+  **What the loop cost, and what it bought.** Nine review passes across six
+  rounds. The class that kept recurring early was a universal asserted over a
+  space measured on two backends — refuted four rounds running until the remedy
+  stopped being "narrow it again" and became "delete it and name what was
+  measured". **The last round was the one that paid**, and it paid on ground the
+  earlier five never walked: a gate that fails the release it serves. Phase 1 of
+  `CONTRIBUTING.md` condenses `[Unreleased]` *in place* and Phase 2 is what
+  renames the heading, so the released shape lives under `[Unreleased]` for that
+  whole span — and Phase 3 runs `hatch run all` over it. Reconstructed and run,
+  this gate returned 70 lines of violations there and told the release manager to
+  do Phase 2 early. `check_breaking_migration_link.py` had already named that
+  window and survived it by reporting a count; this gate, written after it and
+  against it, neither documented nor survived it. It now stands down on a `###`
+  grouping and says so on every run. Two more the same round: a `[~]` bullet did
+  not end the completed item above it, so that item wore another's `audience:`
+  tags, and the entry grammar was narrower than the sibling's, so one line drew
+  two verdicts from one `hatch run lint`. Every rule this gate has changed under
+  review, and each change was found by reading — the runs only confirmed them.
 
 - [x] **BUG-261 — Two breaking changes are on master with no upgrade path, and the obligation is stated where their authors never read**
   spec: — · effort: S · audience: user.api_docs, user.site, contributor.tooling
@@ -596,9 +619,9 @@ if evidence changes; these are retired.
   sections the constraint is claimed over; it said five until round 2, having
   been written against the five-subsection draft.
   Same file and same window as **ID-252**, which lints the `[Unreleased]`
-  section's own integrity and never reads `migration.md`; that item is
-  unaffected by this closure and its cross-reference was repaired in the same
-  commit.
+  section's own integrity and never reads `migration.md`. That item has since
+  closed; the two gates now run side by side in `lint` and `docs-gate`, and
+  share an entry grammar so that one section cannot draw two verdicts.
 
 - [x] **BK-356 — `io_timeout` should default to a real bound, not `None`**
   spec: SFTP-030, SFTP-005 · effort: S · audience: user.api, user.api_docs, user.site

@@ -318,6 +318,38 @@ compliant the day before.
   Found by BK-356's review round 2, which reached it by running the failure
   rather than reading the mapping.
 
+- [ ] **BUG-263 — The migration guide promises a drive folder named `.` stays reachable as a key; no key spelling reaches it**
+  spec: GR-058 · effort: XS · audience: user.site
+  `docs-src/reference/migration.md` § *`GraphBackend(base_path=".")` now means
+  the drive root* tells a caller whose drive holds a folder literally named `.`
+  that it "stays reachable as an ordinary key under a `base_path` that is not
+  itself a root spelling". It is not reachable under any `base_path`, because
+  the predicate that strips `.` from `base_path` is the same one that strips it
+  from every key: `GraphBackend._key_segments` delegates to
+  `_flat_ns._addressable_segments`, and `native_path` /
+  `_parent_reference_path` / the write and source guards all route through it.
+  Measured with `base_path="reports"`:
+  | key | addresses |
+  | --- | --- |
+  | `./x` | `/drives/D/root:/reports/x:` |
+  | `.` | `/drives/D/root:/reports:` |
+  | `x/./y` | `/drives/D/root:/reports/x/y:` |
+
+  So the folder is unaddressable, not relocated — which is a strictly larger
+  break than the section describes, and the sentence sends a caller looking for
+  a workaround that does not exist.
+  **The fix is the sentence, not the code.** `_addressable_segments`' own
+  docstring records why the two predicates must stay identical (a draft that
+  widened one broke the `to_key(native_path(key)) == key` identity on 4 of 7
+  measured keys), so the guide should say the folder can no longer be addressed
+  and name what a caller does instead — rename it before upgrading.
+  The neighbouring claim, "Every other `base_path` value is unaffected", was
+  checked and **holds**: the only behavioural difference between the old `if s`
+  split and `if s and s != "."` is dot segments, and the preceding sentence
+  already covers those. Recorded so the next reader does not re-litigate it.
+  Found by ID-252's closing review reading outside its own diff; shipped by
+  BUG-261.
+
 - [ ] **BUG-254 — Five backend classes breach BE-029's root row against an absent container**
   spec: BE-004, BE-021, BE-029 · effort: S · audience: user.api
   BE-029 already decides this and is not qualified by whether the container
@@ -1440,12 +1472,13 @@ CHANGELOG `[Unreleased]` is linted for duplicate entries, stub shape and the
 audience rule — **met** by ID-252 (`check_changelog_unreleased.py`), whose
 stated bound is that it keys on the ID at line start, so a single entry whose
 *content* went stale is still nobody's to catch; the
-ripple-check's six measured blind spots are answered (BK-346); the
+CHANGELOG expansion step Phase 1 depends on is written down or dropped
+(ID-253); the ripple-check's six measured blind spots are answered (BK-346); the
 hand-maintained inventories ID-245 names are generated — four bullets, of which
 the checker inventory has shipped; `check_formal_trace` proves
 assertion rather than citation (ID-207); and both open revisit pins have fired
 and named successors (ID-150, ID-249).
-**Bounded to those six deliberately.** "No artifact asserts what no mechanism
+**Bounded to those seven deliberately.** "No artifact asserts what no mechanism
 can check" is the promise and cannot be a closing condition: this section's own
 preamble records that detecting the remaining class needs semantic comparison of
 prose, which research § 1 marks as having no general oracle. Nor is "no figure
@@ -1543,19 +1576,23 @@ the commit that writes it lands, so cite the generator instead.
   own subject — the deletions that produced this file's current shape are
   exactly the event the second pass exists to catch.
 
-- [ ] **ID-253 — Nothing performs the CHANGELOG expansion step two authorities assign to release Phase 1**
+- [ ] **ID-253 — Nobody documented performs the CHANGELOG expansion step release Phase 1 depends on**
   spec: — · effort: S · audience: contributor.process
-  `CONTRIBUTING.md` § Release Phase 1 says the `[Unreleased]` stubs are
+  `CONTRIBUTING.md` § Release Phase 1 said the `[Unreleased]` stubs are
   "expanded to prose at release time (release skill Phase 1)", and the
-  ripple-check row **CHANGELOG entry** says the release skill "organises into
-  sections and expands to prose". Neither names what the prose is written
+  ripple-check row **CHANGELOG entry** said the release skill "organises into
+  sections and expands to prose". Neither named what the prose is written
   *from*, and `.claude/skills/release/SKILL.md` has no expansion step:
   `rg -n 'CHANGELOG' .claude/skills/release/SKILL.md` returns 3 hits — the
   Phase 1 completeness cross-check, the Phase 4 release-body template, and a
   link — and the only one that transforms the section condenses it **further**,
-  for the GitHub release body. So the step two authorities assign to Phase 1 is
-  performed by nobody documented, and Phase 1's line is self-referential: it
-  points at the checklist that contains it.
+  for the GitHub release body. Phase 1's line was self-referential: it pointed
+  at the checklist that contains it.
+  **Both authorities now say the step is manual and untooled** — ID-252 amended
+  them rather than leave them asserting a delegation that does not exist — so
+  what is open is no longer a false claim but a missing capability: the step is
+  real (38 released sections carry expanded prose), performed by hand, and
+  written down nowhere.
   **Found by ID-252 leaning on it.** That item condensed six `[Unreleased]`
   entries to stubs and justified the condensation with "Phase 1 re-expands, so
   nothing is lost"; review refuted the premise. The condensation survived on a
@@ -1566,12 +1603,16 @@ the commit that writes it lands, so cite the generator instead.
   real work in people's reasoning, and if it does not exist, every condensation
   is taken on trust.
   **What it does not decide.** Whether to write the step into the release skill,
-  naming `BACKLOG-DONE.md` § Unreleased as the source, or to delete the claim
-  and accept that a released section carries the stubs it was written with. The
-  38 released sections carry prose and `### Added` groups, so *something* has
-  been doing it by hand; establishing what is step one. Both authorities move
-  together whichever way it goes — the row and the checklist line are two copies
-  of one direction ([Rule 4](DRIFT-RULES.md#authority)).
+  naming `BACKLOG-DONE.md` § Unreleased as the source, or to accept that a
+  released section carries the stubs it was written with and drop the expansion
+  from the checklist entirely. Establishing who has been doing it by hand is
+  step one. Both authorities move together whichever way it goes — the row and
+  the checklist line are two copies of one direction
+  ([Rule 4](DRIFT-RULES.md#authority)).
+  **A third artifact moves with them now:** `check_changelog_unreleased.py`
+  stands down once a `###` grouping reaches `[Unreleased]`, which is precisely
+  the state this step produces. Whoever writes the step owns that hand-off, and
+  the gate's release-window bound is where it is stated.
 
 - [ ] **BK-346 — The ripple-check table answers questions adjacent to the ones asked**
   spec: — · effort: S/M · audience: contributor.process

@@ -122,11 +122,21 @@ properties:
                                     content or behavior delta (RST→backtick
                                     sweep, em-dash policing).
 
-      Derived rule: CHANGELOG entry required iff any entry in `audience`
+      Derived rule: CHANGELOG entry required if any entry in `audience`
       starts with `user.`, or `contributor.process` introduces a new
       user-facing framework / spec. Items tagged only `library.maintainer`,
       `contributor.tooling`, `infra.test`, `infra.ci`, or `internal.style`
       are not user-facing and skip CHANGELOG.
+
+      **One direction, not a biconditional** (`DRIFT-RULES.md` Rule 4,
+      declared here because this file owns the rule). "Required" is the half
+      that governs: a `user.` item with no entry is a defect.
+      An entry with no such item is not, because two legitimate cases produce
+      one — an item still open in `BACKLOG.md` that shipped a single bullet,
+      and the `contributor.process` clause above, which earns an entry without
+      a `user.` tag. `scripts/check_changelog_unreleased.py` enforces exactly
+      that direction, and registers the first case against `BACKLOG.md` rather
+      than reporting it.
 
   discovery_followups:
     type: array

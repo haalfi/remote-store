@@ -8,19 +8,20 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 ## [Unreleased]
 
 - BUG-262: Gate that every unreleased `**Breaking**` entry links its upgrade path in the migration guide
+- ID-252: Gate the CHANGELOG `[Unreleased]` section: one entry per item, each a single line within a prose budget, and one for every completed user-facing item
 - BUG-261: Publish the missing upgrade paths in the migration guide, and move the obligation to write one onto the PR making the breaking change
 - BK-356: **Breaking** — SFTP reads and writes are bounded by default: `io_timeout` defaults to 120 s rather than being opt-in, so an unconfigured store no longer hangs on a silent peer. Upgrade path in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
 - BK-357: **Breaking** — seeking to the end of an `SFTPBackend` stream now raises when the size request fails, instead of silently answering `0` on a file of any size. Upgrade path in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
 - BK-355: **Fix** — releasing a stream whose read failed on a stalled SFTP connection no longer pays the bound a second time
 - BK-354: **Added** — `SFTPBackend(io_timeout=...)` bounds a read or write that stalls on an already-open channel
-- BUG-259: **Fix** — a write to the store root is refused before it reaches the storage system, on every backend that declares `WRITE`; the `move`/`copy` destination is refused on the same terms, and `GraphBackend(base_path=".")` now scopes to the drive root.
+- BUG-259: **Fix** — a write to the store root is refused up front on every backend that declares `WRITE`, and the `move`/`copy` destination on the same terms; `GraphBackend(base_path=".")` scopes to the drive root where it scoped to a folder named `.`. Upgrade path in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
 - BUG-247: **Fix** — `LocalBackend` reads a deleted root directory as an absent store, instead of answering every operation with `InvalidPath("Path escapes root directory")`.
 - ID-245: Derive the cross-artifact gate inventory from each gate's own docstring instead of maintaining it by hand
 - BUG-246: An absent container reads as an absent path on `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` and `SQLBlobBackend`
 - BUG-249: `S3Boto3Backend`'s three listings no longer leak a raw `botocore.ClientError`
 - BUG-258: Conform `RemoteStoreComputeLogManager.get_log_keys_for_log_key_prefix` to Dagster's narrowed return type
-- BUG-248: **Breaking** — `GraphBackend` (and its sync adapter) reads an absent drive as an absent path on every operation the contract decides, where it raised `BackendUnavailable`; `write` and `check_health` keep the old escalation. Upgrade path in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
-- BUG-243: **Change** — a tolerant delete treats an absent container (bucket, Azure container, SQL table) as an absent path: both deletes return cleanly with `missing_ok=True`, and raise `NotFound` without it.
+- BUG-248: **Breaking** — `GraphBackend` (and its sync adapter) reads an absent drive as an absent path on every operation the contract decides, where it raised `BackendUnavailable`. Four callers it does not decide keep the old escalation, on a drive-identity 404 only. Upgrade path in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
+- BUG-243: **Change** — a tolerant delete treats an absent container (bucket, Azure container, SQL table) as an absent path: both deletes return cleanly with `missing_ok=True`, and raise `NotFound` without it, where `delete` and `delete_folder` disagreed against the same missing container.
 - BUG-242: **Fix** — `S3Backend` and `S3PyArrowBackend` reported a 403 as `NotFound` on `delete`, `move`/`copy` source, `delete_folder` and `get_folder_info`, and `delete(missing_ok=True)` returned silently; all now raise `PermissionDenied`
 - BK-324: **Breaking** — flat-namespace backends raise `InvalidPath` for a wrong-type path instead of answering as if it were a file; `""`/`"."` is the root folder on every backend, and `max_depth` needs `recursive=True` at the Backend ABC. Upgrade path in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
 - BK-331: Document each backend's depth-listing strategy in its own `list_files()` docstring, and drop the stale per-backend strategy tables from specs 037, 027 and 020

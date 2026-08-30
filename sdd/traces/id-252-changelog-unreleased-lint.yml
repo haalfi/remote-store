@@ -9,48 +9,65 @@ trigger: >-
 source_items:
   - ID-252
 audience:
+  - user.site
   - contributor.tooling
 discovery_followups:
   # Born in review round 1: the release checklist's expansion step, which this
   # item's condensation had been justified by, is performed by nothing.
   - ID-253
-# Named rather than counted, per the schema's review_rounds clause. Five review
-# passes, each answered by exactly one fix commit: round 1 (unprimed) by bd44f28,
-# round 2 (measuring) by 0414dfe with e9687bb finishing one of its sub-points,
-# round 3 (reader) by 4717a3e, the first closing gate by 43c3d41, and the second
-# closing gate by the commit carrying this line. The commit that opened the PR
-# answers nothing and is not a pass, and neither does a commit that only edits
-# this file.
+  # Born in the closing gate, reading outside this diff: master's migration
+  # guide promises a Graph drive folder named `.` stays reachable as an
+  # ordinary key. Measured against `_key_segments`, no key spelling reaches it.
+  - BUG-263
+# Named rather than counted, per the schema's review_rounds clause, and named
+# from **commits that exist on the branch being merged**:
 #
-# **Re-derived from the branch log on every edit, never incremented**, and the
-# list is written after the commits it names exist. Two earlier versions of this
-# comment were wrong: one opened "Two review passes" and was falsified by a round
-# appended six lines below it while attributing round 3's fix commit to round 2,
-# and its replacement said rounds 2 and 3 found nothing against this item's own
-# artifacts one sentence before naming a round-3 finding against this item's
-# gate. Both were caught by a whole-file pass, in the field whose own clause
-# exists to prevent exactly this.
+#     git log --oneline 67a5285..HEAD
 #
-# **What this item's own artifacts drew, since the count above is the PR's:**
-# round 1 found two (the parser failing open, an unused helper); round 3 found
-# the budget rule fighting the migration link a breaking stub owes; the first
-# closing gate found
-# two that changed rules (the budget's stale derivation, the advisory note's
-# missing register); the second found two more (three ID patterns disagreeing
-# with gen_backlogid, and the open-item predicate pinned for one status of two).
-# Round 2 alone returned nothing here.
+# Five rounds ran before a rebase onto BUG-262 squashed their fix commits away,
+# so the SHAs those rounds were named by (bd44f28, 0414dfe, e9687bb, 4717a3e,
+# 43c3d41) resolve to nothing on a fresh clone. Naming them here would be the
+# plausible-looking SHA the schema's own clause warns about, so they are
+# recorded as history rather than as a derivation, and the field counts the
+# **one** review-fix commit this branch actually carries: the closing gate's,
+# which is also the round that changed the most.
 #
-# Round 3 was a three-member panel of which two members died on an API rate
-# limit, so it is one pass, not three.
-review_rounds: 5
+# **Re-derived on every edit, never incremented.** Three earlier versions of
+# this comment were wrong: one opened "Two review passes" and was falsified by a
+# round appended six lines below it; its replacement said rounds 2 and 3 found
+# nothing against this item's artifacts one sentence before naming a round-3
+# finding against its gate; the third named five orphaned SHAs as a live
+# derivation. All three were caught by a whole-file pass, in the field whose own
+# clause exists to prevent exactly this.
+#
+# **Nine passes over six rounds** is the loop's own shape, and it is not this
+# field: round 1 (unprimed), round 2 (measuring), round 3 (reader, a three-member
+# panel of which two died on a rate limit, so one pass), two closing gates, and a
+# third closing gate after the rebase running unprimed and whole-file. What each
+# drew against this item's own artifacts: round 1, two (the parser failing open,
+# an unused helper); round 2, nothing; round 3, the budget rule fighting the
+# migration link a breaking stub owes; closing gate 1, two that changed rules
+# (the budget's stale derivation, the advisory note's missing register); closing
+# gate 2, two more (ID patterns disagreeing, the open-item predicate pinned for
+# one status of two); closing gate 3, three that changed rules — the gate failing
+# the release window it has to survive, a `[~]` bullet not ending the item above
+# it, and an entry grammar narrower than the sibling parser's.
+review_rounds: 1
 expected_ripples:
   # Anticipated by the ripple-check: DRIFT-RULES by the "new or changed
   # cross-artifact check" row, BACKLOG/BACKLOG-DONE by "backlog item touched",
-  # GATE-INVENTORY because a Drift-gate declaration is what generates it.
+  # GATE-INVENTORY because a Drift-gate declaration is what generates it,
+  # backlogid.json because filing an item reallocates the next safe ID.
+  # Derived from `git diff --name-only 67a5285..HEAD`, not from what was
+  # anticipated in prose: CLAUDE-REFERENCE.md was listed here for three rounds
+  # while the branch did not touch it, which is the same field asserting a
+  # ripple it had not made.
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
   - sdd/GATE-INVENTORY.md
+  - sdd/backlogid.json
   - sdd/CLAUDE-REFERENCE.md
+  - CONTRIBUTING.md
   - pyproject.toml
 surprising_ripples:
   # CHANGELOG.md is the gate's subject, and the gate could not be green on
@@ -152,15 +169,24 @@ phases:
           320-character budget" and "taking the longest to 287", which asserts a
           threshold selecting entries before that threshold existed, and quotes a
           figure two later commits moved. Three artifacts had the number removed
-          and this one kept it -- the fourth copy, found by the third closing
-          gate. The constant's own comment carries the command to re-derive it.
-      - file: scripts/_changelog.py
-        section: "(full)"
+          and this one kept it -- the fourth copy, found by the second closing
+          gate. A third gate, after the rebase onto BUG-262, found the
+          replacement sentence stale in turn: it named a fit ("just above the
+          longest survivor") that the re-applied condensation had moved, so the
+          fit went the way the figure had. The constant's own comment carries the command to re-derive it.
+      - file: scripts/check_changelog_unreleased.py
+        section: "Parsing"
         read_type: reference
         extract: >-
-          One parser for the section's grammar, imported by both gates this PR
-          adds. It declares no Drift-gate block and says why: it compares
-          nothing and is wired nowhere.
+          The parser lived in a shared scripts/_changelog.py while this PR
+          carried two gates over the section. The second was dropped, so the
+          module was folded back in: one consumer is not a library. What the
+          fold cost was invisible until a whole-file pass read the result as one
+          artifact -- the entry grammar had drifted narrower than
+          check_breaking_migration_link.py's, so one CHANGELOG line drew two
+          verdicts from one lint run. Sharing a file was never what kept them
+          agreeing; saying so in both patterns' comments is.
+        outcome: misleading
 
   - id: verify
     name: "Run it against the state it exists to have caught"
@@ -189,7 +215,7 @@ phases:
   - id: review
     name: "Round 1, unprimed"
     steps:
-      - file: scripts/_changelog.py
+      - file: scripts/check_changelog_unreleased.py
         section: "parse_done_unreleased"
         read_type: verify
         extract: >-
@@ -200,9 +226,11 @@ phases:
           exact heading, so the silent case sat on the release path. The sibling
           gate written in the same PR already raised on an underivable claim and
           had a test for it; this one did not, so the PR shipped both the rule
-          and its violation. Now raises DerivationError, with the class moved to
-          the shared parser so there is one of it, and four tests including one
-          asserting the CLI does not print its success line.
+          and its violation. Now raises DerivationError, with four tests
+          including one asserting the CLI does not print its success line. Each
+          of those raises later gained a match= argument: asserting the type
+          alone, the tests passed against the very conflation their own
+          docstrings forbid.
         outcome: ok
       - file: CHANGELOG.md
         section: "[Unreleased] / BUG-259"
@@ -230,3 +258,59 @@ phases:
           ID-253 rather than fixed here: whether to write the step or delete the
           claim is a release-process decision.
         outcome: misleading
+
+  - id: closing_gate
+    name: "Closing gate after the rebase: unprimed and whole-file"
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Release Phase 1, Phase 2, Phase 3"
+        read_type: gate
+        extract: >-
+          The round's worst finding, and it was outside the diff. Phase 1
+          condenses [Unreleased] *in place* and Phase 2 is what renames the
+          heading, so the released shape lives under [Unreleased] for that whole
+          span -- and Phase 3 runs `hatch run all` over it. Reconstructed that
+          tree and ran the gate: 70 lines of violations, every condensed line a
+          stray, every completed item entry-less, and a remediation telling the
+          release manager to do Phase 2 early. The gate this item exists to add
+          would have blocked the release it serves. It was the file's own stated
+          bound ("released sections carry ### groupings ... none of the three
+          rules applies to them") that hid it: the bound named the shape and
+          assumed the heading tracked it.
+        outcome: misleading
+      - file: scripts/check_breaking_migration_link.py
+        section: "module docstring"
+        read_type: reference
+        extract: >-
+          The sibling had already named this exact window -- "from the moment
+          Phase 1 condenses until Phase 2 renames the heading, this gate
+          enumerates zero entries" -- and survives it by reporting a count. This
+          gate was written after it, against it, and neither documented nor
+          survived it. Reading a sibling for what it *shares* is not the same as
+          reading it for what it *warns about*, and only the second was done.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "ID-252 / audience"
+        read_type: verify
+        extract: >-
+          The tag read contributor.tooling alone, which made a CHANGELOG entry
+          not owed -- by the very gate this item adds. Re-derived: the branch
+          takes 12,756 bytes out of a file published at
+          docs.remotestore.dev/reference/changelog/, which is what user.site
+          means. A tag whose only effect is to exempt the work from its own rule
+          is the wrong tag; it now carries user.site and an entry.
+        outcome: ok
+      - file: docs-src/reference/migration.md
+        section: "GraphBackend(base_path=\".\") now means the drive root"
+        read_type: verify
+        extract: >-
+          Read outside this diff, in master's own guide. It promises a drive
+          folder named "." "stays reachable as an ordinary key under a base_path
+          that is not itself a root spelling". Measured against
+          GraphBackend._key_segments with base_path="reports": "./x" addresses
+          reports/x and "x/./y" addresses reports/x/y, so no key spelling reaches
+          it. The neighbouring claim ("every other base_path value is
+          unaffected") was checked and holds. Filed as BUG-263 rather than fixed
+          here -- it is BUG-261's section, not this item's.
+        outcome: misleading
+

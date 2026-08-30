@@ -10,9 +10,13 @@ CHANGELOG commit immediately before it records a reviewer catching the
 identical resolution by hand. Found once by attention, missed by the next
 merge.
 
-Nothing mechanical read this file's content before this gate: ``CHANGELOG``
-appears in ``scripts/`` only in link and render concerns, and in ``ci.yml``
-only inside ``DOCS_PAT``. The whole defense was the PR template and review.
+``scripts/check_breaking_migration_link.py`` (BUG-262) parses the same section,
+and is the only other thing that does: every remaining ``CHANGELOG`` mention in
+``scripts/`` is a link or render concern, and ``ci.yml`` names it only inside
+``DOCS_PAT``. That gate asks whether a **Breaking** entry links its upgrade
+path; this one asks whether the section's entries exist once each and cover the
+completed items. Neither asserts the other's claim, but they share a grammar —
+see ``_ENTRY_RE``, which is spelled to agree with its counterpart there.
 
 The three rules
 ===============
@@ -21,20 +25,24 @@ The three rules
    naming both lines.
 2. **A stub, not a section.** Every non-blank line in the section is an entry
    matching ``- <ID>: <text>``, and no entry exceeds ``_MAX_ENTRY_CHARS``
-   characters **of prose** -- Markdown link targets are discounted, because a
+   characters **of prose** — Markdown link targets are discounted, because a
    URL's length is a property of the docs site rather than a choice the author
    made, and counting it priced a breaking entry out of linking to the
    migration section it owes.
    Length is the machine-decidable half of "one-line stub": each entry is
-   already one physical line, so a line-count rule would pass on a 4,900
-   character paragraph, and paragraphs are what hid the duplicate -- at one
+   already one physical line, so a line-count rule would pass on a 4,910
+   character paragraph, and paragraphs are what hid the duplicate — at one
    line each two copies are unmissable, at 2.3 kB each they sat four lines
-   apart unseen. ``CONTRIBUTING.md`` Phase 1 expands stubs to prose at release
-   time, so prose here is not early work, it is work in the wrong section.
+   apart unseen. The budget is justified by what the section is *for* — a
+   scannable index of what shipped, which is what makes a duplicate visible —
+   and deliberately not by "the release re-expands this prose anyway": that
+   premise is exactly what ID-253 files as unbacked, since ``CONTRIBUTING.md``
+   Phase 1 names no source for the expanded prose and the release skill has no
+   expansion step.
 3. **The audience rule.** Every item under ``BACKLOG-DONE.md`` § Unreleased
    whose ``audience`` carries a ``user.*`` tag has an entry. This is the
    direction ``CONTRIBUTING.md`` § Release Phase 1 already runs, and the only
-   one that governs -- see the authority note below.
+   one that governs — see the authority note below.
 
 Authority (Rule 4)
 ==================
@@ -42,7 +50,7 @@ Authority (Rule 4)
 The two sets are not required to be equal, and declaring which side governs is
 what makes this checkable at all. **The completed-item side governs**: a
 user-facing completed item without an entry is a failure. An entry with no
-completed item is **not failed**, because two legitimate cases produce one -- an
+completed item is **not failed**, because two legitimate cases produce one — an
 item still open in ``BACKLOG.md`` that shipped one bullet (the live instance at
 the time of writing had an entry and no ``BACKLOG-DONE.md`` counterpart for
 exactly that reason), and the trace schema's own escape clause, under which a
@@ -58,7 +66,7 @@ Bounds (Rule 7)
 ===============
 
 * It keys on the **ID at line start**. So it catches a duplicated entry and
-  cannot catch a single entry whose *content* went stale -- the wider defect
+  cannot catch a single entry whose *content* went stale — the wider defect
   the recurrence's own commit message describes. It says nothing about whether
   a title is right, only that there is exactly one.
 * Length is a proxy for shape. A 300-character entry that reads as a paragraph
@@ -67,19 +75,37 @@ Bounds (Rule 7)
 * It reads the ``[Unreleased]`` heading only. Released sections carry
   ``### Added`` groupings and condensed prose by design, and none of the three
   rules applies to them.
+* **It stands down inside the release window, loudly.** ``CONTRIBUTING.md``
+  § Release Phase 1 condenses ``[Unreleased]`` into that same released shape
+  *in place*, and Phase 2 is what renames the heading — so from Phase 1 until
+  Phase 2 the released shape lives under ``[Unreleased]``, and Phase 3 runs
+  ``hatch run all`` over it. All three rules key on ``- <ID>:`` lines, which
+  that shape does not have: run anyway, this gate reported every condensed
+  line as a stray and every completed item as entry-less, and its remediation
+  told the release manager to do Phase 2 early. It now detects a ``###``
+  grouping in the section and reports the window instead of failing, which is
+  the same survival ``check_breaking_migration_link.py`` gets by reporting a
+  count. The cost is that a stray ``###`` mid-cycle disables all three rules —
+  so the stand-down prints on every run, including green ones, rather than
+  being inferred from silence.
 * The audience rule reaches exactly as far as the ``audience:`` lines under
   ``BACKLOG-DONE.md`` § Unreleased. An item whose line is missing is reported
   as unevaluable rather than passed.
 * The advisory half is **registered, not chatty**. An entry whose ID is a live
   open item in ``sdd/BACKLOG.md`` is a tolerated divergence with an owner and a
-  rationale already -- the item -- so it is silent
+  rationale already — the item — so it is silent
   ([Rule 6](../sdd/DRIFT-RULES.md#tolerated)); a note that printed on every
   green run until that item closed would teach readers to skip a passing gate's
   output. Only an ID the backlog knows nowhere is reported. The cost is that a
   *wrong* ID that happens to match some other open item passes silently.
 * Completed means ``[x]``, matching ``BACKLOG-DONE.md``'s own preamble and
-  ``gen_backlogid.py``. A ``[ ]`` or ``[~]`` bullet under § Unreleased is
-  outside this gate; the shape of that file belongs to ID-235.
+  ``gen_backlogid.py``. A ``[ ]`` or ``[~]`` bullet under § Unreleased is not a
+  completed item, and whether it belongs in that file at all is ID-235's. It is
+  still an **input**, not something outside this gate: it ends the item above
+  it. Reading only ``[x]`` bullets as boundaries meant a ``[~]`` item's
+  ``audience:`` line was credited to the completed item above — which both
+  silenced the "no ``audience:`` line" finding for that item and reported it
+  against tags it does not carry.
 * Neither half may fail **silently**. A ``BACKLOG-DONE.md`` with no
   ``## Unreleased`` heading once made the audience rule evaluate an empty set
   while this gate printed success, and Phase 2 renames that exact heading. It
@@ -89,16 +115,24 @@ Bounds (Rule 7)
 Exit codes
 ==========
 
-* ``0`` -- the section is unique, stub-shaped, and covers every completed
-  user-facing item. Advisory notes may still be printed.
-* ``1`` -- one line per violation to stderr, plus remediation.
+* ``0`` — the section is unique, stub-shaped, and covers every completed
+  user-facing item; or the release window is open and the gate stood down.
+  Notes may still be printed, and the stand-down always is.
+* ``1`` — one line per violation to stderr, plus remediation.
 
 Drift-gate::
 
     kind:       pair
     compares: the CHANGELOG [Unreleased] entries ↔ the completed items under
-        sdd/BACKLOG-DONE.md § Unreleased, and the section against its own
-        one-entry-per-ID stub grammar
+        sdd/BACKLOG-DONE.md § Unreleased, with sdd/BACKLOG.md read as the
+        register that decides which unmatched entries are tolerated
+    domain:     process
+
+Drift-gate::
+
+    kind:       rule
+    rule: every line under CHANGELOG [Unreleased] is a `- <ID>: <text>` stub,
+        one per ID, within the prose budget
     domain:     process
 """
 
@@ -118,7 +152,7 @@ _CHANGELOG = _REPO_ROOT / "CHANGELOG.md"
 # Parsing
 # --------------------------------------------------------------------------- #
 
-UNRELEASED_HEADING = "## [Unreleased]"
+_UNRELEASED = "## [Unreleased]"
 
 # A released section's heading, e.g. `## [0.30.0] - 2026-07-19`. Any `## [`
 # after the Unreleased heading closes the section.
@@ -127,10 +161,23 @@ _SECTION_RE = re.compile(r"^## \[")
 # The entry grammar. The ID must lead the line: keying on it is what makes a
 # duplicate detectable, and what bounds this gate to entry identity rather
 # than entry content.
-_ENTRY_RE = re.compile(r"^- (?P<id>[A-Z]+-\d+[a-z]*): (?P<text>.*)$")
+#
+# The prefix class is `[A-Z][A-Z0-9-]*`, spelled to equal
+# `check_breaking_migration_link.py`'s `_ENTRY_RE`, the only other parser of
+# this section. It was `[A-Z]+`, which excluded the compound form that gate
+# admits: `- SQL-BLOB-020: ...` was a valid entry there and a stray line here,
+# so one `hatch run lint` returned two verdicts about one line — the failure
+# mode the comment below says this module exists to avoid one level up. The
+# wider class is the safe direction of the two: it fails open on a prefix
+# neither gate has seen, where the narrow one failed a legitimate entry.
+#
+# No `text` group: this gate keys on identity and length, never on entry
+# content. A parsed-but-unread field is what the `prose_length` docstring
+# records deleting once already.
+_ENTRY_RE = re.compile(r"^- (?P<id>[A-Z][A-Z0-9-]*-\d+[a-z]*): .*$")
 
 # An inline Markdown link. Used to discount the target when measuring an
-# entry against the stub budget -- see `Entry.prose_length`.
+# entry against the stub budget — see `Entry.prose_length`.
 _LINK_RE = re.compile(r"\[([^\]]*)\]\([^)]*\)")
 
 
@@ -151,7 +198,6 @@ class Entry:
     """One ``[Unreleased]`` entry."""
 
     item_id: str
-    text: str
     line: int  # 1-indexed line in CHANGELOG.md
     raw: str
 
@@ -174,10 +220,6 @@ class Entry:
         """
         return len(_LINK_RE.sub(r"\1", self.raw))
 
-    @property
-    def is_breaking(self) -> bool:
-        return "**Breaking**" in self.text
-
 
 @dataclass(frozen=True)
 class Section:
@@ -190,6 +232,10 @@ class Section:
     # duplicate check keys on.
     stray: list[tuple[int, str]]
     found: bool
+    # A `### ` grouping inside the section: the shape Phase 1 condenses into
+    # and Phase 2 renames. See the release-window bound in the module
+    # docstring — this is what makes the gate survive its own release.
+    grouped: bool = False
 
 
 def parse_unreleased(changelog: Path = _CHANGELOG) -> Section:
@@ -207,7 +253,7 @@ def parse_unreleased(changelog: Path = _CHANGELOG) -> Section:
         raise DerivationError(f"cannot read {changelog}: {exc}") from exc
 
     try:
-        start = lines.index(UNRELEASED_HEADING)
+        start = lines.index(_UNRELEASED)
     except ValueError:
         return Section(entries=[], stray=[], found=False)
 
@@ -219,16 +265,19 @@ def parse_unreleased(changelog: Path = _CHANGELOG) -> Section:
 
     entries: list[Entry] = []
     stray: list[tuple[int, str]] = []
+    grouped = False
     for i in range(start + 1, end):
         line = lines[i]
         if not line.strip():
             continue
+        if line.startswith("### "):
+            grouped = True
         m = _ENTRY_RE.match(line)
         if m:
-            entries.append(Entry(item_id=m.group("id"), text=m.group("text"), line=i + 1, raw=line))
+            entries.append(Entry(item_id=m.group("id"), line=i + 1, raw=line))
         else:
             stray.append((i + 1, line))
-    return Section(entries=entries, stray=stray, found=True)
+    return Section(entries=entries, stray=stray, found=True, grouped=grouped)
 
 
 @dataclass(frozen=True)
@@ -254,41 +303,54 @@ class DoneItem:
 
 # Completed means `[x]`, and only `[x]`. `BACKLOG-DONE.md`'s own preamble says
 # "All items must use `[x]` status", and `gen_backlogid.py` reads the same file
-# with the same rule -- two parsers over one artifact disagreeing about what
+# with the same rule — two parsers over one artifact disagreeing about what
 # counts is the defect this module exists to avoid one level up. A `[ ]` or
 # `[~]` bullet under § Unreleased is therefore not a completed item here, and
 # the audience rule says nothing about it; that gap belongs to the backlog
 # structural lint (ID-235), which checks this file's shape.
 #
-# The ID grammar matches `gen_backlogid.py` too, suffix and parenthetical
-# included: IDs here may carry a letter suffix (`BK-139d`, `ID-118b`,
+# The suffix and parenthetical match `gen_backlogid.py`; the prefix class is
+# deliberately wider. IDs here may carry a letter suffix (`BK-139d`, `ID-118b`,
 # `ID-013b` are live) and a bullet may read `**BK-167b (partial) — ...`.
-# Spelling the ID `[A-Z]+-\d+` looked right and was wrong twice over -- it
-# failed a legitimate suffixed stub as a stray line, and, with no anchor after
-# the digits, silently truncated `BK-139a` to `BK-139` here. The trailing ` —`
-# is the anchor that makes the truncation impossible.
-_ITEM_RE = re.compile(r"^- \[x\] \*\*(?P<id>[A-Z]+-\d+[a-z]*)(?:\s+\([^)]+\))? —")
+# Spelling the ID `[A-Z]+-\d+` looked right and was wrong three times over — it
+# failed a legitimate suffixed stub as a stray line; with no anchor after the
+# digits it silently truncated `BK-139a` to `BK-139` here; and its prefix class
+# disagreed with the sibling gate over the same section (see `_ENTRY_RE`).
+# `gen_backlogid.py` spells the prefix as the closed set `(BK|BUG|ID|AF|BL)`
+# because it *allocates* IDs and may not invent a prefix; these patterns
+# *recognise* them, where a closed set fails a legitimate line. The trailing
+# ` —` is the anchor that makes the truncation impossible.
+_ITEM_RE = re.compile(r"^- \[x\] \*\*(?P<id>[A-Z][A-Z0-9-]*-\d+[a-z]*)(?:\s+\([^)]+\))? —")
+# Any status bullet, `[x]` or not. `_ITEM_RE` decides what is a *completed
+# item*; this decides where one *ends*. Conflating the two credited a `[~]`
+# item's `audience:` line to the completed item above it: the finding that item
+# was owed ("carries no `audience:` line") was silenced, and a violation was
+# reported against tags it does not carry. A boundary and a selection are
+# different questions over one file, and one pattern cannot answer both.
+_ANY_ITEM_RE = re.compile(r"^- \[[x ~]\] \*\*")
 # Anchored to the metadata line, not searched for anywhere in the body.
 # `search` over the whole line meant an item with *no* metadata line whose
-# body prose contains the word -- these bodies argue about audience
-# routinely -- was handed whatever that sentence parsed to, and escaped the
+# body prose contains the word — these bodies argue about audience
+# routinely — was handed whatever that sentence parsed to, and escaped the
 # rule silently if none of it began with `user.`. The docstring credited
 # "only the first match" with preventing that; what prevented it was a
 # convention, and a convention is not a guard.
 _AUDIENCE_RE = re.compile(r"^\s*(?:spec:.*?·\s*)?(?:effort:.*?·\s*)?audience:\s*(?P<tags>.+?)\s*$")
 
-_BACKLOG_DONE = _REPO_ROOT / "sdd" / "BACKLOG-DONE.md"
 
-
-def parse_done_unreleased(backlog_done: Path = _BACKLOG_DONE) -> list[DoneItem]:
+def parse_done_unreleased(backlog_done: Path) -> list[DoneItem]:
     """Items under ``BACKLOG-DONE.md`` § ``Unreleased``, with their audience tags.
 
     The audience line belongs to the item whose bullet most recently opened, so
     a body paragraph that happens to contain the word is not mistaken for one:
     only the first ``audience:`` after a bullet is taken. An item whose bullet
     is followed by the next bullet with no ``audience:`` in between is returned
-    with an empty tuple rather than dropped -- an item the rule cannot be
+    with an empty tuple rather than dropped — an item the rule cannot be
     evaluated for is a finding, not a silent pass.
+
+    "The next bullet" means any status bullet (``_ANY_ITEM_RE``), not the next
+    ``[x]`` one. See that pattern's comment: the two questions look like one
+    and are not.
     """
     try:
         lines = backlog_done.read_text(encoding="utf-8").split("\n")
@@ -327,6 +389,11 @@ def parse_done_unreleased(backlog_done: Path = _BACKLOG_DONE) -> list[DoneItem]:
             pending_id = m.group("id")
             pending_line = i + 1
             continue
+        if _ANY_ITEM_RE.match(lines[i]):
+            # A `[ ]` or `[~]` bullet: not an item this gate evaluates, but it
+            # closes the one above, whose metadata lines cannot appear below it.
+            flush()
+            continue
         if pending_id is None:
             continue
         a = _AUDIENCE_RE.search(lines[i])
@@ -338,18 +405,16 @@ def parse_done_unreleased(backlog_done: Path = _BACKLOG_DONE) -> list[DoneItem]:
     return items
 
 
-_BACKLOG = _REPO_ROOT / "sdd" / "BACKLOG.md"
-
-_OPEN_ITEM_RE = re.compile(r"^- \[[ ~]\] \*\*(?P<id>[A-Z]+-\d+[a-z]*)(?:\s+\([^)]+\))? —")
+_OPEN_ITEM_RE = re.compile(r"^- \[[ ~]\] \*\*(?P<id>[A-Z][A-Z0-9-]*-\d+[a-z]*)(?:\s+\([^)]+\))? —")
 
 
-def open_item_ids(backlog: Path = _BACKLOG) -> set[str]:
+def open_item_ids(backlog: Path) -> set[str]:
     """IDs of items still open in ``BACKLOG.md`` (`[ ]` or `[~]`).
 
     This is the **register** behind the audience rule's advisory half
     ([`DRIFT-RULES.md` Rule 6](../sdd/DRIFT-RULES.md#tolerated)): an
     ``[Unreleased]`` entry whose ID is a live open item is a *tolerated*
-    divergence with an owner and a rationale already -- the item itself -- and
+    divergence with an owner and a rationale already — the item itself — and
     saying so on every green run is how a permanent line teaches readers to
     skip a passing gate's output. An entry whose ID is open nowhere and
     completed nowhere is *unnoticed*, and that is the one worth a note.
@@ -369,22 +434,20 @@ def open_item_ids(backlog: Path = _BACKLOG) -> set[str]:
 # The rules
 # --------------------------------------------------------------------------- #
 
-# Derived from the section it governs, not chosen for roundness: when this gate
-# landed, the budget was set just above the longest surviving entry once the
-# release-grade prose had been condensed out of the section.
-#
-# **The headroom is not stated here, deliberately.** It was, as a character
-# count, and it went stale in the same commit that changed what this constant
-# measures -- adding a migration link to four entries and discounting link
-# targets moved the longest entry without moving the sentence describing it,
-# in three artifacts at once. That is the third time a figure quoted beside
-# this work outlived its derivation. Re-derive instead of reading a number:
+# A ceiling on prose, not a fitted curve. The first draft was set just above
+# the longest surviving entry, and saying so was itself the mistake: the
+# sentence describing the fit outlived the fit twice — once when adding a
+# migration link to four entries and discounting link targets moved the longest
+# entry, and again when a rebase re-applied the condensation onto a different
+# base and moved it further. **Neither the headroom nor the fit is stated here,
+# deliberately.** Both are measurements, and this constant answers a question
+# about what the section is *for*. Re-derive instead of reading a number:
 #
 #     hatch run python -c "import runpy; m = runpy.run_path('scripts/check_changelog_unreleased.py'); \
 #         print(max(e.prose_length for e in m['parse_unreleased']().entries))"
 #
 # Raising the budget is a decision about what the section is for, so it is a
-# constant with a reason rather than a literal -- but the reason is the rule
+# constant with a reason rather than a literal — but the reason is the rule
 # (a stub, not a paragraph), never a measurement that ages.
 _MAX_ENTRY_CHARS = 320
 
@@ -478,10 +541,38 @@ def _check_audience(entries: list[Entry], backlog_done: Path, backlog: Path) -> 
     return violations, notes
 
 
+# The stand-down is a note, so it rides the same channel as the advisory half
+# and needs no third return value from `collect`. `main` keys on this prefix to
+# keep from printing "unique, stub-shaped and complete" about a section it did
+# not read — the one sentence a stood-down run must not say.
+_STOOD_DOWN = "stood down: "
+
+
+def _release_window_note(section: Section) -> str:
+    """The stand-down line, printed rather than inferred from silence.
+
+    Named "stood down" and not "passed" on purpose: the caller reports zero
+    violations here because it checked nothing, and a reader who cannot tell
+    those apart has no way to notice a stray ``###`` switching the gate off
+    mid-cycle.
+    """
+    remaining = len(section.entries)
+    return (
+        f"{_STOOD_DOWN}[Unreleased] carries a `###` grouping, the shape "
+        "CONTRIBUTING.md § Release Phase 1 condenses it into and Phase 2 renames. All three rules "
+        f"key on `- <ID>:` lines, so none was evaluated ({remaining} line(s) still in stub shape). "
+        "Outside a release, this means a `###` heading reached [Unreleased] by mistake: remove it "
+        "and the rules come back."
+    )
+
+
 def collect(repo_root: Path = _REPO_ROOT) -> tuple[list[Violation], list[str]]:
     section = parse_unreleased(repo_root / "CHANGELOG.md")
     if not section.found:
         return [Violation("CHANGELOG.md", 1, "no `## [Unreleased]` heading (was it renamed early?)")], []
+
+    if section.grouped:
+        return [], [_release_window_note(section)]
 
     violations = _check_unique(section.entries)
     violations.extend(_check_shape(section.entries, section.stray))
@@ -493,10 +584,20 @@ def collect(repo_root: Path = _REPO_ROOT) -> tuple[list[Violation], list[str]]:
     return violations, notes
 
 
+# The rule is stated here because this is where a failing developer is standing.
+# Its remediation used to be two document pointers alone, and neither document
+# states any of the three rules: someone told their entry ran over the budget
+# was sent to two files where that number does not appear and no length rule is
+# written down, its only home being a constant in this file. The pointers stay,
+# after the rule rather than instead of it — and CONTRIBUTING.md § Release
+# Phase 1 now names this gate, which is the ripple BUG-262's trace recorded
+# nobody asking about.
 _REMEDIATION = (
-    "See CONTRIBUTING.md § Release Phase 1 and the ripple-check row **CHANGELOG entry** in "
-    "sdd/CLAUDE-REFERENCE.md. An [Unreleased] entry is one line, `- <ID>: <Title>`, one per item, "
-    "and every completed user-facing item has one."
+    f"An [Unreleased] entry is one line, `- <ID>: <Title>`, one per ID, at most {_MAX_ENTRY_CHARS} "
+    "characters of prose (Markdown link targets are not counted), and every completed user-facing "
+    "item under sdd/BACKLOG-DONE.md § Unreleased has one. Prose belongs in the release section, "
+    "the backlog entry, or the migration guide. See CONTRIBUTING.md § Release Phase 1 and the "
+    "ripple-check row **CHANGELOG entry** in sdd/CLAUDE-REFERENCE.md."
 )
 
 
@@ -516,11 +617,17 @@ def main(argv: list[str] | None = None) -> int:
         print(f"check_changelog_unreleased: cannot derive the claim: {exc}", file=sys.stderr)
         return 1
 
+    stood_down = False
     for note in notes:
-        print(f"check_changelog_unreleased: note: {note}")
+        if note.startswith(_STOOD_DOWN):
+            stood_down = True
+            print(f"check_changelog_unreleased: {note}")
+        else:
+            print(f"check_changelog_unreleased: note: {note}")
 
     if not violations:
-        print("check_changelog_unreleased: [Unreleased] is unique, stub-shaped and complete.")
+        if not stood_down:
+            print("check_changelog_unreleased: [Unreleased] is unique, stub-shaped and complete.")
         return 0
 
     for v in violations:

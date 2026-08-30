@@ -3,8 +3,8 @@
 The gate exists because a duplicated `[Unreleased]` entry reached master and
 contradicted itself: two copies of one item four lines apart, the lower one
 pre-amendment, so the section called an item open two lines below the entry
-that closed it. The regression cases below reproduce that class -- a duplicate,
-a paragraph where a stub belongs, a user-facing completed item with no entry --
+that closed it. The regression cases below reproduce that class — a duplicate,
+a paragraph where a stub belongs, a user-facing completed item with no entry —
 and the clean baseline proves the gate does not fire on the shape the section
 is supposed to have.
 
@@ -92,8 +92,10 @@ class TestCleanBaseline:
         assert notes == []
 
     def test_released_sections_are_not_read(self, tmp_path: Path) -> None:
-        """The fixture's [0.30.0] section carries a `###` heading and long prose,
-        both of which fail every rule here. Neither may be reported."""
+        """The fixture's [0.30.0] section carries a `###` heading and a bullet
+        leading with no ID, both of which the shape rule would report. Neither
+        may be, and the `###` must not trip the release-window stand-down
+        either: the parser stops at the next `## [`."""
         violations, _ = _mod.collect(_tree(tmp_path, _ENTRIES, _ITEMS))
         assert violations == []
 
@@ -167,18 +169,75 @@ class TestShape:
         assert len(violations) == 1
         assert "characters of prose" in violations[0].message
 
-    def test_a_sub_heading_inside_unreleased_fails(self, tmp_path: Path) -> None:
-        """Grouping headings are Phase 2's work; here they break the grammar the
-        duplicate check keys on."""
-        violations, _ = _mod.collect(_tree(tmp_path, "### Added\n\n" + _ENTRIES, _ITEMS))
-        assert len(violations) == 1
-        assert "not an entry" in violations[0].message
-
     def test_a_wrapped_entry_fails(self, tmp_path: Path) -> None:
         entries = "- BK-100: a title that someone\n  wrapped onto a second line\n- BK-101: fine\n"
         violations, _ = _mod.collect(_tree(tmp_path, entries, _ITEMS))
         assert len(violations) == 1
         assert violations[0].line == _line_of(tmp_path, "wrapped onto a second line")
+
+    def test_a_compound_prefix_entry_is_an_entry(self, tmp_path: Path) -> None:
+        """One line, one verdict, across both parsers of this section.
+
+        `check_breaking_migration_link.py` admits `[A-Z][A-Z0-9-]*-\\d+`, and its
+        own tests pin the compound form. Spelling this gate's prefix `[A-Z]+`
+        made `- SQL-BLOB-020: …` a valid entry there and a stray line here, so a
+        single `hatch run lint` returned two answers about one line — the
+        disagreement both modules say they exist to prevent one level up.
+        """
+        entries = "- SQL-BLOB-020: a compound-prefix entry\n- BK-101: fine\n"
+        section = _mod.parse_unreleased(_tree(tmp_path, entries, _ITEMS) / "CHANGELOG.md")
+        assert [e.item_id for e in section.entries] == ["SQL-BLOB-020", "BK-101"]
+        assert section.stray == []
+
+
+class TestReleaseWindow:
+    """CONTRIBUTING.md § Release Phase 1 condenses `[Unreleased]` in place, and
+    Phase 2 is what renames the heading — so the released shape lives under
+    `[Unreleased]` for that whole span, and Phase 3 runs `hatch run all` over
+    it. A gate that fails there blocks the release it serves."""
+
+    def test_a_grouped_section_stands_down_instead_of_failing(self, tmp_path: Path) -> None:
+        """Reproduces the release window: run against it before this behaviour
+        existed, the gate reported every condensed line as a stray and every
+        completed item as entry-less, and its remediation told the release
+        manager to do Phase 2 early."""
+        condensed = (
+            "### Fixed\n\n"
+            "- **A condensed release entry** carrying prose at whatever length it\n"
+            "  likes, wrapped over lines, naming no ID at the start.\n"
+        )
+        violations, notes = _mod.collect(_tree(tmp_path, condensed, _ITEMS))
+        assert violations == []
+        assert len(notes) == 1
+        assert notes[0].startswith(_mod._STOOD_DOWN)
+
+    def test_the_stand_down_is_printed_and_not_called_a_pass(self, tmp_path: Path, capsys) -> None:
+        """The cost of standing down is that a stray `###` switches three rules
+        off; the only thing that keeps that visible is saying so on a green run.
+        A run that checked nothing must not print the sentence claiming it did."""
+        condensed = "### Fixed\n\n- **A condensed release entry** with no leading ID.\n"
+        rc = _mod.main(["--repo-root", str(_tree(tmp_path, condensed, _ITEMS))])
+        out = capsys.readouterr().out
+        assert rc == 0
+        assert "stood down" in out
+        assert "unique, stub-shaped and complete" not in out
+
+    def test_the_audience_rule_stands_down_with_the_rest(self, tmp_path: Path) -> None:
+        """Not three independent stand-downs: the audience rule keys on the same
+        `- <ID>:` lines, so a section with none reports every completed
+        user-facing item as missing one. BK-100 is user-facing in `_ITEMS`."""
+        violations, _ = _mod.collect(_tree(tmp_path, "### Fixed\n\n- prose, no ID.\n", _ITEMS))
+        assert violations == []
+
+    def test_the_rules_come_back_once_the_grouping_goes(self, tmp_path: Path) -> None:
+        """The stand-down is keyed on the grouping, not latched: a section that
+        never had one is checked, and this is what a mid-cycle stray `###`
+        costs until it is removed."""
+        entries = _ENTRIES + "- BK-100: a duplicate the stand-down would have hidden\n"
+        with_heading, _ = _mod.collect(_tree(tmp_path, "### Added\n\n" + entries, _ITEMS))
+        assert with_heading == []
+        without_heading, _ = _mod.collect(_tree(tmp_path, entries, _ITEMS))
+        assert [v.line for v in without_heading] == [_line_of(tmp_path, "would have hidden")]
 
 
 class TestAudienceRule:
@@ -191,7 +250,7 @@ class TestAudienceRule:
     def test_a_non_user_tag_is_recognised_as_user_facing(self, tmp_path: Path) -> None:
         """The schema's predicate is the `user.` prefix, not the literal
         `user.api`. Testing for the latter drops the items whose only user tag
-        is `user.site` or `user.discoverability.llm` -- which is exactly how a
+        is `user.site` or `user.discoverability.llm` — which is exactly how a
         hand count of the same parse came out three short."""
         items = "- [x] **BK-100 — a docs change**\n  spec: — · effort: S · audience: user.discoverability.llm\n"
         violations, _ = _mod.collect(_tree(tmp_path, "- BK-101: unrelated\n", items))
@@ -300,10 +359,35 @@ class TestAudienceRule:
     def test_a_non_x_status_is_not_a_completed_item(self, tmp_path: Path) -> None:
         """Completed means `[x]`, matching BACKLOG-DONE's own preamble and
         gen_backlogid.py. Two parsers over one artifact disagreeing about what
-        counts is the defect the shared module exists to avoid."""
+        counts is the defect this gate and check_breaking_migration_link.py
+        both say they exist to avoid one level up."""
         items = "- [~] **BK-100 — shipped one bullet**\n  spec: — · effort: S · audience: user.api\n"
         violations, _ = _mod.collect(_tree(tmp_path, "- BK-101: unrelated\n", items))
         assert violations == []
+
+    def test_a_non_x_bullet_still_ends_the_item_above_it(self, tmp_path: Path) -> None:
+        """The test above reads a `[~]` item alone, and passes either way. The
+        defect needs the interleaving.
+
+        `_ITEM_RE` matches `[x]` only, so a `[~]` bullet did not end the item
+        above it and its `audience:` line was credited upward. Measured: this
+        fixture returned `DoneItem('BK-100', audience=('user.api',))` — BK-100
+        both escaped the "carries no `audience:` line" finding it is owed and
+        was judged against tags belonging to another item. Deciding *what is a
+        completed item* and deciding *where one ends* are two questions, and one
+        pattern answered both.
+        """
+        items = (
+            "- [x] **BK-100 — a completed item with no metadata line**\n"
+            "- [~] **BK-200 — an in-progress item that does carry one**\n"
+            "  spec: — · effort: S · audience: user.api\n"
+        )
+        parsed = _mod.parse_done_unreleased(_tree(tmp_path, "- BK-100: fine\n", items) / "sdd" / "BACKLOG-DONE.md")
+        assert [(i.item_id, i.audience) for i in parsed] == [("BK-100", ())]
+
+        violations, _ = _mod.collect(_tree(tmp_path, "- BK-100: fine\n", items))
+        assert len(violations) == 1
+        assert "BK-100 carries no `audience:` line" in violations[0].message
 
 
 class TestCannotFailSilently:
@@ -322,13 +406,13 @@ class TestCannotFailSilently:
             done.read_text(encoding="utf-8").replace("## Unreleased", "## v0.31.0"),
             encoding="utf-8",
         )
-        with pytest.raises(_mod.DerivationError):
+        with pytest.raises(_mod.DerivationError, match="no `## Unreleased` heading"):
             _mod.collect(tree)
 
     def test_a_missing_done_file_raises(self, tmp_path: Path) -> None:
         tree = _tree(tmp_path, _ENTRIES, _ITEMS)
         (tree / "sdd" / "BACKLOG-DONE.md").unlink()
-        with pytest.raises(_mod.DerivationError):
+        with pytest.raises(_mod.DerivationError, match="cannot read"):
             _mod.collect(tree)
 
     def test_main_exits_nonzero_rather_than_reporting_success(self, tmp_path: Path, capsys) -> None:
@@ -347,7 +431,7 @@ class TestCannotFailSilently:
         heading in a file that is not there."""
         tree = _tree(tmp_path, _ENTRIES, _ITEMS)
         (tree / "CHANGELOG.md").unlink()
-        with pytest.raises(_mod.DerivationError):
+        with pytest.raises(_mod.DerivationError, match="cannot read"):
             _mod.collect(tree)
 
     def test_a_missing_unreleased_heading_is_reported(self, tmp_path: Path) -> None:

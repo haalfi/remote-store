@@ -2,7 +2,7 @@
 
 <!-- doc: repo-only -->
 
-Derived from 37 declared mechanism(s) by `scripts/gen_gate_inventory.py`. Do not edit by hand; run `hatch run gen-gate-inventory`.
+Derived from 38 declared mechanism(s) by `scripts/gen_gate_inventory.py`. Do not edit by hand; run `hatch run gen-gate-inventory`.
 
 Which artifact pairs this repo checks, which single-artifact rules it
 asserts, and what its reports surface. *Kind*, the subject column and
@@ -18,7 +18,7 @@ including what *Enforcement* does not mean — is the last section below.
 | `scripts/check_api_docs.py` | the graph IR in docs-src/_data/graph/graph.json ↔ the API reference pages under docs-src/reference/api/ | realization ↔ explanation | `all`, `gen-api-check`, `preflight` | gating |
 | `scripts/check_breaking_migration_link.py` | CHANGELOG.md [Unreleased] **Breaking** entries ↔ the docs-src/reference/migration.md link each one carries | process | `all`, `check-breaking-migration-link`, `docs-gate`, `lint` | gating |
 | `scripts/check_capability_parity.py` | the Capability enum in src/remote_store/_capabilities.py ↔ the Capability datatype and CapabilityName arms in sdd/formal/BackendContract.dfy | realization ↔ intent-formalized | `all`, `ci.yml:verify-formal`, `lint` | gating |
-| `scripts/check_changelog_unreleased.py` | the CHANGELOG [Unreleased] entries ↔ the completed items under sdd/BACKLOG-DONE.md § Unreleased, and the section against its own one-entry-per-ID stub grammar | process | `all`, `check-changelog-unreleased`, `docs-gate`, `lint` | gating |
+| `scripts/check_changelog_unreleased.py` | the CHANGELOG [Unreleased] entries ↔ the completed items under sdd/BACKLOG-DONE.md § Unreleased, with sdd/BACKLOG.md read as the register that decides which unmatched entries are tolerated | process | `all`, `check-changelog-unreleased`, `docs-gate`, `lint` | gating |
 | `scripts/check_ci_full_matrix.py` | ci.yml's ALL_PYTHONS interpreter list ↔ ci-full.yml's test-full matrix | process | `all`, `lint` | gating |
 | `scripts/check_ci_inventory.py` | the scheduled-family workflows under .github/workflows/ ↔ the workflow inventory in sdd/CI-OPERATIONS.md | process | `all`, `lint` | gating |
 | `scripts/check_custom_backend_guide.py` | docs-src/guides/custom-backend-guide.md ↔ Backend.__abstractmethods__, the conformance suite files and the fixture loader's closed vocabularies | explanation ↔ realization | `all`, `check-custom-backend-guide`, `docs-gate`, `lint` | gating |
@@ -41,7 +41,7 @@ including what *Enforcement* does not mean — is the last section below.
 | `scripts/gen_graph.py` | the source tree under src/remote_store/, plus the version and optional-dependency tables in pyproject.toml ↔ docs-src/_data/graph/graph.json | realization | `all`, `gen-graph`, `gen-graph-check`, `preflight` | gating |
 | `scripts/gen_graph_viz.py` | docs-src/_data/graph/graph.json, plus the Repository URL in pyproject.toml that the page's source links are built from ↔ docs-src/explanation/graph_viz.html | realization ↔ explanation | `all`, `gen-graph-viz`, `gen-graph-viz-check`, `preflight` | gating |
 
-## Rule checks, no pair (10)
+## Rule checks, no pair (11)
 
 Checks whose subject is a rule rather than one artifact pair — either
 because they guard a single artifact, or because they bundle several
@@ -51,6 +51,7 @@ yield no row for them at all.
 | Mechanism | Rule asserted | Domain | Runs in | Enforcement |
 |---|---|---|---|---|
 | `scripts/check_backend_order.py` | every backend enumeration in a scanned surface lists backends in the canonical order, which this script's own _BACKENDS constant holds; CONTRIBUTING.md is scanned like any other | explanation | `all`, `check-backend-order`, `docs-gate`, `lint` | gating |
+| `scripts/check_changelog_unreleased.py` | every line under CHANGELOG [Unreleased] is a `- <ID>: <text>` stub, one per ID, within the prose budget | process | `all`, `check-changelog-unreleased`, `docs-gate`, `lint` | gating |
 | `scripts/check_docs_framework.py` | every Markdown file resolves to exactly one documentation class and obeys the framework's placement, nav and bridge rules (G-01 through G-07) | explanation | `all`, `docs-check`, `docs-gate`, `lint` | gating |
 | `scripts/check_mock_spec.py` | every MagicMock or Mock call passes spec= or spec_set= (TESTING.md Rule 4) | verification | `all`, `check-test-quality`, `lint` | gating |
 | `scripts/check_no_tracker_refs.py` | no internal tracker ID appears in a surface that reaches users (CONTENT-RULES Rules 1 and 5) | explanation | `all`, `check-no-tracker-refs`, `docs-gate`, `lint` | gating |
