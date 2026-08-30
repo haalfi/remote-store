@@ -38,12 +38,14 @@ surprising_ripples:
 #   ab36c96  states what the message does not name      -> counts (raised by
 #            the session working BK-360, not by a round on this PR, but it
 #            exists because review found something, which is the schema's test)
-#   <this>   incorporates round 3 (15 findings)         -> counts
-# Value is 4. An earlier revision left this at 0 with a comment saying it would
-# be filled at the close; rounds 1 and 3 both refuted that, the second time
-# noting the file already narrated two rounds in prose while the field an
-# aggregator reads said none had happened.
-review_rounds: 4
+#   7c5c722  incorporates round 3 (15 findings)         -> counts
+#   <this>   incorporates round 4 (14 findings)         -> counts
+# Value is 5. Twice now this field has gone stale under a later commit of my
+# own: it sat at 0 through two rounds, and then at 4 while round 4's fix pass
+# was being written. Both are the same error the rounds kept finding elsewhere
+# — a figure invalidated by the diff carrying it — so if another round-driven
+# commit lands, this list grows with it.
+review_rounds: 5
 phases:
   - id: orient
     name: Orient
