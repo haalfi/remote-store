@@ -1,5 +1,9 @@
 # Research: Code Abundance — Tao's ICM 2026 Argument Transposed to Coding Agents
 
+**Date:** 2026-08-30
+**Backlog items:** — (no item; BK-361 was filed *from* this record's validation pass, not by it)
+**Status:** Research complete — the argument and its evidence are settled as of the date above. Point-in-time snapshot per [`sdd/000-process.md` § Document types](../000-process.md): the external telemetry it cites is 2025–2026 vintage and the repo counts in the appendix drift, so read every figure against this date. Sourcing is uneven by design and § 4 marks which rows were read from the primary and which were not.
+
 ## Context
 
 Terence Tao's public lecture at the International Congress of Mathematicians 2026,
@@ -308,10 +312,13 @@ work survive; metrics that measure how much work happened do not.**
 
 The extra stage is the largest structural difference, and it cuts against
 software. A published proof that nobody fully understands sits inertly in the
-literature; it does not wake anyone at 3am. Software does. An engineer quoted in
-the 2026 on-call literature puts it exactly: "the team's ratio of 'code in
-production' to 'code we understand deeply enough to debug under pressure' has
-shifted, and it's shifted in the wrong direction for incident response."
+literature; it does not wake anyone at 3am. Software does. Brent Chapman, writing
+on the on-call cost of AI-generated code (June 2026, linked in § Sources), puts
+it exactly: "the team's ratio of 'code in production' to 'code we understand
+deeply enough to debug under pressure' has shifted, and it's shifted in the wrong
+direction for incident response." Like every quotation in this record, it reached
+here through a search extraction rather than the post itself; § 4 states that
+bound for the table and it applies to quotations too.
 
 Tao asks, of mathematics, "Could we have a verified proof of a major result that
 no human understands enough to explain it?" The software version is not
@@ -389,10 +396,18 @@ mirage" where file separation does not correspond to logical separation (arXiv
 **And the substrate dependency holds.** This is the sharpest practical argument
 against letting canonicalization decay, so it is worth stating at length rather
 than as a closing line. Tao observes that AI mathematics depends on painstakingly
-canonicalized human theory. The software counterpart is measurable: agents
-perform markedly better on popular, well-documented libraries that are dense in
-training data, and misuse niche or newly released ones. Documentation written for
-humans is often insufficient.
+canonicalized human theory. The software counterpart is reported rather than
+measured, and the distinction matters because this premise is load bearing:
+agents are described as performing markedly better on popular, well-documented
+libraries that are dense in training data, and as misusing niche or newly
+released ones, with human-oriented documentation often insufficient to close the
+gap. The § 4 row for this cites the evidence that exists — a vendor evaluation
+putting standalone agents near 60% accuracy across open-source library tasks, and
+the ReadMe.LLM line of work premised on the same failure — and neither is a
+controlled measurement of the density-to-quality relationship the argument needs.
+**So premise 2 below is the weakest link in this section, and the conclusion
+inherits that.** An earlier draft called it "measurable", which claimed an
+evidence class without producing an instance.
 
 Two claims chain here, and the conclusion follows from their conjunction rather
 than from either one alone.
@@ -439,15 +454,37 @@ control is its local canon — the repository's own conventions, abstractions an
 recorded rationale, which reach the agent through context rather than through
 training. Both obey the same logic and answer to entirely different effort, so a
 recommendation derived from the global half would be advice nobody can take. The
-comprehension trial in the appendix is the local half appearing as evidence: four
-reads recovered the contested reasoning, not because the model knew this
-repository, but because the local canon made reconstruction cheap.
+comprehension trial in the appendix is the local half appearing as evidence:
+seven sources, enumerated there, recovered the contested reasoning — not because
+the model knew this repository, but because the local canon made reconstruction
+cheap.
 
 ## 4. Figures and their derivations
 
 Per [`CLAUDE.md` principle 9](../../CLAUDE.md#principles), each figure names its
-source. "Extraction" means the primary document was unreachable from this
-environment and the figure comes from a search-engine extraction of it.
+source.
+
+**"Extraction" means the figure comes from a search-engine extraction of the
+primary rather than from reading the primary.** An earlier draft defined it as
+"the primary was unreachable", which was wrong for most of the rows carrying it
+and hid the distinction a reader needs. Two different situations produce the
+label, and only the first is a blocked door:
+
+- **Attempted and refused.** `arxiv.org`, `dora.dev`, `martinfowler.com`,
+  `simonwillison.net`, `leidendeclaration.ai`, `flowverify.co`, `polvara.me`,
+  `queue.acm.org` and `margaretstorey.com` were fetched and returned 403 under
+  the environment's egress policy. The DORA, arXiv, Storey and the four
+  "(secondary)" rows sit here.
+- **Not attempted.** The remaining seven rows — METR, Stack Overflow, CloudBees,
+  GitClear, Veracode, Anthropic and Thoughtworks — cite primaries on domains that
+  were never fetched. Nothing is known about whether they are reachable; the
+  figures were taken from search results and the primary was not opened.
+
+The second class is the weaker provenance of the two, because a blocked fetch at
+least establishes that the primary was sought. **No row in this table was read
+from its primary document.** That is worth stating plainly next to the row this
+record calls its best evidence: the Anthropic RCT figures are second-hand, and a
+reader weighting the 50%-versus-67% result should discount accordingly.
 
 | Figure | Source | Sample / date | Access |
 |---|---|---|---|
@@ -467,6 +504,8 @@ environment and the figure comes from a search-engine extraction of it.
 | Triple debt model | Storey, arXiv 2603.22106 / ACM Queue | Analytical, 2026 | Extraction, reached via Polvara (below) |
 | Truck-factor invalidation argument | "The Substrate Collapse" (arXiv 2606.20882) | Analytical, Jun 2026 | Extraction |
 | Modular mirage | arXiv 2605.02741 | 2026 | Extraction |
+| Junior employment −9–10% within six quarters at AI-adopting firms; senior flat; mechanism is slowed hiring | Hosseini & Lichtinger, "Generative AI as Seniority-Biased Technological Change" | 62M workers, 285,000 US firms, 2015–2025, published Aug 2025 | Extraction (not attempted) |
+| Agents near 60% accuracy across open-source library tasks; niche libraries misused | Tessl coding-agent evaluation; ReadMe.LLM (arXiv 2504.09798) | 2025–2026; neither is a controlled density-to-quality measurement | Extraction |
 | SDD artifact counts | This repo | `ls` commands in § Appendix | Direct |
 
 One row needs its provenance stated rather than cited. Polvara's essay is
@@ -475,8 +514,8 @@ egress policy, as do `queue.acm.org`, `arxiv.org` and `margaretstorey.com` — a
 search does not index it. The text used here was supplied directly by the reader
 who raised it, and its claims were checked against independently reachable
 sources before use: the Anthropic and Thoughtworks rows above were verified that
-way, and one claim in the essay was rejected on that basis (§ 2.3, last
-paragraph). Its own footer records that it was researched with an AI deep-research
+way, and one claim in the essay was rejected on that basis (§ 2.3, under
+"One claim in the model is not supported"). Its own footer records that it was researched with an AI deep-research
 tool and edited by its author, which is a reason for the checking rather than an
 objection to the essay.
 
@@ -494,8 +533,12 @@ across biased sources is weaker than it feels.
 
 ## 5. Where the analogy breaks
 
-Faithfulness requires marking the disanalogies, and five of them matter enough
-to change the recommendations.
+Faithfulness requires marking the disanalogies. Six are marked below, one per
+bold lead, and all of them change a recommendation in § 6 except the third —
+software's deletability, which reframes the stakes without moving any proposal.
+§ 2.1 marks a seventh, the adoption-ordering point, which sits there rather than
+here because it is about how the two communities arrived, not about how they
+differ.
 
 **Software's peer review is far weaker than mathematics'.** Tao can lean on
 editors, referees, and community acceptance as a backstop that "cannot be
@@ -503,8 +546,12 @@ optimized purely by the authors and their AI tools." Software's equivalent is
 typically one colleague, under deadline, in a private repository, with no
 external record and no referee report. Where Tao worries that AI output will
 _overwhelm_ peer review, software's review was already the weak link — and the
-2026 data shows reviewers approving agent-authored PRs more readily despite those
-PRs carrying more technical debt on average. **The backstop Tao relies on does
+2026 review-bottleneck reporting behind the § 4 row for Faros, LinearB and
+CircleCI adds that reviewers approve agent-authored PRs more readily despite
+those PRs carrying more technical debt on average. That claim inherits the
+weakest provenance in the table, being vendor telemetry read through a secondary
+aggregator, and it is the evidential half of this disanalogy — so the disanalogy
+rests more on the structural argument than on the measurement. **The backstop Tao relies on does
 not exist in software at comparable strength, so software cannot solve its
 version of the problem by protecting review alone. It has to build capacity that
 mathematics already had.**
@@ -673,10 +720,15 @@ found nothing hard.
 
 **7. Defend the training pipeline explicitly.** Tao lists training the next
 generation among the goals that used to be correlated with the others and warns
-they may diverge. In software the divergence is already measured: entry-level
-developer postings down sharply since 2022 and junior employment declining
-month over month, while a 2025 Harvard study found junior employment dropping
-9–10% within 18 months of a firm adopting AI assistants. Under the bundled
+they may diverge. In software the divergence is already measured. Hosseini and
+Lichtinger's _Generative AI as Seniority-Biased Technological Change_ (Harvard,
+August 2025) tracks 62 million workers across 285,000 US firms and finds junior
+employment at AI-adopting firms falling 9–10% within six quarters while senior
+employment holds — and the mechanism is slowed hiring rather than layoffs, which
+is what makes it a pipeline effect rather than a headcount one. Two
+qualifications the record owes that figure: it is economy-wide rather than
+software-specific, and firm-level AI adoption is proxied by job postings for
+integrator roles, so it measures firms that advertise adoption. Under the bundled
 regime, juniors learned by doing the work agents now do. **If a team wants
 seniors in five years it now has to pay for the training path deliberately,
 because the free version was a side effect of the bundle that has broken.** This
@@ -810,21 +862,30 @@ genuinely differ; refusal of lowest-common-denominator behaviour; mirrored
 sync and async surfaces; conformance parametrised across backends with Dafny and
 TLA+ as independent oracles. That model was formed from `CLAUDE.md`, directory
 listings and trace filenames over the course of writing this record, without
-reading a spec or a source module. It was then checked against
-[`sdd/DESIGN.md`](../DESIGN.md), specs [003](../specs/003-backend-adapter-contract.md),
-[004](../specs/004-path-model.md) and [010](../specs/010-native-path-resolution.md),
-the `_GATING` table at the head of `src/remote_store/_store.py`, and listings of
-`src/remote_store/` and `sdd/specs/`.
+reading a spec or a source module. It was then checked against seven sources:
+four documents — [`sdd/DESIGN.md`](../DESIGN.md), specs
+[003](../specs/003-backend-adapter-contract.md),
+[004](../specs/004-path-model.md) and
+[010](../specs/010-native-path-resolution.md) — plus the `_GATING` table at the
+head of `src/remote_store/_store.py` and listings of `src/remote_store/` and
+`sdd/specs/`. The listings are load-bearing rather than incidental: spec 043 and
+the `_resolution.py` / `_proxy.py` modules named in the second miss below were
+never opened, and appear in that miss because the listings revealed they
+existed. Discovering that a subsystem exists and reading it are different
+acts, and the trial did only the first for that one.
 
 The skeleton survived. Three things did not, and all three were _why_ questions
 rather than _what_ questions:
 
 - **Capabilities are two kinds, not one.** CAP-007 separates gates, which raise
-  `CapabilityNotSupported` and block a method, from quality flags
-  (`ATOMIC_MOVE`, `SEEKABLE_READ`, `LAZY_READ`), which describe a property of an
-  existing method and gate nothing. The prior model would have produced an active
-  error: that a backend must declare `SEEKABLE_READ` to serve `read_seekable()`,
-  when that method is available everywhere and the flag reports only what it costs.
+  `CapabilityNotSupported` and block a method or a guarded kwarg, from quality
+  flags, which describe a property of an existing method and gate nothing.
+  `SEEKABLE_READ` is one such flag; the set lives in
+  [CAP-007](../specs/003-backend-adapter-contract.md) and is not copied here, per
+  [`sdd/CONTENT-RULES.md`](../CONTENT-RULES.md) Rule 2. The prior model would have
+  produced an active error: that a backend must declare `SEEKABLE_READ` to serve
+  `read_seekable()`, when that method is available everywhere and the flag reports
+  only what it costs.
 - **Path resolution was absent entirely** — `_resolution.py`, `_proxy.py`, specs
   010 and 043 — along with its motivating invariant, round-trip safety: anything a
   Store method returns must be usable as input to another without manual
@@ -840,7 +901,9 @@ rather than _what_ questions:
 amnesia argument: this record was written at length about a system whose theory
 its author did not hold. But it also shows the gap closing faster than Naur's
 compiler example predicts. Group B had complete code and documentation and still
-could not extend the system; four reads here recovered the contested reasoning,
+could not extend the system; the seven sources enumerated above recovered the
+contested reasoning here — four documents, one source-file header and two
+directory listings, the listings being what surfaced the second miss —
 because these specs record _why_ at the points where the why was disputed — spec
 010 opens with a section headed "The Problem" and a failing example, and CAP-007
 argues for quality flags rather than merely listing them. **Documentation that
@@ -916,4 +979,5 @@ Theory, norms, and practice:
 - [Simon Willison, Agentic Engineering Patterns](https://simonwillison.net/2026/Feb/23/agentic-engineering-patterns/)
 - [Anthropic: Claude Code best practices](https://www.anthropic.com/engineering/claude-code-best-practices) · [How Anthropic teams use Claude Code](https://claude.com/blog/how-anthropic-teams-use-claude-code)
 - [The 8 software engineering metrics AI broke](https://leaddev.com/ai/the-8-software-engineering-metrics-ai-broke)
-- [Junior developer pipeline collapse](https://www.forbes.com/sites/josipamajic/2026/08/09/coding-jobs-vanish-for-juniors-as-ai-reshapes-career-path/)
+- [Junior developer pipeline collapse](https://www.forbes.com/sites/josipamajic/2026/08/09/coding-jobs-vanish-for-juniors-as-ai-reshapes-career-path/) · Hosseini & Lichtinger, _Generative AI as Seniority-Biased Technological Change_ (Harvard, Aug 2025), reached via [secondary reporting](https://www.ability.ai/blog/junior-developer-pipeline-collapse-ai) and [Stack Overflow's coverage](https://stackoverflow.blog/2025/12/26/ai-vs-gen-z/)
+- [Tessl: a proposed evaluation framework for coding agents](https://tessl.io/blog/proposed-evaluation-framework-for-coding-agents) · [ReadMe.LLM: a framework to help LLMs understand your library](https://arxiv.org/html/2504.09798v1)
