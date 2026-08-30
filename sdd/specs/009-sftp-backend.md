@@ -542,6 +542,17 @@ well as reads, and a stalled write reaches it on the receive side like a read
 does. The distinct fault it covers is a request that never reaches the server,
 as against a reply that never returns.
 
+**The two are distinct faults and the caller cannot tell them apart**, which is
+worth stating now that the raised error carries a message (SFTP-023) and a
+reader might reasonably assume it says which. It does not. Measured against the
+stall relay in both directions at `io_timeout=2.0`, silencing server→client and
+then client→server: one identical message,
+`"SFTP channel stalled: no data within io_timeout=2.0s"`, and a `TimeoutError`
+context in both. Both arrive on the receive side, so they enter the same arm and
+nothing downstream of it knows which direction fell silent. A message that names
+the *fault* is not a message that names its *side*, and only the first is
+claimed.
+
 The "unaffected however long it takes" half is asserted by
 `test_a_transfer_slower_than_the_bound_is_not_interrupted`, which throttles a
 relay rather than stalling it — slow, never silent — and asserts both that the
