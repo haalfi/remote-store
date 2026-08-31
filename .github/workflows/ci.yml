@@ -685,7 +685,7 @@ jobs:
       - uses: actions/checkout@v7
       - name: Check TLA+ files for em dashes
         run: python scripts/check_tla_no_emdash.py
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
