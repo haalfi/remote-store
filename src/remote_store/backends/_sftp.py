@@ -2180,9 +2180,12 @@ class SFTPBackend(Backend):
         atomic write even for a non-directory target — a round-trip this PR
         otherwise removes. It is kept ahead of the fallback deliberately: the
         alternative (fallback first, classify on its failure) would feed a
-        directory target to ``remove`` + ``rename``. The extra stat is bounded
-        to servers without the (near-universal) ``posix-rename@openssh.com``
-        extension, hence the fallback's ``# pragma: no cover``.
+        directory target to ``remove`` + ``rename``. The extra stat is paid
+        whenever ``posix_rename`` fails for a reason ``_is_connection_dead``
+        does not recognise — commonly a server without the (near-universal)
+        ``posix-rename@openssh.com`` extension, but not only that, which is why
+        the ``# pragma: no cover`` on ``_rename_fallback`` names a narrower bound
+        than the code has.
         """
         try:
             self._sftp.posix_rename(tmp_path, sftp_path)

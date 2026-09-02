@@ -584,17 +584,24 @@ list is not a footnote to them.
 
 The caller-visible wall clock for a stalled operation is one bound, not
 several — **with one known exception, recorded below rather than assumed away**,
-and BUG-264 tracks it. The exception is `move`: it has no `_raise_if_dir` step,
-so when `posix_rename` fails with a non-dead `OSError` nothing here fires and
-`_move_fallback` runs on into the stalled channel — measured 4.00 s at a 2.0 s
-bound. **The promote path is not the exception under that antecedent**: there
-mechanism 2 fires, because `_raise_if_dir`'s classification stat re-enters the
-silent channel and re-raises, so `_rename_fallback` is never entered and the
-cost is one bound (measured 2.00 s). `_rename_fallback` does pay two, but only
-when the silence begins *later* — at its own suppressed `remove`, with the
-channel healthy through the classification stat. Stated at this length because
-an earlier revision attributed the 4.00 s to the promote path under the first
-antecedent, where it is 2.00 s.
+and BUG-264 tracks it. **The exception is the fallback's remove-then-rename
+chain**, which both operations reach — what differs is when.
+
+`move` reaches it directly: it has no `_raise_if_dir` step, so when `posix_rename`
+fails with a non-dead `OSError` nothing here fires and `_move_fallback` runs on
+into the stalled channel. Measured 4.00 s at a 2.0 s bound.
+
+The promote path does not, under that same antecedent: mechanism 2 fires, because
+`_raise_if_dir`'s classification stat re-enters the silent channel and re-raises,
+so `_rename_fallback` is never entered and the cost is one bound (measured
+2.00 s). It reaches the exception only when the silence begins *later* — at the
+fallback's own suppressed `remove`, with the channel healthy through the
+classification stat.
+
+Stated at this length because an earlier revision attributed the 4.00 s to the
+promote path under the first antecedent, where it is 2.00 s. One exception, two
+routes in, and which route an operation takes is decided by whether it has a
+classification step between the failed rename and the fallback.
 
 A failed operation re-enters the channel two ways — to classify the
 failure (`_raise_if_dir`, `_has_file_ancestor`) and to release resources — and
@@ -659,9 +666,13 @@ re-entries differently:
    collects it. A read handle cannot: its write buffer is empty and `_write_all`
    returns without a round-trip.
 
-   The `move` guard is a case where a coverage pragma hid a gap: its fallback
-   carries `# pragma: no cover -- fallback for servers without posix_rename`,
-   which describes the fallback correctly, while the dead-connection guard above
+   The `move` guard is a case where a coverage pragma hid a gap. The pragma
+   `# pragma: no cover -- fallback for servers without posix_rename` sits on
+   `_rename_fallback`, the *promote* path's fallback — `_move_fallback` carries
+   none, and says why in its own docstring. **The pragma's wording is itself
+   stale**: the residue subsection below establishes that neither fallback is
+   confined to servers lacking the extension, so it names a bound that does not
+   hold (BUG-264). What the gap was: the dead-connection guard above
    it is reachable on *any* server, since a stalled channel fails `posix_rename`
    like anything else. The fallback is therefore a separate method
    (`_move_fallback`), so the pragma covers only what it names.
@@ -812,7 +823,7 @@ never affected and is omitted.
 | `move` | **untouched** · **absent** · **the move completed** (source gone) · **the destination destroyed while the source survives** — fallback path only |
 | `write_atomic` / `open_atomic` | **untouched** or **absent**, usually with an orphan temp · **the write completed**, no temp · **the destination destroyed with the payload stranded in the temp** — fallback path only |
 
-Five consequences follow, and each is why the closure and its illustrations are
+Six consequences follow, and each is why the closure and its illustrations are
 here rather than left to a reader's inference.
 
 **Reported failure does not mean unchanged, and does not mean incomplete.**

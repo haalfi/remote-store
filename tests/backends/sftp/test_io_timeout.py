@@ -1512,8 +1512,12 @@ def _silence_at(relay: _StallRelay, backend: Any, method: str, predicate: Any, *
 def _break_posix_rename(backend: Any) -> None:
     """Make the live client behave like a server without ``posix-rename@openssh.com``.
 
-    The extension is near-universal, so the fallback carries a ``no cover``
-    pragma and no fixture server omits it. Forcing the client's own
+    No fixture server omits the extension, and `_rename_fallback` carries a
+    ``no cover`` pragma that names that server class as its bound — a bound the
+    spec now says the code does not have, since any non-dead ``posix_rename``
+    failure reaches the fallback. This helper stages the narrow case because it
+    is the cheap one to stage, **not** because it is the only one; the broader
+    route rests on the visible ``except OSError`` in ``_promote``. Forcing the client's own
     ``posix_rename`` to raise a plain ``OSError`` reproduces what such a server
     returns, which is what routes ``_promote`` and ``move`` into their
     remove-then-rename fallbacks.

@@ -270,7 +270,11 @@ class Store:
         """Write binary content to *path* atomically.
 
         If the write fails or is interrupted, *path* is not left in a
-        partial state.
+        partial state. **That is not the same as unchanged.** A failure in
+        the backend's connection can leave *path* as it was, replaced (the
+        write landed and the acknowledgement was lost), or removed — none of
+        them partial, and the error does not say which. Re-check the path
+        rather than assuming a failed call changed nothing.
 
         Args:
             path: Store-relative file path.

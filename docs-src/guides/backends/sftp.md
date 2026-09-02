@@ -359,9 +359,12 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
 
     The destroyed-destination cases come from a rename fallback that removes the
     destination before renaming onto it, and it is not confined to old servers —
-    any rename the backend cannot attribute to a dropped connection takes that
-    path. No example is given: which failures reach it depends on guards that
-    differ per operation, and every attempt to name one here has been wrong.
+    any rename that *fails* for a reason the backend cannot attribute to a
+    dropped connection takes that path. It also needs `overwrite=True`: with
+    the default the call raises `AlreadyExists` before the fallback is reached,
+    so an existing file cannot be destroyed this way. No example failure is
+    given: which ones reach it depends on guards that differ per operation, and
+    every attempt to name one here has been wrong.
 
     So:
 

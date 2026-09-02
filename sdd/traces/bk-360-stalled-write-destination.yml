@@ -20,19 +20,27 @@ discovery_followups:
   - BUG-264
   - BUG-265
   - BUG-266
-# docs-src/_data/graph/graph.json was absent from this list for four rounds and
-# is here now, which is worth recording rather than quietly adding. The graph
-# carries Store and Backend ABC docstrings but not backend-implementation prose,
-# so `gen-graph` produced no diff while the change touched only
-# `backends/_sftp.py` — and then produced one the moment round 5 pushed the fix
-# up to `_store.py` and `_backend.py`. The ripple-check row anticipates the file;
-# what it cannot tell you is which docstrings the graph actually models.
+# The generated graph pair was absent from this list for four rounds and is here
+# now. The reason first written here was wrong and is corrected rather than
+# quietly replaced: it said the graph carries ABC docstrings but not
+# backend-implementation prose. Round 6 checked the generator and the artifact
+# and it is close to the reverse — method nodes carry only the method *name* as
+# their summary (scripts/gen_graph.py), so no method docstring is in the graph at
+# all, while class nodes carry the first line of the class docstring, including
+# SFTPBackend's. The 32 changed values in this PR's graph diff are all `line`
+# fields, shifted because `_backend.py` and `_store.py` grew above the methods
+# below them. So the rule is positional, not semantic: edits to `backends/_sftp.py`
+# moved nothing because SFTPBackend has no method nodes and its class line and
+# first docstring line were untouched. graph_viz.html follows graph.json and is
+# named alongside it in the schema's own example; omitting it while adding its
+# pair was the same miss this note exists to record.
 expected_ripples:
   - CHANGELOG.md
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
   - sdd/backlogid.json
   - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
 surprising_ripples:
   # Neither was anticipated by the ripple-check table, and both were reached by
   # enumerating the subjects the clause's *words* pick out rather than the files
@@ -54,12 +62,13 @@ surprising_ripples:
 # `git log --oneline origin/master..HEAD`, 0e39855 implements and does not
 # count; a12ee23 incorporates review round 1, 0bf25ae round 2, e9ddbff round 3
 # (a four-member panel: unprimed, measuring, whole-file, neglected-surface),
-# 5f206a3 round 4, and the commit this trace ships in incorporates round 5
-# (both rounds ran the three closing gates: unprimed, measuring, whole-file).
-# Value is 5 — rounds, not commits,
+# 5f206a3 round 4, 9c4848e round 5, and the commit this trace ships in
+# incorporates round 6. Rounds 4-6 each ran the closing gates; round 6's
+# measuring gate could not run (account rate limit), which is recorded in the
+# PR rather than counted as a pass. Value is 6 — rounds, not commits,
 # counted from the round each commit answers rather than from a commit tally,
 # which would over-report if one round ever needed two pushes.
-review_rounds: 5
+review_rounds: 6
 
 phases:
   - id: orient
@@ -411,6 +420,54 @@ phases:
           governs the suppressed remove), and the BUG-266 hedge weakened a claim
           a shipped test pins, because BUG-266 raises PermissionDenied and the
           table is scoped to BackendUnavailable. Example deleted, hedge reverted
+        outcome: ok
+
+  - id: close
+    name: Round 6 — the contract one level up, and a note that was backwards
+    steps:
+      - file: src/remote_store/_backend.py
+        section: "Backend.open_atomic, Backend.write_atomic"
+        read_type: verify
+        extract: >-
+          Round 5 rewrote the ABC contract in language derived from SFTP alone.
+          Its closing sentence — "each backend documents its own behaviour on a
+          lost connection" — was false for seven of the eight implementations,
+          which still carry the unconditional promise the paragraph above them
+          had just retracted. The module already had the right form twice over
+          (delete/delete_folder state such things as required of implementations
+          with a divergence register); the fix is to use it. write_atomic said
+          nothing about failure at all while its sibling now did
+        outcome: ok
+      - file: src/remote_store/_store.py
+        section: "Store.write_atomic"
+        read_type: verify
+        extract: >-
+          The weakened contract went up two levels for open_atomic and not at all
+          for write_atomic, so the rendered API page had open_atomic warning to
+          re-check the path while write_atomic two entries above still said it is
+          not left partial. A reader comparing them concludes the wrong one is
+          safer. AsyncStore carried the same sentence
+        outcome: ok
+      - file: scripts/gen_graph.py
+        section: "method node construction"
+        read_type: verify
+        extract: >-
+          The note this trace added in round 5 to explain graph.json's late
+          appearance was itself wrong, and close to backwards: method nodes carry
+          the method name as their summary, so no method docstring is modelled,
+          while class docstrings are. The graph moved on line shifts alone.
+          Corrected in place rather than deleted, since the point of the note was
+          to record a ripple that had been missed for four rounds
+        outcome: misleading
+      - file: sdd/specs/009-sftp-backend.md
+        section: "one-bound paragraph; pragma paragraph; consequence count"
+        read_type: verify
+        extract: >-
+          Three counting or naming errors in text amended over the last two
+          rounds: "five consequences" against six bolded paragraphs, "one known
+          exception" against two named routes, and a pragma paragraph naming
+          _move_fallback for a pragma that sits on _rename_fallback while
+          repeating the server-class bound this work retracted
         outcome: ok
 
   - id: verify

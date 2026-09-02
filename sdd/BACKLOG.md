@@ -348,11 +348,16 @@ compliant the day before.
   `remove` runs under `contextlib.suppress(OSError)`, so its own timeout is
   swallowed and the following `rename` re-enters the same stalled channel.
   Measured 4.00 s at a 2.0 s bound. SFTP-030's one-bound paragraph does name a
-  suppressed `remove` in mechanism 3; the actual gap is the **predicate**, since
-  all three mechanisms key on `_is_connection_dead(exc)` and the failure that
-  enters the fallback is by construction a non-dead `OSError`, so none of them
-  fires. A fixer reading this as a missing list entry will look in the wrong
-  place.
+  suppressed `remove` in mechanism 3, so the gap is not a missing list entry.
+  It is that the mechanisms are **per operation**: `move` has no `_raise_if_dir`
+  step, so nothing fires between its failed `posix_rename` and `_move_fallback`
+  and it pays two bounds. The promote path does have one, and under the same
+  antecedent mechanism 2 fires — `_raise_if_dir`'s own stat re-enters the silent
+  channel and re-raises — so `_rename_fallback` is never entered and the cost is
+  one bound. `_rename_fallback` reaches two only when the silence begins later,
+  at its own suppressed `remove`. An earlier version of this item said all three
+  mechanisms key on the caller's `exc`; mechanism 2 does not, and that
+  conflation is what sent the spec's first attempt at this wrong.
   **Fixing the first half needs a decision, not just a patch:** the
   remove-then-rename ordering is what makes a non-atomic overwrite possible when
   `posix_rename` is unavailable, so removing the window may mean accepting that
