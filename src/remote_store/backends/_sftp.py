@@ -2451,16 +2451,20 @@ class SFTPBackend(Backend):
         if message is None:
             message = str(exc)
         if not message:
-            # The stall literal below is mirrored in more places than either
-            # remediation hint further down, and two of them are exact-equality
-            # assertions: ``test_a_stall_says_what_it_was_and_logs_it`` and
-            # ``test_stalled_upload_request_raises_backend_unavailable`` (both in
-            # ``tests/backends/sftp/test_io_timeout.py``) fail on a reword, and
-            # ``test_a_probe_record_carries_no_path`` pins the rendered line. The
-            # three published copies do **not** fail — ``guides/backends/sftp.md``,
-            # ``reference/migration.md`` and ``guides/troubleshooting.md`` (twice)
-            # quote it as what a reader greps for. Reword this string and those
-            # three pages together, or the message stops matching its own docs.
+            # The stall literal below is mirrored more widely than either
+            # remediation hint further down. Enumerate before rewording it:
+            #     git grep -n 'SFTP channel stalled' -- . ':(exclude)site'
+            # Three of those sites are exact-equality assertions and fail loudly
+            # on a reword — ``test_a_stall_says_what_it_was_and_logs_it`` and
+            # ``test_stalled_upload_request_raises_backend_unavailable`` in
+            # ``test_io_timeout.py``, and ``test_a_probe_record_carries_no_path``
+            # in ``test_config.py``. The rest fail *silently*: published pages
+            # (``guides/backends/sftp.md``, ``guides/troubleshooting.md``,
+            # ``reference/migration.md``) quote it as what a reader greps for,
+            # and ``sdd/`` copies it too, SFTP-030 included. No count is given
+            # here on purpose — the grep is the derivation, and an earlier
+            # revision of this comment said "three published copies" while its
+            # own list named four and omitted the ``sdd/`` ones.
             if isinstance(exc, TimeoutError):  # socket.timeout is TimeoutError (3.10+)
                 message = (
                     f"SFTP channel stalled: no data within io_timeout={self._io_timeout}s"
