@@ -64,19 +64,29 @@ surprising_ripples:
 #            the session working BK-360, not by a round on this PR, but it
 #            exists because review found something, which is the schema's test)
 #   7c5c722  incorporates round 3 (15 findings)         -> counts
-#   e38c0d2  incorporates round 4 (14 findings)         -> counts
-#   4e56fd7  corrects this field, stale under e38c0d2   -> counts
-#   df6cc78  corrects a co-change count found by self-check -> counts
-#   <this>   incorporates round 5 (13 findings)         -> counts
+#   0e15697  incorporates round 4 (14 findings)         -> counts
+#   92a0990  corrects this field, stale under 0e15697   -> counts
+#   24de2b8  corrects a co-change count found by self-check -> counts
+#   d413435  incorporates round 5 (13 findings) and     -> counts
+#            carries out the guide revert it led to
+#   fcc8ee2  files BUG-268, the revert's own cost       -> does not count
+#            (a consequence of a decision, not a round)
+#   (tip)    re-derives this list, stale under fcc8ee2  -> does not count
 # Value is 6, counting one per review round that produced commits: rounds 1-5
-# plus ab36c96. The three bookkeeping commits above sit inside rounds 4 and 5
-# rather than forming rounds of their own.
+# plus a44d91c. The bookkeeping and consequence commits above sit inside rounds
+# 4 and 5 rather than forming rounds of their own.
 # Rewritten under rebase, so those SHAs are the post-rebase ones.
-# **This field went stale three times** — at 0 through two rounds, at 4 while
-# round 4's fix pass was landing, and at 5 while two more commits landed under a
-# list ending in a "<this>" placeholder that then resolved to neither of them.
+# **This field's commit list went stale four times** — the value at 0 through two
+# rounds, at 4 while round 4's fix pass was landing, and at 5 while two more
+# commits landed under a list ending in a "<this>" placeholder that then resolved
+# to neither of them; then the list again, under the commit that files BUG-268.
 # A placeholder standing for the commit being written cannot survive a second
-# commit; naming the SHAs after the fact is the only form that holds.
+# commit, and naming the SHAs after the fact only holds until the next commit —
+# so the list is re-derived from `git log --format='%h %s' origin/master..HEAD
+# --reverse` on every commit that touches this file, which is the check that
+# caught it the fourth time. The last row stays "(tip)" on purpose: a commit
+# cannot carry its own hash, and every attempt so far to write one anyway
+# produced a line that was false the moment it was committed.
 review_rounds: 6
 phases:
   - id: orient
