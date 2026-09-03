@@ -299,9 +299,11 @@ class TestReleaseWindow:
         assert "over the 0 line(s)" in notes[0]
 
     def test_the_stand_down_is_printed_and_not_called_a_pass(self, tmp_path: Path, capsys) -> None:
-        """The cost of standing down is that a stray `###` switches three rules
-        off; the only thing that keeps that visible is saying so on a green run.
-        A run that checked nothing must not print the sentence claiming it did."""
+        """The cost of standing down is that a stray `###` switches three
+        reported things off — two rules plus the register note, the distinction
+        the module docstring's cost paragraph draws; the only thing that keeps
+        that visible is saying so on a green run. A run that checked nothing
+        must not print the sentence claiming it did."""
         condensed = "### Fixed\n\n- **A condensed release entry** with no leading ID.\n"
         rc = _mod.main(["--repo-root", str(_tree(tmp_path, condensed, _ITEMS))])
         out = capsys.readouterr().out

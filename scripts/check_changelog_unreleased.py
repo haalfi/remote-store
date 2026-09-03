@@ -85,24 +85,32 @@ Bounds (Rule 7)
   rules applies to them.
 * **Two of the rules stand down inside the release window, loudly.**
   ``CONTRIBUTING.md`` § Release Phase 1 condenses ``[Unreleased]`` into the
-  released shape *in place*; Phase 2 renames the heading. **That step is the
-  hand-off's other side, and it owns the ordering this bound depends on**: it
-  is written to add the ``###`` groupings *before* condensing any bullet,
-  which is what turns the window below from a wall of violations into one
-  stand-down line naming all three of the things it switched off. Reversing the
-  two costs the release manager the difference, and the checklist says so where
-  the step is. So between them the
-  released shape lives under ``[Unreleased]``, and there the stray-line half of
-  the shape rule reports every condensed line, while the audience rule reports
-  every *user-facing* completed item as entry-less.
+  released shape *in place*; Phase 2 renames the heading. So between them the
+  released shape lives under ``[Unreleased]``, and the two rules that key on
+  entries leading with an ID have nothing to key on: **without a grouping** the
+  stray-line half of the shape rule would report every condensed line, and the
+  audience rule would report every *user-facing* completed item as entry-less.
+  A ``###`` grouping stands both down instead, and says so — the survival
+  ``check_breaking_migration_link.py`` gets by reporting a count. The
+  stand-down line names **three** things, not two, because the register note
+  goes with them; see the cost paragraph below.
 
-  Reconstruct it by putting the most recent released section's body under
-  ``## [Unreleased]`` and leaving ``BACKLOG-DONE.md`` alone. **Run it twice, and
-  the pair is the whole demonstration:** verbatim, the body carries its ``###``
-  headings, so the stand-down fires and the run is clean with one note — that is
-  this bullet's subject working. Strip the headings and the same content
-  produces a wall of violations, overwhelmingly strays, plus every user-facing
-  completed item reported entry-less — that is what the stand-down is worth.
+  **Which of those two outcomes you get is decided by an ordering, and the
+  checklist owns it.** Phase 1 is written to add the ``###`` groupings *before*
+  condensing any bullet. Groupings first, and the whole condensing pass sits
+  behind one stand-down line; bullets first, and the wall arrives and stays
+  until the grouping lands. That is the hand-off this bound depends on, and the
+  checklist states it where the step is.
+
+  Reconstruct either state by putting the most recent released section's body
+  under ``## [Unreleased]`` **in place of the stubs** — not alongside them,
+  which would leave the audience rule satisfied by the surviving stubs and
+  demonstrate nothing — and leaving ``BACKLOG-DONE.md`` alone. **Run it twice
+  and the pair is the whole demonstration:** verbatim, the body carries its
+  ``###`` headings, so the stand-down fires and the run is clean with one note.
+  Strip the headings and the same content produces a wall of violations,
+  overwhelmingly strays, plus every user-facing completed item reported
+  entry-less.
 
   **The figures are not pinned here, and the recipe is why.** An earlier version
   gave the verbatim run a violation count, which stopped reproducing the moment
@@ -110,10 +118,7 @@ Bounds (Rule 7)
   and the number belonged to the stripped variant. The counts move with
   ``BACKLOG-DONE.md`` besides. Run the two variants rather than reading a
   total — this bullet is about a mechanism, not a measurement, and the one
-  measurement it used to carry outlived its own recipe. A
-  ``###`` grouping in the section stands those two rules down and says so, which
-  is the survival ``check_breaking_migration_link.py`` gets by reporting a
-  count.
+  measurement it used to carry outlived its own recipe.
 
   **What this window is not.** It is not on the mandated gate path. Phase 2
   renames both headings and makes the release commit *before* Phase 3 runs

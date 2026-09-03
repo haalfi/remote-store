@@ -504,9 +504,9 @@ release body follows it; both link here rather than restating it, per
 
 **It is decided, not merely described.** Tally the pairwise precedence of `###`
 headings across the released `## [` sections of CHANGELOG.md and most of this
-order is what practice already does: `Added` leads, and `Documentation` precedes
-`Internal`, both without a counter-example worth the name. **One adjacent pair
-came out an exact tie** — `Changed` against `Fixed` — so that pair had no
+order is what practice already does: `Documentation` precedes `Internal` without
+exception, and `Added` leads everywhere but two early releases. **One adjacent
+pair came out an exact tie** — `Changed` against `Fixed` — so that pair had no
 convention, and the line above is what it has instead of one. `Removed` is too
 sparse to settle by count at all, and is placed by meaning: after the changes it
 completes. Re-run the tally rather than trusting a remembered split; it moves

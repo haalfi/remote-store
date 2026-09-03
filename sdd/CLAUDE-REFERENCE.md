@@ -272,11 +272,11 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | A `###` here stands two of the rules down, so keep        |
 |                            | sections out until release. The stub is not the released  |
 |                            | entry: [CONTRIBUTING § Release Phase 1](../CONTRIBUTING.md#release) |
-|                            | condenses it by hand from the stub, the item's            |
-|                            | `BACKLOG-DONE.md` body and the migration guide, into      |
-|                            | [that file's CHANGELOG section order](../CONTRIBUTING.md#changelog-section-order), |
-|                            | which is where that order lives. Nothing here restates    |
-|                            | either, and nothing gates them.                           |
+|                            | condenses it by hand at release time, and names the       |
+|                            | sources it condenses from; the order it condenses into    |
+|                            | is [that file's CHANGELOG section order](../CONTRIBUTING.md#changelog-section-order), |
+|                            | its one home. Neither the sources nor the order are       |
+|                            | restated here — follow the links, and nothing gates them. |
 | **Breaking change**        | Two artifacts, both in the PR making the break:           |
 |                            | `**Breaking**` on the CHANGELOG stub, and a               |
 |                            | `## vPREV to vNEXT` section in                            |

@@ -222,14 +222,20 @@ if evidence changes; these are retired.
   into the released shape and named no source for the prose, and
   `.claude/skills/release/SKILL.md` had no expansion step to delegate to.
   **Who performs it, established by running the history rather than reading it.**
-  `git show 7931c7d -- CHANGELOG.md` — the `Release v0.30.0 (#925)` commit — turns
-  8 stub lines into 55 lines of `###`-grouped prose in one commit, authored by the
-  maintainer with the release-skill agent. So the step is performed at release
-  time, in the release commit, by whoever runs the checklist.
+  `git show 7931c7d --numstat -- CHANGELOG.md` — the `Release v0.30.0 (#925)`
+  commit — returns `55 8`: 8 stub lines out, 55 lines of `###`-grouped prose in,
+  one commit. So the step is performed at release time, in the release commit, by
+  whoever runs the checklist. (Who that was on that occasion is *not* derivable
+  from the commit: it is authored by the maintainer and carries an AI co-author
+  trailer that does not name the release skill. An earlier draft of this entry
+  asserted the pairing anyway, and a measuring pass reported it unreproduced.)
   **And it is a rewrite, not an extraction**, which is why no single source could
   be named. Against `git show 7931c7d~1:sdd/BACKLOG-DONE.md`, § Unreleased held
-  **20** items across 512 lines; the **8** that earned a CHANGELOG entry account
-  for 260 of them, measured bullet line to next bullet line. So 260 lines of
+  **20** items spanning **510** lines, measured bullet line to next bullet line
+  (512 from the `## Unreleased` heading, which with its blank line sits inside no
+  item — stated because the two measures differ by exactly that, and subtracting
+  across them is how a plausible wrong number gets built). Of the 510, the **8**
+  that earned a CHANGELOG entry account for **260**. So 260 lines of
   contributor-facing argument became 55 lines of user-facing prose, and the other
   12 items produced no entry at all — the section is not a queue the CHANGELOG
   drains. (The first draft of this entry read "512 lines … for the 8 items",

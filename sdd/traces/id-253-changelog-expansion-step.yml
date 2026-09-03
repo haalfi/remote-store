@@ -13,15 +13,29 @@ source_items:
   - ID-252
 audience:
   - contributor.process
-# Born while deriving the section order: three of the four ad-hoc stub markers
-# in [Unreleased] are not section names, and the convention is half-written.
-# Deliberately left out of this item's scope (user decision, interview Q3).
+# ID-254 was born while deriving the section order: three of the four ad-hoc
+# stub markers in [Unreleased] are not section names, and the convention is
+# half-written. Left out of scope by user decision at the interview.
+# ID-255 was born in review round 3, from the unprimed member: the stand-down
+# note's stated reason is false in the state Phase 1 prescribes. Filed rather
+# than fixed because the fix is a message string, and this PR's diff to that
+# file is docstring-only — a property verified by AST and worth more than a
+# one-sentence correction.
 discovery_followups:
   - ID-254
+  - ID-255
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
+  - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
+
+# Derived from `git log --oneline origin/master..HEAD`, not recalled. c3d3097
+# implements and does not count. 4379017 incorporates round 1 (four consistency
+# findings, one unprimed reviewer) and 62f0fae incorporates round 2 (three
+# findings, a measuring pass); a third round — a three-member panel, unprimed +
+# whole-file + measuring — produced the commit carrying this line. Value is 3.
+review_rounds: 3
 
 phases:
   - id: orient
@@ -121,11 +135,18 @@ phases:
         section: "v0.30.0 release commit (7931c7d)"
         read_type: verify
         extract: >-
-          `git show 7931c7d -- CHANGELOG.md` shows 8 stubs becoming 55 lines of
-          grouped prose in the release commit itself, authored by the maintainer
-          with the release-skill agent. That is the answer to "who performs it",
-          and it is what made writing the step down the defensible half of the
-          fork
+          `git show 7931c7d --numstat -- CHANGELOG.md` returns `55 8`: 8 stubs
+          out, 55 lines of grouped prose in, in the release commit itself. That
+          is the answer to "who performs it" — whoever runs the checklist, at
+          release time — and it is what made writing the step down the
+          defensible half of the fork. Retrospective: this step first added "by
+          the maintainer with the release-skill agent". The commit is authored by
+          the maintainer and carries an AI co-author trailer, but the trailer
+          does not name the release skill, so that half was an inference the
+          commit does not carry and a measuring pass reported it unreproduced.
+          Removed rather than hedged; the numstat is the part that answers the
+          question
+        outcome: ok
 
   - id: design
     name: Decide
@@ -183,11 +204,22 @@ phases:
         section: "module docstring — rule 2, Bounds (release window)"
         read_type: reference
         extract: >-
-          Docstring only, no behaviour change. Rule 2's parenthetical would have
-          become false on this commit and now records that the premise is backed
-          and still the wrong justification; the release-window bound names the
-          Phase 1 step as owning the groupings-before-bullets ordering the
-          stand-down depends on
+          Docstring only, no behaviour change (confirmed later by AST: strip the
+          module docstring and base and head are byte-identical). Rule 2's
+          parenthetical would have become false on this commit and now records
+          that the premise is backed and still the wrong justification; the
+          release-window bound names the Phase 1 step as owning the
+          groupings-before-bullets ordering the stand-down depends on.
+          Retrospective, and the larger half: editing this bullet exposed that
+          its own reconstruction recipe had silently stopped reproducing —
+          run as written it yields 0 violations, not the 68 it pinned, because
+          the verbatim body carries the `###` that fires the stand-down the
+          bullet describes. Pre-existing (identical on base 3e6d318) but
+          load-bearing once a new sentence pointed at it. Rewritten across two
+          rounds and finally as a whole: the recipe now runs twice with the
+          replace-the-stubs boundary stated, the figures are unpinned, and the
+          counterfactual is marked as one. The three sentence-level patches that
+          preceded the wholesale rewrite are why /ship's divergence check exists
         outcome: ok
 
   - id: verify

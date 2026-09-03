@@ -1762,13 +1762,15 @@ CHANGELOG expansion step Phase 1 depends on is written down or dropped —
 **met** by ID-253, which wrote the step and gave the CHANGELOG section order its
 first home (`CONTRIBUTING.md` § CHANGELOG section order), leaving the step manual
 and the order ungated, both stated where they are written; the `[Unreleased]`
-stub's section marker means one thing or nothing (ID-254);
+stub's section marker means one thing or nothing (ID-254); the release-window
+stand-down states a reason that is false in the state Phase 1 prescribes
+(ID-255);
 the ripple-check's six measured blind spots are answered (BK-346); the
 hand-maintained inventories ID-245 names are generated — four bullets, of which
 the checker inventory has shipped; `check_formal_trace` proves
 assertion rather than citation (ID-207); and both open revisit pins have fired
 and named successors (ID-150, ID-249).
-**Bounded to those ten deliberately.** "No artifact asserts what no mechanism
+**Bounded to those eleven deliberately.** "No artifact asserts what no mechanism
 can check" is the promise and cannot be a closing condition: this section's own
 preamble records that detecting the remaining class needs semantic comparison of
 prose, which research § 1 marks as having no general oracle. Nor is "no figure
@@ -1876,10 +1878,11 @@ the commit that writes it lands, so cite the generator instead.
   change** row states and `check_breaking_migration_link.py` half-enforces. The
   other eight are decoration nobody wrote down: `**Fix**` (5), `**Docs**` (1),
   `**Added**` (1), `**Change**` (1).
-  **Three of those four names are not section names.** ID-253 settled the
-  released section order as Added / Changed / Fixed / Removed / Documentation /
-  Internal, so `**Fix**`, `**Change**` and `**Docs**` each look like they name
-  the section the entry will land in and each names something else. A reader
+  **Three of those four names are not section names.** The canonical names are
+  [`CONTRIBUTING.md` § CHANGELOG section order](../CONTRIBUTING.md#changelog-section-order),
+  which ID-253 gave its one home; against that list `**Fix**`, `**Change**` and
+  `**Docs**` each look like they name the section the entry will land in
+  (`Fixed`, `Changed`, `Documentation`) and each names something else. A reader
   cannot tell whether the marker is a section assignment the author made or an
   emphasis they chose, and the release step reassigns sections from the item
   regardless — which is what ID-253 recorded the v0.30.0 release doing to eight
@@ -1898,6 +1901,41 @@ the commit that writes it lands, so cite the generator instead.
   the cost today is a reader's confusion rather than a wrong release. Found by
   ID-253 while deriving the section order, and deliberately left out of its
   scope.
+
+- [ ] **ID-255 — The stand-down note gives a reason that is false in the state the release checklist prescribes**
+  spec: — · effort: XS · audience: contributor.tooling
+  `_release_window_note` in `scripts/check_changelog_unreleased.py` prints: "The
+  stray-line rule, the audience rule and the unknown-ID note all key on entries
+  leading with an ID, **which condensed prose does not**, so all three stood
+  down." That reason is true at the *end* of Phase 1 and false at its
+  *beginning* — and the beginning is the state
+  [`CONTRIBUTING.md` § Release Phase 1](../CONTRIBUTING.md#release) mandates,
+  since it says to add the `###` groupings **before** condensing any bullet. At
+  that moment nothing has been condensed and every stub still leads with an ID.
+  **The note contradicts itself two sentences later**, reporting "over the N
+  line(s) that still parse as entries" with N the full stub count. Run it: put
+  a bare `### Fixed` above an untouched `[Unreleased]` and the note claims the
+  entries do not lead with an ID while counting the ones that do.
+  **What actually switches the three off is the `###` itself**, textually —
+  `grouped` is a bare `startswith("### ")` and `collect` branches on it alone,
+  never on whether any line still parses. The reason as written describes a
+  *consequence* of finishing the condense, not the *trigger*.
+  **What it decides.** Whether to restate the reason ("a `###` grouping, not the
+  absence of IDs, is what switches these off") or to say both — trigger and the
+  condition that makes standing down harmless. Either is a message-string
+  change, so it also touches
+  `tests/scripts/test_check_changelog_unreleased.py`, which asserts on the note.
+  **A second half worth deciding at the same time**, since it is the same
+  paragraph's blind spot: the docstring's "The cost, stated in full" costs out
+  uniqueness and the prose budget ("worth exactly as much as there are
+  survivors") but never costs out the **audience rule**, which is the one this
+  ordering trades away earliest — it is answerable over the full stub set at the
+  moment the grouping lands, and groupings-first switches it off for the whole
+  condensing pass rather than progressively as entries are consumed.
+  **Filed rather than fixed by ID-253**, which found it: that PR's whole diff to
+  this file is inside the module docstring — verified by AST, base and head
+  byte-identical with the docstring stripped — and it declined to trade that
+  property for a one-sentence message fix.
 
 - [ ] **BK-361 — Typography rules are asserted in `CLAUDE.md` and enforced by nobody**
   spec: — · effort: S/M · audience: contributor.tooling
