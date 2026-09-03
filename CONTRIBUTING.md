@@ -482,7 +482,7 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 
 - [ ] CHANGELOG.md `[Unreleased]` is complete — every completed item has a stub line (see ripple-check row **CHANGELOG entry**). `scripts/check_changelog_unreleased.py` (in `lint` and `docs-gate`) holds **part** of this per PR: one entry per ID, each a single `- <ID>: <text>` line within its prose budget, and an entry for every completed item whose `audience` carries a `user.` tag. Three things it cannot decide are this line's, and they are why the line stays: whether a stub *says the right thing*; an entry owed by an item still open in `sdd/BACKLOG.md`; and the `contributor.process` clause in `sdd/traces/_schema.yml`, where an item with no `user.` tag still owes an entry if it introduced a user-facing framework or spec
 - [ ] CHANGELOG completeness cross-check: `gh api repos/haalfi/remote-store/releases/generate-notes -f tag_name=vX.Y.Z -f previous_tag_name=vPREV -f target_commitish=master --jq .body` lists every merged PR since `vPREV` — confirm each **user-facing** PR maps to a CHANGELOG `[Unreleased]` entry (internal/tooling/dependabot PRs need none). Safety net over the per-PR CHANGELOG discipline; the generated text is **discarded**, not used for the release body (which stays CHANGELOG-derived — Phase 4)
-- [ ] CHANGELOG.md `[Unreleased]` condensed — stubs expanded to prose at release time. **By hand: no tooling performs this**, and this checklist names no source for the expanded prose, so do not read "release skill Phase 1" as a delegation — that skill has no expansion step. Closing that gap is a tracked backlog item. **Add the `###` groupings before condensing any bullet.** In that order `check_changelog_unreleased.py` stands its stray-line and audience rules down and says so on every run; condense first and it reports every condensed line until the grouping lands. Uniqueness and the prose budget keep running either way, over whatever still parses as a stub. Nothing in this checklist runs that gate before Phase 3, which is after Phase 2's rename — this matters only if you run `hatch run lint` or `all` by hand while the section is half-condensed
+- [ ] CHANGELOG.md `[Unreleased]` condensed — stubs expanded to prose at release time, into the [section order](#changelog-section-order) below. **By hand: no tooling performs this**, and "release skill Phase 1" is not a delegation — that skill carries agent notes, not the procedure, which is this line's. **Three sources, in the order you reach for them:** the stub says *what* shipped; the item's body under `sdd/BACKLOG-DONE.md` § Unreleased carries the mechanism and the figures; `docs-src/reference/migration.md` carries what a caller must change. **It is a rewrite for a different audience, not an extraction from any of them** — a backlog body argues the change to a contributor at whatever length that took, and the released entry tells a user what changed and what to do about it. Shape each entry `- **<what changed>** (<ID>): <consequence for the caller>`, and link the migration guide from anything a caller must act on. **Add the `###` groupings before condensing any bullet.** In that order `check_changelog_unreleased.py` stands its stray-line and audience rules down and says so on every run; condense first and it reports every condensed line until the grouping lands. Uniqueness and the prose budget keep running either way, over whatever still parses as a stub. Nothing in this checklist runs that gate before Phase 3, which is after Phase 2's rename — this matters only if you run `hatch run lint` or `all` by hand while the section is half-condensed
 - [ ] `sdd/BACKLOG-DONE.md`: all shipping items moved here under the `## Unreleased` heading, each marked `[x]` (Phase 2 versions the heading)
 - [ ] `FEATURES.md` updated for this release: backends, extensions, capabilities, extras — this is the only time FEATURES.md is edited (do NOT update the version header; `bump-my-version` handles it in Phase 2)
 - [ ] README.md: backends table, installation extras, API table, badges are current
@@ -491,6 +491,30 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 - [ ] Guides: new/changed backend guides are accurate
 - [ ] `docs-src/reference/migration.md`: every `[Unreleased]` entry marked **Breaking**, and any entry whose behaviour change a caller must act on, has a `## vPREV to vX.Y.Z` section. **The PR making the break owes that section, writes it in the same PR, and links it from the CHANGELOG entry** — the link is what `scripts/check_breaking_migration_link.py` (in `lint` and `docs-gate`) enforces, anchor included — the fragment must name a `## ` heading the guide really has, since nothing else in the repo validates it, and it is the only direction available, since `check_no_tracker_refs.py` bars the published guide from citing the entry it answers. The bump table above fixes the version pair for a pre-1.0 breaking change, so it is knowable at authoring time, long before Phase 2 stamps it; the ripple-check's [**Breaking change**](sdd/CLAUDE-REFERENCE.md#detailed-checklist) row is where an author meets that obligation. This line is the backstop for the ones that arrive without it, and the place to correct a pair a PR guessed wrong. The softer half — an entry a caller must act on that carries no **Breaking** marker — is a judgment no marker decides and stays this checklist's to make
 - [ ] DEVELOPMENT_STORY.md: add a section for this release (pre-1.0 only)
+
+<a id="changelog-section-order"></a>
+#### CHANGELOG section order
+
+`Added` → `Changed` → `Fixed` → `Removed` → `Documentation` → `Internal`. Omit
+any section with no entries.
+
+**This is the one home for that order.** Phase 1 condenses into it and Phase 4's
+release body follows it; both link here rather than restating it, per
+[`CLAUDE.md` § Principles](CLAUDE.md#principles) principle 4.
+
+**It is decided, not merely described.** Tally the pairwise precedence of `###`
+headings across the released `## [` sections of CHANGELOG.md and most of the
+order is already settled by practice: over 38 released sections `Added` precedes
+`Changed` in 18 and follows it in 1, `Added` precedes `Fixed` 15 to 2, and
+`Documentation` precedes `Internal` 10 to 0. **`Changed` against `Fixed` is 8 to
+8** — that adjacent pair had no convention, and the line above is what it has
+instead. `Removed` is too sparse to settle by count (3 sections) and is placed by
+meaning, after the changes it completes.
+
+**Two names are retired rather than reused.** `Docs` (0.16.0, 0.17.0) is
+`Documentation`; `Known Limitations` (0.1.0) was a one-off. Sections already
+published keep the names and order they shipped with — this governs the next
+release forward, and nothing checks it mechanically.
 
 <a id="phase-2"></a>
 ### Phase 2: Version bump (on a release branch)
@@ -529,7 +553,7 @@ _Automated by skill agent (`/release`). User role: review and merge PR only._
 - [ ] **[Agent]** Watch `publish.yml` — confirm it completes successfully (PyPI publish)
 - [ ] **[Agent]** Delete the release branch
 
-_Release template: title = version, description = "What's Changed" header with condensed sections (Added, Fixed, Internal), two links (CHANGELOG.md + git version diff). See `.claude/skills/release/SKILL.md` § Phase 4 for full template._
+_Release template: title = version, description = "What's Changed" header whose sections are condensed further from the release's own CHANGELOG section, in the [CHANGELOG section order](#changelog-section-order), plus two links (CHANGELOG.md + git version diff). See `.claude/skills/release/SKILL.md` § Phase 4 for full template._
 
 ### Phase 5: Post-release verification
 

@@ -21,6 +21,16 @@ Execute [`CONTRIBUTING.md` § Release](../../../CONTRIBUTING.md#release) (Phases
 `previous_tag_name` (`vPREV`) with `gh release view --json tagName --jq .tagName`.
 See the checklist item for what the gate compares and why its output is discarded.
 
+**Phase 1 (CHANGELOG condensing)** — The checklist owns the procedure, the three
+sources and the [section order](../../../CONTRIBUTING.md#changelog-section-order);
+this note is only what an agent gets wrong. **Read each item's body under
+`sdd/BACKLOG-DONE.md` § Unreleased before writing its entry** — the stub carries
+neither the mechanism nor the figures, and an entry written from the stub alone
+is a reworded stub, not the expansion. Condense to what a *user* does about the
+change; the backlog body is arguing to a contributor and its length is not a
+target. `###` groupings land before any bullet is condensed, or
+`check_changelog_unreleased.py` reports every condensed line until they do.
+
 **Phase 2** — `bump-my-version` reads its target files from `[[tool.bumpversion.files]]`
 in `pyproject.toml`.
 
@@ -46,8 +56,10 @@ a feedstock exists, only the bot-PR verification step remains.
 ```markdown
 ## What's Changed
 
-<Extract sections from [Unreleased] in CHANGELOG.md and condense by section,
- following the section order in sdd/CLAUDE-REFERENCE.md § Ripple-check table > Detailed checklist.
+<Extract sections from this release's own `## [X.Y.Z]` section in CHANGELOG.md — Phase 2
+ already renamed [Unreleased] to it and opened a fresh empty [Unreleased] above, so that
+ heading now holds the *next* cycle — and condense each section further,
+ following CONTRIBUTING.md § CHANGELOG section order.
  For each section with content, use brief bullet points (1 line per item, bold topic prefix).
  Prefer `**Topic**: explanation` or `**Topic** explanation.` over `**Topic** — explanation`.
  Em dashes belong to true asides, not bullet separators (CLAUDE.md § Response style).>

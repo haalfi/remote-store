@@ -39,10 +39,14 @@ The three rules
    line each two copies are unmissable, at 2.3 kB each they sat four lines
    apart unseen. The budget is justified by what the section is *for* — a
    scannable index of what shipped, which is what makes a duplicate visible —
-   and deliberately not by "the release re-expands this prose anyway": that
-   premise is exactly what ID-253 files as unbacked, since ``CONTRIBUTING.md``
-   Phase 1 names no source for the expanded prose and the release skill has no
-   expansion step.
+   and deliberately **not** by "the release re-expands this prose anyway".
+   ID-253 has since written that expansion step down, so the premise is no
+   longer unbacked; it is still the wrong justification. The step names three
+   sources and none of them is this section: it condenses from the stub, the
+   item's ``BACKLOG-DONE.md`` body and the migration guide, and a stub that
+   grew into a paragraph would be re-read for one line of it. A budget that
+   rested on the expansion would have to move whenever the release procedure
+   did, and this one does not.
 3. **The audience rule.** Every item under ``BACKLOG-DONE.md`` § Unreleased
    whose ``audience`` carries a ``user.*`` tag has an entry. This is the
    direction ``CONTRIBUTING.md`` § Release Phase 1 already runs, and the only
@@ -81,7 +85,12 @@ Bounds (Rule 7)
   rules applies to them.
 * **Two of the rules stand down inside the release window, loudly.**
   ``CONTRIBUTING.md`` § Release Phase 1 condenses ``[Unreleased]`` into the
-  released shape *in place*; Phase 2 renames the heading. So between them the
+  released shape *in place*; Phase 2 renames the heading. **That step is the
+  hand-off's other side, and it owns the ordering this bound depends on**: it
+  is written to add the ``###`` groupings *before* condensing any bullet,
+  which is what turns the window below from a wall of violations into one
+  stand-down line. Reversing the two costs the release manager the difference,
+  and the checklist says so where the step is. So between them the
   released shape lives under ``[Unreleased]``, and there the stray-line half of
   the shape rule reports every condensed line, while the audience rule reports
   every *user-facing* completed item as entry-less. Reconstruct it by putting the most recent
