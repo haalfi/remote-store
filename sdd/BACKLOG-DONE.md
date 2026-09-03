@@ -74,15 +74,19 @@ if evidence changes; these are retired.
 
 - [x] **— Keeping the `**Breaking**` marker through CHANGELOG condensation** *(refused as BUG-261's third disposition; never had an ID)*
   BUG-261's third disposition, and a real observation: the marker exists **only**
-  while a section is unreleased, because `CONTRIBUTING.md` § Release Phase 2
-  condenses `[Unreleased]` into `### Added` / `### Changed` prose and drops it.
+  while a section is unreleased, because `CONTRIBUTING.md` § Release Phase 1
+  condenses `[Unreleased]` into `### Added` / `### Changed` prose and drops it
+  (Phase 2 renames the heading; the phase number here said 2 until ID-253
+  established which phase does which).
   That is why 38 released sections carry one bold `**Breaking**` between them
   (`rg -c '^## \[' CHANGELOG.md` returns 39, one of them `[Unreleased]`), and it
   means nothing can audit breaking changes across history — only the current
   window.
   **Refused on blast radius against demonstrated need.** Preserving the marker
-  changes the shape of every released section and the release skill that writes
-  them, and the only use named for it is a hypothetical retrospective audit that
+  changes the shape of every released section and the by-hand condensing step
+  that writes them — ID-253 later established that no release-skill step does,
+  which narrows the radius without emptying it —
+  and the only use named for it is a hypothetical retrospective audit that
   nobody has asked to run. Under [§ Admission test](BACKLOG.md#how-this-file-works)
   that is an idea with no demonstrated value, so it is refused rather than filed
   and carried. The narrower need it would serve — knowing whether *this* release's
@@ -266,8 +270,8 @@ if evidence changes; these are retired.
   `[Unreleased]` stub marker's half-written convention (**ID-254**) and the
   stand-down note's stated reason, false in the state Phase 1 prescribes
   (**ID-255**).
-  Review ran to four rounds; what each caught, and the three figures this entry
-  got wrong before it got them right, are in the trace.
+  Review ran to five rounds, three of them three-member panels; the trace carries
+  the per-round count and tags the reads that misled.
 
 - [x] **BK-360 — What a stalled non-atomic SFTP `write` leaves at the destination is undocumented**
   spec: SFTP-030, SFTP-014 · effort: S · audience: user.api_docs, user.site
@@ -601,12 +605,15 @@ if evidence changes; these are retired.
   to re-derive it instead.
   **Nothing was lost by condensing, and that had to be checked rather than
   assumed.** The first justification written for it — that release Phase 1
-  re-expands the stubs — is not true as stated: `CONTRIBUTING.md` names no source
-  for that prose and the release skill has no expansion step. The durable homes
+  re-expands the stubs — was not true as stated at the time: `CONTRIBUTING.md`
+  named no source for that prose and the release skill had no expansion step.
+  The durable homes
   are the ones that actually hold the detail: each item's own entry in this file,
   and `docs-src/reference/migration.md` for anything a caller must act on, which
   BUG-261 published. A sweep of all six condensed entries against both confirmed
-  it. The unsourced expansion step is filed as ID-253.
+  it. The unsourced expansion step was filed as ID-253 and has since been
+  written down; the condensation's justification is unaffected, since it never
+  rested on the re-expansion.
   **The audience rule's authority direction is decided in writing**
   ([Rule 4](DRIFT-RULES.md#authority)), because the two sets are not required to
   be equal. The completed-item side governs: a user-facing completed item with no

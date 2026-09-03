@@ -480,10 +480,10 @@ Documentation, examples, and metadata live in many places. Use these to keep the
 
 ### Phase 1: Content freeze
 
+- [ ] `sdd/BACKLOG-DONE.md`: all shipping items moved here under the `## Unreleased` heading, each marked `[x]` (Phase 2 versions the heading). **First in this phase deliberately:** the two CHANGELOG bullets below both read this section — the completeness check compares against it, and the condensing step takes each entry's prose from the item bodies in it — so a sweep run after them reads a section that was not yet complete
 - [ ] CHANGELOG.md `[Unreleased]` is complete — every completed item has a stub line (see ripple-check row **CHANGELOG entry**). `scripts/check_changelog_unreleased.py` (in `lint` and `docs-gate`) holds **part** of this per PR: one entry per ID, each a single `- <ID>: <text>` line within its prose budget, and an entry for every completed item whose `audience` carries a `user.` tag. Three things it cannot decide are this line's, and they are why the line stays: whether a stub *says the right thing*; an entry owed by an item still open in `sdd/BACKLOG.md`; and the `contributor.process` clause in `sdd/traces/_schema.yml`, where an item with no `user.` tag still owes an entry if it introduced a user-facing framework or spec
 - [ ] CHANGELOG completeness cross-check: `gh api repos/haalfi/remote-store/releases/generate-notes -f tag_name=vX.Y.Z -f previous_tag_name=vPREV -f target_commitish=master --jq .body` lists every merged PR since `vPREV` — confirm each **user-facing** PR maps to a CHANGELOG `[Unreleased]` entry (internal/tooling/dependabot PRs need none). Safety net over the per-PR CHANGELOG discipline; the generated text is **discarded**, not used for the release body (which stays CHANGELOG-derived — Phase 4)
 - [ ] CHANGELOG.md `[Unreleased]` condensed — stubs expanded to prose at release time, into the [section order](#changelog-section-order) below. **By hand: no tooling performs this**, and "release skill Phase 1" is not a delegation — that skill carries agent notes, not the procedure, which is this line's. **Three sources, in the order you reach for them:** the stub says *what* shipped; the item's body under `sdd/BACKLOG-DONE.md` § Unreleased carries the mechanism and the figures; `docs-src/reference/migration.md` carries what a caller must change. **It is a rewrite for a different audience, not an extraction from any of them** — a backlog body argues the change to a contributor at whatever length that took, and the released entry tells a user what changed and what to do about it. Shape each entry `- **<what changed>** (<ID>): <consequence for the caller>`, and link the migration guide from anything a caller must act on. **Add the `###` groupings before condensing any bullet.** In that order `check_changelog_unreleased.py` stands down the stray-line rule, the audience rule and its unknown-ID note — three things, which it names on every run; condense first and it reports every condensed line until the grouping lands. Uniqueness and the prose budget keep running either way, over whatever still parses as a stub. Nothing in this checklist runs that gate before Phase 3, which is after Phase 2's rename — this matters only if you run `hatch run lint` or `all` by hand while the section is half-condensed
-- [ ] `sdd/BACKLOG-DONE.md`: all shipping items moved here under the `## Unreleased` heading, each marked `[x]` (Phase 2 versions the heading)
 - [ ] `FEATURES.md` updated for this release: backends, extensions, capabilities, extras — this is the only time FEATURES.md is edited (do NOT update the version header; `bump-my-version` handles it in Phase 2)
 - [ ] README.md: backends table, installation extras, API table, badges are current
 - [ ] Specs vs code: spot-check shipped features match their specs (`pytest -m spec` as proxy)
@@ -516,7 +516,10 @@ every release, and this page deliberately pins no figure from it.
 Deprecated, Removed, Fixed, Security: `Removed` sits after `Fixed` here rather
 than before it, and `Documentation` and `Internal` are additions of ours with no
 counterpart there. The tie this order settles, `Changed` before `Fixed`, agrees
-with it.
+with it. **`Deprecated` and `Security` are not in the order above and have never
+been used** — a security fix has always gone under `Fixed`, and a deprecation
+under `Changed`. If a release needs either as its own section, place it here
+first: the point of one home is that the next person does not have to guess.
 
 **Two names are retired rather than reused.** `Docs` (0.16.0, 0.17.0) is
 `Documentation`; `Known Limitations` (0.1.0) was a one-off. Sections already

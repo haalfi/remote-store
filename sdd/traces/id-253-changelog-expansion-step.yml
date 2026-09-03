@@ -30,12 +30,29 @@ expected_ripples:
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
 
-# Derived from `git log --oneline origin/master..HEAD`, not recalled. c3d3097
-# implements and does not count. 4379017 incorporates round 1 (four consistency
-# findings, one unprimed reviewer) and 62f0fae incorporates round 2 (three
-# findings, a measuring pass); a third round — a three-member panel, unprimed +
-# whole-file + measuring — produced the commit carrying this line. Value is 3.
-review_rounds: 3
+# Not anticipated by any ripple-check row. Sharpening the gate docstring's
+# two-rules-versus-three-things distinction left the test file's own prose
+# contradicting it — and contradicting itself, at two of its three mentions.
+# The row that fired here, "New or changed cross-artifact check or drift
+# report", points only at DRIFT-RULES.md and names no test file, so nothing
+# directed the sweep at it: an unprimed reviewer found it, three rounds in.
+surprising_ripples:
+  - tests/scripts/test_check_changelog_unreleased.py
+
+# Derived from `git log --oneline 3e6d318..HEAD`, re-run at the final head rather
+# than carried forward — an earlier version of this comment stopped at 62f0fae
+# and said 3 while the register entry said four, which is what review round 5
+# caught in all three panel members at once.
+#   c3d3097  implements; does not count
+#   4379017  round 1 — one unprimed reviewer, 4 findings
+#   62f0fae  round 2 — one measuring pass, 3 findings
+#   d9f2da9  round 3 — panel of 3, 12 findings
+#   3caa531  round 4 — panel of 3, 13 findings
+#   8ef0655  not review-driven: a surface cut taken on the author's own
+#            escalation, before round 5 ran
+#   (this commit)  round 5 — panel of 3, 7 findings
+# Five commits exist because review feedback was incorporated. Value is 5.
+review_rounds: 5
 
 phases:
   - id: orient
