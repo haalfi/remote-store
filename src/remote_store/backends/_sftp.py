@@ -2459,11 +2459,129 @@ class SFTPBackend(Backend):
                 return True
         return False
 
+    def _unavailable(self, exc: Exception, path: str, *, message: str | None = None) -> BackendUnavailable:
+        """Build a ``BackendUnavailable`` for a concluded backend failure, and log it.
+
+        **Every** ``BackendUnavailable`` ``_map_exception`` *constructs* ends
+        here, so what a caller is handed — and what lands in their log — is
+        described in one place rather than at each of the four arms. Constructs,
+        not returns: the passthrough arm returns a ``RemoteStoreError`` it was
+        given unchanged, so a ``BackendUnavailable`` built elsewhere and fed
+        back in — the direct raise in ``_open_sftp_bounded`` is the only one
+        today, and it is unreachable in practice — leaves no record. The
+        ``IncompatiblePeer`` arms pass their remediation hint as *message*
+        because they have something better to say than the exception does;
+        everything else lets this method decide.
+
+        **Why the driver's own message is not enough.** paramiko raises several
+        of these signals with no arguments, and ``BackendUnavailable(str(exc))``
+        then carries the empty string: measured on a real channel at
+        ``io_timeout=2.0`` with a relay silencing server→client mid-read,
+        ``e.args == ('',)`` and ``str(e)`` rendered as
+        ``" | path='delivery.csv' | backend='sftp'"``.
+
+        Four shapes do this, and the set they belong to is **the shapes this
+        mapping concludes ``BackendUnavailable`` on** — not the ones
+        ``_is_connection_dead`` matches. The two differ by exactly the
+        ``SSHException`` family, which that predicate documents itself as
+        deliberately *not* matching (it has its own arm here instead), and one
+        of the four blank shapes is a bare ``SSHException``. Naming the wider
+        set is what makes the "every arm ends here" framing above the right one
+        to state the guarantee over. The four: ``TimeoutError`` (which
+        ``socket.timeout`` is), ``EOFError``, ``SFTPError`` and a bare
+        ``SSHException``. Signals carrying a real message keep it.
+
+        The stall is the case that matters most, because ``io_timeout``
+        defaults to a real bound: the first caller to meet it is one who
+        configured nothing, so a blank message is the shipped failure surface
+        rather than an expert's edge case. An error that is the right type and
+        says nothing is predictable to a checker matching on type and to nobody
+        reading a log, which the error model's meaningful-``str()`` invariant
+        forbids.
+
+        **The fallback never overwrites detail.** It fires only when
+        ``str(exc)`` is empty, so a driver that did explain itself reaches the
+        caller intact — the failure this replaces was silence, not noise.
+
+        **The bound is named only when armed.** A half-open socket surfaces as
+        ``TimeoutError`` with ``io_timeout=None`` too, and naming a limit the
+        caller never set would be a false statement about their configuration.
+        """
+        if message is None:
+            message = str(exc)
+        if not message:
+            # The stall literal below is mirrored more widely than either
+            # remediation hint further down. Enumerate before rewording it:
+            #     git grep -n 'SFTP channel stalled' -- . ':(exclude)site'
+            # Three of those sites are exact-equality assertions and fail loudly
+            # on a reword — ``test_a_stall_says_what_it_was_and_logs_it`` and
+            # ``test_stalled_upload_request_raises_backend_unavailable`` in
+            # ``test_io_timeout.py``, and ``test_a_probe_record_carries_no_path``
+            # in ``test_config.py``. The rest fail *silently*: published pages
+            # (``guides/backends/sftp.md``, ``guides/troubleshooting.md``,
+            # ``reference/migration.md``) quote it as what a reader greps for,
+            # and ``sdd/`` copies it too, SFTP-030 included. No count is given
+            # here on purpose — the grep is the derivation, and an earlier
+            # revision of this comment said "three published copies" while its
+            # own list named four and omitted the ``sdd/`` ones.
+            if isinstance(exc, TimeoutError):  # socket.timeout is TimeoutError (3.10+)
+                message = (
+                    f"SFTP channel stalled: no data within io_timeout={self._io_timeout}s"
+                    if self._io_timeout is not None
+                    else "SFTP channel stalled: the socket timed out with no io_timeout set"
+                )
+            else:
+                message = f"SFTP connection lost ({type(exc).__name__} with no detail)"
+        # WARNING, and here rather than at each raise site: this is the point at
+        # which the backend concludes the connection is unusable, and the
+        # cleanup and classification paths above re-enter the *mapping* without
+        # re-entering this conclusion, so one concluded mapping leaves one
+        # record. That is a claim about this method, not about the logger: a
+        # failing connect also emits tenacity's retry warnings (``_connect``
+        # builds ``before_sleep_log(log, logging.WARNING)`` on this same logger)
+        # and the AUTO_ADD policy warning, so "one failure, one line on
+        # ``remote_store.backends._sftp``" is false and is not claimed. No total
+        # is given either: it varies with the retry and host-key policies, and
+        # three review rounds each refuted a different one written as a constant.
+        # ``check_health`` maps through here only when the probe fails in a way
+        # this mapping concludes on. A refused connect and a DNS failure do not:
+        # both are an ``OSError`` the arms above decline, so they exit at the
+        # generic arm as ``RemoteStoreError`` and reach this method zero times
+        # (BUG-265). Which observable failures reach which arm is not enumerated
+        # here or in the spec — see BUG-266; four attempts to state it in a
+        # sentence were each refuted.
+        # The logger name already says which backend this is, so the line adds
+        # the path rather than repeating "SFTP" in front of a message that
+        # usually starts with it. An empty path is dropped from the record
+        # *and* the line, rather than carried as ``path=''``: a structured
+        # consumer reads ``record.path``, so emitting the key with an empty
+        # value would hand it a field that looks answered and is not. This
+        # follows ``_store.py``'s ``ping`` record, which omits the key outright.
+        # An empty path arrives from ``check_health`` and from any operation on
+        # the root key, and the connect-time arms reach it too: the lazy
+        # ``_sftp`` property runs ``_connect`` *inside* the caller's
+        # ``_errors(path)`` block, so a handshake or host-key failure carries
+        # whatever key that operation had — which for ``check_health`` is "".
+        # Measured: a bad banner, and both ``IncompatiblePeer`` variants, each
+        # logged one record with no ``path`` key.
+        record_extra: dict[str, Any] = {"op": "error_mapping", "backend": self.name}
+        if path:
+            record_extra["path"] = path
+            log.warning("%s (path=%r)", message, path, extra=record_extra)
+        else:
+            log.warning("%s", message, extra=record_extra)
+        return BackendUnavailable(message, path=path, backend=self.name)
+
     def _map_exception(self, exc: Exception, path: str) -> RemoteStoreError:
         """Classify an exception into a remote_store error.
 
         Single source of truth for SFTP error mapping, used by both the
         ``_errors()`` context manager and ``_ErrorMappingStream``.
+
+        Only the ``BackendUnavailable`` conclusions are logged, and only by
+        ``_unavailable``. A routine errno — a missing path, a denied one — is an
+        answer rather than a fault, and putting a record behind each would
+        drown the ones that matter.
         """
         import paramiko
 
@@ -2482,7 +2600,7 @@ class SFTPBackend(Backend):
             # ``_sftp`` access reconnects (SFTP-010) rather than reusing a dead
             # client forever. The op itself is reported as ``BackendUnavailable``.
             self._sftp_client = None
-            return BackendUnavailable(str(exc), path=path, backend=self.name)
+            return self._unavailable(exc, path)
         if isinstance(exc, OSError):
             code = getattr(exc, "errno", None)
             if code == errno.ENOENT:
@@ -2522,14 +2640,16 @@ class SFTPBackend(Backend):
             # TestSFTPIncompatiblePeerHint; rename the helper and this string
             # plus that test together.
             if "host key" in str(exc):
-                return BackendUnavailable(
-                    f"{exc} [hint: diagnose by printing "
-                    f"`paramiko.Transport._preferred_keys`. If ssh-rsa is "
-                    f"absent, call SFTPUtils.enable_ssh_rsa_compat() at "
-                    f"process startup. See "
-                    f"docs.remotestore.dev/guides/backends/sftp/#legacy-ssh-rsa]",
-                    path=path,
-                    backend=self.name,
+                return self._unavailable(
+                    exc,
+                    path,
+                    message=(
+                        f"{exc} [hint: diagnose by printing "
+                        f"`paramiko.Transport._preferred_keys`. If ssh-rsa is "
+                        f"absent, call SFTPUtils.enable_ssh_rsa_compat() at "
+                        f"process startup. See "
+                        f"docs.remotestore.dev/guides/backends/sftp/#legacy-ssh-rsa]"
+                    ),
                 )
             # KEX / cipher / MAC variants are not addressable by
             # enable_ssh_rsa_compat. Point users at scan_host_algorithms so
@@ -2538,14 +2658,16 @@ class SFTPBackend(Backend):
             # symbol "scan_host_algorithms" is asserted by
             # TestSFTPIncompatiblePeerHint::test_incompatible_peer_kex_hint;
             # rename the helper and this string plus that test together.
-            return BackendUnavailable(
-                f"{exc} [hint: run "
-                f"SFTPUtils.scan_host_algorithms(host, port) to see which "
-                f"algorithm list the server narrowed, then widen the "
-                f"corresponding list via "
-                f"SFTPBackend(connect_kwargs={{'disabled_algorithms': ...}}).]",
-                path=path,
-                backend=self.name,
+            return self._unavailable(
+                exc,
+                path,
+                message=(
+                    f"{exc} [hint: run "
+                    f"SFTPUtils.scan_host_algorithms(host, port) to see which "
+                    f"algorithm list the server narrowed, then widen the "
+                    f"corresponding list via "
+                    f"SFTPBackend(connect_kwargs={{'disabled_algorithms': ...}}).]"
+                ),
             )
         if isinstance(exc, paramiko.SSHException):
             # audit-020 H1: an SSHException reaching here on a live operation
@@ -2555,7 +2677,7 @@ class SFTPBackend(Backend):
             # SFTPError / socket-teardown / timeout signals clear via
             # ``_is_connection_dead`` above; this covers the SSHException family.
             self._sftp_client = None
-            return BackendUnavailable(str(exc), path=path, backend=self.name)
+            return self._unavailable(exc, path)
         return RemoteStoreError(str(exc), path=path, backend=self.name)  # pragma: no cover
 
     def _stat_to_fileinfo(self, path: str, attrs: Any) -> FileInfo:

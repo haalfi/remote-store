@@ -17,9 +17,9 @@ audience:
   - user.site
 discovery_followups:
   - BK-364
-  - BUG-264
-  - BUG-265
-  - BUG-266
+  - BUG-270
+  - BUG-271
+  - BUG-272
 # The generated graph pair was absent from this list for four rounds and is here
 # now. The reason first written here was wrong and is corrected rather than
 # quietly replaced: it said the graph carries ABC docstrings but not
@@ -254,7 +254,7 @@ phases:
           list had no at_fallback_rename, and it silently mis-staged copy's
           mid-body case as a no-op. Both showed up only because the outcome
           column was added — a row that never raised was being read as a residue
-          measurement. Filed as BUG-264 rather than fixed: closing the window is
+          measurement. Filed as BUG-270 rather than fixed: closing the window is
           a design decision about what overwrite means on a server without
           posix-rename
         outcome: ok
@@ -361,7 +361,7 @@ phases:
         extract: >-
           Three more unqualified invariants that shipped tests refute, on the
           spec governing open_atomic — the surface AW-004's amendment did not
-          reach. Filed as BUG-265 rather than absorbed: the round's own evidence
+          reach. Filed as BUG-271 rather than absorbed: the round's own evidence
           is that each absorbed surface was where the next defect came from
         outcome: ok
       - file: .claude/skills/ship/SKILL.md
@@ -417,8 +417,8 @@ phases:
           Two of my own round-4 edits were wrong in opposite directions: the one
           surviving trigger example could not produce the state it illustrated
           (rename ignores the destination's permissions, and the same permission
-          governs the suppressed remove), and the BUG-266 hedge weakened a claim
-          a shipped test pins, because BUG-266 raises PermissionDenied and the
+          governs the suppressed remove), and the BUG-272 hedge weakened a claim
+          a shipped test pins, because BUG-272 raises PermissionDenied and the
           table is scoped to BackendUnavailable. Example deleted, hedge reverted
         outcome: ok
 

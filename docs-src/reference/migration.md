@@ -42,7 +42,10 @@ so all of them would fail at once.
 the SSH handshake and then stops sending used to block forever, with no
 exception and no log line. It now raises
 [`BackendUnavailable`](api/errors.md) after 120 s of silence, and the backend
-drops the dead client so the next operation reconnects.
+drops the dead client so the next operation reconnects. The error names the
+stall and the bound that fired — `SFTP channel stalled: no data within
+io_timeout=120.0s` — and the backend logs one `WARNING` carrying the same text,
+so the failure is greppable rather than only catchable.
 
 ```python
 # Before (v0.30.0): the call never returns
