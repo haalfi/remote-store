@@ -31,8 +31,10 @@ expected_ripples:
   - sdd/BACKLOG-DONE.md
 
 # Not anticipated by any ripple-check row. Sharpening the gate docstring's
-# two-rules-versus-three-things distinction left the test file's own prose
-# contradicting it — and contradicting itself, at two of its three mentions.
+# two-rules-versus-three-things distinction left one of the test file's three
+# rules-count mentions contradicting it: `switches three rules off` against the
+# correct `two rules` at the other two. (An earlier version of this comment said
+# two of three were wrong, which does not reproduce — one docstring changed.)
 # The row that fired here, "New or changed cross-artifact check or drift
 # report", points only at DRIFT-RULES.md and names no test file, so nothing
 # directed the sweep at it: an unprimed reviewer found it, three rounds in.

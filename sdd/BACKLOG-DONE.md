@@ -612,8 +612,9 @@ if evidence changes; these are retired.
   and `docs-src/reference/migration.md` for anything a caller must act on, which
   BUG-261 published. A sweep of all six condensed entries against both confirmed
   it. The unsourced expansion step was filed as ID-253 and has since been
-  written down; the condensation's justification is unaffected, since it never
-  rested on the re-expansion.
+  written down. That does not retroactively rescue the first justification — it
+  was refuted on its own terms, and the condensation survived on the durable-homes
+  argument above, which is the one that still carries it.
   **The audience rule's authority direction is decided in writing**
   ([Rule 4](DRIFT-RULES.md#authority)), because the two sets are not required to
   be equal. The completed-item side governs: a user-facing completed item with no
