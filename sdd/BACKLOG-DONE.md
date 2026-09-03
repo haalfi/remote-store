@@ -221,58 +221,53 @@ if evidence changes; these are retired.
   `CONTRIBUTING.md` § Release Phase 1 required `[Unreleased]` stubs condensed
   into the released shape and named no source for the prose, and
   `.claude/skills/release/SKILL.md` had no expansion step to delegate to.
-  **Who performs it, established by running the history rather than reading it.**
+  **Who performs it, established by running the history.**
   `git show 7931c7d --numstat -- CHANGELOG.md` — the `Release v0.30.0 (#925)`
   commit — returns `55 8`: 8 stub lines out, 55 lines of `###`-grouped prose in,
-  one commit. So the step is performed at release time, in the release commit, by
-  whoever runs the checklist. (Who that was on that occasion is *not* derivable
-  from the commit: it is authored by the maintainer and carries an AI co-author
-  trailer that does not name the release skill. An earlier draft of this entry
-  asserted the pairing anyway, and a measuring pass reported it unreproduced.)
+  one commit. So it happens at release time, in the release commit, by whoever
+  runs the checklist. Which person or agent that was is not derivable from the
+  commit, and the entry does not claim it.
   **And it is a rewrite, not an extraction**, which is why no single source could
-  be named. Against `git show 7931c7d~1:sdd/BACKLOG-DONE.md`, § Unreleased held
-  **20** items spanning **510** lines, measured bullet line to next bullet line
-  (512 from the `## Unreleased` heading, which with its blank line sits inside no
-  item — stated because the two measures differ by exactly that, and subtracting
-  across them is how a plausible wrong number gets built). Of the 510, the **8**
-  that earned a CHANGELOG entry account for **260**. So 260 lines of
-  contributor-facing argument became 55 lines of user-facing prose, and the other
-  12 items produced no entry at all — the section is not a queue the CHANGELOG
-  drains. (The first draft of this entry read "512 lines … for the 8 items",
-  attributing the whole section to the subset; caught by a measuring review pass
-  that re-ran the split.) Phase 1
-  now names three sources in reach order — the stub (what shipped), the item's
-  `BACKLOG-DONE.md` body (mechanism and figures), the migration guide (what a
-  caller must change) — and says in terms that it is a rewrite for a different
-  audience, with the per-entry shape the 0.30.0 section already used.
+  be named. At `git show 7931c7d~1:sdd/BACKLOG-DONE.md`, § Unreleased held **20**
+  items spanning **510** lines bullet-to-bullet, of which the **8** that earned a
+  CHANGELOG entry account for **260** — against the released section's 55. The
+  other 12 produced no entry at all, so the section is not a queue the CHANGELOG
+  drains. Phase 1 now names three sources in reach order — the stub (what
+  shipped), the item's `BACKLOG-DONE.md` body (mechanism and figures), the
+  migration guide (what a caller must change) — and says in terms that the
+  released entry is written for a different audience, with the per-entry shape
+  the 0.30.0 section already used.
   **The section order got its first home**, `CONTRIBUTING.md` § CHANGELOG section
   order, which [`CLAUDE.md` principle 4](../CLAUDE.md#principles) had named as
-  living in one place while it lived in none. Phase 4's citation pointed at the
+  living in one place while it lived in none; Phase 4's citation pointed at the
   ripple-check's Detailed checklist, whose headings are Spec & contract / Code
-  surface / Tests / Docs / Release & meta.
-  **The order is decided, not described, and the derivation says why.** Pairwise
-  precedence of `###` headings over the 38 released sections settles most of it
-  (`Added` before `Changed` 18 to 1, before `Fixed` 15 to 2; `Documentation`
-  before `Internal` 10 to 0) and leaves `Changed` against `Fixed` at **8 to 8** —
-  an adjacent pair with no convention, now fixed as Added / Changed / Fixed /
-  Removed / Documentation / Internal. `Docs` (0.16.0, 0.17.0) is retired in favour
-  of `Documentation` and `Known Limitations` (0.1.0) recorded as a one-off;
-  already-published sections keep what they shipped with.
-  **A second defect in the same template**, found reading it: Phase 4 said to
-  extract from `[Unreleased]`, which Phase 2 has already renamed to `[X.Y.Z]`
-  above a fresh empty `[Unreleased]`, so the named section was the next cycle's.
-  **The gate's two sentences were amended rather than left standing.**
-  `check_changelog_unreleased.py`'s prose-budget rationale asserted the expansion
-  premise "is exactly what ID-253 files as unbacked" — false on this commit — and
-  now records that the premise is backed and still the wrong justification, since
-  the step takes only *what shipped* from this section and gets its prose from
-  the item body and the migration guide. The
-  release-window bound now names the hand-off's other side: the Phase 1 step owns
-  the groupings-before-bullets ordering the stand-down depends on.
+  surface / Tests / Docs / Release & meta. **The order is decided, not
+  described.** Pairwise precedence of `###` headings over the 38 released
+  sections settles most of it (`Added` before `Changed` 18 to 1, before `Fixed`
+  15 to 2; `Documentation` before `Internal` 10 to 0) and leaves `Changed`
+  against `Fixed` at **8 to 8** — an adjacent pair with no convention, now fixed
+  as Added / Changed / Fixed / Removed / Documentation / Internal. `Docs`
+  (0.16.0, 0.17.0) is retired for `Documentation`, `Known Limitations` (0.1.0)
+  recorded as a one-off, and already-published sections keep what they shipped
+  with. The divergence from Keep a Changelog — `Removed` after `Fixed` rather
+  than before — is stated there rather than left for a reader to notice.
+  **Two further defects, both found by reading the artifacts rather than the
+  item.** Phase 4 said to extract from `[Unreleased]`, which Phase 2 has already
+  renamed to `[X.Y.Z]` above a fresh empty one, so the named section was the next
+  cycle's. And `check_changelog_unreleased.py`'s prose-budget rationale asserted
+  the expansion premise "is exactly what ID-253 files as unbacked" — false on
+  this commit — so it now records that the premise is backed and still the wrong
+  justification, since the step takes only *what shipped* from that section.
+  Amending it exposed that the release-window bound's own reconstruction recipe
+  had stopped reproducing; that is rewritten, with its figures unpinned.
   **Left undone, deliberately.** The step stays manual — a rewrite for a
   different audience is not a transform a script performs — and nothing gates the
-  section order, which applies once per release. The `[Unreleased]` stub marker's
-  half-written convention is filed as **ID-254**.
+  section order, which applies once per release. Two follow-ups: the
+  `[Unreleased]` stub marker's half-written convention (**ID-254**) and the
+  stand-down note's stated reason, false in the state Phase 1 prescribes
+  (**ID-255**).
+  Review ran to four rounds; what each caught, and the three figures this entry
+  got wrong before it got them right, are in the trace.
 
 - [x] **BK-360 — What a stalled non-atomic SFTP `write` leaves at the destination is undocumented**
   spec: SFTP-030, SFTP-014 · effort: S · audience: user.api_docs, user.site
