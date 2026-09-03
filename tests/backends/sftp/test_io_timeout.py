@@ -914,6 +914,12 @@ def test_stalled_upload_request_raises_backend_unavailable(stall_relay: _StallRe
     fails before any payload byte is sent — measured: ``SFTPFile.write`` entered
     0 times either way.
 
+    Note the landing site is stated for a **root-level** target. At any nesting
+    ``_ensure_parent_dirs`` stats each ancestor first, so a pre-armed stall lands
+    there instead — the conclusion below (no payload byte is sent) holds at any
+    depth, but the named round-trip does not, and this docstring's own warning
+    about generalising a measurement applies to that sentence too.
+
     That is a fact about *when* the peer went silent, not about ``write()``. A
     stall that begins mid-body does reach ``SFTPFile.write`` through plain
     ``write``, which the mid-stream test below covers. Stated carefully because
@@ -1372,6 +1378,591 @@ def test_seek_to_end_on_a_stalled_channel_costs_one_bound(stall_relay: _StallRel
         "expected ~1x — one bound inside the probe and a close the guard skips. "
         "At ~2x the probe's failure is not arming the guard and the close is "
         "re-entering the stalled channel"
+    )
+
+
+@pytest.mark.spec("SFTP-030")
+@pytest.mark.parametrize(
+    ("direction", "when", "overwrite", "preexisting", "depth", "expected"),
+    [
+        ("upload", "before", False, None, 0, "absent"),
+        ("upload", "before", True, b"OLD" * 100, 0, "intact"),
+        ("download", "before", True, b"OLD" * 100, 0, "empty"),
+        ("download", "before", True, b"OLD" * 100, 1, "intact"),
+        ("upload", "mid", True, None, 0, "prefix"),
+    ],
+    ids=["absent", "intact", "truncated-to-empty", "nested-target-absorbed", "holds-a-prefix"],
+)
+def test_stalled_write_leaves_one_of_the_named_destination_states(
+    stall_relay: _StallRelay,
+    sftp_server: tuple[int, str] | None,
+    direction: str,
+    when: str,
+    overwrite: bool,
+    preexisting: bytes | None,
+    depth: int,
+    expected: str,
+) -> None:
+    """A stalled non-atomic ``write`` leaves one of the states SFTP-030 names, decided by which reply was lost.
+
+    ``write`` streams to the destination path itself — no temp-and-rename — so
+    unlike ``write_atomic`` there is nowhere else for a half-delivered payload
+    to land. What the path holds afterwards was undocumented, and "undocumented"
+    was doing real work: the troubleshooting page told a caller to treat it as
+    unknown and re-write it, which is safe and says nothing about whether their
+    old file survived.
+
+    The states are not separate faults. They are one fault — a peer that goes
+    silent — sorted by *which round-trip's reply went missing*:
+
+    - **absent** — ``overwrite=False`` fails on the existence ``stat``, before
+      the open. Nothing was ever created. Scoped to a destination that did not
+      already exist; with one present, ``overwrite=False`` raises
+      ``AlreadyExists`` from the stat's *reply* and never reaches a stall.
+    - **intact** — client→server silenced, so the ``CMD_OPEN`` never reaches the
+      server and a pre-existing file is not even truncated.
+    - **truncated-to-empty** — server→client silenced: the server *does* receive
+      the open, truncates, and only its reply is discarded. The old content is
+      gone and nothing has replaced it. This is the destructive state, and it is
+      invisible to the caller — it differs from **intact** only in which
+      direction the silence went, which no caller can observe.
+    - **nested-target-absorbed** — the same arrangement as the row above, one
+      directory down, and the destination *survives*. ``_ensure_parent_dirs``
+      stats every ancestor before the open, so a stall already in effect when
+      the call starts lands there instead. **This row is why the pair is
+      parametrised over depth rather than tested at depth 0 alone**: every other
+      row uses a bare filename, so the bound would otherwise be encoded by the
+      fixture's choice of name and nothing would notice it changing. Note what
+      it does *not* say — the ``empty`` outcome belongs to the open at any
+      depth, as ``test_a_lost_reply_can_complete_the_operation_it_reports_as_failed``
+      shows by silencing the link at the open itself.
+    - **holds-a-prefix** — the peer goes quiet mid-body, so the path holds
+      however many bytes the server took before the silence.
+
+    Which state a given caller met is therefore *not derivable from the error*,
+    which is what makes the documented rule "assume any of them, retry with
+    ``overwrite=True``" the only safe advice rather than a conservative one.
+
+    **These are named states, not an enumeration**, and the name of this test says
+    so deliberately. It read "one of four states" until a later round found a
+    fifth — a write whose silence falls on its last acknowledgement, covered by
+    ``test_a_stalled_write_can_have_delivered_the_payload_in_full``. SFTP-030 now
+    states a closure instead (the residue is any prefix of the operation's
+    effects, up to and including all of them), so a state absent from this
+    parametrisation is not thereby unreachable.
+
+    Asserted on shape, not on sizes. The prefix length is a function of the
+    chunk size and the SSH window and would go stale as either moves; what is
+    durable is that the bytes present are a *prefix of everything sent* and a
+    strictly partial one. Checking against the whole payload rather than the
+    first chunk matters — a prefix assertion bounded at one chunk cannot see
+    corruption past it. The empty case asserts ``0`` exactly, because that is
+    the claim.
+
+    Inspected through a second backend wired **straight to the server**, past
+    the relay: what is being asserted is what the caller's next connection
+    finds, not what the condemned channel would report.
+    """
+    if sftp_server is None:
+        pytest.skip("paramiko not installed")
+
+    io_timeout = 2.0
+    first, second = b"a" * (256 * 1024), b"b" * (256 * 1024)
+    everything_sent = first + second
+    observer = _make_backend(sftp_server[0], io_timeout=30.0)
+    backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
+    leaf = f"stalledwrite_{uuid.uuid4().hex[:8]}.bin"
+    name = f"nested_{uuid.uuid4().hex[:8]}/{leaf}" if depth else leaf
+
+    if preexisting is not None:
+        observer.write(name, preexisting, overwrite=True)
+
+    backend.check_health()  # connect while the relay is still delivering
+
+    content: Any
+    if when == "before":
+        getattr(stall_relay, f"stall_{direction}")()
+        content = b"p" * (3 * 256 * 1024)
+    else:
+
+        class _StallsAfterFirstChunk:
+            """Goes quiet on the wire once a chunk is already written."""
+
+            def __init__(self) -> None:
+                self._chunks = 0
+
+            def read(self, size: int = -1) -> bytes:
+                self._chunks += 1
+                if self._chunks == 1:
+                    return first  # written while the link is healthy
+                if self._chunks == 2:
+                    getattr(stall_relay, f"stall_{direction}")()
+                    return second  # this one meets a silent peer
+                return b""
+
+        content = _StallsAfterFirstChunk()
+
+    with pytest.raises(BackendUnavailable):
+        backend.write(name, content, overwrite=overwrite)
+
+    if expected == "absent":
+        assert not observer.exists(name), "an overwrite=False stall fails on the stat, before anything is created"
+        return
+
+    assert observer.exists(name), f"expected the destination to exist in the {expected!r} state"
+    got = observer.read_bytes(name)
+
+    if expected == "intact":
+        assert got == preexisting, (
+            "the open never reached the server, so the pre-existing file must not even be truncated"
+        )
+    elif expected == "empty":
+        assert got == b"", (
+            f"expected the server-side open to have truncated the target to 0 bytes, got {len(got)}; "
+            "if this now holds the old content the open is no longer reaching the server before the "
+            "reply is lost, and the documented destructive case is stale"
+        )
+    else:  # prefix
+        assert 0 < len(got) < len(everything_sent), f"expected a strictly partial payload, got {len(got)} bytes"
+        assert everything_sent.startswith(got), (
+            "the bytes at the destination must be a prefix of everything sent, not a reordered "
+            "or corrupt fragment — a caller told to discard and re-write needs the first half "
+            "of that advice to be about a prefix"
+        )
+
+
+@pytest.mark.spec("SFTP-030")
+def test_stalled_copy_leaves_a_prefix_at_the_destination_too(
+    stall_relay: _StallRelay, sftp_server: tuple[int, str] | None
+) -> None:
+    """``copy`` writes its destination non-atomically, so the same rule binds it.
+
+    Pinned because the rule's *words* reach ``copy`` while the item that
+    established them named only ``write``. ``copy`` opens its destination with
+    the identical ``self._sftp.file(dst, "w")`` and streams into it, so a stall
+    part-way through leaves a partial file at ``dst`` exactly as a stalled
+    ``write`` leaves one at its target. Without this test the guide's
+    "``write`` and ``copy``" would rest on reading the two call sites and
+    judging them the same, which is the class of claim this file exists to run
+    instead.
+
+    ``move`` is deliberately not parametrised in here: it promotes by
+    ``posix_rename`` rather than streaming, so it has no partial-destination
+    state at all. What it has instead is a *completed* one, which
+    ``test_a_lost_reply_can_complete_the_operation_it_reports_as_failed``
+    covers.
+    """
+    if sftp_server is None:
+        pytest.skip("paramiko not installed")
+
+    io_timeout = 2.0
+    observer = _make_backend(sftp_server[0], io_timeout=30.0)
+    backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
+    src = f"copysrc_{uuid.uuid4().hex[:8]}.bin"
+    dst = f"copydst_{uuid.uuid4().hex[:8]}.bin"
+    payload = b"c" * (8 * 1024 * 1024)
+    observer.write(src, payload)
+
+    backend.check_health()
+    # Enough to clear the two stats and get the transfer genuinely under way.
+    stall_relay.stall_download_after(512 * 1024)
+
+    with pytest.raises(BackendUnavailable):
+        backend.copy(src, dst)
+
+    assert observer.exists(dst), "a stalled copy leaves the partial destination behind, it does not clean up"
+    got = observer.read_bytes(dst)
+    assert 0 < len(got) < len(payload), f"expected a strictly partial destination, got {len(got)} of {len(payload)}"
+    assert payload.startswith(got), "the destination must hold a prefix of the source, not a corrupt fragment"
+    assert observer.read_bytes(src) == payload, "the source must be untouched by a failed copy"
+
+
+def _silence_at(relay: _StallRelay, backend: Any, method: str, predicate: Any, *, direction: str = "download") -> None:
+    """Silence *direction* at the moment *method* issues its request.
+
+    The stall arrives with the request already on the wire, which is what makes
+    the two directions mean different things at that instant: silencing
+    ``download`` lets the request reach the server, which performs it and loses
+    only the reply, while ``upload`` stops the request arriving at all. A relay
+    armed *before* the call cannot stage either — it lands on whichever
+    round-trip the operation makes first, which is never the one under test.
+
+    Wrapping the live ``SFTPClient`` method is what makes the moment
+    deterministic. The alternative — a byte budget on the relay — has to be
+    re-tuned whenever a round-trip is added or removed upstream, and fails by
+    silently stalling somewhere else rather than by failing.
+    """
+    import paramiko
+
+    client = backend.unwrap(paramiko.SFTPClient)
+    original = getattr(client, method)
+
+    def stalling(*args: Any, **kwargs: Any) -> Any:
+        if predicate(*args, **kwargs):
+            getattr(relay, f"stall_{direction}")()
+        return original(*args, **kwargs)
+
+    setattr(client, method, stalling)
+
+
+def _break_posix_rename(backend: Any) -> None:
+    """Make the live client behave like a server without ``posix-rename@openssh.com``.
+
+    No fixture server omits the extension, and `_rename_fallback` carries a
+    ``no cover`` pragma that names that server class as its bound — a bound the
+    spec now says the code does not have, since any non-dead ``posix_rename``
+    failure reaches the fallback. This helper stages the narrow case because it
+    is the cheap one to stage, **not** because it is the only one; the broader
+    route rests on the visible ``except OSError`` in ``_promote``. Forcing the client's own
+    ``posix_rename`` to raise a plain ``OSError`` reproduces what such a server
+    returns, which is what routes ``_promote`` and ``move`` into their
+    remove-then-rename fallbacks.
+    """
+    import paramiko
+
+    def unsupported(*_args: Any, **_kwargs: Any) -> Any:
+        raise OSError("Operation unsupported")
+
+    backend.unwrap(paramiko.SFTPClient).posix_rename = unsupported
+
+
+@pytest.mark.spec("SFTP-014")
+@pytest.mark.spec("SFTP-030")
+@pytest.mark.parametrize("op", ["move", "write_atomic", "open_atomic"])
+def test_the_rename_fallback_destroys_the_destination_when_the_promote_stalls(
+    stall_relay: _StallRelay, sftp_server: tuple[int, str] | None, op: str
+) -> None:
+    """The worst residue state in SFTP-030's table, and the one nothing else reaches.
+
+    On a server without ``posix-rename@openssh.com``, both ``_rename_fallback``
+    and ``_move_fallback`` `remove` the destination and *then* `rename` onto it.
+    Silence the client→server direction at that `rename` and the removal has
+    already happened while the rename never arrives: the destination is **gone**
+    and nothing has replaced it. For the atomic paths the caller's payload is
+    stranded in the orphan temp; for ``move`` the source survives, so the data
+    still exists somewhere — but the file the caller had at the destination does
+    not.
+
+    This is tracked as a defect rather than fixed here (see the backlog): the
+    remove-then-rename ordering is what makes a non-atomic overwrite possible at
+    all on such a server, so closing the window is a design decision, not a
+    patch. What this test does is stop the state being undocumented and
+    unexercised — the fallback carries a ``no cover`` pragma, so nothing else in
+    the suite executes it.
+
+    It is also the row that most needs pinning: it is reached through
+    ``write_atomic``, the operation the library recommends when a failure must
+    not damage the destination.
+    """
+    if sftp_server is None:
+        pytest.skip("paramiko not installed")
+
+    observer = _make_backend(sftp_server[0], io_timeout=30.0)
+    backend = _make_backend(stall_relay.port, io_timeout=2.0)
+    tag = uuid.uuid4().hex[:8]
+    src, dst = f"fbsrc_{tag}.bin", f"fbdst_{tag}.bin"
+    old, new = b"OLD" * 100, b"NEW" * 100
+    if op == "move":
+        observer.write(src, new)
+    observer.write(dst, old, overwrite=True)
+    backend.check_health()
+
+    _break_posix_rename(backend)
+    # The remove completes; the silence begins at the rename that follows it.
+    _silence_at(stall_relay, backend, "rename", lambda *_a, **_k: True, direction="upload")
+
+    def _run() -> None:
+        if op == "move":
+            backend.move(src, dst, overwrite=True)
+        elif op == "open_atomic":
+            with backend.open_atomic(dst, overwrite=True) as handle:
+                handle.write(new)
+        else:
+            backend.write_atomic(dst, new, overwrite=True)
+
+    with pytest.raises(BackendUnavailable):
+        _run()
+
+    assert not observer.exists(dst), (
+        "the fallback removed the destination and the rename never arrived, so the destination "
+        "must be gone — if it is now present the fallback has been reordered and SFTP-030's "
+        "fallback row, plus the backlog item tracking it, change with it"
+    )
+    if op == "move":
+        assert observer.read_bytes(src) == new, "move's source survives, so the data is not lost outright"
+    else:
+        orphans = [entry for entry in observer.list_files("") if f".~tmp.{dst}." in str(entry)]
+        assert orphans, (
+            "the payload must be stranded in the orphan temp — that is the only copy left "
+            "once the destination has been removed"
+        )
+
+
+@pytest.mark.spec("SFTP-030")
+def test_a_stalled_write_can_have_delivered_the_payload_in_full(
+    stall_relay: _StallRelay, sftp_server: tuple[int, str] | None
+) -> None:
+    """The state that made SFTP-030 stop enumerating and state a closure instead.
+
+    Silence the return path at the **last** body write and the server has taken
+    every byte; only the final acknowledgement is lost. The destination holds the
+    payload entire and the caller is told ``BackendUnavailable``, so a stalled
+    ``write`` is not merely "partial or nothing" — it spans the whole range from
+    untouched to complete.
+
+    Three prior attempts to enumerate the reachable residue each missed a state,
+    this one included: the generated enumeration behind the second attempt had
+    ``mid_body`` moments that always left a further chunk to send, so it binned
+    every body stall as a prefix and never staged the final write. SFTP-030 now
+    states the closure — the residue is any prefix of the operation's effects, up
+    to and including all of them — and treats its per-operation states as named
+    illustrations. This test is the illustration for the upper end of that range,
+    and its existence is the argument for the closure.
+
+    Staged with a payload inside paramiko's ``MAX_REQUEST_SIZE`` (32768) so the
+    body is one ``CMD_WRITE``: the stream silences the link from inside its only
+    ``read()``, after the open's reply is already back. Sized deliberately rather
+    than incidentally — at two writes the same arrangement yields a prefix, which
+    is the sibling test's row, and that contrast is what makes this a statement
+    about the *last* acknowledgement rather than about body writes generally.
+
+    **Scoped to ``write``.** ``copy`` reaches the same state by the same
+    mechanism — its destination is written with the identical ``file(dst, "w")``
+    and stream — but it has no caller-supplied stream to silence from, so
+    staging it needs a byte budget on the relay. This file does use one
+    elsewhere (``stall_download_after`` in the partial-``copy`` test above), and
+    the distinction is what the budget has to hit: *somewhere mid-transfer* is
+    robust, whereas *after the last body acknowledgement and before its reply*
+    is a single round-trip that moves whenever buffering does. A budget aimed
+    there fails by stalling in the wrong place rather than by failing, so the
+    test would still pass while measuring another state. An attempt to
+    parametrise it in here silenced ``copy``'s *source* open instead and left
+    the destination untouched, which is that failure mode.
+    """
+    if sftp_server is None:
+        pytest.skip("paramiko not installed")
+
+    observer = _make_backend(sftp_server[0], io_timeout=30.0)
+    backend = _make_backend(stall_relay.port, io_timeout=2.0)
+    dst = f"fulldst_{uuid.uuid4().hex[:8]}.bin"
+    payload = bytes(range(256)) * 125  # 32000 B: one CMD_WRITE, under MAX_REQUEST_SIZE
+    observer.write(dst, b"OLD" * 100, overwrite=True)
+    backend.check_health()
+
+    class _StallsOnTheAcknowledgement:
+        """Hands over the whole payload, then silences the return path."""
+
+        def __init__(self) -> None:
+            self._done = False
+
+        def read(self, size: int = -1) -> bytes:
+            if self._done:
+                return b""
+            self._done = True
+            stall_relay.stall_download()
+            return payload
+
+    with pytest.raises(BackendUnavailable):
+        backend.write(dst, _StallsOnTheAcknowledgement(), overwrite=True)
+
+    got = observer.read_bytes(dst)
+    assert got == payload, (
+        f"expected the destination to hold the payload in full ({len(payload)} bytes), got {len(got)}; "
+        "if this is now short, the completed-write state is no longer reachable this way and "
+        "SFTP-030's named states change — the closure it argues does not"
+    )
+
+
+@pytest.mark.spec("SFTP-014")
+@pytest.mark.spec("SFTP-030")
+@pytest.mark.parametrize("op", ["move", "write_atomic", "open_atomic", "copy_open", "copy_open_nested"])
+def test_a_lost_reply_can_complete_the_operation_it_reports_as_failed(
+    stall_relay: _StallRelay, sftp_server: tuple[int, str] | None, op: str
+) -> None:
+    """A timeout says no reply came back — never that the server did not act.
+
+    This is the governing fact behind SFTP-030's residue table, and the sharpest
+    consequence of it: for ``move`` and both atomic writes, the *whole*
+    operation succeeds and the caller is told ``BackendUnavailable``. A partial
+    write is a visible hazard; an operation that silently succeeded under a
+    failure report is not, and a caller who blindly retries a ``move`` that
+    actually landed meets ``NotFound`` on a source that is already gone.
+
+    Each row silences the return path at the moment the deciding request goes
+    out, so what is asserted is the lost-reply case specifically rather than
+    whatever round-trip a pre-armed stall happened to reach first:
+
+    - **move** — the reply to ``posix_rename`` is lost, so the rename stands.
+    - **write_atomic** / **open_atomic** — the reply to the *promote* rename is
+      lost, so the new content is in place and no temp survives. SFTP-014 never
+      stated the untouched-destination half at all — a reader took it from the
+      word "atomic" — so this row is why that clause now states it *and* bounds
+      it to a failure before the promote.
+    - **copy_open** — the reply to the destination ``CMD_OPEN`` is lost, so
+      ``dst`` is truncated to empty. It also pins that the ``empty`` outcome
+      belongs to the open rather than to a target's depth: the sibling test's
+      ``nested-target-absorbed`` row shows a *pre-armed* stall never reaching
+      the open below the root, and this one reaches it directly.
+
+    Read back through a second backend wired straight to the server, so the
+    assertions are about what the caller's next connection finds.
+    """
+    if sftp_server is None:
+        pytest.skip("paramiko not installed")
+
+    io_timeout = 2.0
+    observer = _make_backend(sftp_server[0], io_timeout=30.0)
+    backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
+    tag = uuid.uuid4().hex[:8]
+    src, dst = f"lostsrc_{tag}.bin", f"lostdst_{tag}.bin"
+    if op == "copy_open_nested":
+        # Same case one directory down, which is what turns "the empty residue
+        # belongs to the open at any depth" from a sentence into an assertion.
+        dst = f"lostnest_{tag}/{dst}"
+    old, new = b"OLD" * 100, b"NEW" * 100
+    backend.check_health()  # connect while the relay is still delivering
+
+    def _run() -> None:
+        if op == "move":
+            observer.write(src, old)
+            _silence_at(stall_relay, backend, "posix_rename", lambda *_a, **_k: True)
+            backend.move(src, dst)
+        elif op.startswith("copy_open"):
+            leaf = dst.rsplit("/", 1)[-1]
+            observer.write(src, new)
+            observer.write(dst, old, overwrite=True)
+            _silence_at(stall_relay, backend, "file", lambda p, m="r", *_a, **_k: "w" in m and p.endswith(leaf))
+            backend.copy(src, dst, overwrite=True)
+        else:
+            observer.write(dst, old, overwrite=True)
+            _silence_at(stall_relay, backend, "posix_rename", lambda *_a, **_k: True)
+            if op == "open_atomic":
+                with backend.open_atomic(dst, overwrite=True) as handle:
+                    handle.write(new)
+            else:
+                backend.write_atomic(dst, new, overwrite=True)
+
+    with pytest.raises(BackendUnavailable):
+        _run()
+
+    if op == "move":
+        assert not observer.exists(src), (
+            "the rename reached the server, so the source must be gone even though the caller "
+            "was told the move failed — if this is now present the lost-reply hazard has changed "
+            "and SFTP-030's move row goes with it"
+        )
+        assert observer.read_bytes(dst) == old, "the moved bytes must be at the destination, unchanged"
+    elif op.startswith("copy_open"):
+        assert observer.read_bytes(dst) == b"", (
+            "the destination open reached the server, so the target must be truncated to empty. "
+            "Parametrised at depth 0 and depth 1 because the claim is that this residue belongs "
+            "to the open rather than to the target's depth — the depth-dependent half is which "
+            "round-trip a *pre-armed* stall reaches, which the sibling test pins"
+        )
+    else:
+        assert observer.read_bytes(dst) == new, (
+            "the promote reached the server, so the write completed despite the reported failure — "
+            "SFTP-014's caveat is scoped to a failure *before* the promote for exactly this reason"
+        )
+        # Scoped to *this* destination's temp, not to the directory being clean.
+        # The store root is shared with every other test on the session-scoped
+        # server, several of which leave orphan temps on purpose, so a bare
+        # "no .~tmp. here" assertion fails on a sibling's litter under the
+        # parallel lane while saying nothing about this promote.
+        leftovers = [entry for entry in observer.list_files("") if f".~tmp.{dst}." in str(entry)]
+        assert not leftovers, (
+            f"a promote that landed consumes its temp file, so no orphan for {dst} should remain; found {leftovers}"
+        )
+
+
+@pytest.mark.spec("SFTP-014")
+@pytest.mark.spec("SFTP-030")
+@pytest.mark.spec("AW-004")
+@pytest.mark.parametrize("op", ["write_atomic", "open_atomic"])
+def test_a_stalled_atomic_write_preserves_the_destination_and_leaves_an_orphan_temp(
+    stall_relay: _StallRelay, sftp_server: tuple[int, str] | None, op: str
+) -> None:
+    """The contrast the non-atomic rule is stated beside, executed rather than quoted.
+
+    SFTP-014's caveat stated one claim about a connection lost mid-write — that
+    an orphan temp file may remain — while the half a reader actually decides on,
+    that an existing destination survives, went unwritten and was taken from the
+    word "atomic". Both are the reference point for choosing between ``write``
+    and ``write_atomic``, so a rule about ``write``'s destination is only as
+    useful as that contrast is true and stated.
+
+    Both are asserted here on a real stall, for both atomic entry points:
+    ``open_atomic`` yields its handle outside ``_errors`` and cleans up under
+    its own guard, so its temp-file behaviour does not follow from
+    ``write_atomic``'s.
+
+    **The destination is pre-populated deliberately.** Asserting "untouched"
+    against a path where nothing existed proves only that nothing was created,
+    which is the weaker claim and the one a caller does not care about: what
+    ``write_atomic`` is bought for is that the file they already have survives.
+    So the assertion is on the old bytes still being there, byte for byte.
+
+    Scoped to a failure in the **body**. A stall whose lost reply is the promote
+    itself leaves the destination *replaced* — see
+    ``test_a_lost_reply_can_complete_the_operation_it_reports_as_failed``, which
+    is why SFTP-014's caveat carries a scope rather than an unqualified
+    "untouched".
+
+    The orphan is the *expected* outcome rather than a defect: SFTP-014's
+    Postconditions have the cleanup unlink deliberately skipped when the failure
+    is itself a dropped-connection signal, so that error handling never triggers
+    a reconnect against a server that is already down.
+    """
+    if sftp_server is None:
+        pytest.skip("paramiko not installed")
+
+    io_timeout = 2.0
+    observer = _make_backend(sftp_server[0], io_timeout=io_timeout * 15)
+    backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
+    folder = f"atomicstall_{uuid.uuid4().hex[:8]}"
+    name = f"{folder}/target.bin"
+    preexisting = b"OLD" * 100
+    observer.write(name, preexisting, overwrite=True)
+
+    backend.check_health()
+
+    class _StallsAfterFirstChunk:
+        def __init__(self) -> None:
+            self._chunks = 0
+
+        def read(self, size: int = -1) -> bytes:
+            self._chunks += 1
+            if self._chunks == 1:
+                return b"a" * (256 * 1024)
+            if self._chunks == 2:
+                stall_relay.stall_upload()
+                return b"b" * (256 * 1024)
+            return b""
+
+    def _stall_the_write() -> None:
+        # overwrite=True throughout: the destination is pre-populated on purpose,
+        # so the default would raise AlreadyExists before any stall is reached.
+        if op == "open_atomic":
+            with backend.open_atomic(name, overwrite=True) as handle:
+                handle.write(b"a" * (256 * 1024))
+                stall_relay.stall_upload()
+                handle.write(b"b" * (8 * 1024 * 1024))
+        else:
+            backend.write_atomic(name, _StallsAfterFirstChunk(), overwrite=True)
+
+    with pytest.raises(BackendUnavailable):
+        _stall_the_write()
+
+    assert observer.read_bytes(name) == preexisting, (
+        "the atomic caveat's first claim: an existing destination survives a failure in the "
+        "body, because the payload never went there — if these bytes have changed, the promote "
+        "is running before the body lands and the capability's whole purpose is gone"
+    )
+    leftovers = [entry for entry in observer.list_files(folder) if ".~tmp." in str(entry)]
+    assert leftovers, (
+        "the atomic caveat's second claim: an orphan temp holds the partial payload. If this is "
+        "now empty the dropped-connection cleanup guard has changed, and SFTP-014's Postconditions "
+        "plus the SFTP guide's atomic caveat change with it"
     )
 
 

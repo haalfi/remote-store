@@ -88,7 +88,9 @@ takes an hour is unaffected, while a flow that goes quiet for longer than the
 bound raises [`BackendUnavailable`](../../reference/api/errors.md). That error
 names the stall and the value that fired (`SFTP channel stalled: no data within
 io_timeout=120.0s`), and the backend logs it once at `WARNING`, so a stall is
-distinguishable from any other `BackendUnavailable` in a log you read later.
+distinguishable from any other `BackendUnavailable` in a log you read later. What
+it does not say is whether the operation happened —
+[a stalled operation may have succeeded](#capabilities).
 
 **It is on by default, at 120 seconds.** You get the bound without asking for
 it, so nothing you write hangs forever on a silent peer. What you configure is
@@ -338,8 +340,58 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
 
 !!! warning "Atomic write caveat"
     Atomic writes use a temp file (`.~tmp.<name>.<uuid>`) and rename. If the
-    connection drops between write and rename, the orphan temp file will remain
-    on the server.
+    connection drops between write and rename, the destination is untouched but
+    the orphan temp file will remain on the server. If it drops *during* the
+    rename, see the danger note below — the write may have landed.
+
+!!! danger "A stalled operation may have succeeded"
+    When a transfer stalls, the timeout tells you **no reply came back**. It
+    does not tell you the server never got the request. If the silence was on
+    the return path, the server did the work and only the answer was lost — so
+    every operation here has a state where it did what you asked and raised
+    `BackendUnavailable` anyway.
+
+    The general rule is that **any amount of the operation may have happened,
+    from none of it to all of it**, and the error does not tell you which. The
+    states below are the ones worth naming, not a complete list:
+
+    | Operation | What a `BackendUnavailable` may have left |
+    | --- | --- |
+    | `write()` | The destination unchanged, absent, **emptied**, holding an unpredictable prefix, or **written in full** |
+    | `copy()` | The same five, at `dst`; the source is never affected |
+    | `move()` | The paths unchanged, **the move completed** (source gone), or **the destination destroyed** with the source still there |
+    | `write_atomic()` / `open_atomic()` | The destination unchanged, often with an orphan temp; **the write completed**; or **the destination destroyed** with your data left in an orphan temp file |
+
+    The destroyed-destination cases come from a rename fallback that removes the
+    destination before renaming onto it, and it is not confined to old servers —
+    any rename that *fails* for a reason the backend cannot attribute to a
+    dropped connection takes that path. It also needs `overwrite=True`: with
+    the default the call raises `AlreadyExists` before the fallback is reached,
+    so an existing file cannot be destroyed this way. No example failure is
+    given: which ones reach it depends on guards that differ per operation, and
+    every attempt to name one here has been wrong.
+
+    So:
+
+    - **Do not treat a failure as a no-op.** Re-check the state before acting on
+      it. A failed `move()` that actually succeeded gives `NotFound` on retry;
+      a failed `write(..., overwrite=True)` may have truncated your previous
+      file without replacing it.
+    - **Retry with `overwrite=True`.** The path is usually still occupied, so a
+      plain retry raises `AlreadyExists` instead of retrying.
+    - **Do not resume from a partial file.** The prefix length depends on
+      buffering you cannot see, so appending to it corrupts the file. Discard
+      and re-write from the start.
+
+    **`write_atomic()` is still the right choice when readers must never see a
+    half-written file** (see the caveat above, and
+    [atomicity semantics](../../explanation/concurrency.md)): no reader ever
+    observes a partial file at the destination. What it does not promise is that
+    a reported failure means nothing happened, nor that your existing file
+    survives one.
+
+    Parent directories created for a write remain behind in every case — a
+    failed write is not a rollback.
 
 !!! note "Move fallback"
     `move()` tries `posix_rename` (atomic), then standard `rename()`, then

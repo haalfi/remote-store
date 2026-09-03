@@ -248,6 +248,11 @@ class Backend(abc.ABC):
     ) -> WriteResult:
         """Write content atomically via temp file + rename.
 
+        Failure behaviour is ``open_atomic``'s, which shares the temp-and-promote
+        mechanism: readers never observe a partial *path*, but a failure in the
+        backend's connection guarantees neither that a temp artifact was cleaned
+        up nor that the write did not land.
+
         Args:
             path: Backend-relative key.
             content: Data to write.
@@ -271,7 +276,15 @@ class Backend(abc.ABC):
         """Yield a writable file object backed by a temporary location.
 
         On successful exit the temp file is atomically promoted to *path*.
-        On exception the temp file is removed and *path* is untouched.
+        On an exception raised by the caller's own code, the temp file is removed
+        and *path* is untouched. **Neither half is guaranteed when the failure is
+        the backend's connection**: a backend whose cleanup would re-enter the
+        same failed connection may leave the temp behind, and a promote whose
+        reply is lost may have been performed. What every backend does guarantee
+        is that no reader observes a partially written *path*. Documenting the
+        lost-connection behaviour is required of implementations rather than
+        guaranteed by them; a backend that leaves it unstated is a gap, not a
+        promise that nothing happens.
 
         Args:
             path: Backend-relative key.

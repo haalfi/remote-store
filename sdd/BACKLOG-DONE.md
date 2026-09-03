@@ -215,6 +215,68 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-360 — What a stalled non-atomic SFTP `write` leaves at the destination is undocumented**
+  spec: SFTP-030, SFTP-014 · effort: S · audience: user.api_docs, user.site
+  Established by running it, not by reading the mapping — and the answer is
+  wider than the item's question.
+  **The governing fact is that a timeout reports one round-trip's lost reply.**
+  Everything the operation did *before* that round-trip already happened; for
+  the round-trip itself, a client→server silence means the request never arrived
+  and a server→client silence means the server performed it and only the answer
+  was lost. A caller can observe neither, and the error cannot close the gap:
+  BK-359 landed a message naming the stall and the bound, which says why the
+  operation failed but not what the server did with the request first — a thing
+  the client never learns. So several operations have a state in which they
+  did what they were asked and reported `BackendUnavailable` anyway.
+  **Three enumerations were caught short before the answer stopped being a
+  list.** Two revisions proposed a scope criterion — "which method was called",
+  then "which direction was silenced" — and review refuted each with a state the
+  argument had not considered. The third parametrised the condition space and
+  generated it (**164 combinations ran, 156 pruned as unreachable**, the
+  harness's own totals, with the raised type recorded per case so a combination
+  where no stall fired could not be mistaken for a measurement) — and review
+  found *that* short too: a `write` whose silence falls on its last body
+  acknowledgement leaves the destination holding the payload entire, a moment the
+  enumeration had no row for.
+  So SFTP-030 now states a **closure** instead: the residue is any prefix of the
+  operation's effects, up to and including all of them. That is a property of the
+  mechanism rather than a survey of outputs, so there is no fourth list to catch
+  short; the per-operation states are kept as named illustrations, explicitly not
+  exhaustive.
+  **Three findings beyond the item's scope.** `move` and the atomic writes
+  *succeeding under a failure report* is a sharper hazard than a partial write —
+  a blind retry of a `move` that landed meets `NotFound` on a source already
+  gone. SFTP-014 turned out never to have stated the untouched-destination half a
+  reader decides on, so it now states it *and* bounds it. And the
+  `_rename_fallback` / `_move_fallback` remove-then-rename window destroys the
+  destination outright — reachable on any server, not only those lacking the
+  extension, whenever `posix_rename` fails for a reason `_is_connection_dead`
+  does not recognise and the operation's own directory guard has not already
+  rejected the target. Review corrected that scope twice: first from "fallback
+  servers only", then again when three named example triggers turned out to
+  include two unreachable ones, after which the examples were deleted rather
+  than corrected a third time. Documented here and tracked for fixing as
+  **BUG-270**, along with the second `io_timeout` bound `move`'s fallback costs
+  and, as **BUG-272**, a non-dead failure that removes the temp as well.
+  **Two cross-artifact contradictions were absorbed** rather than left to a
+  follow-up, both being clauses a shipped test now refutes: AW-004's unqualified
+  "no orphaned temporary files are left behind" gained its named SFTP divergence,
+  and `concurrency.md` stopped framing orphan litter as the only atomic-write
+  hazard on a page the new SFTP guidance links to.
+  **`copy` was bound by the clause and the item did not name it**, found by
+  enumerating the subjects the clause's words pick out rather than the files the
+  diff touched.
+  **One bound worth keeping straight:** the `empty` residue belongs to the open
+  at any depth, but a *pre-armed* stall reaches the open only for a root-level
+  target — `_ensure_parent_dirs` stats every ancestor first — so both halves are
+  pinned at depth 0 and depth 1 rather than left to a fixture's choice of
+  filename.
+  Stated in SFTP-030 § What a stalled operation leaves behind (table plus
+  derivation), in the SFTP guide, in the `write` / `copy` / `move` /
+  `write_atomic` docstrings, and in the troubleshooting page, whose "not
+  currently documented; treat the path as being in an unknown state" bullet this
+  replaces.
+  Found by BK-356's review round 7, by the reader lens.
 - [x] **BUG-268 — The troubleshooting page printed the pre-BK-359 blank traceback as the stall symptom, and said the log was empty**
   spec: SFTP-023, SFTP-030 · effort: XS · audience: user.site
   Filed and closed inside BK-359's own PR, which is why it appears here without

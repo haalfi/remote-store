@@ -207,7 +207,9 @@ recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 (BUG-245) and neither does a stream (BK-358); one operation does not answer by
 payload size (BUG-253); a caller who meets a failure on **any** backend can tell
 *which* failure it was, rather than an empty message (BUG-264), and catches the
-type the docs promised (BUG-265); and a newly
+type the docs promised (BUG-265); what a failed operation *leaves behind* is not
+worse than the failure itself, so a reported failure never silently destroys the
+caller's file (BUG-270, BUG-272); and a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
 (BK-345). BK-359 is why the Promise above carries a third clause, added with it
 rather than left implicit: an error that is
@@ -273,27 +275,113 @@ error: it meets the rows it was brought to and misses the bound that arrived
 after, which is what a clause growing a new sentence does to a backend that was
 compliant the day before.
 
-- [ ] **BK-360 — What a stalled non-atomic SFTP `write` leaves at the destination is undocumented**
-  spec: SFTP-030, SFTP-014 · effort: S · audience: user.api_docs, user.site
-  `io_timeout` bounds writes as well as reads (SFTP-030: "the bound covers writes
-  as well as reads, and a stalled write reaches it on the receive side"), and
-  BK-356 made that bound the default — so a stalled write now raises for callers
-  who configured nothing. What the remote path holds afterwards is documented for
-  the *atomic* path only: SFTP-014 and the SFTP guide's atomic-write caveat say
-  the destination is untouched and an orphan temp file may remain. For plain
-  `write`, which streams to the destination path directly, no artifact says
-  whether the path is absent, empty, or carries a prefix of the payload, nor
-  whether a retry needs `overwrite=True`.
-  The nearest guidance lives in `docs-src/guides/transfer-operations.md` ("When
-  retrying, pass `overwrite=True` to replace the partial file"), which is a
-  different subsystem and is not linked from the SFTP pages.
-  **Found by BK-356's review round 7, by the reader lens** — the first pass on
-  that PR to ask whether a reader can act rather than whether the text is true.
-  The reviewer explicitly declined to assert the answer, and so does this item:
-  SFTP-030 does not settle it either, which is the point. Establish the behaviour
-  by running it, then state it once in the SFTP guide beside the atomic caveat.
-  Until then `docs-src/guides/troubleshooting.md` tells the reader to treat the
-  path as being in an unknown state and re-write it, which is safe and vague.
+- [ ] **BUG-272 — A non-dead rename failure in the atomic fallback removes the destination *and* the temp, losing both copies**
+  spec: SFTP-014, AW-003 · effort: M · audience: user.api
+  Distinct from BUG-270, which is about a *stall* in the same window and where the
+  payload survives in the orphan temp. Here nothing survives.
+  Measured against the in-process server with `posix_rename` unsupported and the
+  fallback `rename` failing for a **non-dead** reason (`EACCES`, and again with
+  `EIO`), for both `write_atomic` and `open_atomic`: `_rename_fallback` removes the
+  destination, the `rename` fails, and `write_atomic`'s `except BaseException`
+  handler then computes `connection_lost = False` and *successfully* unlinks the
+  temp. Observed `remove()` calls were the destination followed by the temp, and
+  the directory was left empty. `PermissionDenied` is raised, so the caller is
+  correctly told the write failed — and their pre-existing file is gone with no
+  copy of the replacement anywhere.
+  **The cleanup guard is doing exactly what it was designed to do**, which is why
+  this is a design question rather than a typo: it skips the unlink only when the
+  failure is a dropped connection, on the reasoning that a live connection can
+  afford the tidy-up. That reasoning does not account for the fallback having
+  already destroyed the destination before the failure, which makes the temp the
+  only remaining copy.
+  **`AW-003`** ("If `overwrite=True`, the atomic rename replaces the existing
+  file") is unqualified against this path and is the cross-backend clause to
+  amend, on the same terms AW-004 was amended by BK-360.
+  **Found by BK-360's review round 4, by a measuring pass.** BK-360 softened the
+  recoverability claims in the guide and in BUG-270 rather than asserting a temp
+  the caller may not have; it does not fix this.
+
+- [ ] **BUG-271 — `022-streaming-atomic-writes.md` carries three `open_atomic` invariants that shipped tests refute**
+  spec: SAW-004, SAW-005, SAW-009 · effort: S · audience: contributor.process
+  BK-360 amended AW-004 for the SFTP dropped-connection divergence and corrected
+  `open_atomic`'s docstring, but the spec that governs `open_atomic` was not told:
+  - **SAW-004** "On exception, target path is unchanged (no partial file)" —
+    refuted by `test_the_rename_fallback_destroys_the_destination_when_the_promote_stalls[open_atomic]`
+    (destination gone) and `test_a_lost_reply_can_complete_the_operation_it_reports_as_failed[open_atomic]`
+    (destination replaced), both shipped and passing.
+  - **SAW-005** "Temp artifact is cleaned up on both success and failure" — the
+    same clause AW-004 was amended for, refuted by
+    `test_a_stalled_atomic_write_preserves_the_destination_and_leaves_an_orphan_temp[open_atomic]`.
+  - **SAW-009**'s per-backend prose, "On failure, `sftp.remove()` cleans up" —
+    contradicted by the deliberate skip AW-004 now records.
+  The divergence is already established in code, in `open_atomic`'s docstring and
+  in AW-004; only this spec is stale, so the work is to carry the same scoping
+  across rather than to decide anything new. Left out of BK-360 deliberately: that
+  item's review had already absorbed two cross-spec surfaces, and the evidence
+  there was that each absorption was where the next defect came from.
+  **Found by BK-360's review round 4, by a measuring pass.**
+
+- [ ] **BUG-270 — `_rename_fallback` destroys the destination and strands the payload when the promote stalls**
+  spec: SFTP-014, SFTP-030 · effort: M · audience: user.api
+  Under `overwrite=True`, `_rename_fallback` and `_move_fallback` each
+  `remove(dst)` and then `rename(tmp, dst)`. A silence beginning at that `rename`
+  leaves the destination **gone** with nothing put in its place — for
+  `write_atomic` / `open_atomic` the payload is stranded in the orphan
+  `.~tmp.<name>.<uuid8>`; for `move` the source survives. Measured at
+  `io_timeout=2.0`, client→server silenced at the `rename`: destination absent,
+  one orphan temp for the atomic paths and an intact source for `move`.
+  The `overwrite=True` condition is load-bearing and part of the recipe: both
+  fallbacks guard the `remove` on it, and with `overwrite=False` the prior stat
+  raises `AlreadyExists` before either fallback is reached.
+  **It is not confined to servers lacking `posix-rename@openssh.com`.** The route
+  in is a `posix_rename` failure `_is_connection_dead` does not recognise, on a
+  target `_raise_if_dir` (or, for `move`, the destination `stat`) has not already
+  rejected. Measured per trigger against a server that answers the extended
+  request: `EACCES` reaches both fallbacks; `EXDEV` reaches `_move_fallback`
+  only, since `write_atomic` puts its temp in the target's own directory; a
+  **directory target reaches neither** — the promote path is guarded by
+  `_raise_if_dir` and `move` by its eager destination `stat`, which are different
+  guards and were conflated at one point in BK-360's own review.
+  Reproduced on a server that advertises and answers the extended request and
+  fails this one, with nothing patched client-side: destination gone, payload in
+  the temp. That widens who is exposed from a legacy-server edge case to any
+  store where a rename can fail for a mundane reason.
+  **It is the residue state that leaves the caller worst off**, and it is reached
+  through the operation the library recommends for safety. Under a *stall* the
+  payload usually survives — in the orphan temp for the atomic paths, or in the
+  source for `move` — because `_is_connection_dead` is true and the cleanup unlink
+  is skipped. **That consolation does not hold for a non-dead failure**: BUG-272
+  records a measured case where the fallback removes the destination, the rename
+  fails for a non-dead reason, and the cleanup then successfully removes the temp
+  too, so neither copy remains. So this item should not be fixed on the assumption
+  that the temp is a recovery path.
+  **A second, independent half: it costs two `io_timeout` bounds, not one.** The
+  `remove` runs under `contextlib.suppress(OSError)`, so its own timeout is
+  swallowed and the following `rename` re-enters the same stalled channel.
+  Measured 4.00 s at a 2.0 s bound. SFTP-030's one-bound paragraph does name a
+  suppressed `remove` in mechanism 3, so the gap is not a missing list entry.
+  It is that the mechanisms are **per operation**: `move` has no `_raise_if_dir`
+  step, so nothing fires between its failed `posix_rename` and `_move_fallback`
+  and it pays two bounds. The promote path does have one, and under the same
+  antecedent mechanism 2 fires — `_raise_if_dir`'s own stat re-enters the silent
+  channel and re-raises — so `_rename_fallback` is never entered and the cost is
+  one bound. `_rename_fallback` reaches two only when the silence begins later,
+  at its own suppressed `remove`. An earlier version of this item said all three
+  mechanisms key on the caller's `exc`; mechanism 2 does not, and that
+  conflation is what sent the spec's first attempt at this wrong.
+  **Fixing the first half needs a decision, not just a patch:** the
+  remove-then-rename ordering is what makes a non-atomic overwrite possible when
+  `posix_rename` is unavailable, so removing the window may mean accepting that
+  such a store cannot overwrite atomically and saying so, rather than silently
+  narrowing it.
+  `_rename_fallback` carries `# pragma: no cover` (`_move_fallback` does not, and
+  its docstring explains why). BK-360 added
+  `test_the_rename_fallback_destroys_the_destination_when_the_promote_stalls`,
+  which drives both, so the behaviour is pinned even though the pragma still
+  suppresses coverage reporting for one of them — worth revisiting with the fix.
+  **Found by BK-360's review round 2, by a measuring pass**, with the server-class
+  scope corrected by its round 3. BK-360 documents the resulting state in
+  SFTP-030 and the SFTP guide; it does not fix it.
 
 - [ ] **BUG-264 — A mapped error can still reach the caller with an empty message on Azure, and through the base-class arms everywhere**
   spec: ERR-009 · effort: M · audience: user.api
@@ -1098,7 +1186,7 @@ resting on it rather than a pending one.
 copies an example, without opening an issue.
 
 **Closes when:** every published page and shipped example a user decides from is
-**true** (BK-339, BK-325, ID-125), **reachable** (BK-327), and **walked
+**true** (BK-339, BK-325, BK-364, ID-125), **reachable** (BK-327), and **walked
 end-to-end by a maintainer** (BK-332, and ID-199's authoring contract). Each
 clause names the items that move it, so closure is checkable rather than
 asserted.
@@ -1108,6 +1196,28 @@ rehearsal sits with the guides because it is the only mechanism that has ever
 found their defects, and BK-327 sits here rather than with the gates because a
 page nobody can navigate to is a page nobody reads — the gate is the mechanism,
 not the payoff.
+
+- [ ] **BK-364 — `transfer-operations.md` documents partial files for `download` only, and the other direction is the one that can destroy data**
+  spec: — · effort: S · audience: user.site
+  § Error semantics carries one bullet on residue — *"Partial files on failed
+  download: if `download` fails mid-transfer a partial local file may remain …
+  When retrying, pass `overwrite=True`"* — and says nothing about `upload` or
+  `transfer`, which route through `store.write()` and so leave a partial file at
+  the **remote** destination on exactly the same fault. The asymmetry is
+  backwards: a partial local file is the caller's own disk and their own
+  `overwrite` flag, while a partial remote file may have replaced data they
+  cannot re-derive.
+  **Found by BK-360's review round 1, while checking whether that item's SFTP
+  rule rippled here.** It was left out of BK-360 deliberately: the SFTP rule is
+  measured for one backend, and this bullet is about a helper that works over
+  *any* `Store`, so stating it needs the residue question answered per backend
+  rather than borrowed from SFTP. That is the work — establish what
+  `upload`/`transfer` leave behind on the backends the helper is used with, then
+  state it once beside the `download` bullet.
+  BK-360 established the SFTP half and is the model: the governing fact there is
+  that a timeout reports a *lost reply*, so an operation reported as failed may
+  have been performed. Whether the flat-namespace backends share that shape is
+  the open question, not an assumption to carry over.
 
 - [ ] **BK-339 — Decide what replaces `store.md`'s hand-maintained Backend Behavior Matrix**
   spec: — · effort: M · audience: user.site
