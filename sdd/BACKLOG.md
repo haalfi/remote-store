@@ -1763,7 +1763,7 @@ CHANGELOG expansion step Phase 1 depends on is written down or dropped —
 first home (`CONTRIBUTING.md` § CHANGELOG section order), leaving the step manual
 and the order ungated, both stated where they are written; the `[Unreleased]`
 stub's section marker means one thing or nothing (ID-254); the release-window
-stand-down states a reason that is false in the state Phase 1 prescribes
+stand-down's stated reason matches what actually switches the rules off
 (ID-255);
 the ripple-check's six measured blind spots are answered (BK-346); the
 hand-maintained inventories ID-245 names are generated — four bullets, of which
@@ -1910,32 +1910,28 @@ the commit that writes it lands, so cite the generator instead.
   down." That reason is true at the *end* of Phase 1 and false at its
   *beginning* — and the beginning is the state
   [`CONTRIBUTING.md` § Release Phase 1](../CONTRIBUTING.md#release) mandates,
-  since it says to add the `###` groupings **before** condensing any bullet. At
-  that moment nothing has been condensed and every stub still leads with an ID.
-  **The note contradicts itself two sentences later**, reporting "over the N
-  line(s) that still parse as entries" with N the full stub count. Run it: put
-  a bare `### Fixed` above an untouched `[Unreleased]` and the note claims the
-  entries do not lead with an ID while counting the ones that do.
-  **What actually switches the three off is the `###` itself**, textually —
-  `grouped` is a bare `startswith("### ")` and `collect` branches on it alone,
-  never on whether any line still parses. The reason as written describes a
-  *consequence* of finishing the condense, not the *trigger*.
-  **What it decides.** Whether to restate the reason ("a `###` grouping, not the
-  absence of IDs, is what switches these off") or to say both — trigger and the
-  condition that makes standing down harmless. Either is a message-string
-  change, so it also touches
-  `tests/scripts/test_check_changelog_unreleased.py`, which asserts on the note.
-  **A second half worth deciding at the same time**, since it is the same
-  paragraph's blind spot: the docstring's "The cost, stated in full" costs out
-  uniqueness and the prose budget ("worth exactly as much as there are
-  survivors") but never costs out the **audience rule**, which is the one this
-  ordering trades away earliest — it is answerable over the full stub set at the
-  moment the grouping lands, and groupings-first switches it off for the whole
-  condensing pass rather than progressively as entries are consumed.
+  since it says to add the `###` groupings **before** condensing any bullet.
+  **Reproduce it:** put a bare `### Fixed` above an untouched `[Unreleased]`.
+  The note claims the entries do not lead with an ID, then reports "over the 25
+  line(s) that still parse as entries" — counting the ones that do.
+  What actually switches the three off is the `###` itself: `grouped` is a bare
+  `startswith("### ")` and `collect` branches on it alone, never on whether any
+  line still parses. The reason describes a *consequence* of finishing the
+  condense, not the *trigger*.
+  **What it decides.** Whether to state the trigger instead ("a `###` grouping,
+  not the absence of IDs, is what switches these off") or to state both. It is a
+  message-string change; no existing assertion pins the reason clause — the
+  tests key on `_STOOD_DOWN` and on the surviving-entry count, deliberately, per
+  the comment at that assertion — so whoever takes it should add one, or the
+  corrected reason is unpinned in exactly the way the wrong one was.
+  **A second half worth deciding at the same time**, being the same paragraph's
+  blind spot: the docstring's "The cost, stated in full" costs out uniqueness
+  and the prose budget but never costs out the **audience rule**, which is what
+  the groupings-first ordering trades away earliest.
   **Filed rather than fixed by ID-253**, which found it: that PR's whole diff to
-  this file is inside the module docstring — verified by AST, base and head
-  byte-identical with the docstring stripped — and it declined to trade that
-  property for a one-sentence message fix.
+  `scripts/check_changelog_unreleased.py` is inside the module docstring —
+  verified by AST, base and head byte-identical with the docstring stripped —
+  and it declined to trade that property for a one-sentence message fix.
 
 - [ ] **BK-361 — Typography rules are asserted in `CLAUDE.md` and enforced by nobody**
   spec: — · effort: S/M · audience: contributor.tooling

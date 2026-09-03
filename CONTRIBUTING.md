@@ -505,12 +505,18 @@ release body follows it; both link here rather than restating it, per
 **It is decided, not merely described.** Tally the pairwise precedence of `###`
 headings across the released `## [` sections of CHANGELOG.md and most of this
 order is what practice already does: `Documentation` precedes `Internal` without
-exception, and `Added` leads everywhere but two early releases. **One adjacent
-pair came out an exact tie** — `Changed` against `Fixed` — so that pair had no
-convention, and the line above is what it has instead of one. `Removed` is too
-sparse to settle by count at all, and is placed by meaning: after the changes it
-completes. Re-run the tally rather than trusting a remembered split; it moves
-every release.
+exception, and `Added` leads in all but a couple of early releases. **One
+adjacent pair came out an exact tie** — `Changed` against `Fixed` — so that pair
+had no convention, and the line above is what it has instead of one. `Removed`
+is too sparse to settle by count at all, and is placed by meaning: after the
+changes it completes. Run the tally rather than trusting any of that; it moves
+every release, and this page deliberately pins no figure from it.
+
+**Where this diverges from Keep a Changelog**, whose order is Added, Changed,
+Deprecated, Removed, Fixed, Security: `Removed` sits after `Fixed` here rather
+than before it, and `Documentation` and `Internal` are additions of ours with no
+counterpart there. The tie this order settles, `Changed` before `Fixed`, agrees
+with it.
 
 **Two names are retired rather than reused.** `Docs` (0.16.0, 0.17.0) is
 `Documentation`; `Known Limitations` (0.1.0) was a one-off. Sections already

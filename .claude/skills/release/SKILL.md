@@ -21,16 +21,12 @@ Execute [`CONTRIBUTING.md` § Release](../../../CONTRIBUTING.md#release) (Phases
 `previous_tag_name` (`vPREV`) with `gh release view --json tagName --jq .tagName`.
 See the checklist item for what the gate compares and why its output is discarded.
 
-**Phase 1 (CHANGELOG condensing)** — The checklist owns the procedure, the three
-sources and the [section order](../../../CONTRIBUTING.md#changelog-section-order);
-this note is only what an agent gets wrong. **Read each item's body under
-`sdd/BACKLOG-DONE.md` § Unreleased before writing its entry** — the stub carries
-neither the mechanism nor the figures, and an entry written from the stub alone
-is a reworded stub, not the expansion. Condense to what a *user* does about the
-change; the backlog body is arguing to a contributor and its length is not a
-target. Follow the checklist's step ordering as written rather than from memory —
-it is what keeps `check_changelog_unreleased.py` quiet mid-condense, and the
-reason is stated there.
+**Phase 1 (CHANGELOG condensing)** — Work the checklist bullet as written; it
+owns the procedure, the sources and the section order. The one failure worth
+naming here: **an entry written from the stub alone is a reworded stub, not the
+expansion.** Work each item's `sdd/BACKLOG-DONE.md` body as the checklist says
+and the difference is obvious; skip it and every entry comes out one line long
+and no more useful than the index it came from.
 
 **Phase 2** — `bump-my-version` reads its target files from `[[tool.bumpversion.files]]`
 in `pyproject.toml`.

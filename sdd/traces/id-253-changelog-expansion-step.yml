@@ -80,8 +80,10 @@ phases:
         extract: >-
           The prose-budget rationale asserts the expansion premise is what
           ID-253 files as unbacked, and the release-window bound describes the
-          stand-down without naming who owns the other side of the hand-off
-        outcome: ok
+          stand-down without naming who owns the other side of the hand-off —
+          which is the half this item had to supply, and reading the bound did
+          not say so
+        outcome: unclear
 
   - id: measure
     name: Establish the facts before deciding
@@ -114,9 +116,11 @@ phases:
         read_type: reference
         extract: >-
           Read via `git show 7931c7d~1:sdd/BACKLOG-DONE.md`: § Unreleased held 20
-          items across 512 lines, of which the 8 that earned a CHANGELOG entry
-          account for 260 (bullet line to next bullet line) against the released
-          section's 55. This is what established the step as a rewrite for a
+          items spanning 510 lines bullet-to-bullet, of which the 8 that earned a
+          CHANGELOG entry account for 260, against the released section's 55.
+          (512 counts from the `## Unreleased` heading, which sits inside no
+          item; the two measures are two lines apart and must not be subtracted
+          across.) This is what established the step as a rewrite for a
           different audience rather than an extraction, and therefore what made
           "name the source" answerable only as three sources. Retrospective: this
           step was first written as "512 lines for the 8 items", attributing the
@@ -220,7 +224,7 @@ phases:
           replace-the-stubs boundary stated, the figures are unpinned, and the
           counterfactual is marked as one. The three sentence-level patches that
           preceded the wholesale rewrite are why /ship's divergence check exists
-        outcome: ok
+        outcome: misleading
 
   - id: verify
     name: Ripple-check and gates

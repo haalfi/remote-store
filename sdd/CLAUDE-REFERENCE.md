@@ -269,7 +269,7 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | under `BACKLOG-DONE.md` § Unreleased has an entry.        |
 |                            | *Not* gated: whether a stub says the right thing, and     |
 |                            | the `contributor.process` clause in `traces/_schema.yml`. |
-|                            | A `###` here stands two of the rules down, so keep        |
+|                            | A `###` here stands two rules and a note down, so keep    |
 |                            | sections out until release. The stub is not the released  |
 |                            | entry: [CONTRIBUTING § Release Phase 1](../CONTRIBUTING.md#release) |
 |                            | condenses it by hand at release time, and names the       |

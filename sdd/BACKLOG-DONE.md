@@ -265,7 +265,8 @@ if evidence changes; these are retired.
   `check_changelog_unreleased.py`'s prose-budget rationale asserted the expansion
   premise "is exactly what ID-253 files as unbacked" — false on this commit — and
   now records that the premise is backed and still the wrong justification, since
-  the step condenses from three sources of which this section is not one. The
+  the step takes only *what shipped* from this section and gets its prose from
+  the item body and the migration guide. The
   release-window bound now names the hand-off's other side: the Phase 1 step owns
   the groupings-before-bullets ordering the stand-down depends on.
   **Left undone, deliberately.** The step stays manual — a rewrite for a

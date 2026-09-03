@@ -41,12 +41,12 @@ The three rules
    scannable index of what shipped, which is what makes a duplicate visible —
    and deliberately **not** by "the release re-expands this prose anyway".
    ID-253 has since written that expansion step down, so the premise is no
-   longer unbacked; it is still the wrong justification. The step names three
-   sources and none of them is this section: it condenses from the stub, the
-   item's ``BACKLOG-DONE.md`` body and the migration guide, and a stub that
-   grew into a paragraph would be re-read for one line of it. A budget that
-   rested on the expansion would have to move whenever the release procedure
-   did, and this one does not.
+   longer unbacked; it is still the wrong justification. The step takes only
+   *what shipped* from this section and gets the prose from the item's
+   ``BACKLOG-DONE.md`` body and the migration guide, so a stub grown into a
+   paragraph would be re-read for one line of it. A budget that rested on the
+   expansion would have to move whenever the release procedure did, and this
+   one does not.
 3. **The audience rule.** Every item under ``BACKLOG-DONE.md`` § Unreleased
    whose ``audience`` carries a ``user.*`` tag has an entry. This is the
    direction ``CONTRIBUTING.md`` § Release Phase 1 already runs, and the only
@@ -103,14 +103,19 @@ Bounds (Rule 7)
   checklist states it where the step is.
 
   Reconstruct either state by putting the most recent released section's body
-  under ``## [Unreleased]`` **in place of the stubs** — not alongside them,
-  which would leave the audience rule satisfied by the surviving stubs and
-  demonstrate nothing — and leaving ``BACKLOG-DONE.md`` alone. **Run it twice
-  and the pair is the whole demonstration:** verbatim, the body carries its
-  ``###`` headings, so the stand-down fires and the run is clean with one note.
-  Strip the headings and the same content produces a wall of violations,
-  overwhelmingly strays, plus every user-facing completed item reported
-  entry-less.
+  under ``## [Unreleased]`` **in place of the stubs**, and leaving
+  ``BACKLOG-DONE.md`` alone. **Run it twice and the pair is the whole
+  demonstration:** verbatim, the body carries its ``###`` headings, so the
+  stand-down fires and the run is clean with one note. Strip the headings and
+  the same content produces a wall of violations, mostly strays, plus every
+  user-facing completed item reported entry-less.
+
+  *In place of* matters to the stripped run only, and only for the second
+  half: leave the stubs alongside and they satisfy the audience rule, so that
+  run reports the strays without the entry-less items. The verbatim run is
+  unaffected either way — the ``###`` stands the audience rule down before the
+  stubs can answer it — so this is a property of one variant, not of the
+  recipe.
 
   **The figures are not pinned here, and the recipe is why.** An earlier version
   gave the verbatim run a violation count, which stopped reproducing the moment
