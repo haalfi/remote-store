@@ -244,9 +244,16 @@ if evidence changes; these are retired.
   the rest unwrapped, measured on paramiko 5.0.0. `EACCES` is a deliberate
   exclusion, carried by BUG-273. They classify through
   `_is_unreachable` and an arm of their own rather than by widening
-  `_is_connection_dead`: that predicate is also the stream `is_fatal` guard and
-  the mid-operation "do not re-enter a dead channel" test, and no operation is
-  in flight when a connect is refused. Every other `OSError` the errno dispatch
+  `_is_connection_dead`, because **the two predicates answer different
+  questions** — was the host ever reached, versus is a connection the backend
+  had now unusable. **No reachability reason is given, and that is the finding
+  rather than an omission:** three rounds wrote one and review refuted each in
+  turn (no operation is in flight at connect time; the guards are never
+  consulted on the connect path; the shapes partition by phase). The condition's
+  space is enumerated instead — `TestSFTPConnectTimePredicateSpace` generates
+  connect-time shape x operation and asserts the caller's answer per cell — so
+  which predicate claims a shape is an implementation detail. Every other
+  `OSError` the errno dispatch
   declines keeps the base `RemoteStoreError` — `EIO` and `ENOSPC` are faults of
   a connection that is working, and the test suite pins that bound.
   **The DNS arm supplies its own message.** `gaierror` renders as `Name or
@@ -261,8 +268,11 @@ if evidence changes; these are retired.
   none.
   **One backlog correction shipped with it:** this item's own body claimed
   `docs-src/guides/health-check.md` "now carries a caveat pointing here". It
-  never did — the guide's `BackendUnavailable` row was simply false, and is now
-  true as written with nothing added.
+  never did — the guide's `BackendUnavailable` row was simply false, and needed
+  nothing added. **It is true as written for the failures this item covers**, and
+  the qualifier is load-bearing: BUG-273 records one class of network error, a
+  locally-rejected connect, that still answers `PermissionDenied`. The row is not
+  unconditionally true and this entry does not claim it is.
   **What was deliberately not done:** the same class of defect on other
   backends, which is **BUG-264**, and the observable-failure-to-arm table, which
   is **BUG-266**.

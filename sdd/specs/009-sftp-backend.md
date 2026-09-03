@@ -346,20 +346,34 @@ a plain `OSError`.
 These are a *connect-time* set and sit in their own arm rather than joining the
 dropped-connection set above, **because the two predicates answer different
 questions** — was the host ever reached, versus is a connection the backend had
-now unusable. Not because a connect-time shape could not safely sit in the other
-set: a connect that *times out* raises `socket.timeout`, which the
-dropped-connection predicate already matches, and no harm follows, because the
-`is_fatal` and re-entry guards that predicate also serves are never consulted on
-the connect path.
+now unusable.
+
+**No claim is made about what is reachable when, and the omission is the
+clause.** Three rationales of that kind were written for this split and each was
+refuted by a state it had not considered: that no operation is in flight at
+connect time (a connect that times out raises `socket.timeout`, which the
+dropped-connection predicate already matches); that the `is_fatal` and re-entry
+guards are never consulted on the connect path (they are — `read`, `read_bytes`
+and `delete` evaluate the lazy `_sftp` property inside their own `try`, so a
+failure raised by `_connect` reaches them); and that the shapes partition by
+phase at all. A fourth reading is not more likely to be exhaustive than the
+first three, so the condition's space is enumerated instead of argued:
+`TestSFTPConnectTimePredicateSpace` generates the product of connect-time shape
+and operation and asserts, per cell, that the caller gets `BackendUnavailable`
+with a non-empty message, a cleared client and one `op="error_mapping"` record.
+Which predicate claims a shape is therefore an implementation detail, which is
+the only footing on which this split has survived review.
 
 Every other `OSError` the errno dispatch declines keeps the base
 `RemoteStoreError` — `EIO` and `ENOSPC` are faults of a connection that is
 working. **`EACCES` is a known exclusion rather than an oversight**: paramiko
 re-raises it unwrapped like the three above, so a locally-rejected connect takes
-the `EACCES` arm and is answered `PermissionDenied` naming the caller's path for
-a failure that never reached the server. It is excluded because the same errno
-on a live operation genuinely is a denied path and this dispatch cannot tell the
+the `EACCES` arm and is answered `PermissionDenied` — naming the caller's key on
+a keyed operation, and a bare `Permission denied: ` on `check_health`, for a
+failure that never reached the server. It is excluded because the same errno on
+a live operation genuinely is a denied path and this dispatch cannot tell the
 two apart. BUG-273 carries it.
+
 **Every** `BackendUnavailable` this mapping returns — the `SSHException` family
 included — invalidates the cached SFTP client so the next operation reconnects
 (see SFTP-010, tier 2). The list is not the guarantee: recovery is anchored to
@@ -419,7 +433,15 @@ whenever it has one", and only in one direction. A refused connect keeps
 paramiko's text, which already names host and port. A `gaierror` renders as
 `Name or service not known` and never says *which* name, so that arm supplies
 one naming the host — the port is deliberately omitted, since resolution never
-reaches it. The arm also covers its own blank cases — **both** of them, the
+reaches it. **A connect that times out is the bound on this**: it is claimed by
+the dropped-connection predicate, so it keeps that arm's treatment and names
+neither host nor port — `BackendUnavailable("timed out")`. Of the three ordinary
+ways a connect fails, one names host and port (paramiko's own text), one names
+the host, and one names nothing. Stated rather than fixed, because narrowing it
+would mean re-partitioning the predicates, which is the thing this section
+declines to do.
+
+The arm also covers its own blank cases — **both** of them, the
 resolution branch and the errno branch — rather than falling through, because
 the generic fallback reports a connection *lost*, which is the wrong sentence
 for one that was never made. Neither blank shape is raised by anything today:

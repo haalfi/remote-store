@@ -472,18 +472,27 @@ compliant the day before.
   `EHOSTDOWN` (`SSHClient.connect` captures only `ECONNREFUSED` and
   `EHOSTUNREACH` into `NoValidConnectionsError`; its own docstring says so). It
   therefore reaches the mapping as a plain `PermissionError` and takes the
-  `EACCES` arm, so `check_health()` answers
-  `PermissionDenied("Permission denied: <the caller's key>")` for a connect that
-  never reached the server. That is BUG-265's own defect shape — a caller
-  following the health-check guide catches the wrong type — with a worse second
-  half, because the message names a path as the subject of a failure the path
-  had no part in.
-  **What was NOT measured, and it is the item's open question:** that a real
-  network produces `EACCES` on `connect()`. Linux does return it for a locally
-  rejected connect (`iptables --reject-with icmp-admin-prohibited`), but no such
-  route existed in the sandbox that found this, so **the trigger is
-  unreproduced** and the first work here is reproducing it. An unreachable
-  trigger makes this a documentation item rather than a code one.
+  `EACCES` arm. Measured per operation, since the two answers differ:
+  `read_bytes("delivery.csv")` and `exists("delivery.csv")` answer
+  `PermissionDenied("Permission denied: delivery.csv")`, while `check_health()`
+  — which runs under `_errors()` with no key — answers a bare
+  `PermissionDenied("Permission denied: ")`. That is BUG-265's own defect shape,
+  a caller following the health-check guide catching the wrong type, in two
+  flavours: on a keyed operation the message names a path as the subject of a
+  failure the path had no part in, and on the probe it dangles a colon with
+  nothing after it — the shape
+  `test_a_message_less_dns_failure_does_not_trail_an_empty_colon` exists to
+  prevent on the sibling arm.
+  **What was NOT measured, and it is the item's open question:** that any real
+  network produces `EACCES` on `connect()`. **No trigger is known**, and the
+  first work here is finding one. An earlier revision of this item offered
+  `iptables --reject-with icmp-admin-prohibited`; that is wrong and is recorded
+  here so it is not tried twice. It sends ICMP type 3 code 13, which Linux's
+  `icmp_err_convert` maps to `EHOSTUNREACH` — an errno BUG-265 already put in
+  `_is_unreachable`'s tuple, so following that recipe lands on the new arm and
+  shows nothing. A local `OUTPUT`-chain `REJECT` yields `EPERM`, also not
+  `EACCES`. If no trigger exists, this is a documentation item rather than a
+  code one.
   **Disposition:** not simply widening the tuple. The same errno on a live
   operation genuinely is a denied path — `test_eacces_maps_to_permission_denied`
   pins that and is right — and `_map_exception` dispatches on the exception

@@ -2471,16 +2471,23 @@ class SFTPBackend(Backend):
         The connect-time counterpart to ``_is_connection_dead``, and separate
         from it because **the two answer different questions** — this one asks
         whether the host was ever reached, that one whether a connection the
-        backend had is now unusable. That is the whole of the reason, and it is
-        stated that way because the tempting shorter reason is false: "no
-        operation is in flight at connect time, so folding these in would arm
-        the ``is_fatal`` and re-entry guards for a state they cannot meet" is
-        refuted by a shape already in the other predicate. A connect that
-        *times out* raises ``socket.timeout``, which ``_is_connection_dead``
-        matches, and no harm follows — those guards are simply never consulted
-        on the connect path. So reachability is not what keeps the sets apart;
-        the question each is asked is. ``_map_exception`` gives each its own arm,
+        backend had is now unusable. ``_map_exception`` gives each its own arm,
         and the two are disjoint over every shape measured against them.
+
+        **That is the whole of the reason, and no claim is made here about what
+        is reachable when.** Three successive rationales of that kind were
+        written and each was refuted: that no operation is in flight at connect
+        time (a connect that times out raises ``socket.timeout``, which the
+        other predicate already matches); that the ``is_fatal`` and re-entry
+        guards are never consulted on the connect path (they are — ``read``,
+        ``read_bytes`` and ``delete`` evaluate the lazy ``_sftp`` property
+        *inside* their own ``try``, so a failure raised by ``_connect`` reaches
+        them); and that the shapes partition by phase at all. What a caller
+        actually gets is enumerated instead, as the product of connect-time
+        shape and operation, in
+        ``TestSFTPConnectTimePredicateSpace`` — twelve cells, each asserting
+        ``BackendUnavailable`` with a non-empty message, a cleared client and
+        one record. Read the table there rather than reasoning from here.
 
         Three shapes reach here, none of them matched by the errno dispatch in
         ``_map_exception``:
@@ -2571,15 +2578,17 @@ class SFTPBackend(Backend):
         return None
 
     def _unavailable(self, exc: Exception, path: str, *, message: str | None = None) -> BackendUnavailable:
-        """Build a ``BackendUnavailable`` for a concluded backend failure, and log it.
+        r"""Build a ``BackendUnavailable`` for a concluded backend failure, and log it.
 
         **Every** ``BackendUnavailable`` ``_map_exception`` *constructs* ends
         here, so what a caller is handed — and what lands in their log — is
         described in one place rather than at each of the arms that reach it.
         No count is given: this docstring said "the four arms" through the
         addition of a fifth (the unreachable-host arm), and the number was never
-        what the sentence needed. ``rg -n 'self\\._unavailable\\(' `` on this file
-        is the derivation if you want one. Constructs,
+        what the sentence needed. ``rg -n 'self\._unavailable\(' `` on this file
+        is the derivation if you want one — and this docstring is raw so that
+        command is copy-pasteable from the source, which is where a maintainer
+        reads it, rather than only from ``__doc__``. Constructs,
         not returns: the passthrough arm returns a ``RemoteStoreError`` it was
         given unchanged, so a ``BackendUnavailable`` built elsewhere and fed
         back in — the direct raise in ``_open_sftp_bounded`` is the only one

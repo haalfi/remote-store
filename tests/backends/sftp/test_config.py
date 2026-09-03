@@ -15,6 +15,7 @@ import socket
 import sys
 import tempfile
 import uuid
+from functools import partial
 from typing import TYPE_CHECKING, Any
 from unittest.mock import patch
 
@@ -1988,6 +1989,132 @@ class TestSFTPMapException:
         assert not ours, f"an unrelated errno logged {[r.getMessage() for r in ours]}"
 
 
+class TestSFTPConnectTimePredicateSpace:
+    """BUG-265: what each connect-time shape meets, enumerated rather than argued.
+
+    **This class exists because three successive prose rationales for keeping
+    ``_is_unreachable`` separate from ``_is_connection_dead`` were each refuted
+    by a state the argument had not considered.** In order: "no operation is in
+    flight at connect time" (refuted — a connect that times out raises
+    ``socket.timeout``, which ``_is_connection_dead`` already matches); "those
+    guards are never consulted on the connect path" (refuted by measurement —
+    ``read_bytes`` against a refused port consults it three times, twice before
+    the mapping); and, implicitly, that the shapes partition neatly by phase
+    (they do not — the same ``socket.timeout`` is both connect-time and
+    mid-operation).
+
+    A fourth reading is not more likely to be exhaustive than the first three,
+    so the condition's space is parametrised and generated instead. The axes are
+    the connect-time failure shape and the operation that meets it; what is
+    asserted is the observable contract, which is what a caller has and what no
+    rationale can get wrong.
+
+    The prose that survives is one sentence — the two predicates answer
+    different questions — and it makes no claim about reachability, because
+    every claim of that kind made about this pair so far has been false.
+    """
+
+    SHAPES = ("refused", "dns", "connect-timeout")
+    OPERATIONS = ("check_health", "exists", "read_bytes", "delete")
+
+    @staticmethod
+    def _backend(monkeypatch: pytest.MonkeyPatch, shape: str) -> SFTPBackend:
+        """Build a backend whose connect fails in *shape*, deterministically.
+
+        ``refused`` uses a just-released ephemeral port, so it is the real
+        kernel refusal. The other two are monkeypatched at the socket layer
+        rather than aimed at the network: a DNS failure driven through the host
+        resolver would depend on the runner's nameserver, and a connect timeout
+        driven through a blackhole address would depend on a route this suite
+        cannot assume.
+        """
+        port = 22
+        if shape == "refused":
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.bind(("127.0.0.1", 0))
+            port = int(sock.getsockname()[1])
+            sock.close()
+        elif shape == "dns":
+            monkeypatch.setattr(
+                socket,
+                "getaddrinfo",
+                lambda *a, **k: (_ for _ in ()).throw(socket.gaierror(-2, "Name or service not known")),
+            )
+        elif shape == "connect-timeout":
+            monkeypatch.setattr(
+                socket.socket, "connect", lambda self, addr: (_ for _ in ()).throw(TimeoutError("timed out"))
+            )
+        return SFTPBackend(
+            host="127.0.0.1",
+            port=port,
+            host_key_policy="auto",
+            timeout=3,
+            retry=RetryPolicy.disabled(),
+        )
+
+    @pytest.mark.spec("SFTP-023")
+    @pytest.mark.parametrize("shape", SHAPES)
+    @pytest.mark.parametrize("operation", OPERATIONS)
+    def test_every_connect_time_shape_answers_backend_unavailable(
+        self, operation: str, shape: str, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """SFTP-023: the product of connect-time shape x operation, generated.
+
+        Twelve cells. Whichever predicate claims a shape, the caller's answer is
+        the same: ``BackendUnavailable``, a non-empty message, the cached client
+        cleared, and exactly one ``op="error_mapping"`` record. That is the
+        contract the docstrings promise, and asserting it per cell is what makes
+        the split between the two predicates an implementation detail rather
+        than something prose has to get right.
+        """
+        backend = self._backend(monkeypatch, shape)
+        call = (
+            backend.check_health
+            if operation == "check_health"
+            else partial(getattr(backend, operation), "delivery.csv")
+        )
+        with caplog.at_level(logging.DEBUG, logger="remote_store"):
+            caplog.clear()
+            with pytest.raises(BackendUnavailable) as caught:
+                call()
+
+        assert caught.value.args[0], f"{operation}/{shape} raised a blank message"
+        assert backend._sftp_client is None, f"{operation}/{shape} left the cached client in place"
+        records = [r for r in caplog.records if getattr(r, "op", None) == "error_mapping"]
+        assert len(records) == 1, f"{operation}/{shape} left {len(records)} mapping records"
+
+    @pytest.mark.spec("SFTP-023")
+    def test_the_dead_connection_guard_is_consulted_on_the_connect_path(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """SFTP-023: pin the fact that refuted two rationales in a row.
+
+        Both claimed the mid-operation re-entry guards cannot be reached before
+        a connect succeeds. They can: ``read_bytes`` evaluates the lazy ``_sftp``
+        property *inside* its own ``try``, so a failure raised by ``_connect``
+        is handed to that guard like any other.
+
+        This asserts the reachability, not a count. The count is a function of
+        how many probes the classification path makes, which is
+        ``read_bytes``'s business and not this contract's — pinning it here
+        would make an unrelated refactor fail this test. What must not silently
+        become true is "never consulted", because that is the sentence two
+        rounds of review had to delete.
+        """
+        seen: list[str] = []
+        original = SFTPBackend._is_connection_dead
+
+        def counting(exc: Exception) -> bool:
+            seen.append(type(exc).__name__)
+            return bool(original(exc))
+
+        monkeypatch.setattr(SFTPBackend, "_is_connection_dead", staticmethod(counting))
+        backend = self._backend(monkeypatch, "refused")
+        with pytest.raises(BackendUnavailable):
+            backend.read_bytes("delivery.csv")
+
+        assert seen, "the dead-connection guard was never consulted on the connect path"
+        assert "NoValidConnectionsError" in seen, f"the connect failure never reached the guard: {seen}"
+
+
 class TestSFTPUnreachableHost:
     """BUG-265, end to end: what a caller actually meets against a host that is not there.
 
@@ -2030,24 +2157,35 @@ class TestSFTPUnreachableHost:
             backend.check_health()
 
     @pytest.mark.spec("SFTP-023")
-    def test_dns_failure_raises_backend_unavailable(self) -> None:
-        """SFTP-023: an unresolvable host answers the same way.
+    def test_dns_failure_raises_backend_unavailable(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """SFTP-023: an unresolvable host answers the same way, through the real connect path.
 
-        The message is not asserted here, only the type. A resolver that hijacks
-        NXDOMAIN — some corporate and captive-portal resolvers do — turns this
-        into a refused or timed-out connect against the hijack address instead,
-        which is a different arm reaching the same conclusion. The name is pinned
-        against the mapping directly in
-        ``test_a_dns_failure_names_the_host_that_did_not_resolve``, where no
-        resolver is involved.
+        ``getaddrinfo`` is monkeypatched rather than the test being aimed at an
+        RFC 2606 ``.invalid`` host, and the reason is not fastidiousness. An
+        earlier revision did aim at the network, and that made this the only
+        test in the suite depending on the runner's resolver: ``timeout=3``
+        bounds ``socket.connect``, not ``getaddrinfo``, which takes no timeout
+        at all, so a runner with a configured-but-unreachable nameserver would
+        block for the resolver's own retransmit budget. A hijacking resolver was
+        the failure mode the docstring anticipated; an unresponsive one was not,
+        and it is the worse of the two.
+
+        Everything after resolution is still the real thing — `_connect`,
+        paramiko, the mapping — so the path this pins is unchanged; only the
+        one step that cannot be bounded is made deterministic.
         """
+        monkeypatch.setattr(
+            socket,
+            "getaddrinfo",
+            lambda *a, **k: (_ for _ in ()).throw(socket.gaierror(-2, "Name or service not known")),
+        )
         backend = SFTPBackend(
             host="no-such-host.invalid",
             host_key_policy="auto",
             timeout=3,
             retry=RetryPolicy.disabled(),
         )
-        with pytest.raises(BackendUnavailable):
+        with pytest.raises(BackendUnavailable, match="no-such-host.invalid"):
             backend.check_health()
 
     @pytest.mark.spec("SFTP-023")

@@ -51,14 +51,19 @@ surprising_ripples:
 #   BUG-265: Fix a migration cross-reference, an untested branch and two trace
 #            fields -> counts (round 1, 3 findings)
 #   BUG-265: Correct three derived figures a measuring round refuted, and guard
-#            a second blank-message shape -> counts (round 2, 4 findings)
+#            a second blank shape -> counts (round 2, 4 findings)
 #   BUG-265: Stop counting the arms, and record what the panel refuted
 #                                                 -> counts (round 3, 15
 #            findings from a three-member panel after dedup)
-# Value is 3 — one per review round that produced a commit, which is rows 2, 3
-# and 4; row 1 implements the item. Re-derived from that command before each
-# push, since a later round raises it.
-review_rounds: 3
+#   BUG-265: Enumerate the connect-time predicate space instead of arguing it
+#                                                 -> counts (round 4, 13
+#            findings from a three-member panel after dedup)
+# Value is 4 — one per review round that produced a commit, which is rows 2, 3,
+# 4 and 5; row 1 implements the item. Re-derived from that command before each
+# push, since a later round raises it. Round 4 found the third subject line
+# quoted here had drifted from what the command returns ("blank-message shape"
+# for "blank shape"), which is why the quotations are copy-pasted now.
+review_rounds: 4
 phases:
   - id: orient
     name: Orient
@@ -166,15 +171,21 @@ phases:
         read_type: reference
         extract: >-
           A predicate and an arm of its own rather than widening
-          _is_connection_dead, because that predicate is also the stream
-          is_fatal guard and the mid-operation re-entry test, and no operation
-          is in flight when a connect is refused. Called at 15 sites in the
-          module, 14 of them outside _map_exception — derived by walking the
-          file for the name and excluding the definition and prose mentions,
-          which are 8 more. Retrospective: this line said "eight call sites"
-          until the round-2 figure sweep, having taken the prose-mention count
-          for the call count. The sweep was aimed at the figures a measuring
-          round had already refuted, and caught this one on the way past
+          _is_connection_dead. **The reason recorded here was refuted twice
+          after this step was written** — see the fix_panel and fix_enumerated
+          phases; it said "no operation is in flight when a connect is refused",
+          which is false, and its replacement was false too. The reason that
+          survives is that the two predicates answer different questions, and
+          the condition's space is enumerated in a test rather than argued.
+          Called at 15 sites in the module, 14 of them outside _map_exception
+          (`rg -n 'self\._is_connection_dead' src/remote_store/backends/_sftp.py`
+          minus the one inside the mapping). Retrospective: this line said
+          "eight call sites" until the round-2 figure sweep, having taken a
+          prose-mention count for the call count, and then carried "8 more"
+          prose mentions until round 4 found that stale too — the docstring
+          edits in this very PR moved it. That second figure is now dropped
+          rather than corrected: "prose mention" has no crisp definition and the
+          number moves every time a docstring is touched
         outcome: ok
       - file: sdd/specs/009-sftp-backend.md
         section: "SFTP-023"
@@ -351,6 +362,57 @@ phases:
           stall "were always distinguishable by type", whose whole point is a
           distinction the change removes. None sits on a + line, so only a
           whole-file pass could reach them
+        outcome: ok
+  - id: fix_enumerated
+    name: Round-4 fix pass (repeat-site check fired)
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Stop rule / Repeat-site check"
+        read_type: gate
+        extract: >-
+          Three rounds refuted the same condition — why _is_unreachable is
+          separate from _is_connection_dead — each time by a state the argument
+          had not considered. That is the rule's trigger, and its instruction is
+          to stop arguing and enumerate the space. Round 4's measuring member
+          made it unarguable: read_bytes against a refused port consults
+          _is_connection_dead three times, twice before the mapping, so the
+          replacement rationale round 3 wrote was false in the same way as the
+          one it replaced
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPConnectTimePredicateSpace"
+        read_type: reference
+        extract: >-
+          The enumeration the rule asks for: connect-time shape x operation,
+          twelve cells, asserting the caller's observable answer per cell rather
+          than which predicate claimed the shape. Plus one test pinning the fact
+          that killed two rationales — that the re-entry guard IS consulted on
+          the connect path — asserting reachability and deliberately not a
+          count, since the count belongs to read_bytes' probe sequence and would
+          make an unrelated refactor fail
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_unreachable (docstring), _unavailable (docstring)"
+        read_type: verify
+        extract: >-
+          Every reachability claim deleted, replaced by a pointer to the
+          enumeration. Also made _unavailable's docstring raw: it cited an rg
+          command that did not run as written from the source, because the
+          non-raw string needed doubled backslashes to render — a derivation
+          command a maintainer copies from the file and that fails is worse than
+          the count it replaced
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-273"
+        read_type: verify
+        extract: >-
+          The reproduction recipe filed one round earlier was wrong:
+          icmp-admin-prohibited maps to EHOSTUNREACH, which BUG-265 already
+          claims, so a reader following it would conclude the defect does not
+          exist. Replaced with "no trigger is known" and the failed recipe
+          recorded so it is not tried twice. Also corrected the item's message
+          claim per operation — check_health answers a bare "Permission denied:
+          ", not a keyed message
         outcome: ok
   - id: verify
     name: Verify
