@@ -88,7 +88,9 @@ takes an hour is unaffected, while a flow that goes quiet for longer than the
 bound raises [`BackendUnavailable`](../../reference/api/errors.md). That error
 names the stall and the value that fired (`SFTP channel stalled: no data within
 io_timeout=120.0s`), and the backend logs it once at `WARNING`, so a stall is
-distinguishable from any other `BackendUnavailable` in a log you read later.
+distinguishable from any other `BackendUnavailable` in a log you read later. What
+it does not say is whether the operation happened —
+[a stalled operation may have succeeded](#capabilities).
 
 **It is on by default, at 120 seconds.** You get the bound without asking for
 it, so nothing you write hangs forever on a silent peer. What you configure is

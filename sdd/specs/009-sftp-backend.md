@@ -894,11 +894,12 @@ this clause each got wrong:
   the request never arrived and it did not happen. Server→client silenced, the
   server performed it and only the answer was lost.
 
-**A caller can observe neither**, and the raised error does not close the gap.
-BK-359 gave it a message naming the stall and the bound that fired, which is what
-tells a reader *why* the operation failed — but not what the server did with the
-request before falling silent. That is the distinction this clause turns on, and
-it is not one an error message can carry: the client never learns it.
+**A caller can observe neither**, and this clause rests on that. The
+two-directions paragraph earlier in SFTP-030 measures it: silencing server→client
+and client→server produce one identical message and one identical context, so the
+error names the *fault* and not the *side*. The message therefore tells a reader
+why the operation failed, and no message could tell them what the server did with
+the request before falling silent, because the client never learns it.
 
 **What that entails, and this is the whole of it: the residue is any prefix of
 the operation's effects, up to and including all of them.** An operation is a
