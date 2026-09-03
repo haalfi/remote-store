@@ -85,7 +85,10 @@ is what stops that, and it is armed for you.
 `io_timeout` bounds the silence *between* bytes rather than the transfer as a
 whole, which is what makes it usable on slow links: a multi-gigabyte fetch that
 takes an hour is unaffected, while a flow that goes quiet for longer than the
-bound raises [`BackendUnavailable`](../../reference/api/errors.md).
+bound raises [`BackendUnavailable`](../../reference/api/errors.md). That error
+names the stall and the value that fired (`SFTP channel stalled: no data within
+io_timeout=120.0s`), and the backend logs it once at `WARNING`, so a stall is
+distinguishable from any other `BackendUnavailable` in a log you read later.
 
 **It is on by default, at 120 seconds.** You get the bound without asking for
 it, so nothing you write hangs forever on a silent peer. What you configure is

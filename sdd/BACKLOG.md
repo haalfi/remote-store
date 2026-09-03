@@ -205,14 +205,23 @@ deleted mid-scan (BUG-255) or when a folder vanishes part-way through a
 recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 (BUG-256); a constructor does not leak its driver's exception
 (BUG-245) and neither does a stream (BK-358); one operation does not answer by
-payload size (BUG-253); a caller who meets a failure can tell *which* failure it
-was, rather than an empty message and no log record (BK-359); and a newly
+payload size (BUG-253); a caller who meets a failure on **any** backend can tell
+*which* failure it was, rather than an empty message (BUG-264), and catches the
+type the docs promised (BUG-265); and a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
 (BK-345). BK-359 is why the Promise above carries a third clause, added with it
 rather than left implicit: an error that is
 the right *type* on every backend but says nothing is predictable to a checker
 and not to the person reading their log, and this section is where that reader
-is served. The spec contradiction is adjudicated — BUG-248, closed by
+is served. That clause is now met on SFTP's `BackendUnavailable` arms and
+nowhere else — BK-359 closed the backend whose stall BK-356 had just made the
+default failure surface, and BUG-264 carries the same question outward with the
+answer already measured rather than guessed: Azure reproduces the defect, both
+botocore arms are immune, and the base-class arms leak a blank
+`RemoteStoreError` on SFTP too. A promise clause honoured on one arm of one
+backend is the shape this section exists to catch, and the count of arms is why
+BUG-264 is not the tidy one-line follow-up it was first filed as.
+The spec contradiction is adjudicated — BUG-248, closed by
 [ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md) — the
 never-leak invariant holds on the S3 listing path, closed by BUG-249 with
 BUG-246, the last adapter answers the contract against an absent container,
@@ -286,37 +295,201 @@ compliant the day before.
   Until then `docs-src/guides/troubleshooting.md` tells the reader to treat the
   path as being in an unknown state and re-write it, which is safe and vague.
 
-- [ ] **BK-359 — A stalled SFTP operation raises `BackendUnavailable` with an empty message and no log record**
-  spec: SFTP-030, SFTP-023 · effort: S · audience: user.api
-  `_map_exception` builds the error as `BackendUnavailable(str(exc), ...)`, and
-  paramiko raises `socket.timeout()` with no arguments, so the message is the
-  empty string. Measured on a real channel at `io_timeout=2.0`, with a relay
-  silencing server→client mid-`read_bytes`: `e.args == ('',)`,
-  `str(e) == " | path='delivery.csv' | backend='sftp'"`, `__context__` a bare
-  `TimeoutError()`, and — at `logging.DEBUG` — **no `remote_store` log record at
-  all** between the SFTP `Request: open` and the raise. The only lines are
-  paramiko's own transport traffic.
-  **Pre-existing from BK-354; promoted by BK-356.** While `io_timeout` defaulted
-  to `None`, the only caller who could reach this had set the option themselves
-  and knew what it meant. Flipping the default to `120.0` makes it the shipped
-  failure surface for a silent peer, so the first person to meet it is now
-  someone who configured nothing — the reader with the least context to decode an
-  empty message. Two sentences BK-356 shipped are what make that awkward: the
-  troubleshooting page's "a silent peer raises `BackendUnavailable` after two
-  minutes", and the migration entry's "It now raises `BackendUnavailable` after
-  120 s of silence" — read precisely when a user has least context. That page
-  now documents the empty message and the missing log record for this shape
-  itself, so it describes the defect rather than contradicting it; what it
-  cannot do is give the reader something to search their logs for. The raised
-  object carries none of
-  "silent", "timeout" or the bound, so a user reading their own error log cannot
-  tell it from any other `BackendUnavailable`, a refused connect included.
-  The recovery half is correct and was measured alongside: the client is dropped
-  and the next operation reconnects and reads normally. What is missing is the
-  message, not the behaviour — so the fix is a mapped error that names the
-  stall and the bound, and a decision about whether the backend logs it.
-  Found by BK-356's review round 2, which reached it by running the failure
-  rather than reading the mapping.
+- [ ] **BUG-264 — A mapped error can still reach the caller with an empty message on Azure, and through the base-class arms everywhere**
+  spec: ERR-009 · effort: M · audience: user.api
+  BK-359 fixed the SFTP `BackendUnavailable` arms. Two things it did not reach
+  are measured here rather than assumed, because the first draft of this item
+  filed the question as "unmeasured" and both halves of that guess were wrong.
+
+  **Azure is a confirmed reproduction, not a hypothesis.** A genuine
+  `asyncio.TimeoutError` — obtained by running `asyncio.timeout(0.001)` around a
+  sleep, not by constructing one — carries `args=()` and `str() == ''`.
+  `azure/core/pipeline/transport/_aiohttp.py` wraps it as
+  `ServiceResponseTimeoutError(err, error=err)` at lines **397, 483 and 580** of
+  the installed 3.x, and `AzureError.__init__` sets `self.message =
+  str(message)`. That subclasses `ServiceResponseError`, so
+  `classify_azure_error`'s `ServiceRequestError | ServiceResponseError` arm
+  (`backends/_azure_common.py:173`) returns `BackendUnavailable('')`, rendering
+  as `" | path='delivery.csv' | backend='azure'"` — character for character the
+  SFTP defect. **Line 395 is a fourth raise site on the same arm**, wrapping the
+  same `asyncio.TimeoutError` as `ServiceRequestTimeoutError`, which subclasses
+  `ServiceRequestError`; an earlier revision of this item cited three sites and
+  had each line number one low, so treat the set as four.
+  It reaches `AsyncAzureBackend` (**10** `classify_azure_error` call sites:
+  611, 894, 943, 1020, 1056, 1091, 1118, 1155, 1181, 1658) and `AzureBackend`
+  (**3**: 1818, 1965, 2024) — counted as call sites, with the `from ... import`
+  line excluded, which is where the earlier 11-and-4 figures came from.
+  The sync side is exposed the same way but is
+  **not** reproduced: `requests`' `ConnectionError`, `ReadTimeout`,
+  `ConnectTimeout` and `ChunkedEncodingError` all stringify empty when
+  argument-less, and the requests transport wraps them identically, but requests
+  itself normally supplies urllib3 text, so only the async timeout is an
+  end-to-end reproduction.
+
+  **Both boto3 arms are immune**, which the first draft of this item implied
+  might need fixing. `ClientError` always formats from a template — even
+  `ClientError({}, "GetObject")` gives `"An error occurred (Unknown) when calling
+  the GetObject operation: Unknown"` — and `BotoCoreError` formats from a class
+  `fmt`, with a bare instance giving `"An unspecified error occurred"`. Recorded
+  so the next reader does not re-derive it.
+
+  **The `BackendUnavailable` framing was too narrow**, which is the second thing
+  BK-359 did not reach. ERR-009 is a claim about `str()` on *any* error, and the
+  same construction spelled with the base class is at **7** sites in 5 files:
+  `rg -n 'RemoteStoreError\(str\(exc\)' src/` → `backends/_azure_common.py:198`
+  and `:199`, `backends/_s3_boto3.py:972`, `backends/_s3_pyarrow.py:651`,
+  `_errors.py:194`, and **two in `backends/_sftp.py`** — the `OSError` and final
+  fall-through arms of `_map_exception`, cited without line numbers because that
+  method is what BK-359 was editing and two successive revisions of this item
+  cited numbers its own diff had already shifted. Those two are the fall-through
+  arms of the very `_map_exception` BK-359 rewrote, so SFTP is not finished
+  either — reading that item's title would suggest otherwise.
+  Two of these are reachable and were driven through the real code:
+  `_classify_by_message(OSError(''))` returns `RemoteStoreError('')`, and an
+  empty `OSError` through `S3PyArrowBackend._pyarrow_errors` does the same. Note
+  those two sites are *unreachable* for `BackendUnavailable` — its branch needs
+  one of `endpoint`/`connect`/`timeout`/`dns`/`name or service` in the message
+  and `""` contains none — so reading the guard alone concludes "safe" and
+  running it finds the exit one line below. That is the whole reason this item
+  exists in measured form.
+
+  **Disposition:** the SFTP `_unavailable` helper is the shape to copy for
+  Azure. The base-class arms need a decision first — whether a blank
+  `RemoteStoreError` deserves the same synthesised fallback, or whether those
+  fall-throughs should be classified rather than passed through — which is why
+  this is M and not S.
+  **Filed by BK-359's `/ship` run**, whose round-1 reviewer found the
+  base-class half; the Azure half was measured after the item was challenged for
+  asserting rather than checking.
+
+- [ ] **BUG-265 — A refused SFTP connect raises `RemoteStoreError`, which contradicts fifteen docstrings and the health-check guide**
+  spec: SFTP-023 · effort: S · audience: user.api, user.site
+  Measured against a just-released ephemeral port (the deterministic-refusal
+  trick `tests/backends/sftp/test_config.py` already uses):
+  `SFTPBackend(...).check_health()` raises
+  `RemoteStoreError("[Errno None] Unable to connect to port <n> on 127.0.0.1")`,
+  **not** `BackendUnavailable`. paramiko raises `NoValidConnectionsError`, an
+  `OSError` whose `errno` is `None`; `_is_connection_dead`'s errno-less arm
+  matches only the literal `"Socket is closed"`, so the mapping falls through to
+  its generic `OSError` arm.
+  **What that contradicts.** `check_health`'s own docstring promises
+  "`BackendUnavailable`: If the SSH/SFTP connection cannot be established"
+  (`backends/_sftp.py`), and the same `Raises:` line appears on **fourteen**
+  further methods — 15 in total, derived by walking the module's AST for
+  functions whose docstring **contains the sentence prefix**
+  `"BackendUnavailable: If the SSH/SFTP connection cannot be established"` as a
+  substring. The predicate has to be stated that precisely: only `check_health`
+  ends the sentence there, and the other fourteen continue `" or fails."`,
+  `" or fails mid-read."` or `" or fails mid-write."`, so a full-line-equality
+  reading of the same words returns 1 rather than 15. The methods:
+  `check_health`, `exists`,
+  `is_file`, `is_folder`, `read`, `read_bytes`, `write`, `write_atomic`,
+  `open_atomic`, `delete`, `delete_folder`, `get_file_info`, `get_folder_info`,
+  `move`, `copy`. An earlier revision said eleven, carried over unchecked while
+  its neighbour's figures were being re-derived;
+  `docs-src/guides/health-check.md` § Error handling maps
+  `BackendUnavailable` to "Network error, DNS failure, or timeout" and shows a
+  caller catching it. A caller who followed that guide does not catch a refused
+  connect at all.
+  **DNS is the same answer, and it is now measured rather than presumed:**
+  against an RFC 2606 `.invalid` host, `check_health()` raises
+  `RemoteStoreError("[Errno -2] Name or service not known")` with a
+  `socket.gaierror` context. So two of the three shapes that row names raise the
+  base class, and only the timeout raises what it promises — which is why the
+  guide now carries a caveat pointing here rather than a corrected row: writing
+  current behaviour into the table would document a defect as the contract.
+  **Why it is not BK-359's to fix.** Changing which exception type a refused
+  connect raises is a behaviour change for anyone whose `except` clauses match
+  the current one, so it needs the breaking-change treatment rather than a
+  ride-along. Nothing in `tests/backends/sftp/` pins a refused *backend*
+  connect today — the two refused-socket tests exercise
+  `SFTPUtils.scan_host_keys` / `scan_host_algorithms`, which do not go through
+  this mapping — so the first work here is the failing test.
+  **Found by BK-359's round-1 reviewer** as a `Possible:` it could not run, and
+  confirmed by running it.
+
+- [ ] **BUG-266 — No artifact maps an observable SFTP failure onto the arm that handles it, and four prose attempts were each refuted**
+  spec: SFTP-023, SFTP-030 · effort: M · audience: user.site, library.maintainer
+  `_map_exception` dispatches on exception *type*, and SFTP-023 states the arms
+  that way — correctly, and pinned by tests. What no artifact states correctly is
+  the other direction: given a failure a reader can observe (a refused port, a
+  wedged daemon, a silent peer, a rejected credential, a DNS failure), which arm
+  does it reach and what does the caller get.
+  **Four attempts to summarise that in a sentence were each refuted by
+  measurement**, all during BK-359's review loop: "a failed probe logs once per
+  poll"; "two records per poll, three under `AUTO_ADD`"; "a failed probe writes
+  more than one record" (zero under `RetryPolicy.disabled()`); and "only a probe
+  that fails by timeout reaches the mapping" — refuted by a bad SSH banner, an
+  accept-then-hangup and an `AuthenticationException`, all three of which reach
+  `_unavailable` through the `SSHException` arm with one `op="error_mapping"`
+  record.
+  **The diagnosis is that the space has axes a sentence cannot carry**: the
+  observable failure, the mapping arm, the retry policy's `max_attempts`, and
+  the host-key policy. Each refuted attempt stated one cell of that product as
+  though it were the whole table.
+  **Disposition:** write it once as a parametrised test enumerating
+  observable-failure x arm, asserting the resulting type, message shape and
+  record count, then let the spec and the guides point at the test rather than
+  restate it. The harness exists — `_StallRelay` plus the in-process server
+  already drive stalls in both directions, and BK-359's review produced working
+  probes for a refused port, a DNS failure, a bad banner and an
+  accept-then-hangup. Sized M because the enumeration, not the assertion, is the
+  work.
+  **Filed by BK-359's round 4**, after that loop's repeat-site check fired:
+  three rounds refuting one condition means enumerate the space rather than
+  restate it a fourth time.
+
+- [ ] **BUG-269 — `observe.md`'s level and `op` tables are enumerations that were already false on master, and BK-359 adds to both**
+  spec: OBS-008 · effort: S · audience: user.site
+  `docs-src/guides/observe.md` § *Logging levels used* and § *Structured `extra`
+  fields* are written as enumerations over the whole library — the section three
+  headings up names `remote_store.backends._local` as an example logger, so
+  backend records are in scope, not just `ext.observe`'s.
+  **Both were already false on master**, which is what keeps this out of
+  BK-359's scope rather than in it:
+  | Row | Says | Contradicted on master by |
+  | --- | --- | --- |
+  | `WARNING` | "Suppressed hook exceptions, fallback behaviour" | the `AUTO_ADD` host-key warning, `backends/_sftp.py:1828` — neither |
+  | `op` | "Operation name (`"read"`, `"write"`, ...)" | `op="connect"` (3 sites), `"download"`, `"upload"`, `"transfer"` — 5 non-operation values, counted by `git grep -n 'extra={"op"' origin/master -- src/` |
+  | `ERROR` | "Before re-raising backend errors" | nothing in `src/` logs at that level — **BUG-267**, filed separately |
+
+  BK-359 adds one more of each: an `op="error_mapping"` `WARNING` that is not a
+  suppressed hook exception and not an operation name. It is the third and sixth
+  instance respectively, not the first.
+  **Why it is filed and not fixed.** BK-359 rewrote these rows once; the rewrite
+  was reverted with the rest of its guide prose after four rounds found defects
+  in it, and this item is the paired record that revert owes — the same pairing
+  BUG-268 made for `troubleshooting.md`. Correcting the `op` row is not a fact
+  but a contract decision: whether `op` means "Store operation" (in which case
+  `connect`, `transfer` and `error_mapping` are misuses of the field) or
+  "operation or internal stage" (in which case the row is merely under-written).
+  That decision sits next to **BUG-267**'s, which is why both should be taken
+  together and neither inside a fix pass. **BUG-266** owns the observable-failure
+  → arm table and reaches neither row.
+
+- [ ] **BUG-267 — OBS-008 demands an `ERROR` level that nothing emits and nothing asserts**
+  spec: OBS-008 · effort: XS · audience: contributor.process
+  OBS-008's Levels bullet read "ERROR (before re-raise)" as an invariant over
+  "all library modules". No call site in `src/` logs at `error`, `exception`,
+  `critical` or `fatal` — verified by grep across the package — and none of the
+  four `@pytest.mark.spec("OBS-008")` tests in `tests/ext/test_observe.py`
+  asserts a level at all.
+  That is [`000-process.md` Rule 7](000-process.md#intent-attribution)'s
+  **Unenforced** row: prose demanded it, nothing enforced it, so the claim is
+  undecided and **nothing moves yet**.
+  **BK-359 twice tried to resolve it in passing and both attempts were wrong.**
+  It first deleted the clause and wrote current behaviour into the spec — the
+  code made right by prose inside a review fix pass. Its round 4 caught that and
+  suspended the clause instead, which left the spec saying *undecided* while the
+  guide `docs-src/guides/observe.md`, rewritten in the same PR, still published
+  the withdrawal as settled. Round 5 found that split. Both edits are reverted;
+  OBS-008 and the guide are back at their pre-BK-359 text, so the divergence is
+  intact and undecided rather than half-resolved in two directions.
+  **The decision owed** is one of two: either the library should report before
+  re-raising, and the deliverable is that call site plus the level assertion
+  Rule 2 wants; or it should not, and the clause is withdrawn on the ordinary
+  path with the reason recorded. Either way it is decided once rather than
+  inherited.
 
 - [ ] **BUG-263 — The migration guide promises a drive folder named `.` stays reachable as a key; no key spelling reaches it**
   spec: GR-058 · effort: XS · audience: user.site

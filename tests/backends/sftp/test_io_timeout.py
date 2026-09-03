@@ -687,6 +687,64 @@ def test_stalled_open_raises_backend_unavailable(stall_relay: _StallRelay) -> No
 
 
 @pytest.mark.spec("SFTP-030")
+@pytest.mark.spec("SFTP-023")
+def test_a_stall_says_what_it_was_and_logs_it(stall_relay: _StallRelay, caplog: pytest.LogCaptureFixture) -> None:
+    """The raised error names the stall and the bound, and leaves one log record.
+
+    BK-359. The sibling above pins that a stall *raises within the bound*; this
+    pins what the caller is then holding. Both halves were measured absent on a
+    real channel before the fix: ``e.args == ('',)``, so ``str(e)`` rendered as
+    ``" | path='delivery.csv' | backend='sftp'"``, and at ``logging.DEBUG`` no
+    ``remote_store`` record at all between the SFTP ``Request: open`` and the
+    raise — only paramiko's own transport traffic.
+
+    It is driven through the relay rather than by handing ``_map_exception`` a
+    constructed ``TimeoutError`` (which ``test_config.py`` does) because the
+    claim is about what paramiko really raises on a silent peer. A unit test
+    asserting the mapping of an exception the driver never constructs that way
+    would pass while the shipped failure stayed blank — which is the shape of
+    mistake BK-359 itself came from: the mapping was read, not run.
+
+    The record count is asserted, not merely its presence. One failure must
+    leave one line: the cleanup and classification paths re-enter the mapping,
+    and a per-call-site log would report a single stall several times, which is
+    worse than silence for anyone matching on it.
+    """
+    io_timeout = 2.0
+    backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
+    name = f"saying_{uuid.uuid4().hex[:8]}.bin"
+    backend.write(name, b"x" * (256 * 1024))
+
+    stall_relay.stall_download()
+
+    with caplog.at_level(logging.DEBUG, logger="remote_store"):
+        # Cleared after connecting, as in the silent-close test below: the
+        # AUTO_ADD warning and the connect lines are not what is under test.
+        caplog.clear()
+        with pytest.raises(BackendUnavailable) as excinfo:
+            backend.read_bytes(name)
+
+    message = excinfo.value.args[0]
+    assert message, f"the stall reached the caller blank: {excinfo.value!r}"
+    assert "stalled" in message, f"the message does not name the fault: {message!r}"
+    assert f"io_timeout={io_timeout}" in message, (
+        f"the message does not name the bound that fired: {message!r} — a reader deciding "
+        "whether their server legitimately pauses that long needs the number"
+    )
+    # Equality, not just substrings, and the context type — because SFTP-030's
+    # indistinguishability clause rests on this test and its upload-side sibling
+    # asserting the *same* things. While this side checked substrings only, a
+    # reword on one side alone would have kept both green and made the two
+    # directions distinguishable, which is what that clause says cannot happen.
+    assert message == f"SFTP channel stalled: no data within io_timeout={io_timeout}s"
+    assert isinstance(excinfo.value.__context__, TimeoutError)
+
+    ours = [r for r in caplog.records if r.name.startswith("remote_store")]
+    assert len(ours) == 1, f"expected one remote_store record for one stall, got {[r.getMessage() for r in ours]}"
+    assert ours[0].levelno == logging.WARNING, f"logged at {ours[0].levelname}, expected WARNING"
+
+
+@pytest.mark.spec("SFTP-030")
 def test_a_transfer_slower_than_the_bound_is_not_interrupted(stall_relay: _StallRelay) -> None:
     """A transfer that outlives the bound completes, because bytes keep arriving.
 
@@ -871,10 +929,19 @@ def test_stalled_upload_request_raises_backend_unavailable(stall_relay: _StallRe
 
     stall_relay.stall_upload()
     start = time.monotonic()
-    with pytest.raises(BackendUnavailable):
+    with pytest.raises(BackendUnavailable) as excinfo:
         backend.write(f"upload_{uuid.uuid4().hex[:8]}.bin", b"w" * 4096)
     elapsed = time.monotonic() - start
     assert elapsed < io_timeout * 3, f"write took {elapsed:.1f}s; expected ~{io_timeout}s"
+
+    # SFTP-030 § Semantics asserts that this direction and the download stall
+    # are indistinguishable to a caller — same message, same context type — and
+    # until this assertion only the download half was pinned. The claim exists
+    # to stop a reader inferring, from an error that now names the stall, that
+    # it also names which side fell silent. Asserting it on the *upload* side is
+    # what makes it a claim about both.
+    assert excinfo.value.args[0] == f"SFTP channel stalled: no data within io_timeout={io_timeout}s"
+    assert isinstance(excinfo.value.__context__, TimeoutError)
 
 
 @pytest.mark.spec("SFTP-030")
@@ -935,7 +1002,7 @@ def test_write_stalling_mid_stream_costs_one_bound(stall_relay: _StallRelay, op:
 
 
 @pytest.mark.spec("SFTP-030")
-def test_copy_stalling_mid_stream_costs_one_bound(stall_relay: _StallRelay) -> None:
+def test_copy_stalling_mid_stream_costs_one_bound(stall_relay: _StallRelay, caplog: pytest.LogCaptureFixture) -> None:
     """``copy()`` holds *two* handles, so an unguarded exit pays two extra bounds.
 
     The only operation here with more than one open handle, which is why it is
@@ -965,19 +1032,39 @@ def test_copy_stalling_mid_stream_costs_one_bound(stall_relay: _StallRelay) -> N
     # Enough to clear the two stats and get the transfer genuinely under way.
     stall_relay.stall_download_after(512 * 1024)
 
-    start = time.monotonic()
-    with pytest.raises(BackendUnavailable):
-        backend.copy(src, dst)
-    elapsed = time.monotonic() - start
+    with caplog.at_level(logging.DEBUG, logger="remote_store"):
+        caplog.clear()  # after the write above, so the connect records are gone
+        start = time.monotonic()
+        with pytest.raises(BackendUnavailable):
+            backend.copy(src, dst)
+        elapsed = time.monotonic() - start
 
     assert elapsed < io_timeout * 1.75, (
         f"copy took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "
         "one of the two handle closes is re-entering the stalled channel"
     )
+    # One failure, one line — asserted *here* because this is the operation with
+    # the most ways to log twice: two handles, two mapped operations, and a
+    # cleanup path that re-enters the mapping. The read-side test cannot show
+    # this, since ``read_bytes`` classifies once and stops.
+    #
+    # Filtered on ``op``, matching the streamed-write sibling below. An earlier
+    # revision counted every ``remote_store`` record at DEBUG, which counts a
+    # different quantity from the claim: it would stay green if ``_unavailable``
+    # stopped logging and any other record appeared, and it would break if the
+    # copy path ever gained a DEBUG line, for a reason unrelated to SFTP-030.
+    # The silent-close test below records the same lesson from the other side.
+    ours = [
+        r for r in caplog.records if r.name.startswith("remote_store") and getattr(r, "op", None) == "error_mapping"
+    ]
+    assert len(ours) == 1, f"one stalled copy emitted {len(ours)} mapping records: {[r.getMessage() for r in ours]}"
+    assert ours[0].levelno == logging.WARNING
 
 
 @pytest.mark.spec("SFTP-030")
-def test_stall_during_streamed_write_costs_one_bound(stall_relay: _StallRelay) -> None:
+def test_stall_during_streamed_write_costs_one_bound(
+    stall_relay: _StallRelay, caplog: pytest.LogCaptureFixture
+) -> None:
     """A stall part-way through a streamed write is bounded, once.
 
     This is the write-side counterpart of the streamed-read test, and what makes
@@ -1013,14 +1100,23 @@ def test_stall_during_streamed_write_costs_one_bound(stall_relay: _StallRelay) -
             stalled_at.append(time.monotonic())
             handle.write(b"w" * (8 * 1024 * 1024))
 
-    with pytest.raises(BackendUnavailable):
-        _write_until_stalled()
-    elapsed = time.monotonic() - stalled_at[0]
+    with caplog.at_level(logging.DEBUG, logger="remote_store"):
+        caplog.clear()  # the connect happens inside _write_until_stalled, so see below
+        with pytest.raises(BackendUnavailable):
+            _write_until_stalled()
+        elapsed = time.monotonic() - stalled_at[0]
 
     assert elapsed < io_timeout * 1.75, (
         f"streamed write took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); "
         "the handle close is re-entering the stalled channel"
     )
+    # The write-side counterpart of the copy assertion: ``open_atomic`` maps
+    # inside ``_errors`` *and* re-enters its own handler with the mapped error,
+    # which is the shape most likely to log twice. Connect records are filtered
+    # out rather than cleared, because this test connects inside the block: the
+    # backend is built lazily and ``_write_until_stalled`` is its first operation.
+    ours = [r for r in caplog.records if r.name.startswith("remote_store") and r.__dict__.get("op") == "error_mapping"]
+    assert len(ours) == 1, f"one stalled streamed write emitted {len(ours)} records: {[r.getMessage() for r in ours]}"
 
 
 @pytest.mark.spec("SFTP-030")

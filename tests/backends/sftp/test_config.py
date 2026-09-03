@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import errno
 import io
+import logging
 import os
 import shutil
 import sys
@@ -1473,7 +1474,19 @@ class TestSFTPToKey:
 
 
 class TestSFTPMapException:
-    """BK-005: _map_exception edge cases (lines 431, 437, 442)."""
+    """Unit-level contract for ``_map_exception``: which type, which message, which record.
+
+    Two generations of test live here. The original set pins the classification
+    edges — passthrough, the errno arms, ``FileNotFoundError``. The SFTP-023 set
+    below it pins what a caller is *handed*: no mapped ``BackendUnavailable``
+    reaches them blank, a stall names the bound that fired, a signal that
+    explained itself is not overwritten, and every arm that concludes emits one
+    ``WARNING`` while a routine errno emits none.
+
+    No source line numbers here. This docstring carried three and all three had
+    gone stale by the time anyone read them, which is the argument against
+    restating a location that the file itself already gives.
+    """
 
     @staticmethod
     def _oserror_enoent() -> OSError:
@@ -1525,6 +1538,253 @@ class TestSFTPMapException:
             assert result.path == path
         elif check == "not-specific":
             assert not isinstance(result, (NotFound, PermissionDenied, AlreadyExists))
+
+    @pytest.mark.spec("SFTP-023")
+    @pytest.mark.parametrize(
+        ("exc_factory", "expect"),
+        [
+            # The four shapes measured to reach ``_map_exception`` carrying no
+            # message of their own. paramiko constructs each of them bare on a
+            # real channel, and ``str(exc)`` is then ``""`` — so the pre-BK-359
+            # ``BackendUnavailable(str(exc))`` produced ``args == ('',)`` and a
+            # rendered message of " | path=... | backend='sftp'". They are
+            # spelled as factories because a shared instance would carry
+            # ``__traceback__`` between parametrised runs.
+            #
+            # ``socket.timeout`` is not listed separately: it has been an alias
+            # of ``TimeoutError`` since 3.10, and this repo's lint rewrites the
+            # spelling, so a second entry would be the same case twice rather
+            # than a second shape. The docstring of ``_is_connection_dead``
+            # records the same equivalence at the matching branch.
+            pytest.param(lambda: TimeoutError(), "io_timeout", id="timeout"),
+            pytest.param(lambda: EOFError(), "EOFError", id="eof-error"),
+            pytest.param(lambda: paramiko.SFTPError(), "SFTPError", id="sftp-error"),
+            pytest.param(lambda: paramiko.SSHException(), "SSHException", id="ssh-exception"),
+        ],
+    )
+    def test_message_less_signal_still_names_the_failure(self, exc_factory: object, expect: str) -> None:
+        """SFTP-023: no mapped ``BackendUnavailable`` reaches the caller blank.
+
+        The defect this pins (BK-359) is not that the *type* was wrong — it was
+        right on every one of these — but that the message was empty, so a user
+        reading their own error log was told nothing at all about what had
+        failed. The type is therefore not what is asserted here; the text is.
+
+        A refused connect is deliberately **not** the contrast drawn here. It
+        was, in an earlier revision, and that was wrong: measured against a
+        just-released ephemeral port, a refused SFTP connect raises the base
+        ``RemoteStoreError`` (paramiko's ``NoValidConnectionsError`` is an
+        ``OSError`` with ``errno=None``, which no arm above matches), so the two
+        were always distinguishable by type. The reader's difficulty was that
+        the stall said nothing — which is what these cases assert — not that it
+        was confusable with something else.
+
+        ``expect`` is the token that distinguishes this shape from the others:
+        the bound's option name for a timeout (which is what the reader has to
+        change), the exception class for the rest (which is what they have to
+        search for). Asserting merely non-empty would pass on a constant
+        string, which would restore the ambiguity in a longer spelling.
+        """
+        backend = SFTPBackend(host="dummy", host_key_policy="auto", io_timeout=120.0)
+        mapped = backend._map_exception(exc_factory(), "delivery.csv")
+        assert isinstance(mapped, BackendUnavailable)
+        message = mapped.args[0]
+        assert message, f"{type(exc_factory()).__name__} mapped to a blank message: {mapped!r}"
+        assert expect in message, f"expected {expect!r} in {message!r}"
+
+    @pytest.mark.spec("SFTP-023")
+    def test_a_stall_names_the_bound_it_broke(self) -> None:
+        """SFTP-023: the timeout message carries the configured bound, not a constant.
+
+        A reader who meets this has to decide whether their server legitimately
+        pauses that long, and cannot without knowing which number fired. The
+        non-default value is deliberate: at ``120.0`` this assertion would also
+        pass against a hard-coded default.
+        """
+        backend = SFTPBackend(host="dummy", host_key_policy="auto", io_timeout=7.5)
+        mapped = backend._map_exception(TimeoutError(), "delivery.csv")
+        assert "7.5" in mapped.args[0], f"the bound is absent from {mapped.args[0]!r}"
+
+    @pytest.mark.spec("SFTP-023")
+    def test_opted_out_stall_does_not_invent_a_bound(self) -> None:
+        """SFTP-023: with ``io_timeout=None`` a timeout still reports, without naming a bound.
+
+        A half-open socket surfaces as ``TimeoutError`` whether or not the
+        channel bound is armed, so this arm is reachable with the option off.
+        Naming a bound here would be a false statement about the caller's
+        configuration — the message must still be non-empty, and must not claim
+        a limit that was never set.
+        """
+        backend = SFTPBackend(host="dummy", host_key_policy="auto", io_timeout=None)
+        message = backend._map_exception(TimeoutError(), "delivery.csv").args[0]
+        assert message, "an opted-out stall still needs a message"
+        assert "io_timeout=" not in message, f"named a bound that was never armed: {message!r}"
+
+    @pytest.mark.spec("SFTP-023")
+    @pytest.mark.parametrize(
+        "exc_factory",
+        [
+            pytest.param(lambda: OSError("Socket is closed"), id="socket-closed"),
+            pytest.param(lambda: paramiko.ChannelException(2, "open failed"), id="channel-exception"),
+        ],
+    )
+    def test_a_signal_that_speaks_for_itself_is_not_overwritten(self, exc_factory: object) -> None:
+        """SFTP-023: the fallback fires only on an empty message, never over a real one.
+
+        The counterpart to the tests above, and the one that stops the fix
+        trading a blank message for a uniform one: a driver that *did* explain
+        itself must reach the caller intact.
+        """
+        exc = exc_factory()
+        backend = SFTPBackend(host="dummy", host_key_policy="auto")
+        mapped = backend._map_exception(exc, "delivery.csv")
+        assert mapped.args[0] == str(exc), f"paramiko's own detail was replaced: {mapped.args[0]!r}"
+
+    @pytest.mark.spec("SFTP-023")
+    def test_the_mapping_leaves_a_log_record(self, caplog: pytest.LogCaptureFixture) -> None:
+        """SFTP-023: a concluded connection death is logged once, at WARNING.
+
+        The second half of BK-359: measured at ``logging.DEBUG``, a stall
+        produced no ``remote_store`` record at all between the SFTP request and
+        the raise, so a user grepping their own logs had nothing to find. One
+        record, because a mapping that logged per call site would multiply a
+        single failure across the retry and cleanup paths that re-enter it.
+        """
+        backend = SFTPBackend(host="dummy", host_key_policy="auto", io_timeout=120.0)
+        with caplog.at_level(logging.DEBUG, logger="remote_store"):
+            caplog.clear()
+            backend._map_exception(TimeoutError(), "delivery.csv")
+
+        ours = [r for r in caplog.records if r.name.startswith("remote_store")]
+        assert len(ours) == 1, f"expected exactly one remote_store record, got {[r.getMessage() for r in ours]}"
+        assert ours[0].levelno == logging.WARNING, f"logged at {ours[0].levelname}, expected WARNING"
+        assert "io_timeout" in ours[0].getMessage(), f"the record does not name the fault: {ours[0].getMessage()!r}"
+        # The present half of SFTP-023's path clause. Its absent half is pinned
+        # by ``test_a_probe_record_carries_no_path``; without this one, deleting
+        # the ``record_extra["path"] = path`` assignment while leaving the
+        # render argument keeps the whole suite green and silently strips the
+        # field a structured consumer reads.
+        assert ours[0].path == "delivery.csv"
+        assert ours[0].backend == "sftp"
+
+    @pytest.mark.spec("SFTP-023")
+    def test_a_live_errno_is_not_logged_as_a_connection_death(self, caplog: pytest.LogCaptureFixture) -> None:
+        """SFTP-023: an ordinary ``NotFound`` mapping stays silent.
+
+        The bound on the clause above. A backend that logged every mapped
+        exception would put a WARNING behind each missing file, which is a
+        routine answer rather than a fault — and would make the record useless
+        for finding the faults it was added for.
+        """
+        backend = SFTPBackend(host="dummy", host_key_policy="auto")
+        with caplog.at_level(logging.DEBUG, logger="remote_store"):
+            caplog.clear()
+            backend._map_exception(OSError(errno.ENOENT, "missing"), "delivery.csv")
+
+        ours = [r for r in caplog.records if r.name.startswith("remote_store")]
+        assert not ours, f"a routine ENOENT logged {[r.getMessage() for r in ours]}"
+
+    @pytest.mark.spec("SFTP-023")
+    @pytest.mark.parametrize(
+        ("message", "hint"),
+        [
+            pytest.param("Incompatible ssh peer (no acceptable host key)", "enable_ssh_rsa_compat", id="host-key"),
+            pytest.param("Incompatible ssh peer (no acceptable kex algorithm)", "scan_host_algorithms", id="kex"),
+        ],
+    )
+    def test_every_arm_that_concludes_emits_one_record(
+        self, message: str, hint: str, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """SFTP-023: the ``IncompatiblePeer`` arms log like every other concluding arm.
+
+        ``_map_exception`` reaches ``_unavailable`` from four arms, and until
+        this test only one of them — the dead-connection arm — had its record
+        pinned. The two ``IncompatiblePeer`` arms were covered by
+        ``TestSFTPIncompatiblePeerHint``, which asserts message content only, so
+        both would still pass if those arms went back to constructing
+        ``BackendUnavailable`` directly. That is precisely the regression
+        SFTP-023's "every one of them" forbids and that the helper's docstring
+        claims is structurally prevented, so it is worth one assertion rather
+        than an argument.
+
+        The remediation hint is asserted *in the record*, not only in the error:
+        routing these arms through the helper is what makes the clause true, and
+        a route that dropped the hint on the way would satisfy the count while
+        losing the thing the arm exists for.
+        """
+        import paramiko
+
+        backend = SFTPBackend(host="dummy", host_key_policy="auto")
+        with caplog.at_level(logging.DEBUG, logger="remote_store"):
+            caplog.clear()
+            mapped = backend._map_exception(paramiko.ssh_exception.IncompatiblePeer(message), "delivery.csv")
+
+        assert isinstance(mapped, BackendUnavailable)
+        assert hint in mapped.args[0], f"the remediation hint is missing from {mapped.args[0]!r}"
+
+        ours = [r for r in caplog.records if r.name.startswith("remote_store")]
+        assert len(ours) == 1, f"expected one record, got {[r.getMessage() for r in ours]}"
+        assert ours[0].levelno == logging.WARNING
+        assert getattr(ours[0], "op", None) == "error_mapping"
+        assert hint in ours[0].getMessage(), "the hint reached the caller but not the log record"
+
+    @pytest.mark.spec("SFTP-023")
+    def test_the_generic_sshexception_arm_emits_one_record(self, caplog: pytest.LogCaptureFixture) -> None:
+        """SFTP-023: the fourth concluding arm, which the parametrised test above does not reach.
+
+        ``_map_exception`` reaches ``_unavailable`` from four arms. The
+        dead-connection arm is pinned by ``test_the_mapping_leaves_a_log_record``
+        and the two ``IncompatiblePeer`` arms by the test above; this is the
+        remaining one, taken by a ``ChannelException`` or any mid-operation
+        ``SSHException``. Its *message* was already pinned by
+        ``test_message_less_signal_still_names_the_failure[ssh-exception]``, but
+        nothing pinned its record — so reverting just this arm to construct
+        ``BackendUnavailable`` directly left the whole suite green while breaking
+        SFTP-023's "every one of them" for the entire ``SSHException`` family.
+
+        Split out rather than folded into the parametrisation above because that
+        one asserts a remediation hint, which this arm does not carry.
+        """
+        import paramiko
+
+        backend = SFTPBackend(host="dummy", host_key_policy="auto")
+        with caplog.at_level(logging.DEBUG, logger="remote_store"):
+            caplog.clear()
+            mapped = backend._map_exception(paramiko.SSHException("Server connection dropped"), "delivery.csv")
+
+        assert isinstance(mapped, BackendUnavailable)
+        ours = [r for r in caplog.records if r.name.startswith("remote_store")]
+        assert len(ours) == 1, f"expected one record, got {[r.getMessage() for r in ours]}"
+        assert ours[0].levelno == logging.WARNING
+        assert getattr(ours[0], "op", None) == "error_mapping"
+
+    @pytest.mark.spec("SFTP-023")
+    def test_a_probe_record_carries_no_path(self, caplog: pytest.LogCaptureFixture) -> None:
+        """SFTP-023: with no path, the record drops the key rather than carrying ``path=''``.
+
+        This is how ``check_health`` arrives. Both halves are asserted because
+        they fail independently: the rendered line is what a plain formatter
+        shows, and ``record.path`` is what a structlog processor or JSON
+        formatter reads. An earlier revision omitted the suffix but still set
+        ``"path": ""`` in ``extra``, so the line looked right while a structured
+        consumer got a field that appeared answered and was not — and this test,
+        which then asserted only the text, passed.
+
+        The branch is *executed* by the rest of the suite, so coverage cannot
+        flag its removal; only these assertions can.
+        """
+        backend = SFTPBackend(host="dummy", host_key_policy="auto", io_timeout=120.0)
+        with caplog.at_level(logging.DEBUG, logger="remote_store"):
+            caplog.clear()
+            backend._map_exception(TimeoutError(), "")
+
+        ours = [r for r in caplog.records if r.name.startswith("remote_store")]
+        assert len(ours) == 1
+        rendered = ours[0].getMessage()
+        assert "path=" not in rendered, f"an empty path was rendered into the line: {rendered!r}"
+        assert rendered == "SFTP channel stalled: no data within io_timeout=120.0s"
+        assert "path" not in ours[0].__dict__, "the record carries an empty path a structured consumer would read"
+        assert getattr(ours[0], "op", None) == "error_mapping"
 
 
 class TestSFTPTypeGuards:

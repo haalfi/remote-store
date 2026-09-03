@@ -215,6 +215,98 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-268 — The troubleshooting page printed the pre-BK-359 blank traceback as the stall symptom, and said the log was empty**
+  spec: SFTP-023, SFTP-030 · effort: XS · audience: user.site
+  Filed and closed inside BK-359's own PR, which is why it appears here without
+  ever having been worked from the active backlog. `docs-src/guides/troubleshooting.md`
+  § *SFTP transfer stalls: hangs, or fails after two minutes* opened on two
+  sentences BK-359 falsified: it printed
+  `remote_store._errors.BackendUnavailable:  | path='delivery.csv' | backend='sftp'`
+  as the traceback a reader should recognise, and stated "There is nothing in
+  `remote_store`'s log to accompany it."
+  **How it came to exist.** BK-359 rewrote that section, and four of its five
+  review rounds found something wrong in the rewrite and nothing in the code: a
+  deleted heading, a record count restated and refuted three times, and a
+  log-filter recipe that raised `RemoteStoreError: 'LogRecord' object has no
+  attribute 'op'` when run. The rewrite was reverted rather than shipped in a
+  state review had not converged on — **and reverting restores the old text, not
+  a true one**, which is the lesson worth keeping: a withdrawal has to be paired
+  with an item, or the retreat quietly ships a false page.
+  **Shipped:** the two sentences replaced by two facts and no recipe. The
+  traceback line is now
+  `remote_store._errors.BackendUnavailable: SFTP channel stalled: no data within io_timeout=120.0s | path='delivery.csv' | backend='sftp'`,
+  copied from running
+  `SFTPBackend(host='h', username='u', io_timeout=120.0)._map_exception(TimeoutError(), 'delivery.csv')`
+  rather than composed, and the page states that the same sentence is written to
+  the `remote_store` logger at `WARNING`. Pinned by
+  `tests/backends/sftp/test_io_timeout.py::test_a_stall_says_what_it_was_and_logs_it`,
+  which asserts the message by literal equality against a live silent peer and
+  one `remote_store` record at `WARNING`.
+  **Deliberately absent**: any `logging` filter snippet (the withdrawn one was
+  wrong because `extra=` keys are attributes on the record, not entries in a
+  dict) and any count of records on the `remote_store` logger, which is
+  BUG-266's table rather than a sentence.
+
+- [x] **BK-359 — A stalled SFTP operation raises `BackendUnavailable` with an empty message and no log record**
+  spec: SFTP-030, SFTP-023 · effort: S · audience: user.api, user.api_docs, user.site
+  `_map_exception` built the error as `BackendUnavailable(str(exc), ...)`, and
+  paramiko raises `socket.timeout()` with no arguments, so the message was the
+  empty string. Measured on a real channel at `io_timeout=2.0`, with a relay
+  silencing server→client mid-`read_bytes`: `e.args == ('',)`,
+  `str(e) == " | path='delivery.csv' | backend='sftp'"`, and — at
+  `logging.DEBUG` — no `remote_store` log record at all between the SFTP
+  `Request: open` and the raise.
+  **Pre-existing from BK-354; promoted by BK-356.** Flipping the default to
+  `120.0` made it the shipped failure surface for a silent peer, so the first
+  person to meet it was one who had configured nothing.
+  **The defect class was wider than the item's title.** Nine exception instances
+  were constructed and driven through `_map_exception` — one per shape the
+  mapping concludes `BackendUnavailable` on, with the seven-errno arm sampled
+  once — and **four** arrived with no message of their own, not one:
+  `TimeoutError` (which `socket.timeout` is), `EOFError`, `paramiko.SFTPError`
+  and a bare `paramiko.SSHException`. The other five carried a real message.
+  **The set is the mapping's, not `_is_connection_dead`'s**: that predicate
+  documents itself as deliberately not matching the `SSHException` family, which
+  has its own arm, so one of the four blank shapes is outside it. Nine is
+  therefore a count of driven instances and not an enumeration of any predicate;
+  it is stated that way because a reader who counts the predicate's body gets
+  five or eleven depending on how the errno arm is grouped, and neither is nine.
+  Fixing only the timeout arm would have left the same complaint reachable by
+  three other routes, so the fallback is keyed on an empty `str(exc)` rather than
+  on the timeout type.
+  **Shipped:** one `_unavailable` helper through which every `BackendUnavailable`
+  that `_map_exception` *constructs* now passes — not every one it *returns*, as
+  this line read until round 5: the mapping's first arm hands back a
+  `BackendUnavailable` built elsewhere without re-entering the helper, so the
+  wider word was falsifiable on that arm while the suite stayed green. A stall
+  names the fault and the bound
+  that fired (`SFTP channel stalled: no data within io_timeout=120.0s`), and
+  names no bound under `io_timeout=None`, where the arm is still reachable via a
+  half-open socket. Other message-less signals name their own class. A signal
+  that already explained itself is never overwritten — the failure being fixed
+  was silence, not noise. The same helper logs one `WARNING`, at the point the
+  backend concludes the connection is unusable rather than at each raise site, so
+  one concluded mapping leaves one record; a routine errno stays unlogged. That
+  is a claim about the mapping and **not** about the logger: `_connect`'s tenacity
+  retry uses `before_sleep_log` on the same logger, so a failure leaves other
+  records there too. **No total is stated**, because it is a product of the
+  retry policy, the host-key policy and the failure shape — three review rounds
+  each refuted a different cell of that product written as a constant, which is
+  why the spec now declines to give one. Note also that a refused connect and a
+  DNS failure never reach `_unavailable` at all (BUG-265), so they contribute
+  nothing from the mapping. The single-record claim is asserted where it could
+  break — `copy`, which holds two
+  handles, and `open_atomic`, which maps and then re-enters its own handler —
+  rather than on a read, which classifies once and stops.
+  **What was deliberately not done:** the same defect on other backends, which is
+  **BUG-264**. That was filed as unmeasured and then measured rather than left
+  so: Azure is a confirmed reproduction, both boto3 arms are immune, and the
+  keyword-guarded sites leak through a blank `RemoteStoreError` instead. The
+  measurement is in that item.
+  Found by BK-356's review round 2, which reached it by running the failure
+  rather than reading the mapping — and closed the same way: the fix is asserted
+  against the live stall relay, not only against a constructed `TimeoutError`.
+
 - [x] **BUG-262 — The breaking-change upgrade-path rule is review-enforced, and the gate the diagnosis proposed would not have caught it**
   spec: — · effort: S · audience: contributor.tooling, user.api_docs
   BUG-261 moved the obligation onto the PR making the break and left nothing

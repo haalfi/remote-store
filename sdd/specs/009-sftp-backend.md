@@ -308,6 +308,86 @@ exception keeps its own branch first: `IncompatiblePeer` (a connect-time
 `SSHException`) is mapped with a diagnostic hint before the generic `SSHException`
 mapping, so the hint is not lost.
 
+**Every `BackendUnavailable` this mapping *constructs* carries a non-empty
+message, and emits exactly one `WARNING` record.** Both halves are one method's
+job (`_unavailable`), which is why they are stated in one clause: the arms that
+could disagree are the same arms. *Constructs*, not *returns* — the mapping's
+first arm passes a `RemoteStoreError` it was handed straight back, so a
+`BackendUnavailable` built elsewhere and fed in carries neither guarantee. Only
+one such object exists (`_open_sftp_bounded`'s direct raise, unreachable in
+practice), so this is a bound on the clause rather than a live gap.
+
+**"One record" is a claim about this mapping, not about the logger**, and the
+distinction is load-bearing for the reader most likely to rely on it — someone
+grepping their own logs. `remote_store.backends._sftp` carries other `WARNING`
+records: `_connect` builds its tenacity retry with
+`before_sleep_log(log, logging.WARNING)` on that same logger, so a connect that
+exhausts its `stop_after_attempt` budget emits one per sleep, and `AUTO_ADD`
+warns once per connect. A failed operation is therefore not a one-line event on
+the logger; it is a one-line event per concluded mapping. A reader searching for
+the mapping's record matches `op="error_mapping"` in the structured `extra`,
+which the retry and policy records do not carry.
+
+**No total is given, deliberately.** How many records a failure leaves on that
+logger is a product of the retry policy's `max_attempts`, the host-key policy,
+and which failure shape occurred — and a stated total is one cell of that
+product presented as the whole of it. Three review rounds each refuted a
+different cell written as a total here: "one WARNING on the logger", then
+"three at the default policy" (three is the `AUTO_ADD` figure; the default is
+`STRICT`), then "two per poll" (which assumes the default `max_attempts`).
+Derive it for a configuration if you need it; do not restate it as a constant.
+
+The message is the driver's own whenever the driver has one. Four of the signals
+above reach the mapping with no arguments — `TimeoutError` (which `socket.timeout`
+is), `EOFError`, `SFTPError` and a bare `SSHException` — and for those
+`BackendUnavailable(str(exc))` carried the empty string, which
+[ERR-009](005-error-model.md) forbids and which no reader can act on. **"The
+signals above" is this clause's own list**, which opens with the `SSHException`
+family; it is deliberately not `_is_connection_dead`'s set, which excludes that
+family and would therefore hold only three of the four. A stall
+names the fault and the bound that fired (`io_timeout=<value>s`), and names no
+bound when `io_timeout is None`, since a half-open socket reaches this arm with
+the option off and claiming a limit the caller never set would be false. The
+others name the signal's own class. A signal that *did* explain itself is never
+overwritten: this is a fallback for silence, not a house style for messages.
+
+The record is emitted where the *conclusion* is reached rather than at each raise
+site, so the cleanup and classification paths that re-enter the mapping do not
+multiply one failure into several lines. That is asserted where the
+multiplication could actually happen rather than where it is easiest to assert:
+`copy` holds two handles and runs two mapped operations, and `open_atomic` maps
+inside `_errors()` and then re-enters its own handler with the mapped error.
+Both are pinned against the live stall relay
+(`test_copy_stalling_mid_stream_costs_one_bound`,
+`test_stall_during_streamed_write_costs_one_bound`); a read, which classifies
+once and stops, cannot show it.
+
+`check_health` maps through here, so a probe that fails **in a way this mapping
+concludes on** logs one record and a `Store.ping()` poll repeats it. That is
+narrower than "a poll against a down server": a refused connect and a DNS
+failure raise the base `RemoteStoreError` from the generic `OSError` arm without
+reaching `_unavailable` at all, so they log nothing from the mapping. BUG-265
+tracks that divergence — `check_health`'s own docstring promises
+`BackendUnavailable` for a connection that cannot be established.
+
+**Which real-world failures land on which arm is not enumerated here**, and the
+omission is deliberate. The arms are stated above by exception *type*, which is
+what this mapping actually dispatches on and what the tests pin; the map from a
+failure a reader can observe (a refused port, a wedged daemon, a rejected
+credential) onto those types is a second question with its own axes, and four
+successive attempts to summarise it in one sentence were each refuted by
+measurement — the last of them, "only a probe that fails by timeout reaches
+it", by a bad SSH banner, an accept-then-hangup and an auth failure, all three
+of which reach `_unavailable` through the `SSHException` arm. BUG-266 carries
+that table, to be written once against a parametrised test rather than as
+prose.
+
+The record carries the path it was mapped with, and omits the key entirely when
+there is none — so a `check_health` record has no `path` at all rather than
+`path=''`, in either the structured `extra` or the rendered line
+(`test_a_probe_record_carries_no_path`). A routine errno is **not** logged: a
+missing or denied path is an answer, not a fault.
+
 ### SFTP-024: No Native Exception Leakage
 
 **Invariant:** No paramiko, socket, or OS exception raised *by the backend* — an
@@ -491,6 +571,24 @@ well as reads, and a stalled write reaches it on the receive side like a read
 does. The distinct fault it covers is a request that never reaches the server,
 as against a reply that never returns.
 
+**The two are distinct faults and the caller cannot tell them apart**, which is
+worth stating now that the raised error carries a message (SFTP-023) and a
+reader might reasonably assume it says which. It does not. Measured against the
+stall relay in both directions at `io_timeout=2.0`, silencing server→client and
+then client→server: one identical message,
+`"SFTP channel stalled: no data within io_timeout=2.0s"`, and a `TimeoutError`
+context in both. Both arrive on the receive side, so they enter the same arm and
+nothing downstream of it knows which direction fell silent. A message that names
+the *fault* is not a message that names its *side*, and only the first is
+claimed.
+
+Asserted on both halves, which is the point: `test_a_stall_says_what_it_was_and_logs_it`
+drives the server→client stall and
+`test_stalled_upload_request_raises_backend_unavailable` the client→server one,
+and each pins the same literal message and a `TimeoutError` context. Pinning
+only the download half would leave the claim resting on the direction a reader
+is least likely to doubt.
+
 The "unaffected however long it takes" half is asserted by
 `test_a_transfer_slower_than_the_bound_is_not_interrupted`, which throttles a
 relay rather than stalling it — slow, never silent — and asserts both that the
@@ -520,6 +618,13 @@ to every route, and stood while two tests in the suite reached it through plain
 **Postconditions:** A stalled operation *that fails* raises `BackendUnavailable`,
 via the existing `_is_connection_dead` / `_map_exception` path (SFTP-023), which
 also clears the cached client so the next operation reconnects (SFTP-010 tier 2).
+The error names the stall and the bound that fired, and the mapping emits one
+`WARNING` record — both per SFTP-023, which owns those clauses for every signal
+rather than for this one. Named here anyway because the stall is the case a
+caller who configured nothing now meets: while the message was empty, this
+Postcondition was satisfied by an error that said nothing whatever about what
+had failed, and the two artifacts that tell an upgrading user what to expect
+(the troubleshooting page, the migration entry) had nothing to point them at.
 
 **The qualifier is load-bearing.** Every mechanism below — the classification guards, the handle guard, the
 stream wrapper's futile-close guard, and the client invalidation the
