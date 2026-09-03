@@ -12359,6 +12359,10 @@ declare <code>Capability.USER_METADATA</code>. Passing <code>None</code> or <cod
     <div class="doc doc-contents first">
 
         <p>Write content atomically via temp file + rename.</p>
+<p>Failure behaviour is <code>open_atomic</code>'s, which shares the temp-and-promote
+mechanism: readers never observe a partial <em>path</em>, but a failure in the
+backend's connection guarantees neither that a temp artifact was cleaned
+up nor that the write did not land.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -12482,7 +12486,15 @@ declare <code>Capability.USER_METADATA</code>. Passing <code>None</code> or <cod
 
         <p>Yield a writable file object backed by a temporary location.</p>
 <p>On successful exit the temp file is atomically promoted to <em>path</em>.
-On exception the temp file is removed and <em>path</em> is untouched.</p>
+On an exception raised by the caller's own code, the temp file is removed
+and <em>path</em> is untouched. <strong>Neither half is guaranteed when the failure is
+the backend's connection</strong>: a backend whose cleanup would re-enter the
+same failed connection may leave the temp behind, and a promote whose
+reply is lost may have been performed. What every backend does guarantee
+is that no reader observes a partially written <em>path</em>. Documenting the
+lost-connection behaviour is required of implementations rather than
+guaranteed by them; a backend that leaves it unstated is a gap, not a
+promise that nothing happens.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

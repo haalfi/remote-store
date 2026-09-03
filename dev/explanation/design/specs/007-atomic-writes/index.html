@@ -10799,10 +10799,38 @@
 <strong>Postconditions:</strong> The check happens <em>before</em> any I/O is attempted.</p>
 <h2 id="aw-003-overwrite-semantics">AW-003: Overwrite Semantics<a class="headerlink" href="#aw-003-overwrite-semantics" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> If <code>overwrite=False</code> and the target file exists, <code>AlreadyExists</code> is raised <em>before</em> writing the temporary file.
-<strong>Postconditions:</strong> If <code>overwrite=True</code>, the atomic rename replaces the existing file.</p>
+<strong>Postconditions:</strong> [~] If <code>overwrite=True</code>, the atomic rename replaces the existing file.</p>
+<p>[~] <strong>The postcondition is unqualified and the SFTP fallback contradicts it.</strong>
+<code>test_the_rename_fallback_destroys_the_destination_when_the_promote_stalls</code>
+measures a case where the existing file is removed and nothing replaces it, so
+"replaces" holds on success and not on every failure. Marked rather than
+rewritten: <strong>BUG-272</strong> owns the behaviour, and writing the current behaviour into
+the invariant would document a defect as the contract.</p>
 <h2 id="aw-004-cleanup-on-failure">AW-004: Cleanup on Failure<a class="headerlink" href="#aw-004-cleanup-on-failure" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> If the write fails (e.g. disk full, permission error), the temporary file is cleaned up.
 <strong>Postconditions:</strong> No orphaned temporary files are left behind.</p>
+<p><strong>Scoped to a failure the backend can still act on.</strong> Cleanup is an operation
+against the same store, so it presupposes a usable connection. A backend whose
+failure <em>is</em> the connection dying may be unable to honour this clause. Whether
+it should still attempt the unlink is the backend's own call and turns on
+whether the attempt would re-enter the <em>same</em> failed connection: an
+HTTP-per-request client can often complete a delete that a wedged SSH channel
+cannot. Either way the orphan is possible, and a backend in that position says
+so in its own spec section.</p>
+<p><strong>Two backends do, and they diverge differently.</strong> <code>SFTPBackend.write_atomic</code> /
+<code>open_atomic</code> <strong>deliberately skip</strong> the cleanup unlink when the failure is itself
+a dropped-connection signal, because it would re-enter the same dead channel and
+stall again inside the error path — so a stalled atomic write leaves a
+<code>.~tmp.&lt;name&gt;.&lt;uuid8&gt;</code> behind, asserted by
+<code>test_a_stalled_atomic_write_preserves_the_destination_and_leaves_an_orphan_temp</code>.
+<code>AzureBackend</code> <strong>attempts</strong> the delete under a suppressing guard and may simply
+fail, which <a href="../012-azure-backend/">012-azure-backend.md</a> already records as an
+inherent limitation of simulated atomicity over a network.
+See <a href="../009-sftp-backend/">009-sftp-backend.md</a> SFTP-014 for the SFTP caveat and
+SFTP-030 for what the destination itself holds. Stated here rather than left to
+those specs because this clause is the cross-backend one, and an unqualified
+invariant that a shipped test contradicts is a spec defect however narrowly the
+divergence is scoped.</p>
 <h2 id="aw-005-intermediate-directories">AW-005: Intermediate Directories<a class="headerlink" href="#aw-005-intermediate-directories" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> <code>write_atomic</code> creates intermediate directories as needed, same as <code>write</code>.</p>
 <h2 id="aw-006-local-backend-implementation">AW-006: Local Backend Implementation<a class="headerlink" href="#aw-006-local-backend-implementation" title="Permanent link">&para;</a></h2>

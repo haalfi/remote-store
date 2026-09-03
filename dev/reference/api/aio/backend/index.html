@@ -12190,6 +12190,14 @@ declare <code>Capability.USER_METADATA</code>. Passing <code>None</code> or <cod
     <div class="doc doc-contents first">
 
         <p>Write content atomically via temp file + rename.</p>
+<p>Readers never observe a partial <em>path</em>. <strong>That is the whole of what the
+atomicity buys</strong>, and it is not the same as all-or-nothing: a failure in
+the backend's connection guarantees neither that a temp artifact was
+cleaned up nor that the write did not land, because a promote whose reply
+is lost may have been performed. Documenting the lost-connection
+behaviour is required of implementations rather than guaranteed by them;
+a backend that leaves it unstated is a gap, not a promise that nothing
+happens.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

@@ -10996,7 +10996,7 @@
 <ul>
 <li><strong>Verify after move.</strong> After <code>move()</code>, check that the source no longer exists. If it does, delete it or alert.</li>
 <li><strong>Write + delete instead of move.</strong> If atomicity matters, write the data to the destination first, verify, then delete the source. This gives you explicit control over each step.</li>
-<li><strong>Use <code>write_atomic()</code> for the write step.</strong> <code>write_atomic()</code> uses temp-file-and-rename on backends that support it, ensuring the destination is written atomically even if <code>move()</code> is not.</li>
+<li><strong>Use <code>write_atomic()</code> for the write step.</strong> <code>write_atomic()</code> uses temp-file-and-rename on backends that support it, ensuring the destination is written atomically even if <code>move()</code> is not. On SFTP this guarantees no reader sees a half-written file; it does <strong>not</strong> guarantee that a reported failure left your existing destination alone — see the <a href="../../guides/backends/sftp/#capabilities">SFTP backend guide</a>.</li>
 </ul>
 <h2 id="summary-table">Summary table<a class="headerlink" href="#summary-table" title="Permanent link">&para;</a></h2>
 <table>
@@ -11078,7 +11078,7 @@
 </tbody>
 </table>
 <p>* Local <code>move()</code> uses <code>shutil.move()</code>, which delegates to <code>os.rename()</code> on the same filesystem (atomic) but falls back to copy+delete across filesystems. Only <code>write_atomic()</code> uses <code>os.replace()</code>.</p>
-<p>** SFTP <code>move()</code> is atomic when <code>posix_rename</code> or <code>rename()</code> succeeds; falls back to copy+delete as a last resort. <code>write_atomic()</code> has an orphan-file risk if the connection drops between write and rename (see the <a href="../../guides/backends/sftp/">SFTP backend guide</a>).</p>
+<p>** SFTP <code>move()</code> is atomic when <code>posix_rename</code> or <code>rename()</code> succeeds; falls back to copy+delete as a last resort. <code>write_atomic()</code> is atomic for <em>readers</em> — no one ever sees a half-written file — but a stalled connection is not a rollback: besides the well-known orphan-file risk, the operation may have completed despite raising, and on the rename-fallback path it can leave the destination removed with the payload stranded in the temp. What a failure leaves behind, per operation, is in the <a href="../../guides/backends/sftp/#capabilities">SFTP backend guide</a>.</p>
 <h2 id="see-also">See also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../reference/capabilities-matrix/">Capabilities Matrix</a> — atomicity and move semantics per backend</li>

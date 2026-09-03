@@ -78,7 +78,7 @@ pkey = SFTPUtils.load_private_key(pem_string)
 
 `timeout` covers only the connect phase. Once the channel is open, paramiko places no bound of its own on reads, so a peer that completes the handshake and then stops sending mid-transfer would block indefinitely — holding whatever pool slot or worker the transfer was running on, with no error to act on. `io_timeout` is what stops that, and it is armed for you.
 
-`io_timeout` bounds the silence *between* bytes rather than the transfer as a whole, which is what makes it usable on slow links: a multi-gigabyte fetch that takes an hour is unaffected, while a flow that goes quiet for longer than the bound raises [`BackendUnavailable`](https://docs.remotestore.dev/stable/reference/api/errors/index.md). That error names the stall and the value that fired (`SFTP channel stalled: no data within io_timeout=120.0s`), and the backend logs it once at `WARNING`, so a stall is distinguishable from any other `BackendUnavailable` in a log you read later.
+`io_timeout` bounds the silence *between* bytes rather than the transfer as a whole, which is what makes it usable on slow links: a multi-gigabyte fetch that takes an hour is unaffected, while a flow that goes quiet for longer than the bound raises [`BackendUnavailable`](https://docs.remotestore.dev/stable/reference/api/errors/index.md). That error names the stall and the value that fired (`SFTP channel stalled: no data within io_timeout=120.0s`), and the backend logs it once at `WARNING`, so a stall is distinguishable from any other `BackendUnavailable` in a log you read later. What it does not say is whether the operation happened — [a stalled operation may have succeeded](#capabilities).
 
 **It is on by default, at 120 seconds.** You get the bound without asking for it, so nothing you write hangs forever on a silent peer. What you configure is whether that value suits your server:
 
@@ -238,7 +238,32 @@ The SFTP backend supports all capabilities except `GLOB` and `ATOMIC_MOVE`. See 
 
 Atomic write caveat
 
-Atomic writes use a temp file (`.~tmp.<name>.<uuid>`) and rename. If the connection drops between write and rename, the orphan temp file will remain on the server.
+Atomic writes use a temp file (`.~tmp.<name>.<uuid>`) and rename. If the connection drops between write and rename, the destination is untouched but the orphan temp file will remain on the server. If it drops *during* the rename, see the danger note below — the write may have landed.
+
+A stalled operation may have succeeded
+
+When a transfer stalls, the timeout tells you **no reply came back**. It does not tell you the server never got the request. If the silence was on the return path, the server did the work and only the answer was lost — so every operation here has a state where it did what you asked and raised `BackendUnavailable` anyway.
+
+The general rule is that **any amount of the operation may have happened, from none of it to all of it**, and the error does not tell you which. The states below are the ones worth naming, not a complete list:
+
+| Operation                          | What a `BackendUnavailable` may have left                                                                                                                  |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `write()`                          | The destination unchanged, absent, **emptied**, holding an unpredictable prefix, or **written in full**                                                    |
+| `copy()`                           | The same five, at `dst`; the source is never affected                                                                                                      |
+| `move()`                           | The paths unchanged, **the move completed** (source gone), or **the destination destroyed** with the source still there                                    |
+| `write_atomic()` / `open_atomic()` | The destination unchanged, often with an orphan temp; **the write completed**; or **the destination destroyed** with your data left in an orphan temp file |
+
+The destroyed-destination cases come from a rename fallback that removes the destination before renaming onto it, and it is not confined to old servers — any rename that *fails* for a reason the backend cannot attribute to a dropped connection takes that path. It also needs `overwrite=True`: with the default the call raises `AlreadyExists` before the fallback is reached, so an existing file cannot be destroyed this way. No example failure is given: which ones reach it depends on guards that differ per operation, and every attempt to name one here has been wrong.
+
+So:
+
+- **Do not treat a failure as a no-op.** Re-check the state before acting on it. A failed `move()` that actually succeeded gives `NotFound` on retry; a failed `write(..., overwrite=True)` may have truncated your previous file without replacing it.
+- **Retry with `overwrite=True`.** The path is usually still occupied, so a plain retry raises `AlreadyExists` instead of retrying.
+- **Do not resume from a partial file.** The prefix length depends on buffering you cannot see, so appending to it corrupts the file. Discard and re-write from the start.
+
+**`write_atomic()` is still the right choice when readers must never see a half-written file** (see the caveat above, and [atomicity semantics](https://docs.remotestore.dev/stable/explanation/concurrency/index.md)): no reader ever observes a partial file at the destination. What it does not promise is that a reported failure means nothing happened, nor that your existing file survives one.
+
+Parent directories created for a write remain behind in every case — a failed write is not a rollback.
 
 Move fallback
 
@@ -442,7 +467,7 @@ write(
 
 Write *content* to *path*, streaming it over the SFTP channel.
 
-The bytes are streamed straight to the destination file (no temp-and-rename), so a dropped connection mid-write can leave a partial or truncated file there — use `write_atomic` when readers must never see a half-written file. Missing parent directories are created first (one `stat` per ancestor).
+The bytes are streamed straight to the destination file (no temp-and-rename), so a failed write may already have changed that path. A `BackendUnavailable` means no reply came back, not that the server never acted. **Any amount of the write may have happened, from none of it to all of it**, and the error does not say which: the destination may be untouched, emptied (the server truncated on open and the old content is gone), holding an unpredictable prefix of *content*, or holding it in full. Retry with `overwrite=True` (the path is usually still occupied) and re-write from the start rather than appending to what is there — the prefix length depends on buffering the caller cannot observe. Use `write_atomic` when readers must never see a half-written file. Missing parent directories are created first (one `stat` per ancestor) and are **not** removed when the write fails.
 
 The returned `WriteResult` carries `size` (counted during upload) and `source="native"`, but every rich field — `last_modified`, `etag`, `version_id`, `digest` — is `None`: SFTP's write response carries no metadata at all, and the backend does not stat afterwards to fetch any. Call `get_file_info` when the metadata is needed.
 
@@ -467,7 +492,11 @@ write_atomic(
 
 Write *content* to *path* atomically via a temp file plus server rename.
 
-Readers never observe a partial file: the body is streamed to a hidden temp file in the destination directory, then promoted with `posix_rename` (atomic on POSIX-compliant servers). Servers without `posix_rename` fall back to a plain `rename` (non-atomic overwrite: the target is removed first), and the temp file is cleaned up on failure.
+Readers never observe a partial file: the body is streamed to a hidden temp file in the destination directory, then promoted with `posix_rename` (atomic on POSIX-compliant servers). Servers without `posix_rename` fall back to a plain `rename` (non-atomic overwrite: the target is removed first).
+
+A failure *before* the promote leaves the destination untouched, and the temp file is cleaned up **best-effort**: the cleanup is deliberately skipped when the failure is itself a dropped connection, so a stall leaves an orphan `.~tmp.<name>.<uuid8>` beside the target rather than stalling again on an unlink the server cannot answer. A stall whose lost reply is the **promote itself** is different: the rename was performed, so the destination holds the new content and no temp remains, while the caller is told `BackendUnavailable`. What is guaranteed is that no reader ever sees a half-written file — not that a reported failure means the write did not happen.
+
+The destination is also unprotected on the **rename-fallback** path, which removes it before renaming onto it: a stall in that window leaves the destination gone. That path is entered when `posix_rename` fails for a reason `_is_connection_dead` does not recognise and the target is not a directory, so it is not confined to servers lacking the extension.
 
 As in `write`, the returned `WriteResult` carries `size` and `source="native"` but leaves every rich field (`last_modified` / `etag` / `version_id` / `digest`) `None`.
 
@@ -488,7 +517,9 @@ open_atomic(
 
 Yield a writable handle promoted to *path* atomically on clean exit.
 
-Writes stream to a hidden temp file in the destination directory; on clean exit it is promoted with `posix_rename` (atomic on POSIX servers, falling back to `rename`), and on any exception the temp file is removed and *path* is left untouched.
+Writes stream to a hidden temp file in the destination directory; on clean exit it is promoted with `posix_rename` (atomic on POSIX servers, falling back to `rename`). On an exception raised by the caller's own code, the temp file is removed and *path* is left untouched.
+
+**A dropped connection is the exception to both halves**, on the same terms as `write_atomic`, whose docstring carries the detail. The temp cleanup is deliberately skipped when the failure is itself a dropped-connection signal, so an orphan `.~tmp.<name>.<uuid8>` remains; a stall whose lost reply is the promote leaves the rename *performed*, so *path* holds the new content; and on the rename-fallback path *path* can be removed with the payload stranded in the temp. No reader ever sees a half-written file, which is what the atomicity buys — but a reported failure means neither that nothing happened nor that *path* survived.
 
 Raises:
 
@@ -616,6 +647,8 @@ Move or rename the file *src* to *dst*.
 
 Tries `posix_rename` first (atomic on POSIX-compliant servers), then a plain `rename`, and finally a stream copy-then-delete. Because the outcome depends on server support, atomicity is not guaranteed across all servers and `ATOMIC_MOVE` is not declared. `src == dst` is a no-op; missing parent directories of *dst* are created first.
 
+A `BackendUnavailable` here means no reply came back, not that the rename did not happen: if the stall swallowed the *reply* to `posix_rename`, the server performed the move and the caller is told it failed. Re-check both paths before retrying — a blind retry of a move that actually succeeded raises `NotFound` on a source that is gone. There is a further state on the **rename-fallback** path, which removes the destination before renaming onto it: a stall in that window leaves the destination gone while the source survives. That path is entered when `posix_rename` fails for a reason `_is_connection_dead` does not recognise and the destination is not a directory, so it is not confined to servers lacking `posix-rename@openssh.com`.
+
 Raises:
 
 - `NotFound` – If src does not exist.
@@ -634,7 +667,7 @@ copy(
 
 Copy the file *src* to *dst* by streaming through the client.
 
-SFTP has no server-side copy, so the bytes round-trip through the client (download then upload); this is not atomic — an interruption can leave a partial file at *dst*. `src == dst` is a no-op; missing parent directories of *dst* are created first.
+SFTP has no server-side copy, so the bytes round-trip through the client (download then upload). The destination is opened and streamed to directly, exactly as in `write`, so this is not atomic: an interruption may leave *dst* untouched, emptied, holding an unpredictable prefix of *src*, or holding it in full, and retrying needs `overwrite=True`. *src* is untouched either way. `src == dst` is a no-op; missing parent directories of *dst* are created first and are not removed when the copy fails.
 
 Raises:
 

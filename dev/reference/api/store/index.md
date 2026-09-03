@@ -246,7 +246,7 @@ write_atomic(
 
 Write binary content to *path* atomically.
 
-If the write fails or is interrupted, *path* is not left in a partial state.
+If the write fails or is interrupted, *path* is not left in a partial state. **That is not the same as unchanged.** A failure in the backend's connection can leave *path* as it was, replaced (the write landed and the acknowledgement was lost), or removed — none of them partial, and the error does not say which. Re-check the path rather than assuming a failed call changed nothing.
 
 Parameters:
 
@@ -287,7 +287,7 @@ open_atomic(
 
 Context manager that yields a writable binary stream.
 
-The file is committed atomically on successful exit; on exception the partial write is discarded.
+The file is committed atomically on successful exit; on an exception raised by your own code the partial write is discarded. A failure in the backend's connection is weaker: no reader ever observes a partially written file, but a temp artifact may survive and a commit whose acknowledgement was lost may already have been applied. Re-check the path rather than assuming a failed call changed nothing.
 
 Parameters:
 

@@ -138,7 +138,7 @@ backend = SFTPBackend(host="files.example.com", username="deploy")
 
 - A streamed read raises rather than returning short, so the bytes you already received are a valid prefix and the handle is dead. Discard it and start the read again; do not try to resume it.
 - The backend drops the dead client, so the **next** operation reconnects on its own. The store stays usable — you do not need to rebuild it.
-- On a stalled `write_atomic` or `open_atomic`, the destination is untouched but an orphan temp file may remain — see the [atomic write caveat](https://docs.remotestore.dev/stable/guides/backends/sftp/#capabilities) in the SFTP guide. What a stalled plain `write` leaves at the destination path is not currently documented; treat the path as being in an unknown state and re-write it.
+- **The failure does not tell you the operation did not happen.** A timeout means no reply came back; if the silence was on the return path, the server did the work and only the answer was lost. **Any amount of the operation may have happened, from none of it to all of it.** A stalled `move` may have moved the file, a stalled `write_atomic` may have written it, and a stalled `write` or `copy` may have left the destination untouched, emptied, holding an unpredictable prefix, or holding the payload in full. Re-check the state rather than assuming a rollback, retry with `overwrite=True`, and never append to a partial file. The [per-operation detail](https://docs.remotestore.dev/stable/guides/backends/sftp/#capabilities) is in the SFTP guide.
 
 If this is happening often against a server you believe is healthy, the bound is probably too tight for it — see **Choosing a value** below.
 

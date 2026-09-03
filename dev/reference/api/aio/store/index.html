@@ -12279,7 +12279,11 @@ declare <code>Capability.USER_METADATA</code>. Passing <code>None</code> or <cod
 
         <p>Write binary content to <em>path</em> atomically.</p>
 <p>If the write fails or is interrupted, <em>path</em> is not left in a
-partial state.</p>
+partial state. <strong>That is not the same as unchanged.</strong> A failure in
+the backend's connection can leave <em>path</em> as it was, replaced (the
+write landed and the acknowledgement was lost), or removed — none of
+them partial, and the error does not say which. Re-check the path
+rather than assuming a failed call changed nothing.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

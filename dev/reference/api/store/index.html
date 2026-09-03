@@ -12372,7 +12372,11 @@ declare <code>Capability.USER_METADATA</code>. Passing <code>None</code> or <cod
 
         <p>Write binary content to <em>path</em> atomically.</p>
 <p>If the write fails or is interrupted, <em>path</em> is not left in a
-partial state.</p>
+partial state. <strong>That is not the same as unchanged.</strong> A failure in
+the backend's connection can leave <em>path</em> as it was, replaced (the
+write landed and the acknowledgement was lost), or removed — none of
+them partial, and the error does not say which. Re-check the path
+rather than assuming a failed call changed nothing.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -12495,8 +12499,12 @@ declare <code>Capability.USER_METADATA</code>. Passing <code>None</code> or <cod
     <div class="doc doc-contents first">
 
         <p>Context manager that yields a writable binary stream.</p>
-<p>The file is committed atomically on successful exit; on exception
-the partial write is discarded.</p>
+<p>The file is committed atomically on successful exit; on an exception
+raised by your own code the partial write is discarded. A failure in the
+backend's connection is weaker: no reader ever observes a partially
+written file, but a temp artifact may survive and a commit whose
+acknowledgement was lost may already have been applied. Re-check the
+path rather than assuming a failed call changed nothing.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

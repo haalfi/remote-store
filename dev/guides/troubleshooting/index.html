@@ -11029,11 +11029,16 @@ misconfigured. The operation is <strong>not retried</strong> — the connect-pha
   read again; do not try to resume it.</li>
 <li>The backend drops the dead client, so the <strong>next</strong> operation reconnects on its
   own. The store stays usable — you do not need to rebuild it.</li>
-<li>On a stalled <code>write_atomic</code> or <code>open_atomic</code>, the destination is untouched but
-  an orphan temp file may remain — see the
-  <a href="../backends/sftp/#capabilities">atomic write caveat</a> in the SFTP guide. What a
-  stalled plain <code>write</code> leaves at the destination path is not currently
-  documented; treat the path as being in an unknown state and re-write it.</li>
+<li><strong>The failure does not tell you the operation did not happen.</strong> A timeout means
+  no reply came back; if the silence was on the return path, the server did the
+  work and only the answer was lost. <strong>Any amount of the operation may have
+  happened, from none of it to all of it.</strong> A stalled <code>move</code> may have moved the
+  file, a stalled <code>write_atomic</code> may have written it, and a stalled <code>write</code> or
+  <code>copy</code> may have left the destination untouched, emptied, holding an
+  unpredictable prefix, or holding the payload in full. Re-check the state rather
+  than assuming a rollback, retry with <code>overwrite=True</code>, and never append to a
+  partial file. The <a href="../backends/sftp/#capabilities">per-operation detail</a> is in
+  the SFTP guide.</li>
 </ul>
 <p>If this is happening often against a server you believe is healthy, the bound is
 probably too tight for it — see <strong>Choosing a value</strong> below.</p>

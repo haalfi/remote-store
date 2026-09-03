@@ -172,7 +172,7 @@ write(
 
 Write *content* to *path*, streaming it over the SFTP channel.
 
-The bytes are streamed straight to the destination file (no temp-and-rename), so a dropped connection mid-write can leave a partial or truncated file there — use `write_atomic` when readers must never see a half-written file. Missing parent directories are created first (one `stat` per ancestor).
+The bytes are streamed straight to the destination file (no temp-and-rename), so a failed write may already have changed that path. A `BackendUnavailable` means no reply came back, not that the server never acted. **Any amount of the write may have happened, from none of it to all of it**, and the error does not say which: the destination may be untouched, emptied (the server truncated on open and the old content is gone), holding an unpredictable prefix of *content*, or holding it in full. Retry with `overwrite=True` (the path is usually still occupied) and re-write from the start rather than appending to what is there — the prefix length depends on buffering the caller cannot observe. Use `write_atomic` when readers must never see a half-written file. Missing parent directories are created first (one `stat` per ancestor) and are **not** removed when the write fails.
 
 The returned `WriteResult` carries `size` (counted during upload) and `source="native"`, but every rich field — `last_modified`, `etag`, `version_id`, `digest` — is `None`: SFTP's write response carries no metadata at all, and the backend does not stat afterwards to fetch any. Call `get_file_info` when the metadata is needed.
 
@@ -197,7 +197,11 @@ write_atomic(
 
 Write *content* to *path* atomically via a temp file plus server rename.
 
-Readers never observe a partial file: the body is streamed to a hidden temp file in the destination directory, then promoted with `posix_rename` (atomic on POSIX-compliant servers). Servers without `posix_rename` fall back to a plain `rename` (non-atomic overwrite: the target is removed first), and the temp file is cleaned up on failure.
+Readers never observe a partial file: the body is streamed to a hidden temp file in the destination directory, then promoted with `posix_rename` (atomic on POSIX-compliant servers). Servers without `posix_rename` fall back to a plain `rename` (non-atomic overwrite: the target is removed first).
+
+A failure *before* the promote leaves the destination untouched, and the temp file is cleaned up **best-effort**: the cleanup is deliberately skipped when the failure is itself a dropped connection, so a stall leaves an orphan `.~tmp.<name>.<uuid8>` beside the target rather than stalling again on an unlink the server cannot answer. A stall whose lost reply is the **promote itself** is different: the rename was performed, so the destination holds the new content and no temp remains, while the caller is told `BackendUnavailable`. What is guaranteed is that no reader ever sees a half-written file — not that a reported failure means the write did not happen.
+
+The destination is also unprotected on the **rename-fallback** path, which removes it before renaming onto it: a stall in that window leaves the destination gone. That path is entered when `posix_rename` fails for a reason `_is_connection_dead` does not recognise and the target is not a directory, so it is not confined to servers lacking the extension.
 
 As in `write`, the returned `WriteResult` carries `size` and `source="native"` but leaves every rich field (`last_modified` / `etag` / `version_id` / `digest`) `None`.
 
@@ -218,7 +222,9 @@ open_atomic(
 
 Yield a writable handle promoted to *path* atomically on clean exit.
 
-Writes stream to a hidden temp file in the destination directory; on clean exit it is promoted with `posix_rename` (atomic on POSIX servers, falling back to `rename`), and on any exception the temp file is removed and *path* is left untouched.
+Writes stream to a hidden temp file in the destination directory; on clean exit it is promoted with `posix_rename` (atomic on POSIX servers, falling back to `rename`). On an exception raised by the caller's own code, the temp file is removed and *path* is left untouched.
+
+**A dropped connection is the exception to both halves**, on the same terms as `write_atomic`, whose docstring carries the detail. The temp cleanup is deliberately skipped when the failure is itself a dropped-connection signal, so an orphan `.~tmp.<name>.<uuid8>` remains; a stall whose lost reply is the promote leaves the rename *performed*, so *path* holds the new content; and on the rename-fallback path *path* can be removed with the payload stranded in the temp. No reader ever sees a half-written file, which is what the atomicity buys — but a reported failure means neither that nothing happened nor that *path* survived.
 
 Raises:
 
@@ -346,6 +352,8 @@ Move or rename the file *src* to *dst*.
 
 Tries `posix_rename` first (atomic on POSIX-compliant servers), then a plain `rename`, and finally a stream copy-then-delete. Because the outcome depends on server support, atomicity is not guaranteed across all servers and `ATOMIC_MOVE` is not declared. `src == dst` is a no-op; missing parent directories of *dst* are created first.
 
+A `BackendUnavailable` here means no reply came back, not that the rename did not happen: if the stall swallowed the *reply* to `posix_rename`, the server performed the move and the caller is told it failed. Re-check both paths before retrying — a blind retry of a move that actually succeeded raises `NotFound` on a source that is gone. There is a further state on the **rename-fallback** path, which removes the destination before renaming onto it: a stall in that window leaves the destination gone while the source survives. That path is entered when `posix_rename` fails for a reason `_is_connection_dead` does not recognise and the destination is not a directory, so it is not confined to servers lacking `posix-rename@openssh.com`.
+
 Raises:
 
 - `NotFound` – If src does not exist.
@@ -364,7 +372,7 @@ copy(
 
 Copy the file *src* to *dst* by streaming through the client.
 
-SFTP has no server-side copy, so the bytes round-trip through the client (download then upload); this is not atomic — an interruption can leave a partial file at *dst*. `src == dst` is a no-op; missing parent directories of *dst* are created first.
+SFTP has no server-side copy, so the bytes round-trip through the client (download then upload). The destination is opened and streamed to directly, exactly as in `write`, so this is not atomic: an interruption may leave *dst* untouched, emptied, holding an unpredictable prefix of *src*, or holding it in full, and retrying needs `overwrite=True`. *src* is untouched either way. `src == dst` is a no-op; missing parent directories of *dst* are created first and are not removed when the copy fails.
 
 Raises:
 

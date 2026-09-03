@@ -192,6 +192,8 @@ write_atomic(
 
 Write content atomically via temp file + rename.
 
+Readers never observe a partial *path*. **That is the whole of what the atomicity buys**, and it is not the same as all-or-nothing: a failure in the backend's connection guarantees neither that a temp artifact was cleaned up nor that the write did not land, because a promote whose reply is lost may have been performed. Documenting the lost-connection behaviour is required of implementations rather than guaranteed by them; a backend that leaves it unstated is a gap, not a promise that nothing happens.
+
 Parameters:
 
 - **`path`** (`str`) – Backend-relative key.

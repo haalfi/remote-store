@@ -11598,7 +11598,9 @@ takes an hour is unaffected, while a flow that goes quiet for longer than the
 bound raises <a href="../../../reference/api/errors/"><code>BackendUnavailable</code></a>. That error
 names the stall and the value that fired (<code>SFTP channel stalled: no data within
 io_timeout=120.0s</code>), and the backend logs it once at <code>WARNING</code>, so a stall is
-distinguishable from any other <code>BackendUnavailable</code> in a log you read later.</p>
+distinguishable from any other <code>BackendUnavailable</code> in a log you read later. What
+it does not say is whether the operation happened —
+<a href="#capabilities">a stalled operation may have succeeded</a>.</p>
 <p><strong>It is on by default, at 120 seconds.</strong> You get the bound without asking for
 it, so nothing you write hangs forever on a silent peer. What you configure is
 whether that value suits your server:</p>
@@ -11843,8 +11845,74 @@ See the <a href="../../../reference/capabilities-matrix/">capabilities matrix</a
 <div class="admonition warning">
 <p class="admonition-title">Atomic write caveat</p>
 <p>Atomic writes use a temp file (<code>.~tmp.&lt;name&gt;.&lt;uuid&gt;</code>) and rename. If the
-connection drops between write and rename, the orphan temp file will remain
-on the server.</p>
+connection drops between write and rename, the destination is untouched but
+the orphan temp file will remain on the server. If it drops <em>during</em> the
+rename, see the danger note below — the write may have landed.</p>
+</div>
+<div class="admonition danger">
+<p class="admonition-title">A stalled operation may have succeeded</p>
+<p>When a transfer stalls, the timeout tells you <strong>no reply came back</strong>. It
+does not tell you the server never got the request. If the silence was on
+the return path, the server did the work and only the answer was lost — so
+every operation here has a state where it did what you asked and raised
+<code>BackendUnavailable</code> anyway.</p>
+<p>The general rule is that <strong>any amount of the operation may have happened,
+from none of it to all of it</strong>, and the error does not tell you which. The
+states below are the ones worth naming, not a complete list:</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>What a <code>BackendUnavailable</code> may have left</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>write()</code></td>
+<td>The destination unchanged, absent, <strong>emptied</strong>, holding an unpredictable prefix, or <strong>written in full</strong></td>
+</tr>
+<tr>
+<td><code>copy()</code></td>
+<td>The same five, at <code>dst</code>; the source is never affected</td>
+</tr>
+<tr>
+<td><code>move()</code></td>
+<td>The paths unchanged, <strong>the move completed</strong> (source gone), or <strong>the destination destroyed</strong> with the source still there</td>
+</tr>
+<tr>
+<td><code>write_atomic()</code> / <code>open_atomic()</code></td>
+<td>The destination unchanged, often with an orphan temp; <strong>the write completed</strong>; or <strong>the destination destroyed</strong> with your data left in an orphan temp file</td>
+</tr>
+</tbody>
+</table>
+<p>The destroyed-destination cases come from a rename fallback that removes the
+destination before renaming onto it, and it is not confined to old servers —
+any rename that <em>fails</em> for a reason the backend cannot attribute to a
+dropped connection takes that path. It also needs <code>overwrite=True</code>: with
+the default the call raises <code>AlreadyExists</code> before the fallback is reached,
+so an existing file cannot be destroyed this way. No example failure is
+given: which ones reach it depends on guards that differ per operation, and
+every attempt to name one here has been wrong.</p>
+<p>So:</p>
+<ul>
+<li><strong>Do not treat a failure as a no-op.</strong> Re-check the state before acting on
+  it. A failed <code>move()</code> that actually succeeded gives <code>NotFound</code> on retry;
+  a failed <code>write(..., overwrite=True)</code> may have truncated your previous
+  file without replacing it.</li>
+<li><strong>Retry with <code>overwrite=True</code>.</strong> The path is usually still occupied, so a
+  plain retry raises <code>AlreadyExists</code> instead of retrying.</li>
+<li><strong>Do not resume from a partial file.</strong> The prefix length depends on
+  buffering you cannot see, so appending to it corrupts the file. Discard
+  and re-write from the start.</li>
+</ul>
+<p><strong><code>write_atomic()</code> is still the right choice when readers must never see a
+half-written file</strong> (see the caveat above, and
+<a href="../../../explanation/concurrency/">atomicity semantics</a>): no reader ever
+observes a partial file at the destination. What it does not promise is that
+a reported failure means nothing happened, nor that your existing file
+survives one.</p>
+<p>Parent directories created for a write remain behind in every case — a
+failed write is not a rollback.</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Move fallback</p>
@@ -12503,10 +12571,18 @@ or fails mid-read.</p>
 
         <p>Write <em>content</em> to <em>path</em>, streaming it over the SFTP channel.</p>
 <p>The bytes are streamed straight to the destination file (no
-temp-and-rename), so a dropped connection mid-write can leave a partial
-or truncated file there — use <code>write_atomic</code> when readers must never
-see a half-written file. Missing parent directories are created first
-(one <code>stat</code> per ancestor).</p>
+temp-and-rename), so a failed write may already have changed that path.
+A <code>BackendUnavailable</code> means no reply came back, not that the server
+never acted. <strong>Any amount of the write may have happened, from none of it
+to all of it</strong>, and the error does not say which: the destination may be
+untouched, emptied (the server truncated on open and the old content is
+gone), holding an unpredictable prefix of <em>content</em>, or holding it in
+full. Retry with <code>overwrite=True</code> (the path is usually still occupied)
+and re-write from the start rather than appending to what is there — the
+prefix length depends on buffering the caller cannot observe. Use
+<code>write_atomic</code> when readers must never see a half-written file.
+Missing parent directories are created first (one <code>stat</code> per ancestor)
+and are <strong>not</strong> removed when the write fails.</p>
 <p>The returned <code>WriteResult</code> carries <code>size</code> (counted during upload)
 and <code>source="native"</code>, but every rich field — <code>last_modified</code>,
 <code>etag</code>, <code>version_id</code>, <code>digest</code> — is <code>None</code>: SFTP's write response
@@ -12582,7 +12658,23 @@ or fails mid-write.</p>
 temp file in the destination directory, then promoted with
 <code>posix_rename</code> (atomic on POSIX-compliant servers). Servers without
 <code>posix_rename</code> fall back to a plain <code>rename</code> (non-atomic overwrite:
-the target is removed first), and the temp file is cleaned up on failure.</p>
+the target is removed first).</p>
+<p>A failure <em>before</em> the promote leaves the destination untouched, and the
+temp file is cleaned up <strong>best-effort</strong>: the cleanup is deliberately
+skipped when the failure is itself a dropped connection, so a stall
+leaves an orphan <code>.~tmp.&lt;name&gt;.&lt;uuid8&gt;</code> beside the target rather than
+stalling again on an unlink the server cannot answer. A stall whose lost
+reply is the <strong>promote itself</strong> is different: the rename was performed,
+so the destination holds the new content and no temp remains, while the
+caller is told <code>BackendUnavailable</code>. What is guaranteed is that no
+reader ever sees a half-written file — not that a reported failure means
+the write did not happen.</p>
+<p>The destination is also unprotected on the <strong>rename-fallback</strong> path,
+which removes it before renaming onto it: a stall in that window leaves
+the destination gone. That path is entered when <code>posix_rename</code> fails
+for a reason <code>_is_connection_dead</code> does not recognise and the target
+is not a directory, so it is not confined to servers lacking the
+extension.</p>
 <p>As in <code>write</code>, the returned <code>WriteResult</code> carries <code>size</code> and
 <code>source="native"</code> but leaves every rich field (<code>last_modified</code> /
 <code>etag</code> / <code>version_id</code> / <code>digest</code>) <code>None</code>.</p>
@@ -12645,8 +12737,17 @@ or fails.</p>
         <p>Yield a writable handle promoted to <em>path</em> atomically on clean exit.</p>
 <p>Writes stream to a hidden temp file in the destination directory; on
 clean exit it is promoted with <code>posix_rename</code> (atomic on POSIX
-servers, falling back to <code>rename</code>), and on any exception the temp file
-is removed and <em>path</em> is left untouched.</p>
+servers, falling back to <code>rename</code>). On an exception raised by the
+caller's own code, the temp file is removed and <em>path</em> is left untouched.</p>
+<p><strong>A dropped connection is the exception to both halves</strong>, on the same
+terms as <code>write_atomic</code>, whose docstring carries the detail. The temp
+cleanup is deliberately skipped when the failure is itself a
+dropped-connection signal, so an orphan <code>.~tmp.&lt;name&gt;.&lt;uuid8&gt;</code> remains;
+a stall whose lost reply is the promote leaves the rename <em>performed</em>, so
+<em>path</em> holds the new content; and on the rename-fallback path <em>path</em> can
+be removed with the payload stranded in the temp. No reader ever sees a
+half-written file, which is what the atomicity buys — but a reported
+failure means neither that nothing happened nor that <em>path</em> survived.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -13053,6 +13154,17 @@ plain <code>rename</code>, and finally a stream copy-then-delete. Because the
 outcome depends on server support, atomicity is not guaranteed across all
 servers and <code>ATOMIC_MOVE</code> is not declared. <code>src == dst</code> is a no-op;
 missing parent directories of <em>dst</em> are created first.</p>
+<p>A <code>BackendUnavailable</code> here means no reply came back, not that the
+rename did not happen: if the stall swallowed the <em>reply</em> to
+<code>posix_rename</code>, the server performed the move and the caller is told it
+failed. Re-check both paths before retrying — a blind retry of a move
+that actually succeeded raises <code>NotFound</code> on a source that is gone.
+There is a further state on the <strong>rename-fallback</strong> path, which removes
+the destination before renaming onto it: a stall in that window leaves
+the destination gone while the source survives. That path is entered
+when <code>posix_rename</code> fails for a reason <code>_is_connection_dead</code> does
+not recognise and the destination is not a directory, so it is not
+confined to servers lacking <code>posix-rename@openssh.com</code>.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -13119,9 +13231,13 @@ or fails.</p>
 
         <p>Copy the file <em>src</em> to <em>dst</em> by streaming through the client.</p>
 <p>SFTP has no server-side copy, so the bytes round-trip through the client
-(download then upload); this is not atomic — an interruption can leave a
-partial file at <em>dst</em>. <code>src == dst</code> is a no-op; missing parent
-directories of <em>dst</em> are created first.</p>
+(download then upload). The destination is opened and streamed to
+directly, exactly as in <code>write</code>, so this is not atomic: an interruption
+may leave <em>dst</em> untouched, emptied, holding an unpredictable prefix of
+<em>src</em>, or holding it in full, and retrying needs <code>overwrite=True</code>.
+<em>src</em> is untouched either way. <code>src == dst</code> is a no-op; missing parent
+directories of <em>dst</em> are created first and are not removed when the copy
+fails.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>

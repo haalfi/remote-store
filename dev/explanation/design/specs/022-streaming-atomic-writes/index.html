@@ -10902,12 +10902,12 @@ multi-GB workloads (Parquet exports, log rotation, report generation).</p>
 <tr>
 <td>SAW-004</td>
 <td>On exception, target path is unchanged (no partial file)</td>
-<td>Done</td>
+<td>[~] Done</td>
 </tr>
 <tr>
 <td>SAW-005</td>
 <td>Temp artifact is cleaned up on both success and failure</td>
-<td>Done</td>
+<td>[~] Done</td>
 </tr>
 <tr>
 <td>SAW-006</td>
@@ -10927,7 +10927,7 @@ multi-GB workloads (Parquet exports, log rotation, report generation).</p>
 <tr>
 <td>SAW-009</td>
 <td>SFTPBackend uses <code>.~tmp.*</code> + <code>posix_rename</code> (with fallback)</td>
-<td>Done</td>
+<td>[~] Done</td>
 </tr>
 <tr>
 <td>SAW-010</td>
@@ -10961,6 +10961,21 @@ multi-GB workloads (Parquet exports, log rotation, report generation).</p>
 </tr>
 </tbody>
 </table>
+<p>[~] <strong>Three rows are marked because shipped tests refute them as written, and
+BUG-271 owns the rewrite.</strong> Each is unqualified where the failure it does not
+survive is a dropped connection rather than a caller exception. SAW-004: a
+stalled promote can leave the target <em>removed</em>, which is neither unchanged nor
+partial. SAW-005: <code>SFTPBackend</code> deliberately skips the cleanup unlink on a
+dead-connection signal, so the temp survives by design — 007-atomic-writes.md
+AW-004 already carries the scoping clause this row does not. SAW-009: the
+fallback is reached on any <code>rename</code> failure the backend cannot attribute to a
+dropped connection, not only on servers lacking the extension, and it removes
+the destination before renaming onto it. Measured by
+<code>test_the_rename_fallback_destroys_the_destination_when_the_promote_stalls</code> and
+<code>test_a_stalled_atomic_write_preserves_the_destination_and_leaves_an_orphan_temp</code>
+in <code>tests/backends/sftp/test_io_timeout.py</code>. Marked rather than rewritten here
+because writing the current behaviour into a requirement row would document a
+defect as the contract.</p>
 <h2 id="capacity-note">Capacity note<a class="headerlink" href="#capacity-note" title="Permanent link">&para;</a></h2>
 <p>S3Backend, S3PyArrowBackend, and AzureBackend (non-HNS) buffer the entire file
 via <code>SpooledTemporaryFile</code> before uploading. Files &lt;= 8 MB are held in memory;
