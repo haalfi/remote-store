@@ -14,29 +14,41 @@ audience:
   - user.api
   - user.site
 expected_ripples:
+  # sdd/backlogid.json is deliberately absent, against the schema's own example
+  # ("after any BACKLOG/BACKLOG-DONE edit"): it is a max-allocated-ID map, this
+  # item allocates no ID because BUG-265 already existed on master, and
+  # `gen_backlogid.py --check` passes with the file untouched. The example is
+  # over-broad for a close.
   - CHANGELOG.md
   - sdd/BACKLOG.md
-  - sdd/BACKLOG-DONE.md
-  - sdd/backlogid.json
   - docs-src/reference/migration.md
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
 surprising_ripples:
-  # Not reachable from the Error-type row, which names the error model, every
-  # backend's mapping and its tests, and the troubleshooting guide. A closed
-  # item's *register entry* is none of those, and this one asserted the fixed
-  # behaviour as a present-tense fact ("a refused connect and a DNS failure
-  # never reach _unavailable at all") because it was true when BK-359 shipped.
+  # BACKLOG-DONE.md is here rather than in expected_ripples, which the schema
+  # makes its complement, and the two lists are keyed by path — so the routine
+  # half (move the closed item in) is folded into this entry rather than
+  # splitting one file across both. The routine half was anticipated; this was
+  # not. BK-359's *own* register entry stated the pre-fix behaviour as a
+  # present-tense fact ("a refused connect and a DNS failure never reach
+  # _unavailable at all"), true when it shipped and falsified by this change.
   # Nothing routes from "I am changing behaviour X" to "which BACKLOG-DONE
-  # entries described X"; the Backlog-item-touched row reaches the item being
-  # closed, not the neighbours a close falsifies.
+  # entries described X": the Error-type row names the error model, the backend
+  # mappings, their tests and the troubleshooting guide, and the
+  # Backlog-item-touched row reaches the item being closed, not the neighbours
+  # a close falsifies.
   - sdd/BACKLOG-DONE.md
 # Derived from `git log --format='%s' origin/master..HEAD --reverse`, naming the
 # commits by subject rather than by SHA, per the schema's clause: a SHA does not
 # survive a rebase and a commit cannot carry its own.
 #   BUG-265: Raise BackendUnavailable for an SFTP host that was never reached
 #            -> does not count (implements the item)
-# Value is 0 at the time of writing and is re-derived from that command before
-# each push; a round that produces a commit raises it.
-review_rounds: 0
+#   BUG-265: Fix a migration cross-reference, an untested branch and two trace
+#            fields -> counts (round 1, 3 findings)
+# Value is 1 — one per review round that produced a commit, which is the second
+# row; the first implements the item. Re-derived from that command before each
+# push, since a later round raises it.
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
@@ -178,6 +190,33 @@ phases:
           which bypasses the mapping. The sentence a text search flags first is
           the one that stays true
         outcome: ok
+  - id: fix
+    name: Round-1 fix pass
+    steps:
+      - file: docs-src/reference/migration.md
+        section: "v0.30.0 to v0.31.0 (io_timeout opt-out paragraph)"
+        read_type: verify
+        extract: >-
+          Inserting a subsection falsified a sentence four sections above it,
+          which counted "the other v0.31.0 change on this backend, in the next
+          section" and now had two siblings. Found by review, not by writing the
+          section — nothing in the ripple-check routes from "I added a section"
+          to "which sentences counted the sections". Swept the file's other
+          positional references (`next section` at the flat-namespace scope
+          note, two `section below` in the Graph entries): all sit after the
+          insertion point and were unaffected
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "expected_ripples, surprising_ripples"
+        read_type: gate
+        extract: >-
+          Re-read after review found this trace listing sdd/backlogid.json,
+          which the PR does not touch — the schema's own example names it "after
+          any BACKLOG/BACKLOG-DONE edit", which is over-broad for a close that
+          allocates no ID. The two lists are also complements, so one path
+          cannot sit in both; BACKLOG-DONE.md is kept in the surprising one and
+          its routine half folded into that comment
+        outcome: misleading
   - id: verify
     name: Verify
     steps:

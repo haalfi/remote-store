@@ -1860,6 +1860,30 @@ class TestSFTPMapException:
         assert "2222" not in message, f"a DNS failure named a port it never reached: {message!r}"
 
     @pytest.mark.spec("SFTP-023")
+    def test_a_message_less_connect_errno_does_not_report_a_lost_connection(self) -> None:
+        """SFTP-023: the unreachable arm covers its own blank case rather than falling through.
+
+        ``_unavailable``'s fallback reports ``SFTP connection lost (...)``, which
+        is the wrong sentence for a connection that was never made — so this arm
+        supplies its own wording for a signal that carries no text. Nothing else
+        in the suite reaches that branch: all seven shapes in the parametrisation
+        above carry a non-empty ``str(exc)``, the ``gaierror`` case returns one
+        line earlier, and the end-to-end cases drive signals that all have text.
+
+        A hand-built bare ``OSError`` is the only way in, and it is worth pinning
+        rather than exempting because SFTP-023 states the behaviour as a clause.
+        """
+        exc = OSError("")
+        exc.errno = errno.ECONNREFUSED
+        assert not str(exc), "the case this test exists for is a signal with no text"
+
+        backend = SFTPBackend(host="sftp.example.invalid", host_key_policy="auto")
+        message = backend._map_exception(exc, "delivery.csv").args[0]
+        assert "sftp.example.invalid" in message, f"the host is absent from {message!r}"
+        assert "OSError" in message, f"the signal's own class is absent from {message!r}"
+        assert "lost" not in message, f"a connection that was never made was reported as lost: {message!r}"
+
+    @pytest.mark.spec("SFTP-023")
     def test_a_refused_connect_keeps_paramikos_own_detail(self) -> None:
         """SFTP-023: the refusal arm does not overwrite a message that already answers.
 
