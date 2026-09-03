@@ -308,10 +308,14 @@ exception keeps its own branch first: `IncompatiblePeer` (a connect-time
 `SSHException`) is mapped with a diagnostic hint before the generic `SSHException`
 mapping, so the hint is not lost.
 
-**Every one of them also carries a non-empty message, and emits exactly one
-`WARNING` record from the mapping.** Both halves are one method's job
-(`_unavailable`), which is why they are stated in one clause: the arms that
-could disagree are the same arms.
+**Every `BackendUnavailable` this mapping *constructs* carries a non-empty
+message, and emits exactly one `WARNING` record.** Both halves are one method's
+job (`_unavailable`), which is why they are stated in one clause: the arms that
+could disagree are the same arms. *Constructs*, not *returns* — the mapping's
+first arm passes a `RemoteStoreError` it was handed straight back, so a
+`BackendUnavailable` built elsewhere and fed in carries neither guarantee. Only
+one such object exists (`_open_sftp_bounded`'s direct raise, unreachable in
+practice), so this is a bound on the clause rather than a live gap.
 
 **"One record" is a claim about this mapping, not about the logger**, and the
 distinction is load-bearing for the reader most likely to rely on it — someone

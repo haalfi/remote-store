@@ -1047,8 +1047,18 @@ def test_copy_stalling_mid_stream_costs_one_bound(stall_relay: _StallRelay, capl
     # the most ways to log twice: two handles, two mapped operations, and a
     # cleanup path that re-enters the mapping. The read-side test cannot show
     # this, since ``read_bytes`` classifies once and stops.
-    ours = [r for r in caplog.records if r.name.startswith("remote_store")]
-    assert len(ours) == 1, f"one stalled copy emitted {len(ours)} records: {[r.getMessage() for r in ours]}"
+    #
+    # Filtered on ``op``, matching the streamed-write sibling below. An earlier
+    # revision counted every ``remote_store`` record at DEBUG, which counts a
+    # different quantity from the claim: it would stay green if ``_unavailable``
+    # stopped logging and any other record appeared, and it would break if the
+    # copy path ever gained a DEBUG line, for a reason unrelated to SFTP-030.
+    # The silent-close test below records the same lesson from the other side.
+    ours = [
+        r for r in caplog.records if r.name.startswith("remote_store") and getattr(r, "op", None) == "error_mapping"
+    ]
+    assert len(ours) == 1, f"one stalled copy emitted {len(ours)} mapping records: {[r.getMessage() for r in ours]}"
+    assert ours[0].levelno == logging.WARNING
 
 
 @pytest.mark.spec("SFTP-030")

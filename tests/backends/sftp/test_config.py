@@ -1659,6 +1659,13 @@ class TestSFTPMapException:
         assert len(ours) == 1, f"expected exactly one remote_store record, got {[r.getMessage() for r in ours]}"
         assert ours[0].levelno == logging.WARNING, f"logged at {ours[0].levelname}, expected WARNING"
         assert "io_timeout" in ours[0].getMessage(), f"the record does not name the fault: {ours[0].getMessage()!r}"
+        # The present half of SFTP-023's path clause. Its absent half is pinned
+        # by ``test_a_probe_record_carries_no_path``; without this one, deleting
+        # the ``record_extra["path"] = path`` assignment while leaving the
+        # render argument keeps the whole suite green and silently strips the
+        # field a structured consumer reads.
+        assert ours[0].path == "delivery.csv"
+        assert ours[0].backend == "sftp"
 
     @pytest.mark.spec("SFTP-023")
     def test_a_live_errno_is_not_logged_as_a_connection_death(self, caplog: pytest.LogCaptureFixture) -> None:

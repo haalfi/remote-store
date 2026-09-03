@@ -376,7 +376,13 @@ compliant the day before.
   "`BackendUnavailable`: If the SSH/SFTP connection cannot be established"
   (`backends/_sftp.py`), and the same `Raises:` line appears on **fourteen**
   further methods — 15 in total, derived by walking the module's AST for
-  functions whose docstring contains that exact line: `check_health`, `exists`,
+  functions whose docstring **contains the sentence prefix**
+  `"BackendUnavailable: If the SSH/SFTP connection cannot be established"` as a
+  substring. The predicate has to be stated that precisely: only `check_health`
+  ends the sentence there, and the other fourteen continue `" or fails."`,
+  `" or fails mid-read."` or `" or fails mid-write."`, so a full-line-equality
+  reading of the same words returns 1 rather than 15. The methods:
+  `check_health`, `exists`,
   `is_file`, `is_folder`, `read`, `read_bytes`, `write`, `write_atomic`,
   `open_atomic`, `delete`, `delete_folder`, `get_file_info`, `get_folder_info`,
   `move`, `copy`. An earlier revision said eleven, carried over unchecked while
@@ -442,10 +448,15 @@ compliant the day before.
   asserts a level at all.
   That is [`000-process.md` Rule 7](000-process.md#intent-attribution)'s
   **Unenforced** row: prose demanded it, nothing enforced it, so the claim is
-  undecided and **nothing moves yet**. BK-359 first resolved it by deleting the
-  clause and writing current behaviour into the spec, which is the code being
-  made right by prose inside a review fix pass; that item's round 4 caught it
-  and suspended the clause instead, pointing here.
+  undecided and **nothing moves yet**.
+  **BK-359 twice tried to resolve it in passing and both attempts were wrong.**
+  It first deleted the clause and wrote current behaviour into the spec — the
+  code made right by prose inside a review fix pass. Its round 4 caught that and
+  suspended the clause instead, which left the spec saying *undecided* while the
+  guide `docs-src/guides/observe.md`, rewritten in the same PR, still published
+  the withdrawal as settled. Round 5 found that split. Both edits are reverted;
+  OBS-008 and the guide are back at their pre-BK-359 text, so the divergence is
+  intact and undecided rather than half-resolved in two directions.
   **The decision owed** is one of two: either the library should report before
   re-raising, and the deliverable is that call site plus the level assertion
   Rule 2 wants; or it should not, and the clause is withdrawn on the ordinary

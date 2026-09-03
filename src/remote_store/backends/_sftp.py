@@ -2407,9 +2407,13 @@ class SFTPBackend(Backend):
     def _unavailable(self, exc: Exception, path: str, *, message: str | None = None) -> BackendUnavailable:
         """Build a ``BackendUnavailable`` for a concluded backend failure, and log it.
 
-        **Every** ``BackendUnavailable`` ``_map_exception`` returns ends here,
-        so what a caller is handed — and what lands in their log — is described
-        in one place rather than at each of the four arms. The
+        **Every** ``BackendUnavailable`` ``_map_exception`` *constructs* ends
+        here, so what a caller is handed — and what lands in their log — is
+        described in one place rather than at each of the four arms. Constructs,
+        not returns: the passthrough arm returns a ``RemoteStoreError`` it was
+        given unchanged, so a ``BackendUnavailable`` built elsewhere and fed
+        back in — the direct raise in ``_open_sftp_bounded`` is the only one
+        today, and it is unreachable in practice — leaves no record. The
         ``IncompatiblePeer`` arms pass their remediation hint as *message*
         because they have something better to say than the exception does;
         everything else lets this method decide.
@@ -2498,8 +2502,13 @@ class SFTPBackend(Backend):
         # consumer reads ``record.path``, so emitting the key with an empty
         # value would hand it a field that looks answered and is not. This
         # follows ``_store.py``'s ``ping`` record, which omits the key outright.
-        # ``check_health`` is how an empty path arrives; the connect-time arms
-        # are reached through an ordinary operation and carry its key.
+        # An empty path arrives from ``check_health`` and from any operation on
+        # the root key, and the connect-time arms reach it too: the lazy
+        # ``_sftp`` property runs ``_connect`` *inside* the caller's
+        # ``_errors(path)`` block, so a handshake or host-key failure carries
+        # whatever key that operation had — which for ``check_health`` is "".
+        # Measured: a bad banner, and both ``IncompatiblePeer`` variants, each
+        # logged one record with no ``path`` key.
         record_extra: dict[str, Any] = {"op": "error_mapping", "backend": self.name}
         if path:
             record_extra["path"] = path

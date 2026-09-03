@@ -161,13 +161,9 @@ logging.getLogger("remote_store").setLevel(logging.DEBUG)
 | Level | When |
 |-------|------|
 | `DEBUG` | Method entry (every Store operation) |
-| `INFO` | An operation that completed and changed something, plus connection, health and batch-summary milestones (a connect, a successful `ping`, a finished batch) |
-| `WARNING` | Suppressed hook exceptions, fallback behaviour, an unsafe configuration, a retry before it sleeps, and a backend failure before it is raised |
-
-Errors are reported by the exception, not by a log record: the library emits
-nothing at `ERROR`. A failed operation raises, and the reporting the library
-does on its own account — a retry about to sleep, a backend it has concluded is
-unreachable — is at `WARNING`.
+| `INFO` | Mutating-operation completion (write, delete, move, copy) |
+| `WARNING` | Suppressed hook exceptions, fallback behaviour |
+| `ERROR` | Before re-raising backend errors |
 
 ### Structured `extra` fields
 
@@ -176,24 +172,9 @@ formatters or structlog processors:
 
 | Field | Description |
 |-------|-------------|
-| `op` | Operation name (`"read"`, `"write"`, ...), or the backend phase that emitted the record (`"connect"`, `"error_mapping"`) |
+| `op` | Operation name (`"read"`, `"write"`, ...) |
 | `path` | Store-relative key |
 | `backend` | Backend name (`"local"`, `"s3"`, ...) |
-
-`op="error_mapping"` marks a record reporting a backend failure the library has
-just concluded and is about to raise.
-
-**Not every record carries every field.** A record logged without `extra=`
-carries none of them, and that is not confined to third-party machinery: the
-suppressed-hook warning in the `WARNING` row above is emitted by this
-extension's own code and carries no `op`. Several backend and retry records are
-the same.
-
-So code that reads these fields must tolerate their absence —
-`getattr(record, "op", None)`, never `record.op`. A `logging.Filter` that
-assumes the attribute raises `AttributeError` inside `Filterer.filter`, which
-the logging module does not route through `handleError`, so it propagates into
-the call that logged and surfaces as a backend error rather than a logging one.
 
 ## Error Handling
 

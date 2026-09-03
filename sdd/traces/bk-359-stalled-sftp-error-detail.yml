@@ -14,8 +14,13 @@ audience:
   - user.site
   - user.api_docs
 discovery_followups:
+  # Four, not the two this listed until round 5 caught it. BUG-266 and BUG-267
+  # were born in round 4 and their BACKLOG bodies say so; recording two of four
+  # is the cleaned-up trace the schema's authoring note warns against.
   - BUG-264
   - BUG-265
+  - BUG-266
+  - BUG-267
 expected_ripples:
   - sdd/backlogid.json
   - CHANGELOG.md
@@ -28,8 +33,17 @@ surprising_ripples:
   # routes from "the library logs something new" to the guide that enumerates
   # what it logs, or to the guide recommending the call that now logs per poll.
   # Both were found by round 1, not by the table.
+  #
+  # Both are listed as ripples that were *met and then withdrawn*. Rounds 2-5
+  # refuted every version of the prose written for them — eleven findings across
+  # three guides, each correction introducing its own defect — so the guide
+  # changes were reverted to master and the documentation ripple was filed as
+  # its own item rather than shipped half-true. The ripple is real; what this
+  # trace records is that this PR could not land it.
   - docs-src/guides/observe.md
   - docs-src/guides/health-check.md
+  - docs-src/guides/troubleshooting.md
+  - sdd/specs/019-ext-observe.md
 # Derived from `git log --oneline origin/master..HEAD`, naming the commits per
 # the schema's clause above rather than stating a bare total:
 #   ad2cb32  implements the item                        -> does not count
@@ -39,13 +53,20 @@ surprising_ripples:
 #            the session working BK-360, not by a round on this PR, but it
 #            exists because review found something, which is the schema's test)
 #   7c5c722  incorporates round 3 (15 findings)         -> counts
-#   <this>   incorporates round 4 (14 findings)         -> counts
-# Value is 5. Twice now this field has gone stale under a later commit of my
-# own: it sat at 0 through two rounds, and then at 4 while round 4's fix pass
-# was being written. Both are the same error the rounds kept finding elsewhere
-# — a figure invalidated by the diff carrying it — so if another round-driven
-# commit lands, this list grows with it.
-review_rounds: 5
+#   e38c0d2  incorporates round 4 (14 findings)         -> counts
+#   4e56fd7  corrects this field, stale under e38c0d2   -> counts
+#   df6cc78  corrects a co-change count found by self-check -> counts
+#   <this>   incorporates round 5 (13 findings)         -> counts
+# Value is 6, counting one per review round that produced commits: rounds 1-5
+# plus ab36c96. The three bookkeeping commits above sit inside rounds 4 and 5
+# rather than forming rounds of their own.
+# Rewritten under rebase, so those SHAs are the post-rebase ones.
+# **This field went stale three times** — at 0 through two rounds, at 4 while
+# round 4's fix pass was landing, and at 5 while two more commits landed under a
+# list ending in a "<this>" placeholder that then resolved to neither of them.
+# A placeholder standing for the commit being written cannot survive a second
+# commit; naming the SHAs after the fact is the only form that holds.
+review_rounds: 6
 phases:
   - id: orient
     name: Orient

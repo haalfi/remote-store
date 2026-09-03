@@ -203,30 +203,9 @@ observation. See ADR-0010.
 - Logger variable: `log = logging.getLogger(__name__)`.
 - Format: `%`-style (lazy evaluation, ruff G004 compliant).
 - Structured context via `extra={}` dict with keys like `backend`, `op`,
-  `path` where applicable. **"Where applicable" is doing real work**: a record
-  logged without `extra=` carries none of them, and that is not confined to
-  records emitted through third-party machinery — `ext/observe.py`'s own
-  suppressed-hook warning is first-party and carries no `op`. Code reading these
-  keys uses `getattr(record, "op", None)`; a `logging.Filter` that assumes the
-  attribute raises inside `Filterer.filter`, which the logging module does not
-  route through `handleError`, so it propagates into the call that logged.
-  `op` is an operation name on Store records and the emitting phase on backend
-  records (`"connect"`, `"error_mapping"`).
-- Levels: DEBUG (method entry), INFO (an operation that completed and changed
-  something, plus connection, health and batch-summary milestones), WARNING
-  (retries, fallbacks, unsafe configuration, suppressed hook exceptions, and a
-  backend failure before it is raised).
-  **The `ERROR` clause is suspended, not withdrawn.** This bullet read
-  "ERROR (before re-raise)" until it was checked: no call site in `src/` logs at
-  `error`, `exception`, `critical` or `fatal`, and none of the four
-  `@pytest.mark.spec("OBS-008")` tests asserts a level. That is
-  [`000-process.md` Rule 7](../000-process.md#intent-attribution)'s *Unenforced*
-  row — prose demanded a level, nothing enforced it, so **nothing moves yet**:
-  the divergence is not resolved by deleting the clause, which would make the
-  code right by prose inside a review fix pass rather than deciding it on the
-  ordinary path. **BUG-267** carries the decision, and the levels above are
-  therefore a description of what is emitted today rather than a settled
-  invariant over the `ERROR` question.
+  `path` where applicable.
+- Levels: DEBUG (method entry), INFO (write/delete/move/copy completion),
+  WARNING (retries, fallbacks), ERROR (before re-raise).
 - Package init registers `NullHandler`:
   `logging.getLogger("remote_store").addHandler(logging.NullHandler())`.
 - Never log inside tight loops (per-chunk streaming).

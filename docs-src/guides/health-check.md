@@ -28,7 +28,7 @@ store.ping()  # raises on failure, silent on success
 |-----------|---------|
 | `PermissionDenied` | Invalid credentials or insufficient permissions |
 | `NotFound` | Bucket, container, or root directory does not exist |
-| `BackendUnavailable` | Network error, DNS failure, or timeout — but see the caveat below |
+| `BackendUnavailable` | Network error, DNS failure, or timeout |
 
 ```python
 from remote_store import BackendUnavailable, NotFound, PermissionDenied
@@ -42,17 +42,6 @@ except NotFound:
 except BackendUnavailable:
     log.error("Backend unreachable for %s", store)
 ```
-
-!!! warning "On SFTP, some unreachable servers raise the base `RemoteStoreError`"
-    Measured against a refused port and against a DNS failure, `SFTPBackend`
-    raises the base [`RemoteStoreError`](../reference/api/errors.md) rather than
-    `BackendUnavailable`. Other unreachable-server shapes — a stall, a failed
-    SSH handshake, a rejected credential — do raise `BackendUnavailable`, so the
-    two types do not divide along any line a caller can predict. Catch
-    `RemoteStoreError` if you need to cover all of them today. This is a known
-    defect rather than intended behaviour, and the exception type will change
-    when it is fixed — which is why this caveat sits beside the table rather
-    than being written into it.
 
 ## Per-backend strategies
 
