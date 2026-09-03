@@ -1571,14 +1571,19 @@ class TestSFTPMapException:
         reading their own error log was told nothing at all about what had
         failed. The type is therefore not what is asserted here; the text is.
 
-        A refused connect is deliberately **not** the contrast drawn here. It
-        was, in an earlier revision, and that was wrong: measured against a
-        just-released ephemeral port, a refused SFTP connect raises the base
-        ``RemoteStoreError`` (paramiko's ``NoValidConnectionsError`` is an
-        ``OSError`` with ``errno=None``, which no arm above matches), so the two
-        were always distinguishable by type. The reader's difficulty was that
-        the stall said nothing — which is what these cases assert — not that it
-        was confusable with something else.
+        A refused connect is deliberately **not** the contrast drawn here, and
+        the reason has changed twice. An early revision drew it and was wrong on
+        the facts of the day: a refused connect then raised the base
+        ``RemoteStoreError``, because ``NoValidConnectionsError`` is an
+        ``OSError`` with ``errno=None`` that no arm matched, so the two were
+        distinguishable by type. BUG-265 then gave it an arm, and both are
+        ``BackendUnavailable`` now — so that distinguishability is gone and
+        cannot be the reason either.
+
+        The reason that survives both is the one that was always the real one:
+        this test is about the **message**, not the type. A refused connect has
+        never been message-less — paramiko names the host and port — so it is
+        not a case these parameters could cover whatever type it carries.
 
         ``expect`` is the token that distinguishes this shape from the others:
         the bound's option name for a timeout (which is what the reader has to
@@ -1696,10 +1701,14 @@ class TestSFTPMapException:
     def test_every_arm_that_concludes_emits_one_record(
         self, message: str, hint: str, caplog: pytest.LogCaptureFixture
     ) -> None:
-        """SFTP-023: the ``IncompatiblePeer`` arms log like every other concluding arm.
+        r"""SFTP-023: the ``IncompatiblePeer`` arms log like every other concluding arm.
 
-        ``_map_exception`` reaches ``_unavailable`` from four arms, and until
-        this test only one of them — the dead-connection arm — had its record
+        ``_map_exception`` reaches ``_unavailable`` from several arms — five at
+        the time of writing, and the count is deliberately not restated in each
+        of these docstrings, because it stood at "four" in three of them through
+        the addition of a fifth. ``rg -n 'self\._unavailable\('`` on the backend
+        module is the derivation. Until this test only one of them — the
+        dead-connection arm — had its record
         pinned. The two ``IncompatiblePeer`` arms were covered by
         ``TestSFTPIncompatiblePeerHint``, which asserts message content only, so
         both would still pass if those arms went back to constructing
@@ -1731,13 +1740,17 @@ class TestSFTPMapException:
 
     @pytest.mark.spec("SFTP-023")
     def test_the_generic_sshexception_arm_emits_one_record(self, caplog: pytest.LogCaptureFixture) -> None:
-        """SFTP-023: the fourth concluding arm, which the parametrised test above does not reach.
+        """SFTP-023: the ``SSHException`` concluding arm, which the parametrised test above does not reach.
 
-        ``_map_exception`` reaches ``_unavailable`` from four arms. The
-        dead-connection arm is pinned by ``test_the_mapping_leaves_a_log_record``
-        and the two ``IncompatiblePeer`` arms by the test above; this is the
-        remaining one, taken by a ``ChannelException`` or any mid-operation
-        ``SSHException``. Its *message* was already pinned by
+        The dead-connection arm is pinned by
+        ``test_the_mapping_leaves_a_log_record``, the two ``IncompatiblePeer``
+        arms by the test above, and the unreachable-host arm by
+        ``test_an_unreachable_host_emits_one_record``; this is the one none of
+        those reach, taken by a ``ChannelException`` or any mid-operation
+        ``SSHException``. Named by its arm rather than by an ordinal on purpose:
+        this docstring said "the fourth concluding arm … this is the remaining
+        one" and stayed that way while a fifth was added, so the inventory it
+        exists to give was the thing that went stale. Its *message* was already pinned by
         ``test_message_less_signal_still_names_the_failure[ssh-exception]``, but
         nothing pinned its record — so reverting just this arm to construct
         ``BackendUnavailable`` directly left the whole suite green while breaking
@@ -1816,9 +1829,10 @@ class TestSFTPMapException:
     def test_a_host_never_reached_maps_to_backend_unavailable(self, exc_factory: object) -> None:
         """SFTP-023: a connection that was never established is ``BackendUnavailable``.
 
-        BUG-265. Fifteen docstrings in this module promise
+        BUG-265. Fifteen docstrings in ``backends/_sftp.py`` promise
         ``BackendUnavailable: If the SSH/SFTP connection cannot be established``
-        — derived by walking the module's AST for functions whose docstring
+        — the backend module, not this test module, which contains none of them
+        — derived by walking that module's AST for functions whose docstring
         contains that sentence prefix as a substring, since only ``check_health``
         ends the sentence there and the other fourteen continue ``" or fails."``
         or a mid-read/mid-write variant. The two most ordinary ways a connect
@@ -1921,7 +1935,7 @@ class TestSFTPMapException:
 
     @pytest.mark.spec("SFTP-023")
     def test_an_unreachable_host_emits_one_record(self, caplog: pytest.LogCaptureFixture) -> None:
-        """SFTP-023: the new arm logs like the four that preceded it.
+        """SFTP-023: the new arm logs like the arms that preceded it.
 
         Before BUG-265 a refused connect reached ``_unavailable`` zero times, so
         a ``Store.ping()`` poll against a down server left nothing carrying

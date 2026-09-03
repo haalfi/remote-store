@@ -205,8 +205,12 @@ deleted mid-scan (BUG-255) or when a folder vanishes part-way through a
 recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 (BUG-256); a constructor does not leak its driver's exception
 (BUG-245) and neither does a stream (BK-358); one operation does not answer by
-payload size (BUG-253); a caller who meets a failure on **any** backend can tell
-*which* failure it was, rather than an empty message (BUG-264); what a failed operation *leaves behind* is not
+payload size (BUG-253); a caller who meets a failure on **any** backend catches
+the type the docs promised and can tell *which* failure it was, rather than an
+empty message (BUG-264, which carries both halves — its Disposition is exactly
+whether the base-class fall-throughs should be classified or merely given a
+message); a connect that fails locally is not reported against the caller's path
+(BUG-273); what a failed operation *leaves behind* is not
 worse than the failure itself, so a reported failure never silently destroys the
 caller's file (BUG-270, BUG-272); and a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
@@ -233,7 +237,11 @@ rule. The catches-the-promised-type half is met on SFTP's connect path, closed
 by BUG-265: a refused port and a DNS failure raise the `BackendUnavailable`
 fifteen docstrings and the health-check guide promise, where both raised the
 base class. That is one backend's connect arm, not the clause — BUG-264 carries
-the rest, and the two are the same promise met at different depths. **One cross-section dependency remains**, per
+the rest, and the two are the same promise met at different depths. It also
+opened BUG-273: the same connect path answers `PermissionDenied` against the
+caller's key when the connect is rejected locally, which is the promised-type
+defect again with a message that blames a path.
+**One cross-section dependency remains**, per
 [§ How this file works](#how-this-file-works): BK-345 waits on **ID-244** in
 section 2 for the seeding hook, stated inside the item that carries it, so this
 section cannot close on its own items alone. BUG-249's denied half carried a
@@ -452,6 +460,39 @@ compliant the day before.
   **Filed by BK-359's `/ship` run**, whose round-1 reviewer found the
   base-class half; the Azure half was measured after the item was challenged for
   asserting rather than checking.
+
+- [ ] **BUG-273 — A locally-rejected SFTP connect answers `PermissionDenied` naming a path the request never reached**
+  spec: SFTP-021, SFTP-023 · effort: S · audience: user.api
+  BUG-265 gave `_map_exception` a connect-time arm for the unreachable-host
+  errnos and deliberately left `EACCES` out of it. This is that exclusion,
+  recorded rather than left for the next reader to re-derive.
+  **What was measured**, by monkeypatching `socket.socket.connect` to raise a
+  chosen errno and driving `paramiko.SSHClient.connect` on paramiko 5.0.0:
+  `EACCES` is re-raised unwrapped, exactly like `ENETUNREACH` / `ENETDOWN` /
+  `EHOSTDOWN` (`SSHClient.connect` captures only `ECONNREFUSED` and
+  `EHOSTUNREACH` into `NoValidConnectionsError`; its own docstring says so). It
+  therefore reaches the mapping as a plain `PermissionError` and takes the
+  `EACCES` arm, so `check_health()` answers
+  `PermissionDenied("Permission denied: <the caller's key>")` for a connect that
+  never reached the server. That is BUG-265's own defect shape — a caller
+  following the health-check guide catches the wrong type — with a worse second
+  half, because the message names a path as the subject of a failure the path
+  had no part in.
+  **What was NOT measured, and it is the item's open question:** that a real
+  network produces `EACCES` on `connect()`. Linux does return it for a locally
+  rejected connect (`iptables --reject-with icmp-admin-prohibited`), but no such
+  route existed in the sandbox that found this, so **the trigger is
+  unreproduced** and the first work here is reproducing it. An unreachable
+  trigger makes this a documentation item rather than a code one.
+  **Disposition:** not simply widening the tuple. The same errno on a live
+  operation genuinely is a denied path — `test_eacces_maps_to_permission_denied`
+  pins that and is right — and `_map_exception` dispatches on the exception
+  alone, so it cannot tell a connect-time `EACCES` from an operation-time one.
+  Separating them needs connect-time context the mapping does not have; the
+  cheap shape is probably for the lazy `_sftp` property to classify what
+  `_connect` raises before the caller's `_errors(path)` block sees it.
+  **Found by BUG-265's round-3 measuring member**, which reported it as a
+  `Possible: Bug:` with the trigger explicitly flagged unreproduced.
 
 - [ ] **BUG-266 — No artifact maps an observable SFTP failure onto the arm that handles it, and four prose attempts were each refuted**
   spec: SFTP-023, SFTP-030 · effort: M · audience: user.site, library.maintainer

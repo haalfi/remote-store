@@ -145,11 +145,15 @@ changes is which branch runs when you list both: a handler ordering
 `except BackendUnavailable` before `except RemoteStoreError` now takes the first
 branch for these two failures where it took the second.
 
-**The failure is now logged.** Reaching the error mapping means one `WARNING` on
+**The error mapping now logs it.** Reaching the mapping means one `WARNING` on
 `remote_store.backends._sftp` carrying `op="error_mapping"`, where a refused
-connect previously left nothing from the mapping at all. A `ping()` on a
-liveness probe against a host that is down repeats it per poll — worth knowing
-before you point one at a store you expect to be unreachable for a while.
+connect previously left nothing from the mapping at all. That is one record
+more, not the first one: this logger already carried the connect retry's own
+`WARNING` per sleep and one more under the `AUTO_ADD` host-key policy, so
+neither the failure nor the logger is new — the mapping's record is. Filter on
+`op="error_mapping"` to see just this one. A `ping()` on a liveness probe
+against a host that is down repeats it per poll, which is worth knowing before
+you point one at a store you expect to be unreachable for a while.
 
 **Scope:** SFTP only, and only the connect-side failures. An `OSError` from a
 connection that is working — a full disk, a device error — still raises the base

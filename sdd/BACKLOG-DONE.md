@@ -238,8 +238,11 @@ if evidence changes; these are retired.
   **Three shapes, one new arm.** `paramiko.NoValidConnectionsError` (an
   `OSError` whose `errno` is `None` — what a refused port actually raises),
   `socket.gaierror`, and the raw connect-side errnos (`ECONNREFUSED` /
-  `EHOSTUNREACH` / `ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN`) for any route that
-  reaches the mapping without paramiko's wrapper. They classify through
+  `EHOSTUNREACH` / `ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN`) — three of which
+  are the *ordinary* connect path rather than a fallback, since
+  `SSHClient.connect` wraps only `ECONNREFUSED` and `EHOSTUNREACH` and re-raises
+  the rest unwrapped, measured on paramiko 5.0.0. `EACCES` is a deliberate
+  exclusion, carried by BUG-273. They classify through
   `_is_unreachable` and an arm of their own rather than by widening
   `_is_connection_dead`: that predicate is also the stream `is_fatal` guard and
   the mid-operation "do not re-enter a dead channel" test, and no operation is
@@ -372,8 +375,9 @@ if evidence changes; these are retired.
   person to meet it was one who had configured nothing.
   **The defect class was wider than the item's title.** Nine exception instances
   were constructed and driven through `_map_exception` — one per shape the
-  mapping concludes `BackendUnavailable` on, with the seven-errno arm sampled
-  once — and **four** arrived with no message of their own, not one:
+  mapping concluded `BackendUnavailable` on **as it stood then**, with the
+  seven-errno arm sampled once — and **four** arrived with no message of their
+  own, not one:
   `TimeoutError` (which `socket.timeout` is), `EOFError`, `paramiko.SFTPError`
   and a bare `paramiko.SSHException`. The other five carried a real message.
   **The set is the mapping's, not `_is_connection_dead`'s**: that predicate
@@ -406,7 +410,8 @@ if evidence changes; these are retired.
   why the spec now declines to give one. Note also that a refused connect and a
   DNS failure did not reach `_unavailable` at all when this shipped, so they
   contributed nothing from the mapping — **no longer true**, and the divergence
-  this observation opened is BUG-265, which gave both an arm of their own. The single-record claim is asserted where it could
+  this observation opened is BUG-265, which gave both an arm of their own.
+  The single-record claim is asserted where it could
   break — `copy`, which holds two
   handles, and `open_atomic`, which maps and then re-enters its own handler —
   rather than on a read, which classifies once and stops.

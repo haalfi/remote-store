@@ -2469,14 +2469,18 @@ class SFTPBackend(Backend):
         """Return True if *exc* says the host was never reached at all.
 
         The connect-time counterpart to ``_is_connection_dead``, and separate
-        from it on purpose. That predicate means *an established connection
-        dropped*, and it is not only a classification input: it is the
-        ``is_fatal`` guard on ``_ErrorMappingStream`` and the "do not re-enter a
-        channel this exception says is dead" test on the read, write and promote
-        paths. None of those states exists before a connect succeeds, so folding
-        these shapes in would arm those guards for a condition they cannot meet.
-        The two predicates are disjoint, and ``_map_exception`` gives each its own
-        arm.
+        from it because **the two answer different questions** — this one asks
+        whether the host was ever reached, that one whether a connection the
+        backend had is now unusable. That is the whole of the reason, and it is
+        stated that way because the tempting shorter reason is false: "no
+        operation is in flight at connect time, so folding these in would arm
+        the ``is_fatal`` and re-entry guards for a state they cannot meet" is
+        refuted by a shape already in the other predicate. A connect that
+        *times out* raises ``socket.timeout``, which ``_is_connection_dead``
+        matches, and no harm follows — those guards are simply never consulted
+        on the connect path. So reachability is not what keeps the sets apart;
+        the question each is asked is. ``_map_exception`` gives each its own arm,
+        and the two are disjoint over every shape measured against them.
 
         Three shapes reach here, none of them matched by the errno dispatch in
         ``_map_exception``:
@@ -2491,14 +2495,30 @@ class SFTPBackend(Backend):
           with nothing in the errno tuples below.
         - An ``OSError`` carrying a connect-side errno (``ECONNREFUSED`` /
           ``EHOSTUNREACH`` / ``ENETUNREACH`` / ``ENETDOWN`` / ``EHOSTDOWN``).
-          paramiko wraps these in ``NoValidConnectionsError`` on the connect path,
-          so this arm is for a route that reaches the mapping without that
-          wrapper rather than for a measured shape.
+          **Three of these five are the ordinary path, not a fallback**, so do
+          not trim them as hypothetical: ``SSHClient.connect`` captures only
+          ``ECONNREFUSED`` and ``EHOSTUNREACH`` into ``NoValidConnectionsError``
+          and re-raises every other ``socket.error`` unwrapped — its own
+          docstring says so ("if a socket error (other than connection-refused
+          or host-unreachable) occurred while connecting"), and driving each
+          errno through ``SSHClient.connect`` on paramiko 5.0.0 confirms
+          ``ENETUNREACH`` / ``ENETDOWN`` / ``EHOSTDOWN`` arrive here as a plain
+          ``OSError``.
 
         Deliberately **not** matched: every other ``OSError`` the errno dispatch
         declines. ``EIO`` and ``ENOSPC`` are faults of a connection that is
         working, and answering them with ``BackendUnavailable`` would tell a
         caller to retry a different host over a full disk.
+
+        **``EACCES`` is a known exclusion, not an oversight, and it is not
+        free.** paramiko re-raises it unwrapped like the three above, so a
+        locally-rejected connect reaches ``_map_exception`` and takes the
+        ``EACCES`` arm — answering ``PermissionDenied`` naming the caller's
+        *path* for a failure that never reached the server. It stays out of this
+        tuple because the same errno on a live operation genuinely is a denied
+        path and this predicate cannot tell the two apart; separating them needs
+        connect-time context the mapping does not have. Tracked as its own item
+        rather than widened here.
         """
         import paramiko
 
@@ -2555,7 +2575,11 @@ class SFTPBackend(Backend):
 
         **Every** ``BackendUnavailable`` ``_map_exception`` *constructs* ends
         here, so what a caller is handed — and what lands in their log — is
-        described in one place rather than at each of the four arms. Constructs,
+        described in one place rather than at each of the arms that reach it.
+        No count is given: this docstring said "the four arms" through the
+        addition of a fifth (the unreachable-host arm), and the number was never
+        what the sentence needed. ``rg -n 'self\\._unavailable\\(' `` on this file
+        is the derivation if you want one. Constructs,
         not returns: the passthrough arm returns a ``RemoteStoreError`` it was
         given unchanged, so a ``BackendUnavailable`` built elsewhere and fed
         back in — the direct raise in ``_open_sftp_bounded`` is the only one
@@ -2572,21 +2596,28 @@ class SFTPBackend(Backend):
         ``e.args == ('',)`` and ``str(e)`` rendered as
         ``" | path='delivery.csv' | backend='sftp'"``.
 
-        Four shapes reach the fallback below, and the set they are drawn from is
-        **the shapes this mapping concludes ``BackendUnavailable`` on that let
-        this method decide the message** — not the ones ``_is_connection_dead``
-        matches. Those two sets differ by exactly the ``SSHException`` family,
-        which that predicate documents itself as deliberately *not* matching (it
-        has its own arm here instead), and one of the four blank shapes is a bare
-        ``SSHException``. Naming the wider set is what makes the "every arm ends
-        here" framing above the right one to state the guarantee over. The four:
-        ``TimeoutError`` (which ``socket.timeout`` is), ``EOFError``,
-        ``SFTPError`` and a bare ``SSHException``. Signals carrying a real
-        message keep it.
+        Four shapes reach the fallback below: ``TimeoutError`` (which
+        ``socket.timeout`` is), ``EOFError``, ``SFTPError`` and a bare
+        ``SSHException``. Signals carrying a real message keep it.
 
-        The unreachable-host shapes are outside that four by construction rather
-        than by luck: ``_unreachable_message`` covers its own blank case, because
-        the fallback's wording says the connection was *lost*, which is the wrong
+        **The set those four are drawn from is not the one
+        ``_is_connection_dead`` matches**, and the difference is worth naming
+        because it is what makes the "every arm ends here" framing above the
+        right one to state the guarantee over. That predicate documents itself
+        as deliberately not matching the ``SSHException`` family, which has its
+        own arm here — and one of the four blank shapes is a bare
+        ``SSHException``, so its set would hold only three of the four.
+
+        No exact difference between the two sets is stated, because it is not
+        the tidy one it looks like. This paragraph read "they differ by exactly
+        the ``SSHException`` family" and that survived the addition of the
+        unreachable-host arm without being true of it: a refused connect gets
+        ``message=None`` from ``_unreachable_message`` whenever the driver
+        supplied text, so it *does* let this method decide, while sitting
+        outside ``_is_connection_dead``. What matters here is only which shapes
+        reach the fallback, and the unreachable ones never do —
+        ``_unreachable_message`` covers its own blank cases, because the
+        fallback's wording says the connection was *lost*, which is the wrong
         sentence for one that was never made.
 
         The stall is the case that matters most, because ``io_timeout``

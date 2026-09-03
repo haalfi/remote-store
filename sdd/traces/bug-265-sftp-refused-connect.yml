@@ -13,6 +13,11 @@ source_items:
 audience:
   - user.api
   - user.site
+discovery_followups:
+  # Born in round 3, from the measuring member driving each connect errno
+  # through paramiko rather than reading which ones it wraps. Filed with its
+  # trigger explicitly unreproduced, which is the first work on it.
+  - BUG-273
 expected_ripples:
   # sdd/backlogid.json is deliberately absent, against the schema's own example
   # ("after any BACKLOG/BACKLOG-DONE edit"): it is a max-allocated-ID map, this
@@ -47,10 +52,13 @@ surprising_ripples:
 #            fields -> counts (round 1, 3 findings)
 #   BUG-265: Correct three derived figures a measuring round refuted, and guard
 #            a second blank-message shape -> counts (round 2, 4 findings)
-# Value is 2 — one per review round that produced a commit, which is rows 2 and
-# 3; row 1 implements the item. Re-derived from that command before each push,
-# since a later round raises it.
-review_rounds: 2
+#   BUG-265: Stop counting the arms, and record what the panel refuted
+#                                                 -> counts (round 3, 15
+#            findings from a three-member panel after dedup)
+# Value is 3 — one per review round that produced a commit, which is rows 2, 3
+# and 4; row 1 implements the item. Re-derived from that command before each
+# push, since a later round raises it.
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -67,9 +75,12 @@ phases:
         section: "1. Failures are predictable"
         read_type: gate
         extract: >-
-          The Promise's second clause — a caller catches the type the docs
-          promised — and the Closes-when sentence naming BUG-265, which has to
-          move when it closes
+          The Promise's first clause — "a caller catches one exception type" —
+          and the Closes-when sentence naming BUG-265, which has to move when it
+          closes. Retrospective: this said "second clause" until round 3. The
+          second is the absent-or-denied-store clause, and the file numbers
+          itself two lines below (BK-359 is "a third clause"), so the miscount
+          was checkable from the same screen
         outcome: ok
       - file: sdd/specs/005-error-model.md
         section: "ERR-007"
@@ -136,13 +147,16 @@ phases:
           parametrisation, the DNS host-naming case, the keep-paramiko's-detail
           case, the one-record case and the unrelated-errno bound; plus
           TestSFTPUnreachableHost for the real connect path. Re-measured against
-          3e6d318 with the current test file on PYTHONPATH: 13 of the 16 fail,
-          and the 3 that pass are the ones asserting what did not change.
-          Retrospective, and the miss is mine: this line first said "11 of 15",
-          counted off a progress bar rather than read off a summary line. The run
-          it described was 12 of 15, and rounds 1 and 2 then added a sixteenth
-          and seventeenth test — two errors in one figure, neither catchable by
-          re-reading the sentence, which is the case for opening the source
+          3e6d318 with the current test file on PYTHONPATH: **14 of the 17
+          fail**, and the 3 that pass are the ones asserting what did not change
+          (the keep-paramiko's-detail case and both unrelated-errno params).
+          Retrospective, and this figure has now been wrong three times, each
+          differently: "11 of 15" was counted off a progress bar rather than a
+          summary line (the run was 12 of 15); "13 of 16" was measured correctly
+          but written in the same commit that added a seventeenth test, so it
+          was stale before it was committed; and both times the paragraph below
+          already named the test count the figure contradicted. Re-derive the
+          whole figure after the last test lands, never the denominator alone
         outcome: ok
   - id: implement
     name: Implement
@@ -172,8 +186,12 @@ phases:
           replaced the paragraph stating that a refused connect reaches
           _unavailable zero times. The largest single edit in the diff and it
           had no step here until round 2 asked why: a spec amendment reads like
-          part of the implementation rather than a read worth recording, and the
-          trace's own file coverage was 6 of 10 as a result
+          part of the implementation rather than a read worth recording, so it
+          never prompted a step the way opening a gate does. No coverage figure
+          is attached, because the one this line carried was wrong twice over —
+          it quoted the post-fix number for the pre-fix state, and attributed it
+          to an omission that moved coverage by zero files, the spec already
+          having been named by the SFTP-010 verify step
         outcome: ok
       - file: src/remote_store/backends/_sftp.py
         section: "_unavailable (docstring, block comment)"
@@ -280,6 +298,59 @@ phases:
           blank handling never sees that shape. Both blank cases are now handled
           and both pinned; neither is raised by anything today, which the spec
           now says rather than leaving them to read as observable behaviour
+        outcome: ok
+  - id: fix_panel
+    name: Round-3 fix pass (three-member panel)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_unavailable (docstring), _is_unreachable (docstring)"
+        read_type: verify
+        extract: >-
+          A whole-file member read each changed file's current state rather than
+          its diff, and found what two diff-anchored rounds could not: the new
+          arm is the *fifth* to reach _unavailable, and "the four arms" was
+          still written three lines above a sentence this PR had already edited.
+          Two test docstrings carried the same figure and one called the
+          SSHException arm "the remaining one". Every count is now replaced by
+          the rg command that derives it — the fix is removing the number, not
+          incrementing it, because incrementing is what round 1 did to the
+          migration sentence and round 2 had to correct it again
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_unreachable (errno bullet)"
+        read_type: verify
+        extract: >-
+          A measuring member drove each connect errno through
+          paramiko.SSHClient.connect with socket.connect monkeypatched, and
+          refuted this bullet's rationale: SSHClient.connect captures only
+          ECONNREFUSED and EHOSTUNREACH into NoValidConnectionsError and
+          re-raises the rest, so ENETUNREACH / ENETDOWN / EHOSTDOWN are the
+          *ordinary* path, not the fallback the docstring called them. paramiko
+          5.0.0's own docstring says as much. The wrong rationale was the
+          dangerous kind: it invited a later maintainer to trim three live
+          entries as hypothetical
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-023 (connect-time set)"
+        read_type: verify
+        extract: >-
+          The same member refuted the separation rationale by execution: a
+          connect that times out raises socket.timeout, which
+          _is_connection_dead already matches, so "no operation is in flight at
+          connect time" is not what keeps the sets apart — a connect-time shape
+          is already in the other one, harmlessly. The reason that survives is
+          that the two predicates answer different questions. Restated in the
+          spec and the docstring together
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPMapException (docstrings)"
+        read_type: verify
+        extract: >-
+          Three docstrings in the file this PR edits argued from behaviour this
+          PR reverses — most sharply the one saying a refused connect and a
+          stall "were always distinguishable by type", whose whole point is a
+          distinction the change removes. None sits on a + line, so only a
+          whole-file pass could reach them
         outcome: ok
   - id: verify
     name: Verify

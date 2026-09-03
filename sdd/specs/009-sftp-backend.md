@@ -337,12 +337,29 @@ So, finally, are the signals that say the host was **never reached**:
 `paramiko.NoValidConnectionsError` (an `OSError` whose `errno` is `None`, which
 is what a refused port actually raises), `socket.gaierror` (name resolution), and
 an `OSError` carrying a connect-side errno (`ECONNREFUSED` / `EHOSTUNREACH` /
-`ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN`). These are a *connect-time* set and
-sit in their own arm rather than joining the dropped-connection set above: the
-predicate guarding that set is also the mid-operation "do not re-enter a dead
-channel" guard, and no operation is in flight when a connect is refused. Every
-other `OSError` the errno dispatch declines keeps the base `RemoteStoreError` —
-`EIO` and `ENOSPC` are faults of a connection that is working.
+`ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN`). Three of those five are the ordinary
+path rather than a fallback: `SSHClient.connect` captures only `ECONNREFUSED`
+and `EHOSTUNREACH` into `NoValidConnectionsError` and re-raises every other
+`socket.error` unwrapped, so `ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN` arrive as
+a plain `OSError`.
+
+These are a *connect-time* set and sit in their own arm rather than joining the
+dropped-connection set above, **because the two predicates answer different
+questions** — was the host ever reached, versus is a connection the backend had
+now unusable. Not because a connect-time shape could not safely sit in the other
+set: a connect that *times out* raises `socket.timeout`, which the
+dropped-connection predicate already matches, and no harm follows, because the
+`is_fatal` and re-entry guards that predicate also serves are never consulted on
+the connect path.
+
+Every other `OSError` the errno dispatch declines keeps the base
+`RemoteStoreError` — `EIO` and `ENOSPC` are faults of a connection that is
+working. **`EACCES` is a known exclusion rather than an oversight**: paramiko
+re-raises it unwrapped like the three above, so a locally-rejected connect takes
+the `EACCES` arm and is answered `PermissionDenied` naming the caller's path for
+a failure that never reached the server. It is excluded because the same errno
+on a live operation genuinely is a denied path and this dispatch cannot tell the
+two apart. BUG-273 carries it.
 **Every** `BackendUnavailable` this mapping returns — the `SSHException` family
 included — invalidates the cached SFTP client so the next operation reconnects
 (see SFTP-010, tier 2). The list is not the guarantee: recovery is anchored to
