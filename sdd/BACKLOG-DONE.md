@@ -215,6 +215,50 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-265 — A refused SFTP connect raises `RemoteStoreError`, which contradicts fifteen docstrings and the health-check guide**
+  spec: SFTP-023 · effort: S · audience: user.api, user.site
+  Reproduced before it was fixed and re-run after, against a just-released
+  ephemeral port and an RFC 2606 `.invalid` host: `check_health()` raised
+  `RemoteStoreError("[Errno None] Unable to connect to port <n> on 127.0.0.1")`
+  and `RemoteStoreError("[Errno -2] Name or service not known")` respectively;
+  both now raise `BackendUnavailable`.
+  **Fifteen docstrings promised the type that was not delivered** — derived by
+  walking the module's AST for functions whose docstring contains the sentence
+  prefix `"BackendUnavailable: If the SSH/SFTP connection cannot be
+  established"` as a substring, which is the predicate that returns 15 rather
+  than 1: only `check_health` ends the sentence there, and the other fourteen
+  continue `" or fails."` or a mid-read/mid-write variant. Because the lazy
+  `_sftp` property runs `_connect` inside the caller's `_errors(path)` block,
+  the defect reached all fifteen on a first operation, not only the probe.
+  **Three shapes, one new arm.** `paramiko.NoValidConnectionsError` (an
+  `OSError` whose `errno` is `None` — what a refused port actually raises),
+  `socket.gaierror`, and the raw connect-side errnos (`ECONNREFUSED` /
+  `EHOSTUNREACH` / `ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN`) for any route that
+  reaches the mapping without paramiko's wrapper. They classify through
+  `_is_unreachable` and an arm of their own rather than by widening
+  `_is_connection_dead`: that predicate is also the stream `is_fatal` guard and
+  the mid-operation "do not re-enter a dead channel" test, and no operation is
+  in flight when a connect is refused. Every other `OSError` the errno dispatch
+  declines keeps the base `RemoteStoreError` — `EIO` and `ENOSPC` are faults of
+  a connection that is working, and the test suite pins that bound.
+  **The DNS arm supplies its own message.** `gaierror` renders as `Name or
+  service not known` and never says which name, so the arm names the host, the
+  way the `IncompatiblePeer` arms name their remediation. The port is
+  deliberately omitted: resolution never reaches it. A refused connect keeps
+  paramiko's own text, which already names host and port.
+  **Not marked `**Breaking**`, and the migration section is owed anyway.**
+  `BackendUnavailable` subclasses `RemoteStoreError`, so no `except` clause
+  stops catching; what changes is which branch runs for a caller who lists both,
+  and that a failure now leaves one `op="error_mapping"` WARNING where it left
+  none.
+  **One backlog correction shipped with it:** this item's own body claimed
+  `docs-src/guides/health-check.md` "now carries a caveat pointing here". It
+  never did — the guide's `BackendUnavailable` row was simply false, and is now
+  true as written with nothing added.
+  **What was deliberately not done:** the same class of defect on other
+  backends, which is **BUG-264**, and the observable-failure-to-arm table, which
+  is **BUG-266**.
+
 - [x] **BK-360 — What a stalled non-atomic SFTP `write` leaves at the destination is undocumented**
   spec: SFTP-030, SFTP-014 · effort: S · audience: user.api_docs, user.site
   Established by running it, not by reading the mapping — and the answer is
@@ -355,8 +399,9 @@ if evidence changes; these are retired.
   retry policy, the host-key policy and the failure shape — three review rounds
   each refuted a different cell of that product written as a constant, which is
   why the spec now declines to give one. Note also that a refused connect and a
-  DNS failure never reach `_unavailable` at all (BUG-265), so they contribute
-  nothing from the mapping. The single-record claim is asserted where it could
+  DNS failure did not reach `_unavailable` at all when this shipped, so they
+  contributed nothing from the mapping — **no longer true**, and the divergence
+  this observation opened is BUG-265, which gave both an arm of their own. The single-record claim is asserted where it could
   break — `copy`, which holds two
   handles, and `open_atomic`, which maps and then re-enters its own handler —
   rather than on a read, which classifies once and stops.

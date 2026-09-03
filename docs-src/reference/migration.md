@@ -115,6 +115,41 @@ failure also arrives one `io_timeout` sooner than before on a stalled
 connection, because the release of a condemned stream no longer pays the bound a
 second time.
 
+**An SFTP host that cannot be reached now raises `BackendUnavailable`:**
+
+In v0.30.0, `SFTPBackend` promised `BackendUnavailable` for a connection that
+cannot be established — on `check_health` and fourteen other methods — and did
+not deliver it for the two most ordinary ways a connect fails. A refused port
+and a DNS failure both raised the base `RemoteStoreError` instead. A caller who
+followed the [health-check guide](../guides/health-check.md), which shows exactly
+that `except BackendUnavailable`, caught neither.
+
+```python
+# v0.30.0: RemoteStoreError('[Errno None] Unable to connect to port 22 on 10.0.0.4')
+# v0.31.0: BackendUnavailable, same text
+store.ping()
+
+# v0.30.0: RemoteStoreError('[Errno -2] Name or service not known')
+# v0.31.0: BackendUnavailable("Cannot resolve SFTP host 'files.example.com': [Errno -2] Name or service not known")
+store.ping()
+```
+
+**Nothing stops catching.** [`BackendUnavailable`](api/errors.md) subclasses
+`RemoteStoreError`, so an `except RemoteStoreError` handler is unaffected. What
+changes is which branch runs when you list both: a handler ordering
+`except BackendUnavailable` before `except RemoteStoreError` now takes the first
+branch for these two failures where it took the second.
+
+**The failure is now logged.** Reaching the error mapping means one `WARNING` on
+`remote_store.backends._sftp` carrying `op="error_mapping"`, where a refused
+connect previously left nothing from the mapping at all. A `ping()` on a
+liveness probe against a host that is down repeats it per poll — worth knowing
+before you point one at a store you expect to be unreachable for a while.
+
+**Scope:** SFTP only, and only the connect-side failures. An `OSError` from a
+connection that is working — a full disk, a device error — still raises the base
+`RemoteStoreError` and still logs nothing. Other backends are unchanged.
+
 **Flat-namespace backends now raise `InvalidPath` for a wrong-typed path:**
 
 A backend that stores keys rather than nodes — the S3 family, Azure on a flat

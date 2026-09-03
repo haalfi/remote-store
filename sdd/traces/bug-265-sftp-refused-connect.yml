@@ -1,0 +1,199 @@
+id: BUG-265
+title: "A refused SFTP connect raises RemoteStoreError, which contradicts fifteen docstrings and the health-check guide"
+trigger: >-
+  BK-359's round-1 reviewer noticed, as a Possible it could not run, that
+  SFTPBackend promised BackendUnavailable for a connection that cannot be
+  established and did not deliver it for a refused port. Running it confirmed
+  that, and a DNS failure with it: both are OSError subclasses no arm of
+  _map_exception claimed, so both exited at the generic arm as the base class
+  while fifteen docstrings and the health-check guide said otherwise.
+source_items:
+  - BUG-265
+  - BK-359
+audience:
+  - user.api
+  - user.site
+expected_ripples:
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - docs-src/reference/migration.md
+surprising_ripples:
+  # Not reachable from the Error-type row, which names the error model, every
+  # backend's mapping and its tests, and the troubleshooting guide. A closed
+  # item's *register entry* is none of those, and this one asserted the fixed
+  # behaviour as a present-tense fact ("a refused connect and a DNS failure
+  # never reach _unavailable at all") because it was true when BK-359 shipped.
+  # Nothing routes from "I am changing behaviour X" to "which BACKLOG-DONE
+  # entries described X"; the Backlog-item-touched row reaches the item being
+  # closed, not the neighbours a close falsifies.
+  - sdd/BACKLOG-DONE.md
+# Derived from `git log --format='%s' origin/master..HEAD --reverse`, naming the
+# commits by subject rather than by SHA, per the schema's clause: a SHA does not
+# survive a rebase and a commit cannot carry its own.
+#   BUG-265: Raise BackendUnavailable for an SFTP host that was never reached
+#            -> does not count (implements the item)
+# Value is 0 at the time of writing and is re-derived from that command before
+# each push; a round that produces a commit raises it.
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-265"
+        read_type: gate
+        extract: >-
+          The two measured shapes, the fifteen-docstring derivation, and the
+          item's own note that nothing pins a refused backend connect today —
+          so the first work is the failing test
+        outcome: misleading
+      - file: sdd/BACKLOG.md
+        section: "1. Failures are predictable"
+        read_type: gate
+        extract: >-
+          The Promise's second clause — a caller catches the type the docs
+          promised — and the Closes-when sentence naming BUG-265, which has to
+          move when it closes
+        outcome: ok
+      - file: sdd/specs/005-error-model.md
+        section: "ERR-007"
+        read_type: gate
+        extract: >-
+          "Raised when the backend cannot be reached or initialized." A refused
+          port and an unresolvable name are squarely that, so the spec is right
+          and the code is wrong (CLAUDE.md principle 5). ERR-007 needed no
+          amendment
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Pre-work index"
+        read_type: gate
+        extract: >-
+          Triggered rows: Error type, Bug fix, Backlog item touched, CHANGELOG
+          entry, Breaking change. The last is the one that decided the
+          disposition — a fix that breaks an except clause without earning the
+          marker owes the migration section alone
+        outcome: ok
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_map_exception, _is_connection_dead, _unavailable"
+        read_type: gate
+        extract: >-
+          Drove check_health against a just-released ephemeral port and an
+          RFC 2606 .invalid host in a throwaway script rather than reading which
+          arm would claim them. NoValidConnectionsError arrives with errno None
+          and gaierror with -2; neither is in any errno tuple, and
+          _is_connection_dead's errno-less branch matches only "Socket is
+          closed"
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_connect (tenacity retry predicate)"
+        read_type: verify
+        extract: >-
+          Checked rather than changed: the connect retry already fires on
+          OSError, so it already retried both shapes. Classification happens
+          after the budget is exhausted, so reclassifying changes no retry
+          behaviour — which is why the migration entry claims none
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPScanHostKeys::test_scan_unreachable_raises"
+        read_type: reference
+        extract: >-
+          The just-released-ephemeral-port trick, reused for the end-to-end
+          tests, and the control that must stay green: scan_host_keys does not
+          go through the mapping and still raises OSError
+        outcome: ok
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: sdd/000-process.md
+        section: "Rule 6 (bug-fix pipeline)"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing test → fix, in one commit"
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPMapException"
+        read_type: reference
+        extract: >-
+          The existing home of _map_exception unit tests. Added the seven-shape
+          parametrisation, the DNS host-naming case, the keep-paramiko's-detail
+          case, the one-record case and the unrelated-errno bound; plus
+          TestSFTPUnreachableHost for the real connect path. Observed 11 of 15
+          failing before the fix, and the 4 that passed were the ones that
+          assert what did not change
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_unreachable, _unreachable_message, _map_exception"
+        read_type: reference
+        extract: >-
+          A predicate and an arm of its own rather than widening
+          _is_connection_dead, because that predicate is also the stream
+          is_fatal guard and the mid-operation re-entry test at eight call
+          sites, and no operation is in flight when a connect is refused
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_unavailable (docstring, block comment)"
+        read_type: verify
+        extract: >-
+          Two claims the fix falsified and neither was flagged by anything: the
+          "four blank shapes" set is now drawn from a wider signal list, and the
+          block comment stated that a refused connect reaches this method zero
+          times. Both are in the same helper the change routes through, which is
+          the only reason they were met
+        outcome: ok
+  - id: docs
+    name: Documentation
+    steps:
+      - file: docs-src/guides/health-check.md
+        section: "Error handling"
+        read_type: verify
+        extract: >-
+          Checked rather than changed. The BackendUnavailable row already said
+          "Network error, DNS failure, or timeout" and is now true as written.
+          The BACKLOG item claimed this guide "now carries a caveat pointing
+          here"; it never did, and that sentence was corrected on the way out
+          rather than carried into the register entry
+        outcome: misleading
+      - file: docs-src/reference/migration.md
+        section: "v0.30.0 to v0.31.0"
+        read_type: reference
+        extract: >-
+          Same unreleased window as BK-356 and BK-357, so this is a subsection
+          rather than a new version pair. States the type change, that no except
+          clause stops catching, which branch a two-clause handler now takes,
+          and the new per-poll WARNING
+        outcome: ok
+      - file: docs-src/guides/backends/sftp.md
+        section: "Preflight host-key discovery"
+        read_type: verify
+        extract: >-
+          Checked rather than changed: "Network failures (host unreachable, port
+          refused, DNS error) raise OSError" is about SFTPUtils.scan_host_keys,
+          which bypasses the mapping. The sentence a text search flags first is
+          the one that stays true
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Detailed checklist"
+        read_type: verify
+        extract: "Error type, Bug fix, Backlog item touched, CHANGELOG entry, Breaking change rows"
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-010 (tier 2)"
+        read_type: verify
+        extract: >-
+          Checked rather than changed. Its enumeration is explicitly the
+          *dead-connection* signal set, and the unreachable shapes are not in
+          it; the invariant it states — every mapping that concludes
+          BackendUnavailable clears the client — is what the new arm complies
+          with. Adding connect-time shapes to a list labelled dead-connection
+          would have falsified the framing to satisfy the letter
+        outcome: ok

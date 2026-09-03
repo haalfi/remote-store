@@ -333,6 +333,16 @@ connection signals that are *not* `SSHException` subclasses: `EOFError`,
 `EBADF`, `socket.timeout` / `TimeoutError` (matched by type, since a half-open
 instance often carries no matching `errno`), and `paramiko.SFTPError` (an
 SFTP-protocol failure that subclasses neither `OSError` nor `SSHException`).
+So, finally, are the signals that say the host was **never reached**:
+`paramiko.NoValidConnectionsError` (an `OSError` whose `errno` is `None`, which
+is what a refused port actually raises), `socket.gaierror` (name resolution), and
+an `OSError` carrying a connect-side errno (`ECONNREFUSED` / `EHOSTUNREACH` /
+`ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN`). These are a *connect-time* set and
+sit in their own arm rather than joining the dropped-connection set above: the
+predicate guarding that set is also the mid-operation "do not re-enter a dead
+channel" guard, and no operation is in flight when a connect is refused. Every
+other `OSError` the errno dispatch declines keeps the base `RemoteStoreError` —
+`EIO` and `ENOSPC` are faults of a connection that is working.
 **Every** `BackendUnavailable` this mapping returns — the `SSHException` family
 included — invalidates the cached SFTP client so the next operation reconnects
 (see SFTP-010, tier 2). The list is not the guarantee: recovery is anchored to
@@ -372,8 +382,10 @@ different cell written as a total here: "one WARNING on the logger", then
 Derive it for a configuration if you need it; do not restate it as a constant.
 
 The message is the driver's own whenever the driver has one. Four of the signals
-above reach the mapping with no arguments — `TimeoutError` (which `socket.timeout`
-is), `EOFError`, `SFTPError` and a bare `SSHException` — and for those
+above — counting the `SSHException` family and the dropped-connection set, not
+the unreachable-host set the paragraph after this one carves out — reach the
+mapping with no arguments: `TimeoutError` (which `socket.timeout`
+is), `EOFError`, `SFTPError` and a bare `SSHException`. For those
 `BackendUnavailable(str(exc))` carried the empty string, which
 [ERR-009](005-error-model.md) forbids and which no reader can act on. **"The
 signals above" is this clause's own list**, which opens with the `SSHException`
@@ -384,6 +396,15 @@ bound when `io_timeout is None`, since a half-open socket reaches this arm with
 the option off and claiming a limit the caller never set would be false. The
 others name the signal's own class. A signal that *did* explain itself is never
 overwritten: this is a fallback for silence, not a house style for messages.
+
+The unreachable-host arm is the one exception to "the driver's own message
+whenever it has one", and only in one direction. A refused connect keeps
+paramiko's text, which already names host and port. A `gaierror` renders as
+`Name or service not known` and never says *which* name, so that arm supplies
+one naming the host — the port is deliberately omitted, since resolution never
+reaches it. The arm also covers its own blank case rather than falling through,
+because the generic fallback reports a connection *lost*, which is the wrong
+sentence for one that was never made.
 
 The record is emitted where the *conclusion* is reached rather than at each raise
 site, so the cleanup and classification paths that re-enter the mapping do not
@@ -397,12 +418,16 @@ Both are pinned against the live stall relay
 once and stops, cannot show it.
 
 `check_health` maps through here, so a probe that fails **in a way this mapping
-concludes on** logs one record and a `Store.ping()` poll repeats it. That is
-narrower than "a poll against a down server": a refused connect and a DNS
-failure raise the base `RemoteStoreError` from the generic `OSError` arm without
-reaching `_unavailable` at all, so they log nothing from the mapping. BUG-265
-tracks that divergence — `check_health`'s own docstring promises
-`BackendUnavailable` for a connection that cannot be established.
+concludes on** logs one record and a `Store.ping()` poll repeats it. That now
+includes the canonical down-server cases: until BUG-265 a refused connect and a
+DNS failure raised the base `RemoteStoreError` from the generic `OSError` arm
+without reaching `_unavailable` at all, contradicting `check_health`'s own
+docstring, and they logged nothing from the mapping. Both now conclude here, so
+a poll against a host that is not there leaves an `op="error_mapping"` record
+where it left none — a change in log volume as well as in exception type. It is
+still narrower than "a poll against a down server": a probe that fails at the
+errno arms (a base path that is missing or denied on a server that answered)
+logs nothing, because that is an answer rather than a fault.
 
 **Which real-world failures land on which arm is not enumerated here**, and the
 omission is deliberate. The arms are stated above by exception *type*, which is

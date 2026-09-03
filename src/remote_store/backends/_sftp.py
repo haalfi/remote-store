@@ -9,6 +9,7 @@ import logging
 import os
 import re
 import shutil
+import socket
 import stat
 import uuid
 from contextlib import contextmanager
@@ -257,7 +258,6 @@ class SFTPUtils:
             Path("host.keys").write_text(entry + "\\n")
             ```
         """
-        import socket
 
         import paramiko
 
@@ -349,7 +349,6 @@ class SFTPUtils:
             # widen via SFTPBackend(connect_kwargs={"disabled_algorithms": ...}).
             ```
         """
-        import socket
         import struct
 
         sock = socket.create_connection((host, port), timeout=timeout)
@@ -2465,6 +2464,82 @@ class SFTPBackend(Backend):
                 return True
         return False
 
+    @staticmethod
+    def _is_unreachable(exc: Exception) -> bool:
+        """Return True if *exc* says the host was never reached at all.
+
+        The connect-time counterpart to ``_is_connection_dead``, and separate
+        from it on purpose. That predicate means *an established connection
+        dropped*, and it is not only a classification input: it is the
+        ``is_fatal`` guard on ``_ErrorMappingStream`` and the "do not re-enter a
+        channel this exception says is dead" test on the read, write and promote
+        paths. None of those states exists before a connect succeeds, so folding
+        these shapes in would arm those guards for a condition they cannot meet.
+        The two predicates are disjoint, and ``_map_exception`` gives each its own
+        arm.
+
+        Three shapes reach here, none of them matched by the errno dispatch in
+        ``_map_exception``:
+
+        - ``paramiko.NoValidConnectionsError`` — paramiko's wrapper for "every
+          address I tried refused me". A ``socket.error`` subclass whose ``errno``
+          is ``None``, which is why it survived the errno arms; the errno-less
+          branch of ``_is_connection_dead`` matches only the literal
+          ``"Socket is closed"``. This is what a refused port actually raises.
+        - ``socket.gaierror`` — name resolution failed. Its ``errno`` is an
+          ``EAI_*`` code (``-2`` for ``EAI_NONAME``), which shares a namespace
+          with nothing in the errno tuples below.
+        - An ``OSError`` carrying a connect-side errno (``ECONNREFUSED`` /
+          ``EHOSTUNREACH`` / ``ENETUNREACH`` / ``ENETDOWN`` / ``EHOSTDOWN``).
+          paramiko wraps these in ``NoValidConnectionsError`` on the connect path,
+          so this arm is for a route that reaches the mapping without that
+          wrapper rather than for a measured shape.
+
+        Deliberately **not** matched: every other ``OSError`` the errno dispatch
+        declines. ``EIO`` and ``ENOSPC`` are faults of a connection that is
+        working, and answering them with ``BackendUnavailable`` would tell a
+        caller to retry a different host over a full disk.
+        """
+        import paramiko
+
+        if isinstance(exc, (paramiko.ssh_exception.NoValidConnectionsError, socket.gaierror)):
+            return True
+        return isinstance(exc, OSError) and getattr(exc, "errno", None) in (
+            errno.ECONNREFUSED,
+            errno.EHOSTUNREACH,
+            errno.ENETUNREACH,
+            errno.ENETDOWN,
+            errno.EHOSTDOWN,
+        )
+
+    def _unreachable_message(self, exc: Exception) -> str | None:
+        """Return the message for an unreachable-host signal, or ``None`` to keep the driver's.
+
+        ``None`` for a refused connect: ``NoValidConnectionsError`` renders as
+        ``"[Errno None] Unable to connect to port 2222 on 10.0.0.4"``, which
+        already names both halves of what the caller has to check, and
+        ``_unavailable``'s rule is that a driver which explained itself is never
+        overwritten.
+
+        A ``gaierror`` is the case that needs one. It renders as
+        ``"[Errno -2] Name or service not known"`` — true, and useless to a
+        reader running several stores, since it never says *which* name. So this
+        arm supplies one, the way the ``IncompatiblePeer`` arms supply their
+        remediation hint. **The port is not named**: resolution never reaches it,
+        and naming it would point a reader at the one thing that cannot be the
+        fault.
+
+        The third branch keeps ``_unavailable``'s blank-message fallback out of
+        this arm's way. That fallback reports a lost connection, which is the
+        wrong sentence for one that was never made, so a message-less connect
+        errno gets its own wording here rather than borrowing it.
+        """
+        if isinstance(exc, socket.gaierror):
+            return f"Cannot resolve SFTP host '{self._host}': {exc}"
+        if not str(exc):
+            return f"Cannot reach SFTP host '{self._host}' ({type(exc).__name__} with no detail)"
+        return None
+
     def _unavailable(self, exc: Exception, path: str, *, message: str | None = None) -> BackendUnavailable:
         """Build a ``BackendUnavailable`` for a concluded backend failure, and log it.
 
@@ -2474,10 +2549,11 @@ class SFTPBackend(Backend):
         not returns: the passthrough arm returns a ``RemoteStoreError`` it was
         given unchanged, so a ``BackendUnavailable`` built elsewhere and fed
         back in — the direct raise in ``_open_sftp_bounded`` is the only one
-        today, and it is unreachable in practice — leaves no record. The
-        ``IncompatiblePeer`` arms pass their remediation hint as *message*
-        because they have something better to say than the exception does;
-        everything else lets this method decide.
+        today, and it is unreachable in practice — leaves no record. Two kinds of
+        arm pass a *message* because they have something better to say than the
+        exception does: the ``IncompatiblePeer`` arms with their remediation
+        hint, and the unreachable-host arm with the name that failed to resolve
+        (``_unreachable_message``). Everything else lets this method decide.
 
         **Why the driver's own message is not enough.** paramiko raises several
         of these signals with no arguments, and ``BackendUnavailable(str(exc))``
@@ -2486,16 +2562,22 @@ class SFTPBackend(Backend):
         ``e.args == ('',)`` and ``str(e)`` rendered as
         ``" | path='delivery.csv' | backend='sftp'"``.
 
-        Four shapes do this, and the set they belong to is **the shapes this
-        mapping concludes ``BackendUnavailable`` on** — not the ones
-        ``_is_connection_dead`` matches. The two differ by exactly the
-        ``SSHException`` family, which that predicate documents itself as
-        deliberately *not* matching (it has its own arm here instead), and one
-        of the four blank shapes is a bare ``SSHException``. Naming the wider
-        set is what makes the "every arm ends here" framing above the right one
-        to state the guarantee over. The four: ``TimeoutError`` (which
-        ``socket.timeout`` is), ``EOFError``, ``SFTPError`` and a bare
-        ``SSHException``. Signals carrying a real message keep it.
+        Four shapes reach the fallback below, and the set they are drawn from is
+        **the shapes this mapping concludes ``BackendUnavailable`` on that let
+        this method decide the message** — not the ones ``_is_connection_dead``
+        matches. Those two sets differ by exactly the ``SSHException`` family,
+        which that predicate documents itself as deliberately *not* matching (it
+        has its own arm here instead), and one of the four blank shapes is a bare
+        ``SSHException``. Naming the wider set is what makes the "every arm ends
+        here" framing above the right one to state the guarantee over. The four:
+        ``TimeoutError`` (which ``socket.timeout`` is), ``EOFError``,
+        ``SFTPError`` and a bare ``SSHException``. Signals carrying a real
+        message keep it.
+
+        The unreachable-host shapes are outside that four by construction rather
+        than by luck: ``_unreachable_message`` covers its own blank case, because
+        the fallback's wording says the connection was *lost*, which is the wrong
+        sentence for one that was never made.
 
         The stall is the case that matters most, because ``io_timeout``
         defaults to a real bound: the first caller to meet it is one who
@@ -2550,12 +2632,14 @@ class SFTPBackend(Backend):
         # is given either: it varies with the retry and host-key policies, and
         # three review rounds each refuted a different one written as a constant.
         # ``check_health`` maps through here only when the probe fails in a way
-        # this mapping concludes on. A refused connect and a DNS failure do not:
-        # both are an ``OSError`` the arms above decline, so they exit at the
-        # generic arm as ``RemoteStoreError`` and reach this method zero times
-        # (BUG-265). Which observable failures reach which arm is not enumerated
-        # here or in the spec — see BUG-266; four attempts to state it in a
-        # sentence were each refuted.
+        # this mapping concludes on. A refused connect and a DNS failure now do:
+        # BUG-265 gave them an arm, where they used to exit at the generic
+        # ``OSError`` arm as ``RemoteStoreError`` and reach this method zero
+        # times. That is a change in log volume as well as in type — a
+        # ``Store.ping()`` poll against a host that is simply not there leaves an
+        # ``op="error_mapping"`` record where it left none. Which observable
+        # failures reach which arm is still not enumerated here or in the spec —
+        # see BUG-266; four attempts to state it in a sentence were each refuted.
         # The logger name already says which backend this is, so the line adds
         # the path rather than repeating "SFTP" in front of a message that
         # usually starts with it. An empty path is dropped from the record
@@ -2607,6 +2691,22 @@ class SFTPBackend(Backend):
             # client forever. The op itself is reported as ``BackendUnavailable``.
             self._sftp_client = None
             return self._unavailable(exc, path)
+        if self._is_unreachable(exc):
+            # BUG-265: a host that was never reached is what ERR-007 calls a
+            # backend that "cannot be reached", and what fifteen docstrings in
+            # this module promise BackendUnavailable for. All three shapes are
+            # OSError subclasses the errno dispatch below declines, so before
+            # this arm existed they exited as the base RemoteStoreError and a
+            # caller following the health-check guide caught neither a refused
+            # port nor a DNS failure.
+            #
+            # The client is cleared like every other concluding arm. There is
+            # nothing to recover here — a connect that never succeeded left no
+            # client — but SFTP-023 states the invariant over *every*
+            # BackendUnavailable this mapping returns, and an arm that skipped it
+            # would make that clause need a carve-out.
+            self._sftp_client = None
+            return self._unavailable(exc, path, message=self._unreachable_message(exc))
         if isinstance(exc, OSError):
             code = getattr(exc, "errno", None)
             if code == errno.ENOENT:

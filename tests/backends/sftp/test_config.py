@@ -11,6 +11,7 @@ import io
 import logging
 import os
 import shutil
+import socket
 import sys
 import tempfile
 import uuid
@@ -1785,6 +1786,232 @@ class TestSFTPMapException:
         assert rendered == "SFTP channel stalled: no data within io_timeout=120.0s"
         assert "path" not in ours[0].__dict__, "the record carries an empty path a structured consumer would read"
         assert getattr(ours[0], "op", None) == "error_mapping"
+
+    @pytest.mark.spec("SFTP-023")
+    @pytest.mark.parametrize(
+        "exc_factory",
+        [
+            # paramiko's own wrapper for "every address I tried refused me". An
+            # ``OSError`` whose ``errno`` is ``None``, which is why no arm caught
+            # it: ``_is_connection_dead``'s errno-less branch matches only the
+            # literal "Socket is closed".
+            pytest.param(
+                lambda: paramiko.ssh_exception.NoValidConnectionsError(
+                    {("127.0.0.1", 22): ConnectionRefusedError(errno.ECONNREFUSED, "Connection refused")}
+                ),
+                id="no-valid-connections",
+            ),
+            pytest.param(lambda: socket.gaierror(-2, "Name or service not known"), id="dns-failure"),
+            # The raw errno siblings, for a path that does not go through
+            # paramiko's wrapper. ``_os_with_errno`` keeps them plain ``OSError``
+            # so the errno-tuple membership is what is exercised, rather than
+            # CPython's promotion to ``ConnectionRefusedError``.
+            pytest.param(lambda: _os_with_errno(errno.ECONNREFUSED, "Connection refused"), id="econnrefused"),
+            pytest.param(lambda: _os_with_errno(errno.EHOSTUNREACH, "No route to host"), id="ehostunreach"),
+            pytest.param(lambda: _os_with_errno(errno.ENETUNREACH, "Network is unreachable"), id="enetunreach"),
+            pytest.param(lambda: _os_with_errno(errno.ENETDOWN, "Network is down"), id="enetdown"),
+            pytest.param(lambda: _os_with_errno(errno.EHOSTDOWN, "Host is down"), id="ehostdown"),
+        ],
+    )
+    def test_a_host_never_reached_maps_to_backend_unavailable(self, exc_factory: object) -> None:
+        """SFTP-023: a connection that was never established is ``BackendUnavailable``.
+
+        BUG-265. Fifteen docstrings in this module promise
+        ``BackendUnavailable: If the SSH/SFTP connection cannot be established``
+        — derived by walking the module's AST for functions whose docstring
+        contains that sentence prefix as a substring, since only ``check_health``
+        ends the sentence there and the other fourteen continue ``" or fails."``
+        or a mid-read/mid-write variant. The two most ordinary ways a connect
+        fails raised the base ``RemoteStoreError`` instead, so a caller following
+        the health-check guide did not catch either.
+
+        The client is asserted invalidated on every shape, not because a
+        connect-time failure leaves one to recover — it does not — but because
+        SFTP-023 states the invariant over *every* ``BackendUnavailable`` this
+        mapping returns, with no carve-out. An arm that skipped it would make the
+        clause need one.
+        """
+        backend = SFTPBackend(host="sftp.example.invalid", host_key_policy="auto")
+        backend._sftp_client = object()  # type: ignore[assignment]
+        mapped = backend._map_exception(exc_factory(), "delivery.csv")  # type: ignore[operator]
+        assert isinstance(mapped, BackendUnavailable), f"{mapped!r} is not BackendUnavailable"
+        assert mapped.args[0], f"an unreachable host mapped to a blank message: {mapped!r}"
+        assert backend._sftp_client is None, "a concluded BackendUnavailable left the cached client in place"
+
+    @pytest.mark.spec("SFTP-023")
+    def test_a_dns_failure_names_the_host_that_did_not_resolve(self) -> None:
+        """SFTP-023: the DNS arm says which name failed; the driver does not.
+
+        ``socket.gaierror`` renders as ``[Errno -2] Name or service not known``,
+        which tells a reader running several stores nothing about which one broke.
+        This arm therefore passes an explicit message, the way the two
+        ``IncompatiblePeer`` arms pass their remediation hint — the established
+        route for "this arm has something better to say than the exception does".
+
+        The port is deliberately **not** named. Resolution never reaches it, so
+        naming it would invite a reader to check the one thing that cannot be the
+        fault. A refused connect is the opposite case and keeps paramiko's own
+        text, which does name both — see the test below.
+        """
+        backend = SFTPBackend(host="sftp.example.invalid", port=2222, host_key_policy="auto")
+        message = backend._map_exception(socket.gaierror(-2, "Name or service not known"), "").args[0]
+        assert "sftp.example.invalid" in message, f"the unresolvable name is absent from {message!r}"
+        assert "Name or service not known" in message, f"the driver's own detail was dropped from {message!r}"
+        assert "2222" not in message, f"a DNS failure named a port it never reached: {message!r}"
+
+    @pytest.mark.spec("SFTP-023")
+    def test_a_refused_connect_keeps_paramikos_own_detail(self) -> None:
+        """SFTP-023: the refusal arm does not overwrite a message that already answers.
+
+        ``NoValidConnectionsError`` names host and port itself, so the fallback
+        rule applies unchanged: it fires for silence, not as a house style.
+        """
+        exc = paramiko.ssh_exception.NoValidConnectionsError(
+            {("127.0.0.1", 22): ConnectionRefusedError(errno.ECONNREFUSED, "Connection refused")}
+        )
+        backend = SFTPBackend(host="127.0.0.1", host_key_policy="auto")
+        assert backend._map_exception(exc, "delivery.csv").args[0] == str(exc)
+
+    @pytest.mark.spec("SFTP-023")
+    def test_an_unreachable_host_emits_one_record(self, caplog: pytest.LogCaptureFixture) -> None:
+        """SFTP-023: the new arm logs like the four that preceded it.
+
+        Before BUG-265 a refused connect reached ``_unavailable`` zero times, so
+        a ``Store.ping()`` poll against a down server left nothing carrying
+        ``op="error_mapping"`` — the canonical down-server path was the one the
+        mapping's record did not cover. It does now, which is a change in log
+        volume as much as in exception type, and both halves are asserted here.
+        """
+        backend = SFTPBackend(host="sftp.example.invalid", host_key_policy="auto")
+        with caplog.at_level(logging.DEBUG, logger="remote_store"):
+            caplog.clear()
+            mapped = backend._map_exception(
+                paramiko.ssh_exception.NoValidConnectionsError(
+                    {("127.0.0.1", 22): ConnectionRefusedError(errno.ECONNREFUSED, "Connection refused")}
+                ),
+                "",
+            )
+
+        assert isinstance(mapped, BackendUnavailable)
+        ours = [r for r in caplog.records if r.name.startswith("remote_store")]
+        assert len(ours) == 1, f"expected one record, got {[r.getMessage() for r in ours]}"
+        assert ours[0].levelno == logging.WARNING
+        assert getattr(ours[0], "op", None) == "error_mapping"
+
+    @pytest.mark.spec("SFTP-023")
+    @pytest.mark.parametrize(
+        "code",
+        [
+            pytest.param(errno.EIO, id="eio"),
+            pytest.param(errno.ENOSPC, id="enospc"),
+        ],
+    )
+    def test_an_unrelated_errno_is_still_the_base_class(self, code: int, caplog: pytest.LogCaptureFixture) -> None:
+        """SFTP-023: the unreachable arm claims connect-time errnos and nothing else.
+
+        The bound on the test above. A predicate written as "any ``OSError`` the
+        errno dispatch declines" would pass every case there and turn a full disk
+        or a device error — faults of a connection that is working — into
+        ``BackendUnavailable``, with a WARNING behind each. Both halves are
+        asserted for the same reason the routine-errno control is: the type and
+        the record fail independently.
+        """
+        backend = SFTPBackend(host="dummy", host_key_policy="auto")
+        with caplog.at_level(logging.DEBUG, logger="remote_store"):
+            caplog.clear()
+            mapped = backend._map_exception(_os_with_errno(code, "unrelated"), "delivery.csv")
+
+        assert not isinstance(mapped, BackendUnavailable), f"errno {code} was claimed as unreachable"
+        assert isinstance(mapped, RemoteStoreError)
+        ours = [r for r in caplog.records if r.name.startswith("remote_store")]
+        assert not ours, f"an unrelated errno logged {[r.getMessage() for r in ours]}"
+
+
+class TestSFTPUnreachableHost:
+    """BUG-265, end to end: what a caller actually meets against a host that is not there.
+
+    The unit tests above drive constructed exceptions through
+    ``_map_exception``. These drive the real fault through the real connect
+    path, which is the half that would still fail if paramiko changed which
+    exception it raises for a refused port.
+
+    ``RetryPolicy.disabled()`` on every case: the classification happens once
+    the connect budget is exhausted, so the default three attempts would pay
+    two backoff sleeps to reach the same assertion.
+    """
+
+    @staticmethod
+    def _closed_port() -> int:
+        """Return a just-released ephemeral port, so a connect to it is refused.
+
+        Same trick as ``TestSFTPScanHostKeys::test_scan_unreachable_raises``:
+        nothing can have raced into the port between the close and the connect
+        attempt, and unlike an RFC 5737 TEST-NET address it is not silently
+        dropped by a local firewall, which would turn a refusal into a timeout.
+        """
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.bind(("127.0.0.1", 0))
+        port = int(sock.getsockname()[1])
+        sock.close()
+        return port
+
+    @pytest.mark.spec("SFTP-023")
+    def test_refused_connect_raises_backend_unavailable(self) -> None:
+        """SFTP-023: ``check_health`` against a refused port answers what its docstring promises."""
+        backend = SFTPBackend(
+            host="127.0.0.1",
+            port=self._closed_port(),
+            host_key_policy="auto",
+            timeout=3,
+            retry=RetryPolicy.disabled(),
+        )
+        with pytest.raises(BackendUnavailable, match=r"(?i)unable to connect|refused|reset"):
+            backend.check_health()
+
+    @pytest.mark.spec("SFTP-023")
+    def test_dns_failure_raises_backend_unavailable(self) -> None:
+        """SFTP-023: an unresolvable host answers the same way.
+
+        The message is not asserted here, only the type. A resolver that hijacks
+        NXDOMAIN — some corporate and captive-portal resolvers do — turns this
+        into a refused or timed-out connect against the hijack address instead,
+        which is a different arm reaching the same conclusion. The name is pinned
+        against the mapping directly in
+        ``test_a_dns_failure_names_the_host_that_did_not_resolve``, where no
+        resolver is involved.
+        """
+        backend = SFTPBackend(
+            host="no-such-host.invalid",
+            host_key_policy="auto",
+            timeout=3,
+            retry=RetryPolicy.disabled(),
+        )
+        with pytest.raises(BackendUnavailable):
+            backend.check_health()
+
+    @pytest.mark.spec("SFTP-023")
+    def test_ping_against_a_refused_port_raises_backend_unavailable(self) -> None:
+        """SFTP-023: the health-check guide's own example works as written.
+
+        The guide sells ``store.ping()`` for startup gates and liveness probes
+        and shows a caller catching ``BackendUnavailable``. That caller fell
+        through to the bare ``except`` they did not write, which is the reader
+        this item exists to serve — so the assertion is made through ``Store``,
+        not through the backend method it delegates to.
+        """
+        from remote_store import Store
+
+        store = Store(
+            SFTPBackend(
+                host="127.0.0.1",
+                port=self._closed_port(),
+                host_key_policy="auto",
+                timeout=3,
+                retry=RetryPolicy.disabled(),
+            )
+        )
+        with pytest.raises(BackendUnavailable):
+            store.ping()
 
 
 class TestSFTPTypeGuards:

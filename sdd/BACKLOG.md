@@ -206,8 +206,7 @@ recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 (BUG-256); a constructor does not leak its driver's exception
 (BUG-245) and neither does a stream (BK-358); one operation does not answer by
 payload size (BUG-253); a caller who meets a failure on **any** backend can tell
-*which* failure it was, rather than an empty message (BUG-264), and catches the
-type the docs promised (BUG-265); what a failed operation *leaves behind* is not
+*which* failure it was, rather than an empty message (BUG-264); what a failed operation *leaves behind* is not
 worse than the failure itself, so a reported failure never silently destroys the
 caller's file (BUG-270, BUG-272); and a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
@@ -230,7 +229,11 @@ BUG-246, the last adapter answers the contract against an absent container,
 closed by BUG-247, and a write to the store root no longer occupies that root
 with a regular file, closed by BUG-259 — which also brought the five
 flat-namespace classes that reached their SDK with the root key to the same
-rule. **One cross-section dependency remains**, per
+rule. The catches-the-promised-type half is met on SFTP's connect path, closed
+by BUG-265: a refused port and a DNS failure raise the `BackendUnavailable`
+fifteen docstrings and the health-check guide promise, where both raised the
+base class. That is one backend's connect arm, not the clause — BUG-264 carries
+the rest, and the two are the same promise met at different depths. **One cross-section dependency remains**, per
 [§ How this file works](#how-this-file-works): BK-345 waits on **ID-244** in
 section 2 for the seeding hook, stated inside the item that carries it, so this
 section cannot close on its own items alone. BUG-249's denied half carried a
@@ -449,52 +452,6 @@ compliant the day before.
   **Filed by BK-359's `/ship` run**, whose round-1 reviewer found the
   base-class half; the Azure half was measured after the item was challenged for
   asserting rather than checking.
-
-- [ ] **BUG-265 — A refused SFTP connect raises `RemoteStoreError`, which contradicts fifteen docstrings and the health-check guide**
-  spec: SFTP-023 · effort: S · audience: user.api, user.site
-  Measured against a just-released ephemeral port (the deterministic-refusal
-  trick `tests/backends/sftp/test_config.py` already uses):
-  `SFTPBackend(...).check_health()` raises
-  `RemoteStoreError("[Errno None] Unable to connect to port <n> on 127.0.0.1")`,
-  **not** `BackendUnavailable`. paramiko raises `NoValidConnectionsError`, an
-  `OSError` whose `errno` is `None`; `_is_connection_dead`'s errno-less arm
-  matches only the literal `"Socket is closed"`, so the mapping falls through to
-  its generic `OSError` arm.
-  **What that contradicts.** `check_health`'s own docstring promises
-  "`BackendUnavailable`: If the SSH/SFTP connection cannot be established"
-  (`backends/_sftp.py`), and the same `Raises:` line appears on **fourteen**
-  further methods — 15 in total, derived by walking the module's AST for
-  functions whose docstring **contains the sentence prefix**
-  `"BackendUnavailable: If the SSH/SFTP connection cannot be established"` as a
-  substring. The predicate has to be stated that precisely: only `check_health`
-  ends the sentence there, and the other fourteen continue `" or fails."`,
-  `" or fails mid-read."` or `" or fails mid-write."`, so a full-line-equality
-  reading of the same words returns 1 rather than 15. The methods:
-  `check_health`, `exists`,
-  `is_file`, `is_folder`, `read`, `read_bytes`, `write`, `write_atomic`,
-  `open_atomic`, `delete`, `delete_folder`, `get_file_info`, `get_folder_info`,
-  `move`, `copy`. An earlier revision said eleven, carried over unchecked while
-  its neighbour's figures were being re-derived;
-  `docs-src/guides/health-check.md` § Error handling maps
-  `BackendUnavailable` to "Network error, DNS failure, or timeout" and shows a
-  caller catching it. A caller who followed that guide does not catch a refused
-  connect at all.
-  **DNS is the same answer, and it is now measured rather than presumed:**
-  against an RFC 2606 `.invalid` host, `check_health()` raises
-  `RemoteStoreError("[Errno -2] Name or service not known")` with a
-  `socket.gaierror` context. So two of the three shapes that row names raise the
-  base class, and only the timeout raises what it promises — which is why the
-  guide now carries a caveat pointing here rather than a corrected row: writing
-  current behaviour into the table would document a defect as the contract.
-  **Why it is not BK-359's to fix.** Changing which exception type a refused
-  connect raises is a behaviour change for anyone whose `except` clauses match
-  the current one, so it needs the breaking-change treatment rather than a
-  ride-along. Nothing in `tests/backends/sftp/` pins a refused *backend*
-  connect today — the two refused-socket tests exercise
-  `SFTPUtils.scan_host_keys` / `scan_host_algorithms`, which do not go through
-  this mapping — so the first work here is the failing test.
-  **Found by BK-359's round-1 reviewer** as a `Possible:` it could not run, and
-  confirmed by running it.
 
 - [ ] **BUG-266 — No artifact maps an observable SFTP failure onto the arm that handles it, and four prose attempts were each refuted**
   spec: SFTP-023, SFTP-030 · effort: M · audience: user.site, library.maintainer
