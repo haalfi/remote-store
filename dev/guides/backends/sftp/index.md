@@ -78,7 +78,7 @@ pkey = SFTPUtils.load_private_key(pem_string)
 
 `timeout` covers only the connect phase. Once the channel is open, paramiko places no bound of its own on reads, so a peer that completes the handshake and then stops sending mid-transfer would block indefinitely — holding whatever pool slot or worker the transfer was running on, with no error to act on. `io_timeout` is what stops that, and it is armed for you.
 
-`io_timeout` bounds the silence *between* bytes rather than the transfer as a whole, which is what makes it usable on slow links: a multi-gigabyte fetch that takes an hour is unaffected, while a flow that goes quiet for longer than the bound raises [`BackendUnavailable`](https://docs.remotestore.dev/stable/reference/api/errors/index.md).
+`io_timeout` bounds the silence *between* bytes rather than the transfer as a whole, which is what makes it usable on slow links: a multi-gigabyte fetch that takes an hour is unaffected, while a flow that goes quiet for longer than the bound raises [`BackendUnavailable`](https://docs.remotestore.dev/stable/reference/api/errors/index.md). That error names the stall and the value that fired (`SFTP channel stalled: no data within io_timeout=120.0s`), and the backend logs it once at `WARNING`, so a stall is distinguishable from any other `BackendUnavailable` in a log you read later.
 
 **It is on by default, at 120 seconds.** You get the bound without asking for it, so nothing you write hangs forever on a silent peer. What you configure is whether that value suits your server:
 

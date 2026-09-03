@@ -11595,7 +11595,10 @@ is what stops that, and it is armed for you.</p>
 <p><code>io_timeout</code> bounds the silence <em>between</em> bytes rather than the transfer as a
 whole, which is what makes it usable on slow links: a multi-gigabyte fetch that
 takes an hour is unaffected, while a flow that goes quiet for longer than the
-bound raises <a href="../../../reference/api/errors/"><code>BackendUnavailable</code></a>.</p>
+bound raises <a href="../../../reference/api/errors/"><code>BackendUnavailable</code></a>. That error
+names the stall and the value that fired (<code>SFTP channel stalled: no data within
+io_timeout=120.0s</code>), and the backend logs it once at <code>WARNING</code>, so a stall is
+distinguishable from any other <code>BackendUnavailable</code> in a log you read later.</p>
 <p><strong>It is on by default, at 120 seconds.</strong> You get the bound without asking for
 it, so nothing you write hangs forever on a silent peer. What you configure is
 whether that value suits your server:</p>

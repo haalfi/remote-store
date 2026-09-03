@@ -11811,6 +11811,78 @@ not enumerated still clears the client rather than wedging the backend. One
 exception keeps its own branch first: <code>IncompatiblePeer</code> (a connect-time
 <code>SSHException</code>) is mapped with a diagnostic hint before the generic <code>SSHException</code>
 mapping, so the hint is not lost.</p>
+<p><strong>Every <code>BackendUnavailable</code> this mapping <em>constructs</em> carries a non-empty
+message, and emits exactly one <code>WARNING</code> record.</strong> Both halves are one method's
+job (<code>_unavailable</code>), which is why they are stated in one clause: the arms that
+could disagree are the same arms. <em>Constructs</em>, not <em>returns</em> — the mapping's
+first arm passes a <code>RemoteStoreError</code> it was handed straight back, so a
+<code>BackendUnavailable</code> built elsewhere and fed in carries neither guarantee. Only
+one such object exists (<code>_open_sftp_bounded</code>'s direct raise, unreachable in
+practice), so this is a bound on the clause rather than a live gap.</p>
+<p><strong>"One record" is a claim about this mapping, not about the logger</strong>, and the
+distinction is load-bearing for the reader most likely to rely on it — someone
+grepping their own logs. <code>remote_store.backends._sftp</code> carries other <code>WARNING</code>
+records: <code>_connect</code> builds its tenacity retry with
+<code>before_sleep_log(log, logging.WARNING)</code> on that same logger, so a connect that
+exhausts its <code>stop_after_attempt</code> budget emits one per sleep, and <code>AUTO_ADD</code>
+warns once per connect. A failed operation is therefore not a one-line event on
+the logger; it is a one-line event per concluded mapping. A reader searching for
+the mapping's record matches <code>op="error_mapping"</code> in the structured <code>extra</code>,
+which the retry and policy records do not carry.</p>
+<p><strong>No total is given, deliberately.</strong> How many records a failure leaves on that
+logger is a product of the retry policy's <code>max_attempts</code>, the host-key policy,
+and which failure shape occurred — and a stated total is one cell of that
+product presented as the whole of it. Three review rounds each refuted a
+different cell written as a total here: "one WARNING on the logger", then
+"three at the default policy" (three is the <code>AUTO_ADD</code> figure; the default is
+<code>STRICT</code>), then "two per poll" (which assumes the default <code>max_attempts</code>).
+Derive it for a configuration if you need it; do not restate it as a constant.</p>
+<p>The message is the driver's own whenever the driver has one. Four of the signals
+above reach the mapping with no arguments — <code>TimeoutError</code> (which <code>socket.timeout</code>
+is), <code>EOFError</code>, <code>SFTPError</code> and a bare <code>SSHException</code> — and for those
+<code>BackendUnavailable(str(exc))</code> carried the empty string, which
+<a href="../005-error-model/">ERR-009</a> forbids and which no reader can act on. <strong>"The
+signals above" is this clause's own list</strong>, which opens with the <code>SSHException</code>
+family; it is deliberately not <code>_is_connection_dead</code>'s set, which excludes that
+family and would therefore hold only three of the four. A stall
+names the fault and the bound that fired (<code>io_timeout=&lt;value&gt;s</code>), and names no
+bound when <code>io_timeout is None</code>, since a half-open socket reaches this arm with
+the option off and claiming a limit the caller never set would be false. The
+others name the signal's own class. A signal that <em>did</em> explain itself is never
+overwritten: this is a fallback for silence, not a house style for messages.</p>
+<p>The record is emitted where the <em>conclusion</em> is reached rather than at each raise
+site, so the cleanup and classification paths that re-enter the mapping do not
+multiply one failure into several lines. That is asserted where the
+multiplication could actually happen rather than where it is easiest to assert:
+<code>copy</code> holds two handles and runs two mapped operations, and <code>open_atomic</code> maps
+inside <code>_errors()</code> and then re-enters its own handler with the mapped error.
+Both are pinned against the live stall relay
+(<code>test_copy_stalling_mid_stream_costs_one_bound</code>,
+<code>test_stall_during_streamed_write_costs_one_bound</code>); a read, which classifies
+once and stops, cannot show it.</p>
+<p><code>check_health</code> maps through here, so a probe that fails <strong>in a way this mapping
+concludes on</strong> logs one record and a <code>Store.ping()</code> poll repeats it. That is
+narrower than "a poll against a down server": a refused connect and a DNS
+failure raise the base <code>RemoteStoreError</code> from the generic <code>OSError</code> arm without
+reaching <code>_unavailable</code> at all, so they log nothing from the mapping. BUG-265
+tracks that divergence — <code>check_health</code>'s own docstring promises
+<code>BackendUnavailable</code> for a connection that cannot be established.</p>
+<p><strong>Which real-world failures land on which arm is not enumerated here</strong>, and the
+omission is deliberate. The arms are stated above by exception <em>type</em>, which is
+what this mapping actually dispatches on and what the tests pin; the map from a
+failure a reader can observe (a refused port, a wedged daemon, a rejected
+credential) onto those types is a second question with its own axes, and four
+successive attempts to summarise it in one sentence were each refuted by
+measurement — the last of them, "only a probe that fails by timeout reaches
+it", by a bad SSH banner, an accept-then-hangup and an auth failure, all three
+of which reach <code>_unavailable</code> through the <code>SSHException</code> arm. BUG-266 carries
+that table, to be written once against a parametrised test rather than as
+prose.</p>
+<p>The record carries the path it was mapped with, and omits the key entirely when
+there is none — so a <code>check_health</code> record has no <code>path</code> at all rather than
+<code>path=''</code>, in either the structured <code>extra</code> or the rendered line
+(<code>test_a_probe_record_carries_no_path</code>). A routine errno is <strong>not</strong> logged: a
+missing or denied path is an answer, not a fault.</p>
 <h3 id="sftp-024-no-native-exception-leakage">SFTP-024: No Native Exception Leakage<a class="headerlink" href="#sftp-024-no-native-exception-leakage" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> No paramiko, socket, or OS exception raised <em>by the backend</em> — an
 operation's own I/O, including <code>open_atomic</code>'s temp-file open, the caller-facing
@@ -11964,6 +12036,22 @@ raises <code>socket.timeout</code>. Since it is <code>settimeout()</code>, the b
 well as reads, and a stalled write reaches it on the receive side like a read
 does. The distinct fault it covers is a request that never reaches the server,
 as against a reply that never returns.</p>
+<p><strong>The two are distinct faults and the caller cannot tell them apart</strong>, which is
+worth stating now that the raised error carries a message (SFTP-023) and a
+reader might reasonably assume it says which. It does not. Measured against the
+stall relay in both directions at <code>io_timeout=2.0</code>, silencing server→client and
+then client→server: one identical message,
+<code>"SFTP channel stalled: no data within io_timeout=2.0s"</code>, and a <code>TimeoutError</code>
+context in both. Both arrive on the receive side, so they enter the same arm and
+nothing downstream of it knows which direction fell silent. A message that names
+the <em>fault</em> is not a message that names its <em>side</em>, and only the first is
+claimed.</p>
+<p>Asserted on both halves, which is the point: <code>test_a_stall_says_what_it_was_and_logs_it</code>
+drives the server→client stall and
+<code>test_stalled_upload_request_raises_backend_unavailable</code> the client→server one,
+and each pins the same literal message and a <code>TimeoutError</code> context. Pinning
+only the download half would leave the claim resting on the direction a reader
+is least likely to doubt.</p>
 <p>The "unaffected however long it takes" half is asserted by
 <code>test_a_transfer_slower_than_the_bound_is_not_interrupted</code>, which throttles a
 relay rather than stalling it — slow, never silent — and asserts both that the
@@ -11989,7 +12077,14 @@ to every route, and stood while two tests in the suite reached it through plain
 <code>write</code> and <code>write_atomic</code>.</p>
 <p><strong>Postconditions:</strong> A stalled operation <em>that fails</em> raises <code>BackendUnavailable</code>,
 via the existing <code>_is_connection_dead</code> / <code>_map_exception</code> path (SFTP-023), which
-also clears the cached client so the next operation reconnects (SFTP-010 tier 2).</p>
+also clears the cached client so the next operation reconnects (SFTP-010 tier 2).
+The error names the stall and the bound that fired, and the mapping emits one
+<code>WARNING</code> record — both per SFTP-023, which owns those clauses for every signal
+rather than for this one. Named here anyway because the stall is the case a
+caller who configured nothing now meets: while the message was empty, this
+Postcondition was satisfied by an error that said nothing whatever about what
+had failed, and the two artifacts that tell an upgrading user what to expect
+(the troubleshooting page, the migration entry) had nothing to point them at.</p>
 <p><strong>The qualifier is load-bearing.</strong> Every mechanism below — the classification guards, the handle guard, the
 stream wrapper's futile-close guard, and the client invalidation the
 Postconditions above promise — is triggered by an exception. A stalled operation

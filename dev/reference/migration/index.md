@@ -26,7 +26,7 @@ backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=No
 
 That restores the unbounded channel, and only that — the other v0.31.0 change on this backend, in the next section, applies whatever you pass here. Note `0` is **not** the opt-out — it raises `ValueError`, because paramiko reads it as non-blocking rather than as a bound, and every SFTP operation waits on a reply, so all of them would fail at once.
 
-**What changes if you do nothing.** An operation against a peer that completes the SSH handshake and then stops sending used to block forever, with no exception and no log line. It now raises [`BackendUnavailable`](https://docs.remotestore.dev/stable/reference/api/errors/index.md) after 120 s of silence, and the backend drops the dead client so the next operation reconnects.
+**What changes if you do nothing.** An operation against a peer that completes the SSH handshake and then stops sending used to block forever, with no exception and no log line. It now raises [`BackendUnavailable`](https://docs.remotestore.dev/stable/reference/api/errors/index.md) after 120 s of silence, and the backend drops the dead client so the next operation reconnects. The error names the stall and the bound that fired — `SFTP channel stalled: no data within io_timeout=120.0s` — and the backend logs one `WARNING` carrying the same text, so the failure is greppable rather than only catchable.
 
 ```
 # Before (v0.30.0): the call never returns

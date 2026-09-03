@@ -14426,6 +14426,8 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>BUG-268: <strong>Docs</strong> — the SFTP stall section of the troubleshooting guide shows the message the raise now carries and the log record that accompanies it, instead of the pre-fix blank traceback</li>
+<li>BK-359: <strong>Fix</strong> — a stalled or dropped SFTP operation now says which failure it was, instead of raising <code>BackendUnavailable</code> with an empty message and no log record</li>
 <li>BUG-262: Gate that every unreleased <code>**Breaking**</code> entry links its upgrade path in the migration guide</li>
 <li>ID-252: Gate the CHANGELOG <code>[Unreleased]</code> section: one entry per item, each a single line within a prose budget, and one for every completed user-facing item</li>
 <li>BUG-261: Publish the missing upgrade paths in the migration guide, and move the obligation to write one onto the PR making the breaking change</li>

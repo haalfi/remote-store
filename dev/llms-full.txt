@@ -3956,13 +3956,13 @@ See the [SFTP backend guide](https://docs.remotestore.dev/stable/guides/backends
 
 ## SFTP transfer stalls: hangs, or fails after two minutes
 
-**Symptom, one of two.** Either an SFTP read or write **never returns** — no exception, no log line, and whatever worker or pool slot it was running on stays occupied — or it **fails after about two minutes** with a traceback whose last line carries no message of its own:
+**Symptom, one of two.** Either an SFTP read or write **never returns** — no exception, no log line, and whatever worker or pool slot it was running on stays occupied — or it **fails after about two minutes** with a traceback whose last line names the stall and the bound that fired:
 
 ```
-remote_store._errors.BackendUnavailable:  | path='delivery.csv' | backend='sftp'
+remote_store._errors.BackendUnavailable: SFTP channel stalled: no data within io_timeout=120.0s | path='delivery.csv' | backend='sftp'
 ```
 
-There is nothing in `remote_store`'s log to accompany it. To confirm the diagnosis, enable paramiko's own DEBUG logging and look for a request going out with no reply coming back.
+That sentence is also written to the `remote_store` logger at `WARNING`, so it can be found without a traceback. To confirm the diagnosis, enable paramiko's own DEBUG logging and look for a request going out with no reply coming back.
 
 Both symptoms come from the same fault: a peer that goes silent mid-operation. Which one you see depends on whether the bound below is armed, which on v0.31.0 and later it is by default. Pick your branch:
 
@@ -8066,7 +8066,7 @@ pkey = SFTPUtils.load_private_key(pem_string)
 
 `timeout` covers only the connect phase. Once the channel is open, paramiko places no bound of its own on reads, so a peer that completes the handshake and then stops sending mid-transfer would block indefinitely — holding whatever pool slot or worker the transfer was running on, with no error to act on. `io_timeout` is what stops that, and it is armed for you.
 
-`io_timeout` bounds the silence *between* bytes rather than the transfer as a whole, which is what makes it usable on slow links: a multi-gigabyte fetch that takes an hour is unaffected, while a flow that goes quiet for longer than the bound raises [`BackendUnavailable`](https://docs.remotestore.dev/stable/reference/api/errors/index.md).
+`io_timeout` bounds the silence *between* bytes rather than the transfer as a whole, which is what makes it usable on slow links: a multi-gigabyte fetch that takes an hour is unaffected, while a flow that goes quiet for longer than the bound raises [`BackendUnavailable`](https://docs.remotestore.dev/stable/reference/api/errors/index.md). That error names the stall and the value that fired (`SFTP channel stalled: no data within io_timeout=120.0s`), and the backend logs it once at `WARNING`, so a stall is distinguishable from any other `BackendUnavailable` in a log you read later.
 
 **It is on by default, at 120 seconds.** You get the bound without asking for it, so nothing you write hangs forever on a silent peer. What you configure is whether that value suits your server:
 
@@ -20302,7 +20302,7 @@ backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=No
 
 That restores the unbounded channel, and only that — the other v0.31.0 change on this backend, in the next section, applies whatever you pass here. Note `0` is **not** the opt-out — it raises `ValueError`, because paramiko reads it as non-blocking rather than as a bound, and every SFTP operation waits on a reply, so all of them would fail at once.
 
-**What changes if you do nothing.** An operation against a peer that completes the SSH handshake and then stops sending used to block forever, with no exception and no log line. It now raises [`BackendUnavailable`](https://docs.remotestore.dev/stable/reference/api/errors/index.md) after 120 s of silence, and the backend drops the dead client so the next operation reconnects.
+**What changes if you do nothing.** An operation against a peer that completes the SSH handshake and then stops sending used to block forever, with no exception and no log line. It now raises [`BackendUnavailable`](https://docs.remotestore.dev/stable/reference/api/errors/index.md) after 120 s of silence, and the backend drops the dead client so the next operation reconnects. The error names the stall and the bound that fired — `SFTP channel stalled: no data within io_timeout=120.0s` — and the backend logs one `WARNING` carrying the same text, so the failure is greppable rather than only catchable.
 
 ```
 # Before (v0.30.0): the call never returns
