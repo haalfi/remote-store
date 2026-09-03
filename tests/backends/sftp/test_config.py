@@ -1825,6 +1825,12 @@ class TestSFTPMapException:
             pytest.param(lambda: _os_with_errno(errno.ENETUNREACH, "Network is unreachable"), id="enetunreach"),
             pytest.param(lambda: _os_with_errno(errno.ENETDOWN, "Network is down"), id="enetdown"),
             pytest.param(lambda: _os_with_errno(errno.EHOSTDOWN, "Host is down"), id="ehostdown"),
+            # EPERM is the one with a known trigger rather than a theoretical
+            # one: a local netfilter REJECT on the OUTPUT chain yields it. It
+            # was added a round after the others, when a measuring reviewer
+            # found the PR shipping a fix for four connect errnos while its own
+            # BUG-273 body documented a reproducible fifth it missed.
+            pytest.param(lambda: _os_with_errno(errno.EPERM, "Operation not permitted"), id="eperm"),
         ],
     )
     def test_a_host_never_reached_maps_to_backend_unavailable(self, exc_factory: object) -> None:
@@ -1852,6 +1858,31 @@ class TestSFTPMapException:
         assert isinstance(mapped, BackendUnavailable), f"{mapped!r} is not BackendUnavailable"
         assert mapped.args[0], f"an unreachable host mapped to a blank message: {mapped!r}"
         assert backend._sftp_client is None, "a concluded BackendUnavailable left the cached client in place"
+
+    @pytest.mark.spec("SFTP-023")
+    def test_a_firewall_rejected_connect_is_not_a_denied_path(self) -> None:
+        """SFTP-023: ``EPERM`` is claimed by the connect arm, not left to the generic one.
+
+        The bound that makes this safe, and the reason it differs from
+        ``EACCES``: the errno dispatch has **no** ``EPERM`` arm, so nothing else
+        wants this errno and claiming it steals no live operation's answer. It
+        fell to the generic arm as the base ``RemoteStoreError`` before, which
+        is the same defect the item exists to close.
+
+        ``EACCES`` is asserted next to it precisely because it must *not* move:
+        on a live operation that errno genuinely is a denied path, and the
+        mapping cannot tell a connect-time one apart. BUG-273 carries that; a
+        change that widened the tuple to it would break
+        ``test_eacces_maps_to_permission_denied``, and this pair says so
+        locally.
+        """
+        backend = SFTPBackend(host="sftp.example.invalid", host_key_policy="auto")
+        rejected = backend._map_exception(_os_with_errno(errno.EPERM, "Operation not permitted"), "delivery.csv")
+        assert isinstance(rejected, BackendUnavailable), f"a rejected connect stayed the base class: {rejected!r}"
+
+        denied = backend._map_exception(_os_with_errno(errno.EACCES, "Permission denied"), "delivery.csv")
+        assert isinstance(denied, PermissionDenied), f"EACCES moved off its arm: {denied!r}"
+        assert not isinstance(denied, BackendUnavailable)
 
     @pytest.mark.spec("SFTP-023")
     def test_a_dns_failure_names_the_host_that_did_not_resolve(self) -> None:
@@ -1925,8 +1956,12 @@ class TestSFTPMapException:
     def test_a_refused_connect_keeps_paramikos_own_detail(self) -> None:
         """SFTP-023: the refusal arm does not overwrite a message that already answers.
 
-        ``NoValidConnectionsError`` names host and port itself, so the fallback
-        rule applies unchanged: it fires for silence, not as a house style.
+        ``NoValidConnectionsError`` names an address and a port itself, so the
+        fallback rule applies unchanged: it fires for silence, not as a house
+        style. The address is the one paramiko *tried*, not the hostname it was
+        handed — so a store configured with a DNS name reports an IP here, which
+        is why the sibling `gaierror` arm supplies its own message rather than
+        deferring the same way.
         """
         exc = paramiko.ssh_exception.NoValidConnectionsError(
             {("127.0.0.1", 22): ConnectionRefusedError(errno.ECONNREFUSED, "Connection refused")}
@@ -2061,11 +2096,20 @@ class TestSFTPConnectTimePredicateSpace:
         """SFTP-023: the product of connect-time shape x operation, generated.
 
         Twelve cells. Whichever predicate claims a shape, the caller's answer is
-        the same: ``BackendUnavailable``, a non-empty message, the cached client
-        cleared, and exactly one ``op="error_mapping"`` record. That is the
-        contract the docstrings promise, and asserting it per cell is what makes
-        the split between the two predicates an implementation detail rather
-        than something prose has to get right.
+        the same: ``BackendUnavailable``, a non-empty message, and exactly one
+        ``op="error_mapping"`` record. Asserting that per cell is what makes the
+        split between the two predicates an implementation detail rather than
+        something prose has to get right.
+
+        **Three guarantees, not four.** An earlier revision also asserted
+        ``_sftp_client is None`` here and review measured it vacuous: the backend
+        is freshly built and the connect never succeeds, so the client is
+        ``None`` on entry to every one of the twelve cells, and deleting the
+        arm's own ``self._sftp_client = None`` left all of them green. That
+        invariant is pinned where it can fail —
+        ``test_a_host_never_reached_maps_to_backend_unavailable``, which seeds a
+        sentinel client first — and claiming it here as well was borrowing
+        credit from a test that does the work.
         """
         backend = self._backend(monkeypatch, shape)
         call = (
@@ -2079,7 +2123,6 @@ class TestSFTPConnectTimePredicateSpace:
                 call()
 
         assert caught.value.args[0], f"{operation}/{shape} raised a blank message"
-        assert backend._sftp_client is None, f"{operation}/{shape} left the cached client in place"
         records = [r for r in caplog.records if getattr(r, "op", None) == "error_mapping"]
         assert len(records) == 1, f"{operation}/{shape} left {len(records)} mapping records"
 
@@ -2092,36 +2135,64 @@ class TestSFTPConnectTimePredicateSpace:
         property *inside* its own ``try``, so a failure raised by ``_connect``
         is handed to that guard like any other.
 
-        This asserts the reachability, not a count. The count is a function of
-        how many probes the classification path makes, which is
-        ``read_bytes``'s business and not this contract's — pinning it here
-        would make an unrelated refactor fail this test. What must not silently
-        become true is "never consulted", because that is the sentence two
-        rounds of review had to delete.
+        **What is asserted is a consultation from outside the mapping**, and
+        that precision is the whole test. An earlier revision recorded only
+        *that* the predicate was consulted, and review measured it unable to
+        fail: ``_map_exception`` calls ``_is_connection_dead`` unconditionally on
+        every exception it maps, so one guaranteed call satisfied it — deleting
+        ``read_bytes``'s entire pre-mapping guard left it green, and driving
+        ``check_health``, which has no pre-mapping guard at all, passed it too.
+        Recording the calling frame is what separates the mapping's own consult
+        from the ones the deleted sentence was about.
+
+        The *count* is deliberately still not asserted: it is a function of how
+        many probes the classification path makes, which is ``read_bytes``'s
+        business, and pinning it would make an unrelated refactor fail here.
+        Nor is the exception's class, which would depend on whether a given
+        platform surfaces a just-released-port connect as a wrapped refusal or a
+        reset — the sibling end-to-end test allows both.
         """
-        seen: list[str] = []
+        import inspect
+
+        callers: list[str] = []
         original = SFTPBackend._is_connection_dead
 
-        def counting(exc: Exception) -> bool:
-            seen.append(type(exc).__name__)
+        def recording(exc: Exception) -> bool:
+            frame = inspect.currentframe()
+            caller = frame.f_back.f_code.co_name if frame is not None and frame.f_back is not None else "?"
+            callers.append(caller)
             return bool(original(exc))
 
-        monkeypatch.setattr(SFTPBackend, "_is_connection_dead", staticmethod(counting))
+        monkeypatch.setattr(SFTPBackend, "_is_connection_dead", staticmethod(recording))
         backend = self._backend(monkeypatch, "refused")
         with pytest.raises(BackendUnavailable):
             backend.read_bytes("delivery.csv")
 
-        assert seen, "the dead-connection guard was never consulted on the connect path"
-        assert "NoValidConnectionsError" in seen, f"the connect failure never reached the guard: {seen}"
+        assert callers, "the dead-connection guard was never consulted at all"
+        outside_mapping = [c for c in callers if c != "_map_exception"]
+        assert outside_mapping, (
+            "every consultation came from _map_exception itself, so the pre-mapping "
+            f"guards were not reached on the connect path: {callers}"
+        )
+        assert "read_bytes" in outside_mapping, f"read_bytes' own guard was not the one reached: {callers}"
 
 
 class TestSFTPUnreachableHost:
-    """BUG-265, end to end: what a caller actually meets against a host that is not there.
+    """BUG-265: the ``Store``-level path, and the two backend probes it wraps.
 
-    The unit tests above drive constructed exceptions through
-    ``_map_exception``. These drive the real fault through the real connect
-    path, which is the half that would still fail if paramiko changed which
-    exception it raises for a refused port.
+    **What is unique here is ``test_ping_against_a_refused_port``**, which goes
+    through ``Store`` — the call the health-check guide actually shows a reader
+    writing. The two ``check_health`` cases overlap
+    ``TestSFTPConnectTimePredicateSpace``'s ``check_health`` cells and are kept
+    because they assert the *message*, which the enumeration deliberately does
+    not.
+
+    This docstring said "the unit tests above drive constructed exceptions,
+    these drive the real fault" until a whole-file pass caught it: that was true
+    of ``TestSFTPMapException``, and then the enumeration class was inserted
+    directly above, which drives a real kernel refusal through the real connect
+    path too. The antecedent moved when a class was inserted between them, which
+    no diff-anchored review could see.
 
     ``RetryPolicy.disabled()`` on every case: the classification happens once
     the connect budget is exhausted, so the default three attempts would pay

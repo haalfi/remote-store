@@ -503,6 +503,35 @@ compliant the day before.
   **Found by BUG-265's round-3 measuring member**, which reported it as a
   `Possible: Bug:` with the trigger explicitly flagged unreproduced.
 
+- [ ] **BUG-274 — A keyed SFTP operation against an unreachable host pays the connect budget two or three times over**
+  spec: SFTP-010, SFTP-023 · effort: S · audience: user.api
+  Not a regression — master behaves identically — but BUG-265 introduced the
+  predicate that would close it, and BUG-265's own round-4 measurement is what
+  exposed the mechanism.
+  **The fourteen mid-operation re-entry guards all ask `_is_connection_dead`
+  alone**, and that predicate answers `False` for every shape `_is_unreachable`
+  claims. Measured on `read_bytes("delivery.csv")` against a just-released
+  ephemeral port, with `_is_connection_dead` wrapped in a frame-recording
+  counter: three consultations (`_sftp.py:903` — `read_bytes`'s own guard,
+  `_sftp.py:2047` — `_raise_if_dir`, and the mapping's own) and **two full
+  `_connect` cycles**. The guard at 903 declines, so control falls through to
+  `_raise_if_dir`, which re-evaluates the lazy `_sftp` property and pays the
+  whole `RetryPolicy` budget again — three attempts with 2–10 s exponential
+  backoff by default. For a nested key `_has_file_ancestor` makes it three.
+  `check_health` is unaffected: it has no re-entry guard, which is why
+  BUG-265's "connect attempts are identical on both revisions" holds for the
+  probe and not for keyed operations.
+  **Disposition:** `or self._is_unreachable(exc)` at those guard sites is the
+  one-line shape, and it is a **behaviour change**, not only a saving: `read`
+  and `read_bytes` would then raise at their guard instead of falling through
+  to classification. That is the correct answer for a host that was never
+  there, but it is the same widening BUG-265 declined to make under review, so
+  it wants its own failing test first — and note that
+  `TestSFTPConnectTimePredicateSpace` deliberately asserts the observable answer
+  and *not* a connect count, so nothing in the suite would notice this either
+  way today. Pinning the count is part of the work.
+  **Found by BUG-265's round-5 unprimed reviewer**, as a `Possible: Perf:`.
+
 - [ ] **BUG-266 — No artifact maps an observable SFTP failure onto the arm that handles it, and four prose attempts were each refuted**
   spec: SFTP-023, SFTP-030 · effort: M · audience: user.site, library.maintainer
   `_map_exception` dispatches on exception *type*, and SFTP-023 states the arms

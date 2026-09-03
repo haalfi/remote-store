@@ -337,11 +337,14 @@ So, finally, are the signals that say the host was **never reached**:
 `paramiko.NoValidConnectionsError` (an `OSError` whose `errno` is `None`, which
 is what a refused port actually raises), `socket.gaierror` (name resolution), and
 an `OSError` carrying a connect-side errno (`ECONNREFUSED` / `EHOSTUNREACH` /
-`ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN`). Three of those five are the ordinary
-path rather than a fallback: `SSHClient.connect` captures only `ECONNREFUSED`
-and `EHOSTUNREACH` into `NoValidConnectionsError` and re-raises every other
-`socket.error` unwrapped, so `ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN` arrive as
-a plain `OSError`.
+`ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN` / `EPERM`). Four of those six are the
+ordinary path rather than a fallback: `SSHClient.connect` captures only
+`ECONNREFUSED` and `EHOSTUNREACH` into `NoValidConnectionsError` and re-raises
+every other `socket.error` unwrapped, so `ENETUNREACH` / `ENETDOWN` /
+`EHOSTDOWN` arrive as a plain `OSError` and `EPERM` as a `PermissionError`.
+`EPERM` is the member with a *known* trigger — a local netfilter `REJECT` on the
+`OUTPUT` chain yields it — and it is safe to claim because the errno dispatch
+below has no `EPERM` arm at all, so nothing else wants it.
 
 These are a *connect-time* set and sit in their own arm rather than joining the
 dropped-connection set above, **because the two predicates answer different
@@ -360,19 +363,25 @@ phase at all. A fourth reading is not more likely to be exhaustive than the
 first three, so the condition's space is enumerated instead of argued:
 `TestSFTPConnectTimePredicateSpace` generates the product of connect-time shape
 and operation and asserts, per cell, that the caller gets `BackendUnavailable`
-with a non-empty message, a cleared client and one `op="error_mapping"` record.
-Which predicate claims a shape is therefore an implementation detail, which is
-the only footing on which this split has survived review.
+with a non-empty message and one `op="error_mapping"` record. Which predicate
+claims a shape is therefore an implementation detail, which is the only footing
+on which this split has survived review. (Three guarantees, not four: an earlier
+revision also claimed a cleared client per cell, and review measured that
+assertion vacuous — the client is `None` on entry to every cell. The
+client-clearing invariant below is pinned by
+`test_a_host_never_reached_maps_to_backend_unavailable`, which seeds a sentinel
+first.)
 
 Every other `OSError` the errno dispatch declines keeps the base
 `RemoteStoreError` — `EIO` and `ENOSPC` are faults of a connection that is
 working. **`EACCES` is a known exclusion rather than an oversight**: paramiko
-re-raises it unwrapped like the three above, so a locally-rejected connect takes
-the `EACCES` arm and is answered `PermissionDenied` — naming the caller's key on
-a keyed operation, and a bare `Permission denied: ` on `check_health`, for a
-failure that never reached the server. It is excluded because the same errno on
-a live operation genuinely is a denied path and this dispatch cannot tell the
-two apart. BUG-273 carries it.
+re-raises it unwrapped like `ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN` above, so a
+locally-rejected connect takes the `EACCES` arm and is answered
+`PermissionDenied` — naming the caller's key on a keyed operation, and a bare
+`Permission denied: ` on `check_health`, for a failure that never reached the
+server. **It is not the `EPERM` case**: this arm can claim `EPERM` because
+nothing else wants it, while `EACCES` on a live operation genuinely is a denied
+path and this dispatch cannot tell the two apart. BUG-273 carries it.
 
 **Every** `BackendUnavailable` this mapping returns — the `SSHException` family
 included — invalidates the cached SFTP client so the next operation reconnects
@@ -428,18 +437,35 @@ the option off and claiming a limit the caller never set would be false. The
 others name the signal's own class. A signal that *did* explain itself is never
 overwritten: this is a fallback for silence, not a house style for messages.
 
-The unreachable-host arm is the one exception to "the driver's own message
-whenever it has one", and only in one direction. A refused connect keeps
-paramiko's text, which already names host and port. A `gaierror` renders as
-`Name or service not known` and never says *which* name, so that arm supplies
-one naming the host — the port is deliberately omitted, since resolution never
-reaches it. **A connect that times out is the bound on this**: it is claimed by
-the dropped-connection predicate, so it keeps that arm's treatment and names
-neither host nor port — `BackendUnavailable("timed out")`. Of the three ordinary
-ways a connect fails, one names host and port (paramiko's own text), one names
-the host, and one names nothing. Stated rather than fixed, because narrowing it
-would mean re-partitioning the predicates, which is the thing this section
-declines to do.
+Two kinds of arm depart from "the driver's own message whenever it has one" —
+the `IncompatiblePeer` arms, which append a remediation hint, and the
+unreachable-host arm, which supplies a message where the driver's answers the
+wrong question. (`_unavailable`'s own docstring says "two kinds of arm"; this
+clause read "the one exception" until a whole-file pass found the two
+disagreeing over the same set.)
+
+**What each connect failure actually names, since no arm makes it uniform:**
+
+| Failure | Message | Names |
+|---|---|---|
+| Refused / unreachable via `NoValidConnectionsError` | paramiko's own text | the **resolved address** and port |
+| DNS | supplied by this arm | the configured host |
+| `ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN` / `EPERM` | the driver's `[Errno n] strerror` | — |
+| Connect timeout | `_is_connection_dead`'s arm, `"timed out"` | — |
+
+**Note the first row's subject.** `NoValidConnectionsError` builds its text from
+the addresses it tried, not from the hostname it was given, so a store
+configured as `files.example.com` reports `Unable to connect to port 22 on
+10.0.0.4`. That is why the DNS arm names the configured host rather than
+deferring to the driver, and it means "the driver already names the host" is
+**false** for the refused case — an earlier revision of this clause said it was
+true and used it as the reason the refused arm needs no message of its own. The
+real reason is narrower: the driver names *enough* — an address and a port a
+reader can act on — where a `gaierror` names nothing at all.
+
+The bottom two rows name neither host nor port. That is stated rather than
+fixed, because narrowing it would mean re-partitioning the predicates, which is
+the thing this section declines to do.
 
 The arm also covers its own blank cases — **both** of them, the
 resolution branch and the errno branch — rather than falling through, because

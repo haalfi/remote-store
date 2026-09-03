@@ -124,10 +124,11 @@ second time.
 
 In v0.30.0, `SFTPBackend` promised `BackendUnavailable` for a connection that
 cannot be established — on `check_health` and fourteen other methods — and did
-not deliver it for the two most ordinary ways a connect fails. A refused port
-and a DNS failure both raised the base `RemoteStoreError` instead. A caller who
-followed the [health-check guide](../guides/health-check.md), which shows exactly
-that `except BackendUnavailable`, caught neither.
+not deliver it for the most ordinary ways a connect fails. A refused port, a DNS
+failure and a connect your own firewall rejects all raised the base
+`RemoteStoreError` instead. A caller who followed the
+[health-check guide](../guides/health-check.md), which shows exactly that
+`except BackendUnavailable`, caught none of them.
 
 ```python
 # v0.30.0: RemoteStoreError('[Errno None] Unable to connect to port 22 on 10.0.0.4')
@@ -137,13 +138,23 @@ store.ping()
 # v0.30.0: RemoteStoreError('[Errno -2] Name or service not known')
 # v0.31.0: BackendUnavailable("Cannot resolve SFTP host 'files.example.com': [Errno -2] Name or service not known")
 store.ping()
+
+# A local egress REJECT (EPERM), and the unreachable-network errnos with it
+# v0.30.0: RemoteStoreError('[Errno 1] Operation not permitted')
+# v0.31.0: BackendUnavailable, same text
+store.ping()
 ```
+
+The first example's message names the address paramiko **tried**, not the host
+you configured — so a store pointed at `files.example.com` reports an IP there.
+That is why the DNS case gets a message naming the host instead of keeping the
+driver's.
 
 **Nothing stops catching.** [`BackendUnavailable`](api/errors.md) subclasses
 `RemoteStoreError`, so an `except RemoteStoreError` handler is unaffected. What
 changes is which branch runs when you list both: a handler ordering
 `except BackendUnavailable` before `except RemoteStoreError` now takes the first
-branch for these two failures where it took the second.
+branch for these failures where it took the second.
 
 **The error mapping now logs it.** Reaching the mapping means one `WARNING` on
 `remote_store.backends._sftp` carrying `op="error_mapping"`, where a refused

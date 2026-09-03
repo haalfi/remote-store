@@ -2501,16 +2501,24 @@ class SFTPBackend(Backend):
           ``EAI_*`` code (``-2`` for ``EAI_NONAME``), which shares a namespace
           with nothing in the errno tuples below.
         - An ``OSError`` carrying a connect-side errno (``ECONNREFUSED`` /
-          ``EHOSTUNREACH`` / ``ENETUNREACH`` / ``ENETDOWN`` / ``EHOSTDOWN``).
-          **Three of these five are the ordinary path, not a fallback**, so do
-          not trim them as hypothetical: ``SSHClient.connect`` captures only
-          ``ECONNREFUSED`` and ``EHOSTUNREACH`` into ``NoValidConnectionsError``
-          and re-raises every other ``socket.error`` unwrapped — its own
-          docstring says so ("if a socket error (other than connection-refused
-          or host-unreachable) occurred while connecting"), and driving each
-          errno through ``SSHClient.connect`` on paramiko 5.0.0 confirms
-          ``ENETUNREACH`` / ``ENETDOWN`` / ``EHOSTDOWN`` arrive here as a plain
-          ``OSError``.
+          ``EHOSTUNREACH`` / ``ENETUNREACH`` / ``ENETDOWN`` / ``EHOSTDOWN`` /
+          ``EPERM``). **Four of these six are the ordinary path, not a
+          fallback**, so do not trim them as hypothetical: ``SSHClient.connect``
+          captures only ``ECONNREFUSED`` and ``EHOSTUNREACH`` into
+          ``NoValidConnectionsError`` and re-raises every other ``socket.error``
+          unwrapped — its own docstring says so ("if a socket error (other than
+          connection-refused or host-unreachable) occurred while connecting"),
+          and driving each errno through ``SSHClient.connect`` on paramiko 5.0.0
+          confirms ``ENETUNREACH`` / ``ENETDOWN`` / ``EHOSTDOWN`` arrive here as
+          a plain ``OSError`` and ``EPERM`` as a ``PermissionError``.
+
+        ``EPERM`` is the one with a *known* trigger rather than a theoretical
+        one: a local netfilter ``REJECT`` on the ``OUTPUT`` chain yields it, so
+        it is the shape a caller behind their own egress firewall actually
+        meets. It carries no risk of stealing a live operation's answer, because
+        the errno dispatch below has no ``EPERM`` arm at all — before this it
+        fell to the generic arm as the base class, which is precisely the defect
+        this predicate exists to close.
 
         Deliberately **not** matched: every other ``OSError`` the errno dispatch
         declines. ``EIO`` and ``ENOSPC`` are faults of a connection that is
@@ -2518,13 +2526,15 @@ class SFTPBackend(Backend):
         caller to retry a different host over a full disk.
 
         **``EACCES`` is a known exclusion, not an oversight, and it is not
-        free.** paramiko re-raises it unwrapped like the three above, so a
+        free.** paramiko re-raises it unwrapped like the others, so a
         locally-rejected connect reaches ``_map_exception`` and takes the
         ``EACCES`` arm — answering ``PermissionDenied`` naming the caller's
-        *path* for a failure that never reached the server. It stays out of this
-        tuple because the same errno on a live operation genuinely is a denied
-        path and this predicate cannot tell the two apart; separating them needs
-        connect-time context the mapping does not have. Tracked as its own item
+        *path*, or a bare ``"Permission denied: "`` from ``check_health``, for a
+        failure that never reached the server. **``EPERM`` above is not the same
+        case**: this predicate can claim it because nothing else wants it, while
+        ``EACCES`` on a live operation genuinely is a denied path and the
+        dispatch cannot tell the two apart. Separating those needs connect-time
+        context the mapping does not have, so it is tracked as its own item
         rather than widened here.
         """
         import paramiko
@@ -2537,6 +2547,7 @@ class SFTPBackend(Backend):
             errno.ENETUNREACH,
             errno.ENETDOWN,
             errno.EHOSTDOWN,
+            errno.EPERM,
         )
 
     def _unreachable_message(self, exc: Exception) -> str | None:
@@ -2544,9 +2555,15 @@ class SFTPBackend(Backend):
 
         ``None`` for a refused connect: ``NoValidConnectionsError`` renders as
         ``"[Errno None] Unable to connect to port 2222 on 10.0.0.4"``, which
-        already names both halves of what the caller has to check, and
-        ``_unavailable``'s rule is that a driver which explained itself is never
-        overwritten.
+        names an address and a port a reader can act on, and ``_unavailable``'s
+        rule is that a driver which explained itself is never overwritten.
+        **Note what that address is.** paramiko builds the text from the
+        addresses it actually tried, not from the hostname it was handed, so a
+        store configured as ``files.example.com`` reports an IP here. This
+        docstring said the driver "already names host and port" until a
+        whole-file pass caught it; it names *enough*, which is the narrower
+        claim that survives, and the difference is exactly why the branch below
+        does not defer to the driver.
 
         A ``gaierror`` is the case that needs one. It renders as
         ``"[Errno -2] Name or service not known"`` — true, and useless to a

@@ -14,10 +14,16 @@ audience:
   - user.api
   - user.site
 discovery_followups:
-  # Born in round 3, from the measuring member driving each connect errno
-  # through paramiko rather than reading which ones it wraps. Filed with its
-  # trigger explicitly unreproduced, which is the first work on it.
+  # BUG-273 was born in round 3, from the measuring member driving each connect
+  # errno through paramiko rather than reading which ones it wraps. Filed with
+  # its trigger explicitly unreproduced, which is the first work on it.
+  # BUG-274 was born in round 5, from the frame-recording measurement that this
+  # round's own test fix was built on — the re-entry guards consult only
+  # _is_connection_dead, so a keyed operation against an unreachable host pays
+  # the connect budget two or three times. Not a regression, so filed rather
+  # than fixed; the widening it wants is the one this PR declined under review.
   - BUG-273
+  - BUG-274
 expected_ripples:
   # sdd/backlogid.json is deliberately absent, against the schema's own example
   # ("after any BACKLOG/BACKLOG-DONE edit"): it is a max-allocated-ID map, this
@@ -58,12 +64,15 @@ surprising_ripples:
 #   BUG-265: Enumerate the connect-time predicate space instead of arguing it
 #                                                 -> counts (round 4, 13
 #            findings from a three-member panel after dedup)
-# Value is 4 — one per review round that produced a commit, which is rows 2, 3,
-# 4 and 5; row 1 implements the item. Re-derived from that command before each
-# push, since a later round raises it. Round 4 found the third subject line
-# quoted here had drifted from what the command returns ("blank-message shape"
-# for "blank shape"), which is why the quotations are copy-pasted now.
-review_rounds: 4
+#   BUG-265: Claim EPERM, and repair two assertions that could not fail
+#                                                 -> counts (round 5, 12
+#            findings from a three-member panel after dedup)
+# Value is 5 — one per review round that produced a commit, which is rows 2-6;
+# row 1 implements the item. Re-derived from that command before each push,
+# since a later round raises it. Round 4 found the third subject line quoted
+# here had drifted from what the command returns ("blank-message shape" for
+# "blank shape"), which is why the quotations are copy-pasted now.
+review_rounds: 5
 phases:
   - id: orient
     name: Orient
@@ -151,17 +160,26 @@ phases:
           The existing home of _map_exception unit tests. Added the seven-shape
           parametrisation, the DNS host-naming case, the keep-paramiko's-detail
           case, the one-record case and the unrelated-errno bound; plus
-          TestSFTPUnreachableHost for the real connect path. Re-measured against
-          3e6d318 with the current test file on PYTHONPATH: **14 of the 17
-          fail**, and the 3 that pass are the ones asserting what did not change
-          (the keep-paramiko's-detail case and both unrelated-errno params).
-          Retrospective, and this figure has now been wrong three times, each
+          TestSFTPUnreachableHost for the real connect path, and later
+          TestSFTPConnectTimePredicateSpace.
+          **Derived from the collected-node-id difference, not from a
+          hand-kept list** — collect over tests/backends/sftp/ at 3e6d318 and at
+          HEAD, subtract, then run the difference against the base library on
+          PYTHONPATH: **32 added, 25 fail, 7 pass**. The 7 are the
+          keep-paramiko's-detail case, both unrelated-errno params, and all four
+          connect-timeout cells, which pass pre-fix because _is_connection_dead
+          already claimed socket.timeout.
+          Retrospective, and this figure was wrong **four** times, each
           differently: "11 of 15" was counted off a progress bar rather than a
           summary line (the run was 12 of 15); "13 of 16" was measured correctly
-          but written in the same commit that added a seventeenth test, so it
-          was stale before it was committed; and both times the paragraph below
-          already named the test count the figure contradicted. Re-derive the
-          whole figure after the last test lands, never the denominator alone
+          but written in the same commit that added a seventeenth test; "14 of
+          17" was re-derived and then staled the same way by round 4's thirteen;
+          and each time the paragraph beside it already named a count the figure
+          contradicted. The lesson took three attempts to state usefully: not
+          "re-derive after the last test lands" — every revision believed it
+          had — but **derive the population by diffing collected node ids
+          rather than enumerating what you remember adding**, which is what
+          finally made the figure reproduce
         outcome: ok
   - id: implement
     name: Implement
@@ -222,7 +240,12 @@ phases:
         read_type: verify
         extract: >-
           Checked rather than changed. The BackendUnavailable row already said
-          "Network error, DNS failure, or timeout" and is now true as written.
+          "Network error, DNS failure, or timeout" and is now true as written
+          **for the failures this item covers** — the qualifier is load-bearing,
+          because BUG-273 records a locally-rejected connect that still answers
+          PermissionDenied. Round 4 added that qualifier to the register entry
+          and round 5 found this copy still unqualified, so the repo stated the
+          scoped claim in one file and the flat one in another for a commit.
           The BACKLOG item claimed this guide "now carries a caveat pointing
           here"; it never did, and that sentence was corrected on the way out
           rather than carried into the register entry
@@ -413,6 +436,66 @@ phases:
           recorded so it is not tried twice. Also corrected the item's message
           claim per operation — check_health answers a bare "Permission denied:
           ", not a keyed message
+        outcome: ok
+  - id: fix_vacuous
+    name: Round-5 fix pass (two assertions that could not fail)
+    steps:
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPConnectTimePredicateSpace"
+        read_type: verify
+        extract: >-
+          **The enumeration written as round 4's repeat-site response shipped
+          two assertions with no discriminating power, and review measured
+          both.** The guard-reachability test recorded only *that*
+          _is_connection_dead was consulted — but _map_exception consults it
+          unconditionally, so one guaranteed call satisfied it: deleting
+          read_bytes' entire pre-mapping guard left it green, and check_health,
+          which has no such guard, passed it too. It now records the calling
+          frame and asserts a consult from outside the mapping. The per-cell
+          "cleared client" assertion was vacuous for a different reason — the
+          client is None on entry to all twelve cells — so the claim is
+          withdrawn from the test and from the three artifacts citing it, since
+          the invariant is really pinned by the unit test that seeds a sentinel.
+          Both repairs were confirmed by mutating a scratch copy of the backend
+          under tmp/ and observing the tests fail. This is the loop's own rule
+          about a verification that can fail silently, met in the artifact
+          written to end an argument about a different one
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_unreachable (errno tuple)"
+        read_type: reference
+        extract: >-
+          EPERM added, on the user's decision. The measuring member found the PR
+          shipping a fix for the connect errnos while BUG-273's own body, added
+          by this PR, documented a local OUTPUT-chain REJECT yielding EPERM —
+          a reproducible instance of the very defect, falling to the generic arm
+          as the base class. Safe to claim where EACCES is not, because the
+          errno dispatch has no EPERM arm at all, so nothing else wants it
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-023 (message taxonomy)"
+        read_type: verify
+        extract: >-
+          Three copies claimed a refused connect "already names host and port".
+          It does not: NoValidConnectionsError builds its text from the
+          addresses paramiko *tried*, so a store configured as a DNS name
+          reports an IP — which is the same "never says which name" deficiency
+          the gaierror arm exists to fix, and it was being used as the reason
+          that arm needs no message. The taxonomy is now a table with the
+          resolved-address subject stated, and it gained the row the prose
+          version omitted: the plain-errno shapes name nothing either
+        outcome: ok
+      - file: sdd/traces/bk-359-stalled-sftp-error-detail.yml
+        section: "docs / health-check.md step"
+        read_type: verify
+        extract: >-
+          A sibling trace's measured sentence — "a refused port raises
+          RemoteStoreError ... none carries op=error_mapping" — is now false in
+          every clause. Annotated in place rather than rewritten, and the
+          general rule stated with it: a register entry states current fact and
+          gets corrected, a trace states a past reading and gets annotated.
+          Round 5 raised this as the two artifacts disagreeing about which
+          treatment such a sentence gets; this is the answer
         outcome: ok
   - id: verify
     name: Verify

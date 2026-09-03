@@ -260,7 +260,11 @@ if evidence changes; these are retired.
   service not known` and never says which name, so the arm names the host, the
   way the `IncompatiblePeer` arms name their remediation. The port is
   deliberately omitted: resolution never reaches it. A refused connect keeps
-  paramiko's own text, which already names host and port.
+  paramiko's own text, which names an address and a port a reader can act on —
+  the *resolved* address, not the configured hostname, since paramiko builds
+  that message from the addresses it tried. Round 5 caught three copies of this
+  clause claiming it "names host and port"; it names enough, which is the
+  narrower claim, and the gap is why the DNS arm supplies its own.
   **Not marked `**Breaking**`, and the migration section is owed anyway.**
   `BackendUnavailable` subclasses `RemoteStoreError`, so no `except` clause
   stops catching; what changes is which branch runs for a caller who lists both,
