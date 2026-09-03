@@ -18,11 +18,18 @@ discovery_followups:
   # were born in round 4 and their BACKLOG bodies say so; recording two of five
   # is the cleaned-up trace the schema's authoring note warns against. BUG-268
   # is later still: it exists only because the guide revert below was carried
-  # out, so it could not be filed before the decision that created it.
+  # out, so it could not be filed before the decision that created it. It is
+  # also the one of the five this PR then closed — it appears under
+  # co_shipped_items too, which is not a contradiction: born here, closed here.
   - BUG-264
   - BUG-265
   - BUG-266
   - BUG-267
+  - BUG-268
+co_shipped_items:
+  # Filed and closed inside this PR, so it never appeared in BACKLOG.md's active
+  # list for anyone but this branch. BACKLOG-DONE.md's entry says so in its
+  # first sentence rather than leaving a reader to wonder how it was worked.
   - BUG-268
 expected_ripples:
   - sdd/backlogid.json
@@ -46,11 +53,19 @@ surprising_ripples:
   #
   # The revert is not cost-free and the trace says so rather than reading as a
   # clean retreat: troubleshooting.md's opening two sentences describe the
-  # pre-fix behaviour, so returning them to master's text ships a page this
-  # commit falsifies. That is BUG-268, filed with both sentences quoted and the
-  # tests that refute them named. Reverting a rewrite restores the *old* text,
-  # not a true one — which is the general lesson, and the reason the withdrawal
-  # had to be paired with an item instead of just a git checkout.
+  # pre-fix behaviour, so returning them to master's text shipped a page this
+  # PR falsifies. Reverting a rewrite restores the *old* text, not a true one —
+  # the general lesson, and the reason the withdrawal had to be paired with an
+  # item (BUG-268) instead of just a git checkout.
+  #
+  # BUG-268 was then closed in this PR rather than left open: two sentences
+  # replaced by two facts, with the traceback line copied from running
+  # `_map_exception(TimeoutError(), 'delivery.csv')` rather than composed. So
+  # troubleshooting.md is a ripple met, withdrawn, and met again on a much
+  # narrower footing — 1 finding across its whole review history, against 5 and
+  # 4 on the two guides that stayed reverted. The narrower edit is the one that
+  # survived, which is the reading this trace wants a later author to take from
+  # eleven findings across three guides.
   - docs-src/guides/observe.md
   - docs-src/guides/health-check.md
   - docs-src/guides/troubleshooting.md

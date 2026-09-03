@@ -463,33 +463,6 @@ compliant the day before.
   path with the reason recorded. Either way it is decided once rather than
   inherited.
 
-- [ ] **BUG-268 — The troubleshooting page prints the pre-BK-359 blank traceback as the stall symptom, and says the log is empty**
-  spec: SFTP-023, SFTP-030 · effort: XS · audience: user.site
-  `docs-src/guides/troubleshooting.md` § *SFTP transfer stalls: hangs, or fails
-  after two minutes* opens on two sentences BK-359 falsified in the same commit
-  that left them standing. It prints
-  `remote_store._errors.BackendUnavailable:  | path='delivery.csv' | backend='sftp'`
-  as the traceback a reader should recognise, and then states "There is nothing
-  in `remote_store`'s log to accompany it."
-  **Both are measured false on the shipped code.** A stalled `read_bytes` now
-  raises `args[0] == "SFTP channel stalled: no data within io_timeout=2.0s"` —
-  asserted by literal equality, against a live silent peer, in
-  `tests/backends/sftp/test_io_timeout.py::test_a_stall_says_what_it_was_and_logs_it`
-  — and the same test asserts exactly one `remote_store` record at `WARNING`
-  where it previously captured none at `DEBUG`.
-  **Why BK-359 filed this rather than fixing the page it broke.** It did rewrite
-  this section, and four of its five review rounds found something wrong in that
-  rewrite and none in the code: a deleted heading, a record count restated and
-  refuted three times, and a log-filter recipe that raised
-  `RemoteStoreError: 'LogRecord' object has no attribute 'op'` when run. The
-  whole guide rewrite was reverted rather than shipped in a state review had not
-  converged on, which returns these two sentences to their pre-fix text.
-  **The fix is two facts and no recipe**: the message the raise now carries, and
-  that one `WARNING` accompanies it. It must not reacquire a `logging` filter
-  snippet — the withdrawn one was wrong because `extra=` keys are attributes on
-  the record, not entries in a dict — nor a count of records on the
-  `remote_store` logger, which is BUG-266's table and not a sentence.
-
 - [ ] **BUG-263 — The migration guide promises a drive folder named `.` stays reachable as a key; no key spelling reaches it**
   spec: GR-058 · effort: XS · audience: user.site
   `docs-src/reference/migration.md` § *`GraphBackend(base_path=".")` now means

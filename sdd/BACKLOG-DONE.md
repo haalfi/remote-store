@@ -215,6 +215,38 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-268 — The troubleshooting page printed the pre-BK-359 blank traceback as the stall symptom, and said the log was empty**
+  spec: SFTP-023, SFTP-030 · effort: XS · audience: user.site
+  Filed and closed inside BK-359's own PR, which is why it appears here without
+  ever having been worked from the active backlog. `docs-src/guides/troubleshooting.md`
+  § *SFTP transfer stalls: hangs, or fails after two minutes* opened on two
+  sentences BK-359 falsified: it printed
+  `remote_store._errors.BackendUnavailable:  | path='delivery.csv' | backend='sftp'`
+  as the traceback a reader should recognise, and stated "There is nothing in
+  `remote_store`'s log to accompany it."
+  **How it came to exist.** BK-359 rewrote that section, and four of its five
+  review rounds found something wrong in the rewrite and nothing in the code: a
+  deleted heading, a record count restated and refuted three times, and a
+  log-filter recipe that raised `RemoteStoreError: 'LogRecord' object has no
+  attribute 'op'` when run. The rewrite was reverted rather than shipped in a
+  state review had not converged on — **and reverting restores the old text, not
+  a true one**, which is the lesson worth keeping: a withdrawal has to be paired
+  with an item, or the retreat quietly ships a false page.
+  **Shipped:** the two sentences replaced by two facts and no recipe. The
+  traceback line is now
+  `remote_store._errors.BackendUnavailable: SFTP channel stalled: no data within io_timeout=120.0s | path='delivery.csv' | backend='sftp'`,
+  copied from running
+  `SFTPBackend(host='h', username='u', io_timeout=120.0)._map_exception(TimeoutError(), 'delivery.csv')`
+  rather than composed, and the page states that the same sentence is written to
+  the `remote_store` logger at `WARNING`. Pinned by
+  `tests/backends/sftp/test_io_timeout.py::test_a_stall_says_what_it_was_and_logs_it`,
+  which asserts the message by literal equality against a live silent peer and
+  one `remote_store` record at `WARNING`.
+  **Deliberately absent**: any `logging` filter snippet (the withdrawn one was
+  wrong because `extra=` keys are attributes on the record, not entries in a
+  dict) and any count of records on the `remote_store` logger, which is
+  BUG-266's table rather than a sentence.
+
 - [x] **BK-359 — A stalled SFTP operation raises `BackendUnavailable` with an empty message and no log record**
   spec: SFTP-030, SFTP-023 · effort: S · audience: user.api, user.api_docs, user.site
   `_map_exception` built the error as `BackendUnavailable(str(exc), ...)`, and
@@ -243,7 +275,11 @@ if evidence changes; these are retired.
   three other routes, so the fallback is keyed on an empty `str(exc)` rather than
   on the timeout type.
   **Shipped:** one `_unavailable` helper through which every `BackendUnavailable`
-  that `_map_exception` returns now passes. A stall names the fault and the bound
+  that `_map_exception` *constructs* now passes — not every one it *returns*, as
+  this line read until round 5: the mapping's first arm hands back a
+  `BackendUnavailable` built elsewhere without re-entering the helper, so the
+  wider word was falsifiable on that arm while the suite stayed green. A stall
+  names the fault and the bound
   that fired (`SFTP channel stalled: no data within io_timeout=120.0s`), and
   names no bound under `io_timeout=None`, where the arm is still reachable via a
   half-open socket. Other message-less signals name their own class. A signal
