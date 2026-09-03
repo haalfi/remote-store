@@ -1868,9 +1868,10 @@ the commit that writes it lands, so cite the generator instead.
 
 - [ ] **ID-254 — The `[Unreleased]` stub's section marker means one thing on half the entries and nothing on the other half**
   spec: — · effort: XS/S · audience: contributor.process
-  Twelve of the 24 entries under CHANGELOG `[Unreleased]` open with a bolded
-  marker and twelve open with none (`- <ID>: **<marker>** —` against
-  `- <ID>: <text>`, tallied over the section). Four of the twelve are
+  Twelve of the 25 entries under CHANGELOG `[Unreleased]` open with a bolded
+  marker and thirteen open with none (`- <ID>: **<marker>** —` against
+  `- <ID>: <text>`, tallied over the section as of this item's filing; re-tally
+  rather than reading the split, which every merged PR moves). Four of the twelve are
   `**Breaking**`, which is a real obligation the ripple-check's **Breaking
   change** row states and `check_breaking_migration_link.py` half-enforces. The
   other eight are decoration nobody wrote down: `**Fix**` (5), `**Docs**` (1),

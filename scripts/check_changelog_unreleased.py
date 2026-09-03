@@ -89,8 +89,9 @@ Bounds (Rule 7)
   hand-off's other side, and it owns the ordering this bound depends on**: it
   is written to add the ``###`` groupings *before* condensing any bullet,
   which is what turns the window below from a wall of violations into one
-  stand-down line. Reversing the two costs the release manager the difference,
-  and the checklist says so where the step is. So between them the
+  stand-down line naming all three of the things it switched off. Reversing the
+  two costs the release manager the difference, and the checklist says so where
+  the step is. So between them the
   released shape lives under ``[Unreleased]``, and there the stray-line half of
   the shape rule reports every condensed line, while the audience rule reports
   every *user-facing* completed item as entry-less. Reconstruct it by putting the most recent
@@ -119,7 +120,9 @@ Bounds (Rule 7)
   entries remain. The stray ``###`` case is the one it is for. Deriving
   the completed-item side is unconditional too, so a renamed ``## Unreleased``
   still raises rather than passing. What a stray ``###`` costs is **three**
-  reported things, not the two the note names: the stray-line rule, the audience
+  reported things, not the two *rules* this bullet's heading counts — the note
+  itself names all three, and an earlier version of this clause said it named
+  two: the stray-line rule, the audience
   rule, and — because the advisory half lives inside the same function as the
   comparison — the register note for an entry whose ID the backlog knows
   nowhere. The note prints on every run, including green ones, rather than being

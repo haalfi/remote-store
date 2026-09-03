@@ -28,8 +28,9 @@ this note is only what an agent gets wrong. **Read each item's body under
 neither the mechanism nor the figures, and an entry written from the stub alone
 is a reworded stub, not the expansion. Condense to what a *user* does about the
 change; the backlog body is arguing to a contributor and its length is not a
-target. `###` groupings land before any bullet is condensed, or
-`check_changelog_unreleased.py` reports every condensed line until they do.
+target. Follow the checklist's step ordering as written rather than from memory —
+it is what keeps `check_changelog_unreleased.py` quiet mid-condense, and the
+reason is stated there.
 
 **Phase 2** — `bump-my-version` reads its target files from `[[tool.bumpversion.files]]`
 in `pyproject.toml`.

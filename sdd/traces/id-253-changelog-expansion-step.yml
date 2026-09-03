@@ -87,9 +87,13 @@ phases:
         section: "[Unreleased]"
         read_type: reference
         extract: >-
-          24 entries, 12 carrying a bolded marker (Fix 5, Breaking 4, Docs 1,
-          Added 1, Change 1) and 12 carrying none — the tally ID-254 was filed
-          from
+          24 entries at the time of measuring, 12 carrying a bolded marker
+          (Fix 5, Breaking 4, Docs 1, Added 1, Change 1) and 12 carrying none —
+          the tally ID-254 was filed from. Retrospective: this PR then added its
+          own unmarked ID-253 stub, making it 25 and 13, and ID-254's body was
+          written from the pre-stub number until review round 1 caught it. The
+          measurement was right and went stale inside the same commit that took
+          it; the marker breakdown was unaffected
         outcome: ok
       - file: sdd/BACKLOG-DONE.md
         section: "Unreleased (at the v0.30.0 release commit)"
