@@ -1884,6 +1884,29 @@ class TestSFTPMapException:
         assert "lost" not in message, f"a connection that was never made was reported as lost: {message!r}"
 
     @pytest.mark.spec("SFTP-023")
+    def test_a_message_less_dns_failure_does_not_trail_an_empty_colon(self) -> None:
+        """SFTP-023: the resolution branch handles its own blank case too.
+
+        The sibling of the test above, and it needs its own: the ``gaierror``
+        branch is reached *first*, so the errno branch's blank handling never
+        sees this shape. Interpolating an empty ``str(exc)`` would render
+        ``Cannot resolve SFTP host 'x': `` and hand a reader a colon promising a
+        reason that is not there.
+
+        Like its sibling this is a guard rather than observed behaviour — the
+        resolver always supplies text — which is exactly why it is asserted:
+        nothing else would notice it regressing.
+        """
+        exc = socket.gaierror()
+        assert not str(exc), "the case this test exists for is a signal with no text"
+
+        backend = SFTPBackend(host="sftp.example.invalid", host_key_policy="auto")
+        message = backend._map_exception(exc, "").args[0]
+        assert "sftp.example.invalid" in message, f"the host is absent from {message!r}"
+        assert not message.rstrip().endswith(":"), f"a dangling colon promises a reason: {message!r}"
+        assert "gaierror" in message, f"the signal's own class is absent from {message!r}"
+
+    @pytest.mark.spec("SFTP-023")
     def test_a_refused_connect_keeps_paramikos_own_detail(self) -> None:
         """SFTP-023: the refusal arm does not overwrite a message that already answers.
 

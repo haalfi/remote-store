@@ -2529,14 +2529,24 @@ class SFTPBackend(Backend):
         and naming it would point a reader at the one thing that cannot be the
         fault.
 
-        The third branch keeps ``_unavailable``'s blank-message fallback out of
+        The blank-message handling keeps ``_unavailable``'s own fallback out of
         this arm's way. That fallback reports a lost connection, which is the
         wrong sentence for one that was never made, so a message-less connect
-        errno gets its own wording here rather than borrowing it.
+        signal gets its own wording here rather than borrowing it. **Both** arms
+        need it, not just the second: a zero-argument ``gaierror`` would
+        otherwise render as ``Cannot resolve SFTP host 'x': `` with a dangling
+        colon, because the resolution branch is reached first and would have
+        interpolated an empty string. Neither blank shape is raised by anything
+        today — an ``OSError`` built with an errno renders as
+        ``[Errno n] strerror``, and the resolver always supplies text — so both
+        are guards rather than observed behaviour, and both are pinned so that
+        stays checkable.
         """
+        detail = str(exc)
         if isinstance(exc, socket.gaierror):
-            return f"Cannot resolve SFTP host '{self._host}': {exc}"
-        if not str(exc):
+            said = f": {detail}" if detail else f" ({type(exc).__name__} with no detail)"
+            return f"Cannot resolve SFTP host '{self._host}'{said}"
+        if not detail:
             return f"Cannot reach SFTP host '{self._host}' ({type(exc).__name__} with no detail)"
         return None
 

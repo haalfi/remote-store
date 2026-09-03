@@ -223,11 +223,16 @@ if evidence changes; these are retired.
   and `RemoteStoreError("[Errno -2] Name or service not known")` respectively;
   both now raise `BackendUnavailable`.
   **Fifteen docstrings promised the type that was not delivered** — derived by
-  walking the module's AST for functions whose docstring contains the sentence
-  prefix `"BackendUnavailable: If the SSH/SFTP connection cannot be
-  established"` as a substring, which is the predicate that returns 15 rather
-  than 1: only `check_health` ends the sentence there, and the other fourteen
-  continue `" or fails."` or a mid-read/mid-write variant. Because the lazy
+  walking the module's AST for functions whose docstring, whitespace-normalised,
+  contains the sentence prefix `"BackendUnavailable: If the SSH/SFTP connection
+  cannot be established"` as a substring. **Three readings of the same words give
+  three answers, and the item's own body had the wrong two:** substring returns
+  **15**; full-line equality against the prefix returns **14**, because the
+  fourteen wrap the sentence and their line *is* exactly the prefix; equality
+  against the prefix plus a period returns **1**, `check_health` alone, which is
+  the only one ending the sentence there. The body said the equality reading
+  "returns 1 rather than 15", inverting which reading loses which methods; caught
+  by running all three. Because the lazy
   `_sftp` property runs `_connect` inside the caller's `_errors(path)` block,
   the defect reached all fifteen on a first operation, not only the probe.
   **Three shapes, one new arm.** `paramiko.NoValidConnectionsError` (an

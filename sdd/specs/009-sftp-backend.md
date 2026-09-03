@@ -402,9 +402,13 @@ whenever it has one", and only in one direction. A refused connect keeps
 paramiko's text, which already names host and port. A `gaierror` renders as
 `Name or service not known` and never says *which* name, so that arm supplies
 one naming the host — the port is deliberately omitted, since resolution never
-reaches it. The arm also covers its own blank case rather than falling through,
-because the generic fallback reports a connection *lost*, which is the wrong
-sentence for one that was never made.
+reaches it. The arm also covers its own blank cases — **both** of them, the
+resolution branch and the errno branch — rather than falling through, because
+the generic fallback reports a connection *lost*, which is the wrong sentence
+for one that was never made. Neither blank shape is raised by anything today:
+an `OSError` built with an errno renders as `[Errno n] strerror`, and the
+resolver always supplies text. They are guards, stated here because they are
+pinned by tests and so remain checkable, not because a caller will observe them.
 
 The record is emitted where the *conclusion* is reached rather than at each raise
 site, so the cleanup and classification paths that re-enter the mapping do not

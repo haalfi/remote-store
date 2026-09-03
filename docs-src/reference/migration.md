@@ -32,10 +32,13 @@ your server's longest legitimate pause.
 backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=None)
 ```
 
-That restores the unbounded channel, and only that — the other two v0.31.0
-changes on this backend, in the sections below, apply whatever you pass here: a
-failed seek-to-end raises rather than answering `0`, and a host that cannot be
-reached raises `BackendUnavailable`. Note `0` is
+That restores the unbounded channel, and only that. The other v0.31.0 changes
+that reach this backend — described in the sections below — apply whatever you
+pass here; among them a failed seek-to-end now raises rather than answering `0`,
+and a host that cannot be reached now raises `BackendUnavailable`. No count is
+given, deliberately: several sections below are backend-agnostic and reach SFTP
+without saying so in their heading, so a number here goes stale the next time one
+is added. Note `0` is
 **not** the opt-out — it raises `ValueError`, because paramiko reads it as
 non-blocking rather than as a bound, and every SFTP operation waits on a reply,
 so all of them would fail at once.
