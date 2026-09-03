@@ -1727,13 +1727,17 @@ def test_a_stalled_write_can_have_delivered_the_payload_in_full(
     about the *last* acknowledgement rather than about body writes generally.
 
     **Scoped to ``write``.** ``copy`` reaches the same state by the same
-    mechanism — its destination is written with the identical
-    ``file(dst, "w")`` and stream — but it has no caller-supplied stream to
-    silence from, so staging it needs a byte budget on the relay, which this file
-    avoids: a budget has to be re-tuned whenever a round-trip moves and fails by
-    stalling somewhere else rather than by failing. An attempt to parametrise it
-    in here silenced ``copy``'s *source* open instead and left the destination
-    untouched, which is the failure mode that argument describes.
+    mechanism — its destination is written with the identical ``file(dst, "w")``
+    and stream — but it has no caller-supplied stream to silence from, so
+    staging it needs a byte budget on the relay. This file does use one
+    elsewhere (``stall_download_after`` in the partial-``copy`` test above), and
+    the distinction is what the budget has to hit: *somewhere mid-transfer* is
+    robust, whereas *after the last body acknowledgement and before its reply*
+    is a single round-trip that moves whenever buffering does. A budget aimed
+    there fails by stalling in the wrong place rather than by failing, so the
+    test would still pass while measuring another state. An attempt to
+    parametrise it in here silenced ``copy``'s *source* open instead and left
+    the destination untouched, which is that failure mode.
     """
     if sftp_server is None:
         pytest.skip("paramiko not installed")

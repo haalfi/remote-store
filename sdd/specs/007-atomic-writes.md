@@ -18,7 +18,14 @@ Atomic writes ensure that a file is either fully written or not written at all. 
 ## AW-003: Overwrite Semantics
 
 **Invariant:** If `overwrite=False` and the target file exists, `AlreadyExists` is raised *before* writing the temporary file.
-**Postconditions:** If `overwrite=True`, the atomic rename replaces the existing file.
+**Postconditions:** [~] If `overwrite=True`, the atomic rename replaces the existing file.
+
+[~] **The postcondition is unqualified and the SFTP fallback contradicts it.**
+`test_the_rename_fallback_destroys_the_destination_when_the_promote_stalls`
+measures a case where the existing file is removed and nothing replaces it, so
+"replaces" holds on success and not on every failure. Marked rather than
+rewritten: **BUG-272** owns the behaviour, and writing the current behaviour into
+the invariant would document a defect as the contract.
 
 ## AW-004: Cleanup on Failure
 

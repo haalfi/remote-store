@@ -2183,9 +2183,8 @@ class SFTPBackend(Backend):
         directory target to ``remove`` + ``rename``. The extra stat is paid
         whenever ``posix_rename`` fails for a reason ``_is_connection_dead``
         does not recognise — commonly a server without the (near-universal)
-        ``posix-rename@openssh.com`` extension, but not only that, which is why
-        the ``# pragma: no cover`` on ``_rename_fallback`` names a narrower bound
-        than the code has.
+        ``posix-rename@openssh.com`` extension, but not only that, which is the
+        bound the ``# pragma: no cover`` on ``_rename_fallback`` states.
         """
         try:
             self._sftp.posix_rename(tmp_path, sftp_path)
@@ -2199,10 +2198,17 @@ class SFTPBackend(Backend):
             self._raise_if_dir(sftp_path, path, cause=exc)
             self._rename_fallback(tmp_path, sftp_path, overwrite=overwrite)
 
-    def _rename_fallback(  # pragma: no cover -- fallback for servers without posix_rename
+    def _rename_fallback(  # pragma: no cover -- any non-dead posix_rename failure, not only a server lacking it
         self, tmp_path: str, sftp_path: str, *, overwrite: bool
     ) -> None:
-        """Promote *tmp_path* with a plain ``rename`` (non-atomic overwrite)."""
+        """Promote *tmp_path* with a plain ``rename`` (non-atomic overwrite).
+
+        Under *overwrite* the destination is removed **before** the rename, so a
+        failure between the two leaves neither the old file nor the new one at
+        *sftp_path* — the payload survives in *tmp_path* only if the cleanup
+        unlink is also skipped. Pre-existing behaviour, not something this
+        method's caller can avoid by ordering.
+        """
         if overwrite:
             with contextlib.suppress(OSError):
                 self._sftp.remove(sftp_path)

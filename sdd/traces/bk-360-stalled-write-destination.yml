@@ -58,17 +58,31 @@ surprising_ripples:
   # page BK-359 is editing in parallel, so the edit was held to one bullet.
   - docs-src/guides/troubleshooting.md
 
-# Derivation, per the review_rounds description in _schema.yml: on
-# `git log --oneline origin/master..HEAD`, 0e39855 implements and does not
-# count; a12ee23 incorporates review round 1, 0bf25ae round 2, e9ddbff round 3
-# (a four-member panel: unprimed, measuring, whole-file, neglected-surface),
-# 5f206a3 round 4, 9c4848e round 5, and the commit this trace ships in
-# incorporates round 6. Rounds 4-6 each ran the closing gates; round 6's
-# measuring gate could not run (account rate limit), which is recorded in the
-# PR rather than counted as a pass. Value is 6 — rounds, not commits,
-# counted from the round each commit answers rather than from a commit tally,
-# which would over-report if one round ever needed two pushes.
-review_rounds: 6
+# Derivation, per the review_rounds description in _schema.yml, from
+# `git log --format=%s origin/master..HEAD --reverse`. Commits are named by
+# subject, not SHA: BK-359 spent a whole round learning that a SHA does not
+# survive a rebase and a commit cannot carry its own hash, and this list has
+# since taken a merge commit too.
+#
+#   "Document what a stalled non-atomic SFTP write ..."  implements; does not count
+#   "Correct the residue rule to the lost-reply law ..."  round 1
+#   "Derive the residue rule by enumeration ..."          round 2
+#   "State the residue as a closure ..."                  round 3 (four-member panel:
+#                                                         unprimed, measuring,
+#                                                         whole-file, neglected-surface)
+#   "Delete the mechanism claims no test ... backs"       round 4
+#   "Correct the guard asymmetry ..."                     round 5
+#   "Take the weakened contract to the surfaces ..."      round 6
+#   "merge master (BK-359) and renumber ..."              no round; merge + collision fix
+#   "link the two clauses the merge left ..."             no round; my own seam read
+#   (tip)                                                 round 7
+#
+# Rounds 4-7 each ran the closing gates. Round 6's measuring gate could not run
+# (account rate limit); round 7 is that gate, re-run against the merged head,
+# and it found 4. Value is 7 — rounds, not commits, counted from the round each
+# commit answers, since two commits here answer no round at all and a commit
+# tally would over-report them.
+review_rounds: 7
 
 phases:
   - id: orient
@@ -468,6 +482,59 @@ phases:
           exception" against two named routes, and a pragma paragraph naming
           _move_fallback for a pragma that sits on _rename_fallback while
           repeating the server-class bound this work retracted
+        outcome: ok
+
+  - id: close_7
+    name: Round 7 — the measuring gate round 6 could not run, on the merged head
+    steps:
+      - file: src/remote_store/aio/_async_backend.py
+        section: "AsyncBackend.write_atomic"
+        read_type: verify
+        extract: >-
+          Round 6 took the weakened contract to the sync ABC and stopped there.
+          The async ABC carries the unweakened docstring and governs async Azure
+          HNS — the backend AW-004's own new paragraph names as diverging — so
+          the one implementation the amendment was written for was reading the
+          promise it retracted. Not caught by check_docstring_parity: the two
+          ABCs are not a registered twin, so nothing compares them. The async
+          side has no open_atomic to defer to, so the clause is written standalone
+          rather than mirrored
+        outcome: ok
+      - file: sdd/specs/007-atomic-writes.md
+        section: "AW-003, AW-004"
+        read_type: verify
+        extract: >-
+          AW-004's new paragraph states the rule that an unqualified invariant a
+          shipped test contradicts is a spec defect, then applies it to one clause
+          while AW-003 — 29 lines above, refuted by the same parametrisation —
+          keeps its unqualified postcondition. Deferring the rewrite to BUG-271
+          and BUG-272 is right; leaving no [~] where a spec reader looks is not.
+          Marked in both 007 and 022, with the refuting test named per CLAUDE.md
+          principle 1, rather than writing current behaviour into a requirement row
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "test_a_stalled_write_can_have_delivered_the_payload_in_full"
+        read_type: verify
+        extract: >-
+          The docstring justified leaving copy's complete-payload state unmeasured
+          by "a byte budget on the relay, which this file avoids", and a test 164
+          lines earlier in the same diff uses stall_download_after. The argument
+          survives, the sentence did not: what matters is what the budget must hit
+          — mid-transfer is robust, the last body acknowledgement is one round-trip
+          that moves with buffering. A false premise under a sound conclusion,
+          which is the defect class every round of this item found
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_promote docstring, _rename_fallback pragma"
+        read_type: verify
+        extract: >-
+          Round 5's fix declared the pragma's reason stale in three artifacts and
+          left the pragma itself unedited, so the commit shipped its own
+          contradiction. Comment corrected to the bound the code has; the pragma
+          stays because the covering tests skip without paramiko. The docstring
+          gained the remove-then-rename window in prose — the tracker IDs I first
+          wrote there were caught by check_no_tracker_refs, which counts a private
+          method's docstring as a published surface
         outcome: ok
 
   - id: verify
