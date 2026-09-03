@@ -94,12 +94,24 @@ Bounds (Rule 7)
   the step is. So between them the
   released shape lives under ``[Unreleased]``, and there the stray-line half of
   the shape rule reports every condensed line, while the audience rule reports
-  every *user-facing* completed item as entry-less. Reconstruct it by putting the most recent
-  released section's body verbatim under ``## [Unreleased]`` and leaving
-  ``BACKLOG-DONE.md`` alone: **68** violations — 48 strays, and 20 entry-less
-  items out of the 43 the section holds — with a remediation telling the release
-  manager to do Phase 2 early. A
-  ``###`` grouping in the section now stands those two down and says so, which
+  every *user-facing* completed item as entry-less.
+
+  Reconstruct it by putting the most recent released section's body under
+  ``## [Unreleased]`` and leaving ``BACKLOG-DONE.md`` alone. **Run it twice, and
+  the pair is the whole demonstration:** verbatim, the body carries its ``###``
+  headings, so the stand-down fires and the run is clean with one note — that is
+  this bullet's subject working. Strip the headings and the same content
+  produces a wall of violations, overwhelmingly strays, plus every user-facing
+  completed item reported entry-less — that is what the stand-down is worth.
+
+  **The figures are not pinned here, and the recipe is why.** An earlier version
+  gave the verbatim run a violation count, which stopped reproducing the moment
+  the stand-down it describes was added: the recipe as written now yields zero,
+  and the number belonged to the stripped variant. The counts move with
+  ``BACKLOG-DONE.md`` besides. Run the two variants rather than reading a
+  total — this bullet is about a mechanism, not a measurement, and the one
+  measurement it used to carry outlived its own recipe. A
+  ``###`` grouping in the section stands those two rules down and says so, which
   is the survival ``check_breaking_migration_link.py`` gets by reporting a
   count.
 
@@ -120,13 +132,13 @@ Bounds (Rule 7)
   entries remain. The stray ``###`` case is the one it is for. Deriving
   the completed-item side is unconditional too, so a renamed ``## Unreleased``
   still raises rather than passing. What a stray ``###`` costs is **three**
-  reported things, not the two *rules* this bullet's heading counts — the note
-  itself names all three, and an earlier version of this clause said it named
-  two: the stray-line rule, the audience
-  rule, and — because the advisory half lives inside the same function as the
-  comparison — the register note for an entry whose ID the backlog knows
-  nowhere. The note prints on every run, including green ones, rather than being
-  inferred from silence.
+  reported things: the stray-line rule, the audience rule, and — because the
+  advisory half lives inside the same function as the comparison — the register
+  note for an entry whose ID the backlog knows nowhere. Three, not the two
+  *rules* this bullet's heading counts, and ``_release_window_note`` names all
+  three; read the count off that function, which is what actually prints, rather
+  than off this prose. The note prints on every run, including green ones,
+  rather than being inferred from silence.
 
   **And the detector is textual.** ``grouped`` is a bare ``startswith("### ")``
   over the section's lines, so a ``###`` inside a fenced code block sets it, and

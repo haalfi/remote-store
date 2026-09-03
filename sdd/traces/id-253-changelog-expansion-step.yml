@@ -99,11 +99,18 @@ phases:
         section: "Unreleased (at the v0.30.0 release commit)"
         read_type: reference
         extract: >-
-          Read via `git show 7931c7d~1:sdd/BACKLOG-DONE.md`: 512 lines of
-          contributor-facing bodies for the 8 items whose released section runs
-          55 lines. This is what established the step as a rewrite for a
+          Read via `git show 7931c7d~1:sdd/BACKLOG-DONE.md`: § Unreleased held 20
+          items across 512 lines, of which the 8 that earned a CHANGELOG entry
+          account for 260 (bullet line to next bullet line) against the released
+          section's 55. This is what established the step as a rewrite for a
           different audience rather than an extraction, and therefore what made
-          "name the source" answerable only as three sources
+          "name the source" answerable only as three sources. Retrospective: this
+          step was first written as "512 lines for the 8 items", attributing the
+          whole section to the subset. The section total and the item count came
+          from one read and were not separated; a measuring review pass re-ran
+          the split and found 20 items, not 8. The conclusion held at 260 to 55,
+          which is why the wrong figure survived a reading pass — it was
+          consistent with everything around it
         outcome: ok
       # The item asked who performs the step by hand. Reading the artifacts
       # could not answer it; running the history could. The clone was shallow

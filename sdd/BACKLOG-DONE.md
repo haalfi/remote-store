@@ -227,8 +227,14 @@ if evidence changes; these are retired.
   maintainer with the release-skill agent. So the step is performed at release
   time, in the release commit, by whoever runs the checklist.
   **And it is a rewrite, not an extraction**, which is why no single source could
-  be named: against `git show 7931c7d~1:sdd/BACKLOG-DONE.md`, 512 lines of
-  contributor-facing item bodies became 55 lines of user-facing prose. Phase 1
+  be named. Against `git show 7931c7d~1:sdd/BACKLOG-DONE.md`, § Unreleased held
+  **20** items across 512 lines; the **8** that earned a CHANGELOG entry account
+  for 260 of them, measured bullet line to next bullet line. So 260 lines of
+  contributor-facing argument became 55 lines of user-facing prose, and the other
+  12 items produced no entry at all — the section is not a queue the CHANGELOG
+  drains. (The first draft of this entry read "512 lines … for the 8 items",
+  attributing the whole section to the subset; caught by a measuring review pass
+  that re-ran the split.) Phase 1
   now names three sources in reach order — the stub (what shipped), the item's
   `BACKLOG-DONE.md` body (mechanism and figures), the migration guide (what a
   caller must change) — and says in terms that it is a rewrite for a different
