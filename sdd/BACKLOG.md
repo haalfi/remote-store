@@ -518,6 +518,16 @@ compliant the day before.
   `EACCES`. `EPERM` **does** have that trigger, which is what made it tempting;
   it is not a reason to claim it. If no `EACCES` trigger exists, that half is a
   documentation item rather than a code one.
+  **What it costs a caller if left: nothing observable today, and that is the
+  finding rather than a reason to close it.** No connect anyone has produced
+  raises `EACCES`, so the wrong-type answer is unreachable; were it reachable, a
+  caller following the health-check guide's `except BackendUnavailable` would
+  catch nothing and meet `PermissionDenied` naming their key, or a bare
+  `Permission denied: ` from `check_health`, for a request that never left the
+  machine. The item's real value is the measurement it carries: the next person
+  to consider widening `_is_unreachable`'s tuple finds here why that breaks a
+  working channel, instead of rediscovering it the way BUG-265 did across two
+  rounds.
   **Disposition:** not widening the tuple — that was tried and measured harmful,
   above. The same errnos on a live operation genuinely are a denied path
   (`test_eacces_maps_to_permission_denied` pins one, `_raise_if_dir`'s guard the
@@ -554,6 +564,15 @@ compliant the day before.
   unproducible; the re-raise names both errnos because BK-316 was written for
   "non-OpenSSH servers whose error shapes differ from OpenSSH", which is the
   case nobody has a fixture for.
+  **What it costs a caller if left:** a user on such a server whose stat is
+  denied with `EPERM` gets the base `RemoteStoreError`, so an `except
+  PermissionDenied` clause written on the strength of the published migration
+  row falls through to their generic handler and a permissions problem is
+  logged as an unknown failure. BUG-265 caveated that published row, so what
+  remains is the code-vs-docs divergence rather than a silently misleading
+  page — the cost of leaving it is that three in-tree artifacts still describe
+  behaviour the module does not have, and the next reader of `_raise_if_dir`
+  has to re-derive which half is true.
   **Disposition:** two ways to make the four artifacts agree, and they differ in
   what a caller gets. Either give the dispatch an `EPERM` arm mapping to
   `PermissionDenied` — which makes every promise true and is a behaviour change
@@ -582,6 +601,23 @@ compliant the day before.
   `check_health` is unaffected: it has no re-entry guard, which is why
   BUG-265's "connect attempts are identical on both revisions" holds for the
   probe and not for keyed operations.
+  **What it costs a caller, measured as wall clock at shipped defaults** — no
+  `retry=` passed, against a just-released ephemeral port, timed per call:
+
+  | call | elapsed |
+  |---|---|
+  | `check_health()` | 4.37 s |
+  | `exists("a.csv")` | 4.00 s |
+  | `read_bytes("a.csv")` | **8.00 s** |
+  | `read_bytes("a/b/c.csv")` | **12.01 s** |
+
+  That is the 1x / 2x / 3x cycle count showing up as time. **A refused port is
+  the cheap case**: each attempt fails instantly, so the elapsed time is almost
+  all backoff. Against a blackholed address every attempt also burns the 10 s
+  `timeout`, so the same multiplier lands on a base roughly an order of
+  magnitude larger. A caller reading many keys from a store that is down pays
+  this per key, which is the shape most likely to be reported as "the library
+  hangs" rather than as a latency bug.
   **Disposition:** `or self._is_unreachable(exc)` at those guard sites is the
   one-line shape, and it is a **behaviour change**, not only a saving: `read`
   and `read_bytes` would then raise at their guard instead of falling through
