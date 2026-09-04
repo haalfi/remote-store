@@ -1758,13 +1758,19 @@ CHANGELOG `[Unreleased]` is linted for duplicate entries, stub shape and the
 audience rule — **met** by ID-252 (`check_changelog_unreleased.py`), whose
 stated bound is that it keys on the ID at line start, so a single entry whose
 *content* went stale is still nobody's to catch; the
-CHANGELOG expansion step Phase 1 depends on is written down or dropped
-(ID-253); the ripple-check's six measured blind spots are answered (BK-346); the
+CHANGELOG expansion step Phase 1 depends on is written down or dropped —
+**met** by ID-253, which wrote the step and gave the CHANGELOG section order its
+first home (`CONTRIBUTING.md` § CHANGELOG section order), leaving the step manual
+and the order ungated, both stated where they are written; the `[Unreleased]`
+stub's section marker means one thing or nothing (ID-254); the release-window
+stand-down's stated reason matches what actually switches the rules off
+(ID-255);
+the ripple-check's six measured blind spots are answered (BK-346); the
 hand-maintained inventories ID-245 names are generated — four bullets, of which
 the checker inventory has shipped; `check_formal_trace` proves
 assertion rather than citation (ID-207); and both open revisit pins have fired
 and named successors (ID-150, ID-249).
-**Bounded to those nine deliberately.** "No artifact asserts what no mechanism
+**Bounded to those eleven deliberately.** "No artifact asserts what no mechanism
 can check" is the promise and cannot be a closing condition: this section's own
 preamble records that detecting the remaining class needs semantic comparison of
 prose, which research § 1 marks as having no general oracle. Nor is "no figure
@@ -1862,55 +1868,80 @@ the commit that writes it lands, so cite the generator instead.
   own subject — the deletions that produced this file's current shape are
   exactly the event the second pass exists to catch.
 
-- [ ] **ID-253 — Nobody documented performs the CHANGELOG expansion step release Phase 1 depends on**
-  spec: — · effort: S · audience: contributor.process
-  `CONTRIBUTING.md` § Release Phase 1 said the `[Unreleased]` stubs are
-  "expanded to prose at release time (release skill Phase 1)", and the
-  ripple-check row **CHANGELOG entry** said the release skill "organises into
-  sections and expands to prose". Neither named what the prose is written
-  *from*, and `.claude/skills/release/SKILL.md` has no expansion step:
-  `rg -n 'CHANGELOG' .claude/skills/release/SKILL.md` returns 3 hits — the
-  Phase 1 completeness cross-check, the Phase 4 release-body template, and a
-  link — and the only one that transforms the section condenses it **further**,
-  for the GitHub release body. Phase 1's line was self-referential: it pointed
-  at the checklist that contains it.
-  **Both authorities now say the step is manual and untooled** — ID-252 amended
-  them rather than leave them asserting a delegation that does not exist — so
-  what is open is no longer a false claim but a missing capability: the step is
-  real (38 released sections carry expanded prose), performed by hand, and
-  written down nowhere.
-  **Found by ID-252 leaning on it.** That item condensed six `[Unreleased]`
-  entries to stubs and justified the condensation with "Phase 1 re-expands, so
-  nothing is lost"; review refuted the premise. The condensation survived on a
-  different argument — the detail's homes are `BACKLOG-DONE.md` and, for
-  anything a caller must act on, the migration guide — and a sweep of the six
-  entries against both is what established it. **That sweep is the evidence
-  this item is worth fixing rather than deleting**: the expansion step is doing
-  real work in people's reasoning, and if it does not exist, every condensation
-  is taken on trust.
-  **What it does not decide.** Whether to write the step into the release skill,
-  naming `BACKLOG-DONE.md` § Unreleased as the source, or to accept that a
-  released section carries the stubs it was written with and drop the expansion
-  from the checklist entirely. Establishing who has been doing it by hand is
-  step one. Both authorities move together whichever way it goes — the row and
-  the checklist line are two copies of one direction
-  ([Rule 4](DRIFT-RULES.md#authority)).
-  **A third artifact moves with them now:** `check_changelog_unreleased.py`
-  stands its stray-line and audience rules down once a `###` grouping reaches
-  `[Unreleased]`, which is precisely the state this step produces. Whoever
-  writes the step owns that hand-off, and the gate's release-window bound is
-  where it is stated.
-  **A fourth thing to settle, found the same way:**
-  `.claude/skills/release/SKILL.md` Phase 4 says to follow "the section order in
-  `sdd/CLAUDE-REFERENCE.md` § Ripple-check table > Detailed checklist". That
-  checklist's headings are Spec & contract / Code surface / Tests / Docs /
-  Release & meta — no CHANGELOG section order lives there, and
-  `rg "Added|Internal|Documentation" sdd/CLAUDE-REFERENCE.md` returns two
-  unrelated hits. Meanwhile [`CLAUDE.md` principle 4](../CLAUDE.md#principles)
-  names "CHANGELOG section order" as an authoritative reference that lives in
-  one place. It lives in none. The citation was thin before ID-252 and ID-252
-  removed the last word that made it plausible, so whoever writes the expansion
-  step also decides where that order is written down.
+- [ ] **ID-254 — The `[Unreleased]` stub's section marker means one thing on half the entries and nothing on the other half**
+  spec: — · effort: XS/S · audience: contributor.process
+  Twelve of the 25 entries under CHANGELOG `[Unreleased]` open with a bolded
+  marker and thirteen open with none (`- <ID>: **<marker>** —` against
+  `- <ID>: <text>`, tallied over the section as of this item's filing; re-tally
+  rather than reading the split, which every merged PR moves). Four of the twelve are
+  `**Breaking**`, which is a real obligation the ripple-check's **Breaking
+  change** row states and `check_breaking_migration_link.py` half-enforces. The
+  other eight are decoration nobody wrote down: `**Fix**` (5), `**Docs**` (1),
+  `**Added**` (1), `**Change**` (1).
+  **Three of those four names are not section names.** The canonical names are
+  [`CONTRIBUTING.md` § CHANGELOG section order](../CONTRIBUTING.md#changelog-section-order),
+  which ID-253 gave its one home; against that list `**Fix**`, `**Change**` and
+  `**Docs**` each look like they name the section the entry will land in
+  (`Fixed`, `Changed`, `Documentation`) and each names something else. A reader
+  cannot tell whether the marker is a section assignment the author made or an
+  emphasis they chose, and the release step reassigns sections from the item
+  regardless — which is what ID-253 recorded the v0.30.0 release doing to eight
+  unmarked stubs.
+  **What it decides.** Either the marker becomes a section assignment the PR
+  author owes — spelled with the canonical names and gateable in
+  `check_changelog_unreleased.py` alongside the three rules already there, which
+  would move section assignment off the release manager and onto the author who
+  knows the change — or it stays free-form emphasis and says so, in which case
+  `**Breaking**` is documented as the one marker that means anything and the
+  other eight are normalised or dropped. **Do not split the difference**: a
+  marker that is a section name on some entries and a mood on others is the
+  state this item exists to leave.
+  **Section assignment is this item's either way.** ID-253 wrote the expansion
+  step's sources, its per-entry shape and the section order, but not the rule for
+  *which* section a given entry lands in — and that is the one decision the step
+  makes per entry. If the marker becomes an obligation, the author assigns and
+  the rule is the marker's definition; if it stays emphasis, the release manager
+  assigns and the rule has to be written for them. Either resolution owes it, so
+  it does not fall between the two.
+  **Not urgent, and the reason bounds it:** nothing downstream reads the
+  marker except the breaking-change gate, which keys on `**Breaking**` alone, so
+  the cost today is a reader's confusion rather than a wrong release. Found by
+  ID-253 while deriving the section order, and deliberately left out of its
+  scope.
+
+- [ ] **ID-255 — The stand-down note gives a reason that is false in the state the release checklist prescribes**
+  spec: — · effort: XS · audience: contributor.tooling
+  `_release_window_note` in `scripts/check_changelog_unreleased.py` prints: "The
+  stray-line rule, the audience rule and the unknown-ID note all key on entries
+  leading with an ID, **which condensed prose does not**, so all three stood
+  down." That reason is true at the *end* of Phase 1 and false at its
+  *beginning* — and the beginning is the state
+  [`CONTRIBUTING.md` § Release Phase 1](../CONTRIBUTING.md#release) mandates,
+  since it says to add the `###` groupings **before** condensing any bullet.
+  **Reproduce it:** put a bare `### Fixed` *inside* an untouched `[Unreleased]`,
+  above its entries — `parse_unreleased` scans forward from the `## [Unreleased]`
+  heading, so a grouping placed above that heading sets nothing and the symptom
+  never appears.
+  The note claims the entries do not lead with an ID, then reports "over the 25
+  line(s) that still parse as entries" — counting the ones that do.
+  What actually switches the three off is the `###` itself: `grouped` is a bare
+  `startswith("### ")` and `collect` branches on it alone, never on whether any
+  line still parses. The reason describes a *consequence* of finishing the
+  condense, not the *trigger*.
+  **What it decides.** Whether to state the trigger instead ("a `###` grouping,
+  not the absence of IDs, is what switches these off") or to state both. It is a
+  message-string change; no existing assertion pins the reason clause — the
+  tests key on `_STOOD_DOWN` and on the surviving-entry count, deliberately, per
+  the comment at that assertion — so whoever takes it should add one, or the
+  corrected reason is unpinned in exactly the way the wrong one was.
+  **A second half worth deciding at the same time**, being the same paragraph's
+  blind spot: the docstring's "The cost, stated in full" costs out uniqueness
+  and the prose budget but never costs out the **audience rule**, which is what
+  the groupings-first ordering trades away earliest.
+  **Filed rather than fixed by ID-253**, which found it: that PR's whole diff to
+  `scripts/check_changelog_unreleased.py` is inside the module docstring —
+  verified by AST, base and head byte-identical with the docstring stripped —
+  and it declined to trade that property for a one-sentence message fix.
 
 - [ ] **BK-361 — Typography rules are asserted in `CLAUDE.md` and enforced by nobody**
   spec: — · effort: S/M · audience: contributor.tooling

@@ -7,6 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
+- ID-253: Write down the release CHANGELOG expansion step and give the released section order its first home in `CONTRIBUTING.md`
 - BK-360: Document what a stalled SFTP operation leaves behind: a timeout reports one round-trip's lost reply, so any amount of the operation may have happened — from nothing to all of it — and a reported failure is neither a rollback nor proof the write did not land
 - BUG-268: **Docs** — the SFTP stall section of the troubleshooting guide shows the message the raise now carries and the log record that accompanies it, instead of the pre-fix blank traceback
 - BK-359: **Fix** — a stalled or dropped SFTP operation now says which failure it was, instead of raising `BackendUnavailable` with an empty message and no log record

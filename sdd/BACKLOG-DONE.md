@@ -74,15 +74,20 @@ if evidence changes; these are retired.
 
 - [x] **— Keeping the `**Breaking**` marker through CHANGELOG condensation** *(refused as BUG-261's third disposition; never had an ID)*
   BUG-261's third disposition, and a real observation: the marker exists **only**
-  while a section is unreleased, because `CONTRIBUTING.md` § Release Phase 2
-  condenses `[Unreleased]` into `### Added` / `### Changed` prose and drops it.
+  while a section is unreleased, because `CONTRIBUTING.md` § Release Phase 1
+  condenses `[Unreleased]` into `### Added` / `### Changed` prose and drops it
+  (Phase 2 renames the heading; the phase number here said 2 until ID-253
+  corrected it against the gate docstring and Phase 1's own bullet, both of which
+  already carried the distinction).
   That is why 38 released sections carry one bold `**Breaking**` between them
   (`rg -c '^## \[' CHANGELOG.md` returns 39, one of them `[Unreleased]`), and it
   means nothing can audit breaking changes across history — only the current
   window.
   **Refused on blast radius against demonstrated need.** Preserving the marker
-  changes the shape of every released section and the release skill that writes
-  them, and the only use named for it is a hypothetical retrospective audit that
+  changes the shape of every released section and the by-hand condensing step
+  that writes them — ID-253 later established that no release-skill step does,
+  which narrows the radius without emptying it —
+  and the only use named for it is a hypothetical retrospective audit that
   nobody has asked to run. Under [§ Admission test](BACKLOG.md#how-this-file-works)
   that is an idea with no demonstrated value, so it is refused rather than filed
   and carried. The narrower need it would serve — knowing whether *this* release's
@@ -214,6 +219,70 @@ if evidence changes; these are retired.
 ---
 
 ## Unreleased
+
+- [x] **ID-253 — Nobody documented performs the CHANGELOG expansion step release Phase 1 depends on**
+  spec: — · effort: S · audience: contributor.process
+  **Written down, not dropped.** The step was real, manual and homeless:
+  `CONTRIBUTING.md` § Release Phase 1 required `[Unreleased]` stubs condensed
+  into the released shape and named no source for the prose, and
+  `.claude/skills/release/SKILL.md` had no expansion step to delegate to.
+  **Who performs it, established by running the history.**
+  `git show 7931c7d --numstat -- CHANGELOG.md` — the `Release v0.30.0 (#925)`
+  commit — returns `55 8`: 8 stub lines out, 55 lines of released section in, one
+  commit. So it happens at release time, in the release commit, by whoever runs
+  the checklist. Which person or agent that was is not derivable from the commit,
+  and the entry does not claim it. (Two of those 55 are the `## [0.30.0]` heading
+  and its blank line, written by Phase 2's rename rather than Phase 1's
+  condensing — the deletion count is 8 and not 9 because `## [Unreleased]` was
+  matched as context. The grouped prose is the other 53. Worth stating in an entry
+  whose subject is which phase does which.)
+  **And it is a rewrite, not an extraction**, which is why no single source could
+  be named. At `git show 7931c7d~1:sdd/BACKLOG-DONE.md`, § Unreleased held **20**
+  items spanning **510** lines bullet-to-bullet, of which the **8** that earned a
+  CHANGELOG entry account for **260** — against the released section's 55. The
+  other 12 produced no entry at all, so the section is not a queue the CHANGELOG
+  drains. Phase 1 now names three sources in reach order — the stub (what
+  shipped), the item's `BACKLOG-DONE.md` body (mechanism and figures), the
+  migration guide (what a caller must change) — and says in terms that the
+  released entry is written for a different audience, with the per-entry shape
+  the 0.30.0 section already used.
+  **The section order got its first home**, `CONTRIBUTING.md` § CHANGELOG section
+  order, which [`CLAUDE.md` principle 4](../CLAUDE.md#principles) had named as
+  living in one place while it lived in none; Phase 4's citation pointed at the
+  ripple-check's Detailed checklist, whose headings are Spec & contract / Code
+  surface / Tests / Docs / Release & meta. **The order is decided, not
+  described.** Pairwise precedence of `###` headings over the 38 released
+  sections settles most of it (`Added` before `Changed` 18 to 1, before `Fixed`
+  15 to 2; `Documentation` before `Internal` 10 to 0) and leaves `Changed`
+  against `Fixed` at **8 to 8** — an adjacent pair with no convention, settled
+  here as Added / Changed / Fixed / Removed / Documentation / Internal. That list
+  records what this item decided; the live order is
+  [`CONTRIBUTING.md` § CHANGELOG section order](../CONTRIBUTING.md#changelog-section-order),
+  which governs if the two ever diverge. `Docs`
+  (0.16.0, 0.17.0) is retired for `Documentation`, `Known Limitations` (0.1.0)
+  recorded as a one-off, and already-published sections keep what they shipped
+  with. The divergence from Keep a Changelog — `Removed` after `Fixed` rather
+  than before — is stated there rather than left for a reader to notice.
+  **Two further defects, both found by reading the artifacts rather than the
+  item.** Phase 4 said to extract from `[Unreleased]`, which Phase 2 has already
+  renamed to `[X.Y.Z]` above a fresh empty one, so the named section was the next
+  cycle's. And `check_changelog_unreleased.py`'s prose-budget rationale asserted
+  the expansion premise "is exactly what ID-253 files as unbacked" — false on
+  this commit — so it now records that the premise is backed and still the wrong
+  justification, since the step takes only *what shipped* from that section.
+  Amending it exposed that the release-window bound's own reconstruction recipe
+  had stopped reproducing; that is rewritten, with its figures unpinned.
+  **Left undone, deliberately.** The step stays manual — a rewrite for a
+  different audience is not a transform a script performs — and nothing gates the
+  section order, which applies once per release. Two follow-ups: the
+  `[Unreleased]` stub marker's half-written convention (**ID-254**) and the
+  stand-down note's stated reason, false in the state Phase 1 prescribes
+  (**ID-255**).
+  The trace carries the round count, the per-round findings, the history of that
+  field going stale, and the tags for the reads that misled. No figure from it is
+  repeated here — repeating one is how it went wrong in the first place, and this
+  sentence said "twice" for one round after the trace had corrected itself to
+  three.
 
 - [x] **BK-360 — What a stalled non-atomic SFTP `write` leaves at the destination is undocumented**
   spec: SFTP-030, SFTP-014 · effort: S · audience: user.api_docs, user.site
@@ -409,8 +478,9 @@ if evidence changes; these are retired.
   *shape* becoming title-first rather than the marker being dropped — a condensed
   entry that kept `**Breaking**` would still be invisible, because the ID no
   longer leads the line. So it enumerates zero entries from Phase 1 condensation
-  until Phase 2 renames the heading, which is exactly while Phase 1's own
-  migration-guide item is being verified; the success line reports the
+  until Phase 2 renames the heading, which at the time overlapped Phase 1's own
+  migration-guide item — ID-253 later reordered that item above condensing, so
+  the overlap is gone; the success line reports the
   enumerated count so that state reads differently from a clean pass. And it
   cannot reach the
   softer half at all: BUG-261 re-derived that set at **6** unmarked entries a
@@ -443,8 +513,10 @@ if evidence changes; these are retired.
   condensed entry leads with a title (`- **SFTP write() …** (BK-313):`), so the
   ID no longer leads the line and nothing matches. The gate therefore enumerates
   zero entries from Phase 1 condensation until Phase 2 renames the heading —
-  which is exactly while Phase 1's own migration-guide checklist item is being
-  verified. Fixed two ways: the docstring states the shape and the window, and
+  which at the time overlapped Phase 1's own migration-guide checklist item.
+  (ID-253 moved that item above condensing, ending the overlap; the gate's own
+  docstring carries the current statement.)
+  Fixed two ways: the docstring states the shape and the window, and
   the success line now reports how many entries were enumerated, so a blind pass
   reads differently from a clean one.
   **`main()`, `--repo-root` and both failure paths now have tests**, per the 20
@@ -547,12 +619,16 @@ if evidence changes; these are retired.
   to re-derive it instead.
   **Nothing was lost by condensing, and that had to be checked rather than
   assumed.** The first justification written for it — that release Phase 1
-  re-expands the stubs — is not true as stated: `CONTRIBUTING.md` names no source
-  for that prose and the release skill has no expansion step. The durable homes
+  re-expands the stubs — was not true as stated at the time: `CONTRIBUTING.md`
+  named no source for that prose and the release skill had no expansion step.
+  The durable homes
   are the ones that actually hold the detail: each item's own entry in this file,
   and `docs-src/reference/migration.md` for anything a caller must act on, which
   BUG-261 published. A sweep of all six condensed entries against both confirmed
-  it. The unsourced expansion step is filed as ID-253.
+  it. The unsourced expansion step was filed as ID-253 and has since been
+  written down. That does not retroactively rescue the first justification — it
+  was refuted on its own terms, and the condensation survived on the durable-homes
+  argument above, which is the one that still carries it.
   **The audience rule's authority direction is decided in writing**
   ([Rule 4](DRIFT-RULES.md#authority)), because the two sets are not required to
   be equal. The completed-item side governs: a user-facing completed item with no

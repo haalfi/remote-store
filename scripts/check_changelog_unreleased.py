@@ -39,10 +39,14 @@ The three rules
    line each two copies are unmissable, at 2.3 kB each they sat four lines
    apart unseen. The budget is justified by what the section is *for* — a
    scannable index of what shipped, which is what makes a duplicate visible —
-   and deliberately not by "the release re-expands this prose anyway": that
-   premise is exactly what ID-253 files as unbacked, since ``CONTRIBUTING.md``
-   Phase 1 names no source for the expanded prose and the release skill has no
-   expansion step.
+   and deliberately **not** by "the release re-expands this prose anyway".
+   ID-253 has since written that expansion step down, so the premise is no
+   longer unbacked; it is still the wrong justification. The step takes only
+   *what shipped* from this section and gets the prose from the item's
+   ``BACKLOG-DONE.md`` body and the migration guide, so a stub grown into a
+   paragraph would be re-read for one line of it. A budget that rested on the
+   expansion would have to move whenever the release procedure did, and this
+   one does not.
 3. **The audience rule.** Every item under ``BACKLOG-DONE.md`` § Unreleased
    whose ``audience`` carries a ``user.*`` tag has an entry. This is the
    direction ``CONTRIBUTING.md`` § Release Phase 1 already runs, and the only
@@ -82,16 +86,44 @@ Bounds (Rule 7)
 * **Two of the rules stand down inside the release window, loudly.**
   ``CONTRIBUTING.md`` § Release Phase 1 condenses ``[Unreleased]`` into the
   released shape *in place*; Phase 2 renames the heading. So between them the
-  released shape lives under ``[Unreleased]``, and there the stray-line half of
-  the shape rule reports every condensed line, while the audience rule reports
-  every *user-facing* completed item as entry-less. Reconstruct it by putting the most recent
-  released section's body verbatim under ``## [Unreleased]`` and leaving
-  ``BACKLOG-DONE.md`` alone: **68** violations — 48 strays, and 20 entry-less
-  items out of the 43 the section holds — with a remediation telling the release
-  manager to do Phase 2 early. A
-  ``###`` grouping in the section now stands those two down and says so, which
-  is the survival ``check_breaking_migration_link.py`` gets by reporting a
-  count.
+  released shape lives under ``[Unreleased]``, and the two rules that key on
+  entries leading with an ID have nothing to key on: **without a grouping** the
+  stray-line half of the shape rule would report every condensed line, and the
+  audience rule would report every *user-facing* completed item as entry-less.
+  A ``###`` grouping stands both down instead, and says so — the survival
+  ``check_breaking_migration_link.py`` gets by reporting a count. The
+  stand-down line names **three** things, not two, because the register note
+  goes with them; see the cost paragraph below.
+
+  **Which of those two outcomes you get is decided by an ordering, and the
+  checklist owns it.** Phase 1 is written to add the ``###`` groupings *before*
+  condensing any bullet. Groupings first, and the whole condensing pass sits
+  behind one stand-down line; bullets first, and the wall arrives and stays
+  until the grouping lands. That is the hand-off this bound depends on, and the
+  checklist states it where the step is.
+
+  Reconstruct either state by putting the most recent released section's body
+  under ``## [Unreleased]`` **in place of the stubs**, and leaving
+  ``BACKLOG-DONE.md`` alone. **Run it twice and the pair is the whole
+  demonstration:** verbatim, the body carries its ``###`` headings, so the
+  stand-down fires and the run is clean with one note. Strip the headings and
+  the same content produces a wall of violations, mostly strays, plus every
+  user-facing completed item reported entry-less.
+
+  *In place of* matters to the stripped run only, and only for the second
+  half: leave the stubs alongside and they satisfy the audience rule, so that
+  run reports the strays without the entry-less items. The verbatim run is
+  unaffected either way — the ``###`` stands the audience rule down before the
+  stubs can answer it — so this is a property of one variant, not of the
+  recipe.
+
+  **The figures are not pinned here, and the recipe is why.** An earlier version
+  gave the verbatim run a violation count, which stopped reproducing the moment
+  the stand-down it describes was added: the recipe as written now yields zero,
+  and the number belonged to the stripped variant. The counts move with
+  ``BACKLOG-DONE.md`` besides. Run the two variants rather than reading a
+  total — this bullet is about a mechanism, not a measurement, and the one
+  measurement it used to carry outlived its own recipe.
 
   **What this window is not.** It is not on the mandated gate path. Phase 2
   renames both headings and makes the release commit *before* Phase 3 runs
@@ -110,11 +142,13 @@ Bounds (Rule 7)
   entries remain. The stray ``###`` case is the one it is for. Deriving
   the completed-item side is unconditional too, so a renamed ``## Unreleased``
   still raises rather than passing. What a stray ``###`` costs is **three**
-  reported things, not the two the note names: the stray-line rule, the audience
-  rule, and — because the advisory half lives inside the same function as the
-  comparison — the register note for an entry whose ID the backlog knows
-  nowhere. The note prints on every run, including green ones, rather than being
-  inferred from silence.
+  reported things: the stray-line rule, the audience rule, and — because the
+  advisory half lives inside the same function as the comparison — the register
+  note for an entry whose ID the backlog knows nowhere. Three, not the two
+  *rules* this bullet's heading counts, and ``_release_window_note`` names all
+  three; read the count off that function, which is what actually prints, rather
+  than off this prose. The note prints on every run, including green ones,
+  rather than being inferred from silence.
 
   **And the detector is textual.** ``grouped`` is a bare ``startswith("### ")``
   over the section's lines, so a ``###`` inside a fenced code block sets it, and

@@ -64,11 +64,20 @@ the whole obligation slipping through the check meant to enforce it.
   The operative exclusion is that *shape*, not the marker: a condensed
   entry that kept ``**Breaking**`` would still be invisible, because the
   ID no longer leads the line. So from the moment Phase 1 condenses until
-  Phase 2 renames the heading, this gate enumerates zero entries -- which
-  is exactly while Phase 1's own migration-guide checklist item is being
-  verified. The success line always reports how many entries were
-  enumerated so that state is visible rather than indistinguishable from
-  a clean pass.
+  Phase 2 renames the heading, this gate enumerates zero entries. **Phase
+  1 is ordered so its own migration-guide item is verified before that
+  window opens**, and it says so where the step is -- for a reason of its
+  own, not this one: condensing *removes* the ``**Breaking**`` markers,
+  and that item keys on the marker alone, with none of the shape
+  condition that blinds this gate. So the two go blind to different
+  things: a condensed entry that kept its marker would still be invisible
+  here and visible there. Its softer half -- an entry a caller must act on
+  that carries no marker at all -- survives condensing either way. An
+  earlier version of this bullet recorded the window as falling "exactly
+  while" that item was verified, which was true of the order at the time
+  and is the overlap the reorder removed. The success line always reports
+  how many entries were enumerated so the window is visible rather than
+  indistinguishable from a clean pass.
 * The softer half of the rule -- an entry a caller must act on that
   carries no marker. No marker decides that, so no gate measures it, and
   `CONTRIBUTING.md` § Release Phase 1 keeps it as a human judgement. In
