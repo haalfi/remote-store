@@ -49,6 +49,14 @@ framework](../CLAUDE.md#documentation-framework)): placement →
    only when the snippet cannot execute in CI (e.g. needs real credentials);
    note the reason inline.
 
+7. <a id="kernsatz"></a>**Lead with the Kernsatz.** [review-enforced]
+   A new or substantially rewritten section in `sdd/` or `.claude/` opens with
+   its core claim in at most three sentences, using no term it does not define on
+   the spot. If those three sentences will not come, the section is not yet
+   understood well enough to write: return to the source instead of writing
+   around the gap. What follows the Kernsatz is detail the Kernsatz earned; prose
+   standing *instead* of it is what this rule catches.
+
 ## Guides
 
 ### Examples (bad → good)
@@ -73,6 +81,12 @@ framework](../CLAUDE.md#documentation-framework)): placement →
 # Rule 5 — source-code facts stay in source
 # bad in README: a method-by-method table listing every Store method
 # good: "See the Store API reference for the full method list."
+
+# Rule 7 — lead with the Kernsatz
+# bad: four paragraphs of history and qualification, with the claim last
+# good: "Listing is depth-limited by default; callers opt into recursion per
+#        call. The default exists because a flat namespace cannot bound a
+#        recursive scan." — then the history, and only what that claim earned.
 ```
 
 ### How the rules interact

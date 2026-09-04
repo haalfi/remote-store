@@ -1,7 +1,10 @@
 # Research: Reader-fit and communication density as a second axis for principle 8
 
 **Date:** 2026-08-17
-**Backlog items:** none yet — filing is itself one of the open decisions (§ 10.5)
+**Backlog items:** ID-250, filed and shipped after this document was written.
+It took a variant of § 10.1 (option A) on the commissioner's decision, justified
+by the local round split rather than by the literature below; § 10 records the
+four options as they stood, and is not rewritten.
 **Status:** Advisory research, not a spec or ADR. Commissioned to test whether
 [`CLAUDE.md` principle 8](../../CLAUDE.md#principles) should gain a second axis:
 not only *where* a piece of detail belongs, but whether it earns its place at

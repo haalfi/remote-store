@@ -155,6 +155,46 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **ID-250 — Prose overshoots its detail level, and no rule fires before it is written**
+  spec: — · effort: S · audience: contributor.process, internal.style
+  **The diagnosis is the round split, not a stylistic preference.** A `/ship`
+  session reaches stable code and tests in roughly two to four rounds; the
+  remaining rounds are prose findings. BUG-248 is the worked specimen: eight
+  rounds, of which the first three or four changed behaviour (the mis-scoped
+  classifier legs) and the rest moved ADR wording, docstrings, pointers and
+  counts. Derivation: its commit subjects in `git log --oneline`, read against
+  what each round's body says it changed.
+  **The mechanism is an asymmetry.** A code finding runs out; a prose finding
+  never does, because any text can be tightened and no rule bounds the request.
+  So a review that keeps asking for one keeps receiving one, and the rounds do
+  not converge on prose the way they converge on behaviour.
+  **The rule fires at authoring time instead**, because a review bound would cut
+  the cost and leave the cause: prose written past its understanding would still
+  be written, merely challenged less often. Shipped as
+  [`CONTENT-RULES.md` Rule 7](CONTENT-RULES.md#kernsatz) — a new or substantially
+  rewritten section in `sdd/` or `.claude/` opens with its core claim in at most
+  three sentences, defining any term it uses; if those sentences will not come,
+  the section is not yet understood and the author returns to the source.
+  Principle 8 gains one clause naming comprehension as its second axis and citing
+  Rule 7 as the method's home, per principle 4.
+  **Enforcement is inherited, not built.** `/ship` and `/rvw-pr` already review
+  changed documentation against `CONTENT-RULES.md`, so Rule 7 reaches every
+  review that runs without either skill being edited. No gate: whether three
+  sentences state the core claim is a judgement, and
+  [`DRIFT-RULES.md`](DRIFT-RULES.md#rules) is the authority on not inventing a
+  mechanism that cannot decide.
+  **What the research does and does not support.** The commissioned literature
+  pass ([research](research/research-detail-density-and-reader-fit.md)) found no
+  direct evidence that dense prose harms readers, and found the curse-of-knowledge
+  literature pointing the other way — authors under-specify. This rule therefore
+  rests on the local round split above and on a metacognitive reading of the
+  illusion of explanatory depth (Rozenblit & Keil 2002): the author's sense of
+  understanding outruns their ability to state it, and the attempt to state it
+  plainly is what exposes the gap. That is an inference, not a finding, and the
+  research doc's § 10 recorded four options of which this is one.
+  No CHANGELOG — internal authoring rule, audience contributor and maintainer.
+  Trace: `sdd/traces/ID-250-kernsatz-rule.yml`.
+
 - [x] **BUG-248 — BE-021's absent-container rule and GR-031's drive-identity escalation contradict each other**
   spec: BE-021, GR-031, PING-011 · effort: M · audience: user.api
   Two deliberate clauses giving opposite answers for the same call, neither

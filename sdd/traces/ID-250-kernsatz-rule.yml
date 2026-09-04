@@ -1,0 +1,114 @@
+id: ID-250
+title: "Prose overshoots its detail level, and no rule fires before it is written"
+trigger: >-
+  Repo prose was observed to overshoot its appropriate detail level almost
+  always. The evidence was the /ship round split: code and tests stabilise in
+  roughly two to four rounds, and the remaining rounds carry prose findings only.
+  Principle 8 could rule out the wrong cut (BK-351) but stated no positive test,
+  so nothing fired before the prose was written.
+source_items:
+  - ID-250
+audience:
+  - contributor.process
+  - internal.style
+discovery_followups: []
+expected_ripples:
+  - CLAUDE.md
+  - sdd/CONTENT-RULES.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+surprising_ripples: []
+co_shipped_items: []
+# One PR, no review round yet at authoring time: the implementing commit does not
+# count, per the schema's rule. Derivation: `git log --oneline origin/master..HEAD`
+# on this branch shows the research commits plus this item's implementation, and
+# no round-driven fix commit.
+review_rounds: 0
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/research/research-detail-density-and-reader-fit.md
+        section: "3 (headline), 9 (repo evidence), 10 (options)"
+        read_type: gate
+        extract: >-
+          The commissioned literature pass found no direct evidence that dense
+          prose harms readers, and found the curse-of-knowledge tradition
+          predicting the opposite failure (under-specification). Its § 10 offered
+          four options; this item implements a variant of option A, justified by
+          the local round split rather than by the literature.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-351, BK-353"
+        read_type: gate
+        extract: >-
+          BK-351 declined a length budget for /ship citing principle 8, recording
+          that it forbids one kind of condensing while setting no positive test.
+          BK-353 then condensed the file and its first cut deleted two
+          load-bearing clauses while claiming nothing was removed. Together they
+          are the repo's own record that the missing half is an authoring test,
+          not a review bound.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BUG-248 (entry and commit subjects)"
+        read_type: reference
+        extract: >-
+          The worked specimen for the round split: eight rounds, the first three
+          or four behavioural, the rest ADR wording, docstrings, pointers and
+          counts.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules (new Rule 7), Guides / Examples"
+        read_type: reference
+        extract: >-
+          Rule 7 added as the method's authoritative home, scoped inline to sdd/
+          and .claude/ rather than widening the file's Intent & Scope, which
+          covers documentation longevity. Rule 7 is about comprehension, so a
+          scope line in the rule keeps the file's promise intact.
+        outcome: ok
+      - file: CLAUDE.md
+        section: "principle 8"
+        read_type: reference
+        extract: >-
+          One clause naming comprehension as the second axis, citing Rule 7 for
+          the method. Deliberately not the method itself: DRIFT-RULES' one-driver
+          rule makes a second description of a method the trigger, and BK-352
+          recorded paying for exactly that when both hosts stated the reader
+          test.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Pre-work index"
+        read_type: gate
+        extract: >-
+          Consulted for what an authoring-rule change owes. The rows cover specs,
+          backends, capabilities, versions, dependencies and docs prose; none
+          asks what a change to CLAUDE.md's principles or to CONTENT-RULES owes,
+          which is the same class of blind spot BK-346 owns and BK-351 and BK-352
+          each hit once. Not filed from here: BK-346's open question is the shape
+          of the fix, and a third instance does not change it.
+        outcome: unclear
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules (one driver, stated bounds)"
+        read_type: gate
+        extract: >-
+          Checked before deciding against a gate. Whether three sentences state a
+          section's core claim is a judgement with no oracle, so the rule ships
+          review-enforced like its six siblings, and enforcement is inherited
+          from /ship and /rvw-pr already reviewing changed docs against this file.
+        outcome: ok
+      - file: .claude/agents/documentation-expert.md
+        section: "Reader test"
+        read_type: verify
+        extract: >-
+          Checked for overlap. The reader test asks whether a page answers the
+          questions it promises, which detects a missing answer; Rule 7 asks
+          whether the author can state the claim at all, which detects an
+          unearned one. Adjacent, not duplicate, and neither states the other's
+          method.
+        outcome: ok
