@@ -1583,7 +1583,8 @@ class TestSFTPMapException:
 
         The reason that survives both is the one that was always the real one:
         this test is about the **message**, not the type. A refused connect has
-        never been message-less — paramiko names the host and port — so it is
+        never been message-less — paramiko names the address it tried and the
+        port — so it is
         not a case these parameters could cover whatever type it carries.
 
         ``expect`` is the token that distinguishes this shape from the others:
@@ -1825,12 +1826,6 @@ class TestSFTPMapException:
             pytest.param(lambda: _os_with_errno(errno.ENETUNREACH, "Network is unreachable"), id="enetunreach"),
             pytest.param(lambda: _os_with_errno(errno.ENETDOWN, "Network is down"), id="enetdown"),
             pytest.param(lambda: _os_with_errno(errno.EHOSTDOWN, "Host is down"), id="ehostdown"),
-            # EPERM is the one with a known trigger rather than a theoretical
-            # one: a local netfilter REJECT on the OUTPUT chain yields it. It
-            # was added a round after the others, when a measuring reviewer
-            # found the PR shipping a fix for four connect errnos while its own
-            # BUG-273 body documented a reproducible fifth it missed.
-            pytest.param(lambda: _os_with_errno(errno.EPERM, "Operation not permitted"), id="eperm"),
         ],
     )
     def test_a_host_never_reached_maps_to_backend_unavailable(self, exc_factory: object) -> None:
@@ -1860,29 +1855,33 @@ class TestSFTPMapException:
         assert backend._sftp_client is None, "a concluded BackendUnavailable left the cached client in place"
 
     @pytest.mark.spec("SFTP-023")
-    def test_a_firewall_rejected_connect_is_not_a_denied_path(self) -> None:
-        """SFTP-023: ``EPERM`` is claimed by the connect arm, not left to the generic one.
+    def test_the_permission_errnos_stay_out_of_the_connect_arm(self) -> None:
+        """SFTP-023: neither ``EACCES`` nor ``EPERM`` is claimed as unreachable.
 
-        The bound that makes this safe, and the reason it differs from
-        ``EACCES``: the errno dispatch has **no** ``EPERM`` arm, so nothing else
-        wants this errno and claiming it steals no live operation's answer. It
-        fell to the generic arm as the base ``RemoteStoreError`` before, which
-        is the same defect the item exists to close.
+        **This test exists because the exclusion was briefly lifted and had to
+        be put back.** A round of review found a locally-rejected connect
+        answering the base class for ``EPERM`` and argued it was free to claim,
+        since ``_map_exception``'s errno dispatch has no ``EPERM`` arm. True of
+        the dispatch, false of the module: ``_raise_if_dir`` re-raises **both**
+        permission errnos on purpose, from a *working* channel, so claiming
+        either turns a server-reported denial into ``BackendUnavailable`` and
+        discards a healthy client — measured, and contradicting a published
+        migration row.
 
-        ``EACCES`` is asserted next to it precisely because it must *not* move:
-        on a live operation that errno genuinely is a denied path, and the
-        mapping cannot tell a connect-time one apart. BUG-273 carries that; a
-        change that widened the tuple to it would break
-        ``test_eacces_maps_to_permission_denied``, and this pair says so
-        locally.
+        So the bound is asserted rather than left to a comment: both errnos keep
+        their own answers, and a future widening of ``_is_unreachable``'s tuple
+        fails here rather than silently changing what a live channel reports.
         """
         backend = SFTPBackend(host="sftp.example.invalid", host_key_policy="auto")
-        rejected = backend._map_exception(_os_with_errno(errno.EPERM, "Operation not permitted"), "delivery.csv")
-        assert isinstance(rejected, BackendUnavailable), f"a rejected connect stayed the base class: {rejected!r}"
 
         denied = backend._map_exception(_os_with_errno(errno.EACCES, "Permission denied"), "delivery.csv")
         assert isinstance(denied, PermissionDenied), f"EACCES moved off its arm: {denied!r}"
-        assert not isinstance(denied, BackendUnavailable)
+
+        rejected = backend._map_exception(_os_with_errno(errno.EPERM, "Operation not permitted"), "delivery.csv")
+        assert not isinstance(rejected, BackendUnavailable), (
+            f"EPERM was claimed as unreachable; _raise_if_dir re-raises it from a live channel: {rejected!r}"
+        )
+        assert isinstance(rejected, RemoteStoreError)
 
     @pytest.mark.spec("SFTP-023")
     def test_a_dns_failure_names_the_host_that_did_not_resolve(self) -> None:
@@ -1896,8 +1895,10 @@ class TestSFTPMapException:
 
         The port is deliberately **not** named. Resolution never reaches it, so
         naming it would invite a reader to check the one thing that cannot be the
-        fault. A refused connect is the opposite case and keeps paramiko's own
-        text, which does name both — see the test below.
+        fault. A refused connect keeps paramiko's own text instead, which names
+        an *address* and a port — the address it tried, not the configured
+        hostname, which is why that case can defer to the driver and this one
+        cannot. See the test below.
         """
         backend = SFTPBackend(host="sftp.example.invalid", port=2222, host_key_policy="auto")
         message = backend._map_exception(socket.gaierror(-2, "Name or service not known"), "").args[0]

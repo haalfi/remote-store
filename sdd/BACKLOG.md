@@ -461,11 +461,31 @@ compliant the day before.
   base-class half; the Azure half was measured after the item was challenged for
   asserting rather than checking.
 
-- [ ] **BUG-273 — A locally-rejected SFTP connect answers `PermissionDenied` naming a path the request never reached**
+- [ ] **BUG-273 — A locally-rejected SFTP connect answers the wrong type, and neither permission errno can be claimed without connect-time context**
   spec: SFTP-021, SFTP-023 · effort: S · audience: user.api
   BUG-265 gave `_map_exception` a connect-time arm for the unreachable-host
-  errnos and deliberately left `EACCES` out of it. This is that exclusion,
-  recorded rather than left for the next reader to re-derive.
+  errnos and deliberately left **both** permission errnos out of it. This is
+  that exclusion, recorded rather than left for the next reader to re-derive.
+  **`EPERM` was tried and reverted inside BUG-265, which is the sharpest
+  evidence this item has.** A round of review found a firewall-rejected connect
+  answering the base `RemoteStoreError` and argued `EPERM` was free to claim,
+  because `_map_exception`'s errno dispatch has no `EPERM` arm. That premise is
+  true of the dispatch and false of the module, and the next round measured it:
+  `_raise_if_dir` re-raises **both** permission errnos on purpose
+  (`_sftp.py`, the classification-stat guard, and its docstring says why), from
+  a **working** channel, inside the caller's `_errors(path)` block. Driving the
+  exact shape `test_raise_if_dir_permission_stat_maps_permission_denied` uses:
+  `EPERM` gave `RemoteStoreError` before the change and
+  `BackendUnavailable("[Errno 1] Permission denied")` after it, **and with a
+  sentinel seeded the new arm cleared the cached client** — so a healthy
+  connection was discarded on a server-reported denial. It also falsified the
+  published v0.29.1→v0.30.0 migration row, which promises `PermissionDenied`
+  for that stat. Reverted; `test_the_permission_errnos_stay_out_of_the_connect_arm`
+  now pins the exclusion so a future widening fails loudly instead of silently
+  changing what a live channel reports.
+  **The lesson for whoever picks this up:** "nothing else wants this errno" is a
+  claim about the whole module, not about one if-chain, and `rg -n 'EPERM' src/
+  docs-src/` is the derivation. Both errnos are one problem, not two.
   **What was measured**, by monkeypatching `socket.socket.connect` to raise a
   chosen errno and driving `paramiko.SSHClient.connect` on paramiko 5.0.0:
   `EACCES` is re-raised unwrapped, exactly like `ENETUNREACH` / `ENETDOWN` /
@@ -491,17 +511,20 @@ compliant the day before.
   `icmp_err_convert` maps to `EHOSTUNREACH` — an errno BUG-265 already put in
   `_is_unreachable`'s tuple, so following that recipe lands on the new arm and
   shows nothing. A local `OUTPUT`-chain `REJECT` yields `EPERM`, also not
-  `EACCES`. If no trigger exists, this is a documentation item rather than a
-  code one.
-  **Disposition:** not simply widening the tuple. The same errno on a live
-  operation genuinely is a denied path — `test_eacces_maps_to_permission_denied`
-  pins that and is right — and `_map_exception` dispatches on the exception
-  alone, so it cannot tell a connect-time `EACCES` from an operation-time one.
-  Separating them needs connect-time context the mapping does not have; the
-  cheap shape is probably for the lazy `_sftp` property to classify what
-  `_connect` raises before the caller's `_errors(path)` block sees it.
-  **Found by BUG-265's round-3 measuring member**, which reported it as a
-  `Possible: Bug:` with the trigger explicitly flagged unreproduced.
+  `EACCES`. `EPERM` **does** have that trigger, which is what made it tempting;
+  it is not a reason to claim it. If no `EACCES` trigger exists, that half is a
+  documentation item rather than a code one.
+  **Disposition:** not widening the tuple — that was tried and measured harmful,
+  above. The same errnos on a live operation genuinely are a denied path
+  (`test_eacces_maps_to_permission_denied` pins one, `_raise_if_dir`'s guard the
+  other), and `_map_exception` dispatches on the exception alone, so it cannot
+  tell a connect-time one from an operation-time one. The cheap shape is for the
+  lazy `_sftp` property to classify what `_connect` raises **before** the
+  caller's `_errors(path)` block sees it, which reaches both errnos at once and
+  is the only place the connect-time context exists.
+  **Found by BUG-265's round-3 measuring member**, which reported the `EACCES`
+  half as a `Possible: Bug:` with its trigger flagged unreproduced; the `EPERM`
+  half was found, fixed and reverted across its rounds 5 and 6.
 
 - [ ] **BUG-274 — A keyed SFTP operation against an unreachable host pays the connect budget two or three times over**
   spec: SFTP-010, SFTP-023 · effort: S · audience: user.api

@@ -2486,8 +2486,12 @@ class SFTPBackend(Backend):
         actually gets is enumerated instead, as the product of connect-time
         shape and operation, in
         ``TestSFTPConnectTimePredicateSpace`` — twelve cells, each asserting
-        ``BackendUnavailable`` with a non-empty message, a cleared client and
-        one record. Read the table there rather than reasoning from here.
+        ``BackendUnavailable`` with a non-empty message and one record. Read the
+        table there rather than reasoning from here. (Three guarantees, not
+        four: an earlier revision claimed a cleared client per cell too, and
+        review measured that assertion vacuous. The client-clearing invariant is
+        pinned by ``test_a_host_never_reached_maps_to_backend_unavailable``,
+        which seeds a sentinel first.)
 
         Three shapes reach here, none of them matched by the errno dispatch in
         ``_map_exception``:
@@ -2501,41 +2505,35 @@ class SFTPBackend(Backend):
           ``EAI_*`` code (``-2`` for ``EAI_NONAME``), which shares a namespace
           with nothing in the errno tuples below.
         - An ``OSError`` carrying a connect-side errno (``ECONNREFUSED`` /
-          ``EHOSTUNREACH`` / ``ENETUNREACH`` / ``ENETDOWN`` / ``EHOSTDOWN`` /
-          ``EPERM``). **Four of these six are the ordinary path, not a
-          fallback**, so do not trim them as hypothetical: ``SSHClient.connect``
-          captures only ``ECONNREFUSED`` and ``EHOSTUNREACH`` into
-          ``NoValidConnectionsError`` and re-raises every other ``socket.error``
-          unwrapped — its own docstring says so ("if a socket error (other than
-          connection-refused or host-unreachable) occurred while connecting"),
-          and driving each errno through ``SSHClient.connect`` on paramiko 5.0.0
-          confirms ``ENETUNREACH`` / ``ENETDOWN`` / ``EHOSTDOWN`` arrive here as
-          a plain ``OSError`` and ``EPERM`` as a ``PermissionError``.
-
-        ``EPERM`` is the one with a *known* trigger rather than a theoretical
-        one: a local netfilter ``REJECT`` on the ``OUTPUT`` chain yields it, so
-        it is the shape a caller behind their own egress firewall actually
-        meets. It carries no risk of stealing a live operation's answer, because
-        the errno dispatch below has no ``EPERM`` arm at all — before this it
-        fell to the generic arm as the base class, which is precisely the defect
-        this predicate exists to close.
+          ``EHOSTUNREACH`` / ``ENETUNREACH`` / ``ENETDOWN`` / ``EHOSTDOWN``).
+          **Three of these five are the ordinary path, not a fallback**, so do
+          not trim them as hypothetical: ``SSHClient.connect`` captures only
+          ``ECONNREFUSED`` and ``EHOSTUNREACH`` into ``NoValidConnectionsError``
+          and re-raises every other ``socket.error`` unwrapped — its own
+          docstring says so ("if a socket error (other than connection-refused
+          or host-unreachable) occurred while connecting"), and driving each
+          errno through ``SSHClient.connect`` on paramiko 5.0.0 confirms
+          ``ENETUNREACH`` / ``ENETDOWN`` / ``EHOSTDOWN`` arrive here as a plain
+          ``OSError``.
 
         Deliberately **not** matched: every other ``OSError`` the errno dispatch
         declines. ``EIO`` and ``ENOSPC`` are faults of a connection that is
         working, and answering them with ``BackendUnavailable`` would tell a
         caller to retry a different host over a full disk.
 
-        **``EACCES`` is a known exclusion, not an oversight, and it is not
-        free.** paramiko re-raises it unwrapped like the others, so a
-        locally-rejected connect reaches ``_map_exception`` and takes the
-        ``EACCES`` arm — answering ``PermissionDenied`` naming the caller's
-        *path*, or a bare ``"Permission denied: "`` from ``check_health``, for a
-        failure that never reached the server. **``EPERM`` above is not the same
-        case**: this predicate can claim it because nothing else wants it, while
-        ``EACCES`` on a live operation genuinely is a denied path and the
-        dispatch cannot tell the two apart. Separating those needs connect-time
-        context the mapping does not have, so it is tracked as its own item
-        rather than widened here.
+        **The two permission errnos are known exclusions, not oversights**, and
+        the reason is the same for both: this predicate sees only the exception,
+        so it cannot tell a connect-time one from a live-channel one. ``EACCES``
+        is the obvious case — on an operation it genuinely is a denied path.
+        ``EPERM`` looks safer and is not: ``_raise_if_dir``'s permission
+        re-raise deliberately passes **both** errnos back through the mapping
+        from a *working* channel, so claiming either here would answer a
+        server-reported denial with ``BackendUnavailable`` and discard a healthy
+        client. That was measured, after a revision of this docstring claimed
+        ``EPERM`` was free to take because the errno dispatch has no arm for it
+        — true of the dispatch, false of the module. Reaching these two needs
+        connect-time context the mapping does not have; both are tracked as
+        their own item rather than widened here.
         """
         import paramiko
 
@@ -2547,7 +2545,6 @@ class SFTPBackend(Backend):
             errno.ENETUNREACH,
             errno.ENETDOWN,
             errno.EHOSTDOWN,
-            errno.EPERM,
         )
 
     def _unreachable_message(self, exc: Exception) -> str | None:

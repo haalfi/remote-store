@@ -337,14 +337,11 @@ So, finally, are the signals that say the host was **never reached**:
 `paramiko.NoValidConnectionsError` (an `OSError` whose `errno` is `None`, which
 is what a refused port actually raises), `socket.gaierror` (name resolution), and
 an `OSError` carrying a connect-side errno (`ECONNREFUSED` / `EHOSTUNREACH` /
-`ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN` / `EPERM`). Four of those six are the
-ordinary path rather than a fallback: `SSHClient.connect` captures only
-`ECONNREFUSED` and `EHOSTUNREACH` into `NoValidConnectionsError` and re-raises
-every other `socket.error` unwrapped, so `ENETUNREACH` / `ENETDOWN` /
-`EHOSTDOWN` arrive as a plain `OSError` and `EPERM` as a `PermissionError`.
-`EPERM` is the member with a *known* trigger — a local netfilter `REJECT` on the
-`OUTPUT` chain yields it — and it is safe to claim because the errno dispatch
-below has no `EPERM` arm at all, so nothing else wants it.
+`ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN`). Three of those five are the ordinary
+path rather than a fallback: `SSHClient.connect` captures only `ECONNREFUSED`
+and `EHOSTUNREACH` into `NoValidConnectionsError` and re-raises every other
+`socket.error` unwrapped, so `ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN` arrive as
+a plain `OSError`.
 
 These are a *connect-time* set and sit in their own arm rather than joining the
 dropped-connection set above, **because the two predicates answer different
@@ -374,14 +371,22 @@ first.)
 
 Every other `OSError` the errno dispatch declines keeps the base
 `RemoteStoreError` — `EIO` and `ENOSPC` are faults of a connection that is
-working. **`EACCES` is a known exclusion rather than an oversight**: paramiko
-re-raises it unwrapped like `ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN` above, so a
+working.
+
+**The two permission errnos are known exclusions rather than oversights**, and
+one reason covers both: this mapping sees only the exception, so it cannot tell
+a connect-time errno from a live-channel one. paramiko re-raises `EACCES` and
+`EPERM` unwrapped like `ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN`, so a
 locally-rejected connect takes the `EACCES` arm and is answered
 `PermissionDenied` — naming the caller's key on a keyed operation, and a bare
 `Permission denied: ` on `check_health`, for a failure that never reached the
-server. **It is not the `EPERM` case**: this arm can claim `EPERM` because
-nothing else wants it, while `EACCES` on a live operation genuinely is a denied
-path and this dispatch cannot tell the two apart. BUG-273 carries it.
+server. `EPERM` reads as the safer of the two and is not: `_raise_if_dir`'s
+permission re-raise deliberately passes **both** back through this mapping from
+a working channel, so claiming either would answer a server-reported denial with
+`BackendUnavailable` and discard a healthy client. A revision of this section
+briefly claimed `EPERM` on the grounds that the errno dispatch has no arm for
+it — true of the dispatch, false of the module, and measured as such before it
+shipped. BUG-273 carries both.
 
 **Every** `BackendUnavailable` this mapping returns — the `SSHException` family
 included — invalidates the cached SFTP client so the next operation reconnects
@@ -450,7 +455,7 @@ disagreeing over the same set.)
 |---|---|---|
 | Refused / unreachable via `NoValidConnectionsError` | paramiko's own text | the **resolved address** and port |
 | DNS | supplied by this arm | the configured host |
-| `ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN` / `EPERM` | the driver's `[Errno n] strerror` | — |
+| `ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN` | the driver's `[Errno n] strerror` | — |
 | Connect timeout | `_is_connection_dead`'s arm, `"timed out"` | — |
 
 **Note the first row's subject.** `NoValidConnectionsError` builds its text from

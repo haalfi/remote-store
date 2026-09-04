@@ -67,12 +67,15 @@ surprising_ripples:
 #   BUG-265: Claim EPERM, and repair two assertions that could not fail
 #                                                 -> counts (round 5, 12
 #            findings from a three-member panel after dedup)
-# Value is 5 — one per review round that produced a commit, which is rows 2-6;
+#   BUG-265: Revert EPERM, and sweep what round 5 left half-swept
+#                                                 -> counts (round 6, 9
+#            findings from a three-member panel after dedup)
+# Value is 6 — one per review round that produced a commit, which is rows 2-7;
 # row 1 implements the item. Re-derived from that command before each push,
 # since a later round raises it. Round 4 found the third subject line quoted
 # here had drifted from what the command returns ("blank-message shape" for
 # "blank shape"), which is why the quotations are copy-pasted now.
-review_rounds: 5
+review_rounds: 6
 phases:
   - id: orient
     name: Orient
@@ -165,10 +168,13 @@ phases:
           **Derived from the collected-node-id difference, not from a
           hand-kept list** — collect over tests/backends/sftp/ at 3e6d318 and at
           HEAD, subtract, then run the difference against the base library on
-          PYTHONPATH: **32 added, 25 fail, 7 pass**. The 7 are the
-          keep-paramiko's-detail case, both unrelated-errno params, and all four
-          connect-timeout cells, which pass pre-fix because _is_connection_dead
-          already claimed socket.timeout.
+          PYTHONPATH: **31 added, 23 fail, 8 pass**. The 8 are the
+          keep-paramiko's-detail case, both unrelated-errno params, the
+          permission-errno exclusion test (which asserts what did *not* change),
+          and all four connect-timeout cells, which pass pre-fix because
+          _is_connection_dead already claimed socket.timeout. It read 32/25/7
+          until round 6 reverted the EPERM param and replaced its test —
+          re-derived by the same node-id diff, not adjusted by hand.
           Retrospective, and this figure was wrong **four** times, each
           differently: "11 of 15" was counted off a progress bar rather than a
           summary line (the run was 12 of 15); "13 of 16" was measured correctly
@@ -454,24 +460,31 @@ phases:
           frame and asserts a consult from outside the mapping. The per-cell
           "cleared client" assertion was vacuous for a different reason — the
           client is None on entry to all twelve cells — so the claim is
-          withdrawn from the test and from the three artifacts citing it, since
-          the invariant is really pinned by the unit test that seeds a sentinel.
+          withdrawn from the test and from the artifacts citing it, since the
+          invariant is really pinned by the unit test that seeds a sentinel.
           Both repairs were confirmed by mutating a scratch copy of the backend
           under tmp/ and observing the tests fail. This is the loop's own rule
           about a verification that can fail silently, met in the artifact
-          written to end an argument about a different one
+          written to end an argument about a different one.
+          Retrospective: this line said "the three artifacts" and the sweep
+          reached two. Round 6 found the third — _is_unreachable's own docstring,
+          the one telling a reader to go and read that table — still promising a
+          guarantee the table had stopped making. A sweep described as complete
+          in the same commit that left it incomplete
         outcome: ok
       - file: src/remote_store/backends/_sftp.py
         section: "_is_unreachable (errno tuple)"
         read_type: reference
         extract: >-
-          EPERM added, on the user's decision. The measuring member found the PR
-          shipping a fix for the connect errnos while BUG-273's own body, added
-          by this PR, documented a local OUTPUT-chain REJECT yielding EPERM —
-          a reproducible instance of the very defect, falling to the generic arm
-          as the base class. Safe to claim where EACCES is not, because the
-          errno dispatch has no EPERM arm at all, so nothing else wants it
-        outcome: ok
+          EPERM added, on the user's decision, and **reverted one round later**
+          — see the fix_reverted phase. The measuring member found the PR
+          shipping a fix for the connect errnos while BUG-273's own body
+          documented a local OUTPUT-chain REJECT yielding EPERM, a reproducible
+          instance of the very defect falling to the generic arm. The safety
+          argument I supplied with it — "the errno dispatch has no EPERM arm, so
+          nothing else wants it" — was true of the dispatch and false of the
+          module, and the user's decision rested on it
+        outcome: misleading
       - file: sdd/specs/009-sftp-backend.md
         section: "SFTP-023 (message taxonomy)"
         read_type: verify
@@ -496,6 +509,49 @@ phases:
           gets corrected, a trace states a past reading and gets annotated.
           Round 5 raised this as the two artifacts disagreeing about which
           treatment such a sentence gets; this is the answer
+        outcome: ok
+  - id: fix_reverted
+    name: Round-6 fix pass (a behaviour change withdrawn)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_raise_if_dir (permission re-raise), _is_unreachable"
+        read_type: gate
+        extract: >-
+          **The most important read of the whole item, and it came at round 6.**
+          _raise_if_dir re-raises EACCES *and EPERM* on purpose, from a working
+          channel, inside the caller's _errors(path) block — its docstring says
+          why, and a published v0.29.1-to-v0.30.0 migration row promises
+          PermissionDenied for that stat. So claiming EPERM answered a
+          server-reported denial with BackendUnavailable and discarded a healthy
+          client. Measured on the shape
+          test_raise_if_dir_permission_stat_maps_permission_denied drives, with
+          a sentinel seeded to see the clearing. Reverted, and the exclusion is
+          now pinned by a test rather than argued in a comment, because the
+          argument is what failed: "nothing else wants this errno" is a claim
+          about the module and was checked against one if-chain
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-273"
+        read_type: reference
+        extract: >-
+          Rewritten to carry both permission errnos as one problem rather than
+          EACCES alone, with the EPERM attempt and its measurement as the
+          item's sharpest evidence — a claim-and-revert inside the PR is better
+          grounds than the unreproduced EACCES trigger it was filed on. The
+          disposition is now specific: classify what _connect raises before the
+          caller's _errors block sees it, which is the only place the
+          connect-time context exists and reaches both errnos at once
+        outcome: ok
+      - file: docs-src/reference/migration.md
+        section: "Scope paragraph, v0.29.1 to v0.30.0 table"
+        read_type: verify
+        extract: >-
+          The Scope sentence ("only the connect-side failures ... a connection
+          that is working still raises the base RemoteStoreError") was false
+          while EPERM was claimed, and the same file's v0.30.0 table four
+          hundred lines below said the opposite about the same errno. The revert
+          makes both true again; the paragraph now says *why* it is true and
+          links the older section, so the next widening has to meet it
         outcome: ok
   - id: verify
     name: Verify

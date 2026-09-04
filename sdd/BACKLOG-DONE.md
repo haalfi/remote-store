@@ -241,8 +241,14 @@ if evidence changes; these are retired.
   `EHOSTUNREACH` / `ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN`) — three of which
   are the *ordinary* connect path rather than a fallback, since
   `SSHClient.connect` wraps only `ECONNREFUSED` and `EHOSTUNREACH` and re-raises
-  the rest unwrapped, measured on paramiko 5.0.0. `EACCES` is a deliberate
-  exclusion, carried by BUG-273. They classify through
+  the rest unwrapped, measured on paramiko 5.0.0. **Both permission errnos are
+  deliberate exclusions**, carried by BUG-273: `EACCES` from the start, and
+  `EPERM` after being claimed in a late round and reverted in the next, when
+  measurement showed `_raise_if_dir` re-raises both from a *working* channel —
+  so claiming either answered a server-reported denial with
+  `BackendUnavailable` and discarded a healthy client. The argument that
+  admitted it ("the errno dispatch has no `EPERM` arm") was true of the dispatch
+  and false of the module. They classify through
   `_is_unreachable` and an arm of their own rather than by widening
   `_is_connection_dead`, because **the two predicates answer different
   questions** — was the host ever reached, versus is a connection the backend

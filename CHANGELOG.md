@@ -7,7 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BUG-265: **Fix** — a refused SFTP connect, a DNS failure and a firewall-rejected one raise `BackendUnavailable`, the type fifteen docstrings and the health-check guide promise, instead of the base `RemoteStoreError`. Upgrade path in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
+- BUG-265: **Fix** — a refused SFTP connect and a DNS failure raise `BackendUnavailable`, the type fifteen docstrings and the health-check guide promise, instead of the base `RemoteStoreError`. Upgrade path in the [migration guide](https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310).
 - BK-360: Document what a stalled SFTP operation leaves behind: a timeout reports one round-trip's lost reply, so any amount of the operation may have happened — from nothing to all of it — and a reported failure is neither a rollback nor proof the write did not land
 - BUG-268: **Docs** — the SFTP stall section of the troubleshooting guide shows the message the raise now carries and the log record that accompanies it, instead of the pre-fix blank traceback
 - BK-359: **Fix** — a stalled or dropped SFTP operation now says which failure it was, instead of raising `BackendUnavailable` with an empty message and no log record

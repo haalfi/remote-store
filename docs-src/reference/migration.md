@@ -124,11 +124,10 @@ second time.
 
 In v0.30.0, `SFTPBackend` promised `BackendUnavailable` for a connection that
 cannot be established — on `check_health` and fourteen other methods — and did
-not deliver it for the most ordinary ways a connect fails. A refused port, a DNS
-failure and a connect your own firewall rejects all raised the base
-`RemoteStoreError` instead. A caller who followed the
-[health-check guide](../guides/health-check.md), which shows exactly that
-`except BackendUnavailable`, caught none of them.
+not deliver it for the two most ordinary ways a connect fails. A refused port
+and a DNS failure both raised the base `RemoteStoreError` instead. A caller who
+followed the [health-check guide](../guides/health-check.md), which shows exactly
+that `except BackendUnavailable`, caught neither.
 
 ```python
 # v0.30.0: RemoteStoreError('[Errno None] Unable to connect to port 22 on 10.0.0.4')
@@ -137,11 +136,6 @@ store.ping()
 
 # v0.30.0: RemoteStoreError('[Errno -2] Name or service not known')
 # v0.31.0: BackendUnavailable("Cannot resolve SFTP host 'files.example.com': [Errno -2] Name or service not known")
-store.ping()
-
-# A local egress REJECT (EPERM), and the unreachable-network errnos with it
-# v0.30.0: RemoteStoreError('[Errno 1] Operation not permitted')
-# v0.31.0: BackendUnavailable, same text
 store.ping()
 ```
 
@@ -154,7 +148,7 @@ driver's.
 `RemoteStoreError`, so an `except RemoteStoreError` handler is unaffected. What
 changes is which branch runs when you list both: a handler ordering
 `except BackendUnavailable` before `except RemoteStoreError` now takes the first
-branch for these failures where it took the second.
+branch for these two failures where it took the second.
 
 **The error mapping now logs it.** Reaching the mapping means one `WARNING` on
 `remote_store.backends._sftp` carrying `op="error_mapping"`, where a refused
@@ -166,9 +160,14 @@ neither the failure nor the logger is new — the mapping's record is. Filter on
 against a host that is down repeats it per poll, which is worth knowing before
 you point one at a store you expect to be unreachable for a while.
 
-**Scope:** SFTP only, and only the connect-side failures. An `OSError` from a
-connection that is working — a full disk, a device error — still raises the base
-`RemoteStoreError` and still logs nothing. Other backends are unchanged.
+**Scope:** SFTP only, and only the shapes a connect actually produces. An
+`OSError` from a connection that is working — a full disk, a device error —
+still raises the base `RemoteStoreError` and still logs nothing. **Permission
+errnos are deliberately untouched**, which is what keeps that sentence true: the
+mapping sees only the exception, so it cannot tell a connect-time `EACCES` or
+`EPERM` from one a working server reported, and the classification stat
+described [in the v0.30.0 notes](#v0291-to-v0300) still answers exactly as it
+did. Other backends are unchanged.
 
 **Flat-namespace backends now raise `InvalidPath` for a wrong-typed path:**
 
