@@ -77,7 +77,8 @@ if evidence changes; these are retired.
   while a section is unreleased, because `CONTRIBUTING.md` § Release Phase 1
   condenses `[Unreleased]` into `### Added` / `### Changed` prose and drops it
   (Phase 2 renames the heading; the phase number here said 2 until ID-253
-  established which phase does which).
+  corrected it against the gate docstring and Phase 1's own bullet, both of which
+  already carried the distinction).
   That is why 38 released sections carry one bold `**Breaking**` between them
   (`rg -c '^## \[' CHANGELOG.md` returns 39, one of them `[Unreleased]`), and it
   means nothing can audit breaking changes across history — only the current
@@ -227,10 +228,14 @@ if evidence changes; these are retired.
   `.claude/skills/release/SKILL.md` had no expansion step to delegate to.
   **Who performs it, established by running the history.**
   `git show 7931c7d --numstat -- CHANGELOG.md` — the `Release v0.30.0 (#925)`
-  commit — returns `55 8`: 8 stub lines out, 55 lines of `###`-grouped prose in,
-  one commit. So it happens at release time, in the release commit, by whoever
-  runs the checklist. Which person or agent that was is not derivable from the
-  commit, and the entry does not claim it.
+  commit — returns `55 8`: 8 stub lines out, 55 lines of released section in, one
+  commit. So it happens at release time, in the release commit, by whoever runs
+  the checklist. Which person or agent that was is not derivable from the commit,
+  and the entry does not claim it. (Two of those 55 are the `## [0.30.0]` heading
+  and its blank line, written by Phase 2's rename rather than Phase 1's
+  condensing — the deletion count is 8 and not 9 because `## [Unreleased]` was
+  matched as context. The grouped prose is the other 53. Worth stating in an entry
+  whose subject is which phase does which.)
   **And it is a rewrite, not an extraction**, which is why no single source could
   be named. At `git show 7931c7d~1:sdd/BACKLOG-DONE.md`, § Unreleased held **20**
   items spanning **510** lines bullet-to-bullet, of which the **8** that earned a
@@ -249,8 +254,11 @@ if evidence changes; these are retired.
   described.** Pairwise precedence of `###` headings over the 38 released
   sections settles most of it (`Added` before `Changed` 18 to 1, before `Fixed`
   15 to 2; `Documentation` before `Internal` 10 to 0) and leaves `Changed`
-  against `Fixed` at **8 to 8** — an adjacent pair with no convention, now fixed
-  as Added / Changed / Fixed / Removed / Documentation / Internal. `Docs`
+  against `Fixed` at **8 to 8** — an adjacent pair with no convention, settled
+  here as Added / Changed / Fixed / Removed / Documentation / Internal. That list
+  records what this item decided; the live order is
+  [`CONTRIBUTING.md` § CHANGELOG section order](../CONTRIBUTING.md#changelog-section-order),
+  which governs if the two ever diverge. `Docs`
   (0.16.0, 0.17.0) is retired for `Documentation`, `Known Limitations` (0.1.0)
   recorded as a one-off, and already-published sections keep what they shipped
   with. The divergence from Keep a Changelog — `Removed` after `Fixed` rather
@@ -271,8 +279,8 @@ if evidence changes; these are retired.
   stand-down note's stated reason, false in the state Phase 1 prescribes
   (**ID-255**).
   The trace carries the round count, the per-round findings and the tags for the
-  reads that misled. No count is repeated here: two homes for one figure is how
-  both went stale at once, twice.
+  reads that misled. No count is repeated here: the figure went stale twice, and
+  on the second occasion both homes were wrong at once.
 
 - [x] **BK-360 — What a stalled non-atomic SFTP `write` leaves at the destination is undocumented**
   spec: SFTP-030, SFTP-014 · effort: S · audience: user.api_docs, user.site

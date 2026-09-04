@@ -66,13 +66,17 @@ the whole obligation slipping through the check meant to enforce it.
   ID no longer leads the line. So from the moment Phase 1 condenses until
   Phase 2 renames the heading, this gate enumerates zero entries. **Phase
   1 is ordered so its own migration-guide item is verified before that
-  window opens**, and it says so where the step is: the item keys on the
-  same marker this gate does, so running it after condensing would leave
-  it reading nothing. An earlier version of this bullet recorded the
-  opposite -- that the blind window fell "exactly while" that item was
-  being verified -- which was true of the order at the time and is the
-  overlap the reorder removed. The success line always reports how many
-  entries were enumerated so the window is visible rather than
+  window opens**, and it says so where the step is -- for a reason of its
+  own, not this one: condensing *removes* the ``**Breaking**`` markers,
+  and that item keys on the marker alone, with none of the shape
+  condition that blinds this gate. So the two go blind to different
+  things: a condensed entry that kept its marker would still be invisible
+  here and visible there. Its softer half -- an entry a caller must act on
+  that carries no marker at all -- survives condensing either way. An
+  earlier version of this bullet recorded the window as falling "exactly
+  while" that item was verified, which was true of the order at the time
+  and is the overlap the reorder removed. The success line always reports
+  how many entries were enumerated so the window is visible rather than
   indistinguishable from a clean pass.
 * The softer half of the rule -- an entry a caller must act on that
   carries no marker. No marker decides that, so no gate measures it, and

@@ -171,7 +171,10 @@ phases:
         read_type: verify
         extract: >-
           `git show 7931c7d --numstat -- CHANGELOG.md` returns `55 8`: 8 stubs
-          out, 55 lines of grouped prose in, in the release commit itself. That
+          out, 55 lines of released section in — of which 53 are the grouped
+          prose and 2 are the version heading Phase 2's rename writes, the
+          deletion count being 8 rather than 9 because `## [Unreleased]` matched
+          as context. In the release commit itself. That
           is the answer to "who performs it" — whoever runs the checklist, at
           release time — and it is what made writing the step down the
           defensible half of the fork. Retrospective: this step first added "by
