@@ -40,11 +40,21 @@ expected_ripples:
 # directed the sweep at it: an unprimed reviewer found it, three rounds in.
 surprising_ripples:
   - tests/scripts/test_check_changelog_unreleased.py
+  # Reordering Phase 1 so the migration-guide item precedes condensing falsified
+  # a Rule 7 bound in a file this work never otherwise touched: that gate's blind
+  # window fell "exactly while" that checklist item was verified, which was a
+  # property of the old order. No ripple-check row connects a checklist's bullet
+  # order to a gate's stated bounds; a whole-file reviewer found it.
+  - scripts/check_breaking_migration_link.py
 
-# Derived from `git log --oneline 3e6d318..HEAD`, re-run at the final head rather
-# than carried forward — an earlier version of this comment stopped at 62f0fae
-# and said 3 while the register entry said four, which is what review round 5
-# caught in all three panel members at once.
+# Derived from `git log --oneline 3e6d318..HEAD`.
+#
+# **This field is stale the moment a fix pass lands, including the pass that
+# writes it — so re-derive it in every fix pass, never increment it.** It went
+# stale twice: round 5 caught it at 3 when it was 4, round 7 caught it at 5 when
+# it was 6. Both times the comment had been correct for the commit it shipped in
+# and was overtaken by the next one. The register entry no longer repeats the
+# count, so this is now its only home.
 #   c3d3097  implements; does not count
 #   4379017  round 1 — one unprimed reviewer, 4 findings
 #   62f0fae  round 2 — one measuring pass, 3 findings
@@ -52,9 +62,11 @@ surprising_ripples:
 #   3caa531  round 4 — panel of 3, 13 findings
 #   8ef0655  not review-driven: a surface cut taken on the author's own
 #            escalation, before round 5 ran
-#   (this commit)  round 5 — panel of 3, 7 findings
-# Five commits exist because review feedback was incorporated. Value is 5.
-review_rounds: 5
+#   caa24e9  round 5 — panel of 3, 7 findings
+#   ffc59b4  round 6 — panel of 3, 5 findings
+#   (this commit)  round 7 — panel of 3, 5 findings
+# Seven commits exist because review feedback was incorporated. Value is 7.
+review_rounds: 7
 
 phases:
   - id: orient

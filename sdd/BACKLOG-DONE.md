@@ -270,8 +270,9 @@ if evidence changes; these are retired.
   `[Unreleased]` stub marker's half-written convention (**ID-254**) and the
   stand-down note's stated reason, false in the state Phase 1 prescribes
   (**ID-255**).
-  Review ran to five rounds, three of them three-member panels; the trace carries
-  the per-round count and tags the reads that misled.
+  The trace carries the round count, the per-round findings and the tags for the
+  reads that misled. No count is repeated here: two homes for one figure is how
+  both went stale at once, twice.
 
 - [x] **BK-360 — What a stalled non-atomic SFTP `write` leaves at the destination is undocumented**
   spec: SFTP-030, SFTP-014 · effort: S · audience: user.api_docs, user.site
