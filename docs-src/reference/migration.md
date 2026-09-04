@@ -470,9 +470,18 @@ whose error shapes differ from OpenSSH now raise the canonical type:
 
 | Condition (non-OpenSSH server)                             | Old error          | New error          |
 |------------------------------------------------------------|--------------------|--------------------|
-| Permission-denied classification stat (`EACCES`/`EPERM`)   | `RemoteStoreError` | `PermissionDenied` |
+| Permission-denied classification stat (`EACCES` only — see below) | `RemoteStoreError` | `PermissionDenied` |
 | Mode-less existing target on an `overwrite=False` write    | `RemoteStoreError` | `InvalidPath`      |
 | `delete` of a missing path behind an opaque-error ancestor | `RemoteStoreError` | `NotFound`         |
+
+!!! warning "The first row was published as `EACCES`/`EPERM` and holds only for `EACCES`"
+
+    The classification-stat re-raise names both permission errnos, but the error
+    mapping has an `EACCES` arm and none for `EPERM`, so an `EPERM` stat still
+    reaches you as the base `RemoteStoreError` — the same answer it gave before
+    v0.30.0. Corrected here rather than left standing; the fix is tracked and
+    may change the type or narrow the promise, so do not rely on either
+    outcome for `EPERM` yet.
 
 One accepted consequence of the defensive mode-less policy: a mode-less *regular file*
 written under `overwrite=False` now surfaces `InvalidPath` rather than `AlreadyExists`.

@@ -530,7 +530,7 @@ compliant the day before.
   half as a `Possible: Bug:` with its trigger flagged unreproduced; the `EPERM`
   half was found, fixed and reverted across its rounds 5 and 6.
 
-- [ ] **BUG-275 — `_raise_if_dir`'s permission re-raise delivers `PermissionDenied` for one of the two errnos it names, and three artifacts promise both**
+- [ ] **BUG-275 — `_raise_if_dir`'s permission re-raise delivers `PermissionDenied` for one of the two errnos it names, and four artifacts promise both**
   spec: SFTP-021 · effort: S · audience: user.api, user.api_docs
   Pre-existing, not introduced by BUG-265 — found by its closing whole-file
   pass, which was checking whether that item's `EPERM` revert had left half a

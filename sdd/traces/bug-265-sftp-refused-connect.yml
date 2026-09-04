@@ -78,12 +78,18 @@ surprising_ripples:
 #   BUG-265: Correct the grounds for the EPERM revert, and file BUG-275
 #                                                 -> counts (closing whole-file
 #            pass, 3 findings, one root)
-# Value is 7 — one per review round that produced a commit, which is rows 2-8;
+#   Merge remote-tracking branch 'origin/master' ... -> does not count (ID-253
+#            landed on master; conflict resolution, no review finding)
+#   BUG-265: Fix the author's review, and caveat a published row it falsified
+#                                                 -> counts (author's own
+#            review against the five-step reading path, 4 findings)
+# Value is 8 — one per review round that produced a commit; the merge and row 1
+# are the two that do not.
 # row 1 implements the item. Re-derived from that command before each push,
 # since a later round raises it. Round 4 found the third subject line quoted
 # here had drifted from what the command returns ("blank-message shape" for
 # "blank shape"), which is why the quotations are copy-pasted now.
-review_rounds: 7
+review_rounds: 8
 phases:
   - id: orient
     name: Orient
@@ -582,6 +588,46 @@ phases:
           shape (EPERM) answers the base class instead. Two rounds swept past
           it, which is the half-reverted-state class the round-6 commit message
           itself enumerates, met one artifact further out
+        outcome: ok
+  - id: fix_user_review
+    name: Fix pass on the author's own review
+    steps:
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-023 (permission-errno paragraph)"
+        read_type: verify
+        extract: >-
+          The one real defect the author's review found, and it is the shape
+          this whole item exists to fix, restated in the spec that fixes it:
+          the paragraph asserted "a locally-rejected connect takes the EACCES
+          arm and is answered PermissionDenied" as contract fact, while BUG-273
+          — filed by this PR — records that no EACCES trigger is known, and was
+          silent on EPERM, the one local rejection that IS reproducible and that
+          reaches the generic arm as the base class. Rewritten as two bullets
+          saying what each errno does, with the unestablished trigger attributed
+          rather than stated
+        outcome: ok
+      - file: docs-src/reference/migration.md
+        section: "v0.29.1 to v0.30.0 (SFTP failure paths table)"
+        read_type: verify
+        extract: >-
+          Principle 1 and 3 met where filing an item is not enough: this PR
+          establishes that a published row is false for EPERM, edits this file,
+          and adds a cross-reference pointing at that row — so leaving it
+          unmarked was the unfinished half. The row now says EACCES only and
+          carries a warning admonition. Filing BUG-275 handles fixing it;
+          marking the gap is what the same commit owed
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-023 (retrospective density)"
+        read_type: reference
+        extract: >-
+          The round-6 whole-file member raised this and declined to file it; the
+          author's review derived it — retrospective passages whose subject is a
+          previous draft went 2 to 7 in this PR — and separated the kinds. Kept
+          the one that constrains a future editor (do not re-add a reachability
+          rationale); dropped three whose subject was which earlier sentence of
+          this section was wrong, since their authoritative home is this trace
+          and a copy here is a second place to keep in step. Principles 4 and 8
         outcome: ok
   - id: verify
     name: Verify

@@ -362,12 +362,10 @@ first three, so the condition's space is enumerated instead of argued:
 and operation and asserts, per cell, that the caller gets `BackendUnavailable`
 with a non-empty message and one `op="error_mapping"` record. Which predicate
 claims a shape is therefore an implementation detail, which is the only footing
-on which this split has survived review. (Three guarantees, not four: an earlier
-revision also claimed a cleared client per cell, and review measured that
-assertion vacuous — the client is `None` on entry to every cell. The
-client-clearing invariant below is pinned by
-`test_a_host_never_reached_maps_to_backend_unavailable`, which seeds a sentinel
-first.)
+on which this split has survived review. The client-clearing invariant below is
+pinned separately, by `test_a_host_never_reached_maps_to_backend_unavailable`,
+which seeds a sentinel first — a per-cell assertion could not reach it, since
+the client is `None` on entry to every cell.
 
 Every other `OSError` the errno dispatch declines keeps the base
 `RemoteStoreError` — `EIO` and `ENOSPC` are faults of a connection that is
@@ -376,17 +374,25 @@ working.
 **The two permission errnos are known exclusions rather than oversights**, and
 one reason covers both: this mapping sees only the exception, so it cannot tell
 a connect-time errno from a live-channel one. paramiko re-raises `EACCES` and
-`EPERM` unwrapped like `ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN`, so a
-locally-rejected connect takes the `EACCES` arm and is answered
-`PermissionDenied` — naming the caller's key on a keyed operation, and a bare
-`Permission denied: ` on `check_health`, for a failure that never reached the
-server. `EPERM` reads as the safer of the two and is not: `_raise_if_dir`'s
-permission re-raise deliberately passes **both** back through this mapping from
-a working channel, so claiming either would answer a server-reported denial with
-`BackendUnavailable` and discard a healthy client. A revision of this section
-briefly claimed `EPERM` on the grounds that the errno dispatch has no arm for
-it — true of the dispatch, false of the module, and measured as such before it
-shipped. BUG-273 carries both.
+`EPERM` unwrapped like `ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN`, and what each
+then reaches differs:
+
+- `EACCES` takes the `EACCES` arm and is answered `PermissionDenied` — naming
+  the caller's key on a keyed operation, and a bare `Permission denied: ` on
+  `check_health`. **Whether any connect produces it is unestablished**; BUG-273
+  records the trigger as unknown, so this is what would happen and not a
+  behaviour a reader can currently observe.
+- `EPERM` has no arm at all and falls to the generic one as the base
+  `RemoteStoreError`. This is the local rejection that *is* reproducible — a
+  netfilter `REJECT` on the `OUTPUT` chain yields it — so it is the shape a
+  reader meets, and it is BUG-265's own defect surviving in the errno the
+  connect-time set does not claim. BUG-275 carries it.
+
+Neither is claimed here because `_raise_if_dir`'s permission re-raise
+deliberately passes **both** back through this mapping from a working channel,
+so claiming either would answer a server-reported denial with
+`BackendUnavailable` and discard a healthy client. BUG-273 carries that
+exclusion for both.
 
 **Every** `BackendUnavailable` this mapping returns — the `SSHException` family
 included — invalidates the cached SFTP client so the next operation reconnects
@@ -445,9 +451,7 @@ overwritten: this is a fallback for silence, not a house style for messages.
 Two kinds of arm depart from "the driver's own message whenever it has one" —
 the `IncompatiblePeer` arms, which append a remediation hint, and the
 unreachable-host arm, which supplies a message where the driver's answers the
-wrong question. (`_unavailable`'s own docstring says "two kinds of arm"; this
-clause read "the one exception" until a whole-file pass found the two
-disagreeing over the same set.)
+wrong question.
 
 **What each connect failure actually names, since no arm makes it uniform:**
 
@@ -461,12 +465,10 @@ disagreeing over the same set.)
 **Note the first row's subject.** `NoValidConnectionsError` builds its text from
 the addresses it tried, not from the hostname it was given, so a store
 configured as `files.example.com` reports `Unable to connect to port 22 on
-10.0.0.4`. That is why the DNS arm names the configured host rather than
-deferring to the driver, and it means "the driver already names the host" is
-**false** for the refused case — an earlier revision of this clause said it was
-true and used it as the reason the refused arm needs no message of its own. The
-real reason is narrower: the driver names *enough* — an address and a port a
-reader can act on — where a `gaierror` names nothing at all.
+10.0.0.4`. It does **not** name the configured host, which is why the DNS arm
+supplies its own message rather than deferring to the driver the way the refused
+arm does: the driver names *enough* there — an address and a port a reader can
+act on — where a `gaierror` names nothing at all.
 
 The bottom two rows name neither host nor port. That is stated rather than
 fixed, because narrowing it would mean re-partitioning the predicates, which is

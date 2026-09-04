@@ -254,9 +254,10 @@ if evidence changes; these are retired.
   `BackendUnavailable` and discarded a healthy client, where `EPERM` had
   answered the base `RemoteStoreError`. The argument that admitted it ("the
   errno dispatch has no `EPERM` arm") was true of the dispatch and false of the
-  module. That dispatch gap is real and older than this item — three artifacts
-  and a published migration row say the re-raise delivers `PermissionDenied` for
-  both errnos, and it never has for `EPERM` — filed as **BUG-275**. They
+  module. That dispatch gap is real and older than this item — four artifacts,
+  one of them the published migration table, say the re-raise delivers
+  `PermissionDenied` for both errnos, and it never has for `EPERM` — filed as
+  **BUG-275**. They
   classify through
   `_is_unreachable` and an arm of their own rather than by widening
   `_is_connection_dead`, because **the two predicates answer different
