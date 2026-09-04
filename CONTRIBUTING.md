@@ -509,8 +509,10 @@ exception, and `Added` leads in all but a couple of early releases. **One
 adjacent pair came out an exact tie** — `Changed` against `Fixed` — so that pair
 had no convention, and the line above is what it has instead of one. `Removed`
 is too sparse to settle by count at all, and is placed by meaning: after the
-changes it completes. Run the tally rather than trusting any of that; it moves
-every release, and this page deliberately pins no figure from it.
+changes it completes. Run the tally rather than trusting any of that: it moves
+every release, and the characterisations above go stale on exactly the release a
+numeral would. They are here to show the order was derived rather than invented —
+the order itself is decided and does not need practice to keep vouching for it.
 
 **Where this diverges from Keep a Changelog**, whose order is Added, Changed,
 Deprecated, Removed, Fixed, Security: `Removed` sits after `Fixed` here rather

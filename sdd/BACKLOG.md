@@ -1896,6 +1896,13 @@ the commit that writes it lands, so cite the generator instead.
   other eight are normalised or dropped. **Do not split the difference**: a
   marker that is a section name on some entries and a mood on others is the
   state this item exists to leave.
+  **Section assignment is this item's either way.** ID-253 wrote the expansion
+  step's sources, its per-entry shape and the section order, but not the rule for
+  *which* section a given entry lands in — and that is the one decision the step
+  makes per entry. If the marker becomes an obligation, the author assigns and
+  the rule is the marker's definition; if it stays emphasis, the release manager
+  assigns and the rule has to be written for them. Either resolution owes it, so
+  it does not fall between the two.
   **Not urgent, and the reason bounds it:** nothing downstream reads the
   marker except the breaking-change gate, which keys on `**Breaking**` alone, so
   the cost today is a reader's confusion rather than a wrong release. Found by
