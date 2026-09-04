@@ -246,9 +246,13 @@ if evidence changes; these are retired.
   `EPERM` after being claimed in a late round and reverted in the next, when
   measurement showed `_raise_if_dir` re-raises both from a *working* channel —
   so claiming either answered a server-reported denial with
-  `BackendUnavailable` and discarded a healthy client. The argument that
-  admitted it ("the errno dispatch has no `EPERM` arm") was true of the dispatch
-  and false of the module. They classify through
+  `BackendUnavailable` and discarded a healthy client, where `EPERM` had
+  answered the base `RemoteStoreError`. The argument that admitted it ("the
+  errno dispatch has no `EPERM` arm") was true of the dispatch and false of the
+  module. That dispatch gap is real and older than this item — three artifacts
+  and a published migration row say the re-raise delivers `PermissionDenied` for
+  both errnos, and it never has for `EPERM` — filed as **BUG-275**. They
+  classify through
   `_is_unreachable` and an arm of their own rather than by widening
   `_is_connection_dead`, because **the two predicates answer different
   questions** — was the host ever reached, versus is a connection the backend
@@ -280,9 +284,12 @@ if evidence changes; these are retired.
   `docs-src/guides/health-check.md` "now carries a caveat pointing here". It
   never did — the guide's `BackendUnavailable` row was simply false, and needed
   nothing added. **It is true as written for the failures this item covers**, and
-  the qualifier is load-bearing: BUG-273 records one class of network error, a
-  locally-rejected connect, that still answers `PermissionDenied`. The row is not
-  unconditionally true and this entry does not claim it is.
+  the qualifier is load-bearing: BUG-273 records a locally-rejected connect that
+  still answers the wrong type — `PermissionDenied` on the `EACCES` shape, whose
+  trigger is unknown, and the base `RemoteStoreError` on the `EPERM` one, which
+  is the shape a reader can actually produce. Either way it is not
+  `BackendUnavailable`. The row is not unconditionally true and this entry does
+  not claim it is.
   **What was deliberately not done:** the same class of defect on other
   backends, which is **BUG-264**, and the observable-failure-to-arm table, which
   is **BUG-266**.

@@ -478,9 +478,13 @@ compliant the day before.
   `EPERM` gave `RemoteStoreError` before the change and
   `BackendUnavailable("[Errno 1] Permission denied")` after it, **and with a
   sentinel seeded the new arm cleared the cached client** — so a healthy
-  connection was discarded on a server-reported denial. It also falsified the
-  published v0.29.1→v0.30.0 migration row, which promises `PermissionDenied`
-  for that stat. Reverted; `test_the_permission_errnos_stay_out_of_the_connect_arm`
+  connection was discarded on a server-reported denial. **The grounds matter
+  and were first stated too strongly:** the published v0.29.1→v0.30.0 migration
+  row promising `PermissionDenied` for that stat was *already* not honoured for
+  `EPERM` before the change and is not honoured after it, which is BUG-275, not
+  this item. What claiming `EPERM` did was move that path from the base class to
+  `BackendUnavailable` plus a client reset — worse, and enough on its own.
+  Reverted; `test_the_permission_errnos_stay_out_of_the_connect_arm`
   now pins the exclusion so a future widening fails loudly instead of silently
   changing what a live channel reports.
   **The lesson for whoever picks this up:** "nothing else wants this errno" is a
@@ -525,6 +529,40 @@ compliant the day before.
   **Found by BUG-265's round-3 measuring member**, which reported the `EACCES`
   half as a `Possible: Bug:` with its trigger flagged unreproduced; the `EPERM`
   half was found, fixed and reverted across its rounds 5 and 6.
+
+- [ ] **BUG-275 — `_raise_if_dir`'s permission re-raise delivers `PermissionDenied` for one of the two errnos it names, and three artifacts promise both**
+  spec: SFTP-021 · effort: S · audience: user.api, user.api_docs
+  Pre-existing, not introduced by BUG-265 — found by its closing whole-file
+  pass, which was checking whether that item's `EPERM` revert had left half a
+  claim standing and found a whole one that predates it.
+  **Measured on the shipped code**, driving `_map_exception` with a plain
+  `OSError` carrying each errno:
+  `EACCES` → `PermissionDenied("Permission denied: delivery.csv")`;
+  `EPERM` → base `RemoteStoreError("denied")`. The errno dispatch has an
+  `EACCES` arm and **no `EPERM` arm**, so a re-raised `EPERM` classification
+  stat falls to the generic arm.
+  **What promises otherwise**, all saying the re-raise exists "so a server that
+  denies even statting the target surfaces `PermissionDenied` rather than a
+  generic `RemoteStoreError`": `_raise_if_dir`'s docstring, its BK-316 inline
+  comment beside the guard, BK-316's `BACKLOG-DONE.md` register entry, and —
+  published — the v0.29.1 → v0.30.0 migration table row
+  `| Permission-denied classification stat (EACCES/EPERM) | RemoteStoreError | PermissionDenied |`.
+  For `EPERM` that row's "after" column is exactly its "before" column.
+  **Trigger is unestablished, and that bounds the priority rather than the
+  diagnosis.** paramiko's `SFTPClient._convert_status` maps
+  `SSH_FX_PERMISSION_DENIED` to `EACCES`, so an SFTP-protocol `EPERM` looks
+  unproducible; the re-raise names both errnos because BK-316 was written for
+  "non-OpenSSH servers whose error shapes differ from OpenSSH", which is the
+  case nobody has a fixture for.
+  **Disposition:** two ways to make the four artifacts agree, and they differ in
+  what a caller gets. Either give the dispatch an `EPERM` arm mapping to
+  `PermissionDenied` — which makes every promise true and is a behaviour change
+  — or narrow all four to say `EACCES` alone reaches `PermissionDenied` and
+  `EPERM` reaches the base class. **Do not answer it by widening
+  `_is_unreachable`**: BUG-273 records that attempt and its measured harm.
+  **Found by BUG-265's closing pass**, which also caught the two places where
+  that item's own body had cited the migration row as though it were satisfied
+  before and after — corrected there.
 
 - [ ] **BUG-274 — A keyed SFTP operation against an unreachable host pays the connect budget two or three times over**
   spec: SFTP-010, SFTP-023 · effort: S · audience: user.api

@@ -22,8 +22,13 @@ discovery_followups:
   # _is_connection_dead, so a keyed operation against an unreachable host pays
   # the connect budget two or three times. Not a regression, so filed rather
   # than fixed; the widening it wants is the one this PR declined under review.
+  # BUG-275 was born in the closing whole-file pass, which went looking for
+  # half-reverted state from round 6 and found a whole claim older than this
+  # item: _raise_if_dir's permission re-raise delivers PermissionDenied for
+  # EACCES and the base class for EPERM, while four artifacts promise both.
   - BUG-273
   - BUG-274
+  - BUG-275
 expected_ripples:
   # sdd/backlogid.json is deliberately absent, against the schema's own example
   # ("after any BACKLOG/BACKLOG-DONE edit"): it is a max-allocated-ID map, this
@@ -70,12 +75,15 @@ surprising_ripples:
 #   BUG-265: Revert EPERM, and sweep what round 5 left half-swept
 #                                                 -> counts (round 6, 9
 #            findings from a three-member panel after dedup)
-# Value is 6 — one per review round that produced a commit, which is rows 2-7;
+#   BUG-265: Correct the grounds for the EPERM revert, and file BUG-275
+#                                                 -> counts (closing whole-file
+#            pass, 3 findings, one root)
+# Value is 7 — one per review round that produced a commit, which is rows 2-8;
 # row 1 implements the item. Re-derived from that command before each push,
 # since a later round raises it. Round 4 found the third subject line quoted
 # here had drifted from what the command returns ("blank-message shape" for
 # "blank shape"), which is why the quotations are copy-pasted now.
-review_rounds: 6
+review_rounds: 7
 phases:
   - id: orient
     name: Orient
@@ -519,11 +527,15 @@ phases:
         extract: >-
           **The most important read of the whole item, and it came at round 6.**
           _raise_if_dir re-raises EACCES *and EPERM* on purpose, from a working
-          channel, inside the caller's _errors(path) block — its docstring says
-          why, and a published v0.29.1-to-v0.30.0 migration row promises
-          PermissionDenied for that stat. So claiming EPERM answered a
-          server-reported denial with BackendUnavailable and discarded a healthy
-          client. Measured on the shape
+          channel, inside the caller's _errors(path) block. So claiming EPERM
+          answered a server-reported denial with BackendUnavailable and
+          discarded a healthy client. Retrospective: this step first added "and
+          a published migration row promises PermissionDenied for that stat, SO
+          claiming EPERM..." — the closing pass measured that the row was never
+          honoured for EPERM either way (no EPERM arm in the dispatch; it has
+          always answered the base class), so the row is a separate pre-existing
+          defect, filed as BUG-275, and not the reason the claim was harmful.
+          The harm stands on its own without it. Measured on the shape
           test_raise_if_dir_permission_stat_maps_permission_denied drives, with
           a sentinel seeded to see the clearing. Reverted, and the exclusion is
           now pinned by a test rather than argued in a comment, because the
@@ -548,10 +560,28 @@ phases:
         extract: >-
           The Scope sentence ("only the connect-side failures ... a connection
           that is working still raises the base RemoteStoreError") was false
-          while EPERM was claimed, and the same file's v0.30.0 table four
-          hundred lines below said the opposite about the same errno. The revert
-          makes both true again; the paragraph now says *why* it is true and
-          links the older section, so the next widening has to meet it
+          while EPERM was claimed, and the revert makes it true again; the
+          paragraph now says *why* and links the older section, so the next
+          widening has to meet it. Retrospective: this step first said the
+          revert "makes both true again", counting the v0.30.0 table row four
+          hundred lines below. The closing pass measured that only one of the
+          two was ever true — EPERM has answered the base class throughout, so
+          that row's "after" column equals its "before" column and the revert
+          restored nothing there. Filed as BUG-275. A revert restores the state
+          before the change, which is not the same as the state the documents
+          describe, and this step assumed it was
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) BUG-265, closing qualifier"
+        read_type: verify
+        extract: >-
+          The sentence scoping the health-check row's truth was added in round 4
+          and describes BUG-273 as it read before round 6 retitled it — "one
+          class of network error ... that still answers PermissionDenied", where
+          the item now carries both permission errnos and the only reproducible
+          shape (EPERM) answers the base class instead. Two rounds swept past
+          it, which is the half-reverted-state class the round-6 commit message
+          itself enumerates, met one artifact further out
         outcome: ok
   - id: verify
     name: Verify
