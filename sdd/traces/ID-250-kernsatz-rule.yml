@@ -28,15 +28,18 @@ phases:
   - id: orient
     name: Orient
     steps:
-      - file: sdd/research/research-detail-density-and-reader-fit.md
-        section: "3 (headline), 9 (repo evidence), 10 (options)"
+      - file: sdd/research/research-appropriate-level-of-detail.md
+        section: "headline finding, repo evidence, options"
         read_type: gate
         extract: >-
           The commissioned literature pass found no direct evidence that dense
           prose harms readers, and found the curse-of-knowledge tradition
-          predicting the opposite failure (under-specification). Its § 10 offered
-          four options; this item implements a variant of option A, justified by
-          the local round split rather than by the literature.
+          predicting the opposite failure (under-specification). It offered four
+          options and this item implements a variant of the first, justified by
+          the local round split rather than by the literature. Read at the doc's
+          earlier path and section numbering; both changed when it was rewritten
+          as a standing reference, and the section field is named rather than
+          numbered so it survives that.
         outcome: ok
       - file: sdd/BACKLOG-DONE.md
         section: "BK-351, BK-353"

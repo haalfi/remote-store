@@ -184,14 +184,16 @@ if evidence changes; these are retired.
   [`DRIFT-RULES.md`](DRIFT-RULES.md#rules) is the authority on not inventing a
   mechanism that cannot decide.
   **What the research does and does not support.** The commissioned literature
-  pass ([research](research/research-detail-density-and-reader-fit.md)) found no
+  pass ([research](research/research-appropriate-level-of-detail.md)) found no
   direct evidence that dense prose harms readers, and found the curse-of-knowledge
   literature pointing the other way — authors under-specify. This rule therefore
   rests on the local round split above and on a metacognitive reading of the
   illusion of explanatory depth (Rozenblit & Keil 2002): the author's sense of
   understanding outruns their ability to state it, and the attempt to state it
-  plainly is what exposes the gap. That is an inference, not a finding, and the
-  research doc's § 10 recorded four options of which this is one.
+  plainly is what exposes the gap. That is an inference and the research doc says
+  so; it also weighed three alternatives to this rule, and that weighing was
+  reorganised out when the doc was rewritten as a standing reference on the
+  question rather than a record of the investigation.
   No CHANGELOG — internal authoring rule, audience contributor and maintainer.
   Trace: `sdd/traces/ID-250-kernsatz-rule.yml`.
 
