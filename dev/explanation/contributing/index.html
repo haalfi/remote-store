@@ -5437,6 +5437,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Phase 1: Content freeze">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changelog-section-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CHANGELOG section order
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -11447,6 +11464,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Phase 1: Content freeze">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changelog-section-order" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CHANGELOG section order
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
         
           <li class="md-nav__item">
@@ -11940,18 +11974,48 @@ is authoritative.</p>
 </ul>
 <h3 id="phase-1-content-freeze">Phase 1: Content freeze<a class="headerlink" href="#phase-1-content-freeze" title="Permanent link">&para;</a></h3>
 <ul>
+<li>[ ] <code>sdd/BACKLOG-DONE.md</code>: all shipping items moved here under the <code>## Unreleased</code> heading, each marked <code>[x]</code> (Phase 2 versions the heading). <strong>First in this phase deliberately:</strong> every later bullet that reads this section must find it complete — <code>CHANGELOG.md [Unreleased] is complete</code>, whose gate compares against it, and <code>CHANGELOG.md [Unreleased] condensed</code>, which takes each entry's prose from the item bodies in it. Sweep late and those run against a section that is not yet complete. Stated as a property rather than a roster on purpose: this phase has been reordered, and any list of which bullets sit where goes stale on the next move while the property does not.</li>
 <li>[ ] CHANGELOG.md <code>[Unreleased]</code> is complete — every completed item has a stub line (see ripple-check row <strong>CHANGELOG entry</strong>). <code>scripts/check_changelog_unreleased.py</code> (in <code>lint</code> and <code>docs-gate</code>) holds <strong>part</strong> of this per PR: one entry per ID, each a single <code>- &lt;ID&gt;: &lt;text&gt;</code> line within its prose budget, and an entry for every completed item whose <code>audience</code> carries a <code>user.</code> tag. Three things it cannot decide are this line's, and they are why the line stays: whether a stub <em>says the right thing</em>; an entry owed by an item still open in <code>sdd/BACKLOG.md</code>; and the <code>contributor.process</code> clause in <code>sdd/traces/_schema.yml</code>, where an item with no <code>user.</code> tag still owes an entry if it introduced a user-facing framework or spec</li>
 <li>[ ] CHANGELOG completeness cross-check: <code>gh api repos/haalfi/remote-store/releases/generate-notes -f tag_name=vX.Y.Z -f previous_tag_name=vPREV -f target_commitish=master --jq .body</code> lists every merged PR since <code>vPREV</code> — confirm each <strong>user-facing</strong> PR maps to a CHANGELOG <code>[Unreleased]</code> entry (internal/tooling/dependabot PRs need none). Safety net over the per-PR CHANGELOG discipline; the generated text is <strong>discarded</strong>, not used for the release body (which stays CHANGELOG-derived — Phase 4)</li>
-<li>[ ] CHANGELOG.md <code>[Unreleased]</code> condensed — stubs expanded to prose at release time. <strong>By hand: no tooling performs this</strong>, and this checklist names no source for the expanded prose, so do not read "release skill Phase 1" as a delegation — that skill has no expansion step. Closing that gap is a tracked backlog item. <strong>Add the <code>###</code> groupings before condensing any bullet.</strong> In that order <code>check_changelog_unreleased.py</code> stands its stray-line and audience rules down and says so on every run; condense first and it reports every condensed line until the grouping lands. Uniqueness and the prose budget keep running either way, over whatever still parses as a stub. Nothing in this checklist runs that gate before Phase 3, which is after Phase 2's rename — this matters only if you run <code>hatch run lint</code> or <code>all</code> by hand while the section is half-condensed</li>
-<li>[ ] <code>sdd/BACKLOG-DONE.md</code>: all shipping items moved here under the <code>## Unreleased</code> heading, each marked <code>[x]</code> (Phase 2 versions the heading)</li>
+<li>[ ] <code>docs-src/reference/migration.md</code>: every <code>[Unreleased]</code> entry marked <strong>Breaking</strong>, and any entry whose behaviour change a caller must act on, has a <code>## vPREV to vX.Y.Z</code> section. <strong>The PR making the break owes that section, writes it in the same PR, and links it from the CHANGELOG entry</strong> — the link is what <code>scripts/check_breaking_migration_link.py</code> (in <code>lint</code> and <code>docs-gate</code>) enforces, anchor included — the fragment must name a <code>##</code> heading the guide really has, since nothing else in the repo validates it, and it is the only direction available, since <code>check_no_tracker_refs.py</code> bars the published guide from citing the entry it answers. The bump table above fixes the version pair for a pre-1.0 breaking change, so it is knowable at authoring time, long before Phase 2 stamps it; the ripple-check's <a href="https://github.com/haalfi/remote-store/blob/master/sdd/CLAUDE-REFERENCE.md#detailed-checklist"><strong>Breaking change</strong></a> row is where an author meets that obligation. This line is the backstop for the ones that arrive without it, and the place to correct a pair a PR guessed wrong. <strong>Above the condensing bullet deliberately:</strong> it keys on <code>[Unreleased]</code> entries carrying a <code>**Breaking**</code> marker, and condensing drops those markers along with the stub shape — run it after and it has nothing left to read, while condensing itself needs the guide complete to link from the entries a caller must act on. The softer half — an entry a caller must act on that carries no <strong>Breaking</strong> marker — is a judgment no marker decides and stays this checklist's to make</li>
+<li>[ ] CHANGELOG.md <code>[Unreleased]</code> condensed — stubs expanded to prose at release time, into the <a href="#changelog-section-order">section order</a> below. <strong>By hand: no tooling performs this</strong>, and "release skill Phase 1" is not a delegation — that skill carries agent notes, not the procedure, which is this line's. <strong>Three sources, in the order you reach for them:</strong> the stub says <em>what</em> shipped; the item's body under <code>sdd/BACKLOG-DONE.md</code> § Unreleased carries the mechanism and the figures; <code>docs-src/reference/migration.md</code> carries what a caller must change. <strong>It is a rewrite for a different audience, not an extraction from any of them</strong> — a backlog body argues the change to a contributor at whatever length that took, and the released entry tells a user what changed and what to do about it. Shape each entry <code>- **&lt;what changed&gt;** (&lt;ID&gt;): &lt;consequence for the caller&gt;</code>, and link the migration guide from anything a caller must act on. <strong>Add the <code>###</code> groupings before condensing any bullet.</strong> In that order <code>check_changelog_unreleased.py</code> stands down the stray-line rule, the audience rule and its unknown-ID note — three things, which it names on every run; condense first and it reports every condensed line until the grouping lands. Uniqueness and the prose budget keep running either way, over whatever still parses as a stub. Nothing in this checklist runs that gate before Phase 3, which is after Phase 2's rename — this matters only if you run <code>hatch run lint</code> or <code>all</code> by hand while the section is half-condensed</li>
 <li>[ ] <code>FEATURES.md</code> updated for this release: backends, extensions, capabilities, extras — this is the only time FEATURES.md is edited (do NOT update the version header; <code>bump-my-version</code> handles it in Phase 2)</li>
 <li>[ ] README.md: backends table, installation extras, API table, badges are current</li>
 <li>[ ] Specs vs code: spot-check shipped features match their specs (<code>pytest -m spec</code> as proxy)</li>
 <li>[ ] Examples: <code>hatch run examples</code> passes; manually review notebooks if API surface changed</li>
 <li>[ ] Guides: new/changed backend guides are accurate</li>
-<li>[ ] <code>docs-src/reference/migration.md</code>: every <code>[Unreleased]</code> entry marked <strong>Breaking</strong>, and any entry whose behaviour change a caller must act on, has a <code>## vPREV to vX.Y.Z</code> section. <strong>The PR making the break owes that section, writes it in the same PR, and links it from the CHANGELOG entry</strong> — the link is what <code>scripts/check_breaking_migration_link.py</code> (in <code>lint</code> and <code>docs-gate</code>) enforces, anchor included — the fragment must name a <code>##</code> heading the guide really has, since nothing else in the repo validates it, and it is the only direction available, since <code>check_no_tracker_refs.py</code> bars the published guide from citing the entry it answers. The bump table above fixes the version pair for a pre-1.0 breaking change, so it is knowable at authoring time, long before Phase 2 stamps it; the ripple-check's <a href="https://github.com/haalfi/remote-store/blob/master/sdd/CLAUDE-REFERENCE.md#detailed-checklist"><strong>Breaking change</strong></a> row is where an author meets that obligation. This line is the backstop for the ones that arrive without it, and the place to correct a pair a PR guessed wrong. The softer half — an entry a caller must act on that carries no <strong>Breaking</strong> marker — is a judgment no marker decides and stays this checklist's to make</li>
 <li>[ ] DEVELOPMENT_STORY.md: add a section for this release (pre-1.0 only)</li>
 </ul>
+<p><a id="changelog-section-order"></a></p>
+<h4 id="changelog-section-order">CHANGELOG section order<a class="headerlink" href="#changelog-section-order" title="Permanent link">&para;</a></h4>
+<p><code>Added</code> → <code>Changed</code> → <code>Fixed</code> → <code>Removed</code> → <code>Documentation</code> → <code>Internal</code>. Omit
+any section with no entries.</p>
+<p><strong>This is the one home for that order.</strong> Phase 1 condenses into it and Phase 4's
+release body follows it; both link here rather than restating it, per
+<a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#principles"><code>CLAUDE.md</code> § Principles</a> principle 4.</p>
+<p><strong>It is decided, not merely described.</strong> Tally the pairwise precedence of <code>###</code>
+headings across the released <code>## [</code> sections of CHANGELOG.md and most of this
+order is what practice already does: <code>Documentation</code> precedes <code>Internal</code> without
+exception, and <code>Added</code> leads in all but a couple of early releases. <strong>One
+adjacent pair came out an exact tie</strong> — <code>Changed</code> against <code>Fixed</code> — so that pair
+had no convention, and the line above is what it has instead of one. <code>Removed</code>
+is too sparse to settle by count at all, and is placed by meaning: after the
+changes it completes. Run the tally rather than trusting any of that: it moves
+every release, and the characterisations above go stale on exactly the release a
+numeral would. They are here to show the order was derived rather than invented —
+the order itself is decided and does not need practice to keep vouching for it.</p>
+<p><strong>Where this diverges from Keep a Changelog</strong>, whose order is Added, Changed,
+Deprecated, Removed, Fixed, Security: <code>Removed</code> sits after <code>Fixed</code> here rather
+than before it, and <code>Documentation</code> and <code>Internal</code> are additions of ours with no
+counterpart there. The tie this order settles, <code>Changed</code> before <code>Fixed</code>, agrees
+with it. <strong><code>Deprecated</code> and <code>Security</code> are not in the order above and have never
+been used</strong> — a security fix has always gone under <code>Fixed</code>, and a deprecation
+under <code>Changed</code>. If a release needs either as its own section, place it here
+first: the point of one home is that the next person does not have to guess.</p>
+<p><strong>Two names are retired rather than reused.</strong> <code>Docs</code> (0.16.0, 0.17.0) is
+<code>Documentation</code>; <code>Known Limitations</code> (0.1.0) was a one-off. Sections already
+published keep the names and order they shipped with — this governs the next
+release forward, and nothing checks it mechanically.</p>
 <p><a id="phase-2"></a></p>
 <h3 id="phase-2-version-bump-on-a-release-branch">Phase 2: Version bump (on a release branch)<a class="headerlink" href="#phase-2-version-bump-on-a-release-branch" title="Permanent link">&para;</a></h3>
 <ul>
@@ -11988,7 +12052,7 @@ is authoritative.</p>
 <li>[ ] <strong>[Agent]</strong> Watch <code>publish.yml</code> — confirm it completes successfully (PyPI publish)</li>
 <li>[ ] <strong>[Agent]</strong> Delete the release branch</li>
 </ul>
-<p><em>Release template: title = version, description = "What's Changed" header with condensed sections (Added, Fixed, Internal), two links (CHANGELOG.md + git version diff). See <code>.claude/skills/release/SKILL.md</code> § Phase 4 for full template.</em></p>
+<p><em>Release template: title = version, description = "What's Changed" header whose sections are condensed further from the release's own CHANGELOG section, in the <a href="#changelog-section-order">CHANGELOG section order</a>, plus two links (CHANGELOG.md + git version diff). See <code>.claude/skills/release/SKILL.md</code> § Phase 4 for full template.</em></p>
 <h3 id="phase-5-post-release-verification">Phase 5: Post-release verification<a class="headerlink" href="#phase-5-post-release-verification" title="Permanent link">&para;</a></h3>
 <ul>
 <li>[ ] PyPI: <code>pip install remote-store==X.Y.Z</code> in a fresh venv, verify version and README renders on pypi.org</li>
