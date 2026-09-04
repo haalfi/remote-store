@@ -9,8 +9,10 @@ four options as they stood, and is not rewritten.
 [`CLAUDE.md` principle 8](../../CLAUDE.md#principles) should gain a second axis:
 not only *where* a piece of detail belongs, but whether it earns its place at
 all for its reader, and whether the level of detail and communication density is
-appropriate. **Presents options and recommends none**, at the commissioner's
-instruction.
+appropriate. Sections 1–11 **present options and recommend none**, at the
+commissioner's instruction, and are left as written. Sections 12–15 were added
+after the commission was reframed from a reader-side to an author-side claim, and
+record what that reframe brought and what shipped.
 **Related:**
 [`research-id-232-detail-placement-durability.md`](research-id-232-detail-placement-durability.md)
 (the predecessor this either confirms or overturns),
@@ -25,6 +27,14 @@ instrument that covers half of the proposed axis).
 > **confirmed, not overturned**. What *is* supported, and consistently, is the
 > weaker relational claim: how much to say is a property of the
 > text–reader–purpose tuple, never of the text alone.
+>
+> **The document was testing the wrong claim, and § 12 says so.** Sections 1–11
+> test a **reader-side** claim: that surplus detail costs the reader. The
+> commissioner's actual claim is **author-side**: length is a symptom that the
+> author had not yet digested the material. The second claim has a local
+> measurement (§ 14) and a mechanism (§ 13); it is what ID-250 acted on. Sections
+> 1–11 are left as they were written, because a negative result on a different
+> question is still a result.
 >
 > **No source in this report was read in full.** Every scholarly host is blocked
 > by this environment's egress policy (§ 2.2). Claims rest on abstracts, search
@@ -401,6 +411,115 @@ answer and the generator is the derivation that matters.
 
 ---
 
+## 12. The reframe: two different claims wear the same words
+
+"Too much detail" names two claims, and this document spent §§ 1–11 on the one
+that turned out not to be the commissioner's:
+
+| | **Reader-side claim** (§§ 1–11) | **Author-side claim** (§§ 13–14) |
+|---|---|---|
+| Assertion | Surplus detail costs the reader: it conceals the load-bearing claim | Length is a symptom that the author had not yet digested the material |
+| Evidence found | None direct (§ 3). The relational half is theory-level (§ 4) | A local measurement (§ 14) and a metacognitive mechanism (§ 13) |
+| Instrument it implies | A review bound, or a reader test | An authoring test, before the prose exists |
+| Where it fails | Cannot say what the right density *is*, only what it is not | Says nothing about whether any given reader was harmed |
+
+**The distinction is not academic: it picks a different intervention.** A
+reader-side rule fires in review, after the prose exists, and therefore pays the
+rounds § 14 measures. An author-side rule fires before, and can only be a test the
+author applies to their own draft. Everything in §§ 1–11 was aimed at the first;
+ID-250 acted on the second.
+
+## 13. The author-side strand, and the bound it must carry
+
+**The bound first, because the commissioner set it and it is right.** The
+literature below is *learning* research: students, learning outcomes, instructional
+design. The repo's problem is not learning. What transfers is the **metacognitive
+core** — the attempt to state a thing plainly is a test the author can fail, and
+failing it is informative about the author. What does **not** transfer, and is
+carried into no repo rule: the Feynman technique as a study method, Bloom's
+taxonomy as a ladder of learning objectives, and the protégé effect as
+motivation. They are pedagogy for learners, not authoring rules for maintainers.
+
+**Undigested writing has a described shape.** Bereiter & Scardamalia (1987), *The
+Psychology of Written Composition*, separate **knowledge-telling** from
+**knowledge-transforming**: the first retrieves content on topic-and-genre cues
+and transcribes it in the order it arrives; the second works a dialectic between a
+content problem space and a rhetorical one. Novices default to the first because
+the second demands metacognitive control they lack. **[Search-summary.]**
+
+**Inference, not a finding of theirs:** repo prose that lists everything true
+about a subject in the order it was discovered is knowledge-telling. That is the
+shape a `/ship` round then attacks one sentence at a time, and it is a shape an
+author can detect in their own draft before review sees it.
+
+**The mechanism that explains why authors do not notice.** Rozenblit & Keil
+(2002), "The misunderstood limits of folk science: an illusion of explanatory
+depth", *Cognitive Science* 26(5), 521–562: people rate their understanding high,
+attempt a step-by-step causal explanation, and re-rate it markedly lower. The
+qualification is what makes it apply here: **the illusion is far stronger for
+explanatory knowledge than for facts, procedures or narratives** — and
+explanatory prose (ADR rationale, spec reasoning, research argument) is precisely
+what this repo writes most. **[Search-summary; the primary and every mirror were
+blocked, including `cogdevlab.yale.edu`.]**
+
+**The compression attempt is itself the instrument.** Bisra, Liu, Nesbit, Salimi
+& Winne (2018), "Inducing Self-Explanation: a Meta-Analysis", *Educational
+Psychology Review* 30, 703–725: 69 effect sizes from 64 reports, random-effects
+**g = .55**. This confirms the figure the commissioner supplied.
+**[Search-summary.]** It measures learning gain, not writing quality, so it
+supports "producing an explanation changes what the producer knows" and not
+"shorter documents are better documents".
+
+**What this strand does not establish**, stated plainly because the temptation
+runs the other way: not that shorter prose is better, not that a reader was
+harmed, and not that length reliably indicates shallow understanding. It
+establishes that an author who cannot state the core claim may not yet hold it —
+a claim about the author, checkable by the author, and silent about the text's
+effect on anyone else.
+
+## 14. The local measurement, and how far it actually reaches
+
+**The specimen is unambiguous.** BUG-248 ran eight review rounds. The first three
+to four changed behaviour (successively mis-scoped classifier call sites); the
+rest moved ADR wording, docstrings, pointers and counts. Derivation: its commit
+subjects in `git log --oneline origin/master..HEAD` on that branch, read against
+what each round's own body says it changed.
+
+**The mechanism generalises even where the measurement does not.** A code finding
+runs out: there are finitely many wrong call sites. A prose finding never runs
+out, because any text can be tightened and nothing bounds the request. A review
+that keeps asking therefore keeps receiving, and rounds stop converging.
+
+**But the corpus does not show the pattern as the norm, and this document will
+not claim it does.** Derivation: a script over `sdd/traces/[!_]*.yml` reading the
+first `review_rounds:` line of each file — 219 traces carry the field, **median 2,
+mean 2.15, maximum 10**, with **24 traces (11.0%) at five rounds or more**. The
+long-round tail is where the pattern lives, and it is where the `/ship`-era items
+sit (BUG-248 and BK-348 at 8, BUG-243 at 10).
+
+**Two limits on that figure.** `review_rounds` counts rounds, never their content,
+so the code-versus-prose split is not derivable from the corpus at all: it took
+reading BUG-248's rounds one by one, and that was done for one item. And the
+corpus spans the project's whole history, most of it predating `/ship`, so a
+median over it is not a statement about the current loop.
+
+## 15. Outcome
+
+ID-250 shipped a variant of § 10.1: `CONTENT-RULES.md` **Rule 7** (a new or
+substantially rewritten section in `sdd/` or `.claude/` opens with its core claim
+in at most three sentences, defining any term it uses; if those sentences will not
+come, the author returns to the source), plus one clause in principle 8 naming
+comprehension as the second axis and citing Rule 7 as the method's home.
+Enforcement is inherited: `/ship` and `/rvw-pr` already review changed
+documentation against `CONTENT-RULES.md`.
+
+**What it deliberately does not do.** No gate, because whether three sentences
+state a core claim has no oracle. No reach into existing prose, which stays as it
+is until someone edits it. And no claim on the reader-side question, which
+§§ 1–11 leave open and § 11 says what would settle.
+
+---
+
 ## Appendix A — claim ledger
 
 Every row is **not read in full**; the access limitation in § 2.2 applies without
@@ -426,6 +545,11 @@ exception. "Vote" is the adversarial verification result where one was run.
 | A16 | Verbosity bias in LLM and human raters; no task-performance harm shown | Search-summary | — | Low |
 | A17 | Repo: 223 negative trace tags, dominated by under-coverage | Verified locally | — | High |
 | A18 | Repo: two ad-hoc density litigations, one silently lossy cut | Verified locally | — | High |
+| A19 | Bereiter & Scardamalia: knowledge-telling versus knowledge-transforming, novices default to the first | Search-summary | — | Low-medium |
+| A20 | Rozenblit & Keil (2002): explanation attempt lowers self-rated understanding; illusion strongest for *explanatory* knowledge | Search-summary | — | Low-medium |
+| A21 | Bisra et al. (2018): self-explanation meta-analysis, 69 effect sizes from 64 reports, g = .55 | Search-summary | — | Low-medium |
+| A22 | Repo: 219 traces carry `review_rounds`; median 2, mean 2.15, max 10; 24 (11.0%) at ≥5 | Verified locally | — | High |
+| A23 | Repo: BUG-248's eight rounds split roughly three-to-four behavioural, rest prose | Verified locally, one item only | — | Medium |
 
 **Refuted in the first pass, and what that means.** Seventeen claims were voted
 down. The RST cluster (cross-framework agreement, nuclearity instability,
@@ -440,7 +564,7 @@ defensible modern working-memory claims, and Pyramid/SCU reproducibility.
 
 ## Appendix B — the commissioning material, checked
 
-The research was commissioned with two prose briefs and roughly sixty links.
+The research was commissioned with three prose briefs and roughly ninety links.
 Claim-by-claim:
 
 | Supplied claim | Verdict |
@@ -453,6 +577,10 @@ Claim-by-claim:
 | Situation model as the test of necessity | Partially reached; Kintsch and van Dijk's macrorules are descriptive, not an editing procedure (§ 7) |
 | "Trivial is not the same as omissible" | No source contradicts it, and § 4 supports the reasoning behind it. Not itself tested |
 | Textsorte determines appropriate detail | Not reached directly; Göpferich's purpose-and-addressee factors are the nearest support (§ 4) |
+| Kalyuga, Chandler & Sweller (1998) as "the likely reference" | Citation corroborated, the specific text-elimination result not (§ 5) |
+| Self-explanation meta-analysis at +0.55 SD | **Confirmed**: Bisra et al. (2018), g = .55 over 69 effect sizes (§ 13) |
+| Illusion of explanatory depth as evidence for the thesis | **Supported, and sharper than supplied**: the illusion is strongest for *explanatory* knowledge, which is the class this repo writes most (§ 13) |
+| Feynman technique, Bloom's taxonomy, protégé effect | **Excluded on the commissioner's own caution**, which was correct: these are learning methods and learning-objective ladders. Only the metacognitive core transfers, and § 13 states the bound |
 
 **The one structural idea in the commissioning material that the evidence
 supports and this document has kept:** the four outcomes keep / shorten / **move**
