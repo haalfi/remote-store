@@ -31,9 +31,9 @@ something outside the text.
 | Source | What it indexes adequacy to |
 |---|---|
 | Grice (1975), "Logic and Conversation" | The purpose and **stage** of the exchange: "such as is required, at the stage at which it occurs" |
-| Nickerson (1999), *Psychological Bulletin* 125(6) | What **this specific addressee** already knows |
+| Nickerson (1999), "How We Know — and Sometimes Misjudge — What Others Know: Imputing One's Own Knowledge to Others", *Psychological Bulletin* 125, 737–759 | What **this specific addressee** already knows. Cite it by title: a different Nickerson paper of the same year and volume ("Enhancing creativity", 683–732) is easily substituted, and was, by one external review of this document |
 | Groeben (1982), *Leserpsychologie* [*Reader Psychology*] | Comprehensibility as **text × reader interaction**, explicitly not a text property |
-| Göpferich, Karlsruher Verständlichkeitskonzept | Adds **reader, addressee and purpose** to the Hamburg model, whose perspective it faults as *textzentriert* [text-centred] |
+| Göpferich, Karlsruher Verständlichkeitskonzept | Keeps the Hamburg four (as *Struktur*, *Simplizität*, *Motivation*, *Prägnanz*), **adds *Korrektheit* and *Perzipierbarkeit***, and reframes the whole around the **communication situation and the text's communicative function** — the correction to the Hamburg model's *textzentriert* [text-centred] perspective |
 
 **[Grice and Nickerson: verified. Groeben and Göpferich: search-summary.]**
 
@@ -193,6 +193,7 @@ out, because any text can be tightened and nothing bounds the request.
 | Relevance ≈ cognitive effect ÷ processing effort | Sperber and Wilson operate a **comparative** notion and distinguish it from a quantitative one; the quotient is a popularization. **[Search-summary]** |
 | Verbosity bias in LLM judges | Establishes that *raters* over-reward length, not that verbose output harms a reader's task. **[Search-summary]** |
 | Seductive-detail research as a general cutting licence | Covers interesting-**and**-irrelevant material whose mechanism depends on grabbing attention. Bland, on-topic surplus is a different class |
+| The minimal manual as proof that cutting works | Carroll, Smith-Kerker, Ford & Mazur-Rimetz (1987), *Human-Computer Interaction* 3(2): the manual differs from its comparator on **four** dimensions at once — briefer, better attention coordination, error-recovery training, better reference support. It shows one package beating another, not that deleting detail is what did it. **[Verified]** |
 
 ## 8. The decision procedure this supports
 
@@ -245,7 +246,7 @@ record), **search-summary** (a search engine's synthesis of secondary sources),
 | 7 | Carroll et al. (1987) is a four-way bundle, not a brevity result | Verified | Medium |
 | 8 | Kalyuga et al. (1998): text elimination best for experts across three experiments | Search-summary | Low-medium |
 | 9 | *Kürze/Prägnanz* is a mid-scale optimum | Search-summary | Low-medium |
-| 10 | Groeben's interactional turn; Göpferich's text-centred critique | Search-summary | Low-medium |
+| 10 | Groeben's interactional turn; Göpferich keeps the Hamburg four, adds *Korrektheit* and *Perzipierbarkeit*, reframes on the communication situation | Search-summary | Low-medium |
 | 11 | Hamburg dimensions not independent; contrast pairs ad hoc | Search-summary | Low-medium |
 | 12 | Rozenblit & Keil: explanation attempt lowers self-rated understanding, strongest for explanatory knowledge | Search-summary | Low-medium |
 | 13 | Bereiter & Scardamalia: knowledge-telling versus knowledge-transforming | Search-summary | Low-medium |
