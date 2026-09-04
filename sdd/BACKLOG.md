@@ -1911,7 +1911,10 @@ the commit that writes it lands, so cite the generator instead.
   *beginning* — and the beginning is the state
   [`CONTRIBUTING.md` § Release Phase 1](../CONTRIBUTING.md#release) mandates,
   since it says to add the `###` groupings **before** condensing any bullet.
-  **Reproduce it:** put a bare `### Fixed` above an untouched `[Unreleased]`.
+  **Reproduce it:** put a bare `### Fixed` *inside* an untouched `[Unreleased]`,
+  above its entries — `parse_unreleased` scans forward from the `## [Unreleased]`
+  heading, so a grouping placed above that heading sets nothing and the symptom
+  never appears.
   The note claims the entries do not lead with an ID, then reports "over the 25
   line(s) that still parse as entries" — counting the ones that do.
   What actually switches the three off is the `###` itself: `grouped` is a bare

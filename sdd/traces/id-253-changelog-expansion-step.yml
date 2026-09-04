@@ -47,14 +47,17 @@ surprising_ripples:
   # order to a gate's stated bounds; a whole-file reviewer found it.
   - scripts/check_breaking_migration_link.py
 
-# Derived from `git log --oneline 3e6d318..HEAD`.
+# Derived from `git log --oneline 3e6d318..HEAD`, re-run at the commit named
+# below. **The value is stated as of that commit, not as an open-ended total** —
+# which is the only form of this field that stays true, because it is stale the
+# moment another fix pass lands, including the pass that writes it.
 #
-# **This field is stale the moment a fix pass lands, including the pass that
-# writes it — so re-derive it in every fix pass, never increment it.** It went
-# stale twice: round 5 caught it at 3 when it was 4, round 7 caught it at 5 when
-# it was 6. Both times the comment had been correct for the commit it shipped in
-# and was overtaken by the next one. The register entry no longer repeats the
-# count, so this is now its only home.
+# It went stale three times before that was accepted: round 5 caught it at 3 when
+# it was 4; round 7 at 5 when it was 6; round 9 at 7 when it was 8, all three
+# panel members flagging the last one. Each time the ledger had been correct for
+# the commit it shipped in, and the next fix pass edited this file without
+# re-deriving. The register entry no longer repeats the count, so this is its
+# only home — which is why a wrong value here is not a private error.
 #   c3d3097  implements; does not count
 #   4379017  round 1 — one unprimed reviewer, 4 findings
 #   62f0fae  round 2 — one measuring pass, 3 findings
@@ -64,9 +67,12 @@ surprising_ripples:
 #            escalation, before round 5 ran
 #   caa24e9  round 5 — panel of 3, 7 findings
 #   ffc59b4  round 6 — panel of 3, 5 findings
-#   (this commit)  round 7 — panel of 3, 5 findings
-# Seven commits exist because review feedback was incorporated. Value is 7.
-review_rounds: 7
+#   a5c1baf  round 7 — panel of 3, 5 findings
+#   58515ac  round 8 — panel of 3, 5 findings
+#   (this commit)  round 9 — panel of 3, 3 findings
+# Nine review-driven commits as of the commit carrying this line. Value is 9.
+# Any later fix pass owes a re-derivation, not an increment.
+review_rounds: 9
 
 phases:
   - id: orient

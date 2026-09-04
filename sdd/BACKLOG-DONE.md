@@ -476,8 +476,9 @@ if evidence changes; these are retired.
   *shape* becoming title-first rather than the marker being dropped — a condensed
   entry that kept `**Breaking**` would still be invisible, because the ID no
   longer leads the line. So it enumerates zero entries from Phase 1 condensation
-  until Phase 2 renames the heading, which is exactly while Phase 1's own
-  migration-guide item is being verified; the success line reports the
+  until Phase 2 renames the heading, which at the time overlapped Phase 1's own
+  migration-guide item — ID-253 later reordered that item above condensing, so
+  the overlap is gone; the success line reports the
   enumerated count so that state reads differently from a clean pass. And it
   cannot reach the
   softer half at all: BUG-261 re-derived that set at **6** unmarked entries a
@@ -510,8 +511,10 @@ if evidence changes; these are retired.
   condensed entry leads with a title (`- **SFTP write() …** (BK-313):`), so the
   ID no longer leads the line and nothing matches. The gate therefore enumerates
   zero entries from Phase 1 condensation until Phase 2 renames the heading —
-  which is exactly while Phase 1's own migration-guide checklist item is being
-  verified. Fixed two ways: the docstring states the shape and the window, and
+  which at the time overlapped Phase 1's own migration-guide checklist item.
+  (ID-253 moved that item above condensing, ending the overlap; the gate's own
+  docstring carries the current statement.)
+  Fixed two ways: the docstring states the shape and the window, and
   the success line now reports how many entries were enumerated, so a blind pass
   reads differently from a clean one.
   **`main()`, `--repo-root` and both failure paths now have tests**, per the 20
