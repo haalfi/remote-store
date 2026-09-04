@@ -83,13 +83,22 @@ surprising_ripples:
 #   BUG-265: Fix the author's review, and caveat a published row it falsified
 #                                                 -> counts (author's own
 #            review against the five-step reading path, 4 findings)
-# Value is 8 — one per review round that produced a commit; the merge and row 1
-# are the two that do not.
-# row 1 implements the item. Re-derived from that command before each push,
-# since a later round raises it. Round 4 found the third subject line quoted
+#   BUG-265: Record the user-facing cost of each follow-up item
+#                                                 -> does not count (answers a
+#            question from the author about the three filed items; no review
+#            finding)
+#   BUG-265: Correct two misattributions and two counts a whole-file pass found
+#                                                 -> counts (second author pass
+#            over the five files the prose-only commits touched, 4 findings)
+# Value is 9 — one per review round that produced a commit. Three rows do not:
+# row 1 implements the item, the merge resolves a conflict, and the
+# follow-up-cost row answers a question. Re-derived from that command before
+# each push, since a later round raises it — and the round that raised it to 9
+# is the one that found this comment enumerating ten rows where the command
+# returned eleven. Round 4 found the third subject line quoted
 # here had drifted from what the command returns ("blank-message shape" for
 # "blank shape"), which is why the quotations are copy-pasted now.
-review_rounds: 8
+review_rounds: 9
 phases:
   - id: orient
     name: Orient
@@ -627,7 +636,60 @@ phases:
           the one that constrains a future editor (do not re-add a reachability
           rationale); dropped three whose subject was which earlier sentence of
           this section was wrong, since their authoritative home is this trace
-          and a copy here is a second place to keep in step. Principles 4 and 8
+          and a copy here is a second place to keep in step. Principles 4 and 8.
+          The fifth needed no decision — it was the EPERM paragraph, and the
+          permission-errno rewrite in this same pass took it — so four of the
+          five added are gone and the section carries **three**, one more than
+          it did before this PR rather than five more. That last figure was
+          published as 2 to 4 and corrected: the reply arithmetic counted the
+          EPERM passage as kept, which is a fourth way to state a count without
+          running the enumeration behind it
+        outcome: ok
+  - id: fix_whole_file
+    name: Second author pass (whole-file, on the prose-only commits)
+    steps:
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-023 (EPERM bullet)"
+        read_type: verify
+        extract: >-
+          The pass the author asked for over the two prose-only commits nobody
+          had reviewed, and it found the round-7 fix carrying a misattribution
+          of its own: the bullet sent a reader to BUG-275 for a *connect-time*
+          EPERM, while BUG-275 scopes itself to _raise_if_dir's stat on a
+          working channel (`spec: SFTP-021`) and BACKLOG-DONE.md's own entry
+          attributes the same shape to BUG-273. Two files of this PR disagreed
+          about which item a reader should follow. The suggestion in the review
+          that prompted the round-7 fix named BUG-275 too, which is why it was
+          taken without checking — **a finding's own citation is not derived
+          just because the finding is right**
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "1. Failures are predictable (Closes-when narrative)"
+        read_type: verify
+        extract: >-
+          The same defect the author's review had just fixed in SFTP-023,
+          unswept one file over: this section stated flatly that a locally
+          rejected connect "answers PermissionDenied against the caller's key",
+          which is true only of the EACCES shape whose trigger is unknown — the
+          reproducible EPERM one answers the base class. BACKLOG-DONE.md already
+          carried the qualified version, so the repo again stated the scoped
+          claim in one file and the flat one in another, which the docs phase
+          records happening once before between the same two artifacts. Round 7
+          fixed the copy its finding named and swept no further
+        outcome: ok
+      - file: sdd/traces/bug-265-sftp-refused-connect.yml
+        section: "review_rounds derivation, fix_user_review retrospective step"
+        read_type: verify
+        extract: >-
+          Two counts in this file, both found by re-running their own stated
+          derivations. The review_rounds comment enumerated ten commits where
+          `git log --format='%s' origin/master..HEAD --reverse` returned eleven,
+          the unannotated row being the one that answered the author's question
+          about the filed items; the value 8 was right and its enumeration was
+          not, which is the readable half going stale while the figure held. And
+          the retrospective-density step said five passages were added, one
+          kept, three dropped — leaving the fifth unaccounted, so a reader doing
+          the arithmetic gets four where `rg` over SFTP-023's span returns three
         outcome: ok
   - id: verify
     name: Verify

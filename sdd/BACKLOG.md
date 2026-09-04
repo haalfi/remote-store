@@ -238,9 +238,12 @@ by BUG-265: a refused port and a DNS failure raise the `BackendUnavailable`
 fifteen docstrings and the health-check guide promise, where both raised the
 base class. That is one backend's connect arm, not the clause — BUG-264 carries
 the rest, and the two are the same promise met at different depths. It also
-opened BUG-273: the same connect path answers `PermissionDenied` against the
-caller's key when the connect is rejected locally, which is the promised-type
-defect again with a message that blames a path.
+opened BUG-273: the same connect path still answers the wrong type when the
+connect is rejected locally — `PermissionDenied` blaming the caller's key on the
+`EACCES` shape, whose trigger is unknown, and the base `RemoteStoreError` on the
+`EPERM` one a netfilter `REJECT` does produce. Neither is `BackendUnavailable`,
+so it is the promised-type defect again; the qualifier is load-bearing, because
+the reproducible half is the one that answers the base class.
 **One cross-section dependency remains**, per
 [§ How this file works](#how-this-file-works): BK-345 waits on **ID-244** in
 section 2 for the seeding hook, stated inside the item that carries it, so this

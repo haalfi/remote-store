@@ -386,7 +386,11 @@ then reaches differs:
   `RemoteStoreError`. This is the local rejection that *is* reproducible — a
   netfilter `REJECT` on the `OUTPUT` chain yields it — so it is the shape a
   reader meets, and it is BUG-265's own defect surviving in the errno the
-  connect-time set does not claim. BUG-275 carries it.
+  connect-time set does not claim. **BUG-273 carries this half** — a fix needs
+  the connect-time context, which only `_connect` has. BUG-275 carries the
+  absent `EPERM` arm itself, an older live-channel defect and the reason the
+  fall-through lands where it does; it would change this shape's answer from
+  the base class to `PermissionDenied`, which is still not the promised type.
 
 Neither is claimed here because `_raise_if_dir`'s permission re-raise
 deliberately passes **both** back through this mapping from a working channel,
