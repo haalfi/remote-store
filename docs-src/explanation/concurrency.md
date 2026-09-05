@@ -103,7 +103,7 @@ SFTP tries three strategies in order: `posix_rename` (atomic), standard `rename(
 
 \* Local `move()` uses `shutil.move()`, which delegates to `os.rename()` on the same filesystem (atomic) but falls back to copy+delete across filesystems. Only `write_atomic()` uses `os.replace()`.
 
-\*\* SFTP `move()` is atomic when `posix_rename` or `rename()` succeeds; falls back to copy+delete as a last resort. `write_atomic()` is atomic for *readers* — no one ever sees a half-written file — but a stalled connection is not a rollback: besides the well-known orphan-file risk, the operation may have completed despite raising, and on the rename-fallback path it can leave the destination removed with the payload stranded in the temp. What a failure leaves behind, per operation, is in the [SFTP backend guide](../guides/backends/sftp.md#capabilities).
+\*\* SFTP `move()` is atomic when `posix_rename` or `rename()` succeeds; falls back to copy+delete as a last resort. `write_atomic()` is atomic for *readers* — no one ever sees a half-written file — but a stalled connection is not a rollback: besides the well-known orphan-file risk, the operation may have completed despite raising, and on the rename-fallback path a dropped connection can leave the destination path empty, with the old file moved aside to a `.~bak.*` name and the payload in the temp. What a failure leaves behind, per operation, is in the [SFTP backend guide](../guides/backends/sftp.md#capabilities).
 
 ## See also
 

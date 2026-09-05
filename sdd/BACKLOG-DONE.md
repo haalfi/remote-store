@@ -220,6 +220,75 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-272 — A non-dead rename failure in the atomic fallback removes the destination *and* the temp, losing both copies**
+  spec: SFTP-014, AW-003 · effort: M · audience: user.api
+  **What shipped:** the fallback no longer removes the destination. `_displace`
+  renames it to `.~bak.<name>.<uuid8>`, `_restore` renames it back if the promote
+  fails, and `_release` drops it once the promote succeeds — one extra round-trip,
+  paid only on the fallback path. `write_atomic` / `open_atomic` keep their
+  `connection_lost` cleanup guard unchanged: with the destination restored, the
+  temp unlink no longer removes the last copy, which is what made the guard
+  read as the culprit.
+  **The design question the item posed was decided the other way round.** It
+  framed closing the window as possibly meaning "a store without `posix_rename`
+  cannot overwrite atomically". Displacing instead of removing keeps the
+  overwrite, so nothing was retracted: AW-003 gained a clause (**on failure the
+  existing file is not destroyed**) rather than losing one.
+  **What the caller gets now**, measured in
+  `tests/backends/sftp/test_atomic_fallback.py` — non-dead promote failures
+  (`EACCES`, `EIO`) leave the destination holding its old content, with no
+  `.~bak.` or `.~tmp.` left behind. Pre-fix, the same four cases raised `NotFound`
+  on the read-back: the destination was gone and the temp with it.
+  **`move` was never exposed to this half**, which the item did not distinguish.
+  Its fallback answers a live-connection rename failure by copying
+  (`_copy_and_delete`), so the move completes rather than reporting; only a dead
+  channel stops that rung, and that is BUG-270's residue. Pinned by
+  `test_move_copies_when_both_renames_fail`, which is also what put
+  `_copy_and_delete` under test and let its `no cover` pragma go, along with
+  `_rename_fallback`'s.
+  **Found by BK-360's review round 4, by a measuring pass.**
+
+- [x] **BUG-270 — `_rename_fallback` destroys the destination and strands the payload when the promote stalls**
+  spec: SFTP-014, SFTP-030 · effort: M · audience: user.api
+  Both halves closed, in the same change as BUG-272 because both live in the two
+  lines that opened the fallback.
+  **The destination half** is a consequence of BUG-272's fix rather than a
+  separate one: the displace is a rename, so a stall at the promote leaves the
+  old content under `.~bak.<name>.<uuid8>` instead of nowhere. The path is still
+  left empty — a dropped connection is exactly the failure `_restore` cannot run
+  over, and attempting it would pay the bound again — so what changed is that
+  both copies survive under names a caller can find, not that the state
+  disappeared. SFTP-030's residue table, SFTP-014, SFTP-015, SFTP-018 and the
+  SFTP guide's danger note all name the backup now.
+  **The two-bound half** is closed outright: the displace re-raises a
+  dead-connection failure where the old `remove` swallowed it under
+  `contextlib.suppress(OSError)`, so the promote is never attempted on a channel
+  that has already gone silent. SFTP-030's one-bound clause carried this as its
+  single known exception and no longer does. Measured 2.13 s (`move`) and 2.11 s
+  (`write_atomic`) at a 2.0 s bound by `pytest
+  tests/backends/sftp/test_io_timeout.py -k pays_one_bound --durations=0`,
+  against the 4.00 s the item recorded.
+  **The item's own reading of the fix was superseded.** It expected the ordering
+  to be load-bearing enough that closing the window might cost the overwrite;
+  see BUG-272's entry for why it did not.
+  **Found by BK-360's review round 2, by a measuring pass**, with the
+  server-class scope corrected by its round 3.
+
+- [x] **BUG-271 — `022-streaming-atomic-writes.md` carries three `open_atomic` invariants that shipped tests refute**
+  spec: SAW-004, SAW-005, SAW-009 · effort: S · audience: contributor.process
+  Co-shipped with BUG-272 rather than left standing, because that fix changed
+  what the cited tests measure: two of the three refutations named
+  `test_the_rename_fallback_destroys_the_destination_when_the_promote_stalls`,
+  which no longer exists under that name or that verdict.
+  **The three rows now carry one scope, not three.** Each was written for a
+  caller exception and each fails only over a dropped connection, so the marks
+  are gone and the prose under the table states the bound once, deferring to
+  AW-004 for the general form. SAW-004 keeps its no-partial-file clause
+  unqualified — that half was always true; what the drop changes is whether the
+  target is still occupied. SAW-009's per-backend paragraph describes the
+  displace-and-restore rather than "on failure, `sftp.remove()` cleans up".
+  **Found by BK-360's review round 4, by a measuring pass.**
+
 - [x] **BUG-264 — A mapped error can still reach the caller with an empty message on Azure**
   spec: ERR-009, AZ-025 · effort: M · audience: user.api
   **Split, not finished.** This closed the `BackendUnavailable` half; the

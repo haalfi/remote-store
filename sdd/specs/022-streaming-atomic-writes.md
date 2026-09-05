@@ -19,12 +19,12 @@ RFC: `sdd/rfcs/rfc-0004-streaming-atomic-writes.md`
 | SAW-001 | `Backend.open_atomic()` is abstract, returns context manager yielding `BinaryIO` | Done |
 | SAW-002 | `Store.open_atomic()` gates on `Capability.ATOMIC_WRITE` | Done |
 | SAW-003 | On successful exit, file is atomically visible at target path | Done |
-| SAW-004 | On exception, target path is unchanged (no partial file) | [~] Done |
-| SAW-005 | Temp artifact is cleaned up on both success and failure | [~] Done |
+| SAW-004 | On exception, the target path never holds a partial file; it is unchanged unless the connection dropped | Done |
+| SAW-005 | Temp artifact is cleaned up on both success and failure, where the backend can still act | Done |
 | SAW-006 | `AlreadyExists` raised if file exists and `overwrite=False` | Done |
 | SAW-007 | `InvalidPath` raised if path is empty | Done |
 | SAW-008 | LocalBackend uses `mkstemp` + `os.replace` | Done |
-| SAW-009 | SFTPBackend uses `.~tmp.*` + `posix_rename` (with fallback) | [~] Done |
+| SAW-009 | SFTPBackend uses `.~tmp.*` + `posix_rename`, falling back to displace + `rename` | Done |
 | SAW-010 | S3Backend / S3PyArrowBackend buffer via `SpooledTemporaryFile` then PUT | Done |
 | SAW-011 | AzureBackend non-HNS buffers then PUT; HNS uses temp + DFS rename | Done |
 | SAW-012 | MemoryBackend buffers in `BytesIO` then commits | Done |
@@ -32,21 +32,32 @@ RFC: `sdd/rfcs/rfc-0004-streaming-atomic-writes.md`
 | SAW-014 | `ext.observe` fires `on_write` hook after successful promotion | Done |
 | SAW-015 | `ext.otel` emits a span covering the full open-write-promote lifecycle | Done |
 
-[~] **Three rows are marked because shipped tests refute them as written, and
-BUG-271 owns the rewrite.** Each is unqualified where the failure it does not
-survive is a dropped connection rather than a caller exception. SAW-004: a
-stalled promote can leave the target *removed*, which is neither unchanged nor
-partial. SAW-005: `SFTPBackend` deliberately skips the cleanup unlink on a
-dead-connection signal, so the temp survives by design — 007-atomic-writes.md
-AW-004 already carries the scoping clause this row does not. SAW-009: the
-fallback is reached on any `rename` failure the backend cannot attribute to a
-dropped connection, not only on servers lacking the extension, and it removes
-the destination before renaming onto it. Measured by
-`test_the_rename_fallback_destroys_the_destination_when_the_promote_stalls` and
-`test_a_stalled_atomic_write_preserves_the_destination_and_leaves_an_orphan_temp`
-in `tests/backends/sftp/test_io_timeout.py`. Marked rather than rewritten here
-because writing the current behaviour into a requirement row would document a
-defect as the contract.
+**Three rows carry a dropped-connection scope (BUG-271), and it is one bound, not
+three.** Each was written for a caller exception, which is the failure
+`open_atomic` was designed around: the promote has not run, so the target is
+untouched and the temp is removed. A connection that dies *during* the promote is
+the case none of them survived unqualified, and the scoping is the same sentence
+in all three — a backend cannot undo, clean up, or complete over a channel it
+cannot reach. The authority for the general form is
+[007-atomic-writes.md](007-atomic-writes.md) AW-004; these rows carry only what is
+specific to streaming.
+
+- **SAW-004** — no reader ever sees a partial file, which holds without
+  qualification. What the drop can change is *whether the target is still
+  occupied*: a lost promote reply leaves the rename performed, and the SFTP
+  fallback's displace can leave the path empty with the old content beside it
+  (AW-003, and SFTP-030 for the residue). Neither is a partial file.
+- **SAW-005** — `SFTPBackend` deliberately skips the cleanup unlink on a
+  dead-connection signal, so an orphan `.~tmp.*` survives by design rather than
+  by omission.
+- **SAW-009** — the fallback is reached on any `rename` failure the backend
+  cannot attribute to a dropped connection, not only on servers lacking the
+  extension.
+
+Measured by `test_a_stalled_promote_in_the_fallback_leaves_the_old_content_in_a_backup`
+and `test_a_stalled_atomic_write_preserves_the_destination_and_leaves_an_orphan_temp`
+in `tests/backends/sftp/test_io_timeout.py`, and by
+`tests/backends/sftp/test_atomic_fallback.py` for the live-connection half.
 
 ## Capacity note
 
@@ -66,10 +77,13 @@ removes the temp file.
 ### SFTPBackend (SAW-009)
 
 Writes to `.~tmp.{name}.{uuid}` in the same directory. On success,
-`posix_rename()` (with `rename()` fallback) promotes it. On failure,
-`sftp.remove()` cleans up. Setup (existence check, parent dirs) runs inside
-`_errors()` for exception mapping; the yield runs outside `_errors()` so
-caller exceptions propagate without remapping.
+`posix_rename()` promotes it; where that fails for a reason the backend cannot
+attribute to a dropped connection, the fallback renames an occupying destination
+aside to `.~bak.{name}.{uuid}`, renames the temp into place, and then drops the
+backup — or renames it back if the promote failed. On failure, `sftp.remove()`
+cleans the temp up, subject to SAW-005's scope. Setup (existence check, parent
+dirs) runs inside `_errors()` for exception mapping; the yield runs outside
+`_errors()` so caller exceptions propagate without remapping.
 
 ### S3Backend / S3PyArrowBackend (SAW-010)
 

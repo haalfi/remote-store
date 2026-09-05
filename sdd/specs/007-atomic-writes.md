@@ -18,14 +18,21 @@ Atomic writes ensure that a file is either fully written or not written at all. 
 ## AW-003: Overwrite Semantics
 
 **Invariant:** If `overwrite=False` and the target file exists, `AlreadyExists` is raised *before* writing the temporary file.
-**Postconditions:** [~] If `overwrite=True`, the atomic rename replaces the existing file.
+**Postconditions:** If `overwrite=True`, the atomic rename replaces the existing
+file. **On failure the existing file is not destroyed**: it is either still at
+its path, or — where a backend simulates the overwrite by displacing it and
+cannot undo that — recoverable under a name in the same directory.
 
-[~] **The postcondition is unqualified and the SFTP fallback contradicts it.**
-`test_the_rename_fallback_destroys_the_destination_when_the_promote_stalls`
-measures a case where the existing file is removed and nothing replaces it, so
-"replaces" holds on success and not on every failure. Marked rather than
-rewritten: **BUG-272** owns the behaviour, and writing the current behaviour into
-the invariant would document a defect as the contract.
+**The second clause is what a caller cannot reconstruct.** A backend whose
+overwrite is not a single server-side operation has to clear the target before
+it can put the new file there, and the caller's file is that backend's to hand
+back. `SFTPBackend`'s `rename` fallback is the one such window in the library:
+it renames the destination to `.~bak.<name>.<uuid8>` and renames it back if the
+promote fails, so a reported failure costs the caller nothing (BUG-272) — except
+over a dropped connection, where nothing can be renamed back and the backup
+itself is the recovery. See [009-sftp-backend.md](009-sftp-backend.md) SFTP-014
+and SFTP-030 for that residue. Backends whose overwrite is one operation
+(`os.replace`, a PUT, a DFS rename) have no window and nothing to add here.
 
 ## AW-004: Cleanup on Failure
 
@@ -50,6 +57,14 @@ stall again inside the error path — so a stalled atomic write leaves a
 `AzureBackend` **attempts** the delete under a suppressing guard and may simply
 fail, which [012-azure-backend.md](012-azure-backend.md) already records as an
 inherent limitation of simulated atomicity over a network.
+
+**A second artifact class on the SFTP fallback path, and it is not litter.**
+The `.~bak.<name>.<uuid8>` AW-003 describes is released as soon as the promote
+succeeds and renamed back as soon as it fails, so it outlives the call only when
+the connection dropped — the same condition that strands the temp, and there it
+holds the caller's previous file. Cleaning it up unasked is the one thing that
+would make this clause's guarantee false, so it is left where a caller can find
+it.
 See [009-sftp-backend.md](009-sftp-backend.md) SFTP-014 for the SFTP caveat and
 SFTP-030 for what the destination itself holds. Stated here rather than left to
 those specs because this clause is the cross-backend one, and an unqualified

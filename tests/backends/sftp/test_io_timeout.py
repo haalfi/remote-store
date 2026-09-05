@@ -1629,30 +1629,24 @@ def _break_posix_rename(backend: Any) -> None:
 @pytest.mark.spec("SFTP-014")
 @pytest.mark.spec("SFTP-030")
 @pytest.mark.parametrize("op", ["move", "write_atomic", "open_atomic"])
-def test_the_rename_fallback_destroys_the_destination_when_the_promote_stalls(
+def test_a_stalled_promote_in_the_fallback_leaves_the_old_content_in_a_backup(
     stall_relay: _StallRelay, sftp_server: tuple[int, str] | None, op: str
 ) -> None:
     """The worst residue state in SFTP-030's table, and the one nothing else reaches.
 
     On a server without ``posix-rename@openssh.com``, both ``_rename_fallback``
-    and ``_move_fallback`` `remove` the destination and *then* `rename` onto it.
-    Silence the client→server direction at that `rename` and the removal has
-    already happened while the rename never arrives: the destination is **gone**
-    and nothing has replaced it. For the atomic paths the caller's payload is
-    stranded in the orphan temp; for ``move`` the source survives, so the data
-    still exists somewhere — but the file the caller had at the destination does
-    not.
+    and ``_move_fallback`` displace the destination and *then* `rename` onto it.
+    Silence the client→server direction at that second `rename` and the displace
+    has already happened while the promote never arrives: **the destination path
+    is empty**. What is left there is the difference this state turns on — the
+    old content under its ``.~bak.<name>.<uuid8>`` name, because the dead channel
+    is exactly the case ``_restore`` cannot put it back over. Before BUG-272 the
+    displace was a ``remove`` and this residue had no old content in it at all.
 
-    This is tracked as a defect rather than fixed here (see the backlog): the
-    remove-then-rename ordering is what makes a non-atomic overwrite possible at
-    all on such a server, so closing the window is a design decision, not a
-    patch. What this test does is stop the state being undocumented and
-    unexercised — the fallback carries a ``no cover`` pragma, so nothing else in
-    the suite executes it.
-
-    It is also the row that most needs pinning: it is reached through
-    ``write_atomic``, the operation the library recommends when a failure must
-    not damage the destination.
+    The payload survives too, in the orphan temp for the atomic paths and in the
+    surviving source for ``move``, so both copies are recoverable by hand. That
+    is what a caller gets here and it is not a rollback: the path they wrote to
+    holds nothing, and only the names beside it say why.
     """
     if sftp_server is None:
         pytest.skip("paramiko not installed")
@@ -1668,8 +1662,15 @@ def test_the_rename_fallback_destroys_the_destination_when_the_promote_stalls(
     backend.check_health()
 
     _break_posix_rename(backend)
-    # The remove completes; the silence begins at the rename that follows it.
-    _silence_at(stall_relay, backend, "rename", lambda *_a, **_k: True, direction="upload")
+    # The displace (whose destination is the backup) completes; the silence
+    # begins at the promote that follows it, which is the rename onto ``dst``.
+    _silence_at(
+        stall_relay,
+        backend,
+        "rename",
+        lambda _src, target, *_a, **_k: target.rsplit("/", 1)[-1] == dst,
+        direction="upload",
+    )
 
     def _run() -> None:
         if op == "move":
@@ -1684,18 +1685,78 @@ def test_the_rename_fallback_destroys_the_destination_when_the_promote_stalls(
         _run()
 
     assert not observer.exists(dst), (
-        "the fallback removed the destination and the rename never arrived, so the destination "
-        "must be gone — if it is now present the fallback has been reordered and SFTP-030's "
-        "fallback row, plus the backlog item tracking it, change with it"
+        "the fallback displaced the destination and the promote never arrived, so the "
+        "destination path must be empty — if it is now occupied the fallback has been "
+        "reordered and SFTP-030's fallback row, plus the backlog item tracking it, change "
+        "with it"
     )
+    backups = [entry.name for entry in observer.list_files("") if entry.name.startswith(f".~bak.{dst}.")]
+    assert len(backups) == 1, (
+        "the caller's old content must survive under a backup name: the restore cannot run "
+        "over a dead channel, so leaving the backup in place is the only thing standing "
+        "between this state and the total loss BUG-272 measured"
+    )
+    assert observer.read_bytes(backups[0]) == old
     if op == "move":
-        assert observer.read_bytes(src) == new, "move's source survives, so the data is not lost outright"
+        assert observer.read_bytes(src) == new, "move's source survives, so the payload is not lost either"
     else:
         orphans = [entry for entry in observer.list_files("") if f".~tmp.{dst}." in str(entry)]
-        assert orphans, (
-            "the payload must be stranded in the orphan temp — that is the only copy left "
-            "once the destination has been removed"
-        )
+        assert orphans, "the payload survives in the orphan temp, on the same dead-channel reasoning"
+
+
+@pytest.mark.spec("SFTP-030")
+@pytest.mark.parametrize("op", ["move", "write_atomic"])
+def test_the_fallback_pays_one_bound_not_two(
+    stall_relay: _StallRelay, sftp_server: tuple[int, str] | None, op: str
+) -> None:
+    """BUG-270's second half: the fallback's first round-trip must report its own stall.
+
+    The displace used to be a ``remove`` under ``contextlib.suppress(OSError)``,
+    which swallowed its timeout and let the following ``rename`` re-enter the
+    same silent channel — 4.00 s at a 2.0 s bound, one of the two-bound
+    mechanisms SFTP-030 records. ``_displace`` re-raises a dead-connection
+    failure instead, so the promote is never attempted.
+
+    Silencing here is armed at the fallback's *first* rename, which is the
+    displace. The band matches ``test_stall_costs_one_bound_not_several``: 1.75x
+    fails the doubling while leaving slack on a loaded runner.
+
+    The destination is untouched because the request never left the client — the
+    other direction would leave it displaced, which the test above covers.
+    """
+    if sftp_server is None:
+        pytest.skip("paramiko not installed")
+
+    observer = _make_backend(sftp_server[0], io_timeout=30.0)
+    io_timeout = 2.0
+    backend = _make_backend(stall_relay.port, io_timeout=io_timeout)
+    tag = uuid.uuid4().hex[:8]
+    src, dst = f"1bsrc_{tag}.bin", f"1bdst_{tag}.bin"
+    old, new = b"OLD" * 100, b"NEW" * 100
+    if op == "move":
+        observer.write(src, new)
+    observer.write(dst, old, overwrite=True)
+    backend.check_health()
+
+    _break_posix_rename(backend)
+    _silence_at(stall_relay, backend, "rename", lambda *_a, **_k: True, direction="upload")
+
+    def _run() -> None:
+        if op == "move":
+            backend.move(src, dst, overwrite=True)
+        else:
+            backend.write_atomic(dst, new, overwrite=True)
+
+    start = time.monotonic()
+    with pytest.raises(BackendUnavailable):
+        _run()
+    elapsed = time.monotonic() - start
+
+    assert elapsed < io_timeout * 1.75, (
+        f"{op} took {elapsed:.1f}s ({elapsed / io_timeout:.1f}x the bound); the fallback is "
+        "still re-entering the stalled channel after its displace"
+    )
+    assert observer.read_bytes(dst) == old, "the displace request never arrived, so the destination stands"
 
 
 @pytest.mark.spec("SFTP-030")
