@@ -220,6 +220,86 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-265 — A refused SFTP connect raises `RemoteStoreError`, which contradicts fifteen docstrings and the health-check guide**
+  spec: SFTP-023 · effort: S · audience: user.api, user.site
+  Reproduced before it was fixed and re-run after, against a just-released
+  ephemeral port and an RFC 2606 `.invalid` host: `check_health()` raised
+  `RemoteStoreError("[Errno None] Unable to connect to port <n> on 127.0.0.1")`
+  and `RemoteStoreError("[Errno -2] Name or service not known")` respectively;
+  both now raise `BackendUnavailable`.
+  **Fifteen docstrings promised the type that was not delivered** — derived by
+  walking the module's AST for functions whose docstring, whitespace-normalised,
+  contains the sentence prefix `"BackendUnavailable: If the SSH/SFTP connection
+  cannot be established"` as a substring. **Three readings of the same words give
+  three answers, and the item's own body had the wrong two:** substring returns
+  **15**; full-line equality against the prefix returns **14**, because the
+  fourteen wrap the sentence and their line *is* exactly the prefix; equality
+  against the prefix plus a period returns **1**, `check_health` alone, which is
+  the only one ending the sentence there. The body said the equality reading
+  "returns 1 rather than 15", inverting which reading loses which methods; caught
+  by running all three. Because the lazy
+  `_sftp` property runs `_connect` inside the caller's `_errors(path)` block,
+  the defect reached all fifteen on a first operation, not only the probe.
+  **Three shapes, one new arm.** `paramiko.NoValidConnectionsError` (an
+  `OSError` whose `errno` is `None` — what a refused port actually raises),
+  `socket.gaierror`, and the raw connect-side errnos (`ECONNREFUSED` /
+  `EHOSTUNREACH` / `ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN`) — three of which
+  are the *ordinary* connect path rather than a fallback, since
+  `SSHClient.connect` wraps only `ECONNREFUSED` and `EHOSTUNREACH` and re-raises
+  the rest unwrapped, measured on paramiko 5.0.0. **Both permission errnos are
+  deliberate exclusions**, carried by BUG-273: `EACCES` from the start, and
+  `EPERM` after being claimed in a late round and reverted in the next, when
+  measurement showed `_raise_if_dir` re-raises both from a *working* channel —
+  so claiming either answered a server-reported denial with
+  `BackendUnavailable` and discarded a healthy client, where `EPERM` had
+  answered the base `RemoteStoreError`. The argument that admitted it ("the
+  errno dispatch has no `EPERM` arm") was true of the dispatch and false of the
+  module. That dispatch gap is real and older than this item — four artifacts,
+  one of them the published migration table, say the re-raise delivers
+  `PermissionDenied` for both errnos, and it never has for `EPERM` — filed as
+  **BUG-275**. They
+  classify through
+  `_is_unreachable` and an arm of their own rather than by widening
+  `_is_connection_dead`, because **the two predicates answer different
+  questions** — was the host ever reached, versus is a connection the backend
+  had now unusable. **No reachability reason is given, and that is the finding
+  rather than an omission:** three rounds wrote one and review refuted each in
+  turn (no operation is in flight at connect time; the guards are never
+  consulted on the connect path; the shapes partition by phase). The condition's
+  space is enumerated instead — `TestSFTPConnectTimePredicateSpace` generates
+  connect-time shape x operation and asserts the caller's answer per cell — so
+  which predicate claims a shape is an implementation detail. Every other
+  `OSError` the errno dispatch
+  declines keeps the base `RemoteStoreError` — `EIO` and `ENOSPC` are faults of
+  a connection that is working, and the test suite pins that bound.
+  **The DNS arm supplies its own message.** `gaierror` renders as `Name or
+  service not known` and never says which name, so the arm names the host, the
+  way the `IncompatiblePeer` arms name their remediation. The port is
+  deliberately omitted: resolution never reaches it. A refused connect keeps
+  paramiko's own text, which names an address and a port a reader can act on —
+  the *resolved* address, not the configured hostname, since paramiko builds
+  that message from the addresses it tried. Round 5 caught three copies of this
+  clause claiming it "names host and port"; it names enough, which is the
+  narrower claim, and the gap is why the DNS arm supplies its own.
+  **Not marked `**Breaking**`, and the migration section is owed anyway.**
+  `BackendUnavailable` subclasses `RemoteStoreError`, so no `except` clause
+  stops catching; what changes is which branch runs for a caller who lists both,
+  and that a failure now leaves one `op="error_mapping"` WARNING where it left
+  none.
+  **One backlog correction shipped with it:** this item's own body claimed
+  `docs-src/guides/health-check.md` "now carries a caveat pointing here". It
+  never did — the guide's `BackendUnavailable` row was simply false, and needed
+  nothing added. **It is true as written for the failures this item covers**, and
+  the qualifier is load-bearing: BUG-273 records a locally-rejected connect that
+  still answers the wrong type — `PermissionDenied` on the `EACCES` shape, whose
+  trigger is unknown, and the base `RemoteStoreError` on the `EPERM` one, which
+  is the shape a reader can actually produce. Either way it is not
+  `BackendUnavailable`. The row is not unconditionally true and this entry does
+  not claim it is.
+  **What was deliberately not done:** the same class of defect on other
+  backends, which is **BUG-264**, and the observable-failure-to-arm table, which
+  is **BUG-266**.
+
 - [x] **ID-253 — Nobody documented performs the CHANGELOG expansion step release Phase 1 depends on**
   spec: — · effort: S · audience: contributor.process
   **Written down, not dropped.** The step was real, manual and homeless:
@@ -392,8 +472,9 @@ if evidence changes; these are retired.
   person to meet it was one who had configured nothing.
   **The defect class was wider than the item's title.** Nine exception instances
   were constructed and driven through `_map_exception` — one per shape the
-  mapping concludes `BackendUnavailable` on, with the seven-errno arm sampled
-  once — and **four** arrived with no message of their own, not one:
+  mapping concluded `BackendUnavailable` on **as it stood then**, with the
+  seven-errno arm sampled once — and **four** arrived with no message of their
+  own, not one:
   `TimeoutError` (which `socket.timeout` is), `EOFError`, `paramiko.SFTPError`
   and a bare `paramiko.SSHException`. The other five carried a real message.
   **The set is the mapping's, not `_is_connection_dead`'s**: that predicate
@@ -424,8 +505,10 @@ if evidence changes; these are retired.
   retry policy, the host-key policy and the failure shape — three review rounds
   each refuted a different cell of that product written as a constant, which is
   why the spec now declines to give one. Note also that a refused connect and a
-  DNS failure never reach `_unavailable` at all (BUG-265), so they contribute
-  nothing from the mapping. The single-record claim is asserted where it could
+  DNS failure did not reach `_unavailable` at all when this shipped, so they
+  contributed nothing from the mapping — **no longer true**, and the divergence
+  this observation opened is BUG-265, which gave both an arm of their own.
+  The single-record claim is asserted where it could
   break — `copy`, which holds two
   handles, and `open_atomic`, which maps and then re-enters its own handler —
   rather than on a read, which classifies once and stops.

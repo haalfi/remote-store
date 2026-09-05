@@ -9,6 +9,7 @@ import logging
 import os
 import re
 import shutil
+import socket
 import stat
 import uuid
 from contextlib import contextmanager
@@ -257,7 +258,6 @@ class SFTPUtils:
             Path("host.keys").write_text(entry + "\\n")
             ```
         """
-        import socket
 
         import paramiko
 
@@ -349,7 +349,6 @@ class SFTPUtils:
             # widen via SFTPBackend(connect_kwargs={"disabled_algorithms": ...}).
             ```
         """
-        import socket
         import struct
 
         sock = socket.create_connection((host, port), timeout=timeout)
@@ -2465,19 +2464,153 @@ class SFTPBackend(Backend):
                 return True
         return False
 
+    @staticmethod
+    def _is_unreachable(exc: Exception) -> bool:
+        """Return True if *exc* says the host was never reached at all.
+
+        The connect-time counterpart to ``_is_connection_dead``, and separate
+        from it because **the two answer different questions** — this one asks
+        whether the host was ever reached, that one whether a connection the
+        backend had is now unusable. ``_map_exception`` gives each its own arm,
+        and the two are disjoint over every shape measured against them.
+
+        **That is the whole of the reason, and no claim is made here about what
+        is reachable when.** Three successive rationales of that kind were
+        written and each was refuted: that no operation is in flight at connect
+        time (a connect that times out raises ``socket.timeout``, which the
+        other predicate already matches); that the ``is_fatal`` and re-entry
+        guards are never consulted on the connect path (they are — ``read``,
+        ``read_bytes`` and ``delete`` evaluate the lazy ``_sftp`` property
+        *inside* their own ``try``, so a failure raised by ``_connect`` reaches
+        them); and that the shapes partition by phase at all. What a caller
+        actually gets is enumerated instead, as the product of connect-time
+        shape and operation, in
+        ``TestSFTPConnectTimePredicateSpace`` — twelve cells, each asserting
+        ``BackendUnavailable`` with a non-empty message and one record. Read the
+        table there rather than reasoning from here. (Three guarantees, not
+        four: an earlier revision claimed a cleared client per cell too, and
+        review measured that assertion vacuous. The client-clearing invariant is
+        pinned by ``test_a_host_never_reached_maps_to_backend_unavailable``,
+        which seeds a sentinel first.)
+
+        Three shapes reach here, none of them matched by the errno dispatch in
+        ``_map_exception``:
+
+        - ``paramiko.NoValidConnectionsError`` — paramiko's wrapper for "every
+          address I tried refused me". A ``socket.error`` subclass whose ``errno``
+          is ``None``, which is why it survived the errno arms; the errno-less
+          branch of ``_is_connection_dead`` matches only the literal
+          ``"Socket is closed"``. This is what a refused port actually raises.
+        - ``socket.gaierror`` — name resolution failed. Its ``errno`` is an
+          ``EAI_*`` code (``-2`` for ``EAI_NONAME``), which shares a namespace
+          with nothing in the errno tuples below.
+        - An ``OSError`` carrying a connect-side errno (``ECONNREFUSED`` /
+          ``EHOSTUNREACH`` / ``ENETUNREACH`` / ``ENETDOWN`` / ``EHOSTDOWN``).
+          **Three of these five are the ordinary path, not a fallback**, so do
+          not trim them as hypothetical: ``SSHClient.connect`` captures only
+          ``ECONNREFUSED`` and ``EHOSTUNREACH`` into ``NoValidConnectionsError``
+          and re-raises every other ``socket.error`` unwrapped — its own
+          docstring says so ("if a socket error (other than connection-refused
+          or host-unreachable) occurred while connecting"), and driving each
+          errno through ``SSHClient.connect`` on paramiko 5.0.0 confirms
+          ``ENETUNREACH`` / ``ENETDOWN`` / ``EHOSTDOWN`` arrive here as a plain
+          ``OSError``.
+
+        Deliberately **not** matched: every other ``OSError`` the errno dispatch
+        declines. ``EIO`` and ``ENOSPC`` are faults of a connection that is
+        working, and answering them with ``BackendUnavailable`` would tell a
+        caller to retry a different host over a full disk.
+
+        **The two permission errnos are known exclusions, not oversights**, and
+        the reason is the same for both: this predicate sees only the exception,
+        so it cannot tell a connect-time one from a live-channel one. ``EACCES``
+        is the obvious case — on an operation it genuinely is a denied path.
+        ``EPERM`` looks safer and is not: ``_raise_if_dir``'s permission
+        re-raise deliberately passes **both** errnos back through the mapping
+        from a *working* channel, so claiming either here would answer a
+        server-reported denial with ``BackendUnavailable`` and discard a healthy
+        client. That was measured, after a revision of this docstring claimed
+        ``EPERM`` was free to take because the errno dispatch has no arm for it
+        — true of the dispatch, false of the module. Reaching these two needs
+        connect-time context the mapping does not have; both are tracked as
+        their own item rather than widened here.
+        """
+        import paramiko
+
+        if isinstance(exc, (paramiko.ssh_exception.NoValidConnectionsError, socket.gaierror)):
+            return True
+        return isinstance(exc, OSError) and getattr(exc, "errno", None) in (
+            errno.ECONNREFUSED,
+            errno.EHOSTUNREACH,
+            errno.ENETUNREACH,
+            errno.ENETDOWN,
+            errno.EHOSTDOWN,
+        )
+
+    def _unreachable_message(self, exc: Exception) -> str | None:
+        """Return the message for an unreachable-host signal, or ``None`` to keep the driver's.
+
+        ``None`` for a refused connect: ``NoValidConnectionsError`` renders as
+        ``"[Errno None] Unable to connect to port 2222 on 10.0.0.4"``, which
+        names an address and a port a reader can act on, and ``_unavailable``'s
+        rule is that a driver which explained itself is never overwritten.
+        **Note what that address is.** paramiko builds the text from the
+        addresses it actually tried, not from the hostname it was handed, so a
+        store configured as ``files.example.com`` reports an IP here. This
+        docstring said the driver "already names host and port" until a
+        whole-file pass caught it; it names *enough*, which is the narrower
+        claim that survives, and the difference is exactly why the branch below
+        does not defer to the driver.
+
+        A ``gaierror`` is the case that needs one. It renders as
+        ``"[Errno -2] Name or service not known"`` — true, and useless to a
+        reader running several stores, since it never says *which* name. So this
+        arm supplies one, the way the ``IncompatiblePeer`` arms supply their
+        remediation hint. **The port is not named**: resolution never reaches it,
+        and naming it would point a reader at the one thing that cannot be the
+        fault.
+
+        The blank-message handling keeps ``_unavailable``'s own fallback out of
+        this arm's way. That fallback reports a lost connection, which is the
+        wrong sentence for one that was never made, so a message-less connect
+        signal gets its own wording here rather than borrowing it. **Both** arms
+        need it, not just the second: a zero-argument ``gaierror`` would
+        otherwise render as ``Cannot resolve SFTP host 'x': `` with a dangling
+        colon, because the resolution branch is reached first and would have
+        interpolated an empty string. Neither blank shape is raised by anything
+        today — an ``OSError`` built with an errno renders as
+        ``[Errno n] strerror``, and the resolver always supplies text — so both
+        are guards rather than observed behaviour, and both are pinned so that
+        stays checkable.
+        """
+        detail = str(exc)
+        if isinstance(exc, socket.gaierror):
+            said = f": {detail}" if detail else f" ({type(exc).__name__} with no detail)"
+            return f"Cannot resolve SFTP host '{self._host}'{said}"
+        if not detail:
+            return f"Cannot reach SFTP host '{self._host}' ({type(exc).__name__} with no detail)"
+        return None
+
     def _unavailable(self, exc: Exception, path: str, *, message: str | None = None) -> BackendUnavailable:
-        """Build a ``BackendUnavailable`` for a concluded backend failure, and log it.
+        r"""Build a ``BackendUnavailable`` for a concluded backend failure, and log it.
 
         **Every** ``BackendUnavailable`` ``_map_exception`` *constructs* ends
         here, so what a caller is handed — and what lands in their log — is
-        described in one place rather than at each of the four arms. Constructs,
+        described in one place rather than at each of the arms that reach it.
+        No count is given: this docstring said "the four arms" through the
+        addition of a fifth (the unreachable-host arm), and the number was never
+        what the sentence needed. ``rg -n 'self\._unavailable\(' `` on this file
+        is the derivation if you want one — and this docstring is raw so that
+        command is copy-pasteable from the source, which is where a maintainer
+        reads it, rather than only from ``__doc__``. Constructs,
         not returns: the passthrough arm returns a ``RemoteStoreError`` it was
         given unchanged, so a ``BackendUnavailable`` built elsewhere and fed
         back in — the direct raise in ``_open_sftp_bounded`` is the only one
-        today, and it is unreachable in practice — leaves no record. The
-        ``IncompatiblePeer`` arms pass their remediation hint as *message*
-        because they have something better to say than the exception does;
-        everything else lets this method decide.
+        today, and it is unreachable in practice — leaves no record. Two kinds of
+        arm pass a *message* because they have something better to say than the
+        exception does: the ``IncompatiblePeer`` arms with their remediation
+        hint, and the unreachable-host arm with the name that failed to resolve
+        (``_unreachable_message``). Everything else lets this method decide.
 
         **Why the driver's own message is not enough.** paramiko raises several
         of these signals with no arguments, and ``BackendUnavailable(str(exc))``
@@ -2486,16 +2619,29 @@ class SFTPBackend(Backend):
         ``e.args == ('',)`` and ``str(e)`` rendered as
         ``" | path='delivery.csv' | backend='sftp'"``.
 
-        Four shapes do this, and the set they belong to is **the shapes this
-        mapping concludes ``BackendUnavailable`` on** — not the ones
-        ``_is_connection_dead`` matches. The two differ by exactly the
-        ``SSHException`` family, which that predicate documents itself as
-        deliberately *not* matching (it has its own arm here instead), and one
-        of the four blank shapes is a bare ``SSHException``. Naming the wider
-        set is what makes the "every arm ends here" framing above the right one
-        to state the guarantee over. The four: ``TimeoutError`` (which
+        Four shapes reach the fallback below: ``TimeoutError`` (which
         ``socket.timeout`` is), ``EOFError``, ``SFTPError`` and a bare
         ``SSHException``. Signals carrying a real message keep it.
+
+        **The set those four are drawn from is not the one
+        ``_is_connection_dead`` matches**, and the difference is worth naming
+        because it is what makes the "every arm ends here" framing above the
+        right one to state the guarantee over. That predicate documents itself
+        as deliberately not matching the ``SSHException`` family, which has its
+        own arm here — and one of the four blank shapes is a bare
+        ``SSHException``, so its set would hold only three of the four.
+
+        No exact difference between the two sets is stated, because it is not
+        the tidy one it looks like. This paragraph read "they differ by exactly
+        the ``SSHException`` family" and that survived the addition of the
+        unreachable-host arm without being true of it: a refused connect gets
+        ``message=None`` from ``_unreachable_message`` whenever the driver
+        supplied text, so it *does* let this method decide, while sitting
+        outside ``_is_connection_dead``. What matters here is only which shapes
+        reach the fallback, and the unreachable ones never do —
+        ``_unreachable_message`` covers its own blank cases, because the
+        fallback's wording says the connection was *lost*, which is the wrong
+        sentence for one that was never made.
 
         The stall is the case that matters most, because ``io_timeout``
         defaults to a real bound: the first caller to meet it is one who
@@ -2550,12 +2696,14 @@ class SFTPBackend(Backend):
         # is given either: it varies with the retry and host-key policies, and
         # three review rounds each refuted a different one written as a constant.
         # ``check_health`` maps through here only when the probe fails in a way
-        # this mapping concludes on. A refused connect and a DNS failure do not:
-        # both are an ``OSError`` the arms above decline, so they exit at the
-        # generic arm as ``RemoteStoreError`` and reach this method zero times
-        # (BUG-265). Which observable failures reach which arm is not enumerated
-        # here or in the spec — see BUG-266; four attempts to state it in a
-        # sentence were each refuted.
+        # this mapping concludes on. A refused connect and a DNS failure now do:
+        # BUG-265 gave them an arm, where they used to exit at the generic
+        # ``OSError`` arm as ``RemoteStoreError`` and reach this method zero
+        # times. That is a change in log volume as well as in type — a
+        # ``Store.ping()`` poll against a host that is simply not there leaves an
+        # ``op="error_mapping"`` record where it left none. Which observable
+        # failures reach which arm is still not enumerated here or in the spec —
+        # see BUG-266; four attempts to state it in a sentence were each refuted.
         # The logger name already says which backend this is, so the line adds
         # the path rather than repeating "SFTP" in front of a message that
         # usually starts with it. An empty path is dropped from the record
@@ -2607,6 +2755,22 @@ class SFTPBackend(Backend):
             # client forever. The op itself is reported as ``BackendUnavailable``.
             self._sftp_client = None
             return self._unavailable(exc, path)
+        if self._is_unreachable(exc):
+            # BUG-265: a host that was never reached is what ERR-007 calls a
+            # backend that "cannot be reached", and what fifteen docstrings in
+            # this module promise BackendUnavailable for. All three shapes are
+            # OSError subclasses the errno dispatch below declines, so before
+            # this arm existed they exited as the base RemoteStoreError and a
+            # caller following the health-check guide caught neither a refused
+            # port nor a DNS failure.
+            #
+            # The client is cleared like every other concluding arm. There is
+            # nothing to recover here — a connect that never succeeded left no
+            # client — but SFTP-023 states the invariant over *every*
+            # BackendUnavailable this mapping returns, and an arm that skipped it
+            # would make that clause need a carve-out.
+            self._sftp_client = None
+            return self._unavailable(exc, path, message=self._unreachable_message(exc))
         if isinstance(exc, OSError):
             code = getattr(exc, "errno", None)
             if code == errno.ENOENT:

@@ -308,7 +308,16 @@ phases:
           _unavailable at all. So the note claimed a per-poll record that is not
           emitted and a filter that suppresses nothing, reintroducing in a guide
           the same over-reach the same commit had just retracted from SFTP-023.
-          Rewritten to what was measured
+          Rewritten to what was measured.
+          **Superseded by BUG-265, and marked rather than rewritten:** every
+          clause of that measurement is now false — a refused port raises
+          BackendUnavailable and does leave one op="error_mapping" record. A
+          trace records what a round measured *at the time*, so the measurement
+          stands as history and this sentence says what overturned it. That is
+          the same disposition BUG-265 applied to its own steps, and it is the
+          answer to the question its review raised: a register entry states
+          current fact and gets corrected, a trace states a past reading and
+          gets annotated
         outcome: ok
   - id: verify
     name: Verify

@@ -32,8 +32,13 @@ your server's longest legitimate pause.
 backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=None)
 ```
 
-That restores the unbounded channel, and only that — the other v0.31.0 change on
-this backend, in the next section, applies whatever you pass here. Note `0` is
+That restores the unbounded channel, and only that. The other v0.31.0 changes
+that reach this backend — described in the sections below — apply whatever you
+pass here; among them a failed seek-to-end now raises rather than answering `0`,
+and a host that cannot be reached now raises `BackendUnavailable`. No count is
+given, deliberately: several sections below are backend-agnostic and reach SFTP
+without saying so in their heading, so a number here goes stale the next time one
+is added. Note `0` is
 **not** the opt-out — it raises `ValueError`, because paramiko reads it as
 non-blocking rather than as a bound, and every SFTP operation waits on a reply,
 so all of them would fail at once.
@@ -114,6 +119,55 @@ a request that can fail, and their streams are byte-for-byte unchanged. The
 failure also arrives one `io_timeout` sooner than before on a stalled
 connection, because the release of a condemned stream no longer pays the bound a
 second time.
+
+**An SFTP host that cannot be reached now raises `BackendUnavailable`:**
+
+In v0.30.0, `SFTPBackend` promised `BackendUnavailable` for a connection that
+cannot be established — on `check_health` and fourteen other methods — and did
+not deliver it for the two most ordinary ways a connect fails. A refused port
+and a DNS failure both raised the base `RemoteStoreError` instead. A caller who
+followed the [health-check guide](../guides/health-check.md), which shows exactly
+that `except BackendUnavailable`, caught neither.
+
+```python
+# v0.30.0: RemoteStoreError('[Errno None] Unable to connect to port 22 on 10.0.0.4')
+# v0.31.0: BackendUnavailable, same text
+store.ping()
+
+# v0.30.0: RemoteStoreError('[Errno -2] Name or service not known')
+# v0.31.0: BackendUnavailable("Cannot resolve SFTP host 'files.example.com': [Errno -2] Name or service not known")
+store.ping()
+```
+
+The first example's message names the address paramiko **tried**, not the host
+you configured — so a store pointed at `files.example.com` reports an IP there.
+That is why the DNS case gets a message naming the host instead of keeping the
+driver's.
+
+**Nothing stops catching.** [`BackendUnavailable`](api/errors.md) subclasses
+`RemoteStoreError`, so an `except RemoteStoreError` handler is unaffected. What
+changes is which branch runs when you list both: a handler ordering
+`except BackendUnavailable` before `except RemoteStoreError` now takes the first
+branch for these two failures where it took the second.
+
+**The error mapping now logs it.** Reaching the mapping means one `WARNING` on
+`remote_store.backends._sftp` carrying `op="error_mapping"`, where a refused
+connect previously left nothing from the mapping at all. That is one record
+more, not the first one: this logger already carried the connect retry's own
+`WARNING` per sleep and one more under the `AUTO_ADD` host-key policy, so
+neither the failure nor the logger is new — the mapping's record is. Filter on
+`op="error_mapping"` to see just this one. A `ping()` on a liveness probe
+against a host that is down repeats it per poll, which is worth knowing before
+you point one at a store you expect to be unreachable for a while.
+
+**Scope:** SFTP only, and only the shapes a connect actually produces. An
+`OSError` from a connection that is working — a full disk, a device error —
+still raises the base `RemoteStoreError` and still logs nothing. **Permission
+errnos are deliberately untouched**, which is what keeps that sentence true: the
+mapping sees only the exception, so it cannot tell a connect-time `EACCES` or
+`EPERM` from one a working server reported, and the classification stat
+described [in the v0.30.0 notes](#v0291-to-v0300) still answers exactly as it
+did. Other backends are unchanged.
 
 **Flat-namespace backends now raise `InvalidPath` for a wrong-typed path:**
 
@@ -416,9 +470,18 @@ whose error shapes differ from OpenSSH now raise the canonical type:
 
 | Condition (non-OpenSSH server)                             | Old error          | New error          |
 |------------------------------------------------------------|--------------------|--------------------|
-| Permission-denied classification stat (`EACCES`/`EPERM`)   | `RemoteStoreError` | `PermissionDenied` |
+| Permission-denied classification stat (`EACCES` only — see below) | `RemoteStoreError` | `PermissionDenied` |
 | Mode-less existing target on an `overwrite=False` write    | `RemoteStoreError` | `InvalidPath`      |
 | `delete` of a missing path behind an opaque-error ancestor | `RemoteStoreError` | `NotFound`         |
+
+!!! warning "The first row was published as `EACCES`/`EPERM` and holds only for `EACCES`"
+
+    The classification-stat re-raise names both permission errnos, but the error
+    mapping has an `EACCES` arm and none for `EPERM`, so an `EPERM` stat still
+    reaches you as the base `RemoteStoreError` — the same answer it gave before
+    v0.30.0. Corrected here rather than left standing; the fix is tracked and
+    may change the type or narrow the promise, so do not rely on either
+    outcome for `EPERM` yet.
 
 One accepted consequence of the defensive mode-less policy: a mode-less *regular file*
 written under `overwrite=False` now surfaces `InvalidPath` rather than `AlreadyExists`.

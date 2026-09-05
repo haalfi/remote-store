@@ -205,9 +205,12 @@ deleted mid-scan (BUG-255) or when a folder vanishes part-way through a
 recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 (BUG-256); a constructor does not leak its driver's exception
 (BUG-245) and neither does a stream (BK-358); one operation does not answer by
-payload size (BUG-253); a caller who meets a failure on **any** backend can tell
-*which* failure it was, rather than an empty message (BUG-264), and catches the
-type the docs promised (BUG-265); what a failed operation *leaves behind* is not
+payload size (BUG-253); a caller who meets a failure on **any** backend catches
+the type the docs promised and can tell *which* failure it was, rather than an
+empty message (BUG-264, which carries both halves — its Disposition is exactly
+whether the base-class fall-throughs should be classified or merely given a
+message); a connect that fails locally is not reported against the caller's path
+(BUG-273); what a failed operation *leaves behind* is not
 worse than the failure itself, so a reported failure never silently destroys the
 caller's file (BUG-270, BUG-272); and a newly
 registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
@@ -230,7 +233,18 @@ BUG-246, the last adapter answers the contract against an absent container,
 closed by BUG-247, and a write to the store root no longer occupies that root
 with a regular file, closed by BUG-259 — which also brought the five
 flat-namespace classes that reached their SDK with the root key to the same
-rule. **One cross-section dependency remains**, per
+rule. The catches-the-promised-type half is met on SFTP's connect path, closed
+by BUG-265: a refused port and a DNS failure raise the `BackendUnavailable`
+fifteen docstrings and the health-check guide promise, where both raised the
+base class. That is one backend's connect arm, not the clause — BUG-264 carries
+the rest, and the two are the same promise met at different depths. It also
+opened BUG-273: the same connect path still answers the wrong type when the
+connect is rejected locally — `PermissionDenied` blaming the caller's key on the
+`EACCES` shape, whose trigger is unknown, and the base `RemoteStoreError` on the
+`EPERM` one a netfilter `REJECT` does produce. Neither is `BackendUnavailable`,
+so it is the promised-type defect again; the qualifier is load-bearing, because
+the reproducible half is the one that answers the base class.
+**One cross-section dependency remains**, per
 [§ How this file works](#how-this-file-works): BK-345 waits on **ID-244** in
 section 2 for the seeding hook, stated inside the item that carries it, so this
 section cannot close on its own items alone. BUG-249's denied half carried a
@@ -450,51 +464,173 @@ compliant the day before.
   base-class half; the Azure half was measured after the item was challenged for
   asserting rather than checking.
 
-- [ ] **BUG-265 — A refused SFTP connect raises `RemoteStoreError`, which contradicts fifteen docstrings and the health-check guide**
-  spec: SFTP-023 · effort: S · audience: user.api, user.site
-  Measured against a just-released ephemeral port (the deterministic-refusal
-  trick `tests/backends/sftp/test_config.py` already uses):
-  `SFTPBackend(...).check_health()` raises
-  `RemoteStoreError("[Errno None] Unable to connect to port <n> on 127.0.0.1")`,
-  **not** `BackendUnavailable`. paramiko raises `NoValidConnectionsError`, an
-  `OSError` whose `errno` is `None`; `_is_connection_dead`'s errno-less arm
-  matches only the literal `"Socket is closed"`, so the mapping falls through to
-  its generic `OSError` arm.
-  **What that contradicts.** `check_health`'s own docstring promises
-  "`BackendUnavailable`: If the SSH/SFTP connection cannot be established"
-  (`backends/_sftp.py`), and the same `Raises:` line appears on **fourteen**
-  further methods — 15 in total, derived by walking the module's AST for
-  functions whose docstring **contains the sentence prefix**
-  `"BackendUnavailable: If the SSH/SFTP connection cannot be established"` as a
-  substring. The predicate has to be stated that precisely: only `check_health`
-  ends the sentence there, and the other fourteen continue `" or fails."`,
-  `" or fails mid-read."` or `" or fails mid-write."`, so a full-line-equality
-  reading of the same words returns 1 rather than 15. The methods:
-  `check_health`, `exists`,
-  `is_file`, `is_folder`, `read`, `read_bytes`, `write`, `write_atomic`,
-  `open_atomic`, `delete`, `delete_folder`, `get_file_info`, `get_folder_info`,
-  `move`, `copy`. An earlier revision said eleven, carried over unchecked while
-  its neighbour's figures were being re-derived;
-  `docs-src/guides/health-check.md` § Error handling maps
-  `BackendUnavailable` to "Network error, DNS failure, or timeout" and shows a
-  caller catching it. A caller who followed that guide does not catch a refused
-  connect at all.
-  **DNS is the same answer, and it is now measured rather than presumed:**
-  against an RFC 2606 `.invalid` host, `check_health()` raises
-  `RemoteStoreError("[Errno -2] Name or service not known")` with a
-  `socket.gaierror` context. So two of the three shapes that row names raise the
-  base class, and only the timeout raises what it promises — which is why the
-  guide now carries a caveat pointing here rather than a corrected row: writing
-  current behaviour into the table would document a defect as the contract.
-  **Why it is not BK-359's to fix.** Changing which exception type a refused
-  connect raises is a behaviour change for anyone whose `except` clauses match
-  the current one, so it needs the breaking-change treatment rather than a
-  ride-along. Nothing in `tests/backends/sftp/` pins a refused *backend*
-  connect today — the two refused-socket tests exercise
-  `SFTPUtils.scan_host_keys` / `scan_host_algorithms`, which do not go through
-  this mapping — so the first work here is the failing test.
-  **Found by BK-359's round-1 reviewer** as a `Possible:` it could not run, and
-  confirmed by running it.
+- [ ] **BUG-273 — A locally-rejected SFTP connect answers the wrong type, and neither permission errno can be claimed without connect-time context**
+  spec: SFTP-021, SFTP-023 · effort: S · audience: user.api
+  BUG-265 gave `_map_exception` a connect-time arm for the unreachable-host
+  errnos and deliberately left **both** permission errnos out of it. This is
+  that exclusion, recorded rather than left for the next reader to re-derive.
+  **`EPERM` was tried and reverted inside BUG-265, which is the sharpest
+  evidence this item has.** A round of review found a firewall-rejected connect
+  answering the base `RemoteStoreError` and argued `EPERM` was free to claim,
+  because `_map_exception`'s errno dispatch has no `EPERM` arm. That premise is
+  true of the dispatch and false of the module, and the next round measured it:
+  `_raise_if_dir` re-raises **both** permission errnos on purpose
+  (`_sftp.py`, the classification-stat guard, and its docstring says why), from
+  a **working** channel, inside the caller's `_errors(path)` block. Driving the
+  exact shape `test_raise_if_dir_permission_stat_maps_permission_denied` uses:
+  `EPERM` gave `RemoteStoreError` before the change and
+  `BackendUnavailable("[Errno 1] Permission denied")` after it, **and with a
+  sentinel seeded the new arm cleared the cached client** — so a healthy
+  connection was discarded on a server-reported denial. **The grounds matter
+  and were first stated too strongly:** the published v0.29.1→v0.30.0 migration
+  row promising `PermissionDenied` for that stat was *already* not honoured for
+  `EPERM` before the change and is not honoured after it, which is BUG-275, not
+  this item. What claiming `EPERM` did was move that path from the base class to
+  `BackendUnavailable` plus a client reset — worse, and enough on its own.
+  Reverted; `test_the_permission_errnos_stay_out_of_the_connect_arm`
+  now pins the exclusion so a future widening fails loudly instead of silently
+  changing what a live channel reports.
+  **The lesson for whoever picks this up:** "nothing else wants this errno" is a
+  claim about the whole module, not about one if-chain, and `rg -n 'EPERM' src/
+  docs-src/` is the derivation. Both errnos are one problem, not two.
+  **What was measured**, by monkeypatching `socket.socket.connect` to raise a
+  chosen errno and driving `paramiko.SSHClient.connect` on paramiko 5.0.0:
+  `EACCES` is re-raised unwrapped, exactly like `ENETUNREACH` / `ENETDOWN` /
+  `EHOSTDOWN` (`SSHClient.connect` captures only `ECONNREFUSED` and
+  `EHOSTUNREACH` into `NoValidConnectionsError`; its own docstring says so). It
+  therefore reaches the mapping as a plain `PermissionError` and takes the
+  `EACCES` arm. Measured per operation, since the two answers differ:
+  `read_bytes("delivery.csv")` and `exists("delivery.csv")` answer
+  `PermissionDenied("Permission denied: delivery.csv")`, while `check_health()`
+  — which runs under `_errors()` with no key — answers a bare
+  `PermissionDenied("Permission denied: ")`. That is BUG-265's own defect shape,
+  a caller following the health-check guide catching the wrong type, in two
+  flavours: on a keyed operation the message names a path as the subject of a
+  failure the path had no part in, and on the probe it dangles a colon with
+  nothing after it — the shape
+  `test_a_message_less_dns_failure_does_not_trail_an_empty_colon` exists to
+  prevent on the sibling arm.
+  **What was NOT measured, and it is the item's open question:** that any real
+  network produces `EACCES` on `connect()`. **No trigger is known**, and the
+  first work here is finding one. An earlier revision of this item offered
+  `iptables --reject-with icmp-admin-prohibited`; that is wrong and is recorded
+  here so it is not tried twice. It sends ICMP type 3 code 13, which Linux's
+  `icmp_err_convert` maps to `EHOSTUNREACH` — an errno BUG-265 already put in
+  `_is_unreachable`'s tuple, so following that recipe lands on the new arm and
+  shows nothing. A local `OUTPUT`-chain `REJECT` yields `EPERM`, also not
+  `EACCES`. `EPERM` **does** have that trigger, which is what made it tempting;
+  it is not a reason to claim it. If no `EACCES` trigger exists, that half is a
+  documentation item rather than a code one.
+  **What it costs a caller if left: nothing observable today, and that is the
+  finding rather than a reason to close it.** No connect anyone has produced
+  raises `EACCES`, so the wrong-type answer is unreachable; were it reachable, a
+  caller following the health-check guide's `except BackendUnavailable` would
+  catch nothing and meet `PermissionDenied` naming their key, or a bare
+  `Permission denied: ` from `check_health`, for a request that never left the
+  machine. The item's real value is the measurement it carries: the next person
+  to consider widening `_is_unreachable`'s tuple finds here why that breaks a
+  working channel, instead of rediscovering it the way BUG-265 did across two
+  rounds.
+  **Disposition:** not widening the tuple — that was tried and measured harmful,
+  above. The same errnos on a live operation genuinely are a denied path
+  (`test_eacces_maps_to_permission_denied` pins one, `_raise_if_dir`'s guard the
+  other), and `_map_exception` dispatches on the exception alone, so it cannot
+  tell a connect-time one from an operation-time one. The cheap shape is for the
+  lazy `_sftp` property to classify what `_connect` raises **before** the
+  caller's `_errors(path)` block sees it, which reaches both errnos at once and
+  is the only place the connect-time context exists.
+  **Found by BUG-265's round-3 measuring member**, which reported the `EACCES`
+  half as a `Possible: Bug:` with its trigger flagged unreproduced; the `EPERM`
+  half was found, fixed and reverted across its rounds 5 and 6.
+
+- [ ] **BUG-275 — `_raise_if_dir`'s permission re-raise delivers `PermissionDenied` for one of the two errnos it names, and four artifacts promise both**
+  spec: SFTP-021 · effort: S · audience: user.api, user.api_docs
+  Pre-existing, not introduced by BUG-265 — found by its closing whole-file
+  pass, which was checking whether that item's `EPERM` revert had left half a
+  claim standing and found a whole one that predates it.
+  **Measured on the shipped code**, driving `_map_exception` with a plain
+  `OSError` carrying each errno:
+  `EACCES` → `PermissionDenied("Permission denied: delivery.csv")`;
+  `EPERM` → base `RemoteStoreError("denied")`. The errno dispatch has an
+  `EACCES` arm and **no `EPERM` arm**, so a re-raised `EPERM` classification
+  stat falls to the generic arm.
+  **What promises otherwise**, all saying the re-raise exists "so a server that
+  denies even statting the target surfaces `PermissionDenied` rather than a
+  generic `RemoteStoreError`": `_raise_if_dir`'s docstring, its BK-316 inline
+  comment beside the guard, BK-316's `BACKLOG-DONE.md` register entry, and —
+  published — the v0.29.1 → v0.30.0 migration table row
+  `| Permission-denied classification stat (EACCES/EPERM) | RemoteStoreError | PermissionDenied |`.
+  For `EPERM` that row's "after" column is exactly its "before" column.
+  **Trigger is unestablished, and that bounds the priority rather than the
+  diagnosis.** paramiko's `SFTPClient._convert_status` maps
+  `SSH_FX_PERMISSION_DENIED` to `EACCES`, so an SFTP-protocol `EPERM` looks
+  unproducible; the re-raise names both errnos because BK-316 was written for
+  "non-OpenSSH servers whose error shapes differ from OpenSSH", which is the
+  case nobody has a fixture for.
+  **What it costs a caller if left:** a user on such a server whose stat is
+  denied with `EPERM` gets the base `RemoteStoreError`, so an `except
+  PermissionDenied` clause written on the strength of the published migration
+  row falls through to their generic handler and a permissions problem is
+  logged as an unknown failure. BUG-265 caveated that published row, so what
+  remains is the code-vs-docs divergence rather than a silently misleading
+  page — the cost of leaving it is that three in-tree artifacts still describe
+  behaviour the module does not have, and the next reader of `_raise_if_dir`
+  has to re-derive which half is true.
+  **Disposition:** two ways to make the four artifacts agree, and they differ in
+  what a caller gets. Either give the dispatch an `EPERM` arm mapping to
+  `PermissionDenied` — which makes every promise true and is a behaviour change
+  — or narrow all four to say `EACCES` alone reaches `PermissionDenied` and
+  `EPERM` reaches the base class. **Do not answer it by widening
+  `_is_unreachable`**: BUG-273 records that attempt and its measured harm.
+  **Found by BUG-265's closing pass**, which also caught the two places where
+  that item's own body had cited the migration row as though it were satisfied
+  before and after — corrected there.
+
+- [ ] **BUG-274 — A keyed SFTP operation against an unreachable host pays the connect budget two or three times over**
+  spec: SFTP-010, SFTP-023 · effort: S · audience: user.api
+  Not a regression — master behaves identically — but BUG-265 introduced the
+  predicate that would close it, and BUG-265's own round-4 measurement is what
+  exposed the mechanism.
+  **The fourteen mid-operation re-entry guards all ask `_is_connection_dead`
+  alone**, and that predicate answers `False` for every shape `_is_unreachable`
+  claims. Measured on `read_bytes("delivery.csv")` against a just-released
+  ephemeral port, with `_is_connection_dead` wrapped in a frame-recording
+  counter: three consultations (`_sftp.py:903` — `read_bytes`'s own guard,
+  `_sftp.py:2047` — `_raise_if_dir`, and the mapping's own) and **two full
+  `_connect` cycles**. The guard at 903 declines, so control falls through to
+  `_raise_if_dir`, which re-evaluates the lazy `_sftp` property and pays the
+  whole `RetryPolicy` budget again — three attempts with 2–10 s exponential
+  backoff by default. For a nested key `_has_file_ancestor` makes it three.
+  `check_health` is unaffected: it has no re-entry guard, which is why
+  BUG-265's "connect attempts are identical on both revisions" holds for the
+  probe and not for keyed operations.
+  **What it costs a caller, measured as wall clock at shipped defaults** — no
+  `retry=` passed, against a just-released ephemeral port, timed per call:
+
+  | call | elapsed |
+  |---|---|
+  | `check_health()` | 4.37 s |
+  | `exists("a.csv")` | 4.00 s |
+  | `read_bytes("a.csv")` | **8.00 s** |
+  | `read_bytes("a/b/c.csv")` | **12.01 s** |
+
+  That is the 1x / 2x / 3x cycle count showing up as time. **A refused port is
+  the cheap case**: each attempt fails instantly, so the elapsed time is almost
+  all backoff. Against a blackholed address every attempt also burns the 10 s
+  `timeout`, so the same multiplier lands on a base roughly an order of
+  magnitude larger. A caller reading many keys from a store that is down pays
+  this per key, which is the shape most likely to be reported as "the library
+  hangs" rather than as a latency bug.
+  **Disposition:** `or self._is_unreachable(exc)` at those guard sites is the
+  one-line shape, and it is a **behaviour change**, not only a saving: `read`
+  and `read_bytes` would then raise at their guard instead of falling through
+  to classification. That is the correct answer for a host that was never
+  there, but it is the same widening BUG-265 declined to make under review, so
+  it wants its own failing test first — and note that
+  `TestSFTPConnectTimePredicateSpace` deliberately asserts the observable answer
+  and *not* a connect count, so nothing in the suite would notice this either
+  way today. Pinning the count is part of the work.
+  **Found by BUG-265's round-5 unprimed reviewer**, as a `Possible: Perf:`.
 
 - [ ] **BUG-266 — No artifact maps an observable SFTP failure onto the arm that handles it, and four prose attempts were each refuted**
   spec: SFTP-023, SFTP-030 · effort: M · audience: user.site, library.maintainer
