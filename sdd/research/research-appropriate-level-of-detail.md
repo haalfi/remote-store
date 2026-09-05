@@ -221,6 +221,19 @@ they declined to write.
 The reader is absent when the text is written. The author's grasp is present.
 That is the whole argument for putting the test on the author.
 
+**The channel property behind that argument has a name.** Abbaschian (2026),
+"Cross-Disciplinary Taxonomy and Modeling of Misunderstanding Generation,
+Amplification, and Detection", arXiv:2608.13604, separates the *materiality* of a
+divergence from its **recoverability** — whether the interaction produces evidence
+of the divergence, whether that evidence is observable to either party, and
+whether feedback and repair are available. Durable prose is a low-recoverability
+channel: no back-channel, no puzzled expression, and the reader's difficulty
+surfaces months later as a trace tag if at all (§ 6.2). The same paper notes that
+failures to adapt "vocabulary, form, or level of detail" to the reader are
+**production-side**, and so "harder to identify than listener interpretations".
+**[Single-author preprint, read in part; a taxonomy, not evidence. Cited for the
+distinction it names, not for a finding.]**
+
 ### 5.2 The mechanism: the explanation attempt exposes the gap
 
 Rozenblit & Keil (2002), "The misunderstood limits of folk science: an illusion
@@ -262,13 +275,23 @@ have little information on past successes and failures", against facts and
 procedures where past performance is easy to inspect. An author who states a
 section's core claim is manufacturing precisely the missing feedback.
 
-**The shape undigested writing takes** is described independently: Bereiter &
-Scardamalia (1987), *The Psychology of Written Composition*, separate
-**knowledge-telling** — retrieving content on topic-and-genre cues and
-transcribing it in arrival order — from **knowledge-transforming**, a dialectic
-between a content problem space and a rhetorical one. **[Search-summary.]**
+**The shape undigested writing takes** is described independently, and by
+criteria specific enough to apply. Bereiter & Scardamalia (1987), *The Psychology
+of Written Composition*, characterise **knowledge-telling** by four marks: the
+task is globally reduced to "tell what I know about this topic"; text is
+generated sentence by sentence from local associative cues rather than from
+higher goals; planning and revision are minimal; and content is not restructured
+for purpose, audience or genre. Their contrast is
+**knowledge-transforming**, in which the writer moves iteratively between a
+content problem space and a rhetorical one, reshaping both. **[Search-summary,
+but the four marks are the authors' own criteria rather than a summariser's
+gloss.]**
+
 *Inference, not their claim:* prose that lists everything true about a subject in
-discovery order is knowledge-telling, and it is detectable by its author.
+discovery order conforms to the knowledge-telling marks, and an author can check
+their own draft against them. **Their caution applies to that inference**: these
+are models of a *process*, not types of person, so a passage "conforms more
+closely to knowledge-telling" — no one is a knowledge-teller.
 
 **Bound, stated because the temptation runs the other way.** Adjacent work is
 learning research — the self-explanation effect (Bisra, Liu, Nesbit, Salimi &
@@ -330,7 +353,7 @@ out, because any text can be tightened and nothing bounds the request.
 | Proposal | Why it fails |
 |---|---|
 | Readability formulas, word budgets | Surface proxies; blind to purpose and reader (§ 1) |
-| RST "keep nuclei, delete satellites" | Rests on a label trained annotators agree on ~4 times in 5: RST-DT reports 86.8% spans, **80.7% nuclearity**, 72% relations over six taggers. **[Search-summary]** |
+| RST "keep nuclei, delete satellites" | Rests on a label trained annotators agree on about four times in five: 86.8% spans, **80.7% nuclearity**, 72% relations over six taggers. Provenance matters here, because the figures are widely quoted without it: they come from the **corpus documentation accompanying the LDC release** (Carlson, Marcu & Okurowski, 2003, LDC2002T07), not from the 2001 workshop paper, which reports kappa statistics instead, and not from the LDC catalogue entry, which carries no agreement figures at all. **[Search-summary; the documentation itself is unread here]** |
 | Kintsch & van Dijk's macrorules as an editing procedure | They model what readers do, not what authors should cut. **[Search-summary]** |
 | Relevance ≈ cognitive effect ÷ processing effort | Sperber and Wilson operate a **comparative** notion and distinguish it from a quantitative one; the quotient is a popularization. **[Search-summary]** |
 | Verbosity bias in LLM judges | Establishes that *raters* over-reward length, not that verbose output harms a reader's task. **[Search-summary]** |
@@ -415,9 +438,10 @@ record), **search-summary** (a search engine's synthesis of secondary sources),
 | 11a | The Hamburg authors deliberately gave no concrete action instructions, relying on model texts — the opposite of Rule 7's approach | Secondary, read in full | Medium |
 | 12 | Rozenblit & Keil: the explanation attempt lowers self-rated understanding across 12 studies, and moves it to where independent raters already scored it | **Verified, read in full** | High |
 | 12a | The same: **no** drop for procedures or narratives, a significantly smaller drop for facts, so the effect is specific to explanatory knowledge | **Verified, read in full** | High |
-| 13 | Bereiter & Scardamalia: knowledge-telling versus knowledge-transforming | Search-summary | Low-medium |
+| 13 | Bereiter & Scardamalia: knowledge-telling marked by task reduced to "tell what I know", local sentence-by-sentence generation, minimal planning and revision, and no restructuring for purpose or audience — and these are models of a process, not types of writer | Search-summary, but stated as the authors' criteria | Medium |
 | 14 | Bisra et al. (2018): self-explanation g = .55, 69 effect sizes from 64 reports | Search-summary | Low-medium |
-| 15 | RST-DT agreement 86.8 / 80.7 / 72 percent over six taggers | Search-summary | Low |
+| 15 | RST-DT agreement 86.8 / 80.7 / 72 percent over six taggers, from the 2003 LDC corpus documentation rather than the 2001 workshop paper (which reports kappas) | Search-summary | Low |
+| 15a | Abbaschian (2026): *recoverability* — whether an interaction produces observable evidence of divergence and allows repair — is distinct from a divergence's size; adapting level of detail is a production-side failure and harder to detect than a reader's misreading | Preprint, read in part; taxonomy, not evidence | Low |
 | 16 | Relevance is comparative, not a quotient | Search-summary | Low-medium |
 | 17 | Macrorules are comprehension rules, not an editing procedure | Search-summary | Low |
 | 18 | Verbosity bias is a property of raters, not evidence of reader harm | Search-summary | Low |
