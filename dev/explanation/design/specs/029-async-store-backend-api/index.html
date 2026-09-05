@@ -13163,8 +13163,8 @@ semantics.</p>
 <h3 id="async-078-resource-cleanup">ASYNC-078: Resource Cleanup<a class="headerlink" href="#async-078-resource-cleanup" title="Permanent link">&para;</a></h3>
 <p><strong>Invariant:</strong> <code>aclose()</code> closes all four lazily-created SDK clients and any auto-created async credential. Safe to call multiple times. Idempotent.</p>
 <h3 id="async-079-error-mapping">ASYNC-079: Error Mapping<a class="headerlink" href="#async-079-error-mapping" title="Permanent link">&para;</a></h3>
-<p><strong>Invariant:</strong> All Azure SDK exceptions are mapped to <code>remote_store</code> error types via <code>classify_azure_error()</code> from <code>_azure_common</code>. Same mapping as the sync <code>AzureBackend</code>.
-<strong>See also:</strong> <a href="../012-azure-backend/">012-azure-backend.md</a> (AZ-013 through AZ-016), <a href="../005-error-model/">005-error-model.md</a>.</p>
+<p><strong>Invariant:</strong> All Azure SDK exceptions are mapped to <code>remote_store</code> error types via <code>classify_azure_error()</code> from <code>_azure_common</code>. Same mapping as the sync <code>AzureBackend</code>, message guarantee included: the twins share one classifier, so AZ-025's postcondition on the transport row binds here without restating it.
+<strong>See also:</strong> <a href="../012-azure-backend/">012-azure-backend.md</a> § Error Mapping, <a href="../005-error-model/">005-error-model.md</a>. The Azure reference names a section rather than a clause range, because a range's endpoints are whatever happens to be filed there.</p>
 <hr />
 <h2 id="asyncbackendsyncadapter">AsyncBackendSyncAdapter<a class="headerlink" href="#asyncbackendsyncadapter" title="Permanent link">&para;</a></h2>
 <p>The inverse of <code>SyncBackendAdapter</code>: implements the sync <code>Backend</code> ABC by

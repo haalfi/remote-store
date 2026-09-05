@@ -14454,6 +14454,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>BUG-264: <strong>Fix</strong> — an Azure connection or timeout failure that the SDK reports without any text now says which side of the exchange failed, instead of raising <code>BackendUnavailable</code> with an empty message</li>
 <li>BK-358: <strong>Fix</strong> — a dropped SFTP connection mid-read raises <code>BackendUnavailable</code> from a <code>read()</code> stream, where it leaked a raw <code>paramiko.SSHException</code> while the same drop on <code>read_bytes()</code> mapped. Upgrade path in the <a href="https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310">migration guide</a>.</li>
 <li>ID-256: Content rule 7 — a new or substantially rewritten section in <code>sdd/</code> or <code>.claude/</code> opens with its core claim in at most three sentences, and an author who cannot write them returns to the source rather than writing around the gap</li>
 <li>BUG-265: <strong>Fix</strong> — a refused SFTP connect and a DNS failure raise <code>BackendUnavailable</code>, the type fifteen docstrings and the health-check guide promise, instead of the base <code>RemoteStoreError</code>. Upgrade path in the <a href="https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310">migration guide</a>.</li>
