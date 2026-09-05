@@ -417,7 +417,16 @@ compliant the day before.
   SFTP-030 and the SFTP guide; it does not fix it.
 
 - [ ] **BUG-276 — A mapped error still reaches the caller with an empty message through five base-class arms**
-  spec: ERR-009 · effort: S · audience: user.api
+  spec: ERR-009, AZ-025 · effort: M · audience: user.api
+  **M, not S**, for the reason BUG-264 gave before the split: the arms need a
+  decision before a patch, and this item adds scope on top of that — five arms
+  across four files, a `_errors.py` change that moves what three S3 backends
+  report, and an unsettled placement question.
+  **AZ-025 is listed because this fix falsifies a clause there.** That spec
+  states as current behaviour that the Azure fall-through *can* render blank,
+  and `test_an_unmapped_exception_still_reaches_the_caller_blank` pins it. Both
+  go red when this lands, by design — they are the reminder to re-read the
+  clause, not collateral.
   The remainder of BUG-264, which closed the `BackendUnavailable` half. ERR-009
   is a claim about `str()` on *any* error, and the same construction spelled with
   the base class stands at **7 sites in 5 files**:

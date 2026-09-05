@@ -98,10 +98,17 @@ class _LoopbackServer:
     def __init__(self, *, close_immediately: bool) -> None:
         self._close_immediately = close_immediately
         self._listener = socket.socket()
+        # A poll timeout plus a stop flag, rather than relying on close() to
+        # interrupt a blocked accept(): on POSIX it does not, because the
+        # syscall holds its own reference to the file, so the thread would sit
+        # there until join() gave up and every teardown would cost that bound.
+        # Same shape as the SFTP test server's accept loop, for the same reason.
+        self._listener.settimeout(0.5)
         self._listener.bind(("127.0.0.1", 0))
         self._listener.listen(8)
         self.port: int = self._listener.getsockname()[1]
         self._accepted: list[socket.socket] = []
+        self._stop = threading.Event()
         self._thread = threading.Thread(target=self._serve, daemon=True)
         self._thread.start()
 
@@ -116,10 +123,12 @@ class _LoopbackServer:
         return self._listener.fileno()
 
     def _serve(self) -> None:
-        while True:
+        while not self._stop.is_set():
             try:
                 conn, _ = self._listener.accept()
-            except OSError:  # listener closed by close()
+            except TimeoutError:  # poll interval elapsed; re-check the stop flag
+                continue
+            except OSError:  # listener closed out from under us
                 return
             if self._close_immediately:
                 conn.close()
@@ -127,8 +136,9 @@ class _LoopbackServer:
                 self._accepted.append(conn)
 
     def close(self) -> None:
-        self._listener.close()
+        self._stop.set()
         self._thread.join(timeout=5)
+        self._listener.close()
         for conn in self._accepted:
             conn.close()
         self._accepted.clear()
@@ -195,11 +205,24 @@ def test_the_azure_helper_emits_no_log_record(caplog: pytest.LogCaptureFixture) 
     Driven on the blank shape, which is the one path that reaches the fallback
     at all, so the assertion covers the branch a record would most plausibly be
     added to.
+
+    **The instrument is checked before it is trusted.** An empty `caplog` proves
+    nothing on its own: if the module's logger name changed, or propagation were
+    disabled, or ``at_level`` named the wrong target, this would keep passing
+    while asserting nothing — the vacuous-pass shape it exists to prevent in the
+    other direction. So it first emits a record on that exact logger and
+    confirms it is captured.
     """
     inner = TimeoutError()
     assert str(inner) == "", "premise: the fallback branch needs a detail-less input"
 
-    with caplog.at_level(logging.DEBUG, logger="remote_store.backends._azure_common"):
+    logger_name = "remote_store.backends._azure_common"
+
+    with caplog.at_level(logging.DEBUG, logger=logger_name):
+        logging.getLogger(logger_name).warning("positive control")
+        assert caplog.records, "caplog is not capturing this logger; the assertion below would be vacuous"
+        caplog.clear()
+
         mapped = classify_azure_error(ServiceResponseTimeoutError(inner, error=inner), "delivery.csv", "async-azure")
 
     assert isinstance(mapped, BackendUnavailable)
@@ -270,19 +293,24 @@ def test_the_loopback_helper_closes_every_socket_it_opened() -> None:
     """
     server = _LoopbackServer(close_immediately=False)
     probe = socket.socket()
-    probe.settimeout(5)
-    probe.connect(("127.0.0.1", server.port))
+    try:
+        probe.settimeout(5)
+        probe.connect(("127.0.0.1", server.port))
 
-    # Wait for the accept thread to record the connection, so the assertion
-    # covers a non-empty set rather than passing on a race.
-    deadline = time.monotonic() + 5
-    while not server.accepted and time.monotonic() < deadline:
-        time.sleep(0.01)
-    accepted = list(server.accepted)
-    assert accepted, "the server never accepted the probe connection"
-
-    probe.close()
-    server.close()
+        # Wait for the accept thread to record the connection, so the assertion
+        # covers a non-empty set rather than passing on a race.
+        deadline = time.monotonic() + 5
+        while not server.accepted and time.monotonic() < deadline:
+            time.sleep(0.01)
+        accepted = list(server.accepted)
+        assert accepted, "the server never accepted the probe connection"
+    finally:
+        # The cleanup runs even when the assertion above fires. Without the
+        # try/finally, the one failure this test exists to catch would itself
+        # leak both sockets and raise the ResourceWarning — against some later,
+        # unrelated test — that the whole file is here to prevent.
+        probe.close()
+        server.close()
 
     assert server.listener_fileno == -1, "the listener socket outlived close()"
     assert [c.fileno() for c in accepted] == [-1] * len(accepted), "an accepted connection outlived close()"

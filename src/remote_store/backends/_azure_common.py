@@ -159,12 +159,13 @@ def _unavailable(exc: Exception, path: str, backend_name: str) -> BackendUnavail
     distinguish, plus the SDK exception class, which is the part a reader
     searches for.
 
-    **Why an SDK error can arrive empty at all** is documented once, in the
-    error-mapping spec's *"Why the message clause is here"* paragraph, and is
-    not restated here: it is a fact about the SDK's transports rather than about
-    this function, and it moves between SDK releases. (That spec section also has
-    a paragraph labelled ``Rationale:``, which is a different one and covers
-    structured classification.)
+    **Why an SDK error can arrive empty at all** is a fact about the SDK's
+    transports rather than about this function, and it moves between SDK
+    releases, so it is not repeated here. The error-mapping spec's *"Why the
+    message clause is here"* paragraph carries it, and the one after that one
+    carries the per-transport detail. (That section also has a paragraph
+    labelled ``Rationale:`` — a different one, covering structured
+    classification.)
 
     **No log record**, where the SFTP helper of the same name emits one. A
     scoped decision about this backend, not a claim that the two should differ:

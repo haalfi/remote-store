@@ -501,8 +501,8 @@ class TestAsyncAzureErrorMapping:
         """A driver signal carrying no text still names a cause (ERR-009, AZ-025).
 
         Why an SDK error can arrive empty is in AZ-025's *"Why the message
-        clause is here"* paragraph, which is its one home; this docstring covers
-        only what *this test* does.
+        clause is here"* paragraph; this docstring covers only what *this test*
+        does.
 
         The inner exception is a *genuine* fired timeout rather than a
         constructed one, because that is what makes ``args == ()``.

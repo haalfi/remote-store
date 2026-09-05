@@ -153,8 +153,13 @@ phases:
         read_type: reference
         extract: >-
           Enumerated the whole class rather than trusting the item's scope:
-          rg -n 'BackendUnavailable\(' src/ returns five BackendUnavailable(str(exc))
-          sites. Two are keyword-guarded (endpoint/connect/timeout/dns/
+          rg -n 'BackendUnavailable\(str\(exc\)' src/ returned five sites at the
+          time (four after this fix replaced Azure's with _unavailable). The
+          broader rg -n 'BackendUnavailable\(' src/ is a different query and
+          returns about fifty; an earlier revision of this step named that one
+          for this figure, which is the derivation-does-not-reproduce shape the
+          work kept finding elsewhere.
+          Two are keyword-guarded (endpoint/connect/timeout/dns/
           name or service), which "" cannot satisfy, and the two boto arms are
           fed by classes that always format — str(ClientError({}, "GetObject"))
           and str(BotoCoreError()) both run non-empty. So this arm was the last
@@ -188,9 +193,30 @@ phases:
         section: "TestAzureErrorMapping"
         read_type: reference
         extract: >-
-          The sync twin's home, asserted through AzureBackend._classify. The
-          sync side is exposed identically and has no end-to-end reproduction,
-          so it is pinned at the classifier
+          The sync twin's home, asserted through AzureBackend._classify. Neither
+          transport supplies the blank input through the backend's own options,
+          so both twins pin the guarantee at the classifier. Later rounds added
+          the case AZ-025 pins and nothing asserted: a bare RuntimeError through
+          the unmapped fall-through, which BUG-276 will deliberately turn red
+        outcome: ok
+      - file: tests/backends/azure/aio/test_error_detail.py
+        section: "(new file) loopback controls, log control, fixture contract"
+        read_type: reference
+        extract: >-
+          The PR's largest new artifact, and the one three review rounds were
+          spent getting right. Loopback sockets drive check_health() against a
+          dead port, an accept-then-close and a stall, asserting each keeps the
+          driver's own words — the controls that stop the fallback overwriting a
+          real explanation, which no classifier unit test can catch. A caplog
+          control pins the deliberate no-log decision, and a fixture-contract
+          test pins that every socket is closed.
+          Retrospective, and mine rather than the document's: the accept loop
+          first relied on close() to interrupt a blocked accept(), which works
+          on the Windows box this was written on and not on POSIX, so CI's Linux
+          leg would have paid a five-second join timeout per server. The repo
+          already had the settimeout-plus-stop-event pattern in
+          tests/backends/sftp/_helpers.py; a review round found it and named
+          that precedent
         outcome: ok
   - id: implement
     name: Implement

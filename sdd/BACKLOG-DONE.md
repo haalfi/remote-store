@@ -246,7 +246,8 @@ if evidence changes; these are retired.
   stringifies empty and the arm returned `BackendUnavailable('')` rendering as
   `" | path='delivery.csv' | backend='azure'"` — character for character the SFTP
   defect BK-359 fixed. AZ-025's *"Why the message clause is here"* paragraph is
-  where a reader goes for the transport detail behind this.
+  where a reader goes for why an SDK error can arrive empty; the paragraph after
+  it carries the per-transport detail.
 
   **Neither shipped transport supplies that input through the backend's own
   options**, which took three attempts to state correctly and is recorded so the
@@ -288,7 +289,10 @@ if evidence changes; these are retired.
   **One stale pointer swept with it:** ASYNC-079's See-also cited "AZ-013 through
   AZ-016", which are `is_file()`, atomic write and the two `delete_folder`
   clauses, so a reader arriving from the async twin would have missed the message
-  postcondition this item adds to AZ-025. Corrected to AZ-025 through AZ-028.
+  postcondition this item adds to AZ-025. Now points at that spec's
+  § Error Mapping by name rather than at a clause range, because a range's
+  endpoints are whatever happens to be filed there — which two reviewers read
+  differently before the section name settled it.
   **Filed by BK-359's `/ship` run**, whose round-1 reviewer found the base-class
   half; the Azure half was measured after the item was challenged for asserting
   rather than checking.
