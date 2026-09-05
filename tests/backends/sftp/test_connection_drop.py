@@ -28,7 +28,8 @@ closes the connection.
 
 **Why the relay goes silent before it closes**, which is the one thing about it
 that is not obvious: see ``_DropRelay``. A bare close reaches this defect at
-best occasionally and on one measured host not at all.
+best occasionally and on one measured host not at all, and
+``_assert_reached_by_the_eof_path`` is what stops that going unnoticed.
 """
 
 from __future__ import annotations
@@ -106,26 +107,29 @@ class _DropRelay:
     meets. If the transport wins, it tears itself down and the next SFTP read
     raises ``OSError('Socket is closed')`` — an ``OSError``, which the wrapper
     has always caught, so the drop maps and this file's whole subject is missed.
-    Measured over 15 runs of a bare close on two hosts: **2 reached
-    ``SSHException`` on one and 0 on the other** — never reliably, and on the
-    second host not at all. Silencing first puts the client inside a blocking
-    ``recv`` at the moment the socket dies, so the EOF path is the one that
-    fires: **15 of 15 on both hosts**, on the streamed read, the ``SEEK_END``
-    probe and the eager read alike. That second figure is what the five tests
-    below re-derive on every invocation.
+    A bare close has been measured on three hosts and reached ``SSHException``
+    2 of 15 times, 0 of 15, and 3 of 53 — never reliably, and on one host not at
+    all. Silencing first puts the client inside a blocking ``recv`` at the moment
+    the socket dies, so the EOF path is the one that fires: **15 of 15 on every
+    host measured**, on the streamed read, the ``SEEK_END`` probe and the eager
+    read alike.
 
-    **No recipe is given for the bare-close figure, and that is the finding
-    rather than an omission.** It is the outcome of a race between paramiko's
-    transport-reader thread and the client's next read, so its distribution is a
-    property of the host, not of an edit — which is why the two hosts disagree.
-    Two review rounds each wrote a recipe for it and each was refuted by running
-    it: the first tore the connection down inside ``_pump``, which fires on the
-    first byte either way so the handshake never completes; the second made
-    ``arm()`` tear down directly, which is the right edit and still returned 0 of
-    15 across 45 runs. A third reading would not be more exhaustive than those
-    two. What the number is evidence for survives without being reproducible:
-    the obvious staging does not reliably reach this defect, so a test written
-    against it would mostly have passed before the fix and been called flaky.
+    **The bare-close figures are not reproducible, and no recipe is offered.**
+    The outcome is a race between paramiko's transport-reader thread and the
+    client's next read, so its distribution is a property of the host rather than
+    of an edit — which is why the three disagree. Two review rounds each wrote a
+    re-derivation recipe and each was refuted by running it, so the claim was
+    withdrawn rather than restated a third time. What the numbers are evidence
+    for survives without being reproducible: the obvious staging does not
+    reliably reach this defect, so a test written against it would mostly have
+    passed before the fix and been called flaky.
+
+    **What guards this choice is ``_assert_reached_by_the_eof_path``, not this
+    paragraph.** Every test here asserts ``BackendUnavailable``, and both
+    outcomes of the race now map to it, so the mapped type alone cannot tell the
+    staging apart — measured, four of the five tests pass under a bare close.
+    The cause-chain assertion is what makes a regression here fail rather than
+    quietly pass.
 
     **``arm()`` is one-shot.** The teardown re-opens the gate, so the listener
     keeps serving and the next connection is pumped normally — which is what lets
@@ -238,6 +242,40 @@ def _drain(stream: Any) -> None:
         pass
 
 
+def _assert_reached_by_the_eof_path(exc: BackendUnavailable) -> None:
+    """Assert the mapped failure came from the EOF path, not the transport teardown.
+
+    **This is what makes the suite guard the staging, and without it the suite
+    does not.** Every test here asserts ``BackendUnavailable``, and after the fix
+    *both* outcomes the drop race can produce are mapped to it: the ``SSHException``
+    that ``SFTPClient._read_response`` builds from an ``EOFError``, and the
+    ``OSError('Socket is closed')`` a torn-down transport raises. Asserting the
+    mapped type alone therefore cannot tell the two apart — measured, four of the
+    five tests below pass under a bare close, the staging this module exists to
+    avoid. A later simplification of ``arm()`` would keep them green while the
+    file's whole subject was silently lost.
+
+    The wrapper raises ``from exc``, so ``__cause__`` is the paramiko exception
+    that actually escaped and is the one place the two outcomes differ.
+
+    **Only for failures mapped by the wrapper.** A failure mapped inside
+    ``_errors()`` — anything on the eager path — is raised ``from None``, so it
+    carries no cause by design and this helper does not apply to it.
+    """
+    import paramiko
+
+    cause = exc.__cause__
+    assert isinstance(cause, paramiko.SSHException), (
+        f"expected the drop to arrive by the EOF path as SSHException, got {cause!r}. "
+        "An OSError here means the transport tore the socket down first — the relay "
+        "staged a bare close rather than silencing server->client, so this test is no "
+        "longer exercising the shape BK-358 was about."
+    )
+    assert not isinstance(cause, paramiko.SFTPError), (
+        "SFTPError is a different supplied shape with a different is_fatal verdict; a drop must not arrive as one"
+    )
+
+
 @pytest.mark.spec("SIO-012")
 @pytest.mark.spec("SFTP-024")
 def test_a_mid_read_drop_on_a_stream_raises_backend_unavailable(drop_relay: _DropRelay) -> None:
@@ -256,8 +294,9 @@ def test_a_mid_read_drop_on_a_stream_raises_backend_unavailable(drop_relay: _Dro
         assert stream.read(64 * 1024), "expected the stream to deliver bytes before the drop"
         drop_relay.arm()
 
-        with pytest.raises(BackendUnavailable):
+        with pytest.raises(BackendUnavailable) as raised:
             _drain(stream)
+    _assert_reached_by_the_eof_path(raised.value)
 
 
 @pytest.mark.spec("SIO-012")
@@ -288,8 +327,9 @@ def test_a_mid_read_drop_invalidates_the_client_and_the_next_read_reconnects(
         # and what the escape actually cost.
         assert backend._sftp_client is not None, "precondition: a live client is cached"
         drop_relay.arm()
-        with pytest.raises(BackendUnavailable):
+        with pytest.raises(BackendUnavailable) as raised:
             _drain(stream)
+        _assert_reached_by_the_eof_path(raised.value)
     finally:
         stream.close()
 
@@ -321,8 +361,9 @@ def test_a_dropped_stream_raises_rather_than_truncating(drop_relay: _DropRelay) 
         assert first, "expected the stream to deliver bytes before the drop"
         drop_relay.arm()
 
-        with pytest.raises(BackendUnavailable):
+        with pytest.raises(BackendUnavailable) as raised:
             _drain(stream)
+        _assert_reached_by_the_eof_path(raised.value)
 
     assert len(first) < len(payload), "the drop must land mid-transfer, not after the last byte"
     assert payload.startswith(first), "what arrived before the drop must be a valid prefix"
@@ -365,6 +406,14 @@ def test_the_stream_and_read_bytes_answer_a_drop_the_same_way(drop_relay: _DropR
     with pytest.raises(BackendUnavailable) as eager:
         backend.read_bytes(name)
 
+    # Only the streamed half can carry this: ``_errors()`` raises
+    # ``from None`` (``_sftp.py``), so a failure mapped inside it deliberately
+    # drops the paramiko exception, while the wrapper raises ``from exc`` and
+    # keeps it. That asymmetry is pre-existing and not what this test is about —
+    # it is noted here so a reader does not take the missing cause for a defect.
+    _assert_reached_by_the_eof_path(streamed.value)
+    assert eager.value.__cause__ is None, "``_errors()`` suppresses the cause with ``from None``"
+
     for exc in (streamed.value, eager.value):
         assert str(exc), "SFTP-023: a dropped connection names the failure rather than raising blank"
         assert exc.backend == "sftp"
@@ -390,5 +439,6 @@ def test_a_seek_to_end_meeting_a_drop_maps(drop_relay: _DropRelay) -> None:
         assert stream.read(4096), "expected the stream to deliver bytes before the drop"
         drop_relay.arm()
 
-        with pytest.raises(BackendUnavailable):
+        with pytest.raises(BackendUnavailable) as raised:
             stream.seek(0, io.SEEK_END)
+        _assert_reached_by_the_eof_path(raised.value)

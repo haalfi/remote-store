@@ -76,18 +76,31 @@ chunk = stream.read(4096)
 
 **Invariant:** Where a backend supplies `_ErrorMappingStream` with an `is_fatal`
 predicate, releasing a stream returned by that backend's `Backend.read()` does
-not re-enter a connection the stream's own failure has already established is
-unusable. Backends that supply no predicate release unconditionally, and this
-clause makes no claim about them. Supplying one is optional by design, not an
-omission each backend is expected to correct: it is worth the parameter only
-where a close on a dead connection blocks, which is a property of the transport,
-not of every stream. `SFTPBackend` is the only backend that supplies one.
+not re-enter a connection **that predicate has condemned**. Backends that supply
+no predicate release unconditionally, and this clause makes no claim about them.
+Supplying one is optional by design, not an omission each backend is expected to
+correct: it is worth the parameter only where a close on a dead connection
+blocks, which is a property of the transport, not of every stream.
+`SFTPBackend` is the only backend that supplies one.
 **Postconditions:** A backend that can recognise such a failure supplies
 `_ErrorMappingStream` with an `is_fatal` predicate over the raised exception.
 Once it answers `True` for a mapped failure, the wrapper's `close()` skips the
 inner close and marks itself closed; the caller sees an ordinary `close()`. A
 backend that supplies no predicate closes unconditionally, which is the
 behaviour every backend had before this clause.
+
+**The predicate's verdict is the scope, and it is narrower than "unusable".**
+The Invariant read "a connection the stream's own failure has already
+established is unusable", which this clause cannot deliver and, since
+[SIO-012](#sio-012-the-set-of-exception-shapes-a-stream-maps), does not: a
+dropped SFTP connection is now mapped to `BackendUnavailable` and clears the
+cached client — the library establishing it unusable — while
+`_is_connection_dead` declines to condemn that shape, so the close re-enters it.
+Scoping the headline to unusability made it false on the one backend it applies
+to, in that backend's commonest failure. Scoping it to the predicate makes it
+say what the mechanism does, which is what the Postconditions above have always
+said; the two sets differ on purpose, and the paragraph on supplied shapes below
+says why.
 
 **Why a predicate rather than the mapped error type.** The wrapper is shared, so
 a rule derived from the classification would bind backends the symptom was never
@@ -151,13 +164,23 @@ guard where before it never reached `_fail` at all; it deliberately excludes the
 is mapped, invalidates the cached client, and still closes the inner handle.
 Measured through the wrapper with the backend's own mapper and predicate:
 `SSHException` maps with the guard unarmed and one inner close; `SFTPError`,
-`EOFError` and a socket-teardown `OSError` map with it armed and no inner close.
+`EOFError` and `OSError("Socket is closed")` map with it armed and no inner
+close. That last shape is named exactly rather than as "a socket-teardown
+`OSError`": `_is_connection_dead` matches the errno-less "Socket is closed"
+literal and a socket-teardown errno by two separate branches, and it is the
+literal that was measured. A plain errno-less `OSError` is matched by neither.
 
 **The unarmed half is a decision, not a residue.** `SSHException` is the shape a
 dropped connection takes, so it is the one where the guard would matter — and
-the close there is free: measured at **0.0001–0.0003 s over five real drops**
-(0.00 s to two decimals, and stated as the range so it is not read as an exact
-zero), because paramiko's transport-reader thread tears the socket down on EOF
+the close there is free: **under 0.001 s**, stated as an upper bound rather
+than a band because the phenomenon is faster and more spread than a band can
+honestly carry — re-running the derivation below over 25 real drops returned a
+median of 0.00005 s and a maximum of 0.0003 s, against 0.0001–0.0003 s from an
+earlier five-sample run. Five samples cannot bound something whose observed
+spread is eightfold, and the earlier figure excluded most of what a re-run
+returns. The direction is benign — it is faster than first stated, which only
+strengthens "there is nothing to buy" — but a bound is what the evidence
+supports. Under a millisecond, because paramiko's transport-reader thread tears the socket down on EOF
 before `SFTPFile.close()` can issue its `CMD_CLOSE`. There is nothing to buy, which is why
 `SFTPBackend.read` was left passing the predicate unchanged when its caught set
 widened. Derivation: the drop relay in

@@ -240,7 +240,11 @@ if evidence changes; these are retired.
   measurement below, and not as a residue. Measured per shape through the wrapper
   with the backend's own mapper and predicate: `SSHException` maps with
   `_connection_lost=False` and one inner close; `SFTPError`, `EOFError` and
-  `OSError` map with `_connection_lost=True` and none.
+  `OSError("Socket is closed")` map with `_connection_lost=True` and none. The
+  qualifier on that last one is load-bearing: a plain errno-less `OSError` is not
+  a dead-connection signal at all, so it neither arms the guard nor reaches
+  `BackendUnavailable` — it lands in `_map_exception`'s generic
+  `RemoteStoreError` arm.
   **Fixed by a per-construction-site caught set** — a new `also_catch` parameter
   on `_ErrorMappingStream`, which `SFTPBackend.read()` supplies
   `(paramiko.SSHException, paramiko.SFTPError)` — rather than by the item's third

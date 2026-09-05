@@ -12,8 +12,18 @@ source_items:
   - BK-357
 audience:
   - user.api
+# Counted from the commits that exist because review feedback was incorporated,
+# on `git log --oneline 8184c4b..HEAD`: 99f2e46 (round 1), 233acd0 (round 2) and
+# the round-3 fix commit that carries this line. 8184c4b is the implementation
+# and does not count; ebc0ccd is a docstring reflow I found myself while writing
+# a brief, not review feedback, so it does not either.
+review_rounds: 3
 expected_ripples:
-  - sdd/backlogid.json
+  # sdd/backlogid.json is deliberately absent, against the schema's own example
+  # ("after any BACKLOG/BACKLOG-DONE edit"), on the reasoning BUG-265's trace
+  # established one PR earlier in this release: it is a max-allocated-ID map,
+  # this item allocates no ID because BK-358 already existed on master, and
+  # `gen_backlogid.py --check` passes with the file untouched.
   - CHANGELOG.md
   - docs-src/reference/migration.md
 surprising_ripples:

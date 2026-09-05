@@ -195,11 +195,17 @@ that branch no longer runs, and you should catch
 for you except that the failure now has the type the docstrings promised.
 
 ```python
-# Before: the only way to catch a mid-read drop
+# Before (v0.30.0): the only way to catch a mid-read drop
+try:
+    with store.read("delivery.csv") as stream:
+        data = stream.read()
 except paramiko.SSHException:
     ...
 
-# After
+# After (v0.31.0)
+try:
+    with store.read("delivery.csv") as stream:
+        data = stream.read()
 except BackendUnavailable:
     ...
 ```
