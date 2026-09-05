@@ -7751,6 +7751,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../research/research-appropriate-level-of-detail/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Is the level of detail appropriate?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../research/research-arc42-evaluation/" class="md-nav__link">
         
   
@@ -10805,8 +10833,8 @@
 placement of all <code>.md</code> content in the repository.</p>
 <p>Part of the documentation framework (see <a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#documentation-framework"><code>CLAUDE.md</code> § Documentation
 framework</a>): structure →
-<a href="../documentation/"><code>sdd/DOCUMENTATION.md</code></a>; longevity →
-<a href="../content-rules/"><code>sdd/CONTENT-RULES.md</code></a>.</p>
+<a href="../documentation/"><code>sdd/DOCUMENTATION.md</code></a>; longevity, and the Rule 7
+comprehension test → <a href="../content-rules/"><code>sdd/CONTENT-RULES.md</code></a>.</p>
 <p><a id="rules"></a></p>
 <h2 id="rules">Rules<a class="headerlink" href="#rules" title="Permanent link">&para;</a></h2>
 <ol>
@@ -10837,8 +10865,11 @@ framework</a>): structure →
    added. The implementation lives in the build tooling.</p>
 </li>
 <li>
-<p><strong>PR-time enforcement.</strong> A PR-blocking check verifies every framework
-   rule. Failures block merge.</p>
+<p><strong>PR-time enforcement.</strong> A PR-blocking check verifies rules 1-4 of <em>this</em>
+   file — <code>scripts/check_docs_framework.py</code>, whose gates G-01 to G-07 cover them
+   and the related framework constraints. Failures block merge. <strong>It does not
+   reach the content rules</strong>, which are review-enforced and marked so individually
+   in <a href="../content-rules/"><code>CONTENT-RULES.md</code></a>.</p>
 </li>
 </ol>
 <h2 id="guides">Guides<a class="headerlink" href="#guides" title="Permanent link">&para;</a></h2>

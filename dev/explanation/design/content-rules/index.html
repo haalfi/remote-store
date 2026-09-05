@@ -7740,6 +7740,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../research/research-appropriate-level-of-detail/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Is the level of detail appropriate?
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../research/research-arc42-evaluation/" class="md-nav__link">
         
   
@@ -10779,8 +10807,12 @@
 <!-- doc: dual dest=explanation/design/content-rules.md -->
 
 <h2 id="intent-scope">Intent &amp; Scope<a class="headerlink" href="#intent-scope" title="Permanent link">&para;</a></h2>
-<p>Rules for writing documentation that stays accurate over time. Applies to
-all content: README, guides, docstrings, and inline doc comments.</p>
+<p>Rules for writing documentation that stays accurate over time (rules 1–6),
+applying to all content: README, guides, docstrings, and inline doc comments.
+<strong>Rule 7 is a second axis and carries its own narrower scope</strong>: it is about
+whether a section is understood well enough to write, not about staying accurate,
+and it binds <code>sdd/</code> and <code>.claude/</code> only. That split is deliberate — see the note
+in the rule.</p>
 <p>Part of the documentation framework (see <a href="https://github.com/haalfi/remote-store/blob/master/CLAUDE.md#documentation-framework"><code>CLAUDE.md</code> § Documentation
 framework</a>): placement →
 <a href="../authoring/"><code>sdd/AUTHORING.md</code></a>; structure →
@@ -10829,6 +10861,37 @@ framework</a>): placement →
    only when the snippet cannot execute in CI (e.g. needs real credentials);
    note the reason inline.</p>
 </li>
+<li>
+<p><a id="kernsatz"></a><strong>Lead with the Kernsatz</strong> — the core claim, stated first. [review-enforced]
+   A new or substantially rewritten section in <code>sdd/</code>, <code>.claude/</code> or a root-level
+   process doc opens with
+   its core claim in at most three sentences, defining any term it coins or uses
+   in a sense the reader cannot be assumed to hold. If those sentences will not
+   come, the section is not yet understood well enough to write: return to the
+   source — the material the section is about — instead of writing around the gap.
+   What follows the Kernsatz is detail the Kernsatz earned. <strong>A claim that is absent
+   and a claim that arrives in paragraph four both fail this rule</strong>; the first is
+   the one it exists to catch, and the second is the one it is easiest to fix.
+   <strong>What triggers it.</strong> A <em>section</em> is a heading-delimited unit of Markdown
+   prose at any heading level; a list item, a table and a YAML block are not
+   sections, and a section whose body is mostly a table still opens with the
+   claim the table serves. <em>Substantially rewritten</em> means the section's claim
+   changed, not its wording — <strong>and a section that stated no claim before is
+   substantially rewritten by definition</strong>, since there was nothing for the
+   rewrite to preserve.
+   <strong>Why the scope is what it is.</strong> Rules 1–6 govern accuracy over time and apply
+   everywhere; this one governs comprehension at writing time and is confined to
+   the repo's own reasoning surfaces, where author and reader are both
+   contributors. Those are <code>sdd/</code>, <code>.claude/</code>, and the root-level process docs
+   (<code>CLAUDE.md</code>, <code>CONTRIBUTING.md</code>, <code>AGENTS.md</code>) — the scope line above names the
+   first two; the third is named here because the rationale selects it and an
+   author rewriting a principle should not have to infer that. Extending it to
+   <code>docs-src/</code> and docstrings has not been argued for: those readers are not
+   contributors, and § 9.5 of the record below argues they need <em>more</em> context
+   rather than a tighter opening.
+   <strong>Defining a term does not mean restating an authority.</strong> Rule 4 keeps facts in
+   one place; a one-clause gloss plus a link satisfies both.</p>
+</li>
 </ol>
 <h2 id="guides">Guides<a class="headerlink" href="#guides" title="Permanent link">&para;</a></h2>
 <h3 id="examples-bad-good">Examples (bad → good)<a class="headerlink" href="#examples-bad-good" title="Permanent link">&para;</a></h3>
@@ -10851,13 +10914,25 @@ framework</a>): placement →
 <a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a># Rule 5 — source-code facts stay in source
 <a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a># bad in README: a method-by-method table listing every Store method
 <a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a># good: "See the Store API reference for the full method list."
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a># Rule 7 — lead with the Kernsatz
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a># bad: three paragraphs circling what the retry policy is for, naming the cases
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>#      it covers and the ones it does not, and never saying what it decides
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a># also bad: the same claim stated correctly, but only in the last paragraph
+<a id="__codelineno-0-25" name="__codelineno-0-25" href="#__codelineno-0-25"></a># good: "A retry policy decides which failures are worth repeating. It repeats
+<a id="__codelineno-0-26" name="__codelineno-0-26" href="#__codelineno-0-26"></a>#        the ones a later attempt could plausibly answer differently, and no
+<a id="__codelineno-0-27" name="__codelineno-0-27" href="#__codelineno-0-27"></a>#        others." — then the cases, and only what that claim earned.
 </code></pre></div>
 <h3 id="how-the-rules-interact">How the rules interact<a class="headerlink" href="#how-the-rules-interact" title="Permanent link">&para;</a></h3>
-<p>The detail rules are all expressions of the same principle: <strong>stable prose describes
-shape; volatile detail lives in its authoritative location.</strong> The positive side
-of the same coin: a document is the SSoT for its own stable core — its purpose,
-principles, and design intent. Other documents link to it for those things; they
-do not restate them. When in doubt, ask rule 1.</p>
+<p><strong>Rules 1–6 are one axis; rule 7 is the other.</strong> Rules 1–6 are expressions of a
+single principle: <strong>stable prose describes shape; volatile detail lives in its
+authoritative location.</strong> The positive side of the same coin: a document is the
+SSoT for its own stable core — its purpose, principles, and design intent. Other
+documents link to it for those things; they do not restate them. When in doubt on
+any of those six, ask rule 1.</p>
+<p>Rule 7 does not belong to that family and rule 1 cannot decide it: the 6-month
+accuracy test says nothing about whether a section leads with its claim. When in
+doubt on rule 7, try to write the three sentences — failing is the answer.</p>
 <h3 id="finding-the-documents-that-are-failing-readers">Finding the documents that are failing readers<a class="headerlink" href="#finding-the-documents-that-are-failing-readers" title="Permanent link">&para;</a></h3>
 <p>Agent traces tag any read that did not deliver (<code>sdd/traces/_schema.yml</code>
 <code>outcome</code>). <code>hatch run report-trace-outcomes</code> aggregates those tags into a
@@ -10865,7 +10940,11 @@ ranking of the referenced files, with the traces and sections that cited each.
 It is a report, never a gate: read it when asking which documents to improve,
 not as a pass/fail. The script's module docstring states what it does not catch.</p>
 <h3 id="provenance">Provenance<a class="headerlink" href="#provenance" title="Permanent link">&para;</a></h3>
-<p>Derived from <a href="../research/research-doc-content-longevity/"><code>sdd/research/research-doc-content-longevity.md</code></a>.</p>
+<p>Rules 1–6 derive from
+<a href="../research/research-doc-content-longevity/"><code>sdd/research/research-doc-content-longevity.md</code></a>.
+Rule 7 derives from
+<a href="../research/research-appropriate-level-of-detail/"><code>sdd/research/research-appropriate-level-of-detail.md</code></a>,
+which argues it and marks what it does not establish.</p>
 
 
 
