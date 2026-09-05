@@ -95,7 +95,9 @@ phases:
           and when the transport wins the next read raises `OSError('Socket is closed')`,
           which the base tuple already caught. Found by running the staging 15 times
           rather than once. Silencing server->client first and closing on the reply the
-          client will never see is 15 of 15
+          client will never see is 15 of 15. Round 2 later measured the bare close at 0 of
+          15 on its host and refuted the re-derivation recipe, which is what established
+          that the 2-in-15 was a host-dependent race sample rather than a figure
         outcome: ok
 
   - id: tests
@@ -206,6 +208,41 @@ phases:
           `backend._sftp_client` assertions need the `# internal: no public observable`
           marker and its reason, since the reconnect is the public guarantee and only the
           private pair says the invalidation happened on the operation that surfaced the drop
+        outcome: ok
+
+  - id: fix2
+    name: Review round 2 (measuring)
+    steps:
+      - file: tests/backends/sftp/test_connection_drop.py
+        section: "_DropRelay (docstring)"
+        read_type: gate
+        extract: >-
+          Round 2 ran rather than read, and refuted the re-derivation recipe round 1 had
+          just corrected: followed literally it returned 0 of 15 across 45 runs, and the
+          bare close reached the defect 0 of 15 on that host against 2 of 15 here. Two
+          consecutive rounds refuting the same site, so the repeat-site rule applies — the
+          recipe was dropped rather than written a third time, because the thing being
+          measured is a race whose distribution belongs to the host. The second host's 0 of
+          15 turned out to make the staging argument more sharply than the figure did
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-358 (entry)"
+        read_type: gate
+        extract: >-
+          Polarity inversion: "would have passed before the fix two times in fifteen"
+          reads the 13/2 split backwards, since *mapped* is the outcome under which a
+          `BackendUnavailable` assertion passes. Retrospectively, I converted "reached the
+          defect" into "the test passed" in one sentence and did not re-check the direction;
+          the same conversion is correct everywhere else in the diff, which is why nothing
+          else carried it
+        outcome: ok
+      - file: sdd/specs/006-streaming-io.md
+        section: "SIO-010"
+        read_type: verify
+        extract: >-
+          Round 2 measured the close at 0.0001-0.0003 s over five real drops where the spec
+          said 0.00 s. Consistent, but stated as the range so it is not read as an exact
+          zero
         outcome: ok
 
   - id: verify

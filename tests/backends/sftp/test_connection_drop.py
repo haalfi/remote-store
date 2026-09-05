@@ -27,8 +27,8 @@ does the converting. An injected shape cannot reach a defect whose cause is
 closes the connection.
 
 **Why the relay goes silent before it closes**, which is the one thing about it
-that is not obvious: see ``_DropRelay``. A bare close reaches this defect two
-times in fifteen.
+that is not obvious: see ``_DropRelay``. A bare close reaches this defect at
+best occasionally and on one measured host not at all.
 """
 
 from __future__ import annotations
@@ -106,17 +106,26 @@ class _DropRelay:
     meets. If the transport wins, it tears itself down and the next SFTP read
     raises ``OSError('Socket is closed')`` — an ``OSError``, which the wrapper
     has always caught, so the drop maps and this file's whole subject is missed.
-    Measured over 15 runs of a bare close: **13 mapped that way, 2 reached
-    ``SSHException``**. Silencing first puts the client inside a blocking
+    Measured over 15 runs of a bare close on two hosts: **2 reached
+    ``SSHException`` on one and 0 on the other** — never reliably, and on the
+    second host not at all. Silencing first puts the client inside a blocking
     ``recv`` at the moment the socket dies, so the EOF path is the one that
-    fires: 15 of 15, on the streamed read, the ``SEEK_END`` probe and the eager
-    read alike. Both figures are 15 runs of the drop staged each way against
-    this module's own relay on paramiko 5.0.0 / CPython 3.11, classifying the
-    exception that escaped; to re-derive the first, make ``arm()`` call
-    ``_tear_down()`` directly — that *is* the bare close — and loop a test.
-    (Not by tearing down inside ``_pump`` unconditionally: that fires on the
-    first byte either way, so the handshake never completes and nothing is
-    measured.)
+    fires: **15 of 15 on both hosts**, on the streamed read, the ``SEEK_END``
+    probe and the eager read alike. That second figure is what the five tests
+    below re-derive on every invocation.
+
+    **No recipe is given for the bare-close figure, and that is the finding
+    rather than an omission.** It is the outcome of a race between paramiko's
+    transport-reader thread and the client's next read, so its distribution is a
+    property of the host, not of an edit — which is why the two hosts disagree.
+    Two review rounds each wrote a recipe for it and each was refuted by running
+    it: the first tore the connection down inside ``_pump``, which fires on the
+    first byte either way so the handshake never completes; the second made
+    ``arm()`` tear down directly, which is the right edit and still returned 0 of
+    15 across 45 runs. A third reading would not be more exhaustive than those
+    two. What the number is evidence for survives without being reproducible:
+    the obvious staging does not reliably reach this defect, so a test written
+    against it would mostly have passed before the fix and been called flaky.
 
     **``arm()`` is one-shot.** The teardown re-opens the gate, so the listener
     keeps serving and the next connection is pumped normally — which is what lets

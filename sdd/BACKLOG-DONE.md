@@ -236,7 +236,7 @@ if evidence changes; these are retired.
   `_connection_lost` stayed `False`, leaving BK-355's futile-close guard inert;
   that is fixed for `SFTPError` only. `SSHException` now reaches `_fail` but
   `_is_connection_dead` does not match it, so the guard stays unarmed on **exactly
-  the shape a dropped connection takes** — deliberately, per the 0.00 s
+  the shape a dropped connection takes** — deliberately, per the sub-millisecond
   measurement below, and not as a residue. Measured per shape through the wrapper
   with the backend's own mapper and predicate: `SSHException` maps with
   `_connection_lost=False` and one inner close; `SFTPError`, `EOFError` and
@@ -265,7 +265,8 @@ if evidence changes; these are retired.
   **`is_fatal` was left unchanged, on a measurement rather than a judgement.**
   Widening it to match the `SSHException` family — as the two write-side sites in
   `_sftp.py` already spell — would buy nothing: the inner close after an
-  `SSHException` costs **0.00 s** on a hard drop and on a half-close alike,
+  `SSHException` costs **under a millisecond** on a hard drop and on a half-close
+  alike (SIO-010 carries the measured range),
   because paramiko's transport-reader thread tears the socket down on EOF before
   `SFTPFile.close()` can issue its `CMD_CLOSE`. Recorded in SIO-010 so the
   question is not reopened from the asymmetry with those two sites.
@@ -273,13 +274,24 @@ if evidence changes; these are retired.
   socket close does not reliably reach this defect: it races paramiko's transport
   thread, and when the transport wins, the next read raises
   `OSError("Socket is closed")` — which the base tuple already caught, so the drop
-  maps and the defect is missed. Measured over 15 runs, **13 mapped that way and 2
-  reached `SSHException`**. The relay therefore silences server→client first and
-  closes on the reply the client will never see, which puts the client inside a
-  blocking `recv` when the socket dies: 15 of 15 on the streamed read, the
-  `SEEK_END` probe and the eager read alike. A test written against the obvious
-  staging would have passed before the fix two times in fifteen and been called
-  flaky.
+  maps and the defect is missed. Measured over 15 runs of a bare close on two
+  hosts: **2 reached `SSHException` on one and 0 on the other**. The relay
+  therefore silences server→client first and closes on the reply the client will
+  never see, which puts the client inside a blocking `recv` when the socket dies:
+  **15 of 15 on both hosts**, on the streamed read, the `SEEK_END` probe and the
+  eager read alike. So a test written against the obvious staging would mostly
+  have *passed* before the fix — thirteen times in fifteen on the first host and
+  every time on the second — and been called flaky.
+  **The bare-close figure is not reproducible, and that is worth more than the
+  figure was.** It is a race between paramiko's transport-reader thread and the
+  client's next read, so its distribution belongs to the host rather than to an
+  edit, which is why the two hosts disagree. Two review rounds each wrote a
+  re-derivation recipe and each was refuted by running it — the first fired
+  before the handshake completed, the second was the right edit and still
+  returned 0 of 15 across 45 runs. The recipe was dropped rather than written a
+  third time, per the repeat-site rule: the second host's 0 of 15 makes the point
+  the number was there for more sharply than the number did, since on that host
+  the obvious staging would have caught nothing at all.
   **Why no existing test caught it.** `test_read_stream_eoferror_maps_and_reconnects`
   injects `EOFError` from a fake handle, which bypasses
   `SFTPClient._read_response` — the line that converts it to `SSHException`. An

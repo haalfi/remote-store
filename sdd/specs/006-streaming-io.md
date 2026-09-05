@@ -155,14 +155,15 @@ Measured through the wrapper with the backend's own mapper and predicate:
 
 **The unarmed half is a decision, not a residue.** `SSHException` is the shape a
 dropped connection takes, so it is the one where the guard would matter — and
-the close there is free: measured **0.00 s**, because paramiko's
-transport-reader thread tears the socket down on EOF before `SFTPFile.close()`
-can issue its `CMD_CLOSE`. There is nothing to buy, which is why
+the close there is free: measured at **0.0001–0.0003 s over five real drops**
+(0.00 s to two decimals, and stated as the range so it is not read as an exact
+zero), because paramiko's transport-reader thread tears the socket down on EOF
+before `SFTPFile.close()` can issue its `CMD_CLOSE`. There is nothing to buy, which is why
 `SFTPBackend.read` was left passing the predicate unchanged when its caught set
 widened. Derivation: the drop relay in
 `tests/backends/sftp/test_connection_drop.py`, timed around the wrapper's
 `close()` after a mapped failure; paramiko 5.0.0. A half-close (FIN
-server→client only) was measured at 0.00 s too, but its relay is not in the
+server→client only) came in under a millisecond too, but its relay is not in the
 repo, so treat that as a cross-check rather than something a reader can re-run.
 Contrast the stall this clause was written for, where the socket stays open and
 the close does wait — and note the reason is paramiko's teardown rather than
