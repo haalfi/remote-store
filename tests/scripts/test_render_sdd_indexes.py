@@ -205,5 +205,9 @@ def test_live_research_index_is_fully_dated_and_descending(mods):
 
     kind = next(k for k in scan.SDD_KINDS if k.slug == "research")
     assert kind.dated is True
-    ordered = [e.date for e in render._index_order(kind, entries)]
-    assert ordered == sorted(dates, reverse=True)
+    ordered = render._index_order(kind, entries)
+    # `dates` is derived from the scan, not from `ordered`, so this fails on an
+    # ascending sort, no sort, a dropped entry, or a scrambled middle.
+    assert [e.date for e in ordered] == sorted(dates, reverse=True)
+    # Dates alone cannot see one same-date document substituted for another.
+    assert {e.slug for e in ordered} == {e.slug for e in entries}

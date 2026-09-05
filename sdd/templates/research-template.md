@@ -4,6 +4,12 @@
 **Backlog items:** <ID> (<Brief title>)
 **Status:** Research complete — ready for design decisions | In progress
 
+<!-- The **Date:** line above is load-bearing: it fills the "Date (as of)"
+     column of the published research index and orders it newest first. Keep
+     the exact `**Date:** YYYY-MM-DD` spelling, in the header (above the first
+     `---` rule); `hatch run check-sdd-index` rejects a doc without it. -->
+
+
 ---
 
 ## 1. Problem Statement
