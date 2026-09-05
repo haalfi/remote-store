@@ -221,7 +221,7 @@ if evidence changes; these are retired.
 ## Unreleased
 
 - [x] **ID-256 — Prose overshoots its detail level, and no rule fires before it is written**
-  spec: — · effort: S · audience: contributor.process, internal.style
+  spec: — · effort: S · audience: contributor.process, user.site
   **The diagnosis is the round split, not a stylistic preference.** A `/ship`
   session reaches stable code and tests in roughly two to four rounds; the
   remaining rounds are prose findings. BUG-248 is the worked specimen: eight
@@ -245,9 +245,11 @@ if evidence changes; these are retired.
   **Enforcement is inherited, not built.** `/ship` and `/rvw-pr` already review
   changed documentation against `CONTENT-RULES.md`, so Rule 7 reaches every
   review that runs without either skill being edited. No gate: whether three
-  sentences state the core claim is a judgement, and
-  [`DRIFT-RULES.md`](DRIFT-RULES.md#rules) is the authority on not inventing a
-  mechanism that cannot decide.
+  sentences state the core claim is a judgement with no oracle, so the rule ships
+  review-enforced like its six siblings. [`DRIFT-RULES.md` Rule
+  5](DRIFT-RULES.md#rules) is the obligation that bears: it prefers the mandatory
+  path and requires a deliberately advisory check to state why, which this
+  sentence does.
   **What the research does and does not support.** The literature pass
   ([research](research/research-appropriate-level-of-detail.md)) found **both**
   failure directions evidenced, and the same text moving with the reader's
@@ -264,7 +266,12 @@ if evidence changes; these are retired.
   the research doc says so. The doc has since been restructured to argue its
   position, and its § 9 carries five proposals beyond this rule — none of them
   implemented here.
-  No CHANGELOG — internal authoring rule, audience contributor and maintainer.
+  **CHANGELOG entry owed and written.** `CONTENT-RULES.md` carries
+  `<!-- doc: dual dest=explanation/design/content-rules.md -->`, so Rule 7
+  publishes to docs.remotestore.dev — the audience line above therefore carries
+  `user.site`, and `sdd/traces/_schema.yml` makes an entry required rather than a
+  judgement. The precedent agrees: ID-144 added content rule 6 to this same file
+  and shipped an entry (`CHANGELOG.md:900`).
   Trace: `sdd/traces/ID-256-kernsatz-rule.yml`.
 - [x] **BUG-265 — A refused SFTP connect raises `RemoteStoreError`, which contradicts fifteen docstrings and the health-check guide**
   spec: SFTP-023 · effort: S · audience: user.api, user.site

@@ -6,8 +6,9 @@
 question — *is the level of detail appropriate?* — rather than a record of how it
 was investigated.
 **Closed to further prose passes.** § 6.3 measures this record diverging under
-review — 13 commits, monotone growth, each of the last three introducing a defect
-the next caught — which is the failure it documents, committed by itself. A later
+review — sixteen commits touching it, monotone growth, each of several passes
+introducing a defect the next caught — which is the failure it documents,
+committed by itself. A later
 finding is filed as a backlog item and fixed only if it names something **false**;
 "this could be tighter" is refused here by § 9.4, and by this line. Point-in-time
 snapshot per
@@ -449,9 +450,12 @@ and read its `extract`.
 ### 6.3 What the round data shows, and its two limits
 
 A script over `sdd/traces/[!_]*.yml` reading each file's first `review_rounds:`
-line, at `f7eb5b7`: 232 of 296 traces carry the field, **median 2, mean 2.48,
-maximum 13**, with **36 traces (15.5%) at five or more**. Pinned for the same
-reason as § 6.2. The long-round tail is where prose rounds accumulate — BUG-248 at
+value, at `f7eb5b7`: 235 of 296 traces carry the field, **median 2, mean 2.49,
+maximum 13**, with **37 traces (15.7%) at five or more**. Pinned for the same
+reason as § 6.2. *Match the value, not the whole line*: three traces carry a
+trailing comment after the number, and an end-of-line anchor drops them — two of
+the three sit at four rounds or more, so the tail this section argues for is
+longer than an anchored scan reports. The long-round tail is where prose rounds accumulate — BUG-248 at
 8, whose first three to four rounds changed behaviour and whose remainder moved
 ADR wording, docstrings, pointers and counts (derivation: its commit subjects read
 against each round's body).
@@ -473,15 +477,21 @@ to explanatory prose adds claims, and claims are the surface the next round read
 That is a positive feedback loop, and it is why § 9.4 puts a floor under what
 counts as a finding at all.
 
-**This record is the second instance, and it is reproducible.** Thirteen commits
-touched it before this sentence was written, and its length went 2,697 → 9,296
-words **monotonically — not one pass reduced it**, including three that described
-themselves as tightening. Each of the last three introduced a defect the next
-caught: four claims dropped in a restructure, a confidence rubric that contradicted
-its own table, and a false statement about which proposals were adopted. No file
-under `src/`, `tests/` or `examples/` was touched on the branch. Derivation:
+**This record is the second instance, and it is reproducible.** At `d433712` the
+command below lists **16 commits** touching this file (15 plus one merge), and its
+length went 2,697 → 10,396 words with **no step reducing it** — including three
+passes that described themselves as tightening. Successive passes each introduced
+a defect the next caught: four claims dropped in a restructure, a confidence
+rubric that contradicted its own table, a false statement about which proposals
+were adopted, and two figures that did not reproduce against the commands named
+beside them. No file under `src/`, `tests/` or `examples/` was touched on the
+branch. Derivation, and read it as of the pin because the series grows:
 `git log --format=%h --reverse origin/master..HEAD -- <this file>`, word-counting
-each blob, and `git diff --name-only origin/master...HEAD`.
+each blob, and `git diff --name-only origin/master...HEAD`. **The count includes
+the merge commit**, which the command does not filter. **And the pin is one behind
+by construction**: the commit that writes this sentence touches the file it counts,
+so a reader re-running it should expect one more than stated and read the direction
+rather than the total.
 
 ## 7. Figures and their derivations
 
@@ -494,12 +504,13 @@ apply directly here (row 22c).
 
 **Tier** — how the claim was obtained: **verified** (adversarial vote against a
 retrieved abstract or metadata record, or a source read in full where the row says
-so), **secondary** (a non-primary account of a primary, read in full),
+so), **secondary** (a non-primary account of a primary, read in full — split
+below by whether its author ran the work it reports),
 **search-summary** (a search engine's synthesis of secondary sources), **local**
 (derived from this repo, reproducible by the named command), **inference** (this
-document's reasoning, never a source's claim). Only rows 8, 8a–8e, 9–9c, 11–11a
-and 12–12a rest on a document read in full; everything else external comes from an
-abstract or a summary.
+document's reasoning, never a source's claim). Rows 7, 8, 8a–8e, 9–9c, 11–11a and
+12–12a rest on a document read in full, and row 15a on a preprint read in part;
+everything else external comes from an abstract or a summary.
 
 **Transfers here** — how far the claim reaches this repo's prose. *High*: the
 claim is about readers doing what this repo's readers do. *Medium*: the mechanism
@@ -513,9 +524,10 @@ goes above it only for a reason the table names:
 
 | Tier | Ceiling | Raised to | When |
 |---|---|---|---|
-| Source read in full | High | — | — |
+| Primary read in full | High | — | — |
+| **Author's own account of their own work**, read in full | Medium-high | — | Rows 8, 8a–8e: Charney, Reder & Wells is Reder reporting her own experiments, and Sweller et al. is a review by the target study's senior author. Closer to a primary than a third-party summary, and short of one because the target paper itself is unread |
 | Verified against an abstract or record | Medium-high | High | The retrieved text *is* the claim — a quoted maxim, a stated thesis (rows 1, 2) |
-| Secondary read in full | Medium | Medium-high | Two independent secondaries agree, and the claim is the one both state directly (row 9 only; 9a–9c stay at Medium) |
+| **Third-party** secondary read in full | Medium | Medium-high | Two independent secondaries agree, and the claim is the one both state directly (row 9 only; 9a–9c stay at Medium) |
 | Search summary | Low-medium | Medium | The row carries the authors' own criteria rather than a summariser's gloss (row 13) |
 | Local, reproducible by the named command | High | — | — |
 | Local, read by hand | Medium | — | — |
@@ -558,10 +570,10 @@ of evidence weak evidence of absence.
 | 17 | Macrorules are comprehension rules, not an editing procedure | Search-summary | Low | Low |
 | 18 | Verbosity bias is a property of raters, not evidence of reader harm | Search-summary | Low | Low |
 | 19 | Repo at `f7eb5b7`: 267 negative trace tags, and all 40 `unclear` extracts name a missing unit rather than a buried one | Local | High | High |
-| 20 | Repo at `f7eb5b7`: 232 of 296 traces carry `review_rounds`; median 2, mean 2.48, max 13; 36 (15.5%) at ≥5 | Local | High | High |
+| 20 | Repo at `f7eb5b7`: 235 of 296 traces carry `review_rounds`; median 2, mean 2.49, max 13; 37 (15.7%) at ≥5. Match the value, not the line: an end-of-line anchor drops three traces with trailing comments | Local | High | High |
 | 21 | Repo: BUG-248's eight rounds split roughly three-to-four behavioural, rest prose | Local, one item | Medium | Medium |
-| 21a | A `/ship` session's findings per round rose 7 → 2 → 13 → 16 while the shipped code stayed clean from round 1 (two revert simulations, no behavioural defect in four rounds), with essentially every round-4 finding a defect the round-3 fix pass introduced. Prose findings are self-generating, not merely inexhaustible | Local, one session, self-reported by the agent under review and not independently re-derived | High | Low as evidence; high as a signature |
-| 21b | This record is the same pattern: 13 commits, 2,697 → 9,296 words **monotone**, three passes that called themselves tightening, each of the last three introducing a defect the next caught, no file under `src/`, `tests/` or `examples/` touched. Derivation in § 6.3 | Local, reproducible by the named commands | High | High |
+| 21a | A `/ship` session's findings per round rose 7 → 2 → 13 → 16 while the shipped code stayed clean from round 1. **No session coordinate is recorded** — the figure was relayed to this record as a screenshot carrying no PR number, item ID or commit, so unlike ADR-0034's comparable series it cannot be reached (two revert simulations, no behavioural defect in four rounds), with essentially every round-4 finding a defect the round-3 fix pass introduced. Prose findings are self-generating, not merely inexhaustible | Local, one session, self-reported by the agent under review and not independently re-derived | High | Low as evidence; high as a signature |
+| 21b | This record is the same pattern, at `d433712`: 16 commits touching it (15 plus a merge), 2,697 → 10,396 words with **no step reducing it**, three passes that called themselves tightening, successive passes each introducing a defect the next caught, no file under `src/`, `tests/` or `examples/` touched. Derivation in § 6.3 | Local, reproducible by the named commands | High | High |
 | 22 | Repo: **four** volume decisions taken with no authoring rule to cite — two litigated at backlog level (BK-351 declining a 5,000-word budget; BK-353 condensing `/ship`, its first cut silently deleting two load-bearing clauses) and two made in review (`bk-313-sftp-roundtrips.yml:176`, a CHANGELOG entry "grown into a verbose paragraph"; `BK-280-ci-build-improvements.yml:92,96`, an entry "too chatty" and comments "too long"). Derivation: `git grep -il` for each ID over `sdd/`, then reading the four extracts | Local | High | High |
 | 22a | Repo experiment: whole against condensed ripple-check, 12 agent readers, 120 answers — obligations tied 42–42 after a 66% cut; rationale lost 12–0; zero invented answers on either page | Local, pre-registered | Medium | High for the tally, low for its reach |
 | 22b | The extra material was misused only by readers who had both the whole page and advance knowledge of the question (2 of 3) | Local, discovered in data | Low | Low — hypothesis for a dedicated run |
@@ -595,7 +607,7 @@ every external row, and the bounds on the one experiment run here.
 | Relevance ≈ cognitive effect ÷ processing effort | Sperber and Wilson operate a **comparative** notion and distinguish it from a quantitative one; the quotient is a popularization. **[Search-summary]** |
 | Verbosity bias in LLM judges | Establishes that *raters* over-reward length, not that verbose output harms a reader's task. **[Search-summary]** |
 | Seductive-detail research as a general cutting licence | Covers interesting-**and**-irrelevant material whose mechanism depends on grabbing attention. Bland, on-topic surplus is a different class |
-| The minimal manual as proof that cutting works | Carroll, Smith-Kerker, Ford & Mazur-Rimetz (1987), *Human-Computer Interaction* 3(2): the manual differs from its comparator on **four** dimensions at once — briefer, better attention coordination, error-recovery training, better reference support. It shows one package beating another, not that deleting detail is what did it. Charney, Reder & Wells reach the same verdict independently: Carroll's team "clarified the terminology and organized the discussion around typical situations", so "we do not know how much the results are due to differences in elaboration and how much they are due to these other clarifications". **[Verified twice: against the abstract, and against Charney, Reder & Wells, read in full — so this row is not abstract-only, contrary to the blanket statement above the ledger, which is scoped to numbered rows]** |
+| The minimal manual as proof that cutting works | Carroll, Smith-Kerker, Ford & Mazur-Rimetz (1987), *Human-Computer Interaction* 3(2): the manual differs from its comparator on **four** dimensions at once — briefer, better attention coordination, error-recovery training, better reference support. It shows one package beating another, not that deleting detail is what did it. Charney, Reder & Wells reach the same verdict independently: Carroll's team "clarified the terminology and organized the discussion around typical situations", so "we do not know how much the results are due to differences in elaboration and how much they are due to these other clarifications". **[Verified twice: against the abstract, and against Charney, Reder & Wells, read in full. Numbered row 7 carries the same claim and is listed among the read-in-full rows above the ledger]** |
 
 ### 8.2 The access limitation
 
@@ -612,8 +624,12 @@ rather than worked around.
 **What that costs this document.** Apart from the five sources named below, no
 source was read in full, so no figure taken from an external source should be
 quoted as established, and a negative finding obtained under blocked access is
-weak evidence of absence. The repo-derived rows (19–22d) carry no such
-limitation and are reproducible by the commands named.
+weak evidence of absence. **Rows 19, 20, 21, 21b and 22 carry no such limitation
+and are reproducible by the commands named.** The other five repo rows are not:
+row 21a is self-reported and carries no session coordinate, and rows 22a–22d come
+from a reader experiment whose protocol, answer key and graded answers were never
+committed, so there is nothing to re-run. § 10 item 5 treats repeating it as new
+work, which is the honest reading.
 
 **The exceptions, and the route around the blockade.** Five documents were
 supplied directly by the maintainer and read in full, and each carries one part
@@ -672,8 +688,9 @@ rebuilt rationale carrying a fact from outside the section (Appendix).
 **The rule this amends is not Rule 7.** Rule 7 is an authoring test — state the
 core claim or return to the source — and says nothing about removing anything.
 The licence to cut lives in [`CLAUDE.md` principle 8](../../CLAUDE.md#principles),
-whose test is that consolidation and tightening are legitimate and deleting a
-load-bearing reason is not, and in `research-id-232`'s justification-sufficiency
+whose own clause is that brevity is a byproduct of correct placement and never the
+target — *never delete a load-bearing reason to hit a length budget* — and in
+`research-id-232`'s justification-sufficiency
 test. **Those are what the recoverability split refines**: they draw the line at
 *load-bearing*, and this proposal says a rationale the surviving section cannot
 reconstruct is load-bearing whether or not it reads as one.
@@ -723,8 +740,9 @@ the harm, the change, and what must survive the change:
 > **Preserve:** the exception for read-only backends.
 
 "This could be tighter" fills none of those lines, which is the point. § 2 supplies
-the other half of the argument: a rule that only cuts is aimed at the direction
-with the weaker evidence.
+the other half of the argument, and it is a claim about **magnitude, not evidence
+quality**: both directions are measured, and a rule that only cuts is aimed at the
+case where cutting helps least and hurts most.
 
 **9.5 Set the licence by reader purpose, with the directory as its default proxy.
 [Adopt, cautiously.]**
@@ -762,9 +780,10 @@ then place what remains by `research-id-232`'s three-condition gate; then
 classify each surviving unit as **keep / shorten / move / remove**, with 9.2, 9.3
 and 9.5 deciding the last two. *Move* is the outcome that ties this question back
 to placement, and it is how this repo's two litigated density disputes were
-resolved (§ 7 row 22). **When placement and length conflict, § 2 decides: never
-delete a load-bearing reason to reach a length.** Under-justification is the
-failure with the better evidence.
+resolved (§ 7 row 22). **When placement and length conflict,
+[principle 8](../../CLAUDE.md#principles) decides: never delete a load-bearing
+reason to hit a length budget.** § 2 supplies the magnitude behind that ordering —
+the reader who lost most was the one the cut was not aimed at.
 
 **One caveat covering all six.** Rule 7 detects an author who cannot state a
 claim; 9.2 through 9.6 decide *what* to cut once the claim is stated. Neither
@@ -930,5 +949,10 @@ only, per § 7's tiers:
 
 **Derived from this repository**, reproducible by the commands named in §§ 6–7:
 `hatch run report-trace-outcomes` at `f7eb5b7`; the `review_rounds` scan over
-`sdd/traces/[!_]*.yml`; BUG-248's commit subjects; BK-351 and BK-353; and the
-pre-registered reader experiment reported in the Appendix.
+`sdd/traces/[!_]*.yml`; BUG-248's commit subjects; and BK-351, BK-353, bk-313 and
+BK-280 for row 22.
+**Not reproducible, and named here so the list above is not read as covering
+them:** the `/ship` session behind row 21a, which carries no coordinate; and the
+reader experiment in the Appendix, whose protocol, page pair, answer key and 120
+graded answers were never committed. Its figures stand on this record's report of
+a run that cannot be repeated from the repository.

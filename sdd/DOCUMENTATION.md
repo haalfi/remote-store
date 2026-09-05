@@ -5,7 +5,7 @@
 
 Authoritative source for documentation structure and standards. Governs the shape and quality of all docs work: new pages, restructuring, and reviews.
 
-Part of the documentation framework (see [`CLAUDE.md` § Documentation framework](../CLAUDE.md#documentation-framework)): placement → [`sdd/AUTHORING.md`](AUTHORING.md); longevity → [`sdd/CONTENT-RULES.md`](CONTENT-RULES.md).
+Part of the documentation framework (see [`CLAUDE.md` § Documentation framework](../CLAUDE.md#documentation-framework)): placement → [`sdd/AUTHORING.md`](AUTHORING.md); longevity, and the Rule 7 comprehension test → [`sdd/CONTENT-RULES.md`](CONTENT-RULES.md).
 
 ## Rules
 

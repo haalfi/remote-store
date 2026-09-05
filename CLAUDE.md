@@ -15,7 +15,7 @@ Spec-Driven Development (SDD).
 5. **Specs are source of truth**: code vs spec conflict: code is wrong — unless no test ever asserted that clause for the backend in question, which [`sdd/000-process.md` Rule 7](sdd/000-process.md#intent-attribution) qualifies (that makes the claim undecided, not the code right), along with prose vs Dafny vs conformance generally. Backlog vs history conflict: backlog is wrong. Fix the less authoritative side.
 6. **Run it, don't just type-check it**: verify behavior, not signatures. Reproduce bugs before claiming fixes. Test what matters, not just what type-checks.
 7. **Be critical, not agreeable**: challenge assumptions, question completeness, flag what's missing. Especially in reviews: a rubber-stamp is worse than no review. Ask what's untested, what could break, what's absent from the checklist.
-8. **Minimize mismatched detail, not detail**: durable artifacts — code, docs, specs, tests — keep the detail whose change-rate and correctness-locus fit the artifact, and relocate detail that belongs to another layer to its authoritative home (per principle 4). Brevity is a byproduct of correct placement, never the target: never delete a load-bearing reason to hit a length budget. **Placement is the first axis; comprehension is the second**: a section that cannot lead with its core claim in three plain sentences is not yet understood, and its length is the symptom rather than the defect — the test, and what to do when it fails, live in [`sdd/CONTENT-RULES.md` Rule 7](sdd/CONTENT-RULES.md#kernsatz).
+8. **Minimize mismatched detail, not detail**: durable artifacts — code, docs, specs, tests — keep the detail whose change-rate and correctness-locus fit the artifact, and relocate detail that belongs to another layer to its authoritative home (per principle 4). Brevity is a byproduct of correct placement, never the target: never delete a load-bearing reason to hit a length budget. **Placement is the first axis; comprehension is the second**: a section that cannot lead with its core claim in at most three sentences is not yet understood, and its length is the symptom rather than the defect — the test, its scope (`sdd/` and `.claude/`), and what to do when it fails live in [`sdd/CONTENT-RULES.md` Rule 7](sdd/CONTENT-RULES.md#kernsatz).
 9. **A figure names its derivation**: a number, a count, or a claim about an action you took — in a spec, ADR, trace, backlog item, skill file, commit message, PR body, or review reply — states the command, query, or enumeration it came from, and that derivation is **run before the sentence is written**, not recalled. Re-reading the sentence does not catch the error; opening the source does. A reader can disagree with a derivation, and can only trust a total. Measured failure modes: [ADR-0037](sdd/adrs/0037-whole-file-gate-and-derived-figures.md).
 
 ## Feature reference
@@ -121,7 +121,7 @@ Three authority docs govern documentation. Apply in order:
 
 1. **[`sdd/AUTHORING.md`](sdd/AUTHORING.md)**: placement (where files belong).
 2. **[`sdd/DOCUMENTATION.md`](sdd/DOCUMENTATION.md)**: structure (what shape they take).
-3. **[`sdd/CONTENT-RULES.md`](sdd/CONTENT-RULES.md)**: longevity (writing that stays accurate).
+3. **[`sdd/CONTENT-RULES.md`](sdd/CONTENT-RULES.md)**: longevity (writing that stays accurate), and — in Rule 7 alone — comprehension at writing time.
 
 ## Code conventions
 

@@ -8,8 +8,8 @@ placement of all `.md` content in the repository.
 
 Part of the documentation framework (see [`CLAUDE.md` § Documentation
 framework](../CLAUDE.md#documentation-framework)): structure →
-[`sdd/DOCUMENTATION.md`](DOCUMENTATION.md); longevity →
-[`sdd/CONTENT-RULES.md`](CONTENT-RULES.md).
+[`sdd/DOCUMENTATION.md`](DOCUMENTATION.md); longevity, and the Rule 7
+comprehension test → [`sdd/CONTENT-RULES.md`](CONTENT-RULES.md).
 
 <a id="rules"></a>
 ## Rules

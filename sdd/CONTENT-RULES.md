@@ -3,8 +3,12 @@
 
 ## Intent & Scope
 
-Rules for writing documentation that stays accurate over time. Applies to
-all content: README, guides, docstrings, and inline doc comments.
+Rules for writing documentation that stays accurate over time (rules 1–6),
+applying to all content: README, guides, docstrings, and inline doc comments.
+**Rule 7 is a second axis and carries its own narrower scope**: it is about
+whether a section is understood well enough to write, not about staying accurate,
+and it binds `sdd/` and `.claude/` only. That split is deliberate — see the note
+in the rule.
 
 Part of the documentation framework (see [`CLAUDE.md` § Documentation
 framework](../CLAUDE.md#documentation-framework)): placement →
@@ -49,13 +53,24 @@ framework](../CLAUDE.md#documentation-framework)): placement →
    only when the snippet cannot execute in CI (e.g. needs real credentials);
    note the reason inline.
 
-7. <a id="kernsatz"></a>**Lead with the Kernsatz.** [review-enforced]
+7. <a id="kernsatz"></a>**Lead with the Kernsatz** — the core claim, stated first. [review-enforced]
    A new or substantially rewritten section in `sdd/` or `.claude/` opens with
-   its core claim in at most three sentences, using no term it does not define on
-   the spot. If those three sentences will not come, the section is not yet
-   understood well enough to write: return to the source instead of writing
-   around the gap. What follows the Kernsatz is detail the Kernsatz earned; prose
-   standing *instead* of it is what this rule catches.
+   its core claim in at most three sentences, defining any term it coins or uses
+   in a sense the reader cannot be assumed to hold. If those sentences will not
+   come, the section is not yet understood well enough to write: return to the
+   source instead of writing around the gap. What follows the Kernsatz is detail
+   the Kernsatz earned; prose standing *instead* of it is what this rule catches —
+   **absence of the claim, not a claim placed late**.
+   **What triggers it.** A *section* is a heading-delimited unit of Markdown prose;
+   a list item, a table and a YAML block are not sections. *Substantially
+   rewritten* means the section's claim changed, not its wording.
+   **Why the scope is narrow.** Rules 1–6 govern accuracy over time and apply
+   everywhere; this one governs comprehension at writing time and is deliberately
+   confined to the repo's own reasoning surfaces, where the author and reader are
+   both contributors. Extending it to `docs-src/` and docstrings has not been
+   argued for.
+   **Defining a term does not mean restating an authority.** Rule 4 keeps facts in
+   one place; a one-clause gloss plus a link satisfies both.
 
 ## Guides
 
@@ -83,19 +98,26 @@ framework](../CLAUDE.md#documentation-framework)): placement →
 # good: "See the Store API reference for the full method list."
 
 # Rule 7 — lead with the Kernsatz
-# bad: four paragraphs of history and qualification, with the claim last
-# good: "Listing is depth-limited by default; callers opt into recursion per
-#        call. The default exists because a flat namespace cannot bound a
-#        recursive scan." — then the history, and only what that claim earned.
+# bad: three paragraphs circling what the retry policy is for, naming the cases
+#      it covers and the ones it does not, and never saying what it decides
+# also bad: the same claim stated correctly, but only in the last paragraph
+# good: "A retry policy decides which failures are worth repeating. It repeats
+#        the ones a later attempt could plausibly answer differently, and no
+#        others." — then the cases, and only what that claim earned.
 ```
 
 ### How the rules interact
 
-The detail rules are all expressions of the same principle: **stable prose describes
-shape; volatile detail lives in its authoritative location.** The positive side
-of the same coin: a document is the SSoT for its own stable core — its purpose,
-principles, and design intent. Other documents link to it for those things; they
-do not restate them. When in doubt, ask rule 1.
+**Rules 1–6 are one axis; rule 7 is the other.** Rules 1–6 are expressions of a
+single principle: **stable prose describes shape; volatile detail lives in its
+authoritative location.** The positive side of the same coin: a document is the
+SSoT for its own stable core — its purpose, principles, and design intent. Other
+documents link to it for those things; they do not restate them. When in doubt on
+any of those six, ask rule 1.
+
+Rule 7 does not belong to that family and rule 1 cannot decide it: the 6-month
+accuracy test says nothing about whether a section leads with its claim. When in
+doubt on rule 7, try to write the three sentences — failing is the answer.
 
 ### Finding the documents that are failing readers
 

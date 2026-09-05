@@ -4,14 +4,14 @@ trigger: >-
   Repo prose was observed to overshoot its appropriate detail level almost
   always. The evidence was the /ship round split: code and tests stabilise in
   roughly two to four rounds, and the remaining rounds carry prose findings only.
-  Principle 8 sets a test for cutting - consolidation and tightening are
-  legitimate, deleting a load-bearing reason is not - but no test for writing, so
-  nothing fired before the prose existed.
+  Principle 8 bars one kind of cut - never delete a load-bearing reason to hit a
+  length budget - but sets no test for writing, so nothing fired before the prose
+  existed.
 source_items:
   - ID-256
 audience:
   - contributor.process
-  - internal.style
+  - user.site
 discovery_followups: []
 expected_ripples:
   - CLAUDE.md
@@ -20,14 +20,14 @@ expected_ripples:
   - sdd/backlogid.json
 surprising_ripples: []
 co_shipped_items: []
-# Three commits exist specifically because review feedback was incorporated: the
+# Four commits exist specifically because review feedback was incorporated: the
 # maintainer's three findings plus an external validation pass (f7eb5b7), the PR's
-# first eleven inline threads (a511623), and its second review round of eleven
-# more (this commit). The Tao-shape restructure is not counted -- it answered a
+# first eleven inline threads (a511623), its second round of eleven more
+# (2dc7411), and its third round of twenty-two (this commit). The Tao-shape restructure is not counted -- it answered a
 # request for a different structure, not a review finding. Derivation:
 # `git log --oneline origin/master..HEAD` read against what each commit body says
 # it responded to.
-review_rounds: 3
+review_rounds: 4
 phases:
   - id: orient
     name: Orient
@@ -121,7 +121,7 @@ phases:
       - file: sdd/traces/bk-353-condense-ship-skill.yml
         section: "orient / BK-351 step (lines 53-61)"
         read_type: verify
-        outcome: misleading
+        outcome: ok
         extract: >-
           Re-read after a PR review found this item had quoted it wrongly. The
           phrase "forbids one *kind* of condensing" lives here, not in BK-351, and
@@ -130,23 +130,29 @@ phases:
           not" - says principle 8 *does* set a test. This trace's own trigger and
           orient step had truncated the quote at "condensing" and attributed it to
           BK-351, inverting it into "setting no positive test". Both are corrected.
-          Tagged misleading against my own reading, not against the source: the
-          source sentence is clear and complete, and the error was quoting half of
-          it from memory of the wrong record. The item's conclusion survives -
+          Not tagged misleading: the source sentence is clear and complete, so no
+          document failed a reader here. The miss was mine and belongs in this
+          extract, per CLAUDE.md's trace-authoring clause and the schema's note that
+          outcome must not blame a document for the reader's error. The item's conclusion survives -
           principle 8 sets a test for cutting and none for drafting, which is the
           gap Rule 7 fills - but it now rests on the sentence as written.
       - file: sdd/traces
-        section: "review_rounds and outcome corpus, re-derived at f7eb5b7"
+        section: "review_rounds and outcome corpus, re-derived at the f7eb5b7 pin"
         read_type: verify
         extract: >-
           The same review found every repo figure in the research doc stated in the
-          present tense against a base that had moved. Re-derived at HEAD rather
-          than re-quoted: 296 traces, 4531 steps, 267 negative tags (227
-          misleading, 40 unclear) from `hatch run report-trace-outcomes`; 232 of
-          296 carrying review_rounds, median 2, mean 2.48, max 13, 36 at >=5. All
-          40 unclear extracts re-read: every one names a missing unit, none an
-          answer that was present but buried, so the section's reading holds at the
-          larger corpus. Both figures now carry a commit pin and say why.
+          present tense against a base that had moved. Re-derived at the f7eb5b7
+          pin rather than re-quoted, and named as a pin in both halves of this step
+          because HEAD moves and a trace is read later than it is written:
+          296 traces, 4531 steps, 267 negative tags (227 misleading, 40 unclear)
+          from `hatch run report-trace-outcomes`; 235 of 296 carrying
+          review_rounds, median 2, mean 2.49, max 13, 37 at >=5. A later round
+          corrected that scan from 232/2.48/36: matching the whole line rather than
+          the value silently dropped three traces carrying a trailing comment after
+          the number, two of them at four rounds or more, so the tail the section
+          argues for was under-reported. All 40 unclear extracts re-read: every one
+          names a missing unit, none an answer that was present but buried, so the
+          section's reading holds at the larger corpus.
         outcome: ok
   - id: verify
     name: Verify
@@ -193,7 +199,7 @@ phases:
       - file: sdd/research/research-appropriate-level-of-detail.md
         section: "2 (Study 1 table), 7 row 8d, 9.5"
         read_type: verify
-        outcome: misleading
+        outcome: ok
         extract: >-
           Round-two review found the Study 1 table and the sentence under it
           disagreeing. Re-read Table 1 from the supplied PDF (pages 5-6) rather
@@ -204,8 +210,9 @@ phases:
           than a win. General orientation moved together and far on all three:
           .85 -> .76, 29.4 -> 40.2, 76.8 -> 101.8. The record had omitted the
           proportion-correct row entirely, which is the row that settles it, and
-          had bolded the unelaborated task-oriented cell as winning. Tagged
-          misleading against my own earlier reading of the table. Also a bound on
+          had bolded the unelaborated task-oriented cell as winning. Not tagged
+          misleading: the table is clear, the misreading was mine, and the record it
+          would rank is fixed in the same commit. Also a bound on
           the source worth recording: the authors' prose calls the task-directed
           result "much more efficiently" and points at commands, the one measure
           of three that favours the cut, by 1.6. Their prose is stronger than

@@ -46,6 +46,12 @@ short bolded sub-heading, not a prose blob — so a reader can see where one
 decision ends and the next begins. Lead with the decision; do not restate the
 context.
 
+**That is not the same test as [`CONTENT-RULES.md` Rule 7](../CONTENT-RULES.md#kernsatz),
+which also binds every section of an ADR.** "Lead with the decision" orders what
+is already written; Rule 7 asks whether the section's core claim can be stated at
+all, in at most three sentences, and says to return to the source if it cannot.
+Satisfying this line does not satisfy that rule.
+
 The **entire `## Decision` section** (up to the next `##`) is lifted verbatim
 into `sdd/adrs/DIGEST.md`, so keep it to the decision and its essential detail;
 anything you would not want in the digest belongs under `## Consequences` or a
