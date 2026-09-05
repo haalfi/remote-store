@@ -440,7 +440,7 @@ Native async Azure backend using `azure.storage.blob.aio` and `azure.storage.fil
 ### ASYNC-079: Error Mapping
 
 **Invariant:** All Azure SDK exceptions are mapped to `remote_store` error types via `classify_azure_error()` from `_azure_common`. Same mapping as the sync `AzureBackend`, message guarantee included: the twins share one classifier, so AZ-025's postcondition on the transport row binds here without restating it.
-**See also:** [012-azure-backend.md](012-azure-backend.md) (AZ-025 through AZ-028), [005-error-model.md](005-error-model.md).
+**See also:** [012-azure-backend.md](012-azure-backend.md) § Error Mapping — named as a section rather than as a clause range, because the range's endpoints are whatever is filed there. [005-error-model.md](005-error-model.md).
 
 ---
 

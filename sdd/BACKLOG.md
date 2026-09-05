@@ -209,7 +209,8 @@ payload size (BUG-253); a caller who meets a failure on **any** backend catches
 the type the docs promised and can tell *which* failure it was, rather than an
 empty message (BUG-276, which is now that clause's whole remainder — its
 Disposition is exactly whether the base-class fall-throughs should be classified
-or merely given a message); a connect that fails locally is not reported against the caller's path
+or merely given a message); a connect that fails locally is not reported
+against the caller's path
 (BUG-273); what a failed operation *leaves behind* is not
 worse than the failure itself, so a reported failure never silently destroys the
 caller's file (BUG-270, BUG-272); and a newly
@@ -228,7 +229,8 @@ arms are fed by classes that always format. What is left of the clause is the
 very `_map_exception` BK-359 rewrote, and one shared helper that puts all three
 S3 backends behind it — which is BUG-276, whose disposition is the open question.
 (Seven sites carry the construction; the item partitions them, because the guard
-above each decides whether it can render blank and two of them cannot.) A promise clause honoured on one arm of one backend was the shape this
+above each decides whether it can render blank and two of them cannot.)
+A promise clause honoured on one arm of one backend was the shape this
 section exists to catch; that the count of arms outlived two items is why
 BUG-276 is not the tidy one-line follow-up its ancestor was first filed as.
 The spec contradiction is adjudicated — BUG-248, closed by

@@ -245,8 +245,8 @@ if evidence changes; these are retired.
   `self.message = str(message)`, so a wrap of an argument-less driver exception
   stringifies empty and the arm returned `BackendUnavailable('')` rendering as
   `" | path='delivery.csv' | backend='azure'"` — character for character the SFTP
-  defect BK-359 fixed. Why an SDK error can arrive empty is AZ-025's, in its
-  *"Why the message clause is here"* paragraph; it is not restated here.
+  defect BK-359 fixed. AZ-025's *"Why the message clause is here"* paragraph is
+  where a reader goes for the transport detail behind this.
 
   **Neither shipped transport supplies that input through the backend's own
   options**, which took three attempts to state correctly and is recorded so the
@@ -717,10 +717,13 @@ if evidence changes; these are retired.
   rather than on a read, which classifies once and stops.
   **What was deliberately not done:** the same defect on other backends, which
   was **BUG-264**. That was filed as unmeasured and then measured rather than
-  left so: Azure was a confirmed reproduction, both boto3 arms are immune, and
-  the keyword-guarded sites leak through a blank `RemoteStoreError` instead.
-  BUG-264 has since closed the Azure arm; **BUG-276** carries the base-class
-  remainder, and the measurement now lives in those two entries.
+  left so: both boto3 arms are immune, and the keyword-guarded sites leak
+  through a blank `RemoteStoreError` instead. Its third finding — that Azure was
+  a confirmed end-to-end reproduction — BUG-264 later withdrew, having measured
+  that no shipped Azure transport supplies the blank input; the classifier arm
+  was still wrong and was still fixed. BUG-264 has since closed that arm;
+  **BUG-276** carries the base-class remainder, and the measurement now lives in
+  those two entries.
   Found by BK-356's review round 2, which reached it by running the failure
   rather than reading the mapping — and closed the same way: the fix is asserted
   against the live stall relay, not only against a constructed `TimeoutError`.

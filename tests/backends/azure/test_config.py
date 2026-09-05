@@ -584,6 +584,26 @@ class TestAzureErrorMapping:
         assert not str(mapped).startswith(" | "), "the message must not be empty"
 
     @pytest.mark.spec("AZ-025")
+    def test_an_unmapped_exception_still_reaches_the_caller_blank(self) -> None:
+        """The one classifier outcome AZ-025's guarantee deliberately excludes.
+
+        An exception matching no row falls through to the base `RemoteStoreError`,
+        which passes `str(exc)` through — so a bare `RuntimeError` renders with
+        nothing before the context. AZ-025 states that rendering; without this,
+        nothing asserted it, because the neighbouring `unknown-exception` param
+        passes `RuntimeError("unexpected")`, which carries text.
+
+        Pinned rather than left to the spec because it is the behaviour the
+        base-class remainder item will deliberately change: when that lands, this
+        fails, at exactly the moment someone should be re-reading the clause.
+        """
+        backend = _make_backend()
+        mapped = backend._classify(RuntimeError(), "delivery.csv")
+
+        assert type(mapped) is RemoteStoreError
+        assert str(mapped) == " | path='delivery.csv' | backend='azure'"
+
+    @pytest.mark.spec("AZ-025")
     def test_a_transport_signal_with_detail_keeps_its_own_words(self) -> None:
         """The fallback replaces silence, never the driver's own explanation."""
         backend = _make_backend()

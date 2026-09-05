@@ -50,8 +50,18 @@ expected_ripples:
 #            all in artifacts the round-3 pass had rewritten. The user's call was
 #            to cut the explanatory narrative rather than keep patching it, so
 #            BUG-276 and the register entry lost their meta-commentary)
-# Value is 4.
-review_rounds: 4
+#   Fix the paragraph every other artifact defers to -> counts (round 5, whose
+#            panel lost its measuring member to a rebase and was re-run. The
+#            defect: the previous pass corrected four pointers and never touched
+#            the paragraph they all point at)
+#   Stop asserting where the prose lives             -> counts (round 6, 13 raw
+#            findings merging to 10. Its measuring member drove both transports
+#            against four fault shapes each, tried to break the reachability
+#            claim and could not, and refuted one of its own hypotheses en route)
+# Value is 6. Re-derived from the command above rather than incremented — the
+# revision that incremented it was one commit behind, because the round-5 fix
+# was the first that did not touch this file.
+review_rounds: 6
 phases:
   - id: orient
     name: Orient
@@ -60,17 +70,21 @@ phases:
         section: "(item) BUG-264"
         read_type: gate
         extract: >-
-          The measured Azure reproduction, the 13 call sites, and the
-          Disposition naming SFTP's _unavailable as the shape to copy — those
-          held. Two of the item's figures did not, and both were taken on trust
-          from a body that presented itself as measured: "four raise sites" is
-          three (the fourth arm catches an aiohttp error that always carries the
-          host), and "the sync side is not reproduced" is backwards — the
-          requests transport supplies a blank ServiceRequestTimeoutError that
-          the aiohttp one cannot. Retrospective, and mine rather than the
-          document's: the item said its figures were measured, and I re-derived
-          the call-site counts while accepting the transport claims, so the
-          reads I checked were the ones already easiest to check
+          The 13 call sites and the Disposition naming SFTP's _unavailable as
+          the shape to copy — those held. Two of the item's figures did not:
+          "four raise sites" is three (the fourth arm catches an aiohttp error
+          that always carries the host), and its reachability claim was wrong,
+          though not in the way I first thought.
+          Retrospective, in three steps because it took three. The item said
+          only the async timeout was an end-to-end reproduction. I refuted that
+          and asserted the sync side was the reachable one, on the strength of
+          str(ConnectTimeout()) being '' — a fact about the class, not about
+          what requests constructs. A later round refuted *that*, and driving
+          both transports against four fault shapes each established the answer:
+          neither supplies the blank input through the backend's own options.
+          The through-line is mine rather than the document's — I re-derived the
+          call-site counts, which were cheap to check, and took the transport
+          claims on trust twice over
         outcome: misleading
       - file: sdd/BACKLOG.md
         section: "1. Failures are predictable"
