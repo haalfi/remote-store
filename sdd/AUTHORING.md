@@ -8,8 +8,8 @@ placement of all `.md` content in the repository.
 
 Part of the documentation framework (see [`CLAUDE.md` § Documentation
 framework](../CLAUDE.md#documentation-framework)): structure →
-[`sdd/DOCUMENTATION.md`](DOCUMENTATION.md); longevity →
-[`sdd/CONTENT-RULES.md`](CONTENT-RULES.md).
+[`sdd/DOCUMENTATION.md`](DOCUMENTATION.md); longevity, and the Rule 7
+comprehension test → [`sdd/CONTENT-RULES.md`](CONTENT-RULES.md).
 
 <a id="rules"></a>
 ## Rules
@@ -36,8 +36,11 @@ framework](../CLAUDE.md#documentation-framework)): structure →
    at build time. Exactly one bridge applies; new mechanisms are not
    added. The implementation lives in the build tooling.
 
-5. **PR-time enforcement.** A PR-blocking check verifies every framework
-   rule. Failures block merge.
+5. **PR-time enforcement.** A PR-blocking check verifies rules 1-4 of *this*
+   file — `scripts/check_docs_framework.py`, whose gates G-01 to G-07 cover them
+   and the related framework constraints. Failures block merge. **It does not
+   reach the content rules**, which are review-enforced and marked so individually
+   in [`CONTENT-RULES.md`](CONTENT-RULES.md).
 
 ## Guides
 

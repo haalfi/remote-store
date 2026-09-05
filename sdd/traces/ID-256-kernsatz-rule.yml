@@ -1,0 +1,240 @@
+id: ID-256
+title: "Prose overshoots its detail level, and no rule fires before it is written"
+trigger: >-
+  Repo prose was observed to overshoot its appropriate detail level almost
+  always. The evidence was the /ship round split: code and tests stabilise in
+  roughly two to four rounds, and the remaining rounds carry prose findings only.
+  Principle 8 bars one kind of cut - never delete a load-bearing reason to hit a
+  length budget - but sets no test for writing, so nothing fired before the prose
+  existed.
+source_items:
+  - ID-256
+audience:
+  - contributor.process
+  - user.site
+discovery_followups: []
+expected_ripples:
+  - CLAUDE.md
+  - sdd/CONTENT-RULES.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+surprising_ripples: []
+co_shipped_items: []
+# Six commits exist specifically because review feedback was incorporated, named
+# by sha rather than deictically because a trace is read later than it is written:
+# f7eb5b7 (the maintainer's three findings plus an external validation pass),
+# a511623 (the PR's first eleven inline threads), 2dc7411 (eleven more),
+# c96fb48 (twenty-two), da52aaf (seven, from a cold read of the shipped rule by a
+# contributor and an enforcing reviewer), and the commit that adds this line (six).
+# Not counted: the Tao-shape restructure, which answered a request for a different
+# structure rather than a review finding, and 01ca8fa, which re-derived pinned
+# figures after a merge. Derivation: `git log --oneline origin/master..HEAD` read
+# against what each commit body says it responded to. The PR description counts
+# differently -- it calls the cold read "Round 4" and does not count the pre-PR
+# pass -- so the two enumerations reach different totals over the same work.
+review_rounds: 6
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/research/research-appropriate-level-of-detail.md
+        section: "headline finding, repo evidence, options"
+        read_type: gate
+        extract: >-
+          The commissioned literature pass found no direct evidence that dense
+          prose harms readers, and found the curse-of-knowledge tradition
+          predicting the opposite failure (under-specification). It offered four
+          options and this item implements a variant of the first, justified by
+          the local round split rather than by the literature. Read at the doc's
+          earlier path and section numbering; both changed when it was rewritten
+          as a standing reference, and the section field is named rather than
+          numbered so it survives that.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-351, BK-353"
+        read_type: gate
+        extract: >-
+          BK-351 declined a 5,000-word budget for /ship on the ground that
+          principle 8 forbids trading a load-bearing reason for a length target.
+          BK-353 then condensed the file and its first cut deleted two
+          load-bearing clauses while claiming nothing was removed. Its trace
+          (bk-353-condense-ship-skill.yml:53-61) reads principle 8 as setting a
+          positive test for cutting - "consolidation and tightening are
+          legitimate, deleting reasons is not" - which is the sentence that
+          locates the gap precisely: the repo had a test for the cut and none for
+          the draft. That is why the missing half is an authoring test, not a
+          review bound.
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BUG-248 (entry and commit subjects)"
+        read_type: reference
+        extract: >-
+          The worked specimen for the round split: eight rounds, the first three
+          or four behavioural, the rest ADR wording, docstrings, pointers and
+          counts.
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules (new Rule 7), Guides / Examples"
+        read_type: reference
+        extract: >-
+          Rule 7 added as the method's authoritative home. First scoped inline to
+          sdd/ and .claude/ rather than widening the file's Intent & Scope, on the
+          reasoning that the file promised longevity and Rule 7 is about
+          comprehension. Review overturned both halves: Intent & Scope now declares
+          the second axis, because leaving it to say one thing while the file
+          carried two was itself the contradiction; and the path scope now names the
+          root-level process docs, because the rule's stated rationale selected them
+          while its enumeration did not.
+        outcome: ok
+      - file: CLAUDE.md
+        section: "principle 8"
+        read_type: reference
+        extract: >-
+          One clause naming comprehension as the second axis, citing Rule 7 for
+          the method. Deliberately not the method itself: DRIFT-RULES' one-driver
+          rule makes a second description of a method the trigger, and BK-352
+          recorded paying for exactly that when both hosts stated the reader
+          test.
+        outcome: ok
+      - file: sdd/research/research-code-abundance-goals-and-values.md
+        section: "whole document, as a structural model"
+        read_type: reference
+        extract: >-
+          Read to take its shape for the detail-level record: TL;DR as a numbered
+          claim chain that marks which links are the record's own, Context
+          carrying the sourcing note, figures and their derivations as a numbered
+          section rather than an appendix, a "where it breaks" section, and
+          Proposals. Adopting it turned the detail-level record from one that
+          presented options into one that argues a position, and the ledger's
+          move out of an appendix is what makes principle 9's derivations
+          readable before the claims that rest on them.
+        outcome: ok
+      - file: sdd/research/research-appropriate-level-of-detail.md
+        section: "whole document"
+        read_type: verify
+        extract: >-
+          Restructured in place into that shape. Content was moved, not cut, and
+          the claim set was diffed mechanically before and after: 252 units in
+          the original, 33 not found verbatim afterwards, each reviewed by hand.
+          Four were real losses from the old decision-procedure section (the
+          keep/shorten/move/remove classification, the move-ties-to-placement
+          sentence, and the never-delete-a-load-bearing-reason rule) and were
+          restored into the new Proposals section; the rest were reflows or
+          renumbered cross-references. Derivation: `python
+          tmp/restructure/claim_diff.py` against a pre-restructure copy. This is
+          the check BK-353 wishes it had run.
+        outcome: ok
+      - file: sdd/traces/bk-353-condense-ship-skill.yml
+        section: "orient / BK-351 step (lines 53-61)"
+        read_type: verify
+        outcome: ok
+        extract: >-
+          Re-read after a PR review found this item had quoted it wrongly. The
+          phrase "forbids one *kind* of condensing" lives here, not in BK-351, and
+          the clause immediately after it - "and sets the test the work has to
+          pass: consolidation and tightening are legitimate, deleting reasons is
+          not" - says principle 8 *does* set a test. This trace's own trigger and
+          orient step had truncated the quote at "condensing" and attributed it to
+          BK-351, inverting it into "setting no positive test". Both are corrected.
+          Not tagged misleading: the source sentence is clear and complete, so no
+          document failed a reader here. The miss was mine and belongs in this
+          extract, per CLAUDE.md's trace-authoring clause and the schema's note that
+          outcome must not blame a document for the reader's error. The item's
+          conclusion survives - principle 8 bars one kind of cut and sets no test for
+          drafting, which is the gap Rule 7 fills - but it now rests on the sentence
+          as written rather than on that trace's reading of it.
+      - file: sdd/traces
+        section: "review_rounds and outcome corpus, re-derived at the f7eb5b7 pin"
+        read_type: verify
+        extract: >-
+          The same review found every repo figure in the research doc stated in the
+          present tense against a base that had moved. Re-derived at the f7eb5b7
+          pin rather than re-quoted, and named as a pin in both halves of this step
+          because HEAD moves and a trace is read later than it is written:
+          296 traces, 4531 steps, 267 negative tags (227 misleading, 40 unclear)
+          from `hatch run report-trace-outcomes`; 235 of 296 carrying
+          review_rounds, median 2, mean 2.49, max 13, 37 at >=5. A later round
+          corrected that scan from 232/2.48/36: matching the whole line rather than
+          the value silently dropped three traces carrying a trailing comment after
+          the number, two of them at four rounds or more, so the tail the section
+          argues for was under-reported. All 40 unclear extracts re-read: every one
+          names a missing unit, none an answer that was present but buried, so the
+          section's reading holds at the larger corpus.
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Pre-work index"
+        read_type: gate
+        extract: >-
+          Consulted for what an authoring-rule change owes. The rows cover specs,
+          backends, capabilities, versions, dependencies and docs prose; none
+          asks what a change to CLAUDE.md's principles or to CONTENT-RULES owes,
+          which is the same class of blind spot BK-346 owns and BK-351 and BK-352
+          each hit once. Not filed from here: BK-346's open question is the shape
+          of the fix, and a third instance does not change it.
+        outcome: unclear
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules (one driver, stated bounds)"
+        read_type: gate
+        extract: >-
+          Checked before deciding against a gate. Whether three sentences state a
+          section's core claim is a judgement with no oracle, so the rule ships
+          review-enforced like its six siblings, and enforcement is inherited
+          from /ship and /rvw-pr already reviewing changed docs against this file.
+        outcome: ok
+      - file: sdd/research/research-appropriate-level-of-detail.md
+        section: "6.3, ledger rows 21a and 21b, Status"
+        read_type: verify
+        outcome: ok
+        extract: >-
+          A live /ship session supplied the strongest evidence this record has for
+          its own mechanism: findings per round 7 -> 2 -> 13 -> 16, rising while
+          the shipped code stayed clean from round 1, and essentially every
+          round-4 finding a defect the round-3 fix pass introduced. That sharpens
+          section 6.3 from "a prose finding never runs out" (unbounded demand) to
+          a positive feedback loop - each fix adds claims, and claims are the
+          surface the next round reads. Recorded this record as the second
+          instance and derived it rather than recalled it: 13 commits touching the
+          file, 2,697 -> 9,296 words monotone with no pass reducing it, three of
+          them describing themselves as tightening, each of the last three
+          introducing a defect the next caught, and zero files under src/, tests/
+          or examples/ on the branch. The record is now marked closed to further
+          prose passes in its Status block, because continuing to review it is the
+          failure it documents.
+      - file: sdd/research/research-appropriate-level-of-detail.md
+        section: "2 (Study 1 table), 7 row 8d, 9.5"
+        read_type: verify
+        outcome: ok
+        extract: >-
+          Round-two review found the Study 1 table and the sentence under it
+          disagreeing. Re-read Table 1 from the supplied PDF (pages 5-6) rather
+          than defending the sentence, and the reviewer was right with more in it
+          than the finding saw. Task orientation: .80/.80 tasks correct, 33.5 vs
+          36.1 minutes, 95.8 vs 94.2 commands - same accuracy, 1.6 fewer commands,
+          2.6 minutes SLOWER without elaborations, so the cut was a wash rather
+          than a win. General orientation moved together and far on all three:
+          .85 -> .76, 29.4 -> 40.2, 76.8 -> 101.8. The record had omitted the
+          proportion-correct row entirely, which is the row that settles it, and
+          had bolded the unelaborated task-oriented cell as winning. Not tagged
+          misleading: the table is clear, the misreading was mine, and the record it
+          would rank is fixed in the same commit. Also a bound on
+          the source worth recording: the authors' prose calls the task-directed
+          result "much more efficiently" and points at commands, the one measure
+          of three that favours the cut, by 1.6. Their prose is stronger than
+          their table; the record now takes the table. Overshoot's evidence is
+          therefore Reder and Anderson's textbook studies, not this cell.
+      - file: .claude/agents/documentation-expert.md
+        section: "Reader test"
+        read_type: verify
+        extract: >-
+          Checked for overlap. The reader test asks whether a page answers the
+          questions it promises, which detects a missing answer; Rule 7 asks
+          whether the author can state the claim at all, which detects an
+          unearned one. Adjacent, not duplicate, and neither states the other's
+          method.
+        outcome: ok

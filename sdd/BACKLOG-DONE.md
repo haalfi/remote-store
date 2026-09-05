@@ -296,6 +296,60 @@ if evidence changes; these are retired.
   Found by BK-355's closing review, which described what the futile-close guard
   reaches and so exposed what it does not.
 
+- [x] **ID-256 — Prose overshoots its detail level, and no rule fires before it is written**
+  spec: — · effort: S · audience: contributor.process, user.site
+  **The diagnosis is the round split, not a stylistic preference.** A `/ship`
+  session reaches stable code and tests in roughly two to four rounds; the
+  remaining rounds are prose findings. BUG-248 is the worked specimen: eight
+  rounds, of which the first three or four changed behaviour (the mis-scoped
+  classifier legs) and the rest moved ADR wording, docstrings, pointers and
+  counts. Derivation: its commit subjects in `git log --oneline`, read against
+  what each round's body says it changed.
+  **The mechanism is an asymmetry.** A code finding runs out; a prose finding
+  never does, because any text can be tightened and no rule bounds the request.
+  So a review that keeps asking for one keeps receiving one, and the rounds do
+  not converge on prose the way they converge on behaviour.
+  **The rule fires at authoring time instead**, because a review bound would cut
+  the cost and leave the cause: prose written past its understanding would still
+  be written, merely challenged less often. Shipped as
+  [`CONTENT-RULES.md` Rule 7](CONTENT-RULES.md#kernsatz) — a new or substantially
+  rewritten section in `sdd/` or `.claude/` opens with its core claim in at most
+  three sentences, defining any term it uses; if those sentences will not come,
+  the section is not yet understood and the author returns to the source.
+  Principle 8 gains one clause naming comprehension as its second axis and citing
+  Rule 7 as the method's home, per principle 4.
+  **Enforcement is inherited, not built.** `/ship` and `/rvw-pr` already review
+  changed documentation against `CONTENT-RULES.md`, so Rule 7 reaches every
+  review that runs without either skill being edited. No gate: whether three
+  sentences state the core claim is a judgement with no oracle, so the rule ships
+  review-enforced like its six siblings. [`DRIFT-RULES.md` Rule
+  5](DRIFT-RULES.md#rules) is the obligation that bears: it prefers the mandatory
+  path and requires a deliberately advisory check to state why, which this
+  sentence does.
+  **What the research does and does not support.** The literature pass
+  ([research](research/research-appropriate-level-of-detail.md)) found **both**
+  failure directions evidenced, and the same text moving with the reader's
+  purpose. Reading the source table rather than its authors' summary: the cut
+  cost the task-directed reader almost nothing (same tasks correct, 1.6 fewer
+  commands, 2.6 minutes slower) and cost the goal-less reader a great deal on
+  every measure (Reder, Charney & Morgan 1986, reported in Charney, Reder & Wells
+  1988). **So no rule that only cuts is supported**, and the licence to cut rests
+  on its being cheap where the reader has a goal rather than beneficial. This
+  rule instead rests on the local round split above and on a metacognitive
+  reading of the illusion of explanatory depth (Rozenblit & Keil 2002): the
+  author's sense of understanding outruns their ability to state it, and the
+  attempt to state it plainly is what exposes the gap. That is an inference and
+  the research doc says so. The doc has since been restructured to argue its
+  position, and its § 9 carries five proposals beyond this rule — none of them
+  implemented here.
+  **CHANGELOG entry owed and written.** `CONTENT-RULES.md` carries
+  `<!-- doc: dual dest=explanation/design/content-rules.md -->`, so Rule 7
+  publishes to docs.remotestore.dev — the audience line above therefore carries
+  `user.site`, and `sdd/traces/_schema.yml` makes an entry required rather than a
+  judgement. The precedent agrees: ID-144 added content rule 6 to this same file
+  and shipped an entry — the ID-144 entry in `CHANGELOG.md`, which
+  `grep -n 'ID-144' CHANGELOG.md` locates at any revision.
+  Trace: `sdd/traces/ID-256-kernsatz-rule.yml`.
 - [x] **BUG-265 — A refused SFTP connect raises `RemoteStoreError`, which contradicts fifteen docstrings and the health-check guide**
   spec: SFTP-023 · effort: S · audience: user.api, user.site
   Reproduced before it was fixed and re-run after, against a just-released
