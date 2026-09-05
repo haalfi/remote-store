@@ -17,24 +17,28 @@ audience:
   # that page declares it too (BUG-265, BK-356, BK-357, BK-359).
   - user.site
 # The rule: a commit counts if it exists because review feedback was
-# incorporated. Enumerated from `git log --oneline 121258d..HEAD`, in branch
-# order, with each label checkable against that commit's own message:
-#   518479e  implementation                       -- does not count
-#   8184c4b  self-found derivation fix (/pr gate) -- does not count
-#   99f2e46  round 1 fixes                        -- counts
-#   233acd0  round 2 fixes                        -- counts
-#   ebc0ccd  self-found docstring reflow          -- does not count
-#   ce0017b  round 3 fixes                        -- counts
-#   7d16f18  round 4 fixes                        -- counts
-#   bd8c670  round 5 fixes                        -- counts
-#   5d08976  round 6 fixes                        -- counts
-#   (this commit)  round 7 fixes                  -- counts
-# **No branch length is stated here, deliberately.** A count of commits on the
-# branch is invalidated by the commit that states it, which is how the previous
-# two versions of this block went wrong: one said "eight" beside nine rows. The
-# enumeration is the derivation and the rule above decides it; add a row when
-# you add a commit, and re-read the rule rather than extending from memory.
-review_rounds: 7
+# incorporated, and the test for that is its own message -- every `counts` row
+# below has a commit message that describes the review round it answers, and no
+# `does not count` row does. Enumerated from `git log --oneline 121258d..HEAD`,
+# in branch order:
+#   518479e  implementation             -- does not count
+#   8184c4b  derivation fix, no round   -- does not count
+#   99f2e46  round 1 fixes              -- counts
+#   233acd0  round 2 fixes              -- counts
+#   ebc0ccd  docstring reflow, no round -- does not count
+#   ce0017b  round 3 fixes              -- counts
+#   7d16f18  round 4 fixes              -- counts
+#   bd8c670  round 5 fixes              -- counts
+#   5d08976  round 6 fixes              -- counts
+#   4001580  round 7 fixes              -- counts
+#   (this commit)  round 8 fixes        -- counts
+# `review_rounds` below is the count of `counts` rows above and nothing else. No
+# other total appears here -- deliberately, and after several went wrong: a
+# figure about this branch that the block does not itself enumerate is
+# invalidated by the very commit that states it, because that commit changes the
+# branch. Add a row when you add a commit, re-apply the rule, and do not
+# reintroduce a summary figure.
+review_rounds: 8
 expected_ripples:
   # sdd/backlogid.json is deliberately absent, against the schema's own example
   # ("after any BACKLOG/BACKLOG-DONE edit"), on the reasoning BUG-265's trace
@@ -277,7 +281,7 @@ phases:
         outcome: misleading
 
   - id: fix3
-    name: Review rounds 3 to 6 (closing panels)
+    name: Review rounds from 3 on (closing panels)
     steps:
       - file: sdd/specs/006-streaming-io.md
         section: "SIO-010 (Invariant)"
@@ -297,7 +301,8 @@ phases:
           Round 4's unprimed member found `paramiko.SFTPError` had no coverage through the
           real construction site: the guard test builds its own wrapper with a hardcoded
           copy of the tuple. Confirmed by mutation on the tree of the day: deleting the shape
-          left that whole test selection green, so half the fix could be reverted silently.
+          left the selection named in that test's own docstring green, so half the fix could
+          be reverted silently.
           No count is given, because the tree it was measured on no longer exists here and a
           re-run returns a different number — what reproduces now is that the same mutation
           fails the test added to close it, parametrised over both supplied shapes
@@ -323,7 +328,7 @@ phases:
         section: "Principles 3, 4, 8, 9"
         read_type: gate
         extract: >-
-          The loop's own lesson, and why it ran to six rounds. Rounds 3 onward each
+          The loop's own lesson, and why it kept running. Rounds 3 onward each
           found that most of the previous fix pass's *prose* was newly wrong while the code
           held: the measurement narrative was told in six artifacts and every pass edited
           some of them. `/ship`'s divergence check fired twice. The response was to cut
