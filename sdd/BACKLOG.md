@@ -204,7 +204,7 @@ backend (BUG-254); a listing does not truncate silently when its container is
 deleted mid-scan (BUG-255) or when a folder vanishes part-way through a
 recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 (BUG-256); a constructor does not leak its driver's exception
-(BUG-245) and neither does a stream (BK-358); one operation does not answer by
+(BUG-245); one operation does not answer by
 payload size (BUG-253); a caller who meets a failure on **any** backend catches
 the type the docs promised and can tell *which* failure it was, rather than an
 empty message (BUG-264, which carries both halves — its Disposition is exactly
@@ -229,7 +229,15 @@ BUG-264 is not the tidy one-line follow-up it was first filed as.
 The spec contradiction is adjudicated — BUG-248, closed by
 [ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md) — the
 never-leak invariant holds on the S3 listing path, closed by BUG-249 with
-BUG-246, the last adapter answers the contract against an absent container,
+BUG-246, and on SFTP's streamed-read path, closed by BK-358: a dropped
+connection reached a caller holding a `read()` stream as a raw
+`paramiko.SSHException` where the same drop on `read_bytes` mapped, and the
+shared stream wrapper now takes the shapes a backend's transport was measured to
+raise outside its base tuple (SIO-012). The two halves of the clause the item
+spanned are why it sat here rather than with the streaming work: a caller who
+catches one exception type is this section's promise verbatim, and the
+`read()`/`read_bytes` split meant the same fault answered two ways.
+The last adapter answers the contract against an absent container,
 closed by BUG-247, and a write to the store root no longer occupies that root
 with a regular file, closed by BUG-259 — which also brought the five
 flat-namespace classes that reached their SDK with the root key to the same
@@ -263,17 +271,21 @@ listing was outside it; now the bound is part of the clause and missing it is a
 breach of it. Writing a rule into a clause enlarges what the clause governs, and
 the two items that changed side are the evidence — neither was a new defect, and
 both were pre-existing behaviour that a new sentence made answerable.
-**Five** further disagreements sit in this section and none of them is with the
+**Four** further disagreements sit in this section and none of them is with the
 absent-container clause, which is why they are not in that count: BUG-253 is
 between two halves of one Graph operation; BUG-245 is a constructor leak, which
-BE-021 scopes to operations and so does not reach, and BK-358 is the same
-never-leak breach reached through the shared stream wrapper on the operation
-path rather than at construction; BUG-254 is with **BE-029's
+BE-021 scopes to operations and so does not reach; BUG-254 is with **BE-029's
 root row**, which BE-021 § Reach now defers to rather than deciding, so the
 breach is of the row § Reach points at and not of the clause this count is about;
 and BUG-256 is about a health probe, which is off the roster BE-021 governs.
-BUG-259 was a sixth of this kind — BE-029's root row on the write path — and has
-closed; it is named in § Closes when above rather than counted here.
+BUG-259 (BE-029's root row on the write path) and BK-358 (the never-leak clause
+reached through the shared stream wrapper) were of this kind too and have both
+closed; each is named in the closures above rather than counted here. **No
+ordinal is given for them**, and that is a correction rather than a style choice:
+this sentence read "a sixth of this kind" against a list that has stood at five
+and at six within one release, so an ordinal over a list items keep leaving is
+wrong from the next closure onward. The count above is derived from the entries
+that follow it; nothing else here is counted.
 **Six classes** have left the list on the *empty-listing and NotFound* rows —
 counted as classes, which is the frame this paragraph opens in and not the bullet
 frame the sentence above it uses. `GraphBackend` went first — BUG-248 adjudicated
@@ -1032,63 +1044,6 @@ compliant the day before.
   hand-written cassette would fabricate a response the tier has never produced.
   This is the item that makes the section's promise stay true for backend seven,
   which is why it sits here and not with the coverage work.
-
-- [ ] **BK-358 — Two paramiko exception shapes escape `_ErrorMappingStream` unmapped**
-  spec: BE-021, SIO-010 · effort: M · audience: user.api
-  `_ErrorMappingStream`'s mapping paths catch `(OSError, EOFError)`. Neither
-  `paramiko.SSHException` nor `paramiko.SFTPError` derives from either, so both
-  propagate out of the wrapper **unmapped**: the caller gets a raw paramiko
-  exception, where BE-021 requires that backend-native exceptions never leak and
-  SFTP-024 extends that to the caller-facing handle. This wrapper is the
-  mechanism those clauses rely on once `_errors()` has exited.
-  **This is the ordinary mid-read drop, not an exotic shape.**
-  `SFTPClient._read_response` converts the underlying `EOFError` into
-  `SSHException("Server connection dropped: ...")`, and `_read_packet` raises
-  `SFTPError("Garbage packet received")`. Measured through the wrapper with a
-  backend predicate supplied: both propagate as themselves, `_connection_lost`
-  stays `False`, and the inner close still runs — so BK-355's guard is inert on
-  exactly the shape a dropped connection takes. `SFTPError` is the sharper case,
-  because `_is_connection_dead` *does* match it: the backend's predicate
-  recognises a failure the wrapper can never hand it.
-  **Pre-existing, and not narrowed by BK-355** — the tuple has been
-  `(OSError, EOFError)` since AF-006. It surfaced during BK-355's closing review
-  because that PR's new clauses describe what the guard reaches, and describing
-  it exposed what it does not.
-  **Fix surface is why this is filed rather than folded in.** The wrapper serves
-  S3, S3-boto3, S3-PyArrow, Azure and HTTP as well as SFTP, and widening the
-  caught tuple changes what every one of them maps. Whether the widening is a
-  paramiko-specific tuple on the SFTP construction site, a second opt-in
-  parameter beside `is_fatal`, or a base-`Exception` catch with the mapper
-  deciding, is undecided — the last is the tempting one and is also the one that
-  would start mapping programming errors, which the wrapper deliberately lets
-  propagate.
-  **Needs a failing test first** (bug-fix protocol): a real dropped connection
-  mid-read, not an injected `EOFError`. The existing SFTP test that covers this
-  ground (`test_read_stream_eoferror_maps_and_reconnects`) injects `EOFError`
-  from a fake handle and so bypasses `_read_response`, which is why the gap has
-  never been caught.
-  **A related measurement, and possibly the worse half.** The `EOFError` arm of
-  the tuple has no reachable producer on the SFTP read path *either*: a
-  send-side `EOFError` from `BaseSFTP._write_all` is swallowed by
-  `BufferedFile.read` into a **short read** before it reaches the wrapper —
-  measured against `SFTPFile.read`, `readline` and `readinto`, all three of
-  which returned empty rather than raising. If that path is reachable
-  mid-transfer it contradicts SFTP-030's repeated claim that "a streamed read
-  raises rather than returning short, so a truncated transfer is never mistaken
-  for a complete one". That claim *is* characterised by a test
-  (`test_streaming_read_raises_rather_than_truncating`), but only against a
-  **stall** — a silent peer, which raises `socket.timeout`. No test covers the
-  drop, which is the fault this item is about.
-  Not measured against a real dropped socket, so it is recorded as an open
-  question rather than as a defect — but it is the first thing to establish
-  here, because it decides whether widening the tuple is sufficient.
-  **Filed in this section rather than beside BK-357** (which was section 4's,
-  being a cost left on the caller, and has since shipped): the defect here is
-  that a caller does not catch one exception type, which is this section's
-  promise verbatim. BK-357 added a second site for it — the `SEEK_END` size
-  probe, bounded by the same tuple as every other path, deliberately — without
-  narrowing the breach; `test_a_probe_failure_outside_the_caught_tuple_propagates_unmapped`
-  pins that boundary and goes when this item lands.
 
 ---
 

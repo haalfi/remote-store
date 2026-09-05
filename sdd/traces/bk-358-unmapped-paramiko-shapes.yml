@@ -1,0 +1,375 @@
+id: BK-358
+title: "Two paramiko exception shapes escape `_ErrorMappingStream` unmapped"
+trigger: >-
+  A dropped SFTP connection reached a caller holding a `Backend.read()` stream as a raw
+  `paramiko.SSHException`, because `_ErrorMappingStream` caught `(OSError, EOFError)` only
+  and `SFTPClient._read_response` converts the underlying `EOFError` before the wrapper
+  sees it — while the same drop on `read_bytes()`, which fails inside `_errors()`, mapped
+  to `BackendUnavailable` correctly.
+source_items:
+  - BK-358
+  - BK-355
+  - BK-357
+audience:
+  - user.api
+  # The migration guide gains a subsection a caller acts on, which is what
+  # the schema defines user.site as. Every sibling in this release that touched
+  # that page declares it too (BUG-265, BK-356, BK-357, BK-359).
+  - user.site
+# The rule: a commit counts if it exists because review feedback was
+# incorporated, and the test for that is its own message -- every `counts` row
+# below has a commit message that describes the review round it answers, and no
+# `does not count` row does. Enumerated from `git log --oneline 121258d..HEAD`,
+# in branch order:
+#   518479e  implementation             -- does not count
+#   8184c4b  derivation fix, no round   -- does not count
+#   99f2e46  round 1 fixes              -- counts
+#   233acd0  round 2 fixes              -- counts
+#   ebc0ccd  docstring reflow, no round -- does not count
+#   ce0017b  round 3 fixes              -- counts
+#   7d16f18  round 4 fixes              -- counts
+#   bd8c670  round 5 fixes              -- counts
+#   5d08976  round 6 fixes              -- counts
+#   4001580  round 7 fixes              -- counts
+#   (this commit)  round 8 fixes        -- counts
+# `review_rounds` below is the count of `counts` rows above and nothing else. No
+# other total appears here -- deliberately, and after several went wrong: a
+# figure about this branch that the block does not itself enumerate is
+# invalidated by the very commit that states it, because that commit changes the
+# branch. Add a row when you add a commit, re-apply the rule, and do not
+# reintroduce a summary figure.
+review_rounds: 8
+expected_ripples:
+  # sdd/backlogid.json is deliberately absent, against the schema's own example
+  # ("after any BACKLOG/BACKLOG-DONE edit"), on the reasoning BUG-265's trace
+  # established one PR earlier in this release: it is a max-allocated-ID map,
+  # this item allocates no ID because BK-358 already existed on master, and
+  # `gen_backlogid.py --check` passes with the file untouched.
+  - CHANGELOG.md
+  - docs-src/reference/migration.md
+surprising_ripples:
+  # Neither is reachable by grepping the item ID: the first names no ID at all,
+  # and the second's staleness is an ordinal two closures behind rather than a
+  # citation that fails to resolve.
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-358 (item)"
+        read_type: gate
+        extract: >-
+          The three fix options and the reason the item was filed rather than folded into
+          BK-355: the wrapper serves six other construction sites, so widening its base
+          tuple changes what all of them map
+        outcome: ok
+      - file: src/remote_store/_stream.py
+        section: "_ErrorMappingStream (full)"
+        read_type: gate
+        extract: "Six separate `except (OSError, EOFError)` clauses; the class docstring states the breach as live"
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "read(), _map_exception, _is_connection_dead, _unavailable"
+        read_type: gate
+        extract: >-
+          The mapper already handles both shapes correctly — `SFTPError` through
+          `_is_connection_dead`, `SSHException` through its own client-clearing arm — so
+          only the caught set is at fault. Decided the fix against converting to `OSError`
+          at an adapter, which would discard the type the mapper dispatches on
+        outcome: ok
+      - file: sdd/specs/006-streaming-io.md
+        section: "SIO-010, SIO-011"
+        read_type: gate
+        extract: >-
+          Both clauses describe the caught tuple only to say what it fails to reach, and
+          both cite BK-358 as an open breach — so both go stale on the fix, and neither
+          owns the tuple
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Pre-work index"
+        read_type: gate
+        extract: >-
+          Triggered rows: Spec section, Bug fix, Backlog item touched, CHANGELOG entry,
+          Breaking change (the `except`-clause half, which owes the migration section
+          without the marker), New test file
+        outcome: ok
+
+  - id: reproduce
+    name: Reproduce against a real socket
+    steps:
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "_StallRelay, sftp_server fixture"
+        read_type: reference
+        extract: >-
+          The relay pattern to model a drop on, and the fact that `sftp_server` is
+          in-process rather than Docker — so the new tests run in the Stage-1 gate
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "test_read_stream_eoferror_maps_and_reconnects"
+        read_type: reference
+        extract: >-
+          Why the gap survived: this test injects `EOFError` from a fake handle, which
+          bypasses `_read_response` — the line that does the converting. Confirms an
+          injected shape cannot reach a defect whose cause is which shape paramiko produces
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "read() (measurement, not a read)"
+        read_type: verify
+        extract: >-
+          Measured the drop end to end before writing anything: the stream raised
+          `SSHException` unmapped, the client stayed cached, and the read raised rather
+          than returning short — which answered the item's own open question about
+          SFTP-030 in the spec's favour. Retrospectively, the first relay I wrote reached
+          the defect 2 times in 15: a bare close races paramiko's transport-reader thread,
+          and when the transport wins the next read raises `OSError('Socket is closed')`,
+          which the base tuple already caught. Found by running the staging 15 times
+          rather than once. Silencing server->client first and closing on the reply the
+          client will never see is 15 of 15. Round 2 later measured the bare close at 0 of
+          15 on its host and refuted the re-derivation recipe, which is what established
+          that the 2-in-15 was a host-dependent race sample rather than a figure
+        outcome: ok
+
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: sdd/000-process.md
+        section: "Rule 6 (bug-fix protocol)"
+        read_type: gate
+        extract: "BACKLOG -> CHANGELOG -> failing test -> fix -> commit together; the test is run and seen to fail"
+        outcome: ok
+      - file: tests/backends/sftp/test_connection_drop.py
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Five tests written and run against unmodified source: all five failed on
+          `paramiko.ssh_exception.SSHException` escaping the wrapper
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "(full)"
+        read_type: gate
+        extract: "Assertion depth and mock discipline for the new module and the rewritten unit pins"
+        outcome: ok
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/_stream.py
+        section: "__init__, the six except clauses"
+        read_type: gate
+        extract: >-
+          Opt-in `also_catch`, resolved once into `self._caught` rather than spelled at
+          each clause — six clauses catching the same set is the invariant, and building
+          it per site is how one drifts
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "read()"
+        read_type: gate
+        extract: "Supply `(paramiko.SSHException, paramiko.SFTPError)`; leave `is_fatal` alone"
+        outcome: ok
+
+  - id: spec
+    name: Specs
+    steps:
+      - file: sdd/specs/006-streaming-io.md
+        section: "SIO-012 (new), SIO-010, SIO-011"
+        read_type: gate
+        extract: >-
+          New clause owning the per-site caught set, so SIO-010 and SIO-011 can link it
+          rather than each re-explaining the tuple. Recorded the 0.00 s close-cost
+          measurement in SIO-010 as the reason `is_fatal` was left alone
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-024, SFTP-030"
+        read_type: gate
+        extract: >-
+          SFTP-024's invariant was false for the streamed handle and is now true; SFTP-030
+          gains the drop beside the stall on its no-short-read claim
+        outcome: ok
+
+  - id: fix
+    name: Review round 1
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-358 (entry)"
+        read_type: gate
+        extract: >-
+          Round 1 (unprimed, solo) returned 3 findings, all Consistency, all prose
+          contradicting a sibling artifact in the same diff. This one was the sharpest: "both
+          measured and both fixed by the same change" is false of the second consequence, and
+          the same entry says so three lines later. Retrospectively, I wrote a summary
+          sentence over two facts I had measured separately and never re-checked that the
+          summary held over both
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_connection_dead (measurement, not a read)"
+        read_type: verify
+        extract: >-
+          Measured the guard per supplied shape before writing the correction, rather than
+          accepting the finding as stated: `SSHException` maps with the guard unarmed and one
+          inner close; `SFTPError`, `EOFError` and a socket-teardown `OSError` map with it
+          armed and none. So the finding understated it — the guard *is* newly armed for
+          `SFTPError`, where the exception previously never reached `_fail`. Pinned by
+          `TestSFTPStreamCaughtSetMeetsTheGuard`, positive-controlled by flipping one
+          expectation and seeing it fail
+        outcome: ok
+      - file: sdd/specs/006-streaming-io.md
+        section: "SIO-010"
+        read_type: verify
+        extract: >-
+          Found by the sibling sweep rather than by the review: SIO-010's new headline ("on
+          SFTP it does not [arm]") is too broad against that measurement, since `SFTPError`
+          does arm it. Split into the two halves
+        outcome: ok
+      - file: tests/test_stream.py
+        section: "TestBackendSuppliedShapes (docstring)"
+        read_type: gate
+        extract: >-
+          "five other construction sites" then enumerating six. Swept every site count in the
+          diff: `_stream.py` said "five others" of an ambiguous unit (disambiguated to
+          backends), and SIO-012, BACKLOG-DONE, the trace and the PR body were all correct.
+          One wrong instance, and it was the one conflating sites with backends
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Rules (3)"
+        read_type: gate
+        extract: >-
+          Own finding, from the qualitative gate rather than the review: two
+          `backend._sftp_client` assertions need the `# internal: no public observable`
+          marker and its reason, since the reconnect is the public guarantee and only the
+          private pair says the invalidation happened on the operation that surfaced the drop
+        outcome: ok
+
+  - id: fix2
+    name: Review round 2 (measuring)
+    steps:
+      - file: tests/backends/sftp/test_connection_drop.py
+        section: "_DropRelay (docstring)"
+        read_type: gate
+        extract: >-
+          Round 2 ran rather than read, and refuted the re-derivation recipe round 1 had
+          just corrected: followed literally it returned 0 of 15 across 45 runs, and the
+          bare close reached the defect 0 of 15 on that host against 2 of 15 here. Two
+          consecutive rounds refuting the same site, so the repeat-site rule applies — the
+          recipe was dropped rather than written a third time, because the thing being
+          measured is a race whose distribution belongs to the host. The second host's 0 of
+          15 turned out to make the staging argument more sharply than the figure did
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-358 (entry)"
+        read_type: gate
+        extract: >-
+          Polarity inversion: "would have passed before the fix two times in fifteen"
+          reads the 13/2 split backwards, since *mapped* is the outcome under which a
+          `BackendUnavailable` assertion passes. Retrospectively, I converted "reached the
+          defect" into "the test passed" in one sentence and did not re-check the direction;
+          the same conversion is correct everywhere else in the diff, which is why nothing
+          else carried it
+        outcome: ok
+      - file: sdd/specs/006-streaming-io.md
+        section: "SIO-010"
+        read_type: verify
+        extract: >-
+          Round 2 measured the close at 0.0001-0.0003 s over five real drops where the spec
+          said 0.00 s, and I tightened the spec to that band. Round 3 then re-ran the same
+          derivation over 25 drops and found every sample below the band's floor, so the
+          band was withdrawn for an upper bound. Recorded as misleading against my own
+          reading rather than against round 2: five samples were never enough to state a
+          band from, and tightening a figure in response to a finding is how a correct
+          number became a wrong one
+        outcome: misleading
+
+  - id: fix3
+    name: Review rounds from 3 on (closing panels)
+    steps:
+      - file: sdd/specs/006-streaming-io.md
+        section: "SIO-010 (Invariant)"
+        read_type: gate
+        extract: >-
+          Round 3's unprimed and whole-file members independently found that the fix had
+          falsified SIO-010's Invariant from sixty lines away: a drop is now mapped and
+          clears the client, establishing unusability, while `_is_connection_dead` declines
+          to condemn that shape, so the close re-enters. It held *vacuously* before, because
+          the shape never reached `_fail`. Three diff-anchored rounds could not have seen it —
+          the falsified sentence has no `+` line, which is the whole-file gate's argument
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "read() (also_catch)"
+        read_type: verify
+        extract: >-
+          Round 4's unprimed member found `paramiko.SFTPError` had no coverage through the
+          real construction site: the guard test builds its own wrapper with a hardcoded
+          copy of the tuple. Confirmed by mutation on the tree of the day: deleting the shape
+          left the selection named in that test's own docstring green, so half the fix could
+          be reverted silently.
+          No count is given, because the tree it was measured on no longer exists here and a
+          re-run returns a different number — what reproduces now is that the same mutation
+          fails the test added to close it, parametrised over both supplied shapes
+        outcome: ok
+      - file: tests/backends/sftp/test_connection_drop.py
+        section: "_assert_reached_by_the_eof_path, _drain"
+        read_type: gate
+        extract: >-
+          Round 3 showed the suite could not distinguish the two race outcomes (both map to
+          `BackendUnavailable`), so four of five tests passed under the staging the module
+          exists to avoid; fixed with a cause-chain assertion rather than by rewording, and
+          positive-controlled. Round 4 then found two assertions inside that fix that could
+          not fail — an unreachable `SFTPError` guard, and a prefix check over bytes read
+          before the drop was armed. Writing an assertion is not the same as writing one
+          that can fail, and I did the first twice. Round 5 then measured that my fix for
+          the second had not worked either: the accumulator collected 0 bytes on 8 of 8
+          runs, because the staging tears down on the reply the client is blocked waiting
+          for, so nothing is ever delivered across the drop. Third time at one site, so the
+          repeat-site rule applied — the enumeration showed the set empty *by construction*,
+          and the claim was deleted rather than attempted a third time
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Principles 3, 4, 8, 9"
+        read_type: gate
+        extract: >-
+          The loop's own lesson, and why it kept running. Rounds 3 onward each
+          found that most of the previous fix pass's *prose* was newly wrong while the code
+          held: the measurement narrative was told in six artifacts and every pass edited
+          some of them. `/ship`'s divergence check fired twice. The response was to cut
+          rather than patch — one home for the staging samples (`_DropRelay`), one for the
+          close cost (SIO-010), everything else states the decision and defers, per
+          principle 4. Restating a moving figure across artifacts is the defect generator,
+          not any individual sentence
+        outcome: ok
+
+  - id: verify
+    name: Ripple-check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Detailed checklist"
+        read_type: verify
+        extract: "Walked the triggered rows before committing"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "Section 1 prose"
+        read_type: verify
+        extract: >-
+          Two sites went stale and neither names the ID in a way a grep for it would have
+          surfaced as broken: the `Closes when` clause naming BK-358 beside BUG-245, and a
+          "Five further disagreements" count that included it. Fixing the second exposed a
+          third — "BUG-259 was a sixth of this kind", an ordinal over a list that has
+          stood at five and at six within one release. Replaced with a derived count and
+          no ordinal
+        outcome: misleading
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-357 (entry)"
+        read_type: verify
+        extract: >-
+          Present-tense assertion inside a past-tense record ("the caught tuple is
+          unchanged, so a `paramiko.SFTPError` from the probe still escapes unmapped").
+          Retensed rather than deleted, per BACKLOG.md's rule that tense decides
+        outcome: ok
+      - file: docs-src/reference/migration.md
+        section: "v0.30.0 to v0.31.0"
+        read_type: verify
+        extract: >-
+          A fix that breaks an `except paramiko.SSHException` clause without earning
+          `**Breaking**` owes the section alone — the error becomes *more* specific to the
+          library's own type, and an `except RemoteStoreError` handler is unaffected
+        outcome: ok
