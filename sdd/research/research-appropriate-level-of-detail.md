@@ -16,10 +16,10 @@ argues for.
 > subject. Of those three, only the last can be checked at the moment of writing,
 > which is why the practical rule is an author-side test and not a length budget.
 >
-> **Standing caveat: four sources have been read in full, and one of them is a
+> **Standing caveat: five sources have been read in full, and one of them is a
 > primary.** Rozenblit & Keil (2002), the mechanism the authoring test rests on
-> (§ 5.2); Sweller, van Merriënboer & Paas (1998), which describes the
-> expertise-reversal experiments its own senior author ran (§ 3); and two
+> (§ 5.2); Sweller, van Merriënboer & Paas (1998) and Charney, Reder & Wells
+> (1988), each describing experiments their own authors ran (§§ 2–3); and two
 > secondary accounts of the Hamburg model (§ 4). All were supplied by the
 > maintainer. Every other external claim rests on an abstract, a metadata record
 > or a search summary, because every scholarly host returns 403 from this
@@ -49,20 +49,46 @@ or knowledge. Readability formulas are the standing wrong turn: they measure
 surface features that correlate with comprehension in aggregate and decide
 nothing about a particular text for a particular reader.
 
-## 2. The two failure directions are not symmetric
+## 2. Both directions are evidenced, and reader purpose decides which one bites
+
+Both failures are real and measured. Which one a text commits depends on why its
+reader opened it.
 
 | | **Overshoot** — more detail than the reader needs | **Undershoot** — less context than the reader needs |
 |---|---|---|
-| Evidence it harms readers | **None found direct.** See § 7 | Stronger, and it is the *predicted* failure |
-| Nearest supporting work | Seductive detail (interesting-**and**-irrelevant material only); expertise reversal (material redundant **for experts**) | Curse of knowledge: authors impute their own knowledge and omit bridging detail |
+| Direct evidence | Reder & Anderson: textbook chapters against summaries one-fifth their length; **summary readers scored significantly higher on the main points, study after study** | The same experiment's other half: readers with no specific task performed **much worse** with the short manual |
+| Robustness | Held across immediate and up-to-one-year delays, true/false, short-answer and free recall, timed and take-home reading | Charney, Reder & Wells call these readers "more greatly impeded by *under-elaborated* texts than the task-directed learners were by the *over-elaborated* version" |
+| Mechanism | Encoding *and* retrieval: with study time on the main points equated, summary readers still won, so elaborations also make the main point harder to retrieve — and "may make it harder for readers to distinguish important points from unimportant ones" | Curse of knowledge: authors impute their own knowledge and omit bridging detail |
 | What the repo measures | The **cost**: review rounds spent on prose (§ 6.3) | The **incidence**: trace tags dominated by missing units (§ 6.2) |
 
-**The asymmetry is the most useful single finding in this document.** The failure
-authors fear is overshoot; the failure the evidence predicts is undershoot. That
-does not make overshoot harmless — this repo pays for it in review rounds — but
-it means a rule that only cuts is aimed at the less-evidenced direction, and will
-eventually delete something load-bearing. `research-id-232`'s
-justification-sufficiency test exists for exactly that reason and still applies.
+**[Verified: Charney, Reder & Wells (1988), "Studies of Elaboration in
+Instructional Texts", in Doheny-Farina (ed.), *Effective Documentation*, MIT
+Press, 47–72, read in full. Reder is an author of the studies she reports.]**
+
+**The measured interaction, from their Study 1** (Reder, Charney & Morgan, 1986;
+40 inexperienced users, an elaborated 11,000-word PC-DOS manual against an
+unelaborated 3,500-word one, 45 minutes' reading, then tasks on the machine):
+
+| Reader | Elaborated manual | Unelaborated manual |
+|---|---:|---:|
+| Knew the tasks in advance | 33.5 min, 95.8 commands | **36.1 min, 94.2 commands** |
+| No specific goal | **29.4 min, 76.8 commands** | 40.2 min, 101.8 commands |
+
+Task-directed readers did slightly better without the elaborations. Readers
+without a goal did far worse without them. **Same text, opposite verdicts,
+decided by what the reader came for.**
+
+**So the asymmetry this document previously reported has a better basis than the
+one it was resting on.** It is no longer "overshoot is unevidenced": overshoot is
+evidenced, for readers who know what they are looking for. What survives is the
+practical asymmetry — **the penalty for cutting too much fell on the reader who
+lacked a goal, and it was the larger of the two**. A rule that only cuts is aimed
+at the case where cutting helps least and hurts most, which is why
+`research-id-232`'s justification-sufficiency test still applies.
+
+**The authors' own resolution is the sentence this whole document is circling:**
+"It is possible for both expounders and minimalists to be right if we shift the
+focus away from length per se. **Length is not really the issue.**"
 
 ## 3. What "appropriate" is a function of
 
@@ -103,7 +129,27 @@ rather than surplus detail, so it bounds the claim rather than proving it.
 
 **Reader purpose and the decision at stake.** What the reader must decide or do
 determines which units are load-bearing. A constraint, an exception or a
-precondition is detail by appearance and structure by function.
+precondition is detail by appearance and structure by function. This is the input
+with the cleanest measurement behind it: § 2's table is the same manual reversing
+its verdict when the reader arrives with a task rather than without one.
+
+**Which *kind* of detail, which turns out to matter more than how much.** In
+Charney, Reder & Wells's Study 2, four manual versions crossed rich or sparse
+**conceptual** elaboration (what a command is for, when it applies) with rich or
+sparse **procedural** elaboration (worked examples of correct commands), across 40
+novice and 40 experienced users. Procedural richness decided everything —
+37.4 and 37.7 minutes with it, 43.5 and 45.9 without; 71.7 and 73.7 commands with
+it, 88.7 and 92.4 without. **Conceptual elaboration made no difference at all**,
+whether added to a rich or a sparse procedural manual, and the novices benefited
+from it no more than the experienced users did. What readers wanted was "little
+more than a summary of the conceptual information" plus "well-chosen examples
+that illustrated what a correct computer command would look like in a specific
+plausible situation". **[Verified, read in full.]**
+
+*Inference, applied to this repo:* worked examples and concrete specifics earn
+their place; explanations of what a thing is for often do not, and are the first
+place to look when a section has grown. That is a sharper instruction than "cut
+detail", and it points at a different target than a length rule would.
 
 **Text type.** The same fact belongs at different depth in an ADR, a spec, a
 guide and a chat reply, because the text's function differs
@@ -289,7 +335,7 @@ out, because any text can be tightened and nothing bounds the request.
 | Relevance ≈ cognitive effect ÷ processing effort | Sperber and Wilson operate a **comparative** notion and distinguish it from a quantitative one; the quotient is a popularization. **[Search-summary]** |
 | Verbosity bias in LLM judges | Establishes that *raters* over-reward length, not that verbose output harms a reader's task. **[Search-summary]** |
 | Seductive-detail research as a general cutting licence | Covers interesting-**and**-irrelevant material whose mechanism depends on grabbing attention. Bland, on-topic surplus is a different class |
-| The minimal manual as proof that cutting works | Carroll, Smith-Kerker, Ford & Mazur-Rimetz (1987), *Human-Computer Interaction* 3(2): the manual differs from its comparator on **four** dimensions at once — briefer, better attention coordination, error-recovery training, better reference support. It shows one package beating another, not that deleting detail is what did it. **[Verified]** |
+| The minimal manual as proof that cutting works | Carroll, Smith-Kerker, Ford & Mazur-Rimetz (1987), *Human-Computer Interaction* 3(2): the manual differs from its comparator on **four** dimensions at once — briefer, better attention coordination, error-recovery training, better reference support. It shows one package beating another, not that deleting detail is what did it. Charney, Reder & Wells reach the same verdict independently: Carroll's team "clarified the terminology and organized the discussion around typical situations", so "we do not know how much the results are due to differences in elaboration and how much they are due to these other clarifications". **[Verified twice]** |
 
 ## 8. The decision procedure this supports
 
@@ -310,24 +356,19 @@ reach a length. Under-justification is the failure with the better evidence.
 
 ## 9. What would settle the open half
 
-1. **Reder & Anderson (1980, 1982), on summaries of physics texts.** The most
-   promising lead in this document, and the last one found: Sweller, van
-   Merriënboer & Paas report that they "ran many experiments indicating that the
-   contents of physics texts were learned more effectively if students were
-   merely presented with a summary rather than with the entire contents". That is
-   detail volume manipulated **in prose**, repeatedly — the study type § 2 says is
-   missing. It is cited here at one remove and has not been checked. If it holds,
-   it is the first direct evidence on the overshoot side and this document's § 2
-   asymmetry needs restating.
-2. **Yeung, Jin & Sweller (1998)**, reported as finding the same expertise
-   reversal using **text-comprehension** material rather than diagrams — a step
-   closer to prose than the wiring-diagram case.
-3. **A study manipulating detail volume in non-instructional reference prose,
-   read non-linearly by domain experts.** Still none found, though the Hamburg
-   corpus comes closer than this document previously allowed: legal codes,
-   insurance conditions and a purchase contract, read by adults (§ 4). What is
-   still missing is the *non-linear* reader — someone looking something up rather
-   than reading through and being tested.
+1. **The non-linear reader.** This is now the only substantial hole. Every study
+   in this document tests someone reading through and then being examined, or
+   working a task immediately after. Nobody has been observed *looking something
+   up* in dense reference prose — which is how maintainers and API users actually
+   read. The Hamburg corpus came closest with legal codes, insurance conditions
+   and a purchase contract (§ 4), but those readers still read linearly and were
+   tested.
+2. **Reder & Anderson (1980, 1982) in the original.** Their findings are now
+   carried by an author's own later chapter (§ 2), so what the primaries would add
+   is sample sizes, effect sizes and the exact time-equating design — not a
+   different answer.
+3. **Yeung, Jin & Sweller (1998)**, reported as finding the same expertise
+   reversal using **text-comprehension** material rather than diagrams.
 4. **Langer, Schulz von Thun & Tausch (1974) in full** — now a smaller question
    than it was. Two secondary sources agree on the optimum and on the validation
    studies (§ 4); what the book would add is whether the authors argue the
@@ -361,7 +402,10 @@ record), **search-summary** (a search engine's synthesis of secondary sources),
 | 7 | Carroll et al. (1987) is a four-way bundle, not a brevity result | Verified | Medium |
 | 8 | Kalyuga et al. (1998): text essential and best integrated for novice apprentices, redundant and best **fully eliminated** for experienced ones; elimination is its own condition, not confounded with integration | Verified against the co-authored 1998 review, read in full | Medium-high |
 | 8a | The same review reads McNamara et al. (1996) as redundancy rather than active processing, because mental-effort ratings **rose** where the active-processing account predicts a fall | Verified against that review | Medium |
-| 8b | Reder & Anderson (1980, 1982): physics texts learned more effectively from a summary than from the entire contents — detail volume manipulated in prose | Cited at one remove in that review; unchecked | Low |
+| 8b | Reder & Anderson (1980, 1982): textbook chapters against summaries one-fifth as long; summary readers scored significantly higher on the main points, across delays up to a year and several test types | Verified against Charney, Reder & Wells (1988), read in full; an author reporting her own studies | Medium-high |
+| 8c | With study time on the main points equated, summary readers still won, so the handicap is retrieval as well as encoding; the authors add that elaborations "may make it harder for readers to distinguish important points from unimportant ones" | Same | Medium |
+| 8d | Study 1: task-directed readers did better with the short manual, goal-less readers far worse with it — and the goal-less readers were the more greatly impeded of the two | Same | Medium-high |
+| 8e | Study 2: procedural (worked-example) elaboration decided performance; **conceptual elaboration made no difference at all**, for novices or experienced users | Same | Medium-high |
 | 9 | *Kürze/Prägnanz*'s optimum sits between `0` and `+`; both extremes impede comprehension | Two secondary sources read in full, in agreement; book unread | Medium-high |
 | 9a | It is the only **unconditional** mid-scale optimum; *anregende Zusätze* is mid-scale but conditional on the other dimensions | Same | Medium |
 | 9b | The four dimensions were validated against reader performance — 28 texts in two versions, 1,100+ readers, no effect for about a quarter of texts — but no study varied length alone, so the optimum is a recommendation, not a measured curve | Same | Medium |
@@ -425,6 +469,12 @@ handed.
 Psychology Review* 10(3), sharing one author. It happens to describe the target
 study in enough detail to answer the question, which is why row 8 moved; the
 target itself remains unread, and row 8's tier says so.
+
+**The fifth was supplied in place of Reder & Anderson (1980, 1982)** and is
+Charney, Reder & Wells (1988), a chapter in which Reder reports her own studies
+and the later manual experiments. It carried § 2 from "no direct evidence on the
+overshoot side" to a measured interaction, and it is the single most consequential
+source in this document after § 5.2's.
 
 **The German strand went the same way.** Two secondary sources were supplied in
 place of Langer, Schulz von Thun & Tausch (1974) — the German Wikipedia article
