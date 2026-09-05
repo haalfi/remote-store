@@ -82,6 +82,34 @@ phases:
           recorded paying for exactly that when both hosts stated the reader
           test.
         outcome: ok
+      - file: sdd/research/research-code-abundance-goals-and-values.md
+        section: "whole document, as a structural model"
+        read_type: reference
+        extract: >-
+          Read to take its shape for the detail-level record: TL;DR as a numbered
+          claim chain that marks which links are the record's own, Context
+          carrying the sourcing note, figures and their derivations as a numbered
+          section rather than an appendix, a "where it breaks" section, and
+          Proposals. Adopting it turned the detail-level record from one that
+          presented options into one that argues a position, and the ledger's
+          move out of an appendix is what makes principle 9's derivations
+          readable before the claims that rest on them.
+        outcome: ok
+      - file: sdd/research/research-appropriate-level-of-detail.md
+        section: "whole document"
+        read_type: verify
+        extract: >-
+          Restructured in place into that shape. Content was moved, not cut, and
+          the claim set was diffed mechanically before and after: 252 units in
+          the original, 33 not found verbatim afterwards, each reviewed by hand.
+          Four were real losses from the old decision-procedure section (the
+          keep/shorten/move/remove classification, the move-ties-to-placement
+          sentence, and the never-delete-a-load-bearing-reason rule) and were
+          restored into the new Proposals section; the rest were reflows or
+          renumbered cross-references. Derivation: `python
+          tmp/restructure/claim_diff.py` against a pre-restructure copy. This is
+          the check BK-353 wishes it had run.
+        outcome: ok
   - id: verify
     name: Verify
     steps:

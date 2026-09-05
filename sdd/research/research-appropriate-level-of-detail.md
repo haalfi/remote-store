@@ -4,27 +4,66 @@
 **Backlog items:** ID-256, which shipped the authoring test in § 5.3.
 **Status:** Advisory research, not a spec or ADR. A standing reference on one
 question — *is the level of detail appropriate?* — rather than a record of how it
-was investigated.
+was investigated. Point-in-time snapshot per
+[`sdd/000-process.md` § Document types](../000-process.md): the repo figures in
+§§ 6–7 drift with the corpus, and the sourcing tiers in § 7 record what was
+reachable on the date above, so read every figure against that date.
 **Related:**
 [`research-id-232-detail-placement-durability.md`](research-id-232-detail-placement-durability.md)
 answers the neighbouring question, *where does this detail belong?*;
 [`../CONTENT-RULES.md`](../CONTENT-RULES.md) carries the rules this document
 argues for.
 
-> **Appropriateness is not a property of a text.** It is a relation between the
-> text, the reader's purpose and knowledge, and the author's grasp of the
-> subject. Of those three, only the last can be checked at the moment of writing,
-> which is why the practical rule is an author-side test and not a length budget.
->
-> **Standing caveat: five sources have been read in full, and one of them is a
-> primary.** Rozenblit & Keil (2002), the mechanism the authoring test rests on
-> (§ 5.2); Sweller, van Merriënboer & Paas (1998) and Charney, Reder & Wells
-> (1988), each describing experiments their own authors ran (§§ 2–3); and two
-> secondary accounts of the Hamburg model (§ 4). All were supplied by the
-> maintainer. Every other external claim rests on an abstract, a metadata record
-> or a search summary, because every scholarly host returns 403 from this
-> environment (Appendix B). Each carries a tier: treat the rest as directional,
-> and the repo figures as the reliable half.
+## TL;DR
+
+**Appropriateness is not a property of a text.** It is a relation between the
+text, the reader's purpose and knowledge, and the author's grasp of the subject.
+Of those three, only the last can be checked at the moment of writing, which is
+why the practical rule is an author-side test and not a length budget.
+
+Everything else in this record is that claim's chain:
+
+1. No text-level instrument — word budget, readability index, density metric —
+   can answer the question, because none of them can see the reader (§ 1).
+2. Both failure directions are measured, and the same text reverses its verdict
+   when the reader arrives with a task rather than without one (§ 2).
+3. Which *kind* of detail is cut decides more than how much: worked examples
+   earn their place, explanations of what a thing is for do not (§ 3).
+4. Brevity is the one comprehensibility dimension whose optimum sits mid-scale,
+   so "shorter" is not a direction to push monotonically (§ 4).
+5. The reader is absent at writing time and the author is not, which is why the
+   shipped control is an author-side test: state the section's core claim, or
+   return to the source (§ 5).
+6. The reader-side instruments this repo owns detect the *opposite* failure from
+   the one it commits, so they cannot close the loop unaided (§ 6).
+7. Therefore: keep the author-side test, condition cutting on **recoverability**
+   rather than on length, and require a prose review finding to name the reader
+   harm it prevents (§ 9).
+
+Links 3 and 7 are this record's own contribution — link 3 is Charney, Reder &
+Wells's Study 2 read against this repo's prose, and link 7's recoverability split
+was found in the local experiment (Appendix) rather than taken from a source.
+Links 1, 2, 4 and 5 are the literature. Link 6 is repo measurement. § 8 marks
+where the evidence breaks, and § 10 lists what would settle the open half.
+
+## Context
+
+The question is asked constantly here and answered ad hoc every time. It arrives
+as a review finding ("this could be tighter"), as an authoring hesitation (how
+much of the reasoning goes in the ADR), and as a recurring cost: `/ship` sessions
+reach stable code and tests in two to four rounds and then spend the remainder on
+prose findings (§ 6.3). This record exists to give that question a standing
+answer, and to say which parts of the answer are evidenced and which are not.
+
+**Standing caveat: five sources have been read in full, and one of them is a
+primary.** Rozenblit & Keil (2002), the mechanism the authoring test rests on
+(§ 5.2); Sweller, van Merriënboer & Paas (1998) and Charney, Reder & Wells
+(1988), each describing experiments their own authors ran (§§ 2–3); and two
+secondary accounts of the Hamburg model (§ 4). All were supplied by the
+maintainer. Every other external claim rests on an abstract, a metadata record
+or a search summary, because every scholarly host returns 403 from this
+environment (§ 8). Each carries a tier in § 7: treat the rest as directional,
+and the repo figures as the reliable half.
 
 ---
 
@@ -149,7 +188,8 @@ plausible situation". **[Verified, read in full.]**
 *Inference, applied to this repo:* worked examples and concrete specifics earn
 their place; explanations of what a thing is for often do not, and are the first
 place to look when a section has grown. That is a sharper instruction than "cut
-detail", and it points at a different target than a length rule would.
+detail", and it points at a different target than a length rule would — it
+becomes § 9's third proposal.
 
 **Text type.** The same fact belongs at different depth in an ADR, a spec, a
 guide and a chat reply, because the text's function differs
@@ -315,11 +355,17 @@ evidence that shorter prose is better prose.
 
 ## 6. The reader-side instruments, and what each reaches
 
+### 6.1 What each one reaches
+
 | Instrument | Detects | Cannot detect |
 |---|---|---|
 | Reader test (`documentation-expert.md`) | A question the page promises and cannot answer | An answer that arrived buried; anything `misleading`, since a no-context reader has nothing to check against |
 | Trace `outcome` tags + `report-trace-outcomes` | Reader failure after the fact, ranked by document | Anything before the document ships; the difference between too much and too little |
 | Review rounds | The **cost** of unresolved prose | Whether a reader was ever harmed |
+
+Each row's right-hand column is the reason § 9 does not propose closing the loop
+with these alone. The Appendix reports the one experiment that puts a number on
+the first row's blind spot.
 
 ### 6.2 What the trace corpus actually shows
 
@@ -329,54 +375,6 @@ carrying an explicit outcome (45.1%), **223 negative tags (191 `misleading`, 32
 unit, not a buried one — "the row did not ask the question that mattered", "no row
 covers a change to a skill's frontmatter". **The repo's most direct measurement of
 reader failure evidences undershoot, not overshoot.**
-
-### 6.2a The one experiment this corpus could run
-
-§ 9 records that no study in the literature tests a reader **looking something
-up** rather than reading through and being examined. That reader was tested here,
-on the ripple-check itself: two versions of the same page (3,255 words against
-1,121, every trigger and obligation preserved), crossed with whether the reader
-knew the questions before reading. Twelve agent readers, ten questions, 120
-answers, graded against a key written before anyone ran.
-
-**On what the page exists to answer, the two versions tied exactly** — 42 of 42
-each, after setting aside one defective question that ten of twelve readers
-identified as unanswerable in almost identical words. A 66% cut cost nothing.
-
-**On the rationale the cut removed, the loss was total** — 12 answers against 0.
-And **no reader on either page invented an answer**: the `misleading` class this
-document keeps saying the reader test cannot reach did not occur, on either side.
-
-Two findings the tally hides, both worth more than it:
-
-**The extra material was misused exactly once, in one cell.** Two of three
-readers who had the whole page *and* knew the question in advance answered it by
-lifting a spec ID from a neighbouring row. Every goal-less reader of the same page
-refused, saying it would conflate rows; so did every reader of the condensed page,
-which carries both rows too. The information is identical; what differs is that
-elaboration makes the row boundary less visible to a reader hunting for something.
-That is Reder & Anderson's mechanism (§ 2) occurring locally — on a sample of
-three, on one question, found in the data rather than predicted. A hypothesis for
-a dedicated run, not a result.
-
-**Cut rationale divides into two kinds.** Three condensed-page readers rebuilt
-half of one probe from the command it described: the command searches two
-phrasings, so a single phrase would obviously miss the other. None could rebuild
-the half that depends on a `.gitignore` fact the page never shows. **Rationale
-explaining what the reader can already see is cheap to cut; rationale carrying a
-fact from elsewhere is not.** Rule 7 does not currently make that distinction.
-
-**One human reader also took the condensed page**, an expert already familiar
-with it. He recovered **less** than any naïve agent reader did — twice marking
-unanswerable a question the page answers — and produced **the only wrong answer
-in the study**, confidently and unhedged, where 120 agent answers had produced
-none. The mechanism is not comprehension but engagement: an expert answers from
-recall rather than reading, and recall is where the illusion of explanatory depth
-(§ 5.2) does its work. n = 1, unblinded, and not a fair contest, since the agents
-were compelled to read the page and the human was not.
-
-**Bounds:** three readers per cell, LLM readers rather than humans, a grader not
-blind to condition, and both cells open-book so no memory effect is in view.
 
 ### 6.3 What the round data shows, and its two limits
 
@@ -396,71 +394,20 @@ the current review loop.
 runs out — there are finitely many wrong call sites. A prose finding never runs
 out, because any text can be tightened and nothing bounds the request.
 
-## 7. What does not answer the question
+## 7. Figures and their derivations
 
-| Proposal | Why it fails |
-|---|---|
-| Readability formulas, word budgets | Surface proxies; blind to purpose and reader (§ 1) |
-| RST "keep nuclei, delete satellites" | Rests on a label trained annotators agree on about four times in five: 86.8% spans, **80.7% nuclearity**, 72% relations over six taggers. Provenance matters here, because the figures are widely quoted without it: they come from the **corpus documentation accompanying the LDC release** (Carlson, Marcu & Okurowski, 2003, LDC2002T07), not from the 2001 workshop paper, which reports kappa statistics instead, and not from the LDC catalogue entry, which carries no agreement figures at all. **[Search-summary; the documentation itself is unread here]** |
-| Kintsch & van Dijk's macrorules as an editing procedure | They model what readers do, not what authors should cut. **[Search-summary]** |
-| Relevance ≈ cognitive effect ÷ processing effort | Sperber and Wilson operate a **comparative** notion and distinguish it from a quantitative one; the quotient is a popularization. **[Search-summary]** |
-| Verbosity bias in LLM judges | Establishes that *raters* over-reward length, not that verbose output harms a reader's task. **[Search-summary]** |
-| Seductive-detail research as a general cutting licence | Covers interesting-**and**-irrelevant material whose mechanism depends on grabbing attention. Bland, on-topic surplus is a different class |
-| The minimal manual as proof that cutting works | Carroll, Smith-Kerker, Ford & Mazur-Rimetz (1987), *Human-Computer Interaction* 3(2): the manual differs from its comparator on **four** dimensions at once — briefer, better attention coordination, error-recovery training, better reference support. It shows one package beating another, not that deleting detail is what did it. Charney, Reder & Wells reach the same verdict independently: Carroll's team "clarified the terminology and organized the discussion around typical situations", so "we do not know how much the results are due to differences in elaboration and how much they are due to these other clarifications". **[Verified twice]** |
+Per [`CLAUDE.md` principle 9](../../CLAUDE.md#principles), each claim names how it
+was obtained. Tiers: **verified** (adversarial vote against a retrieved abstract
+or metadata record, or a source read in full where the row says so),
+**search-summary** (a search engine's synthesis of secondary sources), **local**
+(derived from this repo, reproducible by the named command), **inference** (this
+document's reasoning, never a source's claim).
 
-## 8. The decision procedure this supports
-
-**At authoring time**, in order: state the Kernsatz (§ 5.3); if it will not come,
-stop writing and return to the source; then place what remains by
-`research-id-232`'s three-condition gate; then classify each surviving unit as
-**keep / shorten / move / remove**. *Move* is the outcome that ties this question
-back to placement, and it is how both of this repo's real density disputes were
-resolved.
-
-**At review time**: a prose finding names the reader harm it prevents — an
-unanswerable question, a wrong decision, an action that cannot be executed — or it
-is a preference. This follows from § 2: a rule that only cuts is aimed at the
-less-evidenced direction.
-
-**When the two conflict**, § 2 decides: never delete a load-bearing reason to
-reach a length. Under-justification is the failure with the better evidence.
-
-## 9. What would settle the open half
-
-1. **The non-linear reader, for humans.** No study in the literature tests
-   someone *looking something up* in dense reference prose, which is how
-   maintainers and API users actually read; the Hamburg corpus came closest with
-   legal codes and insurance conditions (§ 4), but those readers still read
-   linearly and were examined. § 6.2a closes this for **agent** readers on one
-   page of this corpus, and its result — a tie on obligations, total loss on
-   rationale — is what a human run would have to confirm or break.
-2. **Reder & Anderson (1980, 1982) in the original.** Their findings are now
-   carried by an author's own later chapter (§ 2), so what the primaries would add
-   is sample sizes, effect sizes and the exact time-equating design — not a
-   different answer.
-3. **Yeung, Jin & Sweller (1998)**, reported as finding the same expertise
-   reversal using **text-comprehension** material rather than diagrams.
-4. **Langer, Schulz von Thun & Tausch (1974) in full** — now a smaller question
-   than it was. Two secondary sources agree on the optimum and on the validation
-   studies (§ 4); what the book would add is whether the authors argue the
-   mid-scale optimum from their own data or assert it from the model.
-5. **Locally and cheaply:** run the reader test against one page twice, whole and
-   condensed, and compare unanswerable counts. The one experiment available
-   without external access, and it tests overshoot directly on this corpus.
-
-**Answered, and no longer worth chasing:** whether any Kalyuga experiment
-isolates text elimination from the integration manipulation. It does (§ 3). The
-*Human Factors* primary would add sample sizes and effect sizes, not a different
-answer.
-
----
-
-## Appendix A — evidence ledger
-
-Tiers: **verified** (adversarial vote against a retrieved abstract or metadata
-record), **search-summary** (a search engine's synthesis of secondary sources),
-**local** (derived from this repo, reproducible by the named command),
-**inference** (this document's reasoning, never a source's claim).
+**No row above tier "search-summary" was read from its primary document except
+where the tier says otherwise**, and five sources carry that exception: rows 8,
+8a–8e, 9–9c, 11–11a and 12–12a. That distinction is the one a reader needs before
+quoting any figure here, which is why it sits in the tier column rather than in a
+footnote.
 
 | # | Claim | Tier | Confidence |
 |---|---|---|---|
@@ -513,7 +460,25 @@ beyond row 15.
 modern working-memory claims, Pyramid/SCU reproducibility, and Daneš's
 thematic-progression typology.
 
-## Appendix B — the access limitation
+## 8. Where the evidence breaks
+
+Three kinds of break, in descending order of how much they cost the argument:
+proposals that look like answers and are not, an access limitation that weakens
+every external row, and the bounds on the one experiment run here.
+
+### 8.1 What does not answer the question
+
+| Proposal | Why it fails |
+|---|---|
+| Readability formulas, word budgets | Surface proxies; blind to purpose and reader (§ 1) |
+| RST "keep nuclei, delete satellites" | Rests on a label trained annotators agree on about four times in five: 86.8% spans, **80.7% nuclearity**, 72% relations over six taggers. Provenance matters here, because the figures are widely quoted without it: they come from the **corpus documentation accompanying the LDC release** (Carlson, Marcu & Okurowski, 2003, LDC2002T07), not from the 2001 workshop paper, which reports kappa statistics instead, and not from the LDC catalogue entry, which carries no agreement figures at all. **[Search-summary; the documentation itself is unread here]** |
+| Kintsch & van Dijk's macrorules as an editing procedure | They model what readers do, not what authors should cut. **[Search-summary]** |
+| Relevance ≈ cognitive effect ÷ processing effort | Sperber and Wilson operate a **comparative** notion and distinguish it from a quantitative one; the quotient is a popularization. **[Search-summary]** |
+| Verbosity bias in LLM judges | Establishes that *raters* over-reward length, not that verbose output harms a reader's task. **[Search-summary]** |
+| Seductive-detail research as a general cutting licence | Covers interesting-**and**-irrelevant material whose mechanism depends on grabbing attention. Bland, on-topic surplus is a different class |
+| The minimal manual as proof that cutting works | Carroll, Smith-Kerker, Ford & Mazur-Rimetz (1987), *Human-Computer Interaction* 3(2): the manual differs from its comparator on **four** dimensions at once — briefer, better attention coordination, error-recovery training, better reference support. It shows one package beating another, not that deleting detail is what did it. Charney, Reder & Wells reach the same verdict independently: Carroll's team "clarified the terminology and organized the discussion around typical situations", so "we do not know how much the results are due to differences in elaboration and how much they are due to these other clarifications". **[Verified twice]** |
+
+### 8.2 The access limitation
 
 Every scholarly host tried returned 403 on CONNECT from this environment's egress
 proxy: `aclanthology.org`, `doi.org`, `www.semanticscholar.org`,
@@ -525,40 +490,268 @@ is session-local, so the literal URL is not reproducible), plus direct retests.
 The proxy's README classifies 403 as an organization policy denial to be reported
 rather than worked around.
 
-**What that costs this document.** With one exception, no source was read in
-full, so no figure taken from an external source should be quoted as established,
-and a negative finding obtained under blocked access is weak evidence of absence.
-The repo-derived rows (19–22) carry no such limitation and are reproducible by
-the commands named.
+**What that costs this document.** Apart from the five sources named below, no
+source was read in full, so no figure taken from an external source should be
+quoted as established, and a negative finding obtained under blocked access is
+weak evidence of absence. The repo-derived rows (19–22d) carry no such
+limitation and are reproducible by the commands named.
 
-**The exceptions, and the route around the blockade.** Two PDFs were supplied
-directly by the maintainer and read in full: Rozenblit & Keil (2002), which moved
-rows 12 and 12a from search-summary to verified and sharpened § 5.2 from an
-assertion to a measured contrast; and Sweller, van Merriënboer & Paas (1998),
-which settled the design question behind row 8 and produced two claims nothing
-else in this pass had reached (rows 8a and 8b). That is the working route for
-anything else in § 9: the environment cannot fetch, but it reads what it is
-handed.
+**The exceptions, and the route around the blockade.** Five documents were
+supplied directly by the maintainer and read in full. Rozenblit & Keil (2002)
+moved rows 12 and 12a from search-summary to verified and sharpened § 5.2 from an
+assertion to a measured contrast. Sweller, van Merriënboer & Paas (1998) settled
+the design question behind row 8 and produced two claims nothing else in this
+pass had reached (rows 8a and 8b). Charney, Reder & Wells (1988) was supplied in
+place of Reder & Anderson (1980, 1982) — Reder reports her own studies there,
+along with the later manual experiments — and it carried § 2 from "no direct
+evidence on the overshoot side" to a measured interaction, which makes it the
+single most consequential source in this document after § 5.2's. And two
+secondary accounts of the Hamburg model, the German Wikipedia article and Kroop,
+Mangler, Hutterer & Swertz's paper on comprehensibility training at the
+University of Vienna, agree on the optimum and on the scale and between them
+carry the validation studies and the standing criticisms; they moved § 4 from one
+search-summary sentence to the best-evidenced section after § 5.2, and corrected
+a claim this document had been making. **That is the working route for anything
+else in § 10: the environment cannot fetch, but it reads what it is handed.**
 
-**Note on the second one.** It was supplied as Kalyuga, Chandler & Sweller (1998),
-*Human Factors* 40(1), and is a different paper — the CLT review in *Educational
-Psychology Review* 10(3), sharing one author. It happens to describe the target
-study in enough detail to answer the question, which is why row 8 moved; the
-target itself remains unread, and row 8's tier says so.
+Two notes on provenance the rows above depend on. The Sweller source was supplied
+as Kalyuga, Chandler & Sweller (1998), *Human Factors* 40(1), and is a different
+paper — the CLT review in *Educational Psychology Review* 10(3), sharing one
+author; it happens to describe the target study in enough detail to answer the
+question, which is why row 8 moved, but the target itself remains unread and row
+8's tier says so. And an encyclopaedia article is a lead rather than an authority
+by this document's own method, so § 4's rows are tiered as secondary and the
+Hamburg book stays on the § 10 list for one narrower question.
 
-**The fifth was supplied in place of Reder & Anderson (1980, 1982)** and is
-Charney, Reder & Wells (1988), a chapter in which Reder reports her own studies
-and the later manual experiments. It carried § 2 from "no direct evidence on the
-overshoot side" to a measured interaction, and it is the single most consequential
-source in this document after § 5.2's.
+### 8.3 The bounds on the local experiment
 
-**The German strand went the same way.** Two secondary sources were supplied in
-place of Langer, Schulz von Thun & Tausch (1974) — the German Wikipedia article
-on the Hamburg model, and Kroop, Mangler, Hutterer & Swertz's paper on
-comprehensibility training at the University of Vienna. Both were read in full,
-they agree on the optimum and on the scale, and between them they carry the
-validation studies and the standing criticisms. That moved § 4 from one
-search-summary sentence to the best-evidenced section after § 5.2, and it
-corrected a claim this document had been making. An encyclopaedia article is a
-lead rather than an authority by this document's own method, so § 4's rows are
-tiered as secondary, and the book stays on the § 9 list for one narrower question.
+Three readers per cell, LLM readers rather than humans, a grader not blind to
+condition, and both cells open-book so no memory effect is in view. The Appendix
+reports it in full, including the two findings the tally hides and the single
+human cell that inverts the naïve expectation about who a reader test measures.
+
+## 9. Proposals
+
+Six, of which only the first has shipped. Each names the section that forces it,
+because the sections disagree with each other often enough that a proposal
+without a citation is a preference.
+
+**1. Keep the control on the author, and put no length rule beside it.**
+[Rule 7](../CONTENT-RULES.md#kernsatz) is in force (§ 5.3), and the case for it
+being the *only* rule of its kind is three-part: § 1 rules out every text-level
+instrument, § 4 says the brevity optimum sits mid-scale rather than at the floor,
+and § 5.1 says the author is the only party present at writing time. A word
+budget fails all three at once. This proposal is restated rather than new because
+the five below qualify it, and a qualification is unreadable without the thing it
+qualifies.
+
+**2. Split the cut decision on recoverability, and say so in Rule 7.** The
+experiment (Appendix) found that cut rationale divides in two: readers rebuilt
+rationale that explains something the surviving text still shows, and could not
+rebuild rationale carrying a fact from outside the section. Rule 7 makes no such
+distinction today, so it gives the same licence to both. The clause it needs:
+*rationale a reader can reconstruct from what the section still shows may be cut;
+rationale carrying a fact from elsewhere may not.* This is the record's own
+finding, on three readers and one page, and it is the weakest-evidenced proposal
+here — which argues for testing it on a second page before adopting it, not for
+leaving the distinction unnamed.
+
+**3. Cut conceptual elaboration before procedural.** § 3's row 8e is the
+strongest single instruction this literature yields: procedural richness decided
+every measure in Charney, Reder & Wells's Study 2, and conceptual elaboration
+made no difference at all, for novices or experts. Applied here, when a section
+has grown the first candidates are the sentences explaining what a thing is *for*;
+worked examples, exact commands and concrete identifiers go last. That points the
+opposite way from where an editor's eye goes, because examples look like bulk and
+explanation looks like substance.
+
+**4. A prose review finding names the reader harm it prevents, or it is a
+preference.** § 6.3's mechanism is why this has to be a rule rather than an
+attitude: a code finding runs out and a prose finding does not, so an unbounded
+licence to tighten converts directly into the round tail that item measures.
+Three harms qualify — a question the reader cannot answer, a decision they would
+get wrong, an action they cannot execute. "This could be tighter" is not one of
+them. § 2 supplies the second half of the argument: a rule that only cuts is
+aimed at the direction with the *weaker* evidence.
+
+**5. Condition the licence on the directory, because that is where reader purpose
+is observable.** § 2's reversal is the whole argument, and § 3's last input names
+the operational consequence. Readers of `sdd/` and `.claude/` arrive with a task,
+which is the cell where cutting helped; readers of `docs-src/`, the README and
+package documentation frequently arrive with no specific goal, and those are the
+readers Charney, Reder & Wells found "more greatly impeded" by the cut version,
+by the larger of the two margins. So the cutting licence is **strongest in
+`sdd/` and weakest in public docs** — the reverse of the intuition that internal
+notes may sprawl while published prose must be tight.
+
+**6. Run the reader test in pairs, or do not read it as a density instrument.**
+§ 6's table says a single-version reader test detects an unanswerable question
+and nothing about surplus. The Appendix shows what a paired run buys: the same
+page whole and condensed, graded against a key written first, produced a tie on
+obligations and a total loss on rationale — two numbers neither version could
+have yielded alone. Record who the reader is while doing it: the one expert human
+in that run recovered less than any naïve agent reader, so a reader test staffed
+by people who already know the page measures their engagement rather than the
+page.
+
+**The procedure the six compose into**, at authoring time and in order: state the
+Kernsatz (§ 5.3); if it will not come, stop writing and return to the source;
+then place what remains by `research-id-232`'s three-condition gate; then
+classify each surviving unit as **keep / shorten / move / remove**, with
+proposals 2, 3 and 5 deciding the last two. *Move* is the outcome that ties this
+question back to placement, and it is how both of this repo's real density
+disputes were resolved (§ 7 row 22). **When placement and length conflict, § 2
+decides: never delete a load-bearing reason to reach a length.**
+Under-justification is the failure with the better evidence.
+
+**One caveat covering all six.** None of them is evidence that shorter prose is
+better prose, and § 4 is the reason to keep saying so: the dimension has an
+optimum, not a direction. Rule 7 detects an author who cannot state a claim; the
+five additions decide *what* to cut once the claim is stated. Neither answers
+whether a given reader was harmed, and § 6's right-hand column is a standing
+reminder that this repo cannot currently find out.
+
+## 10. What would settle the open half
+
+1. **The non-linear reader, for humans.** No study in the literature tests
+   someone *looking something up* in dense reference prose, which is how
+   maintainers and API users actually read; the Hamburg corpus came closest with
+   legal codes and insurance conditions (§ 4), but those readers still read
+   linearly and were examined. The Appendix closes this for **agent** readers on
+   one page of this corpus, and its result — a tie on obligations, total loss on
+   rationale — is what a human run would have to confirm or break.
+2. **Reder & Anderson (1980, 1982) in the original.** Their findings are now
+   carried by an author's own later chapter (§ 2), so what the primaries would add
+   is sample sizes, effect sizes and the exact time-equating design — not a
+   different answer.
+3. **Yeung, Jin & Sweller (1998)**, reported as finding the same expertise
+   reversal using **text-comprehension** material rather than diagrams.
+4. **Langer, Schulz von Thun & Tausch (1974) in full** — now a smaller question
+   than it was. Two secondary sources agree on the optimum and on the validation
+   studies (§ 4); what the book would add is whether the authors argue the
+   mid-scale optimum from their own data or assert it from the model.
+5. **A second paired reader run, on a page whose rationale carries outside
+   facts.** § 9's second proposal rests on three readers and one page. The
+   cheapest test that could break it is another whole-versus-condensed pair,
+   chosen so that most of the cut rationale is of the non-recoverable kind, and it
+   needs no external access.
+
+**Answered, and no longer worth chasing:** whether any Kalyuga experiment
+isolates text elimination from the integration manipulation. It does (§ 3). The
+*Human Factors* primary would add sample sizes and effect sizes, not a different
+answer. **Also answered:** an earlier version of this list proposed running the
+reader test against one page twice, whole and condensed, and comparing
+unanswerable counts — the one experiment available without external access. It
+was run; the Appendix reports it, and item 5 above is its successor rather than a
+repeat.
+
+---
+
+## Appendix: the ripple-check as a worked example
+
+§ 10 records that no study in the literature tests a reader **looking something
+up** rather than reading through and being examined. That reader was tested here,
+on the ripple-check itself: two versions of the same page (3,255 words against
+1,121, every trigger and obligation preserved), crossed with whether the reader
+knew the questions before reading. Twelve agent readers, ten questions, 120
+answers, graded against a key written before anyone ran.
+
+**On what the page exists to answer, the two versions tied exactly** — 42 of 42
+each, after setting aside one defective question that ten of twelve readers
+identified as unanswerable in almost identical words. A 66% cut cost nothing.
+
+**On the rationale the cut removed, the loss was total** — 12 answers against 0.
+And **no reader on either page invented an answer**: the `misleading` class this
+document keeps saying the reader test cannot reach did not occur, on either side.
+
+Two findings the tally hides, both worth more than it:
+
+**The extra material was misused exactly once, in one cell.** Two of three
+readers who had the whole page *and* knew the question in advance answered it by
+lifting a spec ID from a neighbouring row. Every goal-less reader of the same page
+refused, saying it would conflate rows; so did every reader of the condensed page,
+which carries both rows too. The information is identical; what differs is that
+elaboration makes the row boundary less visible to a reader hunting for something.
+That is Reder & Anderson's mechanism (§ 2) occurring locally — on a sample of
+three, on one question, found in the data rather than predicted. A hypothesis for
+a dedicated run, not a result.
+
+**Cut rationale divides into two kinds.** Three condensed-page readers rebuilt
+half of one probe from the command it described: the command searches two
+phrasings, so a single phrase would obviously miss the other. None could rebuild
+the half that depends on a `.gitignore` fact the page never shows. **Rationale
+explaining what the reader can already see is cheap to cut; rationale carrying a
+fact from elsewhere is not.** Rule 7 does not currently make that distinction,
+which is what § 9's second proposal asks it to fix.
+
+**One human reader also took the condensed page**, an expert already familiar
+with it. He recovered **less** than any naïve agent reader did — twice marking
+unanswerable a question the page answers — and produced **the only wrong answer
+in the study**, confidently and unhedged, where 120 agent answers had produced
+none. The mechanism is not comprehension but engagement: an expert answers from
+recall rather than reading, and recall is where the illusion of explanatory depth
+(§ 5.2) does its work. n = 1, unblinded, and not a fair contest, since the agents
+were compelled to read the page and the human was not.
+
+**Bounds:** three readers per cell, LLM readers rather than humans, a grader not
+blind to condition, and both cells open-book so no memory effect is in view.
+
+## Sources
+
+No URLs are given: every scholarly host is blocked from this environment (§ 8.2),
+so a link here would be one this document could not itself follow. The grouping
+is by how each source was read, which is the fact a reader needs in order to
+weight it.
+
+**Read in full, supplied as documents by the maintainer:**
+
+- Rozenblit, L. & Keil, F. (2002). "The misunderstood limits of folk science: an
+  illusion of explanatory depth." *Cognitive Science* 26(5), 521–562.
+- Sweller, J., van Merriënboer, J. & Paas, F. (1998). "Cognitive Architecture and
+  Instructional Design." *Educational Psychology Review* 10(3), 251–296.
+- Charney, D., Reder, L. & Wells, G. (1988). "Studies of Elaboration in
+  Instructional Texts." In S. Doheny-Farina (ed.), *Effective Documentation: What
+  We Have Learned from Research*, MIT Press, 47–72.
+- *Hamburger Verständlichkeitsmodell*, German Wikipedia article (secondary
+  account of Langer, Schulz von Thun & Tausch 1974).
+- Kroop, S., Mangler, J., Hutterer, R. & Swertz, C. Paper on comprehensibility
+  training at the University of Vienna (secondary account of the same model).
+
+**Read in part:**
+
+- Abbaschian, B. (2026). "Cross-Disciplinary Taxonomy and Modeling of
+  Misunderstanding Generation, Amplification, and Detection." arXiv:2608.13604.
+
+**Cited from an abstract, a metadata record or a search summary** — directional
+only, per § 7's tiers:
+
+- Grice, H. P. (1975). "Logic and Conversation." In Cole & Morgan (eds.),
+  *Syntax and Semantics 3: Speech Acts*.
+- Nickerson, R. (1999). "How We Know — and Sometimes Misjudge — What Others Know:
+  Imputing One's Own Knowledge to Others." *Psychological Bulletin* 125, 737–759.
+- Groeben, N. (1982). *Leserpsychologie: Textverständnis — Textverständlichkeit*.
+- Göpferich, S. *Karlsruher Verständlichkeitskonzept*.
+- Langer, I., Schulz von Thun, F. & Tausch, R. (1974). *Sich verständlich
+  ausdrücken*. (The book itself: unread — see § 10 item 4.)
+- Kalyuga, S., Chandler, P. & Sweller, J. (1998). *Human Factors* 40(1). (Unread;
+  reached through the 1998 review above.)
+- Reder, L. & Anderson, J. (1980, 1982). (Unread; reached through Charney, Reder
+  & Wells 1988.)
+- McNamara, D., Kintsch, E., Songer, N. & Kintsch, W. (1996). The reverse
+  cohesion effect.
+- Carroll, J., Smith-Kerker, P., Ford, J. & Mazur-Rimetz, S. (1987). The minimal
+  manual. *Human-Computer Interaction* 3(2).
+- Bereiter, C. & Scardamalia, M. (1987). *The Psychology of Written Composition*.
+- Bisra, K., Liu, Q., Nesbit, J., Salimi, F. & Winne, P. (2018). Meta-analysis of
+  the self-explanation effect.
+- Carlson, L., Marcu, D. & Okurowski, M. E. (2003). RST Discourse Treebank
+  corpus documentation, LDC2002T07.
+- Kintsch, W. & van Dijk, T. (1978). Macrorules for discourse comprehension.
+- Sperber, D. & Wilson, D. (1986). *Relevance: Communication and Cognition*.
+- Brinker, K. *Textsorte / Textfunktion*.
+- Yeung, A., Jin, P. & Sweller, J. (1998). (Unread — see § 10 item 3.)
+
+**Derived from this repository**, reproducible by the commands named in §§ 6–7:
+`hatch run report-trace-outcomes` at `2bbb802`; the `review_rounds` scan over
+`sdd/traces/[!_]*.yml`; BUG-248's commit subjects; BK-351 and BK-353; and the
+pre-registered reader experiment reported in the Appendix.
