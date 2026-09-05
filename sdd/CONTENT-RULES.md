@@ -54,7 +54,8 @@ framework](../CLAUDE.md#documentation-framework)): placement →
    note the reason inline.
 
 7. <a id="kernsatz"></a>**Lead with the Kernsatz** — the core claim, stated first. [review-enforced]
-   A new or substantially rewritten section in `sdd/` or `.claude/` opens with
+   A new or substantially rewritten section in `sdd/`, `.claude/` or a root-level
+   process doc opens with
    its core claim in at most three sentences, defining any term it coins or uses
    in a sense the reader cannot be assumed to hold. If those sentences will not
    come, the section is not yet understood well enough to write: return to the
@@ -69,11 +70,16 @@ framework](../CLAUDE.md#documentation-framework)): placement →
    changed, not its wording — **and a section that stated no claim before is
    substantially rewritten by definition**, since there was nothing for the
    rewrite to preserve.
-   **Why the scope is narrow.** Rules 1–6 govern accuracy over time and apply
-   everywhere; this one governs comprehension at writing time and is deliberately
-   confined to the repo's own reasoning surfaces, where the author and reader are
-   both contributors. Extending it to `docs-src/` and docstrings has not been
-   argued for.
+   **Why the scope is what it is.** Rules 1–6 govern accuracy over time and apply
+   everywhere; this one governs comprehension at writing time and is confined to
+   the repo's own reasoning surfaces, where author and reader are both
+   contributors. Those are `sdd/`, `.claude/`, and the root-level process docs
+   (`CLAUDE.md`, `CONTRIBUTING.md`, `AGENTS.md`) — the scope line above names the
+   first two; the third is named here because the rationale selects it and an
+   author rewriting a principle should not have to infer that. Extending it to
+   `docs-src/` and docstrings has not been argued for: those readers are not
+   contributors, and § 9.5 of the record below argues they need *more* context
+   rather than a tighter opening.
    **Defining a term does not mean restating an authority.** Rule 4 keeps facts in
    one place; a one-clause gloss plus a link satisfies both.
 
@@ -134,4 +140,8 @@ not as a pass/fail. The script's module docstring states what it does not catch.
 
 ### Provenance
 
-Derived from [`sdd/research/research-doc-content-longevity.md`](research/research-doc-content-longevity.md).
+Rules 1–6 derive from
+[`sdd/research/research-doc-content-longevity.md`](research/research-doc-content-longevity.md).
+Rule 7 derives from
+[`sdd/research/research-appropriate-level-of-detail.md`](research/research-appropriate-level-of-detail.md),
+which argues it and marks what it does not establish.

@@ -20,14 +20,19 @@ expected_ripples:
   - sdd/backlogid.json
 surprising_ripples: []
 co_shipped_items: []
-# Four commits exist specifically because review feedback was incorporated: the
-# maintainer's three findings plus an external validation pass (f7eb5b7), the PR's
-# first eleven inline threads (a511623), its second round of eleven more
-# (2dc7411), and its third round of twenty-two (this commit). The Tao-shape restructure is not counted -- it answered a
-# request for a different structure, not a review finding. Derivation:
-# `git log --oneline origin/master..HEAD` read against what each commit body says
-# it responded to.
-review_rounds: 4
+# Six commits exist specifically because review feedback was incorporated, named
+# by sha rather than deictically because a trace is read later than it is written:
+# f7eb5b7 (the maintainer's three findings plus an external validation pass),
+# a511623 (the PR's first eleven inline threads), 2dc7411 (eleven more),
+# c96fb48 (twenty-two), da52aaf (seven, from a cold read of the shipped rule by a
+# contributor and an enforcing reviewer), and the commit that adds this line (six).
+# Not counted: the Tao-shape restructure, which answered a request for a different
+# structure rather than a review finding, and 01ca8fa, which re-derived pinned
+# figures after a merge. Derivation: `git log --oneline origin/master..HEAD` read
+# against what each commit body says it responded to. The PR description counts
+# differently -- it calls the cold read "Round 4" and does not count the pre-PR
+# pass -- so the two enumerations reach different totals over the same work.
+review_rounds: 6
 phases:
   - id: orient
     name: Orient
@@ -75,10 +80,14 @@ phases:
         section: "Rules (new Rule 7), Guides / Examples"
         read_type: reference
         extract: >-
-          Rule 7 added as the method's authoritative home, scoped inline to sdd/
-          and .claude/ rather than widening the file's Intent & Scope, which
-          covers documentation longevity. Rule 7 is about comprehension, so a
-          scope line in the rule keeps the file's promise intact.
+          Rule 7 added as the method's authoritative home. First scoped inline to
+          sdd/ and .claude/ rather than widening the file's Intent & Scope, on the
+          reasoning that the file promised longevity and Rule 7 is about
+          comprehension. Review overturned both halves: Intent & Scope now declares
+          the second axis, because leaving it to say one thing while the file
+          carried two was itself the contradiction; and the path scope now names the
+          root-level process docs, because the rule's stated rationale selected them
+          while its enumeration did not.
         outcome: ok
       - file: CLAUDE.md
         section: "principle 8"
@@ -133,9 +142,10 @@ phases:
           Not tagged misleading: the source sentence is clear and complete, so no
           document failed a reader here. The miss was mine and belongs in this
           extract, per CLAUDE.md's trace-authoring clause and the schema's note that
-          outcome must not blame a document for the reader's error. The item's conclusion survives -
-          principle 8 sets a test for cutting and none for drafting, which is the
-          gap Rule 7 fills - but it now rests on the sentence as written.
+          outcome must not blame a document for the reader's error. The item's
+          conclusion survives - principle 8 bars one kind of cut and sets no test for
+          drafting, which is the gap Rule 7 fills - but it now rests on the sentence
+          as written rather than on that trace's reading of it.
       - file: sdd/traces
         section: "review_rounds and outcome corpus, re-derived at the f7eb5b7 pin"
         read_type: verify

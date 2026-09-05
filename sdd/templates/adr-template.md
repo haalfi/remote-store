@@ -50,12 +50,11 @@ context.
 "Lead with the decision" orders what is already written; Rule 7 asks whether the
 section's core claim can be stated at all, in at most three sentences. Satisfying
 this line does not satisfy that rule.
-**Rule 7 binds an ADR you write, on its own trigger — new or substantially
-rewritten sections — not every section of every ADR, and not this template**,
-which [`AUTHORING.md`](../AUTHORING.md) classes as an authoring tool rather than
-documentation. **And where Rule 7 offers "a gloss plus a link", a `## Decision`
-takes the gloss alone**: the read-alone requirement above outranks it here,
-because this section is lifted verbatim into the digest.
+**Rule 7 binds an ADR you write on its own trigger** — new or substantially
+rewritten sections — not every section of every ADR. **And where Rule 7 offers
+"a gloss plus a link", a `## Decision` takes the gloss alone**: the read-alone
+requirement above outranks it here, because this section is lifted verbatim into
+the digest.
 
 The **entire `## Decision` section** (up to the next `##`) is lifted verbatim
 into `sdd/adrs/DIGEST.md`, so keep it to the decision and its essential detail;

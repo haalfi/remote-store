@@ -10,7 +10,7 @@ via ``scripts.docs.render.render_dual_pages``.
 Before editing this file or ``mkdocs.yml``, read:
   ``sdd/AUTHORING.md``      (placement: where files belong)
   ``sdd/DOCUMENTATION.md``  (structure: what shape pages take)
-  ``sdd/CONTENT-RULES.md``  (longevity: writing that stays accurate)
+  ``sdd/CONTENT-RULES.md``  (longevity, plus Rule 7's comprehension test)
 
 See ``scripts.docs`` for the helpers and
 ``sdd/adrs/0007-docs-src-literate-nav.md`` for the design.

@@ -347,7 +347,8 @@ if evidence changes; these are retired.
   publishes to docs.remotestore.dev — the audience line above therefore carries
   `user.site`, and `sdd/traces/_schema.yml` makes an entry required rather than a
   judgement. The precedent agrees: ID-144 added content rule 6 to this same file
-  and shipped an entry (`CHANGELOG.md:900`).
+  and shipped an entry — the ID-144 entry in `CHANGELOG.md`, which
+  `grep -n 'ID-144' CHANGELOG.md` locates at any revision.
   Trace: `sdd/traces/ID-256-kernsatz-rule.yml`.
 - [x] **BUG-265 — A refused SFTP connect raises `RemoteStoreError`, which contradicts fifteen docstrings and the health-check guide**
   spec: SFTP-023 · effort: S · audience: user.api, user.site
