@@ -2424,15 +2424,17 @@ the commit that writes it lands, so cite the generator instead.
 
 - [ ] **BK-365 — Both backlog files grew past what a maintainer can read, and nothing measures it**
   spec: — · effort: M · audience: contributor.process
-  **`sdd/BACKLOG.md` is 20,041 words.** That is the file a maintainer reads to
-  decide what to work on, and it is now roughly eighty pages of prose. Two
+  **`sdd/BACKLOG.md` is 20,097 words at `6cec225`.** That is the file a maintainer
+  reads to decide what to work on, and it is now roughly eighty pages of prose. Two
   independent multipliers got it there over seven weeks (2026-07-18 → 2026-09-05):
-  the item count doubled, 28 → 56, and the median words per item doubled too,
-  145 → 292. Total 4,823 → 20,041 words — 4.2× against 12.7% growth in `src/`
-  over the same window. `BACKLOG-DONE.md` shows the same shape at 103,446 words
-  over 650 items, and its per-release medians run from **10 words per completed
-  item at v0.3.0 to 646 under `Unreleased`** — 65×, of which 2.8× arrived in the
-  current cycle alone (v0.30.0 sat at 234).
+  the item count doubled, 28 → 57, and the median words per item doubled too,
+  145 → 290. Total 4,823 → 20,097 words — 4.2× against 12.7% growth in `src/`
+  over the same window. `BACKLOG-DONE.md` shows the same shape at 104,328 words
+  over 651 items, and its per-release medians run from **10 words per completed
+  item at v0.3.0 to 649 under `Unreleased`** — 65×, of which 2.8× arrived in the
+  current cycle alone (v0.30.0 sat at 234). **Pinned because both files change on
+  every merge**: re-derive rather than quote, and read the ratios, which are stable,
+  rather than the totals, which are not.
   **Measured, not felt.** Derivation: for each entry, the words between its
   `- [x] **ID-NNN` header and the next header or heading, over
   `git show <sha>:sdd/BACKLOG.md` across the file's history; per-release figures
@@ -2446,7 +2448,7 @@ the commit that writes it lands, so cite the generator instead.
   ([`CONTRIBUTING.md` § Release](../CONTRIBUTING.md#release)) renames
   `## Unreleased` to `## vX.Y.Z` without condensing, so nothing shortens an entry
   after it is written.
-  **The question to answer before any rule is written:** is a 292-word median a
+  **The question to answer before any rule is written:** is a 290-word median a
   defect, or the correct price of the derivations
   [principle 9](../CLAUDE.md#principles) requires? The research record
   ([research](research/research-appropriate-level-of-detail.md) § 9.2) supplies

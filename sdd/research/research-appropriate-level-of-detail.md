@@ -6,8 +6,8 @@
 question — *is the level of detail appropriate?* — rather than a record of how it
 was investigated.
 **Closed to further prose passes.** § 6.3 measures this record diverging under
-review — sixteen commits touching it, monotone growth, each of several passes
-introducing a defect the next caught — which is the failure it documents,
+review — seventeen commits touching it and not one reducing it, each of several
+passes introducing a defect the next caught — which is the failure it documents,
 committed by itself. A later
 finding is filed as a backlog item and fixed only if it names something **false**;
 "this could be tighter" is refused here by § 9.4, and by this line. Point-in-time
@@ -477,10 +477,11 @@ to explanatory prose adds claims, and claims are the surface the next round read
 That is a positive feedback loop, and it is why § 9.4 puts a floor under what
 counts as a finding at all.
 
-**This record is the second instance, and it is reproducible.** At `d433712` the
-command below lists **16 commits** touching this file (15 plus one merge), and its
-length went 2,697 → 10,396 words with **no step reducing it** — including three
-passes that described themselves as tightening. Successive passes each introduced
+**This record is the second instance, and it is reproducible.** **No pass has
+ever reduced it** — that is the invariant, and it is what the derivation below
+tests. The totals move on every commit, so read them as a floor: at `6cec225` the
+command lists **17 commits** touching this file (16 plus one merge), spanning
+2,697 → 10,822 words, three of those passes describing themselves as tightening. Successive passes each introduced
 a defect the next caught: four claims dropped in a restructure, a confidence
 rubric that contradicted its own table, a false statement about which proposals
 were adopted, and two figures that did not reproduce against the commands named
@@ -490,8 +491,8 @@ branch. Derivation, and read it as of the pin because the series grows:
 each blob, and `git diff --name-only origin/master...HEAD`. **The count includes
 the merge commit**, which the command does not filter. **And the pin is one behind
 by construction**: the commit that writes this sentence touches the file it counts,
-so a reader re-running it should expect one more than stated and read the direction
-rather than the total.
+so a reader re-running it will get more than stated. The monotonicity is the claim;
+the total is a floor.
 
 ## 7. Figures and their derivations
 
@@ -573,7 +574,7 @@ of evidence weak evidence of absence.
 | 20 | Repo at `f7eb5b7`: 235 of 296 traces carry `review_rounds`; median 2, mean 2.49, max 13; 37 (15.7%) at ≥5. Match the value, not the line: an end-of-line anchor drops three traces with trailing comments | Local | High | High |
 | 21 | Repo: BUG-248's eight rounds split roughly three-to-four behavioural, rest prose | Local, one item | Medium | Medium |
 | 21a | A `/ship` session's findings per round rose 7 → 2 → 13 → 16 while the shipped code stayed clean from round 1. **No session coordinate is recorded** — the figure was relayed to this record as a screenshot carrying no PR number, item ID or commit, so unlike ADR-0034's comparable series it cannot be reached (two revert simulations, no behavioural defect in four rounds), with essentially every round-4 finding a defect the round-3 fix pass introduced. Prose findings are self-generating, not merely inexhaustible | Local, one session, self-reported by the agent under review and not independently re-derived | High | Low as evidence; high as a signature |
-| 21b | This record is the same pattern, at `d433712`: 16 commits touching it (15 plus a merge), 2,697 → 10,396 words with **no step reducing it**, three passes that called themselves tightening, successive passes each introducing a defect the next caught, no file under `src/`, `tests/` or `examples/` touched. Derivation in § 6.3 | Local, reproducible by the named commands | High | High |
+| 21b | This record is the same pattern, at `6cec225`: 17 commits touching it (16 plus a merge), 2,697 → 10,822 words with **no step reducing it** — the totals are a floor, the monotonicity is the claim — three passes that called themselves tightening, successive passes each introducing a defect the next caught, no file under `src/`, `tests/` or `examples/` touched. Derivation in § 6.3 | Local, reproducible by the named commands | High | High |
 | 22 | Repo: **four** volume decisions taken with no authoring rule to cite — two litigated at backlog level (BK-351 declining a 5,000-word budget; BK-353 condensing `/ship`, its first cut silently deleting two load-bearing clauses) and two made in review (`bk-313-sftp-roundtrips.yml:176`, a CHANGELOG entry "grown into a verbose paragraph"; `BK-280-ci-build-improvements.yml:92,96`, an entry "too chatty" and comments "too long"). Derivation: `git grep -il` for each ID over `sdd/`, then reading the four extracts | Local | High | High |
 | 22a | Repo experiment: whole against condensed ripple-check, 12 agent readers, 120 answers — obligations tied 42–42 after a 66% cut; rationale lost 12–0; zero invented answers on either page | Local, pre-registered | Medium | High for the tally, low for its reach |
 | 22b | The extra material was misused only by readers who had both the whole page and advance knowledge of the question (2 of 3) | Local, discovered in data | Low | Low — hypothesis for a dedicated run |
