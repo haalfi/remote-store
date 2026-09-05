@@ -94,6 +94,59 @@ def _deny_promote_onto(backend: Any, target: str, code: int) -> None:
     client.rename = denied
 
 
+def _strict_rename(backend: Any) -> None:
+    """Make ``rename`` refuse an occupied destination, as SFTP v3 requires.
+
+    The fixture server implements ``rename`` with ``os.rename``, which on POSIX
+    replaces the destination silently — so on it every rename-onto-existing
+    succeeds and the fallback's whole reason for displacing first is invisible.
+    A server that lacks ``posix-rename@openssh.com`` is by definition one whose
+    ``rename`` follows the v3 rule, so a test about that server class has to
+    stage the rule too; without it, a restore that renames onto an occupied path
+    passes here and fails in the field.
+
+    Apply before the other staging helpers, so their wrappers sit outside this
+    one.
+    """
+    import paramiko
+
+    client = backend.unwrap(paramiko.SFTPClient)
+    original = client.rename
+
+    def strict(src: str, dst: str, *args: Any, **kwargs: Any) -> Any:
+        try:
+            client.stat(dst)
+        except OSError:
+            pass
+        else:
+            raise OSError(errno.EEXIST, "destination exists")
+        return original(src, dst, *args, **kwargs)
+
+    client.rename = strict
+
+
+def _deny_removing(backend: Any, target: str, code: int) -> None:
+    """Fail every ``remove`` of *target*, leaving every other unlink alone.
+
+    Ends ``_copy_and_delete`` at its last step, after the destination has been
+    written — the cheapest way to stage a copy rung that fails with the
+    destination already occupied. The fallback's own cleanup unlinks other names,
+    so scoping to *target* is what keeps this a staged server failure rather than
+    a blanket one.
+    """
+    import paramiko
+
+    client = backend.unwrap(paramiko.SFTPClient)
+    original = client.remove
+
+    def denied(path: str, *args: Any, **kwargs: Any) -> Any:
+        if path.rsplit("/", 1)[-1] == target:
+            raise OSError(code, "staged remove failure")
+        return original(path, *args, **kwargs)
+
+    client.remove = denied
+
+
 def _litter(backend: Any) -> list[str]:
     """Names of the fallback's own artifacts left in the store root."""
     return [
@@ -195,6 +248,47 @@ def test_move_copies_when_both_renames_fail(sftp_backend: SFTPBackend, code: int
     assert _litter(backend) == []
 
 
+@pytest.mark.spec("SFTP-018")
+@pytest.mark.spec("AW-003")
+def test_a_failed_copy_rung_still_gives_the_destination_back(sftp_backend: SFTPBackend) -> None:
+    """The restore's hard case: the destination is occupied again by the time it runs.
+
+    ``_copy_and_delete`` opens the destination ``"w"`` before it can fail, so any
+    failure past that point — here the source unlink that ends it — leaves a copy
+    of the payload at the path the backup has to go back to. Renaming onto an
+    occupied path is the one operation the servers this fallback exists for
+    refuse, so the restore has to clear the target first; without that it fails
+    silently and the caller is left with a reported failure, a destination they
+    did not ask for, and their old file under a generated name.
+
+    Staged on a live connection throughout, which is what separates this from the
+    dead-channel residue in ``test_io_timeout.py``: there the restore is skipped
+    by design, here it must run and succeed.
+    """
+    backend: Any = sftp_backend
+    tag = uuid.uuid4().hex[:8]
+    src, dst = f"src_{tag}.bin", f"dst_{tag}.bin"
+    old, new = b"OLD" * 100, b"NEW" * 100
+
+    backend.write(src, new)
+    backend.write(dst, old)
+
+    _break_posix_rename(backend)
+    _strict_rename(backend)
+    _deny_promote_onto(backend, dst, errno.EACCES)
+    _deny_removing(backend, src, errno.EACCES)
+
+    with pytest.raises(PermissionDenied):
+        backend.move(src, dst, overwrite=True)
+
+    assert backend.read_bytes(dst) == old, (
+        "the move failed, so the destination must hold what it held — the copy rung's "
+        "output is this operation's own half-done work, not something to hand the caller"
+    )
+    assert backend.read_bytes(src) == new, "a failed move leaves its source in place"
+    assert _litter(backend) == []
+
+
 @pytest.mark.spec("AW-003")
 @pytest.mark.spec("SFTP-014")
 @pytest.mark.parametrize("op", ["write_atomic", "open_atomic"])
@@ -232,6 +326,12 @@ def test_the_fallback_replaces_an_existing_destination(sftp_backend: SFTPBackend
     Displacing the destination rather than removing it must not cost the overwrite
     itself: the new content lands, the old file is gone, and the backup does not
     outlive the call it was taken for.
+
+    Staged with the v3 rename rule, which is what makes this an assertion about
+    the fallback rather than about the fixture: on the permissive ``os.rename``
+    the fixture server implements, a promote onto the occupied destination
+    succeeds on its own and the test would pass with the displace deleted
+    outright.
     """
     backend: Any = sftp_backend
     tag = uuid.uuid4().hex[:8]
@@ -243,6 +343,7 @@ def test_the_fallback_replaces_an_existing_destination(sftp_backend: SFTPBackend
     backend.write(dst, old)
 
     _break_posix_rename(backend)
+    _strict_rename(backend)
 
     if op == "move":
         backend.move(src, dst, overwrite=True)

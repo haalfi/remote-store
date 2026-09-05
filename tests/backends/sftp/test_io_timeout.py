@@ -1608,15 +1608,17 @@ def _silence_at(relay: _StallRelay, backend: Any, method: str, predicate: Any, *
 def _break_posix_rename(backend: Any) -> None:
     """Make the live client behave like a server without ``posix-rename@openssh.com``.
 
-    No fixture server omits the extension, and `_rename_fallback` carries a
-    ``no cover`` pragma that names that server class as its bound — a bound the
-    spec now says the code does not have, since any non-dead ``posix_rename``
-    failure reaches the fallback. This helper stages the narrow case because it
-    is the cheap one to stage, **not** because it is the only one; the broader
-    route rests on the visible ``except OSError`` in ``_promote``. Forcing the client's own
-    ``posix_rename`` to raise a plain ``OSError`` reproduces what such a server
-    returns, which is what routes ``_promote`` and ``move`` into their
-    remove-then-rename fallbacks.
+    No fixture server omits the extension. This helper stages the narrow case
+    because it is the cheap one to stage, **not** because it is the only one:
+    any non-dead ``posix_rename`` failure reaches the fallback, a route that
+    rests on the visible ``except OSError`` in ``_promote``. Forcing the client's
+    own ``posix_rename`` to raise a plain ``OSError`` reproduces what such a
+    server returns, which is what routes ``_promote`` and ``move`` into their
+    displace-then-rename fallbacks.
+
+    It does **not** stage the other half of that server class — a ``rename`` that
+    refuses an occupied destination — because these tests do not turn on it;
+    ``test_atomic_fallback.py``'s ``_strict_rename`` does, and says why.
     """
     import paramiko
 

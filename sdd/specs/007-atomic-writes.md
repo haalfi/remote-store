@@ -65,6 +65,13 @@ the connection dropped — the same condition that strands the temp, and there i
 holds the caller's previous file. Cleaning it up unasked is the one thing that
 would make this clause's guarantee false, so it is left where a caller can find
 it.
+
+**"Renamed back" is a claim about a path that may not be free**, which is the
+part of it that had to be built rather than assumed: `move`'s copy rung opens the
+destination before it can fail, so the restore clears the target first. Without
+that step the guarantee holds only on servers whose `rename` replaces silently —
+never on the ones that refuse it, which are exactly the servers this fallback
+exists for.
 See [009-sftp-backend.md](009-sftp-backend.md) SFTP-014 for the SFTP caveat and
 SFTP-030 for what the destination itself holds. Stated here rather than left to
 those specs because this clause is the cross-backend one, and an unqualified

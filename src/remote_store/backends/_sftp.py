@@ -1028,7 +1028,7 @@ class SFTPBackend(Backend):
         temp file in the destination directory, then promoted with
         ``posix_rename`` (atomic on POSIX-compliant servers). Servers without
         ``posix_rename`` fall back to a plain ``rename`` (non-atomic overwrite:
-        the target is removed first).
+        the target is moved aside first, and moved back if the rename fails).
 
         A failure *before* the promote leaves the destination untouched, and the
         temp file is cleaned up **best-effort**: the cleanup is deliberately
@@ -1604,9 +1604,12 @@ class SFTPBackend(Backend):
                     # Same reasoning as ``_promote``, and reached on *every*
                     # server rather than only those without the extension: a
                     # stalled channel fails ``posix_rename`` too, and the
-                    # fallback below would then pay the bound on a suppressed
-                    # ``remove``, a ``rename``, and two file opens. Report the
-                    # drop (SFTP-030).
+                    # fallback below would then pay the bound on its displace, a
+                    # ``rename``, and the copy rung's two file opens. The
+                    # displace re-raises rather than suppressing, so entering the
+                    # fallback costs one bound and not two — but not entering it
+                    # at all is still cheaper by the rest. Report the drop
+                    # (SFTP-030).
                     raise
                 self._move_fallback(src_sftp, dst_sftp, overwrite=overwrite)
 
@@ -2242,7 +2245,9 @@ class SFTPBackend(Backend):
         ``overwrite=True`` create) or the server refused to move it, in which
         case it is still there and the promote will fail on its own terms.
         A dead connection is re-raised instead: the promote cannot succeed over
-        it either and would pay a second ``io_timeout`` bound doing so.
+        it either and would pay a second ``io_timeout`` bound doing so. The
+        ``SSHException`` shape of a drop needs no arm here — it is not an
+        ``OSError``, so it never reaches the guard and propagates on its own.
         """
         name = sftp_path.rsplit("/", 1)[-1] if "/" in sftp_path else sftp_path
         parent = sftp_path.rsplit("/", 1)[0] if "/" in sftp_path else "."
@@ -2258,25 +2263,55 @@ class SFTPBackend(Backend):
     def _restore(self, backup: str, sftp_path: str, exc: BaseException) -> None:
         """Put a displaced destination back after a failed promote, best-effort.
 
-        Skipped when *exc* says the channel is dead, on the same reasoning as the
-        temp cleanup in ``write_atomic`` / ``open_atomic``: the rename cannot
-        arrive and would cost another ``io_timeout`` inside the error path. The
-        old content then stays under its ``.~bak.<name>.<uuid8>`` name beside the
-        target — which is the point of taking one, since the alternative is that
-        it no longer exists.
+        Skipped when *exc* says the channel is dead, on the same reasoning — and
+        with the same predicate, which is the part that has to be copied rather
+        than approximated — as the temp cleanup in ``write_atomic`` /
+        ``open_atomic``: the rename cannot arrive, and reaching for ``_sftp``
+        would run the full reconnect inside the error path. ``SSHException`` is
+        in that predicate because ``_is_connection_dead`` deliberately leaves it
+        out (see its docstring), and an ordinary EOF drop arrives as exactly that
+        shape. The old content then stays under its ``.~bak.<name>.<uuid8>`` name
+        beside the target — which is the point of taking one, since the
+        alternative is that it no longer exists.
+
+        **The target is cleared first, and that is not the window reopening.**
+        Anything occupying it now is this operation's own half-done work: the
+        displace succeeded, so the caller's file is in *backup*. It is reachable
+        — ``_move_fallback``'s copy rung opens the destination ``"w"`` before it
+        can fail — and the servers this fallback exists for are the ones that
+        refuse a rename onto an occupied path, so without the remove the restore
+        would fail on exactly the class of server that needs it.
         """
-        if isinstance(exc, Exception) and self._is_connection_dead(exc):
+        import paramiko
+
+        connection_lost = isinstance(exc, Exception) and (
+            self._is_connection_dead(exc) or isinstance(exc, paramiko.SSHException)
+        )
+        if self._sftp_client is None or connection_lost:
             return
-        with contextlib.suppress(OSError):
+        with contextlib.suppress(Exception):
+            self._sftp.remove(sftp_path)
+        with contextlib.suppress(Exception):
             self._sftp.rename(backup, sftp_path)
 
     def _release(self, backup: str) -> None:
         """Drop a backup whose promote succeeded, best-effort.
 
         Suppressed because the operation the caller asked for is already done: a
-        failure here leaves litter, not a wrong result.
+        failure here leaves litter, not a wrong result. ``Exception``, not
+        ``OSError`` — a drop between the promote and this unlink arrives as
+        ``SSHException`` or ``SFTPError``, neither of which is an ``OSError``,
+        and letting one out would report a completed write as failed.
+
+        There is no *exc* to test here, so the dead-channel skip the other
+        best-effort sites make is the transport's own flag instead: ``_sftp``
+        would otherwise run the tenacity reconnect after the caller's operation
+        has already succeeded. ``_is_connected`` is a local flag read, so asking
+        costs nothing.
         """
-        with contextlib.suppress(OSError):
+        if self._sftp_client is None or not self._is_connected():
+            return
+        with contextlib.suppress(Exception):
             self._sftp.remove(backup)
 
     def _rename_fallback(self, tmp_path: str, sftp_path: str, *, overwrite: bool) -> None:
@@ -2314,11 +2349,18 @@ class SFTPBackend(Backend):
         lacks ``posix-rename@openssh.com``. Only ``_copy_and_delete`` genuinely
         requires one.
 
-        The destination is displaced and restored exactly as in
-        ``_rename_fallback``, and the backup is held across **both** rungs: the
-        copy writes the destination while it stands displaced, so releasing the
-        backup before the copy has finished would put the fallback back in the
-        window it exists to close.
+        The destination is displaced and restored as in ``_rename_fallback``,
+        with the backup held across **both** rungs: the copy writes the
+        destination while it stands displaced, so releasing the backup before the
+        copy has finished would put the fallback back in the window it exists to
+        close.
+
+        **The two are not symmetric on failure, and this is the asymmetric one.**
+        A failed promote in ``_rename_fallback`` leaves the destination free,
+        because the rename that would have occupied it is the thing that failed.
+        Here the copy rung opens the destination ``"w"`` before it can fail, so a
+        failure after that point leaves the path occupied by a truncated copy —
+        which is why ``_restore`` clears the target rather than renaming onto it.
         """
         backup = self._displace(dst_sftp) if overwrite else None
         try:

@@ -297,9 +297,11 @@ to `rename`, and falls back to copy + delete if rename fails entirely.
 [SFTP-030 § What a stalled operation leaves behind](#stalled-write-destination):
 a reported failure may mean the move was performed, and over a dropped
 connection the fallback path can leave the destination path empty with its old
-content displaced to `.~bak.<name>.<uuid8>`. On a live connection the fallback
-does not report a failed `rename` at all — it copies instead, which is the third
-rung of this invariant.
+content displaced to `.~bak.<name>.<uuid8>`. On a live connection a failed
+`rename` is not reported at all — the copy rung answers it, which is the third
+rung of this invariant — and a failure of *that* rung gives the destination back:
+it opens the destination before it can fail, so the restore clears the path
+before renaming the backup onto it rather than assuming it free.
 
 ### SFTP-019: Copy Via Read + Write
 
@@ -839,6 +841,17 @@ outside it. Measured after the change: 2.13 s (`move`), 2.11 s (`write_atomic`),
 by `pytest tests/backends/sftp/test_io_timeout.py -k pays_one_bound
 --durations=0`.
 
+**That derivation reaches one shape of drop, and the guard has to cover two.**
+The measurement stages a stall, so what it fires on is a `socket.timeout` /
+`TimeoutError` — matched by `_is_connection_dead`. An EOF drop arrives as
+`paramiko.SSHException`, which that predicate **deliberately excludes**, so
+every guard on this path is written to reach it another way: `_displace` needs
+no arm at all, since an `SSHException` is not an `OSError` and never reaches its
+`except`; `_restore` carries the `or isinstance(exc, paramiko.SSHException)`
+clause verbatim from the two temp-cleanup sites; and `_release`, which has no
+exception to test, asks the transport instead. Stated because the figure above
+cannot be read as covering the shape it could not raise.
+
 The two-route detail is kept because it is what the guard's placement turns on:
 an earlier revision attributed the 4.00 s to the promote path under the first
 antecedent, where it was 2.00 s, and a guard written from that reading would have
@@ -867,7 +880,9 @@ re-entries differently:
    pay the bound again, and `move` skips its own fallback chain — a displace, a
    `rename`, and the copy fallback's two file opens. `write_atomic` and
    `open_atomic` skip their temp cleanup, and `_restore` skips putting a
-   displaced destination back, which is why that residue keeps its backup. And **every**
+   displaced destination back — on the temp cleanup's own predicate, the one
+   that adds `SSHException` to this list's first clause — which is why that
+   residue keeps its backup. And **every**
    paramiko file handle held in a `with` block skips its close on a
    dead-connection exit, since `SFTPFile.close()` flushes and then issues a
    synchronous `CMD_CLOSE` whose reply never comes.

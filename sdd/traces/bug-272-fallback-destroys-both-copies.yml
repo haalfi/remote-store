@@ -22,10 +22,12 @@ surprising_ripples:
   # fix changed, in files the diff had no other reason to open.
   - sdd/specs/009-sftp-backend.md  # the SFTP-030 pragma paragraph, 300 lines from the residue section that owns the claim
   - sdd/BACKLOG.md                 # section 1's "Closes when" clause naming the two items as open
-# <impl-sha> implements; no review commits exist yet. Filled at submission per
-# the schema's review_rounds clause — replace with the count derived from
-# `git log --oneline origin/master..HEAD`.
-review_rounds: 0
+# Counted from `git log --oneline origin/master..HEAD`, which returns exactly
+# two commits: 8ed1dc7 implements and does not count; the commit carrying this
+# line incorporates round 1's six findings and is the one review-driven commit.
+# Its own SHA cannot appear here, which is why the list is named by the query
+# rather than transcribed. Value is 1.
+review_rounds: 1
 phases:
   - id: orient
     name: Orient
