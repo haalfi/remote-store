@@ -207,9 +207,9 @@ recursive walk (BUG-257); `ping()` does not report a vanished store as healthy
 (BUG-245); one operation does not answer by
 payload size (BUG-253); a caller who meets a failure on **any** backend catches
 the type the docs promised and can tell *which* failure it was, rather than an
-empty message (BUG-264, which carries both halves — its Disposition is exactly
-whether the base-class fall-throughs should be classified or merely given a
-message); a connect that fails locally is not reported against the caller's path
+empty message (BUG-276, which is now that clause's whole remainder — its
+Disposition is exactly whether the base-class fall-throughs should be classified
+or merely given a message); a connect that fails locally is not reported against the caller's path
 (BUG-273); what a failed operation *leaves behind* is not
 worse than the failure itself, so a reported failure never silently destroys the
 caller's file (BUG-270, BUG-272); and a newly
@@ -218,14 +218,17 @@ registered backend cannot pass CI without meeting BE-004, BE-005 and BE-021
 rather than left implicit: an error that is
 the right *type* on every backend but says nothing is predictable to a checker
 and not to the person reading their log, and this section is where that reader
-is served. That clause is now met on SFTP's `BackendUnavailable` arms and
-nowhere else — BK-359 closed the backend whose stall BK-356 had just made the
-default failure surface, and BUG-264 carries the same question outward with the
-answer already measured rather than guessed: Azure reproduces the defect, both
-botocore arms are immune, and the base-class arms leak a blank
-`RemoteStoreError` on SFTP too. A promise clause honoured on one arm of one
-backend is the shape this section exists to catch, and the count of arms is why
-BUG-264 is not the tidy one-line follow-up it was first filed as.
+is served. **That clause is now met on every `BackendUnavailable` the library
+constructs** — BK-359 closed the backend whose stall BK-356 had just made the
+default failure surface, and BUG-264 closed Azure, the one other arm that could
+render blank. The remaining `BackendUnavailable(str(exc))` sites cannot: two sit
+behind a keyword guard the empty string cannot satisfy, and the two botocore
+arms are fed by classes that always format. What is left of the clause is the
+**base class**, at seven sites in five files including two in the very
+`_map_exception` BK-359 rewrote — BUG-276, whose disposition is the open
+question. A promise clause honoured on one arm of one backend was the shape this
+section exists to catch; that the count of arms outlived two items is why
+BUG-276 is not the tidy one-line follow-up its ancestor was first filed as.
 The spec contradiction is adjudicated — BUG-248, closed by
 [ADR-0038](adrs/0038-absent-container-outranks-drive-identity.md) — the
 never-leak invariant holds on the S3 listing path, closed by BUG-249 with
@@ -244,7 +247,7 @@ flat-namespace classes that reached their SDK with the root key to the same
 rule. The catches-the-promised-type half is met on SFTP's connect path, closed
 by BUG-265: a refused port and a DNS failure raise the `BackendUnavailable`
 fifteen docstrings and the health-check guide promise, where both raised the
-base class. That is one backend's connect arm, not the clause — BUG-264 carries
+base class. That is one backend's connect arm, not the clause — BUG-276 carries
 the rest, and the two are the same promise met at different depths. It also
 opened BUG-273: the same connect path still answers the wrong type when the
 connect is rejected locally — `PermissionDenied` blaming the caller's key on the
@@ -409,72 +412,52 @@ compliant the day before.
   scope corrected by its round 3. BK-360 documents the resulting state in
   SFTP-030 and the SFTP guide; it does not fix it.
 
-- [ ] **BUG-264 — A mapped error can still reach the caller with an empty message on Azure, and through the base-class arms everywhere**
-  spec: ERR-009 · effort: M · audience: user.api
-  BK-359 fixed the SFTP `BackendUnavailable` arms. Two things it did not reach
-  are measured here rather than assumed, because the first draft of this item
-  filed the question as "unmeasured" and both halves of that guess were wrong.
-
-  **Azure is a confirmed reproduction, not a hypothesis.** A genuine
-  `asyncio.TimeoutError` — obtained by running `asyncio.timeout(0.001)` around a
-  sleep, not by constructing one — carries `args=()` and `str() == ''`.
-  `azure/core/pipeline/transport/_aiohttp.py` wraps it as
-  `ServiceResponseTimeoutError(err, error=err)` at lines **397, 483 and 580** of
-  the installed 3.x, and `AzureError.__init__` sets `self.message =
-  str(message)`. That subclasses `ServiceResponseError`, so
-  `classify_azure_error`'s `ServiceRequestError | ServiceResponseError` arm
-  (`backends/_azure_common.py:173`) returns `BackendUnavailable('')`, rendering
-  as `" | path='delivery.csv' | backend='azure'"` — character for character the
-  SFTP defect. **Line 395 is a fourth raise site on the same arm**, wrapping the
-  same `asyncio.TimeoutError` as `ServiceRequestTimeoutError`, which subclasses
-  `ServiceRequestError`; an earlier revision of this item cited three sites and
-  had each line number one low, so treat the set as four.
-  It reaches `AsyncAzureBackend` (**10** `classify_azure_error` call sites:
-  611, 894, 943, 1020, 1056, 1091, 1118, 1155, 1181, 1658) and `AzureBackend`
-  (**3**: 1818, 1965, 2024) — counted as call sites, with the `from ... import`
-  line excluded, which is where the earlier 11-and-4 figures came from.
-  The sync side is exposed the same way but is
-  **not** reproduced: `requests`' `ConnectionError`, `ReadTimeout`,
-  `ConnectTimeout` and `ChunkedEncodingError` all stringify empty when
-  argument-less, and the requests transport wraps them identically, but requests
-  itself normally supplies urllib3 text, so only the async timeout is an
-  end-to-end reproduction.
-
-  **Both boto3 arms are immune**, which the first draft of this item implied
-  might need fixing. `ClientError` always formats from a template — even
-  `ClientError({}, "GetObject")` gives `"An error occurred (Unknown) when calling
-  the GetObject operation: Unknown"` — and `BotoCoreError` formats from a class
-  `fmt`, with a bare instance giving `"An unspecified error occurred"`. Recorded
-  so the next reader does not re-derive it.
-
-  **The `BackendUnavailable` framing was too narrow**, which is the second thing
-  BK-359 did not reach. ERR-009 is a claim about `str()` on *any* error, and the
-  same construction spelled with the base class is at **7** sites in 5 files:
-  `rg -n 'RemoteStoreError\(str\(exc\)' src/` → `backends/_azure_common.py:198`
-  and `:199`, `backends/_s3_boto3.py:972`, `backends/_s3_pyarrow.py:651`,
-  `_errors.py:194`, and **two in `backends/_sftp.py`** — the `OSError` and final
-  fall-through arms of `_map_exception`, cited without line numbers because that
-  method is what BK-359 was editing and two successive revisions of this item
-  cited numbers its own diff had already shifted. Those two are the fall-through
-  arms of the very `_map_exception` BK-359 rewrote, so SFTP is not finished
-  either — reading that item's title would suggest otherwise.
-  Two of these are reachable and were driven through the real code:
+- [ ] **BUG-276 — A mapped error still reaches the caller with an empty message through the base-class arms, on four backends**
+  spec: ERR-009 · effort: S · audience: user.api
+  The remainder of BUG-264, which closed the `BackendUnavailable` half. ERR-009
+  is a claim about `str()` on *any* error, and the same construction spelled
+  with the base class is at **7** sites in 5 files:
+  `rg -n 'RemoteStoreError\(str\(exc\)' src/` → `backends/_azure_common.py`
+  (two, the `HttpResponseError`-with-unmapped-status arm and the final
+  fall-through), `backends/_s3_boto3.py`, `backends/_s3_pyarrow.py`,
+  `_errors.py`, and **two in `backends/_sftp.py`** — the `OSError` and final
+  fall-through arms of `_map_exception`. Line numbers are deliberately omitted:
+  two successive revisions of BUG-264 cited numbers its own diff had already
+  shifted, and the `rg` above is the derivation. Those two SFTP arms are the
+  fall-throughs of the very `_map_exception` BK-359 rewrote, so SFTP is not
+  finished either — reading that item's title would suggest otherwise.
+  **Two are reachable and were driven through the real code:**
   `_classify_by_message(OSError(''))` returns `RemoteStoreError('')`, and an
   empty `OSError` through `S3PyArrowBackend._pyarrow_errors` does the same. Note
-  those two sites are *unreachable* for `BackendUnavailable` — its branch needs
-  one of `endpoint`/`connect`/`timeout`/`dns`/`name or service` in the message
-  and `""` contains none — so reading the guard alone concludes "safe" and
-  running it finds the exit one line below. That is the whole reason this item
-  exists in measured form.
+  those same two sites are *unreachable* for `BackendUnavailable` — that branch
+  needs one of `endpoint`/`connect`/`timeout`/`dns`/`name or service` in the
+  message and `""` contains none — so reading the guard alone concludes "safe"
+  and running it finds the exit one line below. That is why this class was filed
+  in measured form.
 
-  **Disposition:** the SFTP `_unavailable` helper is the shape to copy for
-  Azure. The base-class arms need a decision first — whether a blank
-  `RemoteStoreError` deserves the same synthesised fallback, or whether those
-  fall-throughs should be classified rather than passed through — which is why
-  this is M and not S.
-  **Filed by BK-359's `/ship` run**, whose round-1 reviewer found the
-  base-class half; the Azure half was measured after the item was challenged for
-  asserting rather than checking.
+  **What BUG-264 established, so it is not re-derived here.** `rg -n
+  'BackendUnavailable\(' src/` returns five `BackendUnavailable(str(exc))`
+  sites; after BUG-264 the remaining four cannot render blank — two sit behind
+  the keyword guard above, and the two botocore arms are fed by classes that
+  always format (`str(ClientError({}, "GetObject"))` gives `"An error occurred
+  (Unknown) when calling the GetObject operation: Unknown"`, `str(BotoCoreError())`
+  gives `"An unspecified error occurred"`). Every other backend — HTTP, SQL,
+  Graph — prefixes literal text at every construction, so none can be blank.
+  **The base class is therefore the whole of what is left**, on Azure, both S3
+  backends, SFTP and the shared `_errors.py` helper.
+
+  **Disposition — the decision is the work, which is why this is not mechanical.**
+  Either a blank `RemoteStoreError` gets the same synthesised fallback Azure's
+  and SFTP's `BackendUnavailable` arms now carry, or these fall-throughs should
+  be *classified* rather than passed through, since each sits at the end of a
+  dispatch that already failed to recognise the exception. The second is the
+  more interesting answer and the more invasive one: an arm that cannot name the
+  failure may be admitting the dispatch above it is incomplete. Decide once and
+  apply to all seven — a per-site answer is how this class got to seven sites.
+  **Not a shared helper by default:** `_errors.py`'s site is the shared one and
+  the other six are per-backend, so whatever is decided has to say which of the
+  two it lives in. BUG-264 put Azure's in `_azure_common` because both twins
+  classify through it; that is a precedent for the shape, not for the placement.
 
 - [ ] **BUG-273 — A locally-rejected SFTP connect answers the wrong type, and neither permission errno can be claimed without connect-time context**
   spec: SFTP-021, SFTP-023 · effort: S · audience: user.api

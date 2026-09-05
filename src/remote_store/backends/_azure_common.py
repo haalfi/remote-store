@@ -144,6 +144,48 @@ def azure_path(path: str) -> str:
     return re.sub(r"/+", "/", path).lstrip("/")
 
 
+def _unavailable(exc: Exception, path: str, backend_name: str) -> BackendUnavailable:
+    """Build the ``BackendUnavailable`` for a transport-level Azure failure.
+
+    Every ``BackendUnavailable`` the ``ServiceRequestError`` /
+    ``ServiceResponseError`` arm returns is built here, so what a caller reads —
+    and what they can grep a log for — is described in one place. The other
+    ``BackendUnavailable`` arms of ``classify_azure_error`` compose their own
+    message from the status code and never reach this.
+
+    **Why the driver's own message is not enough.** ``AzureError.__init__`` sets
+    ``self.message = str(message)``, and every timeout arm of the aiohttp
+    transport wraps a bare ``asyncio.TimeoutError`` as
+    ``ServiceResponseTimeoutError(err, error=err)``. A fired ``asyncio.timeout``
+    carries ``args == ()``, so that wrap stringifies empty and the caller reads
+    ``" | path='delivery.csv' | backend='azure'"`` — the right type saying
+    nothing, which the error model's meaningful-``str()`` invariant forbids. No
+    count of those arms is given: it is a third-party file's shape, it moves
+    between SDK releases, and two revisions of the item behind this fix cited
+    line numbers that had already shifted.
+
+    **The fallback never overwrites detail.** It fires only when ``str(exc)`` is
+    empty, so a driver that did explain itself reaches the caller intact. That
+    is the whole of the rule: the failure being replaced is silence, not noise,
+    and every Azure connection failure reachable through this backend's own
+    options does explain itself (a refused port, a server disconnect and a read
+    timeout are asserted as controls in the async error-detail tests).
+
+    **What the synthesised message says** is which side of the exchange failed —
+    the two base classes this arm tests are exactly that distinction — plus the
+    exception class, which is the part a reader searches the SDK for.
+    """
+    message = str(exc)
+    if not message:
+        side = (
+            "The request never reached the Azure service"
+            if isinstance(exc, ServiceRequestError)
+            else "The Azure service did not complete its response"
+        )
+        message = f"{side} ({type(exc).__name__} with no detail)"
+    return BackendUnavailable(message, path=path, backend=backend_name)
+
+
 def classify_azure_error(exc: Exception, path: str, backend_name: str) -> RemoteStoreError:
     """Classify an Azure SDK exception into a remote_store error type.
 
@@ -170,7 +212,7 @@ def classify_azure_error(exc: Exception, path: str, backend_name: str) -> Remote
     if isinstance(exc, ClientAuthenticationError):
         return PermissionDenied(f"Authentication failed: {path}", path=path, backend=backend_name)
     if isinstance(exc, ServiceRequestError | ServiceResponseError):
-        return BackendUnavailable(str(exc), path=path, backend=backend_name)
+        return _unavailable(exc, path, backend_name)
     if isinstance(exc, HttpResponseError):
         status = getattr(exc, "status_code", None)
         if status == 404:
@@ -196,6 +238,14 @@ def classify_azure_error(exc: Exception, path: str, backend_name: str) -> Remote
         # type and is not reachable through the public API; surface it as the
         # generic base error rather than guessing a more specific type.
         return RemoteStoreError(str(exc), path=path, backend=backend_name)
+    # These two base-class arms can carry an empty message the same way the
+    # transport arm above could, and are deliberately left alone: whether a
+    # blank RemoteStoreError deserves the same synthesised fallback or should be
+    # classified instead is an open decision tracked as BUG-276. The same
+    # construction stands in several other modules — enumerate them with
+    #     rg -n 'RemoteStoreError\(str\(exc\)' src/
+    # rather than trusting a count here. Answering the question at one of those
+    # sites answers it for all of them, by accident.
     return RemoteStoreError(str(exc), path=path, backend=backend_name)
 
 

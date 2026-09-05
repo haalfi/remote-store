@@ -41,15 +41,18 @@ Live fixtures mint a per-call ``conformance-<uuid>``; the scrub layer
 rewrites those to this fixed name so cassettes are replay-compatible.
 """
 
-_FAKE_KEY = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
+AZURITE_EMULATOR_KEY = "Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw=="
 """Azurite's well-known emulator key.
 
 Valid base64 (so the SharedKey signer and ``from_connection_string`` both
-accept it); publicly documented and not a secret.
+accept it); publicly documented and not a secret. Public rather than
+module-private so any test needing a signer-acceptable key uses this one
+instead of pasting a second copy of the literal.
 """
 
 FAKE_CONN_STR = (
-    f"DefaultEndpointsProtocol=https;AccountName={FAKE_ACCOUNT};AccountKey={_FAKE_KEY};EndpointSuffix=core.windows.net"
+    f"DefaultEndpointsProtocol=https;AccountName={FAKE_ACCOUNT};"
+    f"AccountKey={AZURITE_EMULATOR_KEY};EndpointSuffix=core.windows.net"
 )
 """Fake connection string used by replay fixtures.
 

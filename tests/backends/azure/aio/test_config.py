@@ -7,6 +7,7 @@ for async operations.
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import logging
 import re
@@ -27,7 +28,9 @@ from azure.core.exceptions import (  # noqa: E402
     ResourceExistsError,
     ResourceNotFoundError,
     ServiceRequestError,
+    ServiceRequestTimeoutError,
     ServiceResponseError,
+    ServiceResponseTimeoutError,
 )
 from azure.storage.blob import (  # noqa: E402
     BlobProperties,
@@ -474,6 +477,62 @@ class TestAsyncAzureErrorMapping:
         with pytest.raises(NotFound):
             async with backend._errors("test"):
                 raise ResourceNotFoundError("not found")
+
+    @pytest.mark.spec("ASYNC-079")
+    @pytest.mark.spec("AZ-025")
+    @pytest.mark.parametrize(
+        ("wrapper", "expected_side"),
+        [
+            pytest.param(
+                ServiceResponseTimeoutError,
+                "The Azure service did not complete its response",
+                id="response-timeout",
+            ),
+            pytest.param(
+                ServiceRequestTimeoutError,
+                "The request never reached the Azure service",
+                id="request-timeout",
+            ),
+        ],
+    )
+    async def test_a_detail_less_transport_signal_says_which_side_failed(
+        self, wrapper: type, expected_side: str
+    ) -> None:
+        """A driver signal carrying no text still names a cause (ERR-009).
+
+        The inner exception is a *genuine* ``asyncio.TimeoutError`` — obtained by
+        letting ``asyncio.timeout`` fire rather than by constructing one, because
+        that is what makes ``args == ()``. The wrap mirrors
+        ``azure/core/pipeline/transport/_aiohttp.py``, whose four timeout arms
+        all spell it ``Error(err, error=err)``.
+        """
+        try:
+            async with asyncio.timeout(0.001):
+                await asyncio.sleep(5)
+        except TimeoutError as timed_out:
+            inner: BaseException = timed_out
+        else:  # pragma: no cover -- the sleep is 5000x the bound
+            pytest.fail("asyncio.timeout did not fire")
+
+        assert inner.args == (), "premise: a fired asyncio.timeout carries no arguments"
+        assert str(inner) == ""
+
+        mapped = classify_azure_error(wrapper(inner, error=inner), "delivery.csv", "async-azure")
+
+        assert isinstance(mapped, BackendUnavailable)
+        assert expected_side in str(mapped)
+        assert wrapper.__name__ in str(mapped)
+        assert not str(mapped).startswith(" | "), "the message must not be empty"
+
+    @pytest.mark.spec("ASYNC-079")
+    @pytest.mark.spec("AZ-025")
+    def test_a_transport_signal_with_detail_keeps_its_own_words(self) -> None:
+        """The fallback replaces silence, never the driver's own explanation."""
+        mapped = classify_azure_error(ServiceResponseError("Server disconnected"), "delivery.csv", "async-azure")
+
+        assert isinstance(mapped, BackendUnavailable)
+        assert "Server disconnected" in str(mapped)
+        assert "with no detail" not in str(mapped)
 
 
 # =============================================================================

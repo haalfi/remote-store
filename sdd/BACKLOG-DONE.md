@@ -220,6 +220,65 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-264 — A mapped error can still reach the caller with an empty message on Azure**
+  spec: ERR-009, AZ-025 · effort: M · audience: user.api
+  **Split, not finished.** This closed the `BackendUnavailable` half; the
+  base-class half is **BUG-276**, filed with the same measurements and the same
+  open decision. The original title also named the base-class arms, and this
+  entry's does not — read the two together.
+  **What shipped:** `classify_azure_error`'s
+  `ServiceRequestError | ServiceResponseError` arm builds its error through a
+  new `_unavailable` helper, which synthesises a message **only** when
+  `str(exc)` is empty, naming which side of the exchange failed and the SDK
+  exception class. A driver that explained itself is untouched — the failure
+  replaced was silence, not noise. The helper is in `_azure_common`, so both
+  twins get it from one place; no log record was added, unlike SFTP's
+  `_unavailable`, because `op="error_mapping"` is undocumented in
+  `docs-src/guides/observe.md` (BUG-269) and `AzureBackend.check_health` maps
+  through this classifier, so a record here would put one line under every
+  `ping()` poll.
+  **The reproduction, driven rather than read.** A genuine `asyncio.TimeoutError`
+  — from letting `asyncio.timeout(0.001)` fire, not from constructing one —
+  carries `args=()` and `str() == ''`. `AzureError.__init__` sets
+  `self.message = str(message)`, and `azure/core/pipeline/transport/_aiohttp.py`
+  wraps that shape as `ServiceResponseTimeoutError(err, error=err)` /
+  `ServiceRequestTimeoutError(err, error=err)` at four raise sites, so the arm
+  returned `BackendUnavailable('')` rendering as
+  `" | path='delivery.csv' | backend='azure'"` — character for character the
+  SFTP defect BK-359 fixed.
+  **One premise of the item was refuted by measuring it**, and is recorded
+  because the item asserted it twice. "Only the async timeout is an end-to-end
+  reproduction" does not hold: azure-core builds its own
+  `aiohttp.ClientTimeout(sock_connect=…, sock_read=…)` per request, overriding
+  any session `total`, and aiohttp answers those with `ServerTimeoutError`,
+  which carries text. Driving `AsyncAzureBackend.check_health()` at a loopback
+  socket returned a non-empty message for **every** shape the backend's own
+  options can produce — a port with nothing listening, an accept-then-close, and
+  an accept-and-stall. The blank shape needs a bare `asyncio.TimeoutError`,
+  which aiohttp raises for `ClientTimeout(total=…)`; that is reachable for a
+  caller supplying their own transport or session, not through the backend's
+  options. **The fix is right either way** — ERR-009 is a claim about the
+  classifier's output, not about how often the input arrives — and the three
+  socket shapes now ship as controls in
+  `tests/backends/azure/aio/test_error_detail.py`, which is what stops the
+  fallback from ever overwriting a real explanation.
+  **The `BackendUnavailable` half is now closed library-wide**, which is the
+  finding that justified the split. `rg -n 'BackendUnavailable\(' src/` returns
+  five `BackendUnavailable(str(exc))` sites; the four this did not touch cannot
+  render blank — `_errors.py`'s and `_s3_pyarrow.py`'s sit behind a
+  `endpoint`/`connect`/`timeout`/`dns`/`name or service` keyword guard that `""`
+  cannot satisfy, and both botocore arms are fed by classes that always format
+  (`str(ClientError({}, "GetObject"))` and `str(BotoCoreError())` both run
+  non-empty). Every other backend — HTTP, SQL, Graph — prefixes literal text at
+  every construction site.
+  **One stale pointer swept with it:** ASYNC-079's See-also cited "AZ-013
+  through AZ-016", which are `is_file()`, atomic write and the two
+  `delete_folder` clauses. A reader arriving from the async twin landed on the
+  wrong sections and would have missed the message postcondition this item adds
+  to AZ-025; corrected to AZ-025 through AZ-028.
+  **Filed by BK-359's `/ship` run**, whose round-1 reviewer found the base-class
+  half; the Azure half was measured after the item was challenged for asserting
+  rather than checking.
 - [x] **BK-358 — Two paramiko exception shapes escape `_ErrorMappingStream` unmapped**
   spec: BE-021, SIO-010, SIO-012, SFTP-024 · effort: M · audience: user.api, user.site
   Reproduced before it was fixed and re-run after, against a real dropped socket:
@@ -427,8 +486,9 @@ if evidence changes; these are retired.
   `BackendUnavailable`. The row is not unconditionally true and this entry does
   not claim it is.
   **What was deliberately not done:** the same class of defect on other
-  backends, which is **BUG-264**, and the observable-failure-to-arm table, which
-  is **BUG-266**.
+  backends — **BUG-264** took the Azure `BackendUnavailable` arm and **BUG-276**
+  carries what is left, the base-class fall-throughs including two in this
+  module — and the observable-failure-to-arm table, which is **BUG-266**.
 
 - [x] **ID-253 — Nobody documented performs the CHANGELOG expansion step release Phase 1 depends on**
   spec: — · effort: S · audience: contributor.process
@@ -642,11 +702,12 @@ if evidence changes; these are retired.
   break — `copy`, which holds two
   handles, and `open_atomic`, which maps and then re-enters its own handler —
   rather than on a read, which classifies once and stops.
-  **What was deliberately not done:** the same defect on other backends, which is
-  **BUG-264**. That was filed as unmeasured and then measured rather than left
-  so: Azure is a confirmed reproduction, both boto3 arms are immune, and the
-  keyword-guarded sites leak through a blank `RemoteStoreError` instead. The
-  measurement is in that item.
+  **What was deliberately not done:** the same defect on other backends, which
+  was **BUG-264**. That was filed as unmeasured and then measured rather than
+  left so: Azure was a confirmed reproduction, both boto3 arms are immune, and
+  the keyword-guarded sites leak through a blank `RemoteStoreError` instead.
+  BUG-264 has since closed the Azure arm; **BUG-276** carries the base-class
+  remainder, and the measurement now lives in those two entries.
   Found by BK-356's review round 2, which reached it by running the failure
   rather than reading the mapping — and closed the same way: the fix is asserted
   against the live stall relay, not only against a constructed `TimeoutError`.

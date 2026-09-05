@@ -534,6 +534,56 @@ class TestAzureErrorMapping:
         assert type(mapped) is RemoteStoreError
 
     @pytest.mark.spec("AZ-025")
+    @pytest.mark.parametrize(
+        ("wrapper_name", "expected_side"),
+        [
+            pytest.param(
+                "ServiceResponseTimeoutError",
+                "The Azure service did not complete its response",
+                id="response-timeout",
+            ),
+            pytest.param(
+                "ServiceRequestTimeoutError",
+                "The request never reached the Azure service",
+                id="request-timeout",
+            ),
+        ],
+    )
+    def test_a_detail_less_transport_signal_says_which_side_failed(self, wrapper_name: str, expected_side: str) -> None:
+        """A driver signal carrying no text still names a cause (ERR-009).
+
+        The sync transport is exposed on exactly the same arm as the async one —
+        ``requests``' ``ConnectionError``, ``ReadTimeout``, ``ConnectTimeout``
+        and ``ChunkedEncodingError`` all stringify empty when argument-less —
+        but ``requests`` normally supplies urllib3 text, so there is no
+        end-to-end reproduction to drive. The guarantee is asserted where it is
+        made: at the classifier.
+        """
+        inner = TimeoutError()
+        assert str(inner) == "", "premise: an argument-less timeout carries no text"
+
+        # Mirrors azure/core/pipeline/transport/_aiohttp.py, whose four timeout
+        # arms all spell the wrap ``Error(err, error=err)``.
+        wrapper = getattr(__import__("azure.core.exceptions", fromlist=[wrapper_name]), wrapper_name)
+        backend = _make_backend()
+        mapped = backend._classify(wrapper(inner, error=inner), "delivery.csv")
+
+        assert isinstance(mapped, BackendUnavailable)
+        assert expected_side in str(mapped)
+        assert wrapper_name in str(mapped)
+        assert not str(mapped).startswith(" | "), "the message must not be empty"
+
+    @pytest.mark.spec("AZ-025")
+    def test_a_transport_signal_with_detail_keeps_its_own_words(self) -> None:
+        """The fallback replaces silence, never the driver's own explanation."""
+        backend = _make_backend()
+        mapped = backend._classify(_azure_exc("ServiceResponseError", "Server disconnected"), "delivery.csv")
+
+        assert isinstance(mapped, BackendUnavailable)
+        assert "Server disconnected" in str(mapped)
+        assert "with no detail" not in str(mapped)
+
+    @pytest.mark.spec("AZ-025")
     @pytest.mark.spec("SEEK-006")
     def test_classify_unwraps_oserror_cause(self) -> None:
         """_classify unwraps OSError.__cause__ to match Azure exceptions from _AzureRangeReader."""
