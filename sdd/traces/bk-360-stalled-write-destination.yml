@@ -1,0 +1,566 @@
+id: BK-360
+title: "What a stalled non-atomic SFTP `write` leaves at the destination is undocumented"
+trigger: >-
+  BK-356 made io_timeout's bound the default, so a stalled write now raises for
+  callers who configured nothing. What the remote path held afterwards was
+  documented for the atomic path only — SFTP-014 and the SFTP guide say the
+  destination is untouched and an orphan temp may remain — while for plain
+  write, which streams to the destination directly, no artifact said whether the
+  path was absent, empty, or carried a prefix, nor whether a retry needed
+  overwrite=True. The troubleshooting page told the reader to treat the path as
+  being in an unknown state, which is safe and vague.
+source_items:
+  - BK-360
+  - BK-356
+audience:
+  - user.api_docs
+  - user.site
+discovery_followups:
+  - BK-364
+  - BUG-270
+  - BUG-271
+  - BUG-272
+# The generated graph pair was absent from this list for four rounds and is here
+# now. The reason first written here was wrong and is corrected rather than
+# quietly replaced: it said the graph carries ABC docstrings but not
+# backend-implementation prose. Round 6 checked the generator and the artifact
+# and it is close to the reverse — method nodes carry only the method *name* as
+# their summary (scripts/gen_graph.py), so no method docstring is in the graph at
+# all, while class nodes carry the first line of the class docstring, including
+# SFTPBackend's. The 32 changed values in this PR's graph diff are all `line`
+# fields, shifted because `_backend.py` and `_store.py` grew above the methods
+# below them. So the rule is positional, not semantic: edits to `backends/_sftp.py`
+# moved nothing because SFTPBackend has no method nodes and its class line and
+# first docstring line were untouched. graph_viz.html follows graph.json and is
+# named alongside it in the schema's own example; omitting it while adding its
+# pair was the same miss this note exists to record.
+expected_ripples:
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+  - sdd/backlogid.json
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+surprising_ripples:
+  # Neither was anticipated by the ripple-check table, and both were reached by
+  # enumerating the subjects the clause's *words* pick out rather than the files
+  # the diff touched.
+  #
+  # copy() opens its destination with the identical self._sftp.file(dst, "w")
+  # and streams into it, so every row of the new matrix applies to dst. The item
+  # named only write(), the diff had no reason to open _sftp.py's copy(), and a
+  # clause stating the rule for write alone would have been false by omission
+  # for a capable operation. Measured, then pinned by its own test.
+  - src/remote_store/backends/_sftp.py
+  # The troubleshooting page carried the sentence "not currently documented" that
+  # this item closes. Leaving it would have had the repo say undocumented on one
+  # page while documenting it on another (CLAUDE.md principle 3). It is also the
+  # page BK-359 is editing in parallel, so the edit was held to one bullet.
+  - docs-src/guides/troubleshooting.md
+
+# Derivation, per the review_rounds description in _schema.yml, from
+# `git log --format=%s origin/master..HEAD --reverse`. Commits are named by
+# subject, not SHA: BK-359 spent a whole round learning that a SHA does not
+# survive a rebase and a commit cannot carry its own hash, and this list has
+# since taken a merge commit too.
+#
+#   "Document what a stalled non-atomic SFTP write ..."  implements; does not count
+#   "Correct the residue rule to the lost-reply law ..."  round 1
+#   "Derive the residue rule by enumeration ..."          round 2
+#   "State the residue as a closure ..."                  round 3 (four-member panel:
+#                                                         unprimed, measuring,
+#                                                         whole-file, neglected-surface)
+#   "Delete the mechanism claims no test ... backs"       round 4
+#   "Correct the guard asymmetry ..."                     round 5
+#   "Take the weakened contract to the surfaces ..."      round 6
+#   "merge master (BK-359) and renumber ..."              no round; merge + collision fix
+#   "link the two clauses the merge left ..."             no round; my own seam read
+#   (tip)                                                 round 7
+#
+# Rounds 4-7 each ran the closing gates. Round 6's measuring gate could not run
+# (account rate limit); round 7 is that gate, re-run against the merged head,
+# and it found 4. Value is 7 — rounds, not commits, counted from the round each
+# commit answers, since two commits here answer no round at all and a commit
+# tally would over-report them.
+review_rounds: 7
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-360 (item)"
+        read_type: gate
+        extract: "Establish the behaviour by running it, then state it beside the atomic caveat; the item deliberately declines to assert the answer"
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030"
+        read_type: gate
+        extract: >-
+          The bound covers writes as well as reads, and which round-trip a
+          stalled write fails on depends on when the peer went silent. Named the
+          moment but not the residue, which is the gap this item fills
+        outcome: unclear
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-014"
+        read_type: gate
+        extract: "The atomic caveat's two claims — destination untouched, orphan temp may remain — are the contrast the new rule is stated against"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Pre-work index"
+        read_type: gate
+        extract: >-
+          Triggered rows: Spec section (spec-marked tests), Public method
+          signature (docstring Args/Returns/Raises), Backlog item touched
+          (trace), CHANGELOG entry, Tracker ID in published prose — the last
+          being why no BK/SFTP coordinate reaches the docstrings or docs-src
+        outcome: ok
+
+  - id: reproduce
+    name: Establish the behaviour by running it
+    steps:
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "_StallRelay, _make_backend"
+        read_type: reference
+        extract: >-
+          The harness already stages a real silent peer per direction —
+          stall_upload silences client→server, stall_download silences
+          server→client. Reused rather than rebuilt; the direction split turned
+          out to be the axis that decides the answer
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "write, _open_write"
+        read_type: reference
+        extract: >-
+          The destination is opened "w", so the server truncates on open. That
+          is what makes the empty state reachable, and reading it is what
+          predicted the direction split the run then confirmed
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "copy, move, _move_fallback"
+        read_type: reference
+        extract: >-
+          copy shares write's destination-open shape, so the clause binds it;
+          move re-raises on a dead connection before its copy-and-delete
+          fallback, so it does not. Both then run rather than concluded
+        outcome: ok
+      - file: tests/backends/sftp/_helpers.py
+        section: "start_sftp_server"
+        read_type: reference
+        extract: >-
+          Inspect the destination through a second backend wired straight to the
+          server, past the relay: what is asserted is what the caller's next
+          connection finds, not what the condemned channel would report
+        outcome: ok
+
+  - id: tests
+    name: Pin the measured states
+    steps:
+      - file: sdd/TESTING.md
+        section: "Assertion depth"
+        read_type: gate
+        extract: >-
+          Assert the shape, not the sizes — the prefix length follows the chunk
+          size and the SSH window, so a measured byte count would be a derived
+          figure going stale. The empty case asserts 0 exactly, because that is
+          the claim
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "(module docstring)"
+        read_type: reference
+        extract: >-
+          The file states no count of its own tests and says why; the tests added
+          here follow that and introduce no tally. The intact and empty rows
+          differ only by stall direction, which makes them each other's control.
+          Retrospective: this step said "the three tests added here" and the
+          count kept moving as rounds added more — the file's own reason for
+          refusing a tally applied to the trace describing it, which is why the
+          number is gone rather than corrected
+        outcome: ok
+
+  - id: docs
+    name: State it once, in each layer's own register
+    steps:
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030 (new subsection), SFTP-014 (cross-reference)"
+        read_type: reference
+        extract: "The matrix and its derivation go in the spec as the authoritative home; SFTP-014 gains the pointer a reader comparing the two operations needs"
+        outcome: ok
+      - file: docs-src/guides/backends/sftp.md
+        section: "Capabilities / atomic write caveat"
+        read_type: reference
+        extract: >-
+          The reader gets the actionable rule, not the matrix: the silence
+          direction decides the answer but no caller can observe it, so it is
+          load-bearing for the spec and useless to a user
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rules"
+        read_type: gate
+        extract: "No tracker ID or spec coordinate in docstrings or docs-src prose; the guide states the rule without citing SFTP-030 or BK-360"
+        outcome: ok
+
+  - id: fix
+    name: Round 1 — the rule was stated wider than it was run
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "move, write_atomic, _promote"
+        read_type: reference
+        extract: >-
+          Round 1 refused the inference that a dead-connection re-raise before
+          the fallback means the destination is safe: it proves the *client*
+          did no more damage, not that the server did nothing. Run instead, by
+          silencing the return path from inside the call that issues the rename
+          — move's rename and the atomic promote both land, so the operation
+          completes and reports failure. This falsified two sentences the first
+          push shipped and SFTP-014's own caveat
+        outcome: misleading
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-014 (Caveat)"
+        read_type: reference
+        extract: >-
+          "If the connection drops between write and rename, the orphan temp
+          file remains" reads as covering every stalled atomic write and covers
+          only a failure before the promote. Amended rather than cited, which is
+          what quoting a contrast instead of running it had hidden
+        outcome: misleading
+      - file: src/remote_store/backends/_sftp.py
+        section: "_ensure_parent_dirs"
+        read_type: reference
+        extract: >-
+          Every ancestor is stat'd before the open, so a pre-armed stall reaches
+          the open only at depth 0 — the destructive row was being demonstrated
+          by a fixture's bare filename without saying so. The outcome itself is
+          depth-independent, which needed a separate run at the open to separate
+          from the reach question
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Assertion depth"
+        read_type: gate
+        extract: >-
+          Three assertions were weaker than the claims resting on them: a prefix
+          check bounded at the first chunk could not see corruption past it, and
+          "the destination is untouched" was asserted where nothing had existed.
+          Retrospective: all three were mine, written in the same pass as the
+          prose they were meant to hold up
+        outcome: ok
+
+  - id: classify
+    name: Round 2 — stop arguing the criterion, enumerate its space
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Stop rule / Repeat-site check"
+        read_type: gate
+        extract: >-
+          Two consecutive rounds refuted the same condition — what determines the
+          residue. Round 1 killed "which method was called"; round 2 killed its
+          replacement, "which direction was silenced", with a counterexample that
+          was already sitting in round 1's own probe output (a mid-body upload
+          stall destroys a pre-existing file). The rule says stop arguing and
+          generate the product, and it was right: a third reading would have been
+          no more exhaustive than the first two
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_rename_fallback, _move_fallback"
+        read_type: reference
+        extract: >-
+          The enumeration's own first run missed this window because its moment
+          list had no at_fallback_rename, and it silently mis-staged copy's
+          mid-body case as a no-op. Both showed up only because the outcome
+          column was added — a row that never raised was being read as a residue
+          measurement. Filed as BUG-270 rather than fixed: closing the window is
+          a design decision about what overwrite means on a server without
+          posix-rename
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Assertion depth"
+        read_type: gate
+        extract: >-
+          The enumeration is too slow to ship, so what ships is a spanning subset
+          — one case per distinct residue state, including the two nothing
+          previously reached (the fallback's destroyed destination, and the
+          empty-at-open claim at depth 1)
+        outcome: ok
+
+  - id: audit
+    name: Round 3 — a four-member panel, and the enumeration itself falls
+    steps:
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030 (residue subsection)"
+        read_type: reference
+        extract: >-
+          The measuring member found the generated enumeration short: a write
+          whose silence lands on its last body acknowledgement leaves the
+          destination holding the payload entire, and the harness had no moment
+          for it. Third list, third refutation — so the clause stops enumerating
+          and states a closure (the residue is any prefix of the operation's
+          effects, up to and including all of them), keeping the states as named
+          illustrations. Verified by running it before rewriting
+        outcome: misleading
+      - file: src/remote_store/backends/_sftp.py
+        section: "_move_fallback (docstring)"
+        read_type: reference
+        extract: >-
+          "Fallback servers only" was false: the route in is a posix_rename
+          failure _is_connection_dead does not recognise. Retrospective: the
+          correction then named three example triggers taken from this docstring
+          rather than run, and round 4 measured two of them unreachable — a
+          directory target is rejected by _raise_if_dir and by move's own stat
+          before either fallback, and EXDEV cannot arise for _rename_fallback
+          because the temp sits in the target's own directory. The docstring
+          cited as authority is itself wrong on the directory case. Fixing an
+          asserted-from-one-reading claim by asserting a second reading is the
+          shape this trace records twice; the examples are now gone and the
+          clause states the code condition alone
+        outcome: misleading
+      - file: sdd/specs/007-atomic-writes.md
+        section: "AW-004"
+        read_type: verify
+        extract: >-
+          The cross-backend no-orphan invariant was unqualified and a test this
+          PR ships now contradicts it. Previously undecidable under principle 5
+          (no test had asserted it against SFTP on a dropped connection); this
+          work decided it, so the clause gains its named divergence here rather
+          than being left to the SFTP spec
+        outcome: ok
+      - file: docs-src/explanation/concurrency.md
+        section: "Mitigations; atomicity table footnote"
+        read_type: verify
+        extract: >-
+          Two reviewers disagreed on whether this page was affected; read it
+          directly rather than accepting either. It recommended write_atomic for
+          keeping a destination intact and framed orphan litter as the only
+          hazard — and the new SFTP guidance links here, so a reader following
+          the link met the claim it was sent to correct
+        outcome: misleading
+      - file: src/remote_store/backends/_sftp.py
+        section: "open_atomic (docstring)"
+        read_type: verify
+        extract: >-
+          Still promised "on any exception the temp file is removed and path is
+          left untouched" — refuted by three tests this PR adds. write_atomic
+          was rewritten in the same hunk and its sibling, which shares _promote,
+          was never opened
+        outcome: ok
+
+  - id: report
+    name: Round 4 — the closing gates, and the fix pass is the defect source
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_promote, move (destination stat)"
+        read_type: verify
+        extract: >-
+          Round 3's correction named three example triggers for the fallback and
+          two were unreachable: _raise_if_dir runs before _rename_fallback for
+          exactly this reason and move stats its destination first, so a
+          directory target reaches neither; EXDEV cannot reach _rename_fallback
+          because the temp is created in the target's own directory. Measured
+          with both fallbacks instrumented — 0 calls for the directory case.
+          audit-020 had already recorded the guard as live-verified
+        outcome: misleading
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030 (one-bound paragraph; residue derivation)"
+        read_type: verify
+        extract: >-
+          Two self-inflicted contradictions from the same commit: the residue
+          clause said the two-bound cost is something the one-bound paragraph
+          "does not currently allow for" while that commit rewrote the paragraph
+          to allow for it, and "the named states are measured: each was run" was
+          true of 12 of 18. Both are the fix pass contradicting itself rather
+          than the code
+        outcome: ok
+      - file: sdd/specs/022-streaming-atomic-writes.md
+        section: "SAW-004, SAW-005, SAW-009"
+        read_type: verify
+        extract: >-
+          Three more unqualified invariants that shipped tests refute, on the
+          spec governing open_atomic — the surface AW-004's amendment did not
+          reach. Filed as BUG-271 rather than absorbed: the round's own evidence
+          is that each absorbed surface was where the next defect came from
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Stop rule / Divergence check"
+        read_type: gate
+        extract: >-
+          Fired: round 4's findings are in text round 3's fix pass added, and a
+          false trigger inside a danger note is worse than the incomplete claim
+          it replaced. Escalated with the evidence rather than patching a fourth
+          trigger list. The re-plan that came back is the one that addresses the
+          root cause across all four rounds — ship only mechanism claims a test
+          or a single visible conditional backs, and delete the rest rather than
+          correcting them again
+        outcome: ok
+
+  - id: audit_close
+    name: Round 5 — the closing gates, quieter and more precise
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "move (destination stat) vs _promote (_raise_if_dir)"
+        read_type: verify
+        extract: >-
+          The measuring member instrumented both and found move never calls
+          _raise_if_dir at all — its directory guard is the eager destination
+          stat, which fires before posix_rename. Round 4's correction had
+          collapsed the two into one guard, which also mis-assigned the
+          two-bound cost: under the stated antecedent the promote path pays one
+          bound because _raise_if_dir's dead-stat re-raise fires, and it is move
+          that pays two. Both corrected per operation
+        outcome: misleading
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "SFTPFile.pipelined"
+        read_type: reference
+        extract: >-
+          The closure gained a mechanism reason rather than only an unbroken
+          attack: paramiko's SFTPFile.pipelined is False by default and the
+          backend never calls set_pipelined, so writes are strictly sequential
+          and a holed, non-prefix residue is unreachable
+        outcome: ok
+      - file: src/remote_store/_backend.py
+        section: "Backend.open_atomic"
+        read_type: verify
+        extract: >-
+          The ABC and Store.open_atomic still promised the temp removed and the
+          partial write discarded — the same miss as round 3's open_atomic
+          docstring, one level up, and on the surface rendered in the public API
+          reference. Neither was covered by any filed item
+        outcome: ok
+      - file: docs-src/guides/backends/sftp.md
+        section: "danger admonition"
+        read_type: verify
+        extract: >-
+          Two of my own round-4 edits were wrong in opposite directions: the one
+          surviving trigger example could not produce the state it illustrated
+          (rename ignores the destination's permissions, and the same permission
+          governs the suppressed remove), and the BUG-272 hedge weakened a claim
+          a shipped test pins, because BUG-272 raises PermissionDenied and the
+          table is scoped to BackendUnavailable. Example deleted, hedge reverted
+        outcome: ok
+
+  - id: close
+    name: Round 6 — the contract one level up, and a note that was backwards
+    steps:
+      - file: src/remote_store/_backend.py
+        section: "Backend.open_atomic, Backend.write_atomic"
+        read_type: verify
+        extract: >-
+          Round 5 rewrote the ABC contract in language derived from SFTP alone.
+          Its closing sentence — "each backend documents its own behaviour on a
+          lost connection" — was false for seven of the eight implementations,
+          which still carry the unconditional promise the paragraph above them
+          had just retracted. The module already had the right form twice over
+          (delete/delete_folder state such things as required of implementations
+          with a divergence register); the fix is to use it. write_atomic said
+          nothing about failure at all while its sibling now did
+        outcome: ok
+      - file: src/remote_store/_store.py
+        section: "Store.write_atomic"
+        read_type: verify
+        extract: >-
+          The weakened contract went up two levels for open_atomic and not at all
+          for write_atomic, so the rendered API page had open_atomic warning to
+          re-check the path while write_atomic two entries above still said it is
+          not left partial. A reader comparing them concludes the wrong one is
+          safer. AsyncStore carried the same sentence
+        outcome: ok
+      - file: scripts/gen_graph.py
+        section: "method node construction"
+        read_type: verify
+        extract: >-
+          The note this trace added in round 5 to explain graph.json's late
+          appearance was itself wrong, and close to backwards: method nodes carry
+          the method name as their summary, so no method docstring is modelled,
+          while class docstrings are. The graph moved on line shifts alone.
+          Corrected in place rather than deleted, since the point of the note was
+          to record a ripple that had been missed for four rounds
+        outcome: misleading
+      - file: sdd/specs/009-sftp-backend.md
+        section: "one-bound paragraph; pragma paragraph; consequence count"
+        read_type: verify
+        extract: >-
+          Three counting or naming errors in text amended over the last two
+          rounds: "five consequences" against six bolded paragraphs, "one known
+          exception" against two named routes, and a pragma paragraph naming
+          _move_fallback for a pragma that sits on _rename_fallback while
+          repeating the server-class bound this work retracted
+        outcome: ok
+
+  - id: close_7
+    name: Round 7 — the measuring gate round 6 could not run, on the merged head
+    steps:
+      - file: src/remote_store/aio/_async_backend.py
+        section: "AsyncBackend.write_atomic"
+        read_type: verify
+        extract: >-
+          Round 6 took the weakened contract to the sync ABC and stopped there.
+          The async ABC carries the unweakened docstring and governs async Azure
+          HNS — the backend AW-004's own new paragraph names as diverging — so
+          the one implementation the amendment was written for was reading the
+          promise it retracted. Not caught by check_docstring_parity: the two
+          ABCs are not a registered twin, so nothing compares them. The async
+          side has no open_atomic to defer to, so the clause is written standalone
+          rather than mirrored
+        outcome: ok
+      - file: sdd/specs/007-atomic-writes.md
+        section: "AW-003, AW-004"
+        read_type: verify
+        extract: >-
+          AW-004's new paragraph states the rule that an unqualified invariant a
+          shipped test contradicts is a spec defect, then applies it to one clause
+          while AW-003 — 29 lines above, refuted by the same parametrisation —
+          keeps its unqualified postcondition. Deferring the rewrite to BUG-271
+          and BUG-272 is right; leaving no [~] where a spec reader looks is not.
+          Marked in both 007 and 022, with the refuting test named per CLAUDE.md
+          principle 1, rather than writing current behaviour into a requirement row
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "test_a_stalled_write_can_have_delivered_the_payload_in_full"
+        read_type: verify
+        extract: >-
+          The docstring justified leaving copy's complete-payload state unmeasured
+          by "a byte budget on the relay, which this file avoids", and a test 164
+          lines earlier in the same diff uses stall_download_after. The argument
+          survives, the sentence did not: what matters is what the budget must hit
+          — mid-transfer is robust, the last body acknowledgement is one round-trip
+          that moves with buffering. A false premise under a sound conclusion,
+          which is the defect class every round of this item found
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_promote docstring, _rename_fallback pragma"
+        read_type: verify
+        extract: >-
+          Round 5's fix declared the pragma's reason stale in three artifacts and
+          left the pragma itself unedited, so the commit shipped its own
+          contradiction. Comment corrected to the bound the code has; the pragma
+          stays because the covering tests skip without paramiko. The docstring
+          gained the remove-then-rename window in prose — the tracker IDs I first
+          wrote there were caught by check_no_tracker_refs, which counts a private
+          method's docstring as a published surface
+        outcome: ok
+
+  - id: verify
+    name: Ripple-check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Detailed checklist"
+        read_type: verify
+        extract: "Spec section, Public method signature, Backlog item touched, CHANGELOG entry, Tracker ID in published prose"
+        outcome: ok
+      - file: docs-src/guides/transfer-operations.md
+        section: "Error semantics"
+        read_type: verify
+        extract: >-
+          Checked and deliberately left: its partial-file note is about a local
+          file on a failed download, a genuinely different subsystem as the item
+          said. Its silence about upload/transfer, which route through
+          store.write() and so inherit this rule on SFTP, is a real asymmetry
+          but one about every backend's write rather than SFTP's. Retrospective:
+          this step first said "filed rather than widened into this PR" while no
+          item existed anywhere — review round 1 caught the claim, and BK-364
+          was written to make it true. A trace asserting an action is a figure
+          like any other and owed the same check before the sentence was written
+        outcome: ok
+      - file: docs-src/guides/write-integrity.md
+        section: "(full)"
+        read_type: verify
+        extract: "Checked: scoped to hashes and write metadata, not stall recovery. No ripple"
+        outcome: ok

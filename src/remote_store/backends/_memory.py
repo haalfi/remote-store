@@ -161,8 +161,10 @@ class MemoryBackend(Backend):
 
         Raises:
             AlreadyExists: If a file exists at *path* and ``overwrite`` is ``False``.
-            InvalidPath: If *path* is empty or names a folder, or an ancestor of
-                *path* exists as a file.
+            InvalidPath: If *path* addresses the store root — under any
+                spelling, not only ``""`` and ``"."``, since ``_split_path``
+                drops empty and ``"."`` segments — or names a folder, or an
+                ancestor of *path* exists as a file.
         """
         segments = self._split_path(path)
         if not segments:
@@ -234,8 +236,10 @@ class MemoryBackend(Backend):
 
         Raises:
             AlreadyExists: If a file exists at *path* and ``overwrite`` is ``False``.
-            InvalidPath: If *path* is empty or names a folder, or an ancestor of
-                *path* exists as a file.
+            InvalidPath: If *path* addresses the store root — under any
+                spelling, not only ``""`` and ``"."``, since ``_split_path``
+                drops empty and ``"."`` segments — or names a folder, or an
+                ancestor of *path* exists as a file.
         """
         return self.write(path, content, overwrite=overwrite, metadata=metadata)
 
@@ -503,8 +507,9 @@ class MemoryBackend(Backend):
 
         Raises:
             NotFound: If *src* does not exist.
-            InvalidPath: If *src* or *dst* is empty, *src* names a folder, or
-                *dst* names an existing folder.
+            InvalidPath: If *src* or *dst* addresses the store root — under any
+                spelling, and ahead of the source-existence check — or *src*
+                names a folder, or *dst* names an existing folder.
             AlreadyExists: If *dst* is an existing file and ``overwrite`` is
                 ``False``.
         """
@@ -568,8 +573,9 @@ class MemoryBackend(Backend):
 
         Raises:
             NotFound: If *src* does not exist.
-            InvalidPath: If *src* or *dst* is empty, *src* names a folder, or
-                *dst* names an existing folder.
+            InvalidPath: If *src* or *dst* addresses the store root — under any
+                spelling, and ahead of the source-existence check — or *src*
+                names a folder, or *dst* names an existing folder.
             AlreadyExists: If *dst* is an existing file and ``overwrite`` is
                 ``False``.
         """

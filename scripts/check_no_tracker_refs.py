@@ -80,6 +80,13 @@ Exit codes
 * ``0`` -- clean.
 * ``1`` -- one or more violations found (printed to stderr with
   ``file:line``).
+
+Drift-gate::
+
+    kind:       rule
+    rule: no internal tracker ID appears in a surface that reaches users (CONTENT-RULES Rules 1 and
+        5)
+    domain:     explanation
 """
 
 from __future__ import annotations

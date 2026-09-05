@@ -270,7 +270,11 @@ class Store:
         """Write binary content to *path* atomically.
 
         If the write fails or is interrupted, *path* is not left in a
-        partial state.
+        partial state. **That is not the same as unchanged.** A failure in
+        the backend's connection can leave *path* as it was, replaced (the
+        write landed and the acknowledgement was lost), or removed — none of
+        them partial, and the error does not say which. Re-check the path
+        rather than assuming a failed call changed nothing.
 
         Args:
             path: Store-relative file path.
@@ -309,8 +313,12 @@ class Store:
     def open_atomic(self, path: str, *, overwrite: bool = False) -> Iterator[BinaryIO]:
         """Context manager that yields a writable binary stream.
 
-        The file is committed atomically on successful exit; on exception
-        the partial write is discarded.
+        The file is committed atomically on successful exit; on an exception
+        raised by your own code the partial write is discarded. A failure in the
+        backend's connection is weaker: no reader ever observes a partially
+        written file, but a temp artifact may survive and a commit whose
+        acknowledgement was lost may already have been applied. Re-check the
+        path rather than assuming a failed call changed nothing.
 
         Args:
             path: Store-relative file path.
@@ -358,10 +366,9 @@ class Store:
         """Delete a single file.
 
         A store whose backing container is gone — a deleted bucket, container or
-        table — holds no file either, so *missing_ok* tolerates that too on the
-        S3, Azure and SQL backends, and on Graph when its drive is gone. One does
-        not yet: a local store whose root directory was deleted raises
-        ``InvalidPath``.
+        table — holds no file either, so *missing_ok* tolerates that too: on the
+        S3, Azure and SQL backends, on Graph when its drive is gone, and on a
+        local store whose root directory was deleted.
 
         Args:
             path: Store-relative file path.
@@ -386,10 +393,9 @@ class Store:
         """Delete a folder.
 
         A store whose backing container is gone — a deleted bucket, container or
-        table — holds no folder either, so *missing_ok* tolerates that too on the
-        S3, Azure and SQL backends, and on Graph when its drive is gone. One does
-        not yet: a local store whose root directory was deleted raises
-        ``InvalidPath``.
+        table — holds no folder either, so *missing_ok* tolerates that too: on the
+        S3, Azure and SQL backends, on Graph when its drive is gone, and on a
+        local store whose root directory was deleted.
 
         Args:
             path: Store-relative folder path.  Must not be ``""``
@@ -829,7 +835,8 @@ class Store:
         Raises:
             PermissionDenied: If credentials are invalid.
             NotFound: If the bucket, container, or root path does not
-                exist.
+                hold the container it names — it is absent, or something
+                of another type occupies it.
             BackendUnavailable: If the backend cannot be reached.
         """
         _bk = self._backend.name

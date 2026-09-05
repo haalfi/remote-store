@@ -1,0 +1,613 @@
+id: BK-354
+title: "SFTP io_timeout: bound a read that stalls on an open channel"
+trigger: >-
+  Issue #970 reported that an SFTP peer which completes the handshake and then
+  stops sending mid-transfer blocks forever: the single `timeout` constructor
+  arg reaches only connect-phase paramiko timeouts, and nothing calls
+  settimeout() on the opened channel.
+source_items:
+  - BK-354
+audience:
+  - user.api
+  - user.api_docs
+  - user.site
+discovery_followups:
+  - BK-355
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+  - docs-src/guides/backends/sftp.md
+# Counted from `git log --oneline origin/master..HEAD` at the head this trace
+# ships on, which holds twelve commits. The field's description counts *commits*
+# that exist because review feedback was incorporated, not review rounds, and
+# says a `BK-NNN:`-convention commit counts too — so eleven of the twelve do:
+# 2876dfb (round 1, 16 findings), f5227b3 (round 2, 6 findings), 0b1c752 (round
+# 2's third multiplier, filed as BK-355 rather than widened into the PR),
+# 4863ad9 and 8dd2f0a (round 3, 8 findings, two commits because the round's own
+# replacement claim then needed characterising), 51d90c2 and 866dc4b (round 4,
+# the first unprimed exit gate, 5 findings, the second commit being a
+# re-derivation of this very field), bc561fb (round 5, the second exit gate, 6
+# findings), 475da2c (round 6, the third exit gate, 3 findings), and a8f1da6
+# plus the commit this line ships in (round 7, the fourth exit gate, 4 findings,
+# the second commit closing the two the first left open). Only bdf775b, which
+# implements the item, does not count. Value is 11.
+#
+# The PR body counts *rounds* — seven — and does not contradict this: rounds and
+# review-driven commits are different units, and the field is the second. Three
+# earlier values here were wrong, in three distinct ways, which is why the
+# derivation is spelled out rather than summarised: two read the field name
+# instead of its description and counted `fix:` prefixes; one was written before
+# the round's second commit existed; and the reconciliation sentence above once
+# quoted the PR body's round count from memory rather than from the body.
+#
+# Two ways the derivation itself has been wrong, both now closed. Round 2 left
+# it half-named — one SHA plus "the round-2 fix commit" — because the later
+# commit did not exist when the comment was written and the comment was not
+# revisited when it did. Round 4 found the SHAs stale outright: the branch was
+# rebased twice after they were written, so a514166 / 61e4e22 / 630ff2e named
+# nothing on the branch, and the comment read as checkable while being
+# uncheckable. A SHA list is a derivation only while the history under it holds;
+# re-run the command whenever the branch moves under this file, rebases
+# included.
+review_rounds: 11
+phases:
+  - id: orient
+    name: Orient on the report
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_connect (ssh.connect kwargs)"
+        read_type: verify
+        extract: >-
+          Confirm all four timeouts passed to ssh.connect() are connect-phase.
+          Verified against paramiko 5.0.0 in the hatch env rather than from the
+          issue's citation: Transport.channel_timeout defaults to 60*60 and
+          bounds channel open, Channel.timeout initialises to None.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_connection_dead, _map_exception"
+        read_type: reference
+        extract: >-
+          Confirm the recovery path already matches TimeoutError, returns
+          BackendUnavailable and clears the cached client — so the work is
+          arming an existing mechanism, not building one
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_connected"
+        read_type: verify
+        extract: >-
+          Check that clearing _sftp_client actually causes a reconnect; it
+          returns False on a None client, so the loop closes
+        outcome: ok
+  - id: spec
+    name: Spec the bound
+    steps:
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-010"
+        read_type: gate
+        extract: >-
+          Staleness/reconnect contract. Its rationale cites "a socket.timeout
+          from the channel timeout" as a signal this tier keeps from wedging the
+          backend — which presumes a bound that did not exist for reads. Amended
+          to say the tier handles such a timeout but never causes one.
+        outcome: misleading
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-001, SFTP-005, SFTP-023"
+        read_type: gate
+        extract: >-
+          Constructor signature, construction validation and the
+          BackendUnavailable signal set, all of which the new kwarg extends
+        outcome: ok
+  - id: tests
+    name: Failing test first
+    steps:
+      - file: tests/backends/sftp/_helpers.py
+        section: "start_sftp_server, StubServer"
+        read_type: reference
+        extract: >-
+          In-process paramiko SFTP server available session-scoped, so a stall
+          can be exercised end-to-end without Docker
+        outcome: ok
+      - file: tests/backends/sftp/test_ping.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Conventions for spec marks, the backend-closing autouse fixture, and
+          the "internal:" comment form for Rule 3 exceptions
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Ran before implementing, via `hatch run pytest
+          tests/backends/sftp/test_io_timeout.py`: 7 failed on the missing
+          kwarg, 1 passed (the default-None guard, vacuously true). I first
+          wrote this as "4 failed", the count of failing *functions*, against a
+          file whose total I quoted elsewhere as tests — three tests looked
+          unaccounted for. Naming the command is what settles the unit; review
+          caught it. A relay that goes silent server->client after the handshake
+          is what makes the stall real rather than mocked. First green run then
+          failed on one more test, which was my own bug, not the fix's — both
+          stall tests wrote the same filename into a session-scoped server root;
+          fixed with per-test uuid names.
+        outcome: ok
+  - id: implement
+    name: Arm the channel
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_connect, _open_sftp_bounded, __init__"
+        read_type: reference
+        extract: >-
+          Apply settimeout() inside _connect so every reconnect re-arms it;
+          reject non-positive values, since paramiko reads 0 as non-blocking.
+          Round 1 corrected where: I first armed after ssh.open_sftp() returned,
+          which leaves the SFTP version exchange inside SFTPClient.__init__
+          unbounded — the exact hang the item exists to close, reached before
+          the bound is set, and re-entered on every reconnect. _connect now
+          inlines open_session / settimeout / invoke_subsystem / SFTPClient to
+          get the arm in before the first blocking read.
+        outcome: ok
+  - id: fix
+    name: Round 1 review
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_open_sftp_bounded"
+        read_type: verify
+        extract: >-
+          Reproduced the reviewer's headline finding independently rather than
+          taking it: paramiko 5.0.0 SFTPClient.__init__ calls _send_version(),
+          and from_transport never sets a timeout on the new channel. Confirmed
+          the fix is load-bearing by restoring the late-arming order, at which
+          point `timeout 120 pytest -k version_exchange_is_bounded` exits 124
+          (killed while hung) instead of passing.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "read, read_bytes, delete error paths"
+        read_type: reference
+        extract: >-
+          Review found the bound was multiplied for callers: classification
+          re-probes (_raise_if_dir, _has_file_ancestor) re-enter the stalled
+          channel while the cached client is still set, each paying io_timeout
+          again. Guarded all three with the _is_connection_dead short-circuit
+          write_atomic/open_atomic already used — the finding named read_bytes
+          and delete, and `read` shares the shape, so it was swept too.
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "A green test can be vacuous — No positive control"
+        read_type: gate
+        extract: >-
+          Drove the shape of the two new version-exchange tests: a bounded case
+          is only meaningful beside a control proving the same peer hangs
+          without the bound, so the unbounded default is asserted to still be
+          blocked at 8s.
+        outcome: ok
+  - id: fix2
+    name: Round 2 review
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_raise_if_dir"
+        read_type: reference
+        extract: >-
+          Round 1's guards were placed at the call sites, which round 2 showed
+          was the wrong altitude: read's is-dir check is eager, so it has no
+          prior exception to guard on, and _raise_if_dir swallowed the stat's
+          own socket.timeout as "cannot classify" — leaving read to re-enter the
+          dead channel and pay a second bound. Measured before/after with a
+          throwaway probe: read 4.00s -> 2.00s at a 2s bound, read_bytes and
+          delete already 2.00s. Fix moved into the helper (skip on a dead cause,
+          re-raise a dead stat) so eager and error-path callers are both covered.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_open_write, _promote"
+        read_type: reference
+        extract: >-
+          Same class, unswept in round 1 because the finding named only the read
+          paths: both re-probe through _raise_if_dir on failure, and _promote
+          would additionally feed a dead channel to the rename fallback's remove
+          + rename. Guarded.
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "stalled upload, stalled open"
+        read_type: verify
+        extract: >-
+          Two of my round-1 tests did not exercise the mechanism their docstrings
+          named. The upload test failed on a receive timeout, never reaching
+          Channel.sendall — I had asserted SSH window exhaustion without
+          measuring it, and a probe showed paramiko's non-pipelined SFTPFile.write
+          makes that route unreachable here. The mid-transfer claim on the other
+          test was wrong too: the stall was armed before the open, so it failed on
+          CMD_OPEN. Both docstrings and the SFTP-030 sentence corrected to what
+          was measured; the genuine mid-transfer case was already covered by the
+          streaming test.
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-009"
+        read_type: gate
+        extract: >-
+          Source of a false premise I inherited and amplified: it said _connect()
+          retries, but tenacity wraps only the ssh.connect() call inside it.
+          Harmless until this PR put a stall inside _connect and outside that
+          closure, at which point SFTP-030's retry-exclusion clause read as
+          saying the version-exchange stall is retried. Both clauses corrected.
+        outcome: misleading
+      - file: src/remote_store/_stream.py
+        section: "_ErrorMappingStream.close"
+        read_type: reference
+        extract: >-
+          Third multiplier the review found, and the one not fixed here: the
+          suppressed inner close re-enters a connection the failure already
+          condemned, so releasing a stalled handle pays a further silent bound.
+          Shared by the S3, Azure and HTTP backends, so the fix surface is one
+          wrapper and the regression surface is every backend using it — filed
+          as BK-355 and named as a stated exception in SFTP-030 rather than
+          widened into this PR.
+        outcome: ok
+  - id: fix3
+    name: Round 3 review
+    steps:
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "test_subsystem_request_is_not_bounded"
+        read_type: verify
+        extract: >-
+          Round 3 named the fix and I took it, but left the *replacement* claim
+          — that invoke_subsystem is unbounded — derived from reading source
+          rather than running it. Same shape as the three defects this item kept
+          hitting, one level up: I had corrected an unverified claim with another
+          unverified claim. The reviewer's own suggestion (park the mute server
+          in its subsystem handler and see whether io_timeout fires) closes it,
+          so the stated exception is characterised rather than asserted. The test
+          also observes the handler being entered, so "still blocked" is pinned
+          to the request rather than to an earlier handshake step.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_open_sftp_bounded settimeout comment"
+        read_type: verify
+        extract: >-
+          Third time in this item I asserted a paramiko mechanism without running
+          the path. Round 2's fix comment claimed the arm placement also bounded
+          invoke_subsystem; Channel._wait_for_event is a bare event.wait() with
+          no timeout and never reads Channel.timeout, so it bounds nothing there
+          and a real unbounded window remains. Read the source this time before
+          rewriting the comment. The pattern across all three: each claim was
+          about paramiko internals, each sounded mechanical enough to state
+          confidently, and none cost more than one inspect.getsource to check.
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "stalled upload"
+        read_type: verify
+        extract: >-
+          Review said overwrite=False stalls on the pre-write stat so the test
+          never enters SFTPFile.write. Probed both modes with a spy: entered 0
+          times either way — overwrite=True fails on the open instead, so the
+          reviewer's suggested fix would not have reached it either. Only a
+          handle opened before the stall (open_atomic) gets there. Probing that
+          surfaced a defect nobody had named: the best-effort handle.close() on
+          abnormal exit re-enters the dead channel under contextlib.suppress,
+          costing a second bound with no error to explain it (4.04s -> 2.04s at
+          a 2s bound). Guarded, and the new test pins it.
+        outcome: ok
+  - id: fix4
+    name: Round 4 review (unprimed exit gate)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_handle"
+        read_type: verify
+        extract: >-
+          The round-4 must-fix, and the one finding in this item nobody reached
+          by reading the diff's subject: I had fixed the suppressed-close
+          multiplier at one site (the open_atomic probe in round 3) and filed the
+          shared-wrapper case as BK-355, which left the PR's own five `with`
+          blocks — read_bytes, write, write_atomic, move's rename fallback, copy
+          — each still closing a handle into a channel their own failure had just
+          condemned. Fixing one instance and filing another made the class look
+          swept. Extracted the shape into a _handle contextmanager that skips the
+          best-effort close when the escaping exception is a dead connection, and
+          routed all five through it; open_atomic keeps its inline guard because
+          its clean-exit close has to sit inside _errors. Load-bearing check:
+          removing the write-site routing fails
+          test_write_stalling_mid_stream_costs_one_bound at "4.0s (2.0x the
+          bound)" against a 2 s bound.
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "test_from_transport_still_matches_the_inlined_steps"
+        read_type: verify
+        extract: >-
+          A test whose docstring claimed more than its assertions did: it said it
+          pinned "nothing else that looks like a round-trip", and was three
+          substring checks, which catch a removed or renamed step and cannot
+          catch an added one — the precise divergence an unpinned upstream
+          produces silently. Rewritten to read the body as an AST: statement-kind
+          sequence, the three identities, and a total Call count so a round-trip
+          added anywhere, inside the None guard included, moves it. Ran the new
+          assertions against six hand-written variants of the upstream body in a
+          throwaway script (not kept): upstream and a re-spelled tuning kwarg
+          pass; added top-level step, added nested call, renamed subsystem and
+          removed step all fire.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_has_file_ancestor"
+        read_type: verify
+        extract: >-
+          Round 2 added this re-raise and round 4 found nothing exercised it. The
+          stall tests all arrive with an already-dead caller error, which the
+          call-site guard short-circuits before the walk; the state that reaches
+          the walk's own raise is split — opaque SSH_FX_FAILURE from the caller,
+          channel dying on a later probe — and a relay cannot produce that split
+          on demand. Added a two-case test that injects the split onto the live
+          client and asserts the consequence rather than the raise (drop
+          reported, cached client invalidated), with the non-dead walk failure as
+          the control. Non-vacuity confirmed by disabling the re-raise: the drop
+          case then surfaces RemoteStoreError('Failure') and keeps the client.
+        outcome: ok
+      - file: sdd/traces/bk-354-sftp-io-timeout.yml
+        section: "review_rounds"
+        read_type: verify
+        extract: >-
+          The derivation comment named three SHAs, none of which was on the
+          branch: it was written before two rebases and not re-run after either.
+          A derivation that decays with the history under it is the failure mode
+          principle 9 does not by itself catch, since the sentence stays true-
+          looking while becoming uncheckable. Re-run and re-counted, and the
+          value moved 3 -> 7 here (8 by round 5): re-reading the description showed it
+          counts review-driven *commits*, `BK-NNN:`-convention ones included,
+          while every previous value here had counted `fix:` prefixes because
+          the field is *named* review_rounds. The reviewer raised 0b1c752 as
+          "arguably a fifth"; under the description it is not arguable.
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "review_rounds"
+        read_type: gate
+        extract: >-
+          Read to settle the count and found the field's name and its
+          description count different units: it is called review_rounds, and
+          defines itself as "commits that exist specifically because review
+          feedback was incorporated", explicitly including a commit that follows
+          the BK-NNN convention. Three successive values in this trace were
+          derived from the name, mine included, and the clause that would have
+          caught it is in the same paragraph. Tagged unclear rather than
+          misleading: nothing here is wrong, but the field is read far more often
+          than its description is, and a name that answers the question wrongly
+          is where the reader stops.
+        outcome: unclear
+      - file: docs-src/guides/troubleshooting.md
+        section: "SFTP transfer hangs with no error"
+        read_type: reference
+        extract: >-
+          The unbounded subsystem request was recorded as a stated exception in
+          SFTP-030 and characterised by a test, but nowhere a user would look: a
+          reader who sets io_timeout and still hangs was left with the guide
+          saying the bound covers this. Added the "if it still hangs" branch here
+          and the matching warning in the SFTP guide, so the exception reaches
+          the audience that meets it.
+        outcome: ok
+  - id: fix5
+    name: Round 5 review (second unprimed exit gate)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "copy"
+        read_type: verify
+        extract: >-
+          The round-4 fix claimed five _handle call sites and shipped four:
+          copy's two handles were never routed, while the spec, the commit
+          message, the PR body, my reply on the finding and a sibling test
+          docstring all named copy as covered. I had counted move's two handles
+          as "copy and move" and never re-read the file. Worse than the original
+          bug, because five artifacts then asserted it fixed. Fixed, and measured
+          this time rather than enumerated: 6.9s (3.4x) unguarded, 2.0s guarded
+          at a 2s bound — the largest multiple in the item, since copy is the
+          only operation holding two handles at once.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "move, _move_fallback"
+        read_type: verify
+        extract: >-
+          Second must-fix of the round and the one a pragma hid: move does its
+          own posix_rename rather than going through _promote, so round 2's
+          guard never reached it, and the whole block sat under "# pragma: no
+          cover -- fallback for servers without posix_rename". The pragma
+          described the fallback correctly and made the missing guard look
+          equally narrow, when a stalled channel fails posix_rename on any
+          server. Split the fallback into _move_fallback so the pragma covers
+          only what it names. Non-vacuity is the interesting part: without the
+          guard the mocked test does not merely run slow, it *succeeds* — the
+          drop never surfaces because the fallback rename answers.
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "_StallRelay, test_stall_costs_one_bound_not_several"
+        read_type: verify
+        extract: >-
+          The review's diagnosis of why both bugs survived, which is the part
+          worth keeping: every operation in this file with an elapsed-time band
+          is one that some earlier round measured at its own call site. Sites
+          swept only by inheriting the shared helper had no test at all, so the
+          helper's coverage was assumed from its call sites being listed rather
+          than from any of them being run. Added a byte-count stall trigger to
+          the relay (stall_download_after) so "goes quiet mid-transfer" is
+          deterministic rather than timed, and a copy test on top of it.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_handle docstring"
+        read_type: verify
+        extract: >-
+          "The server will reap it" was true but incomplete: SFTPFile.__del__
+          calls _close(async_=True) unconditionally, and BufferedFile.close --
+          which flushes via _write_all -- sits outside _close's own try. Read
+          both in the pinned paramiko before rewriting. A write handle with
+          buffered bytes can still make one blocking write when collected; a
+          read handle cannot, since _write_all returns immediately on an empty
+          buffer. The docstring now claims only what is owed and measured: the
+          bound is not paid twice inline, on the caller's thread.
+        outcome: ok
+      - file: docs-src/guides/retry.md
+        section: "SFTP"
+        read_type: verify
+        extract: >-
+          Ripple the round-2 SFTP-009 correction missed. The spec was fixed at
+          source but this table's "Retry scope: connection only" still carried
+          the coarse reading, which is the one SFTP-030's retry-exclusion clause
+          now depends on being precise. Corrected to name the ssh.connect() call
+          and to say what that leaves unretried.
+        outcome: ok
+  - id: fix6
+    name: Round 6 review (third unprimed exit gate)
+    steps:
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "test_write_stalling_mid_stream_costs_one_bound"
+        read_type: verify
+        extract: >-
+          Round 5 named the rule — the file tests sites that were reasoned about
+          and trusts sites that were enumerated — and round 6 found one still
+          untrusted: write_atomic was the last _handle call site no test would
+          notice losing, because its own tests exit the handle cleanly and fail
+          at the promote, never running the close on a stalled channel.
+          Parametrised into the mid-stream test rather than given a twin; without
+          the guard it fails at 4.0s (2.0x the bound). I then wrote "five sites,
+          five measurements now", which round 7 falsified in the next breath:
+          three are measured, and read_bytes (prefetching read) and move's copy
+          fallback (pragma'd) are not. The sentence closing a gap asserted the
+          class was closed — the same move the gap came from.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_connection_dead docstring"
+        read_type: verify
+        extract: >-
+          A premise this PR removed from SFTP-010 and left standing three
+          hundred lines away: the TimeoutError arm was called "the most
+          realistic trigger, since a slow op hits the channel timeout", which
+          presumes the bound the item exists to add. I read this docstring in
+          the orient phase and quoted it approvingly in the BACKLOG-DONE entry,
+          which is how it survived — reading it for what it gave me, not for
+          what the change would falsify.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_handle docstring figures"
+        read_type: verify
+        extract: >-
+          The helper's docstring carried 4.04/2.04, which is open_atomic's
+          inline-guard measurement for a guard open_atomic does not use; the
+          _handle-guarded write figure is 4.00/2.00. Both SFTP-030 and the PR
+          body kept them apart and only this docstring conflated them — a figure
+          migrating to the nearest plausible home rather than being re-derived.
+        outcome: ok
+      - file: sdd/traces/bk-354-sftp-io-timeout.yml
+        section: "(PR body cross-reference)"
+        read_type: verify
+        extract: >-
+          Round 6 also caught a claim I had generalised from a mock: "without
+          the guard a move on a dead channel reports success" is true of the
+          mocked test only. On a real stalled channel _move_fallback's own arm
+          catches the fallback rename and the drop surfaces, at four more bounds
+          rather than a false success. The trace scoped it correctly and the PR
+          body did not, so the correction is to the body.
+        outcome: ok
+  - id: fix7
+    name: Round 7 review (fourth unprimed exit gate)
+    steps:
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030 (stalled-write round-trip)"
+        read_type: verify
+        extract: >-
+          One class, four instances: round 6's own change falsified claims round
+          6 did not revisit. The largest was SFTP-030's "reaching SFTPFile.write
+          with a stall armed requires a handle opened beforehand — open_atomic",
+          which had generalised the pre-armed measurement (entered 0 times) to
+          every route, and which two tests in the suite already contradicted —
+          one of them added in round 4, the other in round 6. Rewritten around
+          *when* the peer went silent rather than which method was called, since
+          that is the variable that actually decides it.
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "test_stall_during_streamed_write_costs_one_bound"
+        read_type: verify
+        extract: >-
+          Same claim one file over, and the derivation was the tell: "verified by
+          spying on it" was run before the mid-stream tests existed and never
+          re-run after. A docstring saying "the only case in this file" is a
+          claim about the file, so it expires whenever the file changes. Rewritten
+          to say what is actually unique about the test — it is the only one
+          exercising open_atomic's inline guard, which cannot use _handle because
+          its clean-exit close must sit inside _errors.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_handle docstring, SFTP-030 mechanism 3"
+        read_type: verify
+        extract: >-
+          Round 6 fixed this docstring's figures and left "the two call sites"
+          beside them, so adding write_atomic's measurement made the count wrong
+          in the same sentence that made it right. And the spec's "each call site
+          is measured" was never true: read_bytes prefetches, so a stall in its
+          read fails in paramiko's prefetch machinery rather than on the close,
+          and move's copy fallback is pragma'd. Both now name the two unmeasured
+          sites rather than counting them.
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_move_fallback, _copy_and_delete"
+        read_type: verify
+        extract: >-
+          Second instance of the pragma-covers-too-much defect, one level down
+          from the first: round 5 hoisted move's dead-rename guard out from under
+          "# pragma: no cover -- fallback for servers without posix_rename", and
+          put the identical guard inside _move_fallback, under the pragma that
+          had just moved there. Reachable without such a server — posix_rename
+          fails for permission or directory-target reasons on any server — so the
+          copy tail is now its own method and carries the pragma alone. Both
+          guards have a test; the inner one fails DID NOT RAISE when disabled,
+          having silently completed the move. Writing the fix for a defect is
+          apparently the most reliable way I reproduce it.
+        outcome: ok
+  - id: docs
+    name: Document the distinction
+    steps:
+      - file: docs-src/guides/backends/sftp.md
+        section: "Options, Connection Behaviour"
+        read_type: reference
+        extract: >-
+          The options table described `timeout` as "SSH connection timeout"
+          without saying it stops at connect; corrected, and a section added on
+          why the bound is on silence between bytes rather than transfer time.
+          Tagged misleading, not unclear: the row stated something that proved
+          wrong, and that wrong meaning is the whole premise of this item.
+        outcome: misleading
+  - id: verify
+    name: Ripple check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Public method signature"
+        read_type: verify
+        extract: "Docstring Args, examples calling it, guides referencing it"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / New test file"
+        read_type: verify
+        extract: >-
+          Considered os_sensitive and declined: the marker scopes to paths,
+          atomic writes and local filesystem behaviour, while this file
+          exercises sockets and threads
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check table / Spec section, Backlog item touched"
+        read_type: verify
+        extract: "Spec-tagged tests, BACKLOG-DONE entry, live trace, CHANGELOG stub"
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Rules 3, 7, 8"
+        read_type: gate
+        extract: >-
+          Read at the /pr qualitative-review gate, and it caught my own miss:
+          three tests asserted on _sftp_client behind a Rule 3 exception
+          comment, and one forced a reconnect by clearing that attribute by
+          hand. Rule 3 permits the exception, but Rule 8 does not — a rename
+          would have broken them — and unwrap(SFTPClient) is a public accessor
+          (SFTP-026) that made the exception unnecessary. Reworked to drive the
+          reconnect from a real stall and read through unwrap; Rule 7 then
+          folded the recovery and re-arm tests into one, since the flow was
+          identical. The exception comment had made the weakness look
+          adjudicated rather than unexamined.
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Reviewed the guide section and spec prose for longevity; the
+          tracker-ID leak this rule set governs had already been caught
+          mechanically by check_no_tracker_refs during the first gate run
+        outcome: ok

@@ -1,0 +1,345 @@
+id: BK-359
+title: "A stalled SFTP operation raises BackendUnavailable with an empty message and no log record"
+trigger: >-
+  BK-356 made io_timeout default to 120.0, so a silent SFTP peer became the
+  shipped failure surface for callers who had configured nothing — and the error
+  they met carried args == ('',), rendering as " | path='delivery.csv' |
+  backend='sftp'", with no remote_store log record anywhere on the path.
+source_items:
+  - BK-359
+  - BK-356
+  - BK-354
+audience:
+  - user.api
+  - user.site
+  - user.api_docs
+discovery_followups:
+  # Six, not the two this listed until round 5 caught it. BUG-266 and BUG-267
+  # were born in round 4 and their BACKLOG bodies say so; recording two of six
+  # is the cleaned-up trace the schema's authoring note warns against. BUG-268
+  # is later still: it exists only because the guide revert below was carried
+  # out, so it could not be filed before the decision that created it. It is
+  # also the one of the six this PR then closed — it appears under
+  # co_shipped_items too, which is not a contradiction: born here, closed here.
+  # BUG-269 is the sixth and last, born in round 6 against the commit that closed
+  # BUG-268 — a review of a fix pass finding the ripple that pass did not pair.
+  - BUG-264
+  - BUG-265
+  - BUG-266
+  - BUG-267
+  - BUG-268
+  - BUG-269
+co_shipped_items:
+  # Filed and closed inside this PR, so it never appeared in BACKLOG.md's active
+  # list for anyone but this branch. BACKLOG-DONE.md's entry says so in its
+  # first sentence rather than leaving a reader to wonder how it was worked.
+  - BUG-268
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+surprising_ripples:
+  # Neither is reachable from the ripple-check's Error-type row, which names the
+  # error model, the backend mappings, their tests and the troubleshooting guide.
+  # A new *class of log record* is not an error type, and nothing in the table
+  # routes from "the library logs something new" to the guide that enumerates
+  # what it logs, or to the guide recommending the call that now logs per poll.
+  # Both were found by round 1, not by the table.
+  #
+  # Both are listed as ripples that were *met and then withdrawn*. Rounds 2-5
+  # refuted every version of the prose written for them, each correction
+  # introducing its own defect. Rounds 1-3 alone put ten findings on the three
+  # guides — observe.md 5, health-check.md 4, troubleshooting.md 1, counted from
+  # the per-file distribution of the 27 review threads — and rounds 4-6 added
+  # more, so the guide
+  # changes were reverted to master and the documentation ripple was filed as
+  # its own item rather than shipped half-true. The ripple is real; what this
+  # trace records is that this PR could not land it.
+  #
+  # The revert is not cost-free and the trace says so rather than reading as a
+  # clean retreat: troubleshooting.md's opening two sentences describe the
+  # pre-fix behaviour, so returning them to master's text shipped a page this
+  # PR falsifies. Reverting a rewrite restores the *old* text, not a true one —
+  # the general lesson, and the reason the withdrawal had to be paired with an
+  # item (BUG-268) instead of just a git checkout.
+  #
+  # BUG-268 was then closed in this PR rather than left open: two sentences
+  # replaced by two facts, with the traceback line copied from running
+  # `_map_exception(TimeoutError(), 'delivery.csv')` rather than composed. So
+  # troubleshooting.md is a ripple met, withdrawn, and met again on a much
+  # narrower footing — 1 thread across rounds 1-3, against observe.md's 5 and
+  # health-check.md's 4, and 0 findings on the edit that finally shipped. The
+  # narrower edit is the one that survived, which is the reading this trace wants
+  # a later author to take. observe.md, the guide that drew the most, is still
+  # unpaired at the end of rounds 1-5; round 6 filed BUG-269 for it.
+  - docs-src/guides/observe.md
+  - docs-src/guides/health-check.md
+  - docs-src/guides/troubleshooting.md
+  - sdd/specs/019-ext-observe.md
+# Derived from `git log --format='%s' origin/master..HEAD --reverse`, naming the
+# commits per the schema's clause above rather than stating a bare total.
+# **Commits are named by subject, not by SHA** — see the note below the list:
+#   Name the failure a stalled or dropped SFTP operation met  -> does not count
+#            (implements the item)
+#   Scope the log claim to the mapping, and fix three figures round 1 refuted
+#                                                             -> counts (round 1, 8 findings)
+#   Withdraw the logging advice the fix pass invented and got wrong twice
+#                                                             -> counts (round 2, 4 findings)
+#   State that the message names the fault, not the side      -> counts (raised
+#            by the session working BK-360, not by a round on this PR, but it
+#            exists because review found something, which is the schema's test)
+#   Sweep the record-count claim by class, and restore a heading I deleted
+#                                                             -> counts (round 3, 15 findings)
+#   Stop asserting a failure taxonomy in prose, and file it instead
+#                                                             -> counts (round 4, 14 findings)
+#   Correct review_rounds, stale under my own last commit     -> counts (inside round 4)
+#   Replace a co-change note's count with the grep that derives it
+#                                                             -> counts (inside round 5)
+#   Revert the guide prose; keep the code, tests and spec     -> counts (round 5,
+#            13 findings, and carries out the guide revert they led to)
+#   File the two sentences the guide revert leaves false      -> does not count
+#            (BUG-268: a consequence of a decision, not a round)
+#   Re-derive the trace's commit list, stale a fourth time    -> does not count
+#   Correct the two troubleshooting sentences BK-359 falsified -> does not count
+#            (BUG-268 closed; the user chose the fix over shipping the false page)
+#   Name this list's commits by subject, and file the observe.md rows
+#                                                             -> counts (round 6,
+#            3 findings, 0 of them in the commit it reviewed)
+# Value is 7, counting one per review round that produced commits: rounds 1-6
+# plus the BK-360 commit. The bookkeeping and consequence commits sit inside the
+# rounds named beside them rather than forming rounds of their own.
+#
+# **This list went stale five times, and four of those were the SHAs, not the
+# reasoning.** It stood at 0 through two rounds; at 4 while round 4's fix pass
+# landed; at 5 under a "<this>" placeholder that resolved to neither of the two
+# commits after it; then under the BUG-268 filing; then again when a re-derivation
+# fixed only the tail it had just invalidated and left rows 1-5 naming pre-rebase
+# SHAs — while the block above them still claimed to be derived from
+# `origin/master..HEAD`, where those five SHAs do not appear. That last one is
+# the diagnosis: **a SHA is not a stable name for a commit.** A rebase rewrites
+# every one, a placeholder cannot survive the next commit, and a commit cannot
+# carry its own hash at all. Subjects survive rebases, are unique on this branch,
+# and can be checked with one `git log --format='%s'` — so the list names them
+# and no SHA appears in it.
+review_rounds: 7
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BK-359"
+        read_type: gate
+        extract: "The measured symptom and the two halves owed: the message and the log record"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "1. Failures are predictable"
+        read_type: gate
+        extract: >-
+          The Promise's third clause — the failure a caller catches says which
+          failure it was — is the one this item was filed against, and the
+          Closes-when sentence naming BK-359 has to move when it closes
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-023, SFTP-030, SFTP-010"
+        read_type: gate
+        extract: >-
+          What the mapping already promises (type, client invalidation,
+          recovery) and what it does not promise at all (anything about the
+          message or a log line)
+        outcome: ok
+      - file: sdd/specs/005-error-model.md
+        section: "ERR-009"
+        read_type: reference
+        extract: >-
+          "str() and repr() produce meaningful messages" — the general clause
+          this defect breaches, which made it worth asking whether other
+          backends breach it too. Needed no amendment: the clause was already
+          right and the SFTP mapping was wrong
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Pre-work index"
+        read_type: gate
+        extract: >-
+          Triggered rows: Error type (error model, every backend's mapping,
+          troubleshooting guide), Bug fix, Backlog item touched, Spec section
+        outcome: ok
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_map_exception, _is_connection_dead"
+        read_type: gate
+        extract: >-
+          Both dead-connection arms build BackendUnavailable(str(exc)). Drove
+          nine constructed instances through the mapping in a throwaway script
+          rather than reading which could be empty — four arrived blank, not the
+          one the item named. The item's title was a correct diagnosis of a
+          wider class, which is why the fix keys on an empty str(exc) rather
+          than on the timeout type. Retrospective: I first described those nine
+          as "the signals _is_connection_dead matches", which round 1 refuted —
+          that predicate deliberately excludes the SSHException family, and one
+          of the four blank shapes is in it. Nine was a count of instances I
+          chose to drive, and saying otherwise gave the figure a derivation that
+          does not resolve
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "_StallRelay, test_stalled_open_raises_backend_unavailable"
+        read_type: reference
+        extract: >-
+          A live TCP relay that stops delivering on command already exists, so
+          the failing test could be driven by the real fault instead of a
+          constructed TimeoutError
+        outcome: ok
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: sdd/000-process.md
+        section: "Rule 6 (bug-fix pipeline)"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing test → fix, in one commit"
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPMapException"
+        read_type: reference
+        extract: >-
+          The existing home of _map_exception unit tests. Added the empty-shape
+          cases, the bound-naming case, the opted-out case, the
+          do-not-overwrite-real-detail counterpart, and the two logging cases;
+          all observed failing before the fix
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "SFTP-030 stall tests"
+        read_type: reference
+        extract: >-
+          Added the live-relay assertion on message and log record. Observed
+          failing against a real stalled channel: BackendUnavailable('') — the
+          same shape the item measured
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_unavailable, _map_exception"
+        read_type: reference
+        extract: >-
+          One helper all four BackendUnavailable arms pass through, so the
+          message rule and the log rule cannot disagree between arms. The
+          IncompatiblePeer arms pass their remediation hint through it rather
+          than around it, which is what makes the SFTP-023 clause say "every"
+          without a carve-out
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_connect (tenacity before_sleep_log), _create_ssh_client"
+        read_type: verify
+        extract: >-
+          Not read until round 1 named it, and it falsified the clause I had
+          already written. _connect builds before_sleep_log(log, WARNING) on the
+          same module logger and AUTO_ADD warns on every connect, so "one
+          failure, one WARNING on remote_store.backends._sftp" was false. The
+          clause is now scoped to the mapping, with op="error_mapping" given as
+          what a log-searching reader filters on.
+          Retrospective: this step first recorded "three WARNING records before
+          the mapping's own", which round 3 refuted twice over — three is the
+          AUTO_ADD figure and the default policy is STRICT, and a refused
+          connect never reaches the mapping at all, so there is no record for
+          the others to precede. That sentence had already been copied into the
+          spec, the source comment and the BACKLOG-DONE entry by the time it was
+          caught, which is why the sweep in round 3 was four files wide
+        outcome: ok
+  - id: docs
+    name: Documentation
+    steps:
+      - file: docs-src/guides/troubleshooting.md
+        section: "SFTP transfer stalls"
+        read_type: reference
+        extract: >-
+          The page printed the blank traceback as the symptom and stated there
+          was nothing in remote_store's log. Both were true when written and
+          false after the fix — the ripple that most needed finding, and the
+          reason the Error-type row names the troubleshooting guide
+        outcome: ok
+      - file: docs-src/reference/migration.md
+        section: "v0.30.0 to v0.31.0"
+        read_type: reference
+        extract: >-
+          Same unreleased window as BK-356, so the entry describing the new
+          raise gains what the raise now says rather than getting an entry of
+          its own
+        outcome: ok
+      - file: docs-src/guides/backends/sftp.md
+        section: "Bounding a stalled transfer"
+        read_type: reference
+        extract: "One clause: the raise names the stall and the value that fired"
+        outcome: ok
+      - file: docs-src/guides/observe.md
+        section: "Logging levels used, Structured extra fields"
+        read_type: reference
+        extract: >-
+          Round 1's ripple finding. The WARNING row enumerates what the library
+          logs at that level and this record fitted none of it, and the op field
+          was described as an operation name while this record's op is a phase.
+          Found while fixing it that the ERROR row was already false — nothing
+          in src/ calls log.error at all — so the table now says errors are
+          reported by the exception rather than by a record.
+          Retrospective, and this one is mine rather than the document's: the
+          fix pass also added a recipe telling readers to filter on the op
+          field, written from reading the logging module rather than running it.
+          Round 2 executed it. A logging.Filter reading record.op raises
+          AttributeError inside Filterer.filter, which logging does not route
+          through handleError, so it propagates through tenacity's
+          before_sleep_log into _connect and is mapped — turning a working store
+          into one that raises RemoteStoreError("'LogRecord' object has no
+          attribute 'op'") on connect. Strictly worse than the blank message
+          this item exists to fix. The recipe is withdrawn; the field's
+          documentation now states that records may lack it and that getattr is
+          required
+        outcome: misleading
+      - file: docs-src/guides/health-check.md
+        section: "Use cases, Error handling"
+        read_type: reference
+        extract: >-
+          The guide sells ping() for Kubernetes livenessProbe, so the log-volume
+          consequence belonged here and not only in the spec. Retrospective: the
+          arithmetic I wrote was wrong on every figure, and round 2 measured it.
+          A poll against a refused port raises RemoteStoreError, emits two
+          WARNING records (three under AUTO_ADD), and none of them carries
+          op="error_mapping" — the canonical down-server path never reaches
+          _unavailable at all. So the note claimed a per-poll record that is not
+          emitted and a filter that suppresses nothing, reintroducing in a guide
+          the same over-reach the same commit had just retracted from SFTP-023.
+          Rewritten to what was measured.
+          **Superseded by BUG-265, and marked rather than rewritten:** every
+          clause of that measurement is now false — a refused port raises
+          BackendUnavailable and does leave one op="error_mapping" record. A
+          trace records what a round measured *at the time*, so the measurement
+          stands as history and this sentence says what overturned it. That is
+          the same disposition BUG-265 applied to its own steps, and it is the
+          answer to the question its review raised: a register entry states
+          current fact and gets corrected, a trace states a past reading and
+          gets annotated
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Detailed checklist"
+        read_type: verify
+        extract: "Error type, Bug fix, Backlog item touched, CHANGELOG entry rows"
+        outcome: ok
+      - file: docs-src/guides/retry.md
+        section: "SFTP"
+        read_type: verify
+        extract: >-
+          Checked rather than changed: "not retried is not the same as
+          unreported" and the silent-close sentence are both still true, since
+          the futile close never reaches _map_exception
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030 (silent-stall paragraph)"
+        read_type: verify
+        extract: >-
+          "no remote_store log record" for the silent close stays true and its
+          test stays green — it is the control that says the new WARNING fires
+          on the raise path and nowhere else
+        outcome: ok

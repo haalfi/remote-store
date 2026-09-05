@@ -60,11 +60,27 @@ touch.
    the list is not closed, so any durable home carrying both an owner and a
    rationale qualifies. A check with no such register will be switched off instead.
 
-7. <a id="miss-rate"></a>**State the bound, and estimate the miss rate.**
-   [review-enforced]
-   Document in the check itself what it does not catch. Where feasible, seed known
+7. <a id="miss-rate"></a>**State the bound, and declare the subject, in the check
+   itself.** [review-enforced]
+   Document what the check does not catch. Where feasible, seed known
    discrepancies and report what fraction was caught. An unstated bound gets
    trusted past its range.
+   Declare in the same docstring **what the mechanism compares** — the artifact
+   pair, the rule when it guards a single artifact, or what it surfaces when it
+   only measures — in the machine-readable `Drift-gate::` block that
+   [`gen_gate_inventory.py`](../scripts/gen_gate_inventory.py) reads to derive
+   [`GATE-INVENTORY.md`](GATE-INVENTORY.md). The declaration lives beside the
+   code because a curated mapping of which mechanism watches which pair is the
+   parallel artifact Rule 3 forbids, one layer up.
+   **What enforcement reaches, stated because this rule is the one that asks for
+   bounds:** wiring a script named `check_*`, `gen_*`, `drift_*` or `report_*`
+   as a command without a block fails that gate. A mechanism named outside those
+   prefixes **and** carrying no block passes silently — declaring is what puts a
+   mechanism in the inventory, whatever it is called; the prefixes only decide
+   what failing to declare costs. So the obligation is on the author, and the
+   gate is a backstop for the conventional case rather than a guarantee of
+   coverage. The generated inventory carries the full bound list, including the
+   other ways a mechanism escapes.
 
 8. <a id="independence"></a>**Verify independence of derivation path; never assume
    it.** [review-enforced]
@@ -97,6 +113,10 @@ touch.
 # bad:  "verifies spec-to-test traceability"
 # good: "verifies a marker citing the ID exists; does not verify the test asserts
 #        the clause, is enabled, or cites the right ID"
+
+# Rule 7: declare the subject, machine-readably, in the same docstring
+# bad:  a row added by hand to an inventory of what checks what
+# good: Drift-gate:: kind: pair / compares: A <-> B / domain: intent <-> verification
 ```
 
 ### How the rules interact

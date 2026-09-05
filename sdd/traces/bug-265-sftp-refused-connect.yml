@@ -1,0 +1,712 @@
+id: BUG-265
+title: "A refused SFTP connect raises RemoteStoreError, which contradicts fifteen docstrings and the health-check guide"
+trigger: >-
+  BK-359's round-1 reviewer noticed, as a Possible it could not run, that
+  SFTPBackend promised BackendUnavailable for a connection that cannot be
+  established and did not deliver it for a refused port. Running it confirmed
+  that, and a DNS failure with it: both are OSError subclasses no arm of
+  _map_exception claimed, so both exited at the generic arm as the base class
+  while fifteen docstrings and the health-check guide said otherwise.
+source_items:
+  - BUG-265
+  - BK-359
+audience:
+  - user.api
+  - user.site
+discovery_followups:
+  # BUG-273 was born in round 3, from the measuring member driving each connect
+  # errno through paramiko rather than reading which ones it wraps. Filed with
+  # its trigger explicitly unreproduced, which is the first work on it.
+  # BUG-274 was born in round 5, from the frame-recording measurement that this
+  # round's own test fix was built on — the re-entry guards consult only
+  # _is_connection_dead, so a keyed operation against an unreachable host pays
+  # the connect budget two or three times. Not a regression, so filed rather
+  # than fixed; the widening it wants is the one this PR declined under review.
+  # BUG-275 was born in the closing whole-file pass, which went looking for
+  # half-reverted state from round 6 and found a whole claim older than this
+  # item: _raise_if_dir's permission re-raise delivers PermissionDenied for
+  # EACCES and the base class for EPERM, while four artifacts promise both.
+  - BUG-273
+  - BUG-274
+  - BUG-275
+expected_ripples:
+  # sdd/backlogid.json is deliberately absent, against the schema's own example
+  # ("after any BACKLOG/BACKLOG-DONE edit"): it is a max-allocated-ID map, this
+  # item allocates no ID because BUG-265 already existed on master, and
+  # `gen_backlogid.py --check` passes with the file untouched. The example is
+  # over-broad for a close.
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - docs-src/reference/migration.md
+  - docs-src/_data/graph/graph.json
+  - docs-src/explanation/graph_viz.html
+surprising_ripples:
+  # BACKLOG-DONE.md is here rather than in expected_ripples, which the schema
+  # makes its complement, and the two lists are keyed by path — so the routine
+  # half (move the closed item in) is folded into this entry rather than
+  # splitting one file across both. The routine half was anticipated; this was
+  # not. BK-359's *own* register entry stated the pre-fix behaviour as a
+  # present-tense fact ("a refused connect and a DNS failure never reach
+  # _unavailable at all"), true when it shipped and falsified by this change.
+  # Nothing routes from "I am changing behaviour X" to "which BACKLOG-DONE
+  # entries described X": the Error-type row names the error model, the backend
+  # mappings, their tests and the troubleshooting guide, and the
+  # Backlog-item-touched row reaches the item being closed, not the neighbours
+  # a close falsifies.
+  - sdd/BACKLOG-DONE.md
+# Derived from `git log --format='%s' origin/master..HEAD --reverse`, naming the
+# commits by subject rather than by SHA, per the schema's clause: a SHA does not
+# survive a rebase and a commit cannot carry its own.
+#   BUG-265: Raise BackendUnavailable for an SFTP host that was never reached
+#            -> does not count (implements the item)
+#   BUG-265: Fix a migration cross-reference, an untested branch and two trace
+#            fields -> counts (round 1, 3 findings)
+#   BUG-265: Correct three derived figures a measuring round refuted, and guard
+#            a second blank shape -> counts (round 2, 4 findings)
+#   BUG-265: Stop counting the arms, and record what the panel refuted
+#                                                 -> counts (round 3, 15
+#            findings from a three-member panel after dedup)
+#   BUG-265: Enumerate the connect-time predicate space instead of arguing it
+#                                                 -> counts (round 4, 13
+#            findings from a three-member panel after dedup)
+#   BUG-265: Claim EPERM, and repair two assertions that could not fail
+#                                                 -> counts (round 5, 12
+#            findings from a three-member panel after dedup)
+#   BUG-265: Revert EPERM, and sweep what round 5 left half-swept
+#                                                 -> counts (round 6, 9
+#            findings from a three-member panel after dedup)
+#   BUG-265: Correct the grounds for the EPERM revert, and file BUG-275
+#                                                 -> counts (closing whole-file
+#            pass, 3 findings, one root)
+#   Merge remote-tracking branch 'origin/master' ... -> does not count (ID-253
+#            landed on master; conflict resolution, no review finding)
+#   BUG-265: Fix the author's review, and caveat a published row it falsified
+#                                                 -> counts (author's own
+#            review against the five-step reading path, 4 findings)
+#   BUG-265: Record the user-facing cost of each follow-up item
+#                                                 -> does not count (answers a
+#            question from the author about the three filed items; no review
+#            finding)
+#   BUG-265: Correct two misattributions and two counts a whole-file pass found
+#                                                 -> counts (second author pass
+#            over the five files the prose-only commits touched, 4 findings)
+# Value is 9 — one per review round that produced a commit. Three rows do not:
+# row 1 implements the item, the merge resolves a conflict, and the
+# follow-up-cost row answers a question. Re-derived from that command before
+# each push, since a later round raises it — and the round that raised it to 9
+# is the one that found this comment enumerating ten rows where the command
+# returned eleven. Round 4 found the third subject line quoted
+# here had drifted from what the command returns ("blank-message shape" for
+# "blank shape"), which is why the quotations are copy-pasted now.
+review_rounds: 9
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-265"
+        read_type: gate
+        extract: >-
+          The two measured shapes, the fifteen-docstring derivation, and the
+          item's own note that nothing pins a refused backend connect today —
+          so the first work is the failing test
+        outcome: misleading
+      - file: sdd/BACKLOG.md
+        section: "1. Failures are predictable"
+        read_type: gate
+        extract: >-
+          The Promise's first clause — "a caller catches one exception type" —
+          and the Closes-when sentence naming BUG-265, which has to move when it
+          closes. Retrospective: this said "second clause" until round 3. The
+          second is the absent-or-denied-store clause, and the file numbers
+          itself two lines below (BK-359 is "a third clause"), so the miscount
+          was checkable from the same screen
+        outcome: ok
+      - file: sdd/specs/005-error-model.md
+        section: "ERR-007"
+        read_type: gate
+        extract: >-
+          "Raised when the backend cannot be reached or initialized." A refused
+          port and an unresolvable name are squarely that, so the spec is right
+          and the code is wrong (CLAUDE.md principle 5). ERR-007 needed no
+          amendment
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Pre-work index"
+        read_type: gate
+        extract: >-
+          Triggered rows: Error type, Bug fix, Backlog item touched, CHANGELOG
+          entry, Breaking change. The last is the one that decided the
+          disposition — a fix that breaks an except clause without earning the
+          marker owes the migration section alone
+        outcome: ok
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_map_exception, _is_connection_dead, _unavailable"
+        read_type: gate
+        extract: >-
+          Drove check_health against a just-released ephemeral port and an
+          RFC 2606 .invalid host in a throwaway script rather than reading which
+          arm would claim them. NoValidConnectionsError arrives with errno None
+          and gaierror with -2; neither is in any errno tuple, and
+          _is_connection_dead's errno-less branch matches only "Socket is
+          closed"
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_connect (tenacity retry predicate)"
+        read_type: verify
+        extract: >-
+          Checked rather than changed: the connect retry already fires on
+          OSError, so it already retried both shapes. Classification happens
+          after the budget is exhausted, so reclassifying changes no retry
+          behaviour — which is why the migration entry claims none
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPScanHostKeys::test_scan_unreachable_raises"
+        read_type: reference
+        extract: >-
+          The just-released-ephemeral-port trick, reused for the end-to-end
+          tests, and the control that must stay green: scan_host_keys does not
+          go through the mapping and still raises OSError
+        outcome: ok
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: sdd/000-process.md
+        section: "Rule 6 (bug-fix pipeline)"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing test → fix, in one commit"
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPMapException"
+        read_type: reference
+        extract: >-
+          The existing home of _map_exception unit tests. Added the seven-shape
+          parametrisation, the DNS host-naming case, the keep-paramiko's-detail
+          case, the one-record case and the unrelated-errno bound; plus
+          TestSFTPUnreachableHost for the real connect path, and later
+          TestSFTPConnectTimePredicateSpace.
+          **Derived from the collected-node-id difference, not from a
+          hand-kept list** — collect over tests/backends/sftp/ at 3e6d318 and at
+          HEAD, subtract, then run the difference against the base library on
+          PYTHONPATH: **31 added, 23 fail, 8 pass**. The 8 are the
+          keep-paramiko's-detail case, both unrelated-errno params, the
+          permission-errno exclusion test (which asserts what did *not* change),
+          and all four connect-timeout cells, which pass pre-fix because
+          _is_connection_dead already claimed socket.timeout. It read 32/25/7
+          until round 6 reverted the EPERM param and replaced its test —
+          re-derived by the same node-id diff, not adjusted by hand.
+          Retrospective, and this figure was wrong **four** times, each
+          differently: "11 of 15" was counted off a progress bar rather than a
+          summary line (the run was 12 of 15); "13 of 16" was measured correctly
+          but written in the same commit that added a seventeenth test; "14 of
+          17" was re-derived and then staled the same way by round 4's thirteen;
+          and each time the paragraph beside it already named a count the figure
+          contradicted. The lesson took three attempts to state usefully: not
+          "re-derive after the last test lands" — every revision believed it
+          had — but **derive the population by diffing collected node ids
+          rather than enumerating what you remember adding**, which is what
+          finally made the figure reproduce
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_unreachable, _unreachable_message, _map_exception"
+        read_type: reference
+        extract: >-
+          A predicate and an arm of its own rather than widening
+          _is_connection_dead. **The reason recorded here was refuted twice
+          after this step was written** — see the fix_panel and fix_enumerated
+          phases; it said "no operation is in flight when a connect is refused",
+          which is false, and its replacement was false too. The reason that
+          survives is that the two predicates answer different questions, and
+          the condition's space is enumerated in a test rather than argued.
+          Called at 15 sites in the module, 14 of them outside _map_exception
+          (`rg -n 'self\._is_connection_dead' src/remote_store/backends/_sftp.py`
+          minus the one inside the mapping). Retrospective: this line said
+          "eight call sites" until the round-2 figure sweep, having taken a
+          prose-mention count for the call count, and then carried "8 more"
+          prose mentions until round 4 found that stale too — the docstring
+          edits in this very PR moved it. That second figure is now dropped
+          rather than corrected: "prose mention" has no crisp definition and the
+          number moves every time a docstring is touched
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-023"
+        read_type: gate
+        extract: >-
+          The clause the fix has to satisfy and the one it has to amend. Added
+          the connect-time set to the Invariant, scoped the "four blank shapes"
+          count that the wider signal list would otherwise have falsified, and
+          replaced the paragraph stating that a refused connect reaches
+          _unavailable zero times. The largest single edit in the diff and it
+          had no step here until round 2 asked why: a spec amendment reads like
+          part of the implementation rather than a read worth recording, so it
+          never prompted a step the way opening a gate does. No coverage figure
+          is attached, because the one this line carried was wrong twice over —
+          it quoted the post-fix number for the pre-fix state, and attributed it
+          to an omission that moved coverage by zero files, the spec already
+          having been named by the SFTP-010 verify step
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_unavailable (docstring, block comment)"
+        read_type: verify
+        extract: >-
+          Two claims the fix falsified and neither was flagged by anything: the
+          "four blank shapes" set is now drawn from a wider signal list, and the
+          block comment stated that a refused connect reaches this method zero
+          times. Both are in the same helper the change routes through, which is
+          the only reason they were met
+        outcome: ok
+  - id: docs
+    name: Documentation
+    steps:
+      - file: docs-src/guides/health-check.md
+        section: "Error handling"
+        read_type: verify
+        extract: >-
+          Checked rather than changed. The BackendUnavailable row already said
+          "Network error, DNS failure, or timeout" and is now true as written
+          **for the failures this item covers** — the qualifier is load-bearing,
+          because BUG-273 records a locally-rejected connect that still answers
+          PermissionDenied. Round 4 added that qualifier to the register entry
+          and round 5 found this copy still unqualified, so the repo stated the
+          scoped claim in one file and the flat one in another for a commit.
+          The BACKLOG item claimed this guide "now carries a caveat pointing
+          here"; it never did, and that sentence was corrected on the way out
+          rather than carried into the register entry
+        outcome: misleading
+      - file: docs-src/reference/migration.md
+        section: "v0.30.0 to v0.31.0"
+        read_type: reference
+        extract: >-
+          Same unreleased window as BK-356 and BK-357, so this is a subsection
+          rather than a new version pair. States the type change, that no except
+          clause stops catching, which branch a two-clause handler now takes,
+          and the new per-poll WARNING
+        outcome: ok
+      - file: docs-src/guides/backends/sftp.md
+        section: "Preflight host-key discovery"
+        read_type: verify
+        extract: >-
+          Checked rather than changed: "Network failures (host unreachable, port
+          refused, DNS error) raise OSError" is about SFTPUtils.scan_host_keys,
+          which bypasses the mapping. The sentence a text search flags first is
+          the one that stays true
+        outcome: ok
+  - id: fix
+    name: Round-1 fix pass
+    steps:
+      - file: docs-src/reference/migration.md
+        section: "v0.30.0 to v0.31.0 (io_timeout opt-out paragraph)"
+        read_type: verify
+        extract: >-
+          Inserting a subsection falsified a sentence four sections above it,
+          which counted "the other v0.31.0 change on this backend, in the next
+          section" and now had two siblings. Found by review, not by writing the
+          section — nothing in the ripple-check routes from "I added a section"
+          to "which sentences counted the sections". Swept the file's other
+          positional references (`next section` at the flat-namespace scope
+          note, two `section below` in the Graph entries): all sit after the
+          insertion point and were unaffected
+        outcome: ok
+      - file: sdd/traces/_schema.yml
+        section: "expected_ripples, surprising_ripples"
+        read_type: gate
+        extract: >-
+          Re-read after review found this trace listing sdd/backlogid.json,
+          which the PR does not touch — the schema's own example names it "after
+          any BACKLOG/BACKLOG-DONE edit", which is over-broad for a close that
+          allocates no ID. The two lists are also complements, so one path
+          cannot sit in both; BACKLOG-DONE.md is kept in the surprising one and
+          its routine half folded into that comment
+        outcome: misleading
+  - id: fix_measured
+    name: Round-2 fix pass (measuring round)
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) BUG-265"
+        read_type: verify
+        extract: >-
+          A measuring round ran all three readings of the fifteen-docstring
+          predicate and refuted the sentence describing them: substring 15,
+          full-line equality against the prefix 14 (not 1 — the fourteen wrap
+          the sentence, so their line *is* the prefix), equality against prefix
+          plus period 1. The inversion was inherited verbatim from the BACKLOG
+          item's own body, so it had been read past on master, in the item, in
+          the register entry and in the PR body. Nothing but running it finds a
+          claim that plausible
+        outcome: misleading
+      - file: docs-src/reference/migration.md
+        section: "v0.30.0 to v0.31.0 (io_timeout opt-out paragraph)"
+        read_type: verify
+        extract: >-
+          Round 1's fix moved this sentence's count from one to two and it was
+          still wrong: enumerating the version block's ten bolded subsections
+          finds backend-agnostic ones that reach SFTP without saying so in their
+          heading. The sentence now gives no count and says why — the second
+          correction of one sentence, and the lesson is that the count was never
+          the load-bearing part of it
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_unreachable_message"
+        read_type: reference
+        extract: >-
+          The measuring pass reported, without posting it, that a zero-argument
+          gaierror would render "Cannot resolve SFTP host 'x': " with a dangling
+          colon — the resolution branch is reached first, so the errno branch's
+          blank handling never sees that shape. Both blank cases are now handled
+          and both pinned; neither is raised by anything today, which the spec
+          now says rather than leaving them to read as observable behaviour
+        outcome: ok
+  - id: fix_panel
+    name: Round-3 fix pass (three-member panel)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_unavailable (docstring), _is_unreachable (docstring)"
+        read_type: verify
+        extract: >-
+          A whole-file member read each changed file's current state rather than
+          its diff, and found what two diff-anchored rounds could not: the new
+          arm is the *fifth* to reach _unavailable, and "the four arms" was
+          still written three lines above a sentence this PR had already edited.
+          Two test docstrings carried the same figure and one called the
+          SSHException arm "the remaining one". Every count is now replaced by
+          the rg command that derives it — the fix is removing the number, not
+          incrementing it, because incrementing is what round 1 did to the
+          migration sentence and round 2 had to correct it again
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_unreachable (errno bullet)"
+        read_type: verify
+        extract: >-
+          A measuring member drove each connect errno through
+          paramiko.SSHClient.connect with socket.connect monkeypatched, and
+          refuted this bullet's rationale: SSHClient.connect captures only
+          ECONNREFUSED and EHOSTUNREACH into NoValidConnectionsError and
+          re-raises the rest, so ENETUNREACH / ENETDOWN / EHOSTDOWN are the
+          *ordinary* path, not the fallback the docstring called them. paramiko
+          5.0.0's own docstring says as much. The wrong rationale was the
+          dangerous kind: it invited a later maintainer to trim three live
+          entries as hypothetical
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-023 (connect-time set)"
+        read_type: verify
+        extract: >-
+          The same member refuted the separation rationale by execution: a
+          connect that times out raises socket.timeout, which
+          _is_connection_dead already matches, so "no operation is in flight at
+          connect time" is not what keeps the sets apart — a connect-time shape
+          is already in the other one, harmlessly. The reason that survives is
+          that the two predicates answer different questions. Restated in the
+          spec and the docstring together
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPMapException (docstrings)"
+        read_type: verify
+        extract: >-
+          Three docstrings in the file this PR edits argued from behaviour this
+          PR reverses — most sharply the one saying a refused connect and a
+          stall "were always distinguishable by type", whose whole point is a
+          distinction the change removes. None sits on a + line, so only a
+          whole-file pass could reach them
+        outcome: ok
+  - id: fix_enumerated
+    name: Round-4 fix pass (repeat-site check fired)
+    steps:
+      - file: .claude/skills/ship/SKILL.md
+        section: "Stop rule / Repeat-site check"
+        read_type: gate
+        extract: >-
+          Three rounds refuted the same condition — why _is_unreachable is
+          separate from _is_connection_dead — each time by a state the argument
+          had not considered. That is the rule's trigger, and its instruction is
+          to stop arguing and enumerate the space. Round 4's measuring member
+          made it unarguable: read_bytes against a refused port consults
+          _is_connection_dead three times, twice before the mapping, so the
+          replacement rationale round 3 wrote was false in the same way as the
+          one it replaced
+        outcome: ok
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPConnectTimePredicateSpace"
+        read_type: reference
+        extract: >-
+          The enumeration the rule asks for: connect-time shape x operation,
+          twelve cells, asserting the caller's observable answer per cell rather
+          than which predicate claimed the shape. Plus one test pinning the fact
+          that killed two rationales — that the re-entry guard IS consulted on
+          the connect path — asserting reachability and deliberately not a
+          count, since the count belongs to read_bytes' probe sequence and would
+          make an unrelated refactor fail
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_unreachable (docstring), _unavailable (docstring)"
+        read_type: verify
+        extract: >-
+          Every reachability claim deleted, replaced by a pointer to the
+          enumeration. Also made _unavailable's docstring raw: it cited an rg
+          command that did not run as written from the source, because the
+          non-raw string needed doubled backslashes to render — a derivation
+          command a maintainer copies from the file and that fails is worse than
+          the count it replaced
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-273"
+        read_type: verify
+        extract: >-
+          The reproduction recipe filed one round earlier was wrong:
+          icmp-admin-prohibited maps to EHOSTUNREACH, which BUG-265 already
+          claims, so a reader following it would conclude the defect does not
+          exist. Replaced with "no trigger is known" and the failed recipe
+          recorded so it is not tried twice. Also corrected the item's message
+          claim per operation — check_health answers a bare "Permission denied:
+          ", not a keyed message
+        outcome: ok
+  - id: fix_vacuous
+    name: Round-5 fix pass (two assertions that could not fail)
+    steps:
+      - file: tests/backends/sftp/test_config.py
+        section: "TestSFTPConnectTimePredicateSpace"
+        read_type: verify
+        extract: >-
+          **The enumeration written as round 4's repeat-site response shipped
+          two assertions with no discriminating power, and review measured
+          both.** The guard-reachability test recorded only *that*
+          _is_connection_dead was consulted — but _map_exception consults it
+          unconditionally, so one guaranteed call satisfied it: deleting
+          read_bytes' entire pre-mapping guard left it green, and check_health,
+          which has no such guard, passed it too. It now records the calling
+          frame and asserts a consult from outside the mapping. The per-cell
+          "cleared client" assertion was vacuous for a different reason — the
+          client is None on entry to all twelve cells — so the claim is
+          withdrawn from the test and from the artifacts citing it, since the
+          invariant is really pinned by the unit test that seeds a sentinel.
+          Both repairs were confirmed by mutating a scratch copy of the backend
+          under tmp/ and observing the tests fail. This is the loop's own rule
+          about a verification that can fail silently, met in the artifact
+          written to end an argument about a different one.
+          Retrospective: this line said "the three artifacts" and the sweep
+          reached two. Round 6 found the third — _is_unreachable's own docstring,
+          the one telling a reader to go and read that table — still promising a
+          guarantee the table had stopped making. A sweep described as complete
+          in the same commit that left it incomplete
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_unreachable (errno tuple)"
+        read_type: reference
+        extract: >-
+          EPERM added, on the user's decision, and **reverted one round later**
+          — see the fix_reverted phase. The measuring member found the PR
+          shipping a fix for the connect errnos while BUG-273's own body
+          documented a local OUTPUT-chain REJECT yielding EPERM, a reproducible
+          instance of the very defect falling to the generic arm. The safety
+          argument I supplied with it — "the errno dispatch has no EPERM arm, so
+          nothing else wants it" — was true of the dispatch and false of the
+          module, and the user's decision rested on it
+        outcome: misleading
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-023 (message taxonomy)"
+        read_type: verify
+        extract: >-
+          Three copies claimed a refused connect "already names host and port".
+          It does not: NoValidConnectionsError builds its text from the
+          addresses paramiko *tried*, so a store configured as a DNS name
+          reports an IP — which is the same "never says which name" deficiency
+          the gaierror arm exists to fix, and it was being used as the reason
+          that arm needs no message. The taxonomy is now a table with the
+          resolved-address subject stated, and it gained the row the prose
+          version omitted: the plain-errno shapes name nothing either
+        outcome: ok
+      - file: sdd/traces/bk-359-stalled-sftp-error-detail.yml
+        section: "docs / health-check.md step"
+        read_type: verify
+        extract: >-
+          A sibling trace's measured sentence — "a refused port raises
+          RemoteStoreError ... none carries op=error_mapping" — is now false in
+          every clause. Annotated in place rather than rewritten, and the
+          general rule stated with it: a register entry states current fact and
+          gets corrected, a trace states a past reading and gets annotated.
+          Round 5 raised this as the two artifacts disagreeing about which
+          treatment such a sentence gets; this is the answer
+        outcome: ok
+  - id: fix_reverted
+    name: Round-6 fix pass (a behaviour change withdrawn)
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "_raise_if_dir (permission re-raise), _is_unreachable"
+        read_type: gate
+        extract: >-
+          **The most important read of the whole item, and it came at round 6.**
+          _raise_if_dir re-raises EACCES *and EPERM* on purpose, from a working
+          channel, inside the caller's _errors(path) block. So claiming EPERM
+          answered a server-reported denial with BackendUnavailable and
+          discarded a healthy client. Retrospective: this step first added "and
+          a published migration row promises PermissionDenied for that stat, SO
+          claiming EPERM..." — the closing pass measured that the row was never
+          honoured for EPERM either way (no EPERM arm in the dispatch; it has
+          always answered the base class), so the row is a separate pre-existing
+          defect, filed as BUG-275, and not the reason the claim was harmful.
+          The harm stands on its own without it. Measured on the shape
+          test_raise_if_dir_permission_stat_maps_permission_denied drives, with
+          a sentinel seeded to see the clearing. Reverted, and the exclusion is
+          now pinned by a test rather than argued in a comment, because the
+          argument is what failed: "nothing else wants this errno" is a claim
+          about the module and was checked against one if-chain
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-273"
+        read_type: reference
+        extract: >-
+          Rewritten to carry both permission errnos as one problem rather than
+          EACCES alone, with the EPERM attempt and its measurement as the
+          item's sharpest evidence — a claim-and-revert inside the PR is better
+          grounds than the unreproduced EACCES trigger it was filed on. The
+          disposition is now specific: classify what _connect raises before the
+          caller's _errors block sees it, which is the only place the
+          connect-time context exists and reaches both errnos at once
+        outcome: ok
+      - file: docs-src/reference/migration.md
+        section: "Scope paragraph, v0.29.1 to v0.30.0 table"
+        read_type: verify
+        extract: >-
+          The Scope sentence ("only the connect-side failures ... a connection
+          that is working still raises the base RemoteStoreError") was false
+          while EPERM was claimed, and the revert makes it true again; the
+          paragraph now says *why* and links the older section, so the next
+          widening has to meet it. Retrospective: this step first said the
+          revert "makes both true again", counting the v0.30.0 table row four
+          hundred lines below. The closing pass measured that only one of the
+          two was ever true — EPERM has answered the base class throughout, so
+          that row's "after" column equals its "before" column and the revert
+          restored nothing there. Filed as BUG-275. A revert restores the state
+          before the change, which is not the same as the state the documents
+          describe, and this step assumed it was
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "(item) BUG-265, closing qualifier"
+        read_type: verify
+        extract: >-
+          The sentence scoping the health-check row's truth was added in round 4
+          and describes BUG-273 as it read before round 6 retitled it — "one
+          class of network error ... that still answers PermissionDenied", where
+          the item now carries both permission errnos and the only reproducible
+          shape (EPERM) answers the base class instead. Two rounds swept past
+          it, which is the half-reverted-state class the round-6 commit message
+          itself enumerates, met one artifact further out
+        outcome: ok
+  - id: fix_user_review
+    name: Fix pass on the author's own review
+    steps:
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-023 (permission-errno paragraph)"
+        read_type: verify
+        extract: >-
+          The one real defect the author's review found, and it is the shape
+          this whole item exists to fix, restated in the spec that fixes it:
+          the paragraph asserted "a locally-rejected connect takes the EACCES
+          arm and is answered PermissionDenied" as contract fact, while BUG-273
+          — filed by this PR — records that no EACCES trigger is known, and was
+          silent on EPERM, the one local rejection that IS reproducible and that
+          reaches the generic arm as the base class. Rewritten as two bullets
+          saying what each errno does, with the unestablished trigger attributed
+          rather than stated
+        outcome: ok
+      - file: docs-src/reference/migration.md
+        section: "v0.29.1 to v0.30.0 (SFTP failure paths table)"
+        read_type: verify
+        extract: >-
+          Principle 1 and 3 met where filing an item is not enough: this PR
+          establishes that a published row is false for EPERM, edits this file,
+          and adds a cross-reference pointing at that row — so leaving it
+          unmarked was the unfinished half. The row now says EACCES only and
+          carries a warning admonition. Filing BUG-275 handles fixing it;
+          marking the gap is what the same commit owed
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-023 (retrospective density)"
+        read_type: reference
+        extract: >-
+          The round-6 whole-file member raised this and declined to file it; the
+          author's review derived it — retrospective passages whose subject is a
+          previous draft went 2 to 7 in this PR — and separated the kinds. Kept
+          the one that constrains a future editor (do not re-add a reachability
+          rationale); dropped three whose subject was which earlier sentence of
+          this section was wrong, since their authoritative home is this trace
+          and a copy here is a second place to keep in step. Principles 4 and 8.
+          The fifth needed no decision — it was the EPERM paragraph, and the
+          permission-errno rewrite in this same pass took it — so four of the
+          five added are gone and the section carries **three**, one more than
+          it did before this PR rather than five more. That last figure was
+          published as 2 to 4 and corrected: the reply arithmetic counted the
+          EPERM passage as kept, which is a fourth way to state a count without
+          running the enumeration behind it
+        outcome: ok
+  - id: fix_whole_file
+    name: Second author pass (whole-file, on the prose-only commits)
+    steps:
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-023 (EPERM bullet)"
+        read_type: verify
+        extract: >-
+          The pass the author asked for over the two prose-only commits nobody
+          had reviewed, and it found the round-7 fix carrying a misattribution
+          of its own: the bullet sent a reader to BUG-275 for a *connect-time*
+          EPERM, while BUG-275 scopes itself to _raise_if_dir's stat on a
+          working channel (`spec: SFTP-021`) and BACKLOG-DONE.md's own entry
+          attributes the same shape to BUG-273. Two files of this PR disagreed
+          about which item a reader should follow. The suggestion in the review
+          that prompted the round-7 fix named BUG-275 too, which is why it was
+          taken without checking — **a finding's own citation is not derived
+          just because the finding is right**
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "1. Failures are predictable (Closes-when narrative)"
+        read_type: verify
+        extract: >-
+          The same defect the author's review had just fixed in SFTP-023,
+          unswept one file over: this section stated flatly that a locally
+          rejected connect "answers PermissionDenied against the caller's key",
+          which is true only of the EACCES shape whose trigger is unknown — the
+          reproducible EPERM one answers the base class. BACKLOG-DONE.md already
+          carried the qualified version, so the repo again stated the scoped
+          claim in one file and the flat one in another, which the docs phase
+          records happening once before between the same two artifacts. Round 7
+          fixed the copy its finding named and swept no further
+        outcome: ok
+      - file: sdd/traces/bug-265-sftp-refused-connect.yml
+        section: "review_rounds derivation, fix_user_review retrospective step"
+        read_type: verify
+        extract: >-
+          Two counts in this file, both found by re-running their own stated
+          derivations. The review_rounds comment enumerated ten commits where
+          `git log --format='%s' origin/master..HEAD --reverse` returned eleven,
+          the unannotated row being the one that answered the author's question
+          about the filed items; the value 8 was right and its enumeration was
+          not, which is the readable half going stale while the figure held. And
+          the retrospective-density step said five passages were added, one
+          kept, three dropped — leaving the fifth unaccounted, so a reader doing
+          the arithmetic gets four where `rg` over SFTP-023's span returns three
+        outcome: ok
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Detailed checklist"
+        read_type: verify
+        extract: "Error type, Bug fix, Backlog item touched, CHANGELOG entry, Breaking change rows"
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-010 (tier 2)"
+        read_type: verify
+        extract: >-
+          Checked rather than changed. Its enumeration is explicitly the
+          *dead-connection* signal set, and the unreachable shapes are not in
+          it; the invariant it states — every mapping that concludes
+          BackendUnavailable clears the client — is what the new arm complies
+          with. Adding connect-time shapes to a list labelled dead-connection
+          would have falsified the framing to satisfy the letter
+        outcome: ok

@@ -219,13 +219,22 @@ class Backend(abc.ABC):
             call ``get_file_info()`` for them).
 
         Raises:
-            AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or if any slash-aligned
+            InvalidPath: If *path* is the store root. This is the **first**
+                precondition, decided from the key before any request is
+                issued, and no backend declaring ``WRITE`` is exempt from it —
+                including flat-namespace backends, which are exempt from the
+                directory check below. (A backend without ``WRITE`` refuses
+                every path with ``CapabilityNotSupported`` and never reaches
+                this check.) It covers every spelling that addresses the root,
+                which is wider than ``""`` and ``"."``: ``"./"``, ``".//"``,
+                ``"./."`` and ``"/"`` are refused too.
+                Also if *path* names a directory, or if any slash-aligned
                 ancestor of *path* exists as a regular file. Flat-namespace
                 backends (S3, Azure non-HNS, SQL) cannot detect a file
-                ancestor in O(1) and skip the check by default; the
+                ancestor in O(1) and skip *that* check by default; the
                 per-backend ``reject_write_under_file_ancestor`` opt-in
                 enables it.
+            AlreadyExists: If the file exists and ``overwrite`` is ``False``.
         """
 
     @abc.abstractmethod
@@ -239,6 +248,11 @@ class Backend(abc.ABC):
     ) -> WriteResult:
         """Write content atomically via temp file + rename.
 
+        Failure behaviour is ``open_atomic``'s, which shares the temp-and-promote
+        mechanism: readers never observe a partial *path*, but a failure in the
+        backend's connection guarantees neither that a temp artifact was cleaned
+        up nor that the write did not land.
+
         Args:
             path: Backend-relative key.
             content: Data to write.
@@ -250,9 +264,11 @@ class Backend(abc.ABC):
 
         Raises:
             CapabilityNotSupported: If backend lacks ``ATOMIC_WRITE``.
+            InvalidPath: If *path* is the store root (see ``write`` — first
+                precondition, from the key, every spelling), if *path* names
+                a directory, or if any slash-aligned ancestor of *path*
+                exists as a regular file.
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or if any slash-aligned
-                ancestor of *path* exists as a regular file (see ``write``).
         """
 
     @abc.abstractmethod
@@ -260,16 +276,26 @@ class Backend(abc.ABC):
         """Yield a writable file object backed by a temporary location.
 
         On successful exit the temp file is atomically promoted to *path*.
-        On exception the temp file is removed and *path* is untouched.
+        On an exception raised by the caller's own code, the temp file is removed
+        and *path* is untouched. **Neither half is guaranteed when the failure is
+        the backend's connection**: a backend whose cleanup would re-enter the
+        same failed connection may leave the temp behind, and a promote whose
+        reply is lost may have been performed. What every backend does guarantee
+        is that no reader observes a partially written *path*. Documenting the
+        lost-connection behaviour is required of implementations rather than
+        guaranteed by them; a backend that leaves it unstated is a gap, not a
+        promise that nothing happens.
 
         Args:
             path: Backend-relative key.
             overwrite: If ``False``, raise if file already exists.
 
         Raises:
+            InvalidPath: If *path* is the store root (see ``write`` — first
+                precondition, from the key, every spelling), if *path* names
+                a directory, or if any slash-aligned ancestor of *path*
+                exists as a regular file.
             AlreadyExists: If *path* exists and *overwrite* is ``False``.
-            InvalidPath: If *path* names a directory, or if any slash-aligned
-                ancestor of *path* exists as a regular file (see ``write``).
             CapabilityNotSupported: If the backend lacks ``ATOMIC_WRITE``.
         """
 
@@ -279,8 +305,9 @@ class Backend(abc.ABC):
 
         An absent container — a missing bucket, container or table — counts as
         an absent file, so *missing_ok* tolerates it on the same terms. This is
-        required of implementations rather than guaranteed by them: the local
-        backend still raises ``InvalidPath`` when its root directory is gone.
+        required of implementations rather than guaranteed by them; a backend
+        that does not comply is a defect, tracked in the backend contract's own
+        list of known divergences.
 
         Args:
             path: Backend-relative key.
@@ -298,8 +325,9 @@ class Backend(abc.ABC):
 
         An absent container — a missing bucket, container or table — counts as
         an absent folder, so *missing_ok* tolerates it on the same terms. This is
-        required of implementations rather than guaranteed by them: the local
-        backend still raises ``InvalidPath`` when its root directory is gone.
+        required of implementations rather than guaranteed by them; a backend
+        that does not comply is a defect, tracked in the backend contract's own
+        list of known divergences.
 
         Args:
             path: Backend-relative key.
@@ -388,9 +416,16 @@ class Backend(abc.ABC):
             overwrite: If ``True``, replace any existing file at *dst*.
 
         Raises:
+            InvalidPath: If ``src`` or ``dst`` is the store root — the first
+                precondition, decided from the key and ahead of the
+                source-existence check, so a root ``dst`` is refused whether
+                or not ``src`` exists. ``dst`` is a write and is refused
+                under every spelling that addresses the root; ``src`` is a
+                file-shaped operation on a folder and is refused for ``""``
+                and ``"."`` at minimum. Also if ``src`` or ``dst`` names a
+                directory, or if any slash-aligned ancestor of ``dst`` exists
+                as a regular file.
             NotFound: If ``src`` does not exist.
-            InvalidPath: If ``src`` or ``dst`` names a directory, or if any
-                slash-aligned ancestor of ``dst`` exists as a regular file.
             AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
 
@@ -406,9 +441,16 @@ class Backend(abc.ABC):
             overwrite: If ``True``, replace any existing file at *dst*.
 
         Raises:
+            InvalidPath: If ``src`` or ``dst`` is the store root — the first
+                precondition, decided from the key and ahead of the
+                source-existence check, so a root ``dst`` is refused whether
+                or not ``src`` exists. ``dst`` is a write and is refused
+                under every spelling that addresses the root; ``src`` is a
+                file-shaped operation on a folder and is refused for ``""``
+                and ``"."`` at minimum. Also if ``src`` or ``dst`` names a
+                directory, or if any slash-aligned ancestor of ``dst`` exists
+                as a regular file.
             NotFound: If ``src`` does not exist.
-            InvalidPath: If ``src`` or ``dst`` names a directory, or if any
-                slash-aligned ancestor of ``dst`` exists as a regular file.
             AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
 
@@ -516,7 +558,9 @@ class Backend(abc.ABC):
 
         Raises:
             PermissionDenied: If credentials are invalid.
-            NotFound: If the bucket, container, or root path does not exist.
+            NotFound: If the bucket, container, or root path does not hold
+                the container it names — it is absent, or something of
+                another type occupies it.
             BackendUnavailable: If the backend cannot be reached.
         """
 

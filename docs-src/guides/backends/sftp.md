@@ -70,8 +70,115 @@ pkey = SFTPUtils.load_private_key(pem_string)
 | `known_host_keys` | `str` | `None` | Known-hosts string (code-level override) |
 | `host_keys_path` | `str` | `~/.ssh/known_hosts` | Path to known_hosts file |
 | `config` | `dict` | `None` | Config dict (may contain `known_host_keys`) |
-| `timeout` | `int` | `10` | SSH connection timeout in seconds |
+| `timeout` | `int` | `10` | Connect-phase timeout in seconds (connect, banner, auth, channel open) |
+| `io_timeout` | `float` | `120.0` | Seconds a blocking read or write on the open channel may stall before failing. Pass `None` for no bound; `0` and negatives are rejected |
 | `connect_kwargs` | `dict` | `None` | Extra kwargs passed to `SSHClient.connect()` |
+
+### Bounding a stalled transfer
+
+`timeout` covers only the connect phase. Once the channel is open, paramiko
+places no bound of its own on reads, so a peer that completes the handshake and
+then stops sending mid-transfer would block indefinitely — holding whatever pool
+slot or worker the transfer was running on, with no error to act on. `io_timeout`
+is what stops that, and it is armed for you.
+
+`io_timeout` bounds the silence *between* bytes rather than the transfer as a
+whole, which is what makes it usable on slow links: a multi-gigabyte fetch that
+takes an hour is unaffected, while a flow that goes quiet for longer than the
+bound raises [`BackendUnavailable`](../../reference/api/errors.md). That error
+names the stall and the value that fired (`SFTP channel stalled: no data within
+io_timeout=120.0s`), and the backend logs it once at `WARNING`, so a stall is
+distinguishable from any other `BackendUnavailable` in a log you read later. What
+it does not say is whether the operation happened —
+[a stalled operation may have succeeded](#capabilities).
+
+**It is on by default, at 120 seconds.** You get the bound without asking for
+it, so nothing you write hangs forever on a silent peer. What you configure is
+whether that value suits your server:
+
+```python
+from remote_store.backends import SFTPBackend
+
+backend = SFTPBackend(
+    host="files.example.com",
+    username="deploy",
+    io_timeout=300,   # a server that legitimately goes quiet for longer
+)
+```
+
+**Size it against the longest legitimate pause your server can produce, not
+against total transfer time.** Raising it costs only how quickly a stall is
+noticed, which is cheap — the bound is on silence between bytes, so a slow
+transfer is unaffected at any value. Lowering it is the riskier direction: a
+server that goes quiet for legitimate reasons, such as an antivirus or dedup
+appliance scanning a large file when you open it, starts failing intermittently,
+which looks like network flakiness and is harder to diagnose than the hang the
+bound replaced.
+
+To turn the bound off entirely, pass `None`:
+
+```python
+backend = SFTPBackend(host="files.example.com", username="deploy", io_timeout=None)
+```
+
+`0` is **not** how you ask for that — it is rejected with `ValueError`, because
+paramiko reads `0` as non-blocking rather than as a bound, and every SFTP
+operation waits on a reply, so all of them would fail at once.
+
+It is an ordinary option, so it is equally settable from a declarative config:
+
+```python
+BackendConfig(
+    type="sftp",
+    options={"host": "files.example.com", "username": "deploy", "io_timeout": 300},
+)
+```
+
+**Opting out declaratively takes an explicit null, not an omitted key** — leaving
+`io_timeout` out selects the default, as it does in Python. In YAML that is
+`io_timeout: null`; TOML has no null literal, so a TOML-configured store that
+needs an unbounded channel has to construct the backend in code.
+
+The bound is re-applied on every reconnect, including the transparent ones the
+backend performs after a dropped connection, and it covers most of the SFTP
+session setup as well as later transfers. Setting it through the
+[escape hatch](#escape-hatch) instead does not survive those reconnects, because
+each one opens a fresh channel.
+
+!!! warning "Two limits, different in kind"
+    **A wedged SSH daemon is not bounded at all.** A server that opens the SSH
+    channel and then never answers the `sftp` subsystem request still hangs,
+    regardless of `io_timeout`: paramiko waits for that reply on an untimed
+    event, so no channel timeout applies, and every reconnect re-enters that
+    window. It needs a wedged SSH daemon rather than a wedged SFTP subsystem, so
+    it is rarer than the stall this option does cover — but if a peer hangs
+    despite the bound, this is the shape to suspect.
+
+    **Releasing a handle that never failed is bounded but silent.** Closing a
+    stream you have not read to a failure on a stalled connection waits one
+    `io_timeout` and then returns normally: paramiko catches that timeout inside
+    its own close, so nothing is raised, `remote-store` logs nothing, and the
+    dead connection stays cached for the next operation to wait on again. You
+    see the delay, not the cause — paramiko's own DEBUG logging shows the close
+    going out, but nothing there names the stall either. A stream whose read
+    *did* fail costs nothing extra: that close is skipped.
+
+A stall that surfaces is reported, and no stall is retried: the connect-phase
+`RetryPolicy` does not cover one, so a partially consumed stream is never
+silently restarted underneath you.
+A streamed **read** raises rather than returning short, so a truncated transfer
+is never mistaken for a complete one — discard the handle and start again, since
+the bytes already delivered are a valid prefix but the handle is dead. The
+backend drops the dead client, so the next operation reconnects.
+
+Seeking to the end of a stream (`stream.seek(0, os.SEEK_END)`) asks the server
+for the file's size, so it is bounded and reported like any other operation on
+the channel. Worth knowing because you may not be the one writing the seek:
+`read_seekable()` hands the stream to analytical readers such as PyArrow, and a
+reader that sizes a file internally reaches it the same way — for files large
+enough to stream. The [PyArrow adapter](../pyarrow-adapter.md) materialises
+anything at or below its `materialization_threshold` and never seeks the stream
+at all.
 
 ## Preflight host-key discovery
 
@@ -222,7 +329,8 @@ layer (e.g. `requirements.txt` line `paramiko>=3.0,<5`).
 
 - **Lazy connect** — no network call happens during construction. The SSH/SFTP connection is established on the first operation.
 - **Auto-reconnect** — if the connection goes stale between operations, the backend reconnects transparently.
-- **Retry** — transient SSH errors (`SSHException`, `OSError`, `EOFError`) are retried up to 3 times with exponential backoff (2 s min, 10 s max).
+- **Retry** — transient SSH errors (`SSHException`, `OSError`, `EOFError`) are retried up to 3 times with exponential backoff (2 s min, 10 s max). Retry covers establishing the SSH connection only; nothing after that is restarted, and a stall bounded by `io_timeout` is reported to the caller unless it is one of the silent cases above.
+- **Stall detection** — on by default: [`io_timeout`](#bounding-a-stalled-transfer) bounds a read or write that stops making progress on an open channel at 120 s. Tune it, or pass `None` to opt out.
 - **Single connection, not thread-safe** — each `SFTPBackend` instance holds one paramiko `SFTPClient`. Calling it from multiple threads simultaneously (e.g. via `SyncBackendAdapter` + `asyncio.gather`) races on the shared socket. Create one `SFTPBackend` per thread for parallel workloads.
 
 ## Capabilities
@@ -232,8 +340,58 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
 
 !!! warning "Atomic write caveat"
     Atomic writes use a temp file (`.~tmp.<name>.<uuid>`) and rename. If the
-    connection drops between write and rename, the orphan temp file will remain
-    on the server.
+    connection drops between write and rename, the destination is untouched but
+    the orphan temp file will remain on the server. If it drops *during* the
+    rename, see the danger note below — the write may have landed.
+
+!!! danger "A stalled operation may have succeeded"
+    When a transfer stalls, the timeout tells you **no reply came back**. It
+    does not tell you the server never got the request. If the silence was on
+    the return path, the server did the work and only the answer was lost — so
+    every operation here has a state where it did what you asked and raised
+    `BackendUnavailable` anyway.
+
+    The general rule is that **any amount of the operation may have happened,
+    from none of it to all of it**, and the error does not tell you which. The
+    states below are the ones worth naming, not a complete list:
+
+    | Operation | What a `BackendUnavailable` may have left |
+    | --- | --- |
+    | `write()` | The destination unchanged, absent, **emptied**, holding an unpredictable prefix, or **written in full** |
+    | `copy()` | The same five, at `dst`; the source is never affected |
+    | `move()` | The paths unchanged, **the move completed** (source gone), or **the destination destroyed** with the source still there |
+    | `write_atomic()` / `open_atomic()` | The destination unchanged, often with an orphan temp; **the write completed**; or **the destination destroyed** with your data left in an orphan temp file |
+
+    The destroyed-destination cases come from a rename fallback that removes the
+    destination before renaming onto it, and it is not confined to old servers —
+    any rename that *fails* for a reason the backend cannot attribute to a
+    dropped connection takes that path. It also needs `overwrite=True`: with
+    the default the call raises `AlreadyExists` before the fallback is reached,
+    so an existing file cannot be destroyed this way. No example failure is
+    given: which ones reach it depends on guards that differ per operation, and
+    every attempt to name one here has been wrong.
+
+    So:
+
+    - **Do not treat a failure as a no-op.** Re-check the state before acting on
+      it. A failed `move()` that actually succeeded gives `NotFound` on retry;
+      a failed `write(..., overwrite=True)` may have truncated your previous
+      file without replacing it.
+    - **Retry with `overwrite=True`.** The path is usually still occupied, so a
+      plain retry raises `AlreadyExists` instead of retrying.
+    - **Do not resume from a partial file.** The prefix length depends on
+      buffering you cannot see, so appending to it corrupts the file. Discard
+      and re-write from the start.
+
+    **`write_atomic()` is still the right choice when readers must never see a
+    half-written file** (see the caveat above, and
+    [atomicity semantics](../../explanation/concurrency.md)): no reader ever
+    observes a partial file at the destination. What it does not promise is that
+    a reported failure means nothing happened, nor that your existing file
+    survives one.
+
+    Parent directories created for a write remain behind in every case — a
+    failed write is not a rollback.
 
 !!! note "Move fallback"
     `move()` tries `posix_rename` (atomic), then standard `rename()`, then

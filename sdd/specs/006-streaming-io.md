@@ -71,3 +71,148 @@ chunk = stream.read(4096)
 
 **Invariant:** `Capability.LAZY_READ` indicates that `Backend.read()` fetches data lazily on demand from the native source. Backends that load the full file contents into memory before returning a stream do **not** declare this capability.
 **Postconditions:** When `Capability.LAZY_READ` is declared, the stream is connected to the native source and data is pulled as the caller reads. Reading only a small prefix of a large file is expected to avoid loading the full file, though the exact savings depend on backend-level buffering (e.g. s3fs read-ahead, TCP receive buffers). Callers can use `store.supports(Capability.LAZY_READ)` to decide whether partial reads are likely efficient. Backends without `LAZY_READ` (e.g. in-memory, SQL blob) still return a valid `BinaryIO` stream — it just wraps pre-loaded data.
+
+## SIO-010: Releasing a Stream Whose Failure Condemned the Connection
+
+**Invariant:** Where a backend supplies `_ErrorMappingStream` with an `is_fatal`
+predicate, releasing a stream returned by that backend's `Backend.read()` does
+not re-enter a connection the stream's own failure has already established is
+unusable. Backends that supply no predicate release unconditionally, and this
+clause makes no claim about them. Supplying one is optional by design, not an
+omission each backend is expected to correct: it is worth the parameter only
+where a close on a dead connection blocks, which is a property of the transport,
+not of every stream. `SFTPBackend` is the only backend that supplies one.
+**Postconditions:** A backend that can recognise such a failure supplies
+`_ErrorMappingStream` with an `is_fatal` predicate over the raised exception.
+Once it answers `True` for a mapped failure, the wrapper's `close()` skips the
+inner close and marks itself closed; the caller sees an ordinary `close()`. A
+backend that supplies no predicate closes unconditionally, which is the
+behaviour every backend had before this clause.
+
+**Why a predicate rather than the mapped error type.** The wrapper is shared, so
+a rule derived from the classification would bind backends the symptom was never
+measured on: `ReadOnlyHttpBackend._map_stream_error` maps *every* stream exception
+to `BackendUnavailable`, and skipping the close there would trade a bounded wait
+for an unreleased response body. Deciding by predicate keeps each backend
+answering only for its own failures.
+
+**What it buys.** On a connection whose bound is enforced by a timeout, a
+synchronous close is a second round-trip that cannot complete: paramiko's
+`SFTPFile.close()` issues `CMD_CLOSE` and waits for a reply that never comes, so
+without this clause a caller consuming a stalled stream pays the bound twice and
+sees nothing explaining the second wait — paramiko swallows the timeout raised
+inside its own close, and the wrapper suppresses what reaches it. Measured on
+`SFTPBackend` at a 2 s `io_timeout`, consuming part of a `read()` and then
+stalling: 4.00 s before the guard and 2.00 s after.
+
+**The handle is not leaked, but it is not released synchronously either.** It is
+freed by the peer's own teardown of the dead connection, or at collection **of
+the wrapper** — the skip leaves the inner handle bound, so it stays reachable for
+as long as the closed stream object is held, which is later than the handle's own
+collection would be. At that point paramiko's `SFTPFile.__del__` calls
+`_close(async_=True)`, which sends `CMD_CLOSE` without waiting for a reply. The
+clause trades a synchronous release that cannot succeed for an asynchronous one
+that costs the caller nothing, and a caller retaining closed streams retains the
+dead connections with them.
+
+**The limit of the mechanism.** The guard is armed by an exception *reaching*
+`_fail`, so anything that stops one arriving defeats it — whether the transport
+discarded the failure, or raised something outside the `(OSError, EOFError)`
+tuple the mapping paths catch. Neither is a gap in a backend's predicate: what
+decides is the caught tuple, not the predicate. Where a failure does not arrive,
+the close re-enters the connection exactly as it would have without this clause,
+and whatever the mapper would have done — invalidating a cached client, marking a
+session dead — is left undone too.
+
+Both classes are non-empty on `SFTPBackend`, the only backend that has been
+measured. For the second: paramiko's `SSHException` / `SFTPError`, which
+additionally escape unmapped in breach of BE-021 (BK-358). For the first, a
+send-side `EOFError` that `BufferedFile.read` swallows into a short read before
+it reaches the wrapper at all. A `SEEK_END` seek was a third case, and the one
+that cost most — the swallowed size request answered `0` rather than merely
+losing a failure — until
+[SIO-011](#sio-011-sizing-a-stream-for-an-end-relative-seek) moved that request
+into the wrapper, where its failure has a mapping path to travel. That clause
+repairs one discarding call site; it does not empty the class, which is a
+property of the transport rather than of this one.
+
+**See also:** SFTP-030 in [009-sftp-backend.md](009-sftp-backend.md), the bound
+this clause completes, and where that limit is measured.
+
+## SIO-011: Sizing a Stream for an End-Relative Seek
+
+**Invariant:** Where a backend supplies `_ErrorMappingStream` with a
+`size_probe` callable, `seek(offset, SEEK_END)` resolves the stream's size
+through that callable and then delegates an absolute seek, so a failed size
+request is mapped by SIO-010's machinery rather than reaching the caller as a
+position. Backends that supply no probe delegate the end-relative seek to the
+inner stream unchanged, and this clause makes no claim about them.
+**Postconditions:** The seek returns `size + offset`. A size request that fails
+raises the mapped error, arms the SIO-010 guard when the backend's `is_fatal`
+agrees, and leaves the position unchanged. `SEEK_SET` and `SEEK_CUR` never call
+the probe.
+
+**Why this is a clause and not an implementation detail.** paramiko's
+`SFTPFile.seek` resolves `SEEK_END` through `_get_size()`, whose whole body is
+`try: return self.stat().st_size` under a bare `except: return 0`. On a stalled
+channel that `stat` blocked for `io_timeout` and was then discarded, so the seek
+*answered* `0` on a file of any size and raised nothing. Three consequences, and
+the first is the one a caller could act on wrongly:
+
+- The answer was wrong and indistinguishable from an empty file, so a caller
+  sizing a file by seeking to its end read zero bytes and had nothing to catch.
+- Nothing reached `_fail`, so SIO-010's guard stayed unarmed and the close paid
+  the bound a second time.
+- Nothing reached the backend's mapper, so the dead client stayed cached and the
+  next operation re-entered the same channel.
+
+Measured on `SFTPBackend` at a 2 s `io_timeout`, consuming part of a `read()`
+and then stalling: **4.00 s** answering `0` on a 1 MiB file with the dead client
+still cached, against **2.00 s** raising `BackendUnavailable` with the client
+dropped. Derivation: the stall relay
+`test_seek_to_end_on_a_stalled_channel_costs_one_bound` drives, run once as
+shipped and once with `size_probe` withheld from the wrapper — which is exactly
+the pre-clause delegation, so the two runs differ in that argument alone.
+
+**Why a probe rather than a wider catch.** Nothing was raised to catch. The
+inner stream's own failure was consumed before the wrapper could see it, so the
+only repair is to stop delegating the request that fails.
+
+**Why opt-in.** The probe is a round-trip, and unlike SIO-010's predicate it
+runs on the success path. It also has no generic form: the wrapper holds no size
+of its own, so an unconditional version would need a per-backend source anyway.
+What decided it is that **paramiko is the only inner stream measured to discard
+its own size failure**. The enumeration below is by *construction site* rather
+than by backend, because `AzureBackend` builds the wrapper twice over two
+different inner streams and a per-backend list gets it wrong — an earlier draft
+attributed Azure's range reader to its `read()`, which does not use it. The six
+non-SFTP sites reach `SEEK_END` by **four** routes:
+
+- **A size captured at open, added to the offset.** `_S3RangeReader.seek`, which
+  `S3Boto3Backend` builds once in `_open_range_stream` and serves to both
+  `read()` and `read_seekable()`; and `_AzureRangeReader.seek`, which
+  `AzureBackend` builds for `read_seekable()` alone.
+- **A size held on the handle.** `S3Backend.read()` wraps an fsspec file, whose
+  `AbstractBufferedFile.seek` computes `self.size + loc`.
+- **Resolved inside the inner implementation.** `S3PyArrowBackend.read()` wraps
+  a pyarrow `NativeFile` through `_PyArrowBinaryIO`, which passes the whence
+  down and returns the resulting position.
+- **Not seekable at all.** `AzureBackend.read()` wraps `_AzureBinaryIO`, and
+  `ReadOnlyHttpBackend.read()` wraps whatever body its transport yields — an
+  adapter over the response for the `requests` and `httpx` transports, and the
+  `http.client.HTTPResponse` itself for the stdlib one. None defines `seek` or
+  `seekable`, so `IOBase.seekable()` answers `False` for all three; the shared
+  fact is the missing methods, not a shared base class.
+
+None of those has a failure for a probe to repair, so probing on their behalf
+would buy a round-trip per seek and nothing else — or, on the forward-only
+streams, a request against something that cannot seek. `SFTPBackend.read()` is
+the only site that supplies a probe.
+
+**The probe's own failure is bounded by the same caught tuple as every other
+path**, deliberately: a `paramiko.SFTPError` raised by the probe escapes
+unmapped exactly as one raised by a read does (BK-358). Widening the tuple for
+this path alone would make it better than the rest with no clause saying why.
+
+**See also:** SFTP-030 in [009-sftp-backend.md](009-sftp-backend.md), where the
+`SEEK_END` case was a stated exception to the bound until this clause closed it.

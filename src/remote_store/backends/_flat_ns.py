@@ -1,9 +1,11 @@
-"""Shared path-type helpers for flat-namespace backends.
+"""Shared path-type helpers for backends, most of them flat-namespace-only.
 
-Three contracts live here. The first two are about the same blind spot: a
+Four contracts live here. The first three are about the same blind spot: a
 flat namespace stores keys, not nodes, so "this path is a directory" is
 never an answer the store gives back — it has to be inferred from a prefix
-listing.
+listing. The fourth is not about that blind spot and is not flat-namespace
+work at all, which is why the module's name is now narrower than its
+contents:
 
 * **File-ancestor pre-check** — an opt-in *pre*-check on the write path,
   documented immediately below.
@@ -12,6 +14,20 @@ listing.
 * **Absent container reads as absent path** — the folder-existence probe's
   answer when the bucket / container itself is gone, documented at
   ``_children_or_absent_container``.
+* **Root refusal, definitionally from the key** — two guards on **two
+  different predicates**, which is the point rather than an inconsistency.
+  ``_reject_root_as_write_target`` decides on ``_addressable_segments`` and
+  so refuses every spelling that addresses the root; ``_reject_root_as_file``
+  decides on ``is_root`` and so refuses only ``""`` and ``"."``. The write
+  side cost a container and the read side costs an error class or a wrong
+  listing, and the backend contract makes that asymmetry normative — see
+  each guard's own docstring, and do not unify them. This binds *every*
+  backend: the hierarchical ones call it too (``LocalBackend``,
+  ``SFTPBackend``), ``GraphBackend`` reaches the wide predicate through its
+  own ``_key_segments``, and the contract numbers the write half as the one
+  precondition the flat-namespace exemption does not release. It lives here
+  because the flat namespaces were where it was found missing, not because
+  it is theirs.
 
 Hierarchical backends (Local, SFTP, Memory) detect a file-ancestor path on
 ``write`` / ``move`` / ``copy`` for free because their native APIs cannot
@@ -148,6 +164,29 @@ async def _acheck_no_file_ancestor(
             )
 
 
+class _ListingCursor:
+    """Has the container answered yet? Bounds an absent-container tolerance to the first page.
+
+    "An absent container holds nothing" holds only until a page comes back; after
+    that a container 404 means it was deleted mid-scan, and swallowing it returns
+    a short listing that looks complete.
+
+    **Set on a page, never on a yield.** Every listing here discards part of a
+    page — ``list_files`` drops prefixes, markers and anything past ``max_depth``;
+    ``list_folders`` drops keys; ``glob`` drops non-matches — so an item-keyed
+    bound goes blind on the page shapes those filters empty, which are ordinary
+    shapes rather than corner cases.
+
+    Mutable because the tolerance lives in a context manager around the generator
+    body, which cannot see what the body received.
+    """
+
+    __slots__ = ("saw_page",)
+
+    def __init__(self) -> None:
+        self.saw_page = False
+
+
 def _folder_not_file(path: str, backend: str) -> InvalidPath:
     """Build the "wrong type: folder where a file was expected" error.
 
@@ -179,12 +218,128 @@ def _reject_root_as_file(path: str, backend: str) -> None:
     surfaces as a transport-shaped error — a retryable classification for a
     permanently wrong request.
 
-    Not a mutation guard: deleting or writing *the root itself* is a
-    ``Store``-layer concern, and this says nothing about ``delete_folder`` or
-    ``get_folder_info``, which are folder-shaped and legitimately accept it.
+    Not the write guard: a write *to* the root is
+    ``_reject_root_as_write_target`` below, which says what is wrong with
+    writing rather than with reading the wrong type. This says nothing about
+    ``delete_folder`` or ``get_folder_info`` either, which are folder-shaped and
+    legitimately accept the root.
     """
     if is_root(path):
         raise _folder_not_file(path, backend)
+
+
+def _reject_root_as_write_target(path: str, backend: str) -> None:
+    """Raise ``InvalidPath`` when ``write``/``write_atomic``/``open_atomic`` is handed the root.
+
+    A backend whose container can be absent must refuse this **definitionally**,
+    before the transport is touched. Observation is not enough, and the failure
+    is worse than a wrong error class: the container's absence is exactly the
+    state in which an observational is-a-directory check answers ``False``, so
+    the write proceeds, the parent tree is created, the bytes land at the
+    container path, and the store's container is left a regular **file**. Every
+    later call then answers about a store that cannot exist — the root probes
+    answer from the key by definition, so they keep reporting a folder.
+
+    Both hierarchical backends reached that state by their own route and both
+    are fixed by this one check. ``LocalBackend`` creates its root in
+    ``__init__`` and so got away with an observational check until the
+    directory was deleted underneath it; ``SFTPBackend`` creates ``base_path``
+    lazily on first write, so an untouched store is already in it.
+
+    **Called at every write-shaped entry point: the writers, plus the ``move``
+    and ``copy`` *destination*.** That is five sites on four of the seven
+    classes and four on the other three, and neither exception is an omission.
+    ``S3Backend.write_atomic`` and ``S3Boto3Backend.write_atomic`` open with a
+    bare ``return self.write(...)``, so delegation covers them —
+    ``S3PyArrowBackend.write_atomic`` spools before delegating and therefore
+    carries its own. ``AsyncAzureBackend`` has no ``open_atomic`` to guard,
+    because the async ``Backend`` surface does not declare one. A count stated
+    per class rather than per entry point invites exactly the sweep that reads
+    four as a missing guard. The destination was at first guarded on the
+    hierarchical backends' reasoning — container absent, so nothing exists
+    beneath it and the source check fails first; container present, so the
+    destination probe reports a directory — which is true there and measured
+    both ways, and false elsewhere. Measured on the flat namespaces:
+    ``move(src, ".")`` on the direct-boto3 lane **returned cleanly and deleted
+    the source**, and the s3fs lane answered ``AlreadyExists`` for a destination
+    that does not exist. A carve-out resting on one namespace's reachability
+    argument is worth less than the check it saves, so there is no carve-out.
+
+    A write *under* the root is untouched and still creates the container where
+    that is the backend's documented behaviour — only the root key itself is
+    refused.
+
+    **Root-ness is decided on the normalised key, not by ``is_root``**, and this
+    is the one guard in the codebase that draws the line there. ``is_root`` is
+    exactly ``{"", "."}`` — the two spellings a backend key and a ``RemotePath``
+    use — and a caller holding a ``Backend`` directly can write ``"./"``, which
+    addresses the same node and is neither. Measured against a ``LocalBackend``
+    whose root had been deleted: ``write("./")`` and ``write_atomic("./")`` left
+    the root a regular file and raised from the path layer *above* the backend
+    (so the error carried no ``backend``), and ``open_atomic("./")`` returned
+    cleanly having done it — the whole defect this guard exists for, one
+    character away. Dropping empty and ``"."`` segments and testing what is left
+    covers every spelling that addresses the root, and matches how
+    ``GraphBackend`` has always decided the same question.
+
+    ``is_root`` itself is deliberately not widened. It has 52 call sites across
+    13 files, including ``native_path`` / ``to_key`` — where the addressing
+    round-trip is defined in terms of the two canonical spellings — and the
+    prefix construction every flat-namespace listing uses. On the read side an
+    unrecognised root spelling costs a wrong error class; here it costs the
+    container. The asymmetry in the fix follows the asymmetry in the damage.
+
+    Distinct from ``_reject_root_as_file`` on purpose. That helper is explicitly
+    not a mutation guard and its wording ("a folder, not a file") describes a
+    *read* of the wrong type; this one says what is actually wrong with writing
+    here, and says the same thing whether or not the container is currently
+    there.
+    """
+    if not _addressable_segments(path):
+        raise InvalidPath(
+            f"Cannot write — '{path}' is the store root, which is a folder",
+            path=path,
+            backend=backend,
+        )
+
+
+def _addressable_segments(path: str) -> list[str]:
+    """Split *path* into the segments that actually address something.
+
+    Drops empty and ``"."`` segments. The store root yields ``[]`` under every
+    slash-and-dot spelling — ``""``, ``"."``, ``"./"``, ``".//"``, ``"./."``,
+    ``"/"`` — which is what the write guard needs and what ``is_root``, limited
+    to the two canonical spellings, does not give it.
+
+    **Bounded to those spellings on purpose, and the bound is load-bearing.**
+    ``RemotePath._normalize`` folds ``\\\\`` to ``/`` before dropping segments, so
+    it calls ``"\\\\"`` the root too, and a draft of this helper folded to match.
+    That was withdrawn: this predicate is also how ``GraphBackend`` builds every
+    item address, so folding here silently rewrote ``"a\\\\b"`` to ``"a/b"`` and
+    broke the ``to_key(native_path(key)) == key`` identity the backend contract
+    requires of every non-root key — 4 of 7 measured keys failed it. A predicate
+    that decides *refusal* and
+    a predicate that decides *addressing* can be the same function only while
+    they agree on every input, and widening one of them is exactly what ends
+    that.
+
+    So the backslash family is **not** refused by this guard. On a POSIX
+    namespace ``write("\\\\")`` lands a file named ``\\`` inside the container
+    rather than occupying it, which is a milder failure than the one folding
+    caused; on SFTP with an absent ``base_path`` it also creates the container.
+    Stated rather than closed, because closing it here costs the addressing
+    contract.
+
+    Deliberately not a public root predicate. It answers "does this key name
+    anything below the container", which is the question the write guard needs;
+    ``is_root`` answers "is this one of the two canonical root spellings", which
+    is the question addressing and round-tripping need.
+
+    ``GraphBackend._key_segments`` answers the same question and imports this
+    function rather than restating it — one rule, one implementation, and the
+    reason the two must stay identical is written above.
+    """
+    return [s for s in path.split("/") if s and s != "."]
 
 
 def _wrong_type_if_folder(path: str, *, has_children: Callable[[str], bool], backend: str) -> None:
@@ -239,10 +394,18 @@ def _children_or_absent_container(
 ) -> bool:
     """Run the folder-existence probe, reading an absent container as "no children".
 
-    A tolerant delete treats an absent *container* — the bucket, the Azure
-    container — exactly as it treats an absent path, because a container that
-    does not exist holds no path either. Deciding that at the contract is what
-    stops the wire shape from deciding it per backend:
+    Callers that route through *this helper* treat an absent *container* — the
+    bucket, the Azure container — exactly as they treat an absent path, because a
+    container that does not exist holds no path either. That is not every folder
+    probe in the codebase and must not be read as one: ``get_folder_info`` keeps
+    the strict probe on the S3 lanes, deliberately, because it has no
+    ``missing_ok`` and an absent bucket is a plain ``NotFound`` for it either way.
+    The tolerant deletes were the first callers and are why the wire-shape
+    argument below is put in their terms; ``exists`` and ``is_folder`` reach this
+    helper for the same reason, and answer ``False`` where they would otherwise
+    have seen a 404 escape from a probe that must never raise for a missing path.
+    Deciding this at the contract is what stops the wire shape from deciding it
+    per backend:
 
     * ``HeadObject`` answers a bodyless 404, so the file-shaped probe cannot
       distinguish a missing bucket from a missing key even in principle, and
@@ -258,10 +421,11 @@ def _children_or_absent_container(
     one probe per miss — and it would have changed the behaviour that was already
     there rather than the one that disagreed with it.
 
-    Returning ``False`` is not the same as tolerating the call: the caller still
-    runs its wrong-type probe and still raises ``NotFound`` when ``missing_ok``
-    is ``False``. The absent container is reported as a missing path, which is
-    what it is.
+    Returning ``False`` is not the same as tolerating the call: it hands the
+    caller "no children", and what the caller does with that is the caller's
+    contract. A tolerant delete returns cleanly, a strict one still raises
+    ``NotFound`` after its wrong-type probe, and a probe answers ``False``. The
+    absent container is reported as a missing path, which is what it is.
 
     ``absent_container`` narrows the catch to the one wire shape that means
     "the container is not there" — ``FileNotFoundError`` from ``s3fs``, a
@@ -313,6 +477,7 @@ async def _awrong_type_if_file(path: str, *, is_object: Callable[[str], Awaitabl
 __all__ = [
     "_acheck_no_file_ancestor",
     "_achildren_or_absent_container",
+    "_addressable_segments",
     "_awrong_type_if_file",
     "_awrong_type_if_folder",
     "_check_no_file_ancestor",
@@ -320,6 +485,7 @@ __all__ = [
     "_file_not_folder",
     "_folder_not_file",
     "_reject_root_as_file",
+    "_reject_root_as_write_target",
     "_wrong_type_if_file",
     "_wrong_type_if_folder",
 ]

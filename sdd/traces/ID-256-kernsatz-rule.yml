@@ -1,4 +1,4 @@
-id: ID-250
+id: ID-256
 title: "Prose overshoots its detail level, and no rule fires before it is written"
 trigger: >-
   Repo prose was observed to overshoot its appropriate detail level almost
@@ -7,7 +7,7 @@ trigger: >-
   Principle 8 could rule out the wrong cut (BK-351) but stated no positive test,
   so nothing fired before the prose was written.
 source_items:
-  - ID-250
+  - ID-256
 audience:
   - contributor.process
   - internal.style

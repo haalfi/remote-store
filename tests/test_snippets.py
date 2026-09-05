@@ -524,7 +524,7 @@ class TestCustomBackendGuideSnippets:
         assert store.read_bytes("m2.txt") == b"one"
         assert not store.exists("m1.txt")
 
-        with pytest.raises(InvalidPath, match="must not be empty"):
+        with pytest.raises(InvalidPath, match="is the store root"):
             guide_redis_backend.write("", b"x")
 
         store.write("f/x.txt", b"x")
@@ -540,17 +540,33 @@ class TestCustomBackendGuideSnippets:
     @pytest.mark.parametrize(
         ("method", "args", "error", "match"),
         [
-            ("move", ("", "dst.txt"), "InvalidPath", "Source path must not be empty"),
-            ("move", ("src.txt", ""), "InvalidPath", "Destination path must not be empty"),
-            ("copy", ("", "dst.txt"), "InvalidPath", "Source path must not be empty"),
-            ("copy", ("src.txt", ""), "InvalidPath", "Destination path must not be empty"),
+            ("write", ("", b"x"), "InvalidPath", "is the store root"),
+            ("write", ("./", b"x"), "InvalidPath", "is the store root"),
+            ("move", ("", "dst.txt"), "InvalidPath", "folder, not a file"),
+            ("move", ("src.txt", ""), "InvalidPath", "is the store root"),
+            ("move", ("src.txt", "./"), "InvalidPath", "is the store root"),
+            ("copy", ("", "dst.txt"), "InvalidPath", "folder, not a file"),
+            ("copy", ("src.txt", ""), "InvalidPath", "is the store root"),
+            ("copy", ("src.txt", "./"), "InvalidPath", "is the store root"),
             ("delete", ("",), "InvalidPath", "must not be empty"),
             ("delete_folder", ("",), "InvalidPath", "Cannot delete root"),
             ("get_file_info", ("",), "NotFound", "empty path"),
         ],
     )
     def test_backend_guard_clauses(self, guide_redis_backend, method, args, error, match) -> None:
-        """The guide states these guards as contract rules; pin each one."""
+        """The guide states these guards as contract rules; pin each one.
+
+        The `"./"` rows are the ones that matter, and they are why the write
+        half of the tutorial backend no longer tests `not path or path == "."`.
+        The guide tells implementers that spelling addresses the root and that a
+        guard which misses it is not conformant; the reference backend used to
+        miss it, under a heading reading "Rules the code above implements".
+
+        The read-shaped rows deliberately keep the narrow guard, which is what
+        the contract asks of a source: an unrecognised root spelling costs a
+        read an error class and costs a write its container. So these params are
+        also the asymmetry, executable.
+        """
         import remote_store as rs
 
         with pytest.raises(getattr(rs, error), match=match):

@@ -1,0 +1,288 @@
+id: ID-253
+title: "Write down the release CHANGELOG expansion step and give the section order a home"
+trigger: >-
+  CONTRIBUTING.md § Release Phase 1 required [Unreleased] stubs condensed into
+  the released shape and named no source for the expanded prose; the release
+  skill had no expansion step to delegate to; and that skill's Phase 4 cited a
+  CHANGELOG section order in sdd/CLAUDE-REFERENCE.md § Ripple-check > Detailed
+  checklist, whose headings are Spec & contract / Code surface / Tests / Docs /
+  Release & meta. The order lived nowhere while CLAUDE.md principle 4 named it
+  as an example of a reference living in one place.
+source_items:
+  - ID-253
+  - ID-252
+audience:
+  - contributor.process
+# ID-254 was born while deriving the section order: three of the four ad-hoc
+# stub markers in [Unreleased] are not section names, and the convention is
+# half-written. Left out of scope by user decision at the interview.
+# ID-255 was born in review round 3, from the unprimed member: the stand-down
+# note's stated reason is false in the state Phase 1 prescribes. Filed rather
+# than fixed because the fix is a message string, and this PR's diff to that
+# file is docstring-only — a property verified by AST and worth more than a
+# one-sentence correction.
+discovery_followups:
+  - ID-254
+  - ID-255
+expected_ripples:
+  - sdd/backlogid.json
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+
+# Not anticipated by any ripple-check row. Sharpening the gate docstring's
+# two-rules-versus-three-things distinction left one of the test file's three
+# rules-count mentions contradicting it: `switches three rules off` against the
+# correct `two rules` at the other two. (An earlier version of this comment said
+# two of three were wrong, which does not reproduce — one docstring changed.)
+# The row that fired here, "New or changed cross-artifact check or drift
+# report", points only at DRIFT-RULES.md and names no test file, so nothing
+# directed the sweep at it: an unprimed reviewer found it, three rounds in.
+surprising_ripples:
+  - tests/scripts/test_check_changelog_unreleased.py
+  # Reordering Phase 1 so the migration-guide item precedes condensing falsified
+  # a Rule 7 bound in a file this work never otherwise touched: that gate's blind
+  # window fell "exactly while" that checklist item was verified, which was a
+  # property of the old order. No ripple-check row connects a checklist's bullet
+  # order to a gate's stated bounds; a whole-file reviewer found it.
+  - scripts/check_breaking_migration_link.py
+
+# Derived from `git log --oneline 3e6d318..HEAD`, re-run at the commit named
+# below. **The value is stated as of that commit, not as an open-ended total** —
+# which is the only form of this field that stays true, because it is stale the
+# moment another fix pass lands, including the pass that writes it.
+#
+# It went stale three times before that was accepted: round 5 caught it at 3 when
+# it was 4; round 7 at 5 when it was 6; round 9 at 7 when it was 8, all three
+# panel members flagging the last one. Each time the ledger had been correct for
+# the commit it shipped in, and the next fix pass edited this file without
+# re-deriving. The register entry no longer repeats the count, so this is its
+# only home — which is why a wrong value here is not a private error.
+#   c3d3097  implements; does not count
+#   4379017  round 1 — one unprimed reviewer, 4 findings
+#   62f0fae  round 2 — one measuring pass, 3 findings
+#   d9f2da9  round 3 — panel of 3, 12 findings
+#   3caa531  round 4 — panel of 3, 13 findings
+#   8ef0655  not review-driven: a surface cut taken on the author's own
+#            escalation, before round 5 ran
+#   caa24e9  round 5 — panel of 3, 7 findings
+#   ffc59b4  round 6 — panel of 3, 5 findings
+#   a5c1baf  round 7 — panel of 3, 5 findings
+#   58515ac  round 8 — panel of 3, 5 findings
+#   (this commit)  round 9 — panel of 3, 3 findings
+# Nine review-driven commits as of the commit carrying this line. Value is 9.
+# Any later fix pass owes a re-derivation, not an increment.
+review_rounds: 9
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "ID-253"
+        read_type: gate
+        extract: >-
+          The item states the fork (write the step vs drop expansion) and names
+          four artifacts that move together; it explicitly does not decide which
+          way, and says establishing who performs the step by hand is step one
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Pre-work index > Release & meta"
+        read_type: gate
+        extract: >-
+          Triggered rows: CHANGELOG entry, Backlog item touched, Authority
+          direction amended (search every live copy by wording, skipping
+          sdd/rfcs, sdd/research and sdd/traces as records), and New or changed
+          cross-artifact check
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Release Phase 1"
+        read_type: gate
+        extract: >-
+          The condensing bullet after ID-252's amendment: honest that no tooling
+          performs the step and that the checklist names no source, which is the
+          gap rather than a false claim
+        outcome: ok
+      - file: .claude/skills/release/SKILL.md
+        section: "(full)"
+        read_type: gate
+        extract: >-
+          Confirmed there is no expansion step; Phase 4's template is the only
+          thing that transforms the section and it condenses further, for the
+          GitHub release body
+        outcome: ok
+      - file: scripts/check_changelog_unreleased.py
+        section: "module docstring — rule 2, Bounds (release window)"
+        read_type: gate
+        extract: >-
+          The prose-budget rationale asserts the expansion premise is what
+          ID-253 files as unbacked, and the release-window bound describes the
+          stand-down without naming who owns the other side of the hand-off —
+          which is the half this item had to supply, and reading the bound did
+          not say so
+        outcome: unclear
+
+  - id: measure
+    name: Establish the facts before deciding
+    steps:
+      - file: CHANGELOG.md
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Tallied 38 released sections and 111 `###` groupings, then pairwise
+          heading precedence across them: Added before Changed 18 to 1, Added
+          before Fixed 15 to 2, Documentation before Internal 10 to 0, and
+          Changed against Fixed 8 to 8. The last is why the order had to be
+          decided rather than transcribed. Also surfaced the legacy names Docs
+          (x2) and Known Limitations (x1)
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: reference
+        extract: >-
+          24 entries at the time of measuring, 12 carrying a bolded marker
+          (Fix 5, Breaking 4, Docs 1, Added 1, Change 1) and 12 carrying none —
+          the tally ID-254 was filed from. Retrospective: this PR then added its
+          own unmarked ID-253 stub, making it 25 and 13, and ID-254's body was
+          written from the pre-stub number until review round 1 caught it. The
+          measurement was right and went stale inside the same commit that took
+          it; the marker breakdown was unaffected
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "Unreleased (at the v0.30.0 release commit)"
+        read_type: reference
+        extract: >-
+          Read via `git show 7931c7d~1:sdd/BACKLOG-DONE.md`: § Unreleased held 20
+          items spanning 510 lines bullet-to-bullet, of which the 8 that earned a
+          CHANGELOG entry account for 260, against the released section's 55.
+          (512 counts from the `## Unreleased` heading, which sits inside no
+          item; the two measures are two lines apart and must not be subtracted
+          across.) This is what established the step as a rewrite for a
+          different audience rather than an extraction, and therefore what made
+          "name the source" answerable only as three sources. Retrospective: this
+          step was first written as "512 lines for the 8 items", attributing the
+          whole section to the subset. The section total and the item count came
+          from one read and were not separated; a measuring review pass re-ran
+          the split and found 20 items, not 8. The conclusion held at 260 to 55,
+          which is why the wrong figure survived a reading pass — it was
+          consistent with everything around it
+        outcome: ok
+      # The item asked who performs the step by hand. Reading the artifacts
+      # could not answer it; running the history could. The clone was shallow
+      # (50 commits) and had to be deepened before the release commit existed
+      # locally — worth recording as a cost of answering a "who did this"
+      # question in a remote session.
+      - file: CHANGELOG.md
+        section: "v0.30.0 release commit (7931c7d)"
+        read_type: verify
+        extract: >-
+          `git show 7931c7d --numstat -- CHANGELOG.md` returns `55 8`: 8 stubs
+          out, 55 lines of released section in — of which 53 are the grouped
+          prose and 2 are the version heading Phase 2's rename writes, the
+          deletion count being 8 rather than 9 because `## [Unreleased]` matched
+          as context. In the release commit itself. That
+          is the answer to "who performs it" — whoever runs the checklist, at
+          release time — and it is what made writing the step down the
+          defensible half of the fork. Retrospective: this step first added "by
+          the maintainer with the release-skill agent". The commit is authored by
+          the maintainer and carries an AI co-author trailer, but the trailer
+          does not name the release skill, so that half was an inference the
+          commit does not carry and a measuring pass reported it unreproduced.
+          Removed rather than hedged; the numstat is the part that answers the
+          question
+        outcome: ok
+
+  - id: design
+    name: Decide
+    steps:
+      - file: sdd/DRIFT-RULES.md
+        section: "Intent & Scope, Rule 1"
+        read_type: gate
+        extract: >-
+          Scope includes "adds a second description of something already
+          described", which is what writing the section order down risked. Rule
+          1 (one driver, not N copies) is why CONTRIBUTING's Phase 4 trailer and
+          the release skill's template link to the new anchor instead of
+          restating the order
+        outcome: ok
+      - file: scripts/check_no_tracker_refs.py
+        section: "Scope"
+        read_type: gate
+        extract: >-
+          CONTRIBUTING.md is in scope, so the new section-order subsection may
+          not cite ID-253 or any tracker ID; version numbers are fine. Caught
+          before writing, not by the gate
+        outcome: ok
+
+  - id: implement
+    name: Write it down
+    steps:
+      - file: CONTRIBUTING.md
+        section: "Release Phase 1; CHANGELOG section order"
+        read_type: reference
+        extract: >-
+          Phase 1's condensing bullet gains the three sources in reach order and
+          the rewrite-not-extraction statement; a new anchored subsection
+          #changelog-section-order becomes the order's one home, stating the
+          derivation and the 8-to-8 tie rather than implying the order was
+          always convention
+        outcome: ok
+      - file: .claude/skills/release/SKILL.md
+        section: "Phase 1 (CHANGELOG condensing); Phase 4 Release Template"
+        read_type: reference
+        extract: >-
+          Phase 1 gains the agent-specific note (read the BACKLOG-DONE body, or
+          the entry is a reworded stub). Phase 4's citation is repointed at
+          CONTRIBUTING, and a second defect found reading it is fixed: it said
+          to extract from [Unreleased], which Phase 2 has already renamed
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Detailed checklist > CHANGELOG entry"
+        read_type: reference
+        extract: >-
+          The row's open question is replaced by the settled direction, linked
+          rather than restated; trigger names and order untouched so
+          check_ripple_parity is unaffected
+        outcome: ok
+      - file: scripts/check_changelog_unreleased.py
+        section: "module docstring — rule 2, Bounds (release window)"
+        read_type: reference
+        extract: >-
+          Docstring only, no behaviour change (confirmed later by AST: strip the
+          module docstring and base and head are byte-identical). Rule 2's
+          parenthetical would have become false on this commit and now records
+          that the premise is backed and still the wrong justification; the
+          release-window bound names the Phase 1 step as owning the
+          groupings-before-bullets ordering the stand-down depends on.
+          Retrospective, and the larger half: editing this bullet exposed that
+          its own reconstruction recipe had silently stopped reproducing —
+          run as written it yields 0 violations, not the 68 it pinned, because
+          the verbatim body carries the `###` that fires the stand-down the
+          bullet describes. Pre-existing (identical on base 3e6d318) but
+          load-bearing once a new sentence pointed at it. Rewritten across two
+          rounds and finally as a whole: the recipe now runs twice with the
+          replace-the-stubs boundary stated, the figures are unpinned, and the
+          counterfactual is marked as one. The three sentence-level patches that
+          preceded the wholesale rewrite are why /ship's divergence check exists
+        outcome: misleading
+
+  - id: verify
+    name: Ripple-check and gates
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Detailed checklist"
+        read_type: verify
+        extract: >-
+          CHANGELOG entry (stub added), Backlog item touched (this trace),
+          Authority direction amended (searched by wording, not doc name — found
+          the partial copy "(Added, Fixed, Internal)" in CONTRIBUTING's Phase 4
+          trailer that a doc-name search would have missed)
+        outcome: ok
+      - file: scripts/gen_gate_inventory.py
+        section: "Drift-gate:: block parsing"
+        read_type: verify
+        extract: >-
+          Confirmed the inventory reads only the Drift-gate:: fields, which this
+          change does not touch; `--check` reports 38 mechanisms up to date, so
+          no regeneration is owed for a docstring prose edit
+        outcome: ok

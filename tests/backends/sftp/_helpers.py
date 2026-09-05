@@ -12,6 +12,7 @@ import os
 import socket
 import threading
 from pathlib import Path, PurePosixPath
+from typing import ClassVar
 
 import paramiko
 from paramiko import (
@@ -76,6 +77,11 @@ class StubSFTPServer(SFTPServerInterface):
     """SFTP server backed by a local directory tree."""
 
     ROOT: str = ""  # set by start_sftp_server before accepting connections
+    # Which handle ``open`` hands back. A class attribute rather than a
+    # constructor argument because ``SFTPServer`` instantiates the interface
+    # itself, so a variant is selected by subclassing -- the same way
+    # ``ChrootStubSFTPServer`` varies ``stat``.
+    HANDLE_CLASS: ClassVar[type[StubSFTPHandle]] = StubSFTPHandle
 
     def _realpath(self, path: str) -> str:
         """Map an SFTP path to the local filesystem."""
@@ -135,7 +141,7 @@ class StubSFTPServer(SFTPServerInterface):
         else:
             mode = "rb"
         fobj = os.fdopen(fd, mode)
-        handle = StubSFTPHandle(flags)
+        handle = self.HANDLE_CLASS(flags)
         handle.filename = realpath
         handle.readfile = fobj  # type: ignore[assignment]
         handle.writefile = fobj  # type: ignore[assignment]
@@ -200,6 +206,31 @@ class StubSFTPServer(SFTPServerInterface):
 # endregion
 
 
+# region: SFTP server -- refuses FSTAT on an open handle
+class NoFstatStubSFTPHandle(StubSFTPHandle):
+    """A handle whose ``stat`` (``CMD_FSTAT``) is refused by the server.
+
+    ``SSH_FX_OP_UNSUPPORTED`` is a real answer from real servers: FSTAT is
+    optional in the protocol, and a minimal or embedded SFTP implementation may
+    serve reads while refusing to stat the handle. Path-based ``CMD_STAT`` is
+    left working, so the file is otherwise perfectly readable — which is what
+    makes this the one case where sizing a stream by seeking to its end differs
+    from every other operation on a *healthy* connection.
+    """
+
+    def stat(self) -> SFTPAttributes:
+        return paramiko.SFTP_OP_UNSUPPORTED  # type: ignore[return-value]
+
+
+class NoFstatStubSFTPServer(StubSFTPServer):
+    """Serves the plain tree, but hands back handles that refuse ``CMD_FSTAT``."""
+
+    HANDLE_CLASS: ClassVar[type[StubSFTPHandle]] = NoFstatStubSFTPHandle
+
+
+# endregion
+
+
 # region: chroot SFTP server -- denies stat above a configured boundary
 class ChrootStubSFTPServer(StubSFTPServer):
     """SFTP server that refuses to stat the chroot boundary and everything above.
@@ -257,10 +288,11 @@ def _accept_connections(
 ) -> None:
     """Accept SSH connections in a loop until stop_event is set.
 
-    ``server_class`` selects the SFTP interface implementation (the plain
-    ``StubSFTPServer`` or the ``ChrootStubSFTPServer`` variant). ``ROOT`` and
-    ``CHROOT`` are set on that class so concurrently running servers of
-    different classes do not clobber each other's attributes.
+    ``server_class`` selects the SFTP interface implementation: the plain
+    ``StubSFTPServer`` or one of its variants (``ChrootStubSFTPServer``,
+    ``NoFstatStubSFTPServer``). ``ROOT`` and ``CHROOT`` are set on that class so
+    concurrently running servers of different classes do not clobber each
+    other's attributes.
     """
     server_socket.settimeout(0.5)
     server_class.ROOT = root
@@ -306,9 +338,11 @@ def start_sftp_server(
         port: Bind port (default: 0 = OS-assigned free port).
         server_class: SFTP interface implementation. Defaults to the plain
             ``StubSFTPServer``; pass ``ChrootStubSFTPServer`` for the
-            permission-restricted variant (ID-212).
-        chroot: Boundary path for ``ChrootStubSFTPServer``. Ignored by the
-            plain server.
+            permission-restricted variant (ID-212), or
+            ``NoFstatStubSFTPServer`` for one whose handles refuse
+            ``CMD_FSTAT``.
+        chroot: Boundary path for ``ChrootStubSFTPServer``. Ignored by every
+            other variant.
 
     Returns:
         (thread, actual_port, host_key, stop_event, server_socket)

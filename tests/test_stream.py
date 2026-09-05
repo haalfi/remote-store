@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+from typing import cast
 
 import pytest
 
@@ -68,10 +69,13 @@ class _FailingStream(io.RawIOBase):
 
 
 class _EOFStream(io.RawIOBase):
-    """Raises ``EOFError`` on every read op — how paramiko signals a channel death mid-read.
+    """Raises ``EOFError`` on every read op — a dead-connection signal the wrapper must map.
 
-    paramiko's ``_read_all`` / ``_read_response`` raise ``EOFError`` (which is
-    *not* an ``OSError``) when the channel dies during a streamed read.
+    ``EOFError`` is not an ``OSError``, so it needs its own arm in the caught
+    tuple. Deliberately *not* attributed to a paramiko call site: on the SFTP
+    read path a drop surfaces as ``SSHException`` (``_read_response`` catches
+    the ``EOFError`` and converts it) and a send-side ``EOFError`` is swallowed
+    into a short read by ``BufferedFile``. This stands in for the shape.
     """
 
     def readable(self) -> bool:
@@ -106,6 +110,133 @@ class _FailingCloseStream(io.RawIOBase):
         if not self.closed:
             super().close()
             raise OSError("close failed")
+
+
+class _ChannelDeath(OSError):
+    """The failure shape ``_fatal`` below treats as condemning the connection.
+
+    A distinct type rather than a message match, so a test that means "not
+    fatal" can raise a plain ``OSError`` and be sure the predicate says so.
+    """
+
+
+def _fatal(exc: Exception) -> bool:
+    """Stand-in for ``SFTPBackend._is_connection_dead`` — shape, not message."""
+    return isinstance(exc, _ChannelDeath)
+
+
+class _CloseTrackingStream(io.RawIOBase):
+    """Reads fail with *exc* (or return *data* when it is ``None``); closes are counted.
+
+    Counted rather than flagged: the skip has to hold when close is reached
+    twice — a ``with`` block plus an explicit ``close()``, or a
+    ``BufferedReader`` layer closing its raw — and a boolean cannot tell a
+    second inner close from the first.
+    """
+
+    def __init__(self, exc: Exception | None = None, data: bytes = b"payload") -> None:
+        super().__init__()
+        self._exc = exc
+        self._buf = io.BytesIO(data)
+        self.close_calls = 0
+
+    def readable(self) -> bool:
+        return True
+
+    def _check(self) -> None:
+        if self._exc is not None:
+            raise self._exc
+
+    def readinto(self, b: bytearray | memoryview) -> int:  # type: ignore[override]
+        self._check()
+        return self._buf.readinto(b)  # type: ignore[arg-type]
+
+    def read(self, size: int = -1) -> bytes:  # type: ignore[override]
+        self._check()
+        return self._buf.read(size)
+
+    def readline(self, size: int = -1) -> bytes:  # type: ignore[override]
+        self._check()
+        return self._buf.readline(size)
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        self._check()
+        return self._buf.seek(offset, whence)
+
+    def tell(self) -> int:
+        self._check()
+        return self._buf.tell()
+
+    def close(self) -> None:
+        self.close_calls += 1
+        super().close()
+
+
+class _ParamikoSeekEndStream(io.RawIOBase):
+    """Models paramiko's ``SFTPFile``: ``SEEK_END`` sizes over the wire, and swallows.
+
+    ``SFTPFile.seek`` resolves ``SEEK_END`` through ``_get_size()``, whose whole
+    body is ``try: return self.stat().st_size`` under a bare ``except: return
+    0`` (paramiko 5.0.0, read with ``inspect.getsource``).  So a size round-trip
+    that fails leaves the seek *answering* at ``offset`` rather than raising --
+    the shape SIO-011 removes.  ``stat_size`` stands for that round-trip:
+    ``seek`` swallows it exactly as paramiko does, and the wrapper's
+    ``size_probe`` calls it directly so the failure has somewhere to go.
+
+    ``seek`` returns ``None``, as paramiko's does, so these tests exercise the
+    wrapper's existing None-fallback rather than a tidier stand-in.
+    """
+
+    def __init__(self, data: bytes = b"payload", *, stat_exc: Exception | None = None) -> None:
+        super().__init__()
+        self._data = data
+        self._buf = io.BytesIO(data)
+        self._stat_exc = stat_exc
+        self.stat_calls = 0
+        self.seek_calls: list[tuple[int, int]] = []
+        self.close_calls = 0
+
+    def readable(self) -> bool:
+        return True
+
+    def seekable(self) -> bool:
+        # ``SFTPFile.seekable()`` returns ``True`` unconditionally, which is why
+        # ``read_seekable()`` hands this stream straight on rather than spooling
+        # it -- and why a ``BufferedReader`` will accept the seek below.
+        return True
+
+    def readinto(self, b: bytearray | memoryview) -> int:  # type: ignore[override]
+        return self._buf.readinto(b)  # type: ignore[arg-type]
+
+    def stat_size(self) -> int:
+        self.stat_calls += 1
+        if self._stat_exc is not None:
+            raise self._stat_exc
+        return len(self._data)
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        self.seek_calls.append((offset, whence))
+        if whence == io.SEEK_END:
+            try:
+                size = self.stat_size()
+            except Exception:  # noqa: BLE001 -- paramiko's own `except: return 0`
+                size = 0
+            self._buf.seek(size + offset, io.SEEK_SET)
+        else:
+            self._buf.seek(offset, whence)
+        return None  # type: ignore[return-value]  # paramiko behavior
+
+    def tell(self) -> int:
+        return self._buf.tell()
+
+    def close(self) -> None:
+        self.close_calls += 1
+        super().close()
+
+
+def _stat_size_probe(inner: object) -> int:
+    """Stand-in for ``_sftp_handle_size`` — shape, not paramiko."""
+    return cast("int", cast("_ParamikoSeekEndStream", inner).stat_size())
 
 
 # ---------------------------------------------------------------------------
@@ -238,10 +369,11 @@ class TestErrorMappingStreamErrors:
     def test_operation_remaps_eoferror(self, action) -> None:
         """audit-020 M1: ``EOFError`` must map like ``OSError``.
 
-        paramiko raises ``EOFError`` (not an ``OSError``) on a channel death
-        mid-read. The wrapper caught only ``OSError``, so an ``EOFError`` escaped
-        raw to the ``read()`` consumer, unmapped — and for the SFTP backend that
-        also meant the dead client was never invalidated (a read-path wedge).
+        ``EOFError`` is not an ``OSError``. The wrapper caught only ``OSError``,
+        so an ``EOFError`` escaped raw to the ``read()`` consumer, unmapped — and
+        for the SFTP backend that also meant the dead client was never
+        invalidated. The arm is pinned by shape rather than by a paramiko call
+        site: see ``_EOFStream`` above for why no SFTP read path produces one.
         """
         stream = _ErrorMappingStream(_EOFStream(), _test_mapper, "f.txt")
         with pytest.raises(NotFound, match="mapped"):
@@ -270,6 +402,315 @@ class TestErrorMappingStreamErrors:
         stream = _ErrorMappingStream(_FailingCloseStream(), _test_mapper, "f.txt")
         stream.close()  # should not raise
         assert stream.closed
+
+
+# ---------------------------------------------------------------------------
+# Futile-close guard (SIO-010, BK-355)
+# ---------------------------------------------------------------------------
+
+
+class TestFutileCloseGuard:
+    """A close that would re-enter a connection the failure condemned is skipped.
+
+    The cost this exists to remove is a *second* blocking round-trip: paramiko's
+    ``SFTPFile.close()`` issues a synchronous ``CMD_CLOSE`` and waits, so
+    releasing a stream that already failed on a stalled channel pays the bound
+    again — silently, since the close sits under ``contextlib.suppress``. What
+    is asserted here is the skip itself; that it costs one bound rather than two
+    is measured against a real stalled channel in
+    ``tests/backends/sftp/test_io_timeout.py``.
+    """
+
+    @pytest.mark.spec("SIO-010")
+    @pytest.mark.parametrize(
+        "action",
+        [
+            pytest.param(lambda s: s.read(), id="read"),
+            pytest.param(lambda s: s.readinto(bytearray(10)), id="readinto"),
+            pytest.param(lambda s: s.readline(), id="readline"),
+            pytest.param(lambda s: s.seek(0), id="seek"),
+            pytest.param(lambda s: s.tell(), id="tell"),
+        ],
+    )
+    def test_a_fatal_failure_skips_the_inner_close(self, action) -> None:
+        """Every mapping path arms the guard, not just the two a read goes through.
+
+        Parametrised because the guard is per-path: an implementation recording
+        the verdict in ``read``/``readinto`` only would leave the others unarmed,
+        and this is the level at which that is a wrapper property.
+
+        **What this does not claim.** These are wrapper-level cases against an
+        inner stream that raises on demand; they do not say a real backend
+        handle raises from all five. Against paramiko it does not: ``tell`` and a
+        ``SEEK_SET`` / ``SEEK_CUR`` seek read ``_realpos`` locally and never
+        round-trip, so a stalled channel neither blocks nor fails them. A
+        ``SEEK_END`` seek does round-trip, and reaches ``_fail`` only because
+        the wrapper resolves the size through its own probe rather than through
+        paramiko's swallowing ``_get_size`` -- SIO-011, covered by
+        ``TestSeekEndSizeProbe`` below and measured against a stalled channel by
+        ``test_seek_to_end_on_a_stalled_channel_costs_one_bound``. The guard is
+        written per-path because the *wrapper* serves several backends whose
+        inner streams differ, not because every path is reachable on any one of
+        them.
+        """
+        inner = _CloseTrackingStream(_ChannelDeath("channel stalled"))
+        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt", is_fatal=_fatal)
+
+        with pytest.raises(NotFound):
+            action(stream)
+        stream.close()
+
+        assert inner.close_calls == 0, "the close re-entered a connection already condemned"
+        assert stream.closed, "the wrapper must still report itself closed"
+
+    @pytest.mark.spec("SIO-010")
+    def test_a_non_fatal_failure_still_closes(self) -> None:
+        """The guard is narrow: only what the predicate condemns skips the close.
+
+        A stream can fail for reasons a close survives, and on those the close is
+        what releases the handle — so skipping on *any* mapped failure would
+        trade a bounded wait for a leak.
+        """
+        inner = _CloseTrackingStream(OSError("transient read error"))
+        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt", is_fatal=_fatal)
+
+        with pytest.raises(NotFound):
+            stream.read()
+        stream.close()
+
+        assert inner.close_calls == 1
+
+    @pytest.mark.spec("SIO-010")
+    def test_without_a_predicate_a_failure_never_skips_the_close(self) -> None:
+        """The default is the old behaviour, unconditionally.
+
+        S3, S3-boto3, S3-PyArrow, Azure and HTTP all construct the wrapper
+        without a predicate. This pins that their close is byte-for-byte what it
+        was: the guard must be opt-in, not a default the shared wrapper applies
+        on their behalf.
+        """
+        inner = _CloseTrackingStream(_ChannelDeath("channel stalled"))
+        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt")
+
+        with pytest.raises(NotFound):
+            stream.read()
+        stream.close()
+
+        assert inner.close_calls == 1
+
+    @pytest.mark.spec("SIO-010")
+    def test_a_stream_that_never_failed_closes_normally(self) -> None:
+        """Holding a predicate is not itself a reason to skip."""
+        inner = _CloseTrackingStream(data=b"hello")
+        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt", is_fatal=_fatal)
+
+        assert stream.read() == b"hello"
+        stream.close()
+
+        assert inner.close_calls == 1
+
+    @pytest.mark.spec("SIO-010")
+    def test_a_raising_predicate_propagates(self) -> None:
+        """A classifier that raises is a programming error, not a mapped failure.
+
+        The wrapper's contract is that programming errors propagate, and a
+        predicate is pure inspection — so a raising one is a bug in the backend.
+        Suppressing it would substitute silence for the real failure and leave
+        the guard's verdict unset with nothing to say so.
+        """
+        inner = _CloseTrackingStream(OSError("read failed"))
+
+        def _broken(exc: Exception) -> bool:
+            raise AttributeError("predicate is broken")
+
+        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt", is_fatal=_broken)
+
+        with pytest.raises(AttributeError, match="predicate is broken"):
+            stream.read()
+
+        # The other half of the docstring, and the half a mutation reaches: a
+        # predicate that raised returned no verdict, so the guard must stay
+        # unarmed and the close must still release the handle. An
+        # implementation that re-raised but set the flag would leak here while
+        # the assertion above still passed.
+        stream.close()
+        assert inner.close_calls == 1, "a predicate that raised must not arm the guard"
+
+    @pytest.mark.spec("SIO-010")
+    def test_the_guard_survives_the_buffered_layer(self) -> None:
+        """SFTP hands back ``BufferedReader(_ErrorMappingStream(...))``.
+
+        The caller therefore never closes the wrapper directly — the buffer
+        does, on its raw. A guard that only held when closed directly would be
+        armed on the one construction no SFTP caller has.
+        """
+        inner = _CloseTrackingStream(_ChannelDeath("channel stalled"))
+        raw = _ErrorMappingStream(inner, _test_mapper, "f.txt", is_fatal=_fatal)
+        buffered = io.BufferedReader(cast("io.RawIOBase", raw))
+
+        with pytest.raises(NotFound):
+            buffered.read()
+        buffered.close()
+
+        assert inner.close_calls == 0
+        assert raw.closed
+
+
+# ---------------------------------------------------------------------------
+# SEEK_END size probe (SIO-011, BK-357)
+# ---------------------------------------------------------------------------
+
+
+class TestSeekEndSizeProbe:
+    """``SEEK_END`` resolves through the wrapper's own probe, not the inner stream's.
+
+    The defect this closes has two halves and the second is the worse one.  An
+    inner stream that sizes itself over the wire and swallows the failure leaves
+    the wrapper with nothing to map: the futile-close guard stays unarmed, *and*
+    the seek answers ``0`` on a file of any size, which a caller cannot tell
+    from an empty file.  Both halves are asserted here at wrapper level; that a
+    stalled channel then costs one bound rather than two is measured against a
+    real stalled channel in ``tests/backends/sftp/test_io_timeout.py``.
+    """
+
+    @pytest.mark.spec("SIO-011")
+    def test_a_failing_probe_raises_where_the_inner_seek_would_have_answered(self) -> None:
+        """The wrong-answer half: the same stream answers ``0`` without the hook."""
+        inner = _ParamikoSeekEndStream(b"0123456789", stat_exc=_ChannelDeath("channel stalled"))
+        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt", is_fatal=_fatal, size_probe=_stat_size_probe)
+
+        with pytest.raises(NotFound, match="mapped"):
+            stream.seek(0, io.SEEK_END)
+
+        assert inner.seek_calls == [], "the inner seek must not run once the probe has failed"
+
+    @pytest.mark.spec("SIO-011")
+    def test_a_failing_probe_arms_the_futile_close_guard(self) -> None:
+        """The doubled-wait half: the probe's failure reaches ``_fail`` like a read's.
+
+        Asserted separately from the raise above because they are different
+        properties — an implementation that mapped the failure but recorded no
+        verdict would satisfy the first and leave the close paying the bound
+        again, which is the cost SIO-010 exists to remove.
+        """
+        inner = _ParamikoSeekEndStream(b"0123456789", stat_exc=_ChannelDeath("channel stalled"))
+        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt", is_fatal=_fatal, size_probe=_stat_size_probe)
+
+        with pytest.raises(NotFound):
+            stream.seek(0, io.SEEK_END)
+        stream.close()
+
+        assert inner.close_calls == 0, "the close re-entered a connection already condemned"
+        assert stream.closed, "the wrapper must still report itself closed"
+
+    @pytest.mark.spec("SIO-011")
+    def test_without_a_probe_the_inner_swallow_still_answers(self) -> None:
+        """The hook is opt-in, and this is the behaviour every other stream keeps.
+
+        The six non-SFTP construction sites supply no probe, and none of them
+        resolves ``SEEK_END`` by a request it could then discard -- SIO-011
+        enumerates the routes they take instead. Deliberately not restated here:
+        that enumeration has been wrong in three successive review rounds, once
+        in each artifact that copied it, so this docstring links rather than
+        paraphrases (CONTENT-RULES rule 4).
+
+        What matters at this level is only that the wrapper does not start
+        probing on their behalf, which is what this pins, on the same shape
+        ``test_without_a_predicate_a_failure_never_skips_the_close`` pins for the
+        close.
+        """
+        inner = _ParamikoSeekEndStream(b"0123456789", stat_exc=_ChannelDeath("channel stalled"))
+        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt", is_fatal=_fatal)
+
+        assert stream.seek(0, io.SEEK_END) == 0, "without the hook the inner swallow is unchanged"
+        assert inner.seek_calls == [(0, io.SEEK_END)], "the whence must reach the inner stream intact"
+        stream.close()
+        assert inner.close_calls == 1, "nothing was mapped, so nothing may skip the close"
+
+    @pytest.mark.spec("SIO-011")
+    @pytest.mark.parametrize(
+        ("offset", "expected"),
+        [
+            pytest.param(0, 10, id="end"),
+            pytest.param(-4, 6, id="negative-offset"),
+            pytest.param(-10, 0, id="whole-file"),
+        ],
+    )
+    def test_a_healthy_probe_positions_relative_to_the_probed_size(self, offset: int, expected: int) -> None:
+        """The case that always worked must keep working, negative offsets included.
+
+        Parametrised over a negative offset as well as ``0`` because the offset
+        arithmetic is the wrapper's own: ``seek(0, SEEK_END)`` alone would pass
+        against an implementation that dropped the caller's offset entirely.
+        """
+        inner = _ParamikoSeekEndStream(b"0123456789")
+        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt", is_fatal=_fatal, size_probe=_stat_size_probe)
+
+        assert stream.seek(offset, io.SEEK_END) == expected
+        assert inner.seek_calls == [(expected, io.SEEK_SET)], (
+            "the wrapper must resolve the target itself and delegate an absolute seek, "
+            "which is local on a paramiko handle -- delegating SEEK_END would round-trip twice"
+        )
+        assert inner.stat_calls == 1, "one probe per seek, not one per layer"
+
+    @pytest.mark.spec("SIO-011")
+    @pytest.mark.parametrize(
+        "whence",
+        [pytest.param(io.SEEK_SET, id="seek-set"), pytest.param(io.SEEK_CUR, id="seek-cur")],
+    )
+    def test_a_local_seek_never_probes(self, whence: int) -> None:
+        """``SEEK_SET`` / ``SEEK_CUR`` are local on a paramiko handle; probing them would add a round-trip."""
+        inner = _ParamikoSeekEndStream(b"0123456789")
+        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt", is_fatal=_fatal, size_probe=_stat_size_probe)
+
+        stream.seek(3, whence)
+
+        assert inner.stat_calls == 0
+        assert inner.seek_calls == [(3, whence)]
+
+    @pytest.mark.spec("SIO-011")
+    def test_the_probe_survives_the_buffered_layer(self) -> None:
+        """SFTP hands back ``BufferedReader(_ErrorMappingStream(...))``.
+
+        No SFTP caller holds the wrapper directly, so a probe wired only for the
+        bare construction would be armed on the one shape nobody has.  The
+        sibling of ``test_the_guard_survives_the_buffered_layer``.
+        """
+        inner = _ParamikoSeekEndStream(b"0123456789", stat_exc=_ChannelDeath("channel stalled"))
+        raw = _ErrorMappingStream(inner, _test_mapper, "f.txt", is_fatal=_fatal, size_probe=_stat_size_probe)
+        buffered = io.BufferedReader(cast("io.RawIOBase", raw))
+
+        with pytest.raises(NotFound):
+            buffered.seek(0, io.SEEK_END)
+        buffered.close()
+
+        assert inner.close_calls == 0
+        assert raw.closed
+
+    @pytest.mark.spec("SIO-011")
+    def test_a_probe_failure_outside_the_caught_tuple_propagates_unmapped(self) -> None:
+        """The probe path is bounded by the same tuple as every other path, deliberately.
+
+        ``_ErrorMappingStream`` catches ``(OSError, EOFError)`` and nothing
+        else, so a ``paramiko.SFTPError`` -- which subclasses neither -- escapes
+        the probe unmapped exactly as one escapes a read.  That is BK-358's
+        breach of BE-021, unchanged by this clause and not narrowed by it:
+        widening the tuple here alone would make the seek path better than the
+        read path with no clause saying why.  Pinned so the boundary is
+        asserted rather than assumed, and so BK-358 has a test to delete.
+        """
+
+        class _NotAnOSError(Exception):
+            """Stands for ``paramiko.SFTPError``: neither ``OSError`` nor ``EOFError``."""
+
+        inner = _ParamikoSeekEndStream(b"0123456789", stat_exc=_NotAnOSError("garbage packet"))
+        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt", is_fatal=_fatal, size_probe=_stat_size_probe)
+
+        with pytest.raises(_NotAnOSError, match="garbage packet"):
+            stream.seek(0, io.SEEK_END)
+
+        stream.close()
+        assert inner.close_calls == 1, "nothing was mapped, so the guard must stay unarmed"
 
 
 # ---------------------------------------------------------------------------

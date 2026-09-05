@@ -30,6 +30,22 @@ Subcommands:
 The list of testable extras is derived from ``pyproject.toml``'s
 ``[project.optional-dependencies]`` table, minus the dev/build aggregates
 and the marker-gated ``toml`` extra.
+
+Drift-gate::
+
+    kind:       pair
+    entrypoint: diff
+    compares: the freshly resolved dependency set for each extra in pyproject.toml's
+        optional-dependencies table ↔ the committed baseline in infra/drift-locks/
+    domain:     process
+
+Drift-gate::
+
+    kind:       pair
+    entrypoint: render-docs
+    compares: the lock files in infra/drift-locks/, over the extras derived from pyproject.toml
+        ↔ docs-src/reference/tested-versions.md
+    domain:     process ↔ explanation
 """
 
 from __future__ import annotations

@@ -64,6 +64,7 @@ from remote_store._models import ContentDigest, FileInfo, FolderEntry, FolderInf
 from remote_store._path import RemotePath, is_root
 from remote_store._stream import _ErrorMappingStream, _safe_wrap
 from remote_store.backends._fileinfo import _clean_etag, _name_from_path, _normalize_modified
+from remote_store.backends._flat_ns import _ListingCursor
 from remote_store.backends._s3_base import (
     _S3_CA_ENV_VARS,
     _normalize_endpoint_url,
@@ -314,7 +315,12 @@ class S3Boto3Backend(Backend):
     def exists(self, path: str) -> bool:
         """Return ``True`` if an object or prefix exists at *path*; never ``NotFound``.
 
-        One HEAD, falling back to a one-key prefix listing. The root always exists.
+        One HEAD, falling back to a one-key prefix listing. The root always
+        exists. An absent bucket answers ``False``: a bucket that does not exist
+        holds no path either, and this probe never raises for a missing path. A
+        *denied* bucket still raises — the listing is the determinant here, so it
+        fails closed rather than reporting "nothing there" for something you may
+        not see.
 
         Raises:
             PermissionDenied: If the credentials are rejected or lack access (403).
@@ -326,7 +332,7 @@ class S3Boto3Backend(Backend):
                 return True
             if self._head_or_none(path) is not None:
                 return True
-            return self._prefix_has_children(path)
+            return self._children_or_absent_bucket(path)
 
     def is_file(self, path: str) -> bool:
         """Return ``True`` if *path* is an existing object (one HEAD).
@@ -347,7 +353,8 @@ class S3Boto3Backend(Backend):
         """Return ``True`` if *path* is an existing virtual folder (a common prefix).
 
         A same-named object shadows the prefix (flat namespace), so a file returns
-        ``False``. The root is always a folder.
+        ``False``. The root is always a folder. An absent bucket answers
+        ``False``, on the same terms as ``exists``.
 
         Raises:
             PermissionDenied: If the credentials are rejected or lack access (403).
@@ -358,7 +365,7 @@ class S3Boto3Backend(Backend):
                 return True
             if self._head_or_none(path) is not None:
                 return False  # a file shadows a same-named prefix (flat-NS)
-            return self._prefix_has_children(path)
+            return self._children_or_absent_bucket(path)
 
     # endregion
 
@@ -441,11 +448,13 @@ class S3Boto3Backend(Backend):
 
         Raises:
             AlreadyExists: If the object exists and ``overwrite`` is ``False``.
-            InvalidPath: With the ``reject_write_under_file_ancestor`` opt-in, if
-                an ancestor of *path* exists as an object.
+            InvalidPath: If *path* is the store root; or, with the
+                ``reject_write_under_file_ancestor`` opt-in, if an ancestor of
+                *path* exists as an object.
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
+        self._reject_root_as_write_target(path)
         self._maybe_check_no_file_ancestor(path)
         sdk_metadata = dict(metadata) if metadata else None
         extra: dict[str, Any] = {"Metadata": sdk_metadata} if sdk_metadata is not None else {}
@@ -496,7 +505,8 @@ class S3Boto3Backend(Backend):
 
         Raises:
             AlreadyExists: If the object exists and ``overwrite`` is ``False``.
-            InvalidPath: With the opt-in, if an ancestor of *path* exists as an object.
+            InvalidPath: If *path* is the store root; or, with the opt-in, if an
+                ancestor of *path* exists as an object.
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
@@ -516,10 +526,12 @@ class S3Boto3Backend(Backend):
 
         Raises:
             AlreadyExists: If the object exists and ``overwrite`` is ``False``.
-            InvalidPath: With the opt-in, if an ancestor of *path* exists as an object.
+            InvalidPath: If *path* is the store root; or, with the opt-in, if an
+                ancestor of *path* exists as an object.
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
+        self._reject_root_as_write_target(path)
         self._maybe_check_no_file_ancestor(path)
         with self._boto_errors(path):
             if not overwrite and self._head_or_none(path) is not None:
@@ -664,61 +676,90 @@ class S3Boto3Backend(Backend):
 
         Lazily pages a delimiter-scoped ``ListObjectsV2`` breadth-first
         (non-recursive is depth 0; ``recursive`` with ``max_depth`` bounds the
-        descent). A missing prefix yields nothing. Listings are strongly
-        consistent — a just-written object appears in a later listing.
+        descent). A missing prefix yields nothing, and so does an absent bucket.
+        Listings are strongly consistent — a just-written object appears in a
+        later listing.
+
+        Raises:
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after
+                ``close()``.
         """
         prefix = self._prefix_of(path)
         # Unified delimiter BFS: non-recursive == depth limit 0; recursive with
         # max_depth=None == unlimited. Mirrors _S3Base.list_files structure.
         depth_limit = 0 if not recursive else max_depth
         queue: deque[tuple[str, int]] = deque([(prefix, 0)])
-        while queue:
-            current, depth = queue.popleft()
-            for page in self._paginate(current, delimiter="/"):
-                for obj in page.get("Contents", []):
-                    key = obj["Key"]
-                    if key.endswith("/") or key == current:
-                        continue
-                    yield self._obj_to_fileinfo(obj)
-                if depth_limit is None or depth < depth_limit:
-                    for cp in page.get("CommonPrefixes", []):
-                        queue.append((cp["Prefix"], depth + 1))
+        with self._listing_errors(path) as cursor:
+            while queue:
+                current, depth = queue.popleft()
+                for page in self._paginate(current, delimiter="/"):
+                    cursor.saw_page = True
+                    for obj in page.get("Contents", []):
+                        key = obj["Key"]
+                        if key.endswith("/") or key == current:
+                            continue
+                        yield self._obj_to_fileinfo(obj)
+                    if depth_limit is None or depth < depth_limit:
+                        for cp in page.get("CommonPrefixes", []):
+                            queue.append((cp["Prefix"], depth + 1))
 
     def list_folders(self, path: str) -> Iterator[FolderEntry]:
         """Yield immediate subfolders of *path* as ``FolderEntry`` records.
 
         One delimiter-scoped ``ListObjectsV2`` returning common prefixes; a
-        missing prefix yields nothing.
+        missing prefix yields nothing, and so does an absent bucket.
+
+        Raises:
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after
+                ``close()``.
         """
         prefix = self._prefix_of(path)
-        for page in self._paginate(prefix, delimiter="/"):
-            for cp in page.get("CommonPrefixes", []):
-                rel = cp["Prefix"].rstrip("/")
-                yield FolderEntry(path=RemotePath(rel), name=rel.rsplit("/", 1)[-1])
+        with self._listing_errors(path) as cursor:
+            for page in self._paginate(prefix, delimiter="/"):
+                cursor.saw_page = True
+                for cp in page.get("CommonPrefixes", []):
+                    rel = cp["Prefix"].rstrip("/")
+                    yield FolderEntry(path=RemotePath(rel), name=rel.rsplit("/", 1)[-1])
 
     def iter_children(self, path: str) -> Iterator[FileInfo | FolderEntry]:
         """Yield the immediate files and folders under *path* in one paged listing.
 
         Overrides the base two-pass default with a single delimiter-scoped
         ``ListObjectsV2``, yielding ``FileInfo`` for objects and ``FolderEntry``
-        for common prefixes. A missing prefix yields nothing.
+        for common prefixes. A missing prefix yields nothing, and so does an
+        absent bucket.
+
+        Raises:
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after
+                ``close()``.
         """
         prefix = self._prefix_of(path)
-        for page in self._paginate(prefix, delimiter="/"):
-            for obj in page.get("Contents", []):
-                key = obj["Key"]
-                if key.endswith("/") or key == prefix:
-                    continue
-                yield self._obj_to_fileinfo(obj)
-            for cp in page.get("CommonPrefixes", []):
-                rel = cp["Prefix"].rstrip("/")
-                yield FolderEntry(path=RemotePath(rel), name=rel.rsplit("/", 1)[-1])
+        with self._listing_errors(path) as cursor:
+            for page in self._paginate(prefix, delimiter="/"):
+                cursor.saw_page = True
+                for obj in page.get("Contents", []):
+                    key = obj["Key"]
+                    if key.endswith("/") or key == prefix:
+                        continue
+                    yield self._obj_to_fileinfo(obj)
+                for cp in page.get("CommonPrefixes", []):
+                    rel = cp["Prefix"].rstrip("/")
+                    yield FolderEntry(path=RemotePath(rel), name=rel.rsplit("/", 1)[-1])
 
     def glob(self, pattern: str) -> Iterator[FileInfo]:
         """Yield files whose key matches the glob *pattern*.
 
         Narrows to the pattern's literal prefix, lists that subtree, and applies
-        the full glob regex to each key.
+        the full glob regex to each key. Reaches the wire only through
+        ``list_files``, so an absent bucket yields nothing here too.
+
+        Raises:
+            PermissionDenied: If the credentials are rejected or lack access (403).
+            BackendUnavailable: On throttling, 5xx, or transport failure, or after
+                ``close()``.
         """
         from remote_store._glob import extract_prefix, needs_recursive, pattern_to_regex
 
@@ -743,11 +784,13 @@ class S3Boto3Backend(Backend):
         Raises:
             NotFound: If *src* does not exist.
             AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is ``False``.
-            InvalidPath: With the opt-in, if an ancestor of *dst* exists as an object.
+            InvalidPath: If *src* or *dst* is the store root; or, with the opt-in,
+                if an ancestor of *dst* exists as an object.
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
         self._reject_root_as_file(src)
+        self._reject_root_as_write_target(dst)
         with self._boto_errors(src):
             if self._head_or_none(src) is None:
                 self._reject_folder(src)
@@ -774,11 +817,13 @@ class S3Boto3Backend(Backend):
         Raises:
             NotFound: If *src* does not exist.
             AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is ``False``.
-            InvalidPath: With the opt-in, if an ancestor of *dst* exists as an object.
+            InvalidPath: If *src* or *dst* is the store root; or, with the opt-in,
+                if an ancestor of *dst* exists as an object.
             PermissionDenied: If the credentials are rejected or lack access (403).
             BackendUnavailable: On throttling, 5xx, or transport failure, or after ``close()``.
         """
         self._reject_root_as_file(src)
+        self._reject_root_as_write_target(dst)
         with self._boto_errors(src):
             if self._head_or_none(src) is None:
                 self._reject_folder(src)
@@ -855,6 +900,35 @@ class S3Boto3Backend(Backend):
             raise
         except Exception as exc:  # noqa: BLE001
             raise self._classify_error(exc, path) from None
+
+    @contextmanager
+    def _listing_errors(self, path: str = "") -> Iterator[_ListingCursor]:
+        """``_boto_errors`` for a listing, with an absent bucket ending the iteration.
+
+        Carries two obligations from the backend error contract: nothing native
+        leaks, and an absent bucket yields an empty listing rather than raising.
+
+        The absent-bucket branch is narrow in two directions. By *shape*:
+        ``ListObjectsV2`` answers an absent *prefix* with ``200 KeyCount=0``, so
+        the only 404 it can raise is the container's, and a denial still
+        propagates as ``PermissionDenied``. By *position*: callers set
+        ``cursor.saw_page`` per page, after which the 404 means a mid-scan
+        deletion and propagates — see ``_ListingCursor`` for why it is the page
+        and not the yield.
+
+        **Must be entered inside the generator body**, or it does not run until
+        the first ``next()``.
+        """
+        cursor = _ListingCursor()
+        try:
+            with self._boto_errors(path):
+                yield cursor
+        except NotFound:
+            # An absent container reads as an absent path, bounded to the first
+            # page.
+            if cursor.saw_page:
+                raise
+            return
 
     @contextmanager
     def _file_op_errors(self, path: str) -> Iterator[None]:
@@ -997,12 +1071,16 @@ class S3Boto3Backend(Backend):
     def _children_or_absent_bucket(self, path: str) -> bool:
         """``_prefix_has_children``, with a missing bucket answering "no children".
 
-        The ``delete_folder`` determinant. An absent container is an absent
-        path. Unlike the s3fs lane the shape here is a ``ClientError``
-        rather than a distinct exception type, so the predicate reuses
-        ``_is_404`` — which already treats ``NoSuchBucket`` as a not-found code,
-        the same reading that makes this backend's ``_head_or_none`` tolerate a
-        missing bucket on the ``delete`` side.
+        Shared by ``delete_folder``, ``exists`` and ``is_folder`` — every caller
+        whose answer *is* this listing rather than a reclassification of one. An
+        absent container is an absent path, so the delete proceeds to its
+        ``missing_ok`` branch and the two probes answer ``False``.
+
+        Unlike the s3fs lane the shape here is a ``ClientError`` rather than a
+        distinct exception type, so the predicate reuses ``_is_404`` — which
+        already treats ``NoSuchBucket`` as a not-found code, the same reading
+        that makes this backend's ``_head_or_none`` tolerate a missing bucket on
+        the ``delete`` side.
         """
         from botocore.exceptions import ClientError  # type: ignore[import-untyped]
 
@@ -1030,6 +1108,25 @@ class S3Boto3Backend(Backend):
 
         self._raise_if_closed()
         _reject_root_as_file(path, self.name)
+
+    def _reject_root_as_write_target(self, path: str) -> None:
+        """Pre-check: the store root is a folder, so writing *to* it is a type error.
+
+        The sibling above keeps the root out of the SDK for reads, for exactly
+        the reason that applies here: a zero-length ``Key`` is rejected at
+        parameter validation, and it reached the caller as
+        ``BackendUnavailable`` — a retryable class for a permanently wrong
+        request — under both overwrite modes. The dot spelling took a different
+        route again, raising from the layer *above* the backend with no
+        ``backend=`` attribute, so the two spellings disagreed on a call this
+        clause requires to answer alike.
+
+        The closed-backend guard outranks this check and so runs first.
+        """
+        from remote_store.backends._flat_ns import _reject_root_as_write_target
+
+        self._raise_if_closed()
+        _reject_root_as_write_target(path, self.name)
 
     def _reject_folder(self, path: str) -> None:
         """Error path: raise ``InvalidPath`` if *path* is a virtual folder.

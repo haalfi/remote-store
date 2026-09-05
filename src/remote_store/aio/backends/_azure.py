@@ -205,7 +205,11 @@ class AsyncAzureBackend(AsyncBackend):
         return False
 
     async def _flat_children_or_absent_container(self, path: str) -> bool:
-        """Non-HNS ``delete_folder`` determinant: strict, except for an absent container.
+        """Non-HNS folder-existence determinant: strict, except for an absent container.
+
+        Shared by ``delete_folder``, ``exists`` and ``is_folder`` — every non-HNS
+        caller whose answer *is* this listing rather than a reclassification of
+        one.
 
         Distinct from ``_flat_has_children`` above, and the difference is
         load-bearing. That one is fail-open because it runs *after* an operation
@@ -214,11 +218,11 @@ class AsyncAzureBackend(AsyncBackend):
         folder the caller simply cannot see.
 
         The one error it does read as an answer is the container's own 404: an
-        absent container is an absent path, so the caller proceeds to its
-        ``missing_ok`` branch exactly as for an empty prefix. Safe to narrow
-        to ``ResourceNotFoundError`` because an absent *prefix* is never an
-        error here — it is an empty listing — so the only 404 this call can
-        raise is the container's.
+        absent container is an absent path, so ``delete_folder`` proceeds to its
+        ``missing_ok`` branch and the two probes answer ``False``, exactly as for
+        an empty prefix. Safe to narrow to ``ResourceNotFoundError`` because an
+        absent *prefix* is never an error here — it is an empty listing — so the
+        only 404 this call can raise is the container's.
         """
         from azure.core.exceptions import ResourceNotFoundError
 
@@ -262,6 +266,22 @@ class AsyncAzureBackend(AsyncBackend):
 
         self._raise_if_closed()
         _reject_root_as_file(path, self.name)
+
+    def _reject_root_as_write_target(self, path: str) -> None:
+        """Pre-check: the store root is a folder, so writing *to* it is a type error.
+
+        Runs on HNS accounts too, for the reason the sibling above gives: the
+        alternative is handing an empty blob name to the SDK, which answered
+        ``"Please specify a container name and blob name."`` as a bare
+        ``RemoteStoreError`` under both spellings and both overwrite modes —
+        the SDK's own wording, reaching the caller unclassified.
+
+        The closed-backend guard outranks this check and so runs first.
+        """
+        from remote_store.backends._flat_ns import _reject_root_as_write_target
+
+        self._raise_if_closed()
+        _reject_root_as_write_target(path, self.name)
 
     async def _reject_folder(self, path: str) -> None:
         """Error path: raise ``InvalidPath`` if *path* is a virtual folder.
@@ -457,6 +477,12 @@ class AsyncAzureBackend(AsyncBackend):
     async def exists(self, path: str) -> bool:
         """Check if a file or folder exists.
 
+        An absent *container* answers ``False`` — a container that does not exist
+        holds no path either, and this probe never raises for a missing path. A
+        *denied* container still raises: the prefix listing is the determinant
+        here, so it fails closed rather than reporting "nothing there" for
+        something you may not see.
+
         Args:
             path: Backend-relative key, or ``""`` for the root.
 
@@ -482,9 +508,7 @@ class AsyncAzureBackend(AsyncBackend):
                 except Exception:  # noqa: BLE001
                     return False
             else:
-                prefix = ap.rstrip("/") + "/"
-                blobs = self._cc.list_blobs(name_starts_with=prefix, results_per_page=1)
-                return bool([b async for b in blobs][:1])
+                return await self._flat_children_or_absent_container(path)
 
     async def is_file(self, path: str) -> bool:
         """Return ``True`` if ``path`` is an existing file.
@@ -516,6 +540,8 @@ class AsyncAzureBackend(AsyncBackend):
     async def is_folder(self, path: str) -> bool:
         """Return ``True`` if ``path`` is an existing folder.
 
+        An absent container answers ``False``, on the same terms as ``exists``.
+
         Args:
             path: Backend-relative key, or ``""`` for the root.
 
@@ -537,9 +563,7 @@ class AsyncAzureBackend(AsyncBackend):
                 except Exception:  # noqa: BLE001
                     return False
             else:
-                prefix = ap.rstrip("/") + "/"
-                blobs = self._cc.list_blobs(name_starts_with=prefix, results_per_page=1)
-                return bool([b async for b in blobs][:1])
+                return await self._flat_children_or_absent_container(path)
 
     async def read(self, path: str) -> AsyncIterator[bytes]:
         """Open a file for reading and return an async iterator of byte chunks.
@@ -638,8 +662,9 @@ class AsyncAzureBackend(AsyncBackend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If ``path`` names a directory.
+            InvalidPath: If ``path`` is the store root, or names a directory.
         """
+        self._reject_root_as_write_target(path)
         await self._maybe_check_no_file_ancestor(path)
         async with self._errors(path):
             bc = self._blob_client(path)
@@ -725,8 +750,9 @@ class AsyncAzureBackend(AsyncBackend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If ``path`` names a directory.
+            InvalidPath: If ``path`` is the store root, or names a directory.
         """
+        self._reject_root_as_write_target(path)
         if not self._hns:
             # non-HNS: direct upload is atomic (PUT semantics)
             return await self.write(path, content, overwrite=overwrite, metadata=metadata)
@@ -960,6 +986,9 @@ class AsyncAzureBackend(AsyncBackend):
     ) -> AsyncIterator[FileInfo]:
         """List files under ``path``.
 
+        A missing path yields nothing, and so does an absent container — it
+        holds nothing either.
+
         Args:
             path: Backend-relative folder key, or ``""`` for the root.
             recursive: If ``True``, include files in all subdirectories.
@@ -970,24 +999,28 @@ class AsyncAzureBackend(AsyncBackend):
         Returns:
             An async iterator of ``FileInfo`` objects.
         """
+        saw_page = False
         try:
             ap = _azure_path_fn(path)
             prefix = (ap.rstrip("/") + "/") if ap else ""
 
             if self._hns:  # pragma: no cover -- HNS only
                 try:
-                    paths = self._fs.get_paths(path=ap or "/", recursive=recursive)
-                    async for p in paths:
-                        if not getattr(p, "is_directory", False):
-                            if recursive and max_depth is not None:
-                                rel = str(p.name)[len(prefix) :]
-                                depth = rel.count("/")
-                                if depth > max_depth:
-                                    continue
-                            yield props_to_fileinfo(p, str(p.name))
+                    async for page in self._fs.get_paths(path=ap or "/", recursive=recursive).by_page():
+                        saw_page = True
+                        async for p in page:
+                            if not getattr(p, "is_directory", False):
+                                if recursive and max_depth is not None:
+                                    rel = str(p.name)[len(prefix) :]
+                                    depth = rel.count("/")
+                                    if depth > max_depth:
+                                        continue
+                                yield props_to_fileinfo(p, str(p.name))
                 except Exception as exc:  # noqa: BLE001
                     mapped = classify_azure_error(exc, path, self.name)
                     if isinstance(mapped, NotFound):
+                        if saw_page:
+                            raise mapped from None
                         return
                     # Listing under a file-ancestor must yield [] (BE-014),
                     # not leak the SDK's AlreadyExists/409.
@@ -995,24 +1028,44 @@ class AsyncAzureBackend(AsyncBackend):
                         return
                     raise mapped from None
             elif recursive:
-                async for blob in self._cc.list_blobs(name_starts_with=prefix):
-                    if max_depth is not None:
-                        rel = blob.name[len(prefix) :]
-                        depth = rel.count("/")
-                        if depth > max_depth:
-                            continue
-                    yield props_to_fileinfo(blob, blob.name)
+                async for page in self._cc.list_blobs(name_starts_with=prefix).by_page():
+                    saw_page = True
+                    async for blob in page:
+                        if max_depth is not None:
+                            rel = blob.name[len(prefix) :]
+                            depth = rel.count("/")
+                            if depth > max_depth:
+                                continue
+                        yield props_to_fileinfo(blob, blob.name)
             else:
-                async for item in self._cc.walk_blobs(name_starts_with=prefix):
-                    if not getattr(item, "prefix", None):
-                        yield props_to_fileinfo(item, item.name)
+                async for page in self._cc.walk_blobs(name_starts_with=prefix).by_page():
+                    saw_page = True
+                    async for item in page:
+                        if not getattr(item, "prefix", None):
+                            yield props_to_fileinfo(item, item.name)
+        except NotFound:
+            # BE-021: an absent container yields an empty listing, bounded to
+            # the first page. Keyed on the page, not on a yielded item — see
+            # _flat_ns._ListingCursor.
+            if saw_page:
+                raise
+            return
         except RemoteStoreError:
             raise
         except Exception as exc:  # noqa: BLE001
-            raise classify_azure_error(exc, path, self.name) from None
+            mapped = classify_azure_error(exc, path, self.name)
+            if isinstance(mapped, NotFound):
+                # An absent *prefix* comes back as an empty page, so the only
+                # 404 here is the container's; a denial still propagates below.
+                if saw_page:
+                    raise mapped from None
+                return
+            raise mapped from None
 
     async def list_folders(self, path: str) -> AsyncIterator[FolderEntry]:
         """List immediate subfolders under ``path``.
+
+        A missing path yields nothing, and so does an absent container.
 
         Args:
             path: Backend-relative folder key, or ``""`` for the root.
@@ -1020,39 +1073,61 @@ class AsyncAzureBackend(AsyncBackend):
         Returns:
             An async iterator of ``FolderEntry`` objects.
         """
+        saw_page = False
         try:
             ap = _azure_path_fn(path)
             prefix = (ap.rstrip("/") + "/") if ap else ""
 
             if self._hns:  # pragma: no cover -- HNS only
                 try:
-                    paths = self._fs.get_paths(path=ap or "/", recursive=False)
-                    async for p in paths:
-                        if getattr(p, "is_directory", False):
-                            rel = str(p.name).rstrip("/")
-                            folder_name = rel.rsplit("/", 1)[-1]
-                            yield FolderEntry(path=RemotePath(rel), name=folder_name)
+                    async for page in self._fs.get_paths(path=ap or "/", recursive=False).by_page():
+                        saw_page = True
+                        async for p in page:
+                            if getattr(p, "is_directory", False):
+                                rel = str(p.name).rstrip("/")
+                                folder_name = rel.rsplit("/", 1)[-1]
+                                yield FolderEntry(path=RemotePath(rel), name=folder_name)
                 except Exception as exc:  # noqa: BLE001
                     mapped = classify_azure_error(exc, path, self.name)
                     if isinstance(mapped, NotFound):
+                        if saw_page:
+                            raise mapped from None
                         return
                     # Listing under a file-ancestor must yield [] (BE-014).
                     if await self._hns_first_file_ancestor(path) is not None:
                         return
                     raise mapped from None
             else:
-                async for item in self._cc.walk_blobs(name_starts_with=prefix):
-                    if getattr(item, "prefix", None):
-                        rel = self.to_key(item.prefix.rstrip("/"))
-                        folder_name = rel.rsplit("/", 1)[-1]
-                        yield FolderEntry(path=RemotePath(rel), name=folder_name)
+                async for page in self._cc.walk_blobs(name_starts_with=prefix).by_page():
+                    saw_page = True
+                    async for item in page:
+                        if getattr(item, "prefix", None):
+                            rel = self.to_key(item.prefix.rstrip("/"))
+                            folder_name = rel.rsplit("/", 1)[-1]
+                            yield FolderEntry(path=RemotePath(rel), name=folder_name)
+        except NotFound:
+            # BE-021: an absent container yields an empty listing, bounded to
+            # the first page. Keyed on the page, not on a yielded item — see
+            # _flat_ns._ListingCursor.
+            if saw_page:
+                raise
+            return
         except RemoteStoreError:
             raise
         except Exception as exc:  # noqa: BLE001
-            raise classify_azure_error(exc, path, self.name) from None
+            mapped = classify_azure_error(exc, path, self.name)
+            if isinstance(mapped, NotFound):
+                # An absent *prefix* comes back as an empty page, so the only
+                # 404 here is the container's; a denial still propagates below.
+                if saw_page:
+                    raise mapped from None
+                return
+            raise mapped from None
 
     async def iter_children(self, path: str) -> AsyncIterator[FileInfo | FolderEntry]:
         """Yield both files and folders under ``path`` in a single pass.
+
+        A missing path yields nothing, and so does an absent container.
 
         Args:
             path: Backend-relative folder key, or ``""`` for the root.
@@ -1060,40 +1135,63 @@ class AsyncAzureBackend(AsyncBackend):
         Returns:
             An async iterator of ``FileInfo`` (files) and ``FolderEntry`` (folders).
         """
+        saw_page = False
         try:
             ap = _azure_path_fn(path)
             prefix = (ap.rstrip("/") + "/") if ap else ""
 
             if self._hns:  # pragma: no cover -- HNS only
                 try:
-                    paths = self._fs.get_paths(path=ap or "/", recursive=False)
-                    async for p in paths:
-                        if getattr(p, "is_directory", False):
-                            rel = str(p.name).rstrip("/")
-                            folder_name = rel.rsplit("/", 1)[-1]
-                            yield FolderEntry(path=RemotePath(rel), name=folder_name)
-                        else:
-                            yield props_to_fileinfo(p, str(p.name))
+                    async for page in self._fs.get_paths(path=ap or "/", recursive=False).by_page():
+                        saw_page = True
+                        async for p in page:
+                            if getattr(p, "is_directory", False):
+                                rel = str(p.name).rstrip("/")
+                                folder_name = rel.rsplit("/", 1)[-1]
+                                yield FolderEntry(path=RemotePath(rel), name=folder_name)
+                            else:
+                                yield props_to_fileinfo(p, str(p.name))
                 except Exception as exc:  # noqa: BLE001
                     mapped = classify_azure_error(exc, path, self.name)
                     if isinstance(mapped, NotFound):
+                        if saw_page:
+                            raise mapped from None
                         return
                     raise mapped from None
             else:
-                async for item in self._cc.walk_blobs(name_starts_with=prefix):
-                    if getattr(item, "prefix", None):
-                        rel = self.to_key(item.prefix.rstrip("/"))
-                        folder_name = rel.rsplit("/", 1)[-1]
-                        yield FolderEntry(path=RemotePath(rel), name=folder_name)
-                    else:
-                        yield props_to_fileinfo(item, item.name)
+                async for page in self._cc.walk_blobs(name_starts_with=prefix).by_page():
+                    saw_page = True
+                    async for item in page:
+                        if getattr(item, "prefix", None):
+                            rel = self.to_key(item.prefix.rstrip("/"))
+                            folder_name = rel.rsplit("/", 1)[-1]
+                            yield FolderEntry(path=RemotePath(rel), name=folder_name)
+                        else:
+                            yield props_to_fileinfo(item, item.name)
+        except NotFound:
+            # BE-021: an absent container yields an empty listing, bounded to
+            # the first page. Keyed on the page, not on a yielded item — see
+            # _flat_ns._ListingCursor.
+            if saw_page:
+                raise
+            return
         except RemoteStoreError:
             raise
         except Exception as exc:  # noqa: BLE001
-            raise classify_azure_error(exc, path, self.name) from None
+            mapped = classify_azure_error(exc, path, self.name)
+            if isinstance(mapped, NotFound):
+                # An absent *prefix* comes back as an empty page, so the only
+                # 404 here is the container's; a denial still propagates below.
+                if saw_page:
+                    raise mapped from None
+                return
+            raise mapped from None
 
     async def glob(self, pattern: str) -> AsyncIterator[FileInfo]:
         """Match files against a glob pattern.
+
+        Reaches the wire only through ``list_files``, so an absent container
+        yields nothing here too.
 
         Args:
             pattern: Glob pattern (e.g., ``"data/*.csv"``, ``"**/*.txt"``).
@@ -1227,7 +1325,8 @@ class AsyncAzureBackend(AsyncBackend):
 
         Raises:
             NotFound: If ``src`` does not exist.
-            InvalidPath: If ``src`` or ``dst`` names a directory (HNS only).
+            InvalidPath: If ``src`` or ``dst`` is the store root, or names a
+                directory (HNS only).
             AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
         # BE-018 / ASYNC-018: self-move is a no-op (src == dst → Ok), but only
@@ -1238,6 +1337,7 @@ class AsyncAzureBackend(AsyncBackend):
         # azure_path collapses them; without normalising, the copy+delete
         # branch below would delete the sole copy (AZ-017 data-loss edge).
         self._reject_root_as_file(src)
+        self._reject_root_as_write_target(dst)
         if _azure_path_fn(src) == _azure_path_fn(dst):
             async with self._errors(src):
                 src_bc = self._blob_client(src)
@@ -1312,7 +1412,8 @@ class AsyncAzureBackend(AsyncBackend):
 
         Raises:
             NotFound: If ``src`` does not exist.
-            InvalidPath: If ``src`` or ``dst`` names a directory (HNS only).
+            InvalidPath: If ``src`` or ``dst`` is the store root, or names a
+                directory (HNS only).
             AlreadyExists: If ``dst`` exists and ``overwrite`` is ``False``.
         """
         # BE-019 / ASYNC-019: self-copy is a no-op (src == dst → Ok), but only
@@ -1322,6 +1423,7 @@ class AsyncAzureBackend(AsyncBackend):
         # non-canonical paths ("a//b" vs "a/b") that name the same blob once
         # azure_path collapses them (AZ-018 self-op edge).
         self._reject_root_as_file(src)
+        self._reject_root_as_write_target(dst)
         if _azure_path_fn(src) == _azure_path_fn(dst):
             async with self._errors(src):
                 src_bc = self._blob_client(src)

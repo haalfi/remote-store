@@ -36,6 +36,13 @@ Run with:
   hatch run check-docstring-parity
   python scripts/check_docstring_parity.py
   python scripts/check_docstring_parity.py --fix
+
+Drift-gate::
+
+    kind:       pair
+    compares: the sync API docstrings in src/remote_store/ ↔ their hand-mirrored twins in
+        src/remote_store/aio/
+    domain:     realization
 """
 
 from __future__ import annotations
@@ -190,6 +197,7 @@ TWINS: tuple[Twin, ...] = (
                 "_reject_file",
                 "_reject_folder",
                 "_reject_root_as_file",
+                "_reject_root_as_write_target",
                 "_src_props",
                 "check_health",
                 "delete_folder",

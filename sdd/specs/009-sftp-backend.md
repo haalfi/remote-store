@@ -35,7 +35,8 @@ SFTPBackend(
     known_host_keys: str | None = None,
     host_keys_path: str | None = None,  # defaults to ~/.ssh/known_hosts
     config: dict | None = None,         # may contain "known_host_keys"
-    timeout: int = 10,
+    timeout: int = 10,                  # connect phase only (see SFTP-030)
+    io_timeout: float | None = 120.0,   # bound on a stalled open channel
     connect_kwargs: dict | None = None, # extra SSHClient.connect() kwargs
 )
 ```
@@ -84,7 +85,16 @@ on staleness is also supported (see SFTP-010).
 ### SFTP-005: Construction Validation
 
 **Invariant:** `host` must be a non-empty string. Passing an empty or whitespace-only
-host raises `ValueError` at construction time.
+host raises `ValueError` at construction time. `io_timeout`, when not `None`, must
+be a positive number of seconds; `0` and negatives raise `ValueError` — paramiko
+reads `0` as non-blocking rather than as a bound, and every SFTP request waits
+on a reply, so every operation fails at once — writes included, via the
+acknowledgement read that follows them. (`settimeout(0)` does not fail an
+operation that need not block: paramiko raises only when the read buffer is
+empty or the send window is full. Every SFTP operation reaches one of those.)
+`None` is therefore the only way to ask for an unbounded channel, and `0` is not
+a spelling of it: the two look interchangeable to a caller reaching for
+"no limit" from a default that is now a real bound (SFTP-030).
 **Postconditions:** No network validation of host reachability at construction time.
 
 ---
@@ -127,7 +137,11 @@ the Base64 payload. Invalid PEM structures (not 5 parts) raise `ValueError`.
 
 ### SFTP-009: Tenacity Retry on Connect
 
-**Invariant:** The `_connect()` method retries on transient SSH errors using tenacity.
+**Invariant:** `_connect()` retries the `ssh.connect()` call on transient SSH
+errors using tenacity. The retried closure is that call alone, **not** the whole
+of `_connect`: the SFTP channel open and session setup that follow it run once,
+outside the retry, so a failure there is reported rather than retried (SFTP-030
+depends on this scope being stated precisely).
 When no `RetryPolicy` is provided, uses defaults: 3 attempts, exponential backoff
 (2s min, 10s max). When a `RetryPolicy` is provided via the `retry` constructor
 parameter, maps its fields to tenacity: `max_attempts` -> `stop_after_attempt`,
@@ -153,8 +167,17 @@ across the full dead-connection signal set (`EOFError`, `OSError('Socket is
 closed')`, the socket-teardown errnos, `socket.timeout`, and the paramiko
 `SFTPError` / `SSHException` / `ChannelException` families — see SFTP-023).
 Anchoring recovery to that conclusion rather than an enumerated list is what
-keeps a signal the list forgot (e.g. a `socket.timeout` from the channel
-timeout) from wedging the long-lived backend. Operations outside the default
+keeps a signal the list forgot from wedging the long-lived backend — the list
+above is evidence of the current signals, not the guarantee. No worked example
+is given deliberately: every signal named here is enumerated, mapped and
+tested, so any example drawn from the list would illustrate the opposite of the
+claim. Note also that this tier only *handles* a `socket.timeout`; nothing here
+causes one. A read that stalls on an open channel raises nothing at all unless
+SFTP-030's `io_timeout` arms the bound — which it now does by default, so a
+merely silent peer reaches this path on a store configured with nothing. A
+caller who opts out with `io_timeout=None` puts it back out of reach for that
+fault, and the other signals in the set are unaffected either way. Operations
+outside the default
 `_errors()` scope must still route through this mapping for the guarantee to
 hold: the listing operations route their failure through `_map_exception`, and
 `open_atomic`'s streamed-write phase — which yields the handle outside
@@ -207,6 +230,22 @@ the same directory as the target, then renames to the target via `posix_rename`.
 **Caveat:** If the connection drops between write and rename, the orphan temp file
 remains. This is **simulated** atomicity, not true atomicity — the capability is
 declared to enable the write-then-rename pattern, but the caveat must be documented.
+**The destination is untouched only for a failure before the promote**, and that
+half was previously unstated here — a reader took it from the word "atomic"
+rather than from any clause, which is why it is written down now with its bound.
+Two failures fall outside it. A stall whose lost reply is the promote
+`posix_rename` itself leaves the rename *performed*: the destination holds the
+new content, no temp remains, and the caller is told `BackendUnavailable`. And
+the `_rename_fallback` path — entered when `posix_rename` raises an `OSError`
+that `_is_connection_dead` does not recognise and `_raise_if_dir` has not
+rejected the target, so not only on servers lacking the extension — removes the
+destination before renaming onto it, so a stall in that window destroys it and strands the
+payload in the temp (**BUG-270**). So "atomic" here guarantees no reader sees a
+half-written file; it guarantees neither that a reported failure means the write
+did not happen, nor that an existing destination survives. Measured, not
+inferred:
+[SFTP-030 § What a stalled operation leaves behind](#stalled-write-destination)
+carries the closure, the named states and the derivation.
 **Postconditions:** On success, the temp file is gone and the target contains the
 new content. On failure, the backend makes a **best-effort** temp-file cleanup that
 never reconnects: when the failure is itself a dropped-connection signal (or the
@@ -216,11 +255,21 @@ error-handling path — so the orphan-temp caveat above holds and the original e
 propagates without a multi-second reconnect stall. An abnormal exit of an
 `open_atomic` block (including a `GeneratorExit` / `KeyboardInterrupt`) removes the
 temp file under the same best-effort guard.
+**The contrast this caveat is read for** — what plain `write` leaves at the
+destination path when it fails the same way — is
+[SFTP-030 § What a stalled operation leaves behind](#stalled-write-destination).
+A reader choosing between the two operations is comparing the two, and stating
+only this half is what left that choice undecidable.
 
 ### SFTP-015: Atomic Write Overwrite Semantics
 
 **Invariant:** `write_atomic(path, content, overwrite=False)` raises `AlreadyExists`
 if the target already exists. With `overwrite=True`, the existing file is replaced.
+**On success.** A failure can leave it replaced, unchanged, or removed with
+nothing in its place — see
+[SFTP-030 § What a stalled operation leaves behind](#stalled-write-destination),
+and BUG-272 for the removed case, which is the one this invariant reads as
+excluding.
 
 ### SFTP-016: delete_folder Recursive
 
@@ -240,6 +289,10 @@ is empty.
 to `rename`, and falls back to copy + delete if rename fails entirely.
 **Raises:** `NotFound` if `src` does not exist. `AlreadyExists` if `dst` exists and
 `overwrite=False`.
+**On failure**, see
+[SFTP-030 § What a stalled operation leaves behind](#stalled-write-destination):
+a reported failure may mean the move was performed, and the fallback path can
+leave the destination removed.
 
 ### SFTP-019: Copy Via Read + Write
 
@@ -247,6 +300,10 @@ to `rename`, and falls back to copy + delete if rename fails entirely.
 There is no server-side copy operation in SFTP — data passes through the client.
 **Raises:** `NotFound` if `src` does not exist. `AlreadyExists` if `dst` exists and
 `overwrite=False`.
+**On failure**, the destination is written non-atomically and can hold any prefix
+of the source, up to and including all of it — see
+[SFTP-030 § What a stalled operation leaves behind](#stalled-write-destination).
+The source is never affected.
 
 ---
 
@@ -276,6 +333,71 @@ connection signals that are *not* `SSHException` subclasses: `EOFError`,
 `EBADF`, `socket.timeout` / `TimeoutError` (matched by type, since a half-open
 instance often carries no matching `errno`), and `paramiko.SFTPError` (an
 SFTP-protocol failure that subclasses neither `OSError` nor `SSHException`).
+So, finally, are the signals that say the host was **never reached**:
+`paramiko.NoValidConnectionsError` (an `OSError` whose `errno` is `None`, which
+is what a refused port actually raises), `socket.gaierror` (name resolution), and
+an `OSError` carrying a connect-side errno (`ECONNREFUSED` / `EHOSTUNREACH` /
+`ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN`). Three of those five are the ordinary
+path rather than a fallback: `SSHClient.connect` captures only `ECONNREFUSED`
+and `EHOSTUNREACH` into `NoValidConnectionsError` and re-raises every other
+`socket.error` unwrapped, so `ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN` arrive as
+a plain `OSError`.
+
+These are a *connect-time* set and sit in their own arm rather than joining the
+dropped-connection set above, **because the two predicates answer different
+questions** — was the host ever reached, versus is a connection the backend had
+now unusable.
+
+**No claim is made about what is reachable when, and the omission is the
+clause.** Three rationales of that kind were written for this split and each was
+refuted by a state it had not considered: that no operation is in flight at
+connect time (a connect that times out raises `socket.timeout`, which the
+dropped-connection predicate already matches); that the `is_fatal` and re-entry
+guards are never consulted on the connect path (they are — `read`, `read_bytes`
+and `delete` evaluate the lazy `_sftp` property inside their own `try`, so a
+failure raised by `_connect` reaches them); and that the shapes partition by
+phase at all. A fourth reading is not more likely to be exhaustive than the
+first three, so the condition's space is enumerated instead of argued:
+`TestSFTPConnectTimePredicateSpace` generates the product of connect-time shape
+and operation and asserts, per cell, that the caller gets `BackendUnavailable`
+with a non-empty message and one `op="error_mapping"` record. Which predicate
+claims a shape is therefore an implementation detail, which is the only footing
+on which this split has survived review. The client-clearing invariant below is
+pinned separately, by `test_a_host_never_reached_maps_to_backend_unavailable`,
+which seeds a sentinel first — a per-cell assertion could not reach it, since
+the client is `None` on entry to every cell.
+
+Every other `OSError` the errno dispatch declines keeps the base
+`RemoteStoreError` — `EIO` and `ENOSPC` are faults of a connection that is
+working.
+
+**The two permission errnos are known exclusions rather than oversights**, and
+one reason covers both: this mapping sees only the exception, so it cannot tell
+a connect-time errno from a live-channel one. paramiko re-raises `EACCES` and
+`EPERM` unwrapped like `ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN`, and what each
+then reaches differs:
+
+- `EACCES` takes the `EACCES` arm and is answered `PermissionDenied` — naming
+  the caller's key on a keyed operation, and a bare `Permission denied: ` on
+  `check_health`. **Whether any connect produces it is unestablished**; BUG-273
+  records the trigger as unknown, so this is what would happen and not a
+  behaviour a reader can currently observe.
+- `EPERM` has no arm at all and falls to the generic one as the base
+  `RemoteStoreError`. This is the local rejection that *is* reproducible — a
+  netfilter `REJECT` on the `OUTPUT` chain yields it — so it is the shape a
+  reader meets, and it is BUG-265's own defect surviving in the errno the
+  connect-time set does not claim. **BUG-273 carries this half** — a fix needs
+  the connect-time context, which only `_connect` has. BUG-275 carries the
+  absent `EPERM` arm itself, an older live-channel defect and the reason the
+  fall-through lands where it does; it would change this shape's answer from
+  the base class to `PermissionDenied`, which is still not the promised type.
+
+Neither is claimed here because `_raise_if_dir`'s permission re-raise
+deliberately passes **both** back through this mapping from a working channel,
+so claiming either would answer a server-reported denial with
+`BackendUnavailable` and discard a healthy client. BUG-273 carries that
+exclusion for both.
+
 **Every** `BackendUnavailable` this mapping returns — the `SSHException` family
 included — invalidates the cached SFTP client so the next operation reconnects
 (see SFTP-010, tier 2). The list is not the guarantee: recovery is anchored to
@@ -284,6 +406,126 @@ not enumerated still clears the client rather than wedging the backend. One
 exception keeps its own branch first: `IncompatiblePeer` (a connect-time
 `SSHException`) is mapped with a diagnostic hint before the generic `SSHException`
 mapping, so the hint is not lost.
+
+**Every `BackendUnavailable` this mapping *constructs* carries a non-empty
+message, and emits exactly one `WARNING` record.** Both halves are one method's
+job (`_unavailable`), which is why they are stated in one clause: the arms that
+could disagree are the same arms. *Constructs*, not *returns* — the mapping's
+first arm passes a `RemoteStoreError` it was handed straight back, so a
+`BackendUnavailable` built elsewhere and fed in carries neither guarantee. Only
+one such object exists (`_open_sftp_bounded`'s direct raise, unreachable in
+practice), so this is a bound on the clause rather than a live gap.
+
+**"One record" is a claim about this mapping, not about the logger**, and the
+distinction is load-bearing for the reader most likely to rely on it — someone
+grepping their own logs. `remote_store.backends._sftp` carries other `WARNING`
+records: `_connect` builds its tenacity retry with
+`before_sleep_log(log, logging.WARNING)` on that same logger, so a connect that
+exhausts its `stop_after_attempt` budget emits one per sleep, and `AUTO_ADD`
+warns once per connect. A failed operation is therefore not a one-line event on
+the logger; it is a one-line event per concluded mapping. A reader searching for
+the mapping's record matches `op="error_mapping"` in the structured `extra`,
+which the retry and policy records do not carry.
+
+**No total is given, deliberately.** How many records a failure leaves on that
+logger is a product of the retry policy's `max_attempts`, the host-key policy,
+and which failure shape occurred — and a stated total is one cell of that
+product presented as the whole of it. Three review rounds each refuted a
+different cell written as a total here: "one WARNING on the logger", then
+"three at the default policy" (three is the `AUTO_ADD` figure; the default is
+`STRICT`), then "two per poll" (which assumes the default `max_attempts`).
+Derive it for a configuration if you need it; do not restate it as a constant.
+
+The message is the driver's own whenever the driver has one. Four of the signals
+above — counting the `SSHException` family and the dropped-connection set, not
+the unreachable-host set the paragraph after this one carves out — reach the
+mapping with no arguments: `TimeoutError` (which `socket.timeout`
+is), `EOFError`, `SFTPError` and a bare `SSHException`. For those
+`BackendUnavailable(str(exc))` carried the empty string, which
+[ERR-009](005-error-model.md) forbids and which no reader can act on. **"The
+signals above" is this clause's own list**, which opens with the `SSHException`
+family; it is deliberately not `_is_connection_dead`'s set, which excludes that
+family and would therefore hold only three of the four. A stall
+names the fault and the bound that fired (`io_timeout=<value>s`), and names no
+bound when `io_timeout is None`, since a half-open socket reaches this arm with
+the option off and claiming a limit the caller never set would be false. The
+others name the signal's own class. A signal that *did* explain itself is never
+overwritten: this is a fallback for silence, not a house style for messages.
+
+Two kinds of arm depart from "the driver's own message whenever it has one" —
+the `IncompatiblePeer` arms, which append a remediation hint, and the
+unreachable-host arm, which supplies a message where the driver's answers the
+wrong question.
+
+**What each connect failure actually names, since no arm makes it uniform:**
+
+| Failure | Message | Names |
+|---|---|---|
+| Refused / unreachable via `NoValidConnectionsError` | paramiko's own text | the **resolved address** and port |
+| DNS | supplied by this arm | the configured host |
+| `ENETUNREACH` / `ENETDOWN` / `EHOSTDOWN` | the driver's `[Errno n] strerror` | — |
+| Connect timeout | `_is_connection_dead`'s arm, `"timed out"` | — |
+
+**Note the first row's subject.** `NoValidConnectionsError` builds its text from
+the addresses it tried, not from the hostname it was given, so a store
+configured as `files.example.com` reports `Unable to connect to port 22 on
+10.0.0.4`. It does **not** name the configured host, which is why the DNS arm
+supplies its own message rather than deferring to the driver the way the refused
+arm does: the driver names *enough* there — an address and a port a reader can
+act on — where a `gaierror` names nothing at all.
+
+The bottom two rows name neither host nor port. That is stated rather than
+fixed, because narrowing it would mean re-partitioning the predicates, which is
+the thing this section declines to do.
+
+The arm also covers its own blank cases — **both** of them, the
+resolution branch and the errno branch — rather than falling through, because
+the generic fallback reports a connection *lost*, which is the wrong sentence
+for one that was never made. Neither blank shape is raised by anything today:
+an `OSError` built with an errno renders as `[Errno n] strerror`, and the
+resolver always supplies text. They are guards, stated here because they are
+pinned by tests and so remain checkable, not because a caller will observe them.
+
+The record is emitted where the *conclusion* is reached rather than at each raise
+site, so the cleanup and classification paths that re-enter the mapping do not
+multiply one failure into several lines. That is asserted where the
+multiplication could actually happen rather than where it is easiest to assert:
+`copy` holds two handles and runs two mapped operations, and `open_atomic` maps
+inside `_errors()` and then re-enters its own handler with the mapped error.
+Both are pinned against the live stall relay
+(`test_copy_stalling_mid_stream_costs_one_bound`,
+`test_stall_during_streamed_write_costs_one_bound`); a read, which classifies
+once and stops, cannot show it.
+
+`check_health` maps through here, so a probe that fails **in a way this mapping
+concludes on** logs one record and a `Store.ping()` poll repeats it. That now
+includes the canonical down-server cases: until BUG-265 a refused connect and a
+DNS failure raised the base `RemoteStoreError` from the generic `OSError` arm
+without reaching `_unavailable` at all, contradicting `check_health`'s own
+docstring, and they logged nothing from the mapping. Both now conclude here, so
+a poll against a host that is not there leaves an `op="error_mapping"` record
+where it left none — a change in log volume as well as in exception type. It is
+still narrower than "a poll against a down server": a probe that fails at the
+errno arms (a base path that is missing or denied on a server that answered)
+logs nothing, because that is an answer rather than a fault.
+
+**Which real-world failures land on which arm is not enumerated here**, and the
+omission is deliberate. The arms are stated above by exception *type*, which is
+what this mapping actually dispatches on and what the tests pin; the map from a
+failure a reader can observe (a refused port, a wedged daemon, a rejected
+credential) onto those types is a second question with its own axes, and four
+successive attempts to summarise it in one sentence were each refuted by
+measurement — the last of them, "only a probe that fails by timeout reaches
+it", by a bad SSH banner, an accept-then-hangup and an auth failure, all three
+of which reach `_unavailable` through the `SSHException` arm. BUG-266 carries
+that table, to be written once against a parametrised test rather than as
+prose.
+
+The record carries the path it was mapped with, and omits the key entirely when
+there is none — so a `check_health` record has no `path` at all rather than
+`path=''`, in either the structured `extra` or the rendered line
+(`test_a_probe_record_carries_no_path`). A routine errno is **not** logged: a
+missing or denied path is an answer, not a fault.
 
 ### SFTP-024: No Native Exception Leakage
 
@@ -363,3 +605,535 @@ and `docs-src/guides/async.md`.
 **See also:** [003-backend-adapter-contract.md](003-backend-adapter-contract.md)
 (BE-028), [029-async-store-backend-api.md](029-async-store-backend-api.md)
 (ASYNC-094).
+
+---
+
+## Timeouts
+
+### SFTP-030: Channel I/O Timeout
+
+**Invariant:** `timeout` bounds the connect phase only. It is passed to
+`ssh.connect()` as `timeout`, `banner_timeout`, `auth_timeout` and
+`channel_timeout`; the last bounds how long the client waits for a channel to
+*open*, not traffic on an opened one. Blocking I/O on the open channel is
+governed by `Channel.timeout`, which paramiko initialises to `None`.
+
+`io_timeout` (default `120.0`; `None` means unbounded and is the opt-out; `0`
+and negatives raise `ValueError`, see SFTP-005) is applied via
+`Channel.settimeout()` in `_connect`, and **every** reconnect re-arms it on its
+new channel because it is applied there rather than at construction.
+
+**Why the default is a bound rather than `None`.** The option shipped defaulting
+to `None`, which left the stall it exists to bound unbounded unless a caller
+opted in. Two things in this library made that the wrong resting state rather
+than a conservative one. `ReadOnlyHttpBackend` already defaults `timeout=30.0`
+and that bound reaches reads, so a user met a bounded read on HTTP and an
+unbounded one on SFTP with no principle separating them. And the recovery path
+below — `_is_connection_dead` → `_map_exception` → cleared client — was written
+presuming a bound exists; shipping the machinery without its trigger left the
+clause internally contradictory.
+
+**Why `120.0`.** The asymmetry picks it, not a benchmark. Raising the value
+costs detection latency only, which is cheap: the bound is on silence *between*
+bytes, so a slow link is unaffected at any value. Lowering it converts a
+healthy-but-quiet server — an antivirus or dedup appliance scanning a large file
+on `open()` — into intermittent `BackendUnavailable`, which reads as network
+flakiness and is harder to diagnose than the hang it replaces. So the value is
+chosen against the longest *pause* a healthy server is expected to take on one
+operation, not against transfer duration — a stall surfaces inside two minutes,
+while a server that goes quiet on `open()` of a large file is left room. The
+originating issue's transfer times (214 MB in ~20 min, 2.0 GiB in ~70 min) do
+not constrain the choice and are not what it was sized against: expressing the
+bound as a fraction of them would use exactly the yardstick this clause tells
+callers not to use, and no fraction of a transfer time discriminates one silence
+bound from another. `120.0` is also the value the SFTP guide and the
+troubleshooting page already used in their worked examples before it became the
+default, so the value a reader was being shown and the one they got stop
+disagreeing. **Both** worked examples have since moved off it, because
+illustrating an option with its own default illustrates nothing; the pages state
+the default in prose and in the options table instead, which is where a reader
+looks for it.
+
+**It is a behaviour change for a caller who sets nothing**, and shipped as one:
+an operation that previously blocked forever now raises `BackendUnavailable`
+after two minutes of silence. `io_timeout=None` restores the old behaviour.
+
+**The value is restated in prose across the source, this spec, the guides, the
+migration entry, the backlog and the tests, and nothing gates that.** The
+constructor's signature is the source of the value;
+`test_default_arms_the_bound_on_the_channel` pins the constructor against a
+literal, so a silent change to the default fails there. No check compares any
+prose site to the signature, so that sweep is a reviewer's job.
+
+**No enumeration of those sites is given, deliberately.** A list is the obvious
+mitigation and the wrong one: it is a second derived artifact over the same
+fact, so it goes stale exactly as the prose does, and a checklist a reader
+trusts and that is one entry short is worse than no checklist, because it stops
+the search. This clause carried such a list twice and it was short both times.
+Derive the set instead — `rg -n 'io_timeout' src docs-src sdd tests`, read the
+hits that state a value.
+
+Both halves are registered rather than assumed away.
+[`DRIFT-RULES.md` Rule 5](../DRIFT-RULES.md#mandatory-path) asks why the check is
+not gating: a gate would have to parse a default out of a signature and match it
+against prose in four file formats, while the claim space is one number that
+changes about once per major behavioural decision.
+[`Rule 6`](../DRIFT-RULES.md#tolerated) asks for an owner and a rationale on what
+that leaves tolerated: **owner BK-356**, rationale as above.
+[`CONTENT-RULES.md` Rule 5](../CONTENT-RULES.md) is the authority the duplication
+actually diverges from — source-code facts stay in source — and the divergence
+is narrower than it looks: the options table and the migration entry have to
+state values to do their jobs, and what is genuinely tolerated is the narrative
+restatements beside them. The cost is real and was paid inside this item's own
+review, twice: a derived figure in a test docstring went stale one commit after
+review corrected it, and the enumeration this paragraph used to carry was
+incomplete when written.
+
+**It is armed before the SFTP session exists, not after.** `_connect` opens the
+channel, arms the bound, then invokes the `sftp` subsystem and constructs the
+`SFTPClient`. That order is load-bearing: `SFTPClient.__init__` performs the
+SFTP version exchange, which *blocks reading the server's reply* on a channel
+`Transport.open_session` hands back with `Channel.timeout` still `None`. Arming
+after `ssh.open_sftp()` returns would leave that exchange unbounded — a peer
+that completes the SSH handshake and then falls silent hangs there forever,
+which is the exact fault this clause exists to bound, reached before the bound
+is set. It is not a connect-only edge case: every reconnect re-enters that
+window, so the guarantee would be missing precisely for the half-alive peer
+that motivates it, and `RetryPolicy` cannot cover it because a hang raises
+nothing to retry.
+
+**Semantics:** the bound is on a single blocking operation making no progress,
+not on the duration of a transfer. A large file over a slow link is unaffected
+however long it takes; a peer that goes silent for longer than `io_timeout`
+raises `socket.timeout`. Since it is `settimeout()`, the bound covers writes as
+well as reads, and a stalled write reaches it on the receive side like a read
+does. The distinct fault it covers is a request that never reaches the server,
+as against a reply that never returns.
+
+**The two are distinct faults and the caller cannot tell them apart**, which is
+worth stating now that the raised error carries a message (SFTP-023) and a
+reader might reasonably assume it says which. It does not. Measured against the
+stall relay in both directions at `io_timeout=2.0`, silencing server→client and
+then client→server: one identical message,
+`"SFTP channel stalled: no data within io_timeout=2.0s"`, and a `TimeoutError`
+context in both. Both arrive on the receive side, so they enter the same arm and
+nothing downstream of it knows which direction fell silent. A message that names
+the *fault* is not a message that names its *side*, and only the first is
+claimed.
+
+Asserted on both halves, which is the point: `test_a_stall_says_what_it_was_and_logs_it`
+drives the server→client stall and
+`test_stalled_upload_request_raises_backend_unavailable` the client→server one,
+and each pins the same literal message and a `TimeoutError` context. Pinning
+only the download half would leave the claim resting on the direction a reader
+is least likely to doubt.
+
+The "unaffected however long it takes" half is asserted by
+`test_a_transfer_slower_than_the_bound_is_not_interrupted`, which throttles a
+relay rather than stalling it — slow, never silent — and asserts both that the
+transfer completes intact and that it *outlived* the bound, so it cannot pass by
+finishing early. Named here for the reason the silent-close case below is: the
+`SFTP-030` marker says a test pins this clause, not which of its claims, and
+this is the claim that tells a slow-link caller to change nothing. It was
+unexecuted while the default was `None` and load-bearing from the moment the
+default became a bound.
+
+Note which round-trip a stalled write fails on, because it depends on *when* the
+peer went silent, not on which method was called. A stall already in effect when
+the call starts never reaches the payload: it lands on whichever round-trip the
+operation issues first. For `write` that is the existence `stat` on
+`overwrite=False`; on `overwrite=True` it is the first ancestor `stat`
+`_ensure_parent_dirs` issues, and only for a **root-level** target — which has no
+ancestors to probe — is it the file open. (An earlier revision said the open
+unconditionally, which is true only at depth 0; the residue subsection below
+turns on that distinction.) A stall that begins mid-transfer does reach
+`SFTPFile.write`, and `write`, `write_atomic` and `open_atomic` all get there —
+any handle that is open when the peer goes quiet will.
+
+The distinction is stated because both halves have been got wrong here. An early
+revision explained the pre-armed case by `SFTPFile.write` not being pipelined, an
+explanation no run behind it had reached. Its replacement then said reaching
+`SFTPFile.write` "requires a handle opened beforehand — `open_atomic`", which
+generalised a measurement of the pre-armed case (`SFTPFile.write` entered 0 times)
+to every route, and stood while two tests in the suite reached it through plain
+`write` and `write_atomic`.
+
+**Postconditions:** A stalled operation *that fails* raises `BackendUnavailable`,
+via the existing `_is_connection_dead` / `_map_exception` path (SFTP-023), which
+also clears the cached client so the next operation reconnects (SFTP-010 tier 2).
+The error names the stall and the bound that fired, and the mapping emits one
+`WARNING` record — both per SFTP-023, which owns those clauses for every signal
+rather than for this one. Named here anyway because the stall is the case a
+caller who configured nothing now meets: while the message was empty, this
+Postcondition was satisfied by an error that said nothing whatever about what
+had failed, and the two artifacts that tell an upgrading user what to expect
+(the troubleshooting page, the migration entry) had nothing to point them at.
+
+**The qualifier is load-bearing.** Every mechanism below — the classification guards, the handle guard, the
+stream wrapper's futile-close guard, and the client invalidation the
+Postconditions above promise — is triggered by an exception. A stalled operation
+whose failure paramiko *discards* raises nothing, so it reaches none of them: it
+neither reports nor clears the cached client, and the next operation therefore
+re-enters the same dead channel and pays the bound again.
+
+The case that used to demonstrate this was a `SEEK_END` seek, whose swallowed
+size request left the cached client alive for the following operation to
+re-enter. It no longer demonstrates it: [SIO-011](006-streaming-io.md) moved
+that request into the wrapper, so the seek now raises and clears the client like
+any other stalled operation. The demonstrating case is now the silent close
+recorded further down, where paramiko's `SFTPFile._close` catches the stalled
+`CMD_CLOSE` itself — asserted by
+`test_releasing_a_stalled_handle_after_no_failure_is_silent`, which pins all
+three halves the qualifier needs: the wait is bounded at one `io_timeout`,
+nothing is raised, and the cached client survives. The seek's replacement is a
+test, not a paragraph, because a qualifier resting on a figure in prose is one
+paramiko release away from being silently unnecessary.
+
+Read the Postconditions as scoped to the failures that surface; the exception
+list is not a footnote to them.
+
+The caller-visible wall clock for a stalled operation is one bound, not
+several — **with one known exception, recorded below rather than assumed away**,
+and BUG-270 tracks it. **The exception is the fallback's remove-then-rename
+chain**, which both operations reach — what differs is when.
+
+`move` reaches it directly: it has no `_raise_if_dir` step, so when `posix_rename`
+fails with a non-dead `OSError` nothing here fires and `_move_fallback` runs on
+into the stalled channel. Measured 4.00 s at a 2.0 s bound.
+
+The promote path does not, under that same antecedent: mechanism 2 fires, because
+`_raise_if_dir`'s classification stat re-enters the silent channel and re-raises,
+so `_rename_fallback` is never entered and the cost is one bound (measured
+2.00 s). It reaches the exception only when the silence begins *later* — at the
+fallback's own suppressed `remove`, with the channel healthy through the
+classification stat.
+
+Stated at this length because an earlier revision attributed the 4.00 s to the
+promote path under the first antecedent, where it is 2.00 s. One exception, two
+routes in, and which route an operation takes is decided by whether it has a
+classification step between the failed rename and the fallback.
+
+A failed operation re-enters the channel two ways — to classify the
+failure (`_raise_if_dir`, `_has_file_ancestor`) and to release resources — and
+each re-entry would pay `io_timeout` again on a client `_map_exception` has not
+yet cleared. **Three** mechanisms prevent that, because callers arrive at those
+re-entries differently:
+
+1. **A passed cause.** A caller holding a failed operation's exception passes it
+   to `_raise_if_dir`, which skips the probe when that exception already
+   concludes the connection is dead.
+2. **A dead-stat re-raise.** `_raise_if_dir` and `_has_file_ancestor` each
+   re-raise a dead-connection error from their own stat rather than swallowing
+   it as unclassifiable. This is what covers `read`, whose is-dir check is eager
+   and so has no prior exception to pass, and it also fixes a correctness
+   residue in `_has_file_ancestor`: swallowing there returned `False`, the
+   caller's original error surfaced, and `_map_exception` classified it as a
+   generic `RemoteStoreError` — which does *not* clear the cached client, so
+   SFTP-010 tier 2 never fired on the operation that surfaced the drop.
+3. **Skipped teardown.** Every promote-or-rename path skips what follows a dead
+   rename: `_promote` skips the `rename` fallback, whose `remove` + `rename`
+   would each pay the bound again, and `move` skips its own fallback chain — a
+   suppressed `remove`, a `rename`, and the copy fallback's two file opens.
+   `write_atomic` and `open_atomic` skip their temp cleanup. And **every**
+   paramiko file handle held in a `with` block skips its close on a
+   dead-connection exit, since `SFTPFile.close()` flushes and then issues a
+   synchronous `CMD_CLOSE` whose reply never comes.
+
+   That last is the worst of the set when unguarded, because paramiko swallows
+   the timeout raised inside its own close, making it a wait with no error to
+   explain it. The guard is one helper (`_handle`) rather than a per-site
+   repeat, because the site that first exposed it was not the only one:
+   `read_bytes`, `write`, `write_atomic`, `copy` and `move`'s copy fallback all
+   hold a handle the same way, and `open_atomic` applies the same rule inline
+   (its clean-exit close must sit inside `_errors` so a flush failure still
+   maps). Measured at a 2 s bound, on a stream that goes quiet mid-transfer:
+   4.00 s before the guard and 2.00 s after for both `write` and `write_atomic`,
+   and 6.9 s before and 2.0 s after for `copy`, which holds two handles rather
+   than one.
+
+   Three of the five call sites are measured that way; the other two are named
+   here rather than counted as covered, because the helper being shared is not
+   evidence that a site was exercised. `read_bytes` prefetches, so a stall inside
+   its read fails in paramiko's prefetch machinery rather than on the close of a
+   partly-read handle, and a test there would pin something other than what it
+   claimed. `move`'s copy fallback (`_copy_and_delete`) is reached only when both
+   `posix_rename` and `rename` fail for non-dead reasons, which needs a server
+   refusing both, so it carries a `no cover` pragma.
+
+   The distinction is drawn because `copy` shipped unrouted for a round while
+   five artifacts named it covered — the call-site list was read as evidence that
+   the list had been run. The same reading is what put the pragma on too much
+   code twice: first over `move`'s dead-rename guard, then over `_move_fallback`'s
+   own, each of which is reachable well outside the case the pragma names. Each
+   split moved the pragma down to the method that genuinely needs it, and the two
+   guards now have a test apiece.
+
+   The helper bounds what the caller waits inline; it does not promise the
+   round-trip is never made. `SFTPFile.__del__` calls `_close(async_=True)`
+   unconditionally, and the `BufferedFile.close` inside it — which flushes —
+   sits outside `_close`'s own `try`, so a *write* handle still holding buffered
+   bytes can attempt one blocking write when it is collected, on whatever thread
+   collects it. A read handle cannot: its write buffer is empty and `_write_all`
+   returns without a round-trip.
+
+   The `move` guard is a case where a coverage pragma hid a gap. The pragma
+   `# pragma: no cover -- fallback for servers without posix_rename` sits on
+   `_rename_fallback`, the *promote* path's fallback — `_move_fallback` carries
+   none, and says why in its own docstring. **The pragma's wording is itself
+   stale**: the residue subsection below establishes that neither fallback is
+   confined to servers lacking the extension, so it names a bound that does not
+   hold (BUG-270). What the gap was: the dead-connection guard above
+   it is reachable on *any* server, since a stalled channel fails `posix_rename`
+   like anything else. The fallback is therefore a separate method
+   (`_move_fallback`), so the pragma covers only what it names.
+
+**Bounded, with one stated exception.** It is not fixed here:
+
+- **The `subsystem` request.** `Channel.invoke_subsystem` waits in
+  `Channel._wait_for_event`, a bare `threading.Event.wait()` with no timeout
+  argument, which never reads `Channel.timeout`. A peer that opens the session
+  channel and then never answers the request hangs regardless of `io_timeout`,
+  and every reconnect re-enters that window. Bounding it would mean inlining
+  `invoke_subsystem`'s own body — deeper into paramiko internals than the
+  `from_transport` copy this clause already accepts — so it is recorded rather
+  than taken. Narrower than the version-exchange window that *is* bounded: a
+  server that accepts a channel but never answers a channel request is a wedged
+  SSH daemon, not a wedged subsystem.
+  This exception is **characterised by a test**, not asserted: a server variant
+  that parks in its subsystem handler (so no `CHANNEL_SUCCESS` is ever sent)
+  leaves the client blocked well past the bound, with the handler's entry
+  observed so the block is pinned to the request rather than to an earlier
+  handshake step. If that test ever fails, the wait has become bounded and this
+  bullet should be deleted with it.
+
+**Releasing a *streamed-read* handle is bounded by the wrapper, not by
+`_handle`.** `read` hands back an `_ErrorMappingStream`, and that wrapper — not
+this backend — owns the close, so the guard above cannot reach it; it serves the
+S3, Azure and HTTP backends too. The wrapper takes `_is_connection_dead` as its
+`is_fatal` predicate and skips a close its own failure has condemned
+([SIO-010](006-streaming-io.md)), which is what makes the bound above hold for a
+stream as well as for the handles `_handle` covers. Measured at a 2 s bound,
+consuming part of a `read()` and then stalling: 4.00 s for the failed reads plus
+the close before the guard, 2.00 s after
+(`test_releasing_a_stalled_stream_costs_one_bound`).
+
+**A `SEEK_END` seek on that stream is bounded the same way, and only because the
+wrapper sizes the handle itself.** `SFTPFile.seek(offset, SEEK_END)` calls
+`_get_size()`, whose body is `try: return self.stat().st_size` under a bare
+`except: return 0`, so delegating to it discarded the stalled `stat`: the seek
+blocked for the bound and then *answered* `0` on a file of any size, arming
+nothing and leaving the dead client cached, and the close paid the bound again.
+`read` therefore supplies the wrapper a `size_probe`
+([SIO-011](006-streaming-io.md)) that issues `CMD_FSTAT` on the open handle and
+lets the failure out, which is what brings this seek under the `is_fatal` guard
+above. Measured at a 2 s bound: 4.00 s answering `0` on a 1 MiB file with the
+client still cached, against 2.00 s raising `BackendUnavailable` with the client
+dropped (`test_seek_to_end_on_a_stalled_channel_costs_one_bound`). This was a
+stated exception to the bound until that clause landed; it is now an ordinary
+bounded operation, which is why the list above holds one bullet rather than two.
+
+For a **streamed** read (`read`), a stall after the caller has consumed bytes
+raises rather than returning short, so a truncated stream is never
+indistinguishable from a complete one. The bytes already delivered are a valid
+prefix and the handle is dead: the caller discards it rather than resuming.
+This is the premise the retry exclusion below is argued from, so it is stated
+here rather than left implied.
+
+**Excluded from retry:** `RetryPolicy` wraps the `ssh.connect()` call alone, not
+the whole of `_connect` (SFTP-009), so **no** stall bounded by `io_timeout` is
+retried — neither one on a caller's operation nor one in the session setup
+described above, which happens inside `_connect` but outside the retried
+closure. Every stall that surfaces reaches the caller.
+
+**Not every stall surfaces**, and the exception above is the one worth stating
+rather than an exhaustive list of the silent ones: releasing a stalled handle
+after no prior failure is silent too, because paramiko's `SFTPFile._close`
+catches `(IOError, socket.error)` and a stalled `CMD_CLOSE` arrives as
+`socket.timeout`. Measured at a 2 s bound: 2.00 s, nothing raised, no
+`remote_store` log record, the dead client still cached
+(`test_releasing_a_stalled_handle_after_no_failure_is_silent`; paramiko emits
+two DEBUG lines of its own, which are transport chatter rather than a report).
+It is listed here rather than as a second exception because it costs one bound
+and answers nothing — the one above is stated because it costs more than that,
+and the `SEEK_END` seek was stated alongside it for the same reason until
+SIO-011 brought its cost down to one bound and gave it something to raise.
+
+For an operation-level stall the exclusion is deliberate: retrying
+transparently would restart a partially consumed stream underneath a caller
+that had already read from it. That rationale does **not** reach a
+version-exchange stall, where nothing has been consumed yet, so the exclusion
+there is a consequence of where the retry boundary sits rather than a decision
+argued on its merits. Recorded as an open question rather than presented as
+settled: a session-setup stall is arguably a connect failure and could be
+retried like one.
+
+**Rationale:** Without this, a silent peer blocks forever while holding whatever
+pooled resource the operation runs on, and emits no signal — while the recovery
+machinery for exactly that fault already exists. That machinery lacked a trigger
+for as long as the default was `None`; arming it on every store is what the
+default above is for.
+`unwrap(SFTPClient).get_channel().settimeout()` is not a substitute: a
+transparent reconnect builds a fresh channel with `timeout=None`, so a
+caller-applied bound evaporates precisely after a recovered drop. Keeping the
+knob distinct from `timeout` matters because that name already carries four
+connect-phase meanings.
+
+<a id="stalled-write-destination"></a>
+#### What a stalled operation leaves behind
+
+Everything above says when a stalled operation *fails*. This says what it leaves
+behind, which is a separate question and was undocumented while the clause above
+was not — the gap BK-360 closes.
+
+**A timeout reports one round-trip's lost reply.** `io_timeout` fires on a
+receive that made no progress, so what the caller learns is that no answer came
+back for the request outstanding at that moment — never that the request failed
+to arrive. Two things follow, and the second is the one two review rounds of
+this clause each got wrong:
+
+- **Everything the operation did *before* that round-trip already happened.**
+  Those replies came back; the silence started later. A stall in a write's body
+  has already truncated the destination on the open, whichever direction goes
+  quiet.
+- **For the round-trip itself, the direction decides.** Client→server silenced,
+  the request never arrived and it did not happen. Server→client silenced, the
+  server performed it and only the answer was lost.
+
+**A caller can observe neither**, and this clause rests on that. The
+two-directions paragraph earlier in SFTP-030 measures it: silencing server→client
+and client→server produce one identical message and one identical context, so the
+error names the *fault* and not the *side*. The message therefore tells a reader
+why the operation failed, and no message could tell them what the server did with
+the request before falling silent, because the client never learns it.
+
+**What that entails, and this is the whole of it: the residue is any prefix of
+the operation's effects, up to and including all of them.** An operation is a
+sequence of round-trips. The silence cuts that sequence at some point; everything
+before the cut has happened, the cut round-trip has happened or not according to
+direction, and nothing after it has. Every reachable state is the result of
+running some initial segment of the operation — including the empty segment
+(nothing happened) and the **complete** one (the operation was performed in full
+and then reported failure).
+
+**The closure is stated instead of an exhaustive state list because three
+successive attempts at such a list were each caught short**, the third being a
+generated enumeration built specifically to end the problem. It missed a
+`write` whose silence falls on its *last* body acknowledgement, which leaves the
+destination holding the payload entire. That is not an exotic case and it was
+inside the declared condition space; the enumeration simply had no moment for
+it. A fourth list would be a fourth thing to catch short, whereas the closure
+above cannot be: it is a property of the mechanism rather than a survey of its
+outputs.
+
+So the states below are **named illustrations, not an enumeration**. They are the
+ones with a test behind them and the ones a reader is most likely to meet; a
+state absent from this list is not thereby unreachable. The source of a `copy` is
+never affected and is omitted.
+
+| operation | states named here |
+| --- | --- |
+| `write` | **untouched** · **absent** · **empty** (the open truncated it; the old content is gone and nothing replaced it) · **a prefix** · **complete** (every byte written, the final acknowledgement lost) |
+| `copy` | the same five at `dst`; a pre-armed stall dies on the source `stat`, so `empty` needs the silence to begin at the destination open |
+| `move` | **untouched** · **absent** · **the move completed** (source gone) · **the destination destroyed while the source survives** — fallback path only |
+| `write_atomic` / `open_atomic` | **untouched** or **absent**, usually with an orphan temp · **the write completed**, no temp · **the destination destroyed with the payload stranded in the temp** — fallback path only |
+
+Six consequences follow, and each is why the closure and its illustrations are
+here rather than left to a reader's inference.
+
+**Reported failure does not mean unchanged, and does not mean incomplete.**
+Every operation here has a state in which it was performed in full and then
+raised: a caller that reruns a failed `move` meets `NotFound` on a source that is
+already gone, and one that reruns a failed `write` may be overwriting a file that
+is already correct.
+
+**The old content is not safe on the non-atomic path.** The `empty` residue
+destroys a pre-existing file and replaces it with nothing.
+
+**`write_atomic` is the escape, and its bound is the promote.** Its `untouched`
+residue is what the capability is bought for, and it holds against a failure in
+the body — not against a lost promote reply, and not on the fallback path.
+
+**The fallback path is the worst state here**, and it is `_rename_fallback` /
+`_move_fallback`: those remove the destination and then rename onto it, so a
+silence beginning at the `rename` leaves the destination gone with nothing put in
+its place. **It is not confined to servers lacking `posix-rename@openssh.com`.**
+The route in is a `posix_rename` failure that `_is_connection_dead` does not
+recognise, on a target the operation's own directory guard has not already
+rejected — `_raise_if_dir` for the promote path, and for `move` the eager
+destination `stat`, which fires before `posix_rename` is attempted at all.
+The two are **not** the same guard and `move` never calls `_raise_if_dir`;
+collapsing them is how an earlier revision of this sentence mis-assigned the
+two-bound cost recorded above. That condition, per operation, is the whole of
+the claim — a strictly larger set than "the server lacks the extension". **No example triggers are named here**, deliberately:
+naming them requires knowing what every guard between `posix_rename` and the
+fallback does, an earlier revision named three of which two were unreachable,
+and the two guards involved (`_raise_if_dir` here, the destination `stat` in
+`move`) are the kind of detail a reader should check in the code rather than
+trust from prose. It is pre-existing behaviour rather than anything
+this clause introduced, and it is tracked as **BUG-270** along with the
+second `io_timeout` bound it costs — the suppressed `remove` swallows its own
+timeout, which is the exception the one-bound paragraph above records.
+
+**The prefix is not a resume point.** Its length is a function of the chunk size
+and the SSH window, not of anything the caller controls or is told, so a caller
+that seeks past it and appends will corrupt the file. Discard and re-write. This
+is the same conclusion the streamed-read paragraph above reaches from the other
+side of the transfer, and for the same reason.
+
+**Which round-trip a stall *reaches* is a separate question from what that
+round-trip does.** The `empty` residue belongs to the open at any depth; but a
+stall already in effect when the call starts lands on the *first* round-trip the
+operation makes, and `_ensure_parent_dirs` stats every ancestor before the open.
+So a pre-armed stall reaches a `write`'s open only for a root-level target — at
+any nesting an ancestor `stat` absorbs it and the destination survives. Both
+halves are pinned, at depth 0 and depth 1, so the bound cannot be re-encoded
+accidentally by a fixture that happens to use bare filenames.
+
+In every case, parent directories `_ensure_parent_dirs` created on the way in
+remain behind — a failed write is not a rollback.
+
+**Derivation.** The closure above is argued from the mechanism. The named states
+are **not uniformly pinned, and the difference is stated rather than blurred**:
+those with a test were run against a real silent peer through the `_StallRelay`
+harness, with the destination read back through a second backend wired straight
+to the server rather than through the condemned channel, and states whose silence
+must begin at a specific round-trip are staged by silencing the relay from inside
+the call that issues it, so the moment is deterministic rather than raced against
+a timer. The rest follow from the closure and are **argued, not measured**. The
+list is exhaustive rather than hedged, because a hedge is how the previous
+revisions of this paragraph each claimed more coverage than they had: `copy`'s
+untouched, absent and complete; `move`'s untouched and absent; and
+`write_atomic`'s absent — six of the eighteen named states, each mechanically
+the same event as a `write` or `move` state that does have a test.
+
+A generated enumeration over the condition space — operation x the round-trip at
+which silence begins x direction x `overwrite` x whether the destination
+pre-existed x whether the server offers `posix-rename@openssh.com` — ran **164
+combinations and pruned 156 as unreachable**, recording the raised type per case
+so a combination where no stall fired could not be mistaken for a residue
+measurement. Those are the harness's own totals from that run. It is **not** the
+authority for the closure and did not ship: it is the artifact that failed, and
+its failure is what the closure replaces. It earns its mention because the states
+it *did* reach are sound and are among those named above.
+
+The tests behind the named states are
+`test_stalled_write_leaves_one_of_the_named_destination_states`,
+`test_a_stalled_write_can_have_delivered_the_payload_in_full`,
+`test_stalled_copy_leaves_a_prefix_at_the_destination_too`,
+`test_a_lost_reply_can_complete_the_operation_it_reports_as_failed`,
+`test_the_rename_fallback_destroys_the_destination_when_the_promote_stalls` and
+`test_a_stalled_atomic_write_preserves_the_destination_and_leaves_an_orphan_temp`
+in `tests/backends/sftp/test_io_timeout.py`. No claim is made that they span the
+reachable space — the closure says no finite list can. Byte counts are
+deliberately absent: the prefix length moves with the chunk size and the window,
+so a figure would be a derived artifact going stale exactly as the enumeration
+this clause already declines to keep does.
+
+**This clause amends [SFTP-014](#sftp-014-atomic-write-simulated) rather than
+merely citing it**, and amends it in two directions. SFTP-014's caveat said only
+that the orphan temp remains; the untouched-destination half a reader takes from
+"atomic" was never written down there, so it could not be relied on and is now
+stated with its bound. Both halves are false outside that bound: a lost promote
+reply leaves the rename performed, and the fallback path destroys the destination
+while keeping the temp. Found by running the contrast this clause is stated
+against instead of quoting it.

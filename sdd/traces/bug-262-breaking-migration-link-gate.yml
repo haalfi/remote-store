@@ -1,0 +1,245 @@
+id: BUG-262
+title: "The breaking-change upgrade-path rule is review-enforced, and the gate the diagnosis proposed would not have caught it"
+trigger: >-
+  BUG-261 moved the obligation to write a migration section onto the PR making
+  the break, and shipped nothing that checks it. Its own proposed gate keyed on
+  the release heading, which the same release window had already shown to be
+  green while two of the four marked entries went undocumented.
+source_items:
+  - BUG-262
+  - BUG-261
+audience:
+  - contributor.tooling
+  - user.api_docs
+expected_ripples:
+  - sdd/backlogid.json
+  - sdd/GATE-INVENTORY.md
+surprising_ripples:
+  # The gate's remediation names CONTRIBUTING.md § Release Phase 1, and that
+  # bullet stated only the section obligation — so an author who satisfied it
+  # exactly got a red gate pointing back at the line they had satisfied. No
+  # ripple-check row reaches it: the Breaking change row was updated in both
+  # presentations and that felt complete, because nothing asks whether a new
+  # gate's *remediation target* states the rule the gate enforces.
+  - CONTRIBUTING.md
+  # BUG-262 falsified a load-bearing premise in open item ID-252 ("Nothing
+  # mechanical looks at this file's content", naming four scripts): this gate is
+  # a fifth reader and the first that parses the section rather than rendering
+  # it. Found by review, not by the closure sweep — that sweep fires on the ID
+  # being closed, and ID-252 cites no ID here; it is the *measurement* the new
+  # code contradicts. Same shape as BUG-261's BUG-254 / BUG-256 misses.
+  - sdd/BACKLOG.md
+# Named from `gh api repos/haalfi/remote-store/pulls/985/commits`, which returns
+# exactly two: 168e80a implements and does not count; f8f8b82 ("fix: address PR
+# #985 review") incorporates round 1 and counts. Round 2's own fix commit makes
+# it 2, and round 3's fix commit makes it 3. Naming the list rather than the
+# total is what _schema.yml asks for, and an earlier version of this comment
+# named only one of the two.
+review_rounds: 3
+phases:
+  - id: orient
+    name: Orient on what BUG-261 left open
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "BUG-261, and § Decided against"
+        read_type: gate
+        extract: >-
+          The ruling shipped and the gate was refused. The refusal entry states
+          the reason to re-derive rather than reuse: a marker-keyed heading
+          check reaches 4 of 10 relevant entries and would have passed the
+          defect the item was filed for.
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: gate
+        extract: >-
+          Measure the gap before designing for it. Of the 4 entries marked
+          **Breaking**, exactly 1 (BK-357) links the migration guide; BK-356,
+          BUG-248 and BK-324 do not. That 1-of-4 is both the motivation and the
+          proof the per-entry form is decidable from the entry alone.
+        outcome: ok
+  - id: design
+    name: Choose the per-entry form over the per-release one
+    steps:
+      - file: scripts/check_no_tracker_refs.py
+        section: "Scope"
+        read_type: gate
+        extract: >-
+          The citation can only run one way. Every `.md` under `docs-src/` is
+          scanned and any PREFIX-NNN fails, so the published section cannot name
+          the entry it answers — but CHANGELOG.md is explicitly out of scope
+          ("the tracker ID IS the index entry"), so the entry can name the
+          section. That asymmetry is what makes a per-entry check possible at
+          all, and it decided the direction of the link.
+        outcome: ok
+      - file: docs-src/reference/migration.md
+        section: "v0.30.0 to v0.31.0"
+        read_type: reference
+        extract: >-
+          Only the `## vPREV to vNEXT` heading carries an anchor; the
+          subsections are bold paragraph leads, so all three new links point at
+          the one section anchor, exactly as BK-357's existing link does. The
+          convention was already in the corpus rather than invented here.
+        outcome: ok
+  - id: implement
+    name: Write the gate and repair the window
+    steps:
+      - file: scripts/check_ripple_parity.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Structural analogue for a small pair-check: module docstring with a
+          Drift-gate:: block, collect_violations() over a parsed region, and a
+          main() printing one line per violation plus remediation
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rules 3, 4, 7"
+        read_type: gate
+        extract: >-
+          Claim space derived (entries parsed from the section, link matched by
+          pattern), authority declared (the entry owes the link, not the guide),
+          and the bound stated in the docstring — the unchecked remainder here
+          is larger than the checked part, since the softer half was measured at
+          6 unmarked entries against 4 marked ones.
+        outcome: ok
+      - file: tests/scripts/test_check_ripple_parity.py
+        section: "(full)"
+        read_type: reference
+        extract: >-
+          Test shape for a script guard: load the module by path, build a
+          minimal fixture document, and pin the regression that motivated the
+          gate rather than only the happy path
+        outcome: ok
+  - id: wire
+    name: Reach the diff class that invalidates it
+    steps:
+      - file: pyproject.toml
+        section: "[tool.hatch.envs.default.scripts] lint, docs-gate"
+        read_type: gate
+        extract: >-
+          Wire into both, per the trap BK-333 records: CHANGELOG.md matches
+          ci.yml's DOCS_PAT and not CODE_PAT, so a CHANGELOG-only diff runs
+          docs-gate and not lint. A lint-only wiring is unreachable for exactly
+          the edit that breaks the rule.
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Pre-work index and Detailed checklist / Breaking change"
+        read_type: verify
+        extract: >-
+          The row BUG-261 added now names its enforcing gate in both
+          presentations, with what the gate cannot check stated beside it so the
+          row does not read as fully mechanised
+        outcome: ok
+      - file: sdd/GATE-INVENTORY.md
+        section: "(generated)"
+        read_type: verify
+        extract: "35 → 36 mechanisms after `hatch run gen-gate-inventory`; the Drift-gate:: block is what registers it"
+        outcome: ok
+  - id: fix
+    name: Review rounds 1, 2 and 3
+    steps:
+      - file: sdd/traces/_schema.yml
+        section: "id (pattern)"
+        read_type: gate
+        extract: >-
+          Retrospective. The schema states the backlog-ID shape as
+          PREFIX-[0-9]+[a-z]? and the suffixed form is live in BACKLOG-DONE.md
+          (BK-139d, ID-118b, BK-167a/b, ID-013b, ID-151b/c). The gate's grammar
+          required the ID to end in digits, so a marked entry using one was
+          skipped and the gate exited 0 — a fail-open in a gate whose whole
+          value is not failing open. The comment above the regex had justified
+          widening the *prefix* for a hypothetical compound tracker while
+          narrowing away a convention with a dozen live instances.
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Release Phase 1, Phase 2"
+        read_type: gate
+        extract: >-
+          Retrospective, and the round's sharpest finding. Condensation is
+          Phase 1 ("stubs expanded to prose at release time"), not Phase 2,
+          whose only CHANGELOG line renames the heading. So the section is
+          condensed while it is still [Unreleased], the entry shape changes to
+          title-first, and the gate enumerates zero entries for the rest of
+          Phase 1 — while Phase 1's own migration-guide item is being verified.
+          The stated bound named the wrong phase and the wrong mechanism (the
+          marker, not the shape), which is the half a later reader would have
+          had to reason about.
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Release Phase 1 (migration.md bullet)"
+        read_type: verify
+        extract: >-
+          Ripple the row alone did not cover: the gate's remediation sends an
+          author to this bullet, and the bullet stated only the section
+          obligation. An author who did exactly what it says — writes the
+          section, does not link it — got a red gate pointing back at the line
+          they had satisfied. The bullet now carries the link half and names the
+          script.
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Assertion depth"
+        read_type: gate
+        extract: >-
+          Retrospective. Two guards were vacuous: the released-section case used
+          a fixture the entry grammar rejects anyway, so it passed with the
+          scope loop deleted, and every assertion in the file was `== []`, which
+          a parser matching zero entries satisfies everywhere at once. Fixed by
+          using a stub-shaped released entry and by exposing marked_entries() so
+          a test can assert the parser saw what it should have seen, including
+          one case that derives the expected set from the live CHANGELOG.
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rule 8 (independence)"
+        read_type: gate
+        extract: >-
+          Round 2, and the finding worth carrying. The test that was supposed to
+          catch the parser going blind derived its expected set with a regex
+          copied from the implementation — _ENTRY_RE concatenated with the
+          marker clause — so it went blind on exactly the same inputs. Both
+          round-1 fail-opens would have produced two empty lists and compared
+          equal. Rule 8 names this ("independent authors do not produce
+          independent errors"), and here it was not even two authors. Rebuilt to
+          derive by position, splitting on the first ": " with no ID grammar at
+          all, so a narrowed grammar is visible to it.
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "doc: dual marker, migration links"
+        read_type: gate
+        extract: >-
+          Round 2. The link matcher accepted a repo-relative
+          docs-src/reference/migration.md as well as the site URL, on a claim
+          that the corpus used both. It does not: `rg -o
+          '\]\([^)]*migration[^)]*\)' CHANGELOG.md` returns 7 hits, all the
+          published URL. Worse, the file carries `doc: dual
+          dest=reference/changelog.md`, so a repo-relative href resolves under
+          reference/ and 404s on the site — the gate would have blessed a link
+          that check_links and mkdocs --strict reject, letting lint pass and
+          docs-gate fail on the same rule in the same PR.
+        outcome: ok
+      - file: .claude/skills/release/
+        section: "(full)"
+        read_type: verify
+        extract: >-
+          Round 2. The comment above the marker test claimed the anchoring
+          matched "where the release skill reads it". `rg -i breaking .claude/`
+          returns no matches at all — the release skill neither reads nor
+          mentions the marker. An invented corroboration, and the kind a later
+          reader would go looking for to check the two still agree. Removed from
+          both copies; the convention and the false positive already carried the
+          argument.
+        outcome: ok
+      - file: scripts/docs/check_links.py
+        section: "_resolve_docs_site_path, _find_broken_docs_site_links"
+        read_type: gate
+        extract: >-
+          Round 3, and the finding that changed what the gate does. The resolver
+          returns parts.path only, so the fragment of an absolute docs-site URL
+          is discarded and never compared to anything; mkdocs --strict does not
+          resolve external URLs either. So nothing in the repo validated the
+          anchor, and an entry linking #v9999-to-v9999 satisfied this gate with
+          no section written — the delegated obligation escaping through the
+          check meant to enforce it. Also the source of two smaller
+          disagreements: the resolver strips the trailing slash, so requiring it
+          here would reject a URL check_links calls valid, and it skips
+          numbered-version URLs entirely, which this gate accepts.
+        outcome: ok

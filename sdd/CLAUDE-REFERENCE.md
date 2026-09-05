@@ -78,7 +78,8 @@ Read this before starting. One line per trigger.
 |-------------------------------|-----------------------|
 | Bug fix                       | BACKLOG item, CHANGELOG stub under `[Unreleased]`, failing test **before** fix, spec if invariant contradicted |
 | Backlog item touched          | Live trace at `sdd/traces/<id>-<slug>.yml` ([CLAUDE.md § Trace authoring](../CLAUDE.md#trace-authoring)) — not owed for an item decided against or absorbed, which carry a `BACKLOG-DONE.md` register entry instead; schema at `sdd/traces/_schema.yml`; `audience` drives the CHANGELOG-required rule |
-| CHANGELOG entry               | One-line `- <ID>: <Title>` at top of `[Unreleased]`; release skill expands and groups |
+| CHANGELOG entry               | One-line `- <ID>: <Title>` at top of `[Unreleased]`, one per ID, within the prose budget; `check_changelog_unreleased.py` gates those three plus `user.`-tagged completed-item coverage, and no more |
+| Breaking change               | `**Breaking**` on the CHANGELOG stub **and** a `## vPREV to vNEXT` section in `docs-src/reference/migration.md`, both in the PR making the break — the version pair is knowable before any release stamps it ([CONTRIBUTING § When to bump](../CONTRIBUTING.md#versioning)). A fix that breaks an `except` clause without earning the marker owes the **section alone**, so a section with no marker is expected, not a breach. `check_breaking_migration_link.py` enforces the marked half: the entry must link the section, and the anchor must be a heading the guide really has |
 | Version number                | `bump-my-version` (drives `pyproject` file list), then `hatch run gen-graph`; full checklist in [CONTRIBUTING § Phase 2](../CONTRIBUTING.md#phase-2) |
 | Source/test/spec counts       | README badge + CI coverage report (no manual table) |
 | New authoritative process doc in `sdd/` | [CLAUDE.md § Documentation framework](../CLAUDE.md#documentation-framework) (if part of the trio), [CONTRIBUTING § Authoritative Document Format](../CONTRIBUTING.md#authoritative-document-format) (Scope subsection within), sibling authority back-references, `.claude/agents/*.md` FOUNDATION lists, the `/rvw-pr` and `/audit` step lists if the doc is review-enforced, `docs-src/explanation/design/_nav.yml` plus that section's `_index.tmpl`, and this ripple-check |
@@ -259,8 +260,56 @@ Read this at verify-end (after the diff is complete) and during PR review. Each 
 |                            | at `sdd/traces/_schema.yml`. `audience` priority-sorted   |
 |                            | drives the CHANGELOG-required rule.                       |
 | **CHANGELOG entry**        | Add `- <ID>: <Title>` at the top of `[Unreleased]`.       |
-|                            | One line, no details, no sections. Release skill          |
-|                            | organises into sections and expands to prose.             |
+|                            | One line, no details, no sections. Three of those         |
+|                            | properties are gated by `check_changelog_unreleased.py`   |
+|                            | (in `lint` and `docs-gate`): one entry per ID, each a     |
+|                            | single `- <ID>:` line, and at most `_MAX_ENTRY_CHARS`     |
+|                            | of prose (link targets not counted). It also gates the    |
+|                            | other direction — every completed `user.`-tagged item     |
+|                            | under `BACKLOG-DONE.md` § Unreleased has an entry.        |
+|                            | *Not* gated: whether a stub says the right thing, and     |
+|                            | the `contributor.process` clause in `traces/_schema.yml`. |
+|                            | A `###` here stands two rules and a note down, so keep    |
+|                            | sections out until release. The stub is not the released  |
+|                            | entry: [CONTRIBUTING § Release Phase 1](../CONTRIBUTING.md#release) |
+|                            | condenses it by hand at release time, and names the       |
+|                            | sources it condenses from; the order it condenses into    |
+|                            | is [that file's CHANGELOG section order](../CONTRIBUTING.md#changelog-section-order), |
+|                            | its one home. Neither the sources nor the order are       |
+|                            | restated here — follow the links, and nothing gates them. |
+| **Breaking change**        | Two artifacts, both in the PR making the break:           |
+|                            | `**Breaking**` on the CHANGELOG stub, and a               |
+|                            | `## vPREV to vNEXT` section in                            |
+|                            | `docs-src/reference/migration.md` saying what a caller    |
+|                            | must change. The version pair is knowable at authoring    |
+|                            | time — [CONTRIBUTING § When to bump](../CONTRIBUTING.md#versioning) |
+|                            | fixes a pre-1.0 breaking change at a minor bump — so      |
+|                            | neither waits on a release to stamp it.                   |
+|                            | An **existing** section for that pair is appended to,     |
+|                            | not duplicated: one heading per version pair holds every  |
+|                            | break in the release.                                     |
+|                            | The published guide cannot cite the tracker ID it         |
+|                            | answers (`check_no_tracker_refs.py` scans all of          |
+|                            | `docs-src/`), so write the section by what a caller       |
+|                            | observes, and record the ID coordinate in the trace.      |
+|                            | [CONTRIBUTING § Release Phase 1](../CONTRIBUTING.md#release) |
+|                            | is the backstop, not the owner: it catches what arrived   |
+|                            | without a section and decides the softer half — an entry  |
+|                            | a caller must act on that carries no marker.              |
+|                            | **The two artifacts are not a biconditional.** The softer |
+|                            | half owes the section and not the marker, so a section    |
+|                            | whose entry reads `**Fix**` is the rule working rather    |
+|                            | than a counterexample to it. Only the reverse — a marked  |
+|                            | entry with no section — is the breach this row prevents.  |
+|                            | `check_breaking_migration_link.py` (in `lint` and         |
+|                            | `docs-gate`) enforces the marked half mechanically: the   |
+|                            | entry must carry a link to the migration guide, and the   |
+|                            | anchor must resolve to a `## ` heading that guide really  |
+|                            | has — nothing else validates that fragment, so without it |
+|                            | the rule can be satisfied by a link to a section nobody   |
+|                            | wrote. It cannot check that the linked section covers     |
+|                            | *this* entry, and cannot see the softer half at all —     |
+|                            | see its docstring for the full bound list.                |
 | **Version number**         | Run `bump-my-version` (manages the files listed in        |
 |                            | `[[tool.bumpversion.files]]` in `pyproject.toml`);        |
 |                            | then `hatch run gen-graph` to re-stamp `graph.json`.      |

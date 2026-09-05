@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from remote_store._capabilities import Capability
-from remote_store._errors import BackendUnavailable
+from remote_store._errors import BackendUnavailable, InvalidPath
 from tests.backends.conformance._helpers import _require
 
 if TYPE_CHECKING:
@@ -86,3 +86,38 @@ def test_close_posture_outranks_root_rejection(backend: Backend, root: str) -> N
         except Exception as exc:  # noqa: BLE001 -- any typed error is acceptable here
             error = exc
         assert "is closed" not in str(error)
+
+
+@pytest.mark.spec("BE-020")
+@pytest.mark.spec("BE-029")
+@pytest.mark.parametrize("root", ["", "."], ids=["empty", "dot"])
+def test_close_posture_outranks_root_write_rejection(backend: Backend, root: str) -> None:
+    """The same ordering on the *write* path, which has its own root pre-check.
+
+    The sibling above covers the read-shaped pre-check. A backend that writes to
+    the root carries a second, differently-worded root guard, and it is added to
+    each backend in the same place — ahead of the work, after the closed guard.
+    "Ahead of the work" is the easy half to get right and "after the closed
+    guard" is the half that silently depends on which line the implementer typed
+    first, which is exactly what BE-020's paragraph says must not decide it.
+
+    Nothing pinned that on this path: the ordering is asserted in five
+    write-guard docstrings, covering six classes (``_s3_base`` serves both S3
+    lanes), and the read-shaped cell above cannot reach any of them, because
+    ``read_bytes`` never touches a write guard.
+    """
+    _require(backend, Capability.WRITE)
+    backend.close()
+    if backend.close_is_terminal:
+        with pytest.raises(BackendUnavailable, match="is closed"):
+            backend.write(root, b"x")
+    else:
+        # `raises` rather than a caught-and-inspected error: a bare
+        # "is closed" not in str(error) passes when nothing is raised at all,
+        # because str(None) is "None" -- and a non-terminal backend that
+        # silently *succeeds* in writing to the root is the defect this whole
+        # change exists for. The root refusal is unconditional, so the
+        # non-terminal arm owes it just as the terminal arm owes BackendUnavailable.
+        with pytest.raises(InvalidPath) as exc_info:
+            backend.write(root, b"x")
+        assert "is closed" not in str(exc_info.value)

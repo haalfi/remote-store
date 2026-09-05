@@ -76,6 +76,27 @@ All four cells are asserted so neither half drifts: making the HEAD probe strict
 about bucket 404s breaks the tolerant ``delete``, dropping ``delete_folder``'s
 catch breaks the tolerant ``delete_folder``, and swallowing the 404 past
 ``missing_ok`` breaks the two strict cells.
+
+The rest of the roster (``TestEveryLaneAnswersAnAbsentBucketTheSameWay``)
+-------------------------------------------------------------------------
+
+The section above covers the two deletes, which reached the clause first. The
+probes and the listings owe an absent bucket an answer too — ``False`` and an
+empty listing — and ``S3Boto3Backend`` gave neither: ``exists`` and ``is_folder``
+raised ``NotFound`` once the tolerant HEAD came back empty, and the three
+listings let a raw ``botocore.exceptions.ClientError`` escape, being the only
+methods on the class whose wire call was not wrapped in its error mapper.
+
+That class is parametrized over all three lanes for the reason the paragraph
+above gives about the boto3 lane, with the roles reversed: here the s3fs lanes
+are the positive control, since they already answered correctly against the
+identical wire response. A divergence one lane shows and two do not is a
+backend-local omission rather than a contract question, and parametrizing is what
+makes that visible in the cell rather than argued in a comment.
+
+``TestProbeDenialIsPermissionDenied`` gains the probes for the same reason it
+holds the deletes: those probes now read the bucket's own 404 as an answer, and
+one narrowing away is reading *every* error as one — including a denial.
 """
 
 from __future__ import annotations
@@ -190,6 +211,16 @@ _ALL_OPS: dict[str, Callable[[Backend], Any]] = {
     **_FOLDER_SHAPED_OPS,
     **{name: call for name, (call, _o, _l) in _TOLERANT_OPS.items()},
 }
+# The probes BE-004 and BE-005 forbid from raising at all. Kept out of
+# ``_ALL_OPS`` because these two suites want opposite things from them: a denied
+# bucket must still reach the caller as ``PermissionDenied`` (the probe is the
+# determinant and fails closed), while an absent one answers ``False``.
+_PROBES: dict[str, Callable[[Backend], Any]] = {
+    "exists-file": lambda b: b.exists(_KEY),
+    "exists-folder": lambda b: b.exists(_FOLDER),
+    "is_file": lambda b: b.is_file(_KEY),
+    "is_folder": lambda b: b.is_folder(_FOLDER),
+}
 
 
 def _is_listing(request: Any) -> bool:
@@ -280,6 +311,30 @@ class TestProbeDenialIsPermissionDenied:
         with _backend_at(dotted, endpoint) as backend:
             with pytest.raises(PermissionDenied) as exc_info:
                 _ALL_OPS[op_name](backend)
+            assert exc_info.value.backend == _BACKEND_NAMES[dotted]
+
+    @pytest.mark.parametrize("dotted", _BACKEND_PARAMS)
+    @pytest.mark.parametrize("op_name", sorted(_PROBES))
+    def test_denied_probe_is_not_an_absent_container(
+        self,
+        httpserver: HTTPServer,
+        dotted: str,
+        op_name: str,
+    ) -> None:
+        """The control case for the absent-bucket cells below, and the overshoot to fear.
+
+        BE-004 and BE-005 forbid these three from raising ``NotFound``; they say
+        nothing that would let a *denial* be reported as ``False``. The two are
+        one narrowing apart — an absent-container catch widened from the bucket's
+        own 404 to every error would turn "you may not look" into "there is
+        nothing there", which is the invented-answer regression this backend
+        family has already shipped once (BUG-242). A tolerance-only test cannot
+        see it: swallowing the 403 makes the cells below *more* green.
+        """
+        endpoint = _serve_s3_stub(httpserver, object_denied=True, listing_denied=True)
+        with _backend_at(dotted, endpoint) as backend:
+            with pytest.raises(PermissionDenied) as exc_info:
+                _PROBES[op_name](backend)
             assert exc_info.value.backend == _BACKEND_NAMES[dotted]
 
 
@@ -391,58 +446,194 @@ class TestAbsentBucketReadsAsAbsentPath:
             assert exc_info.value.backend == _BACKEND_NAMES[dotted]
 
 
-# The three listings on S3Boto3Backend, which do not wrap `_paginate` in
-# `_boto_errors` the way every other method on the class wraps its call.
+# The three listings on S3Boto3Backend that did not wrap `_paginate` in
+# `_boto_errors` the way every other method on the class wraps its call, plus
+# `glob`, which reaches the wire only through `list_files` and so inherits
+# whatever that method does.
 _BOTO3_LISTINGS: dict[str, Callable[[Backend], Any]] = {
     "list_files": lambda b: list(b.list_files("")),
     "list_files-recursive": lambda b: list(b.list_files("folder", recursive=True)),
     "list_folders": lambda b: list(b.list_folders("")),
     "iter_children": lambda b: list(b.iter_children("")),
+    "glob": lambda b: list(b.glob("**/*.txt")),
 }
 
 
-class TestS3Boto3ListingsLeakTheirNativeError:
-    """A raw ``botocore`` exception escapes three listings — pinned, not fixed.
+class TestEveryLaneAnswersAnAbsentBucketTheSameWay:
+    """The three lanes agree against a missing bucket, on probes and listings alike.
 
-    BE-021's first invariant is that backend-native exceptions never leak: every
-    failure arrives as a ``RemoteStoreError`` subclass. These three are the only
-    methods on ``S3Boto3Backend`` that call the wire without
-    ``_boto_errors`` around it, so against an absent bucket the caller gets
-    ``botocore.exceptions.ClientError`` — a type from a library they may not
-    have imported and cannot catch through ``remote_store``'s hierarchy.
+    Two divergences used to live here, and both were backend-local omissions
+    rather than contract questions — the same wire response, the same operation,
+    two lanes answering correctly and one not:
 
-    Pre-existing, and outside the reach of the absent-container clause, which
-    decides only what the two deletes tolerate. It is pinned here rather than
-    fixed because the fix belongs with the other listing-mapping work in
-    BUG-249, and because an unpinned divergence is how the same measurement
-    gets redone. The assertion is deliberately two-sided: it records that the
-    escaping error *is* a ``ClientError`` and that it is *not* a
-    ``RemoteStoreError``, so closing BUG-249 breaks this cell rather than
-    silently making it vacuous.
+    * ``S3Boto3Backend.exists`` and ``.is_folder`` raised ``NotFound``, because
+      the strict prefix probe was reached once the tolerant HEAD came back empty.
+      BE-004 and BE-005 forbid these from raising at all (BUG-246).
+    * ``S3Boto3Backend``'s three listings let a raw
+      ``botocore.exceptions.ClientError`` escape — a type from a library the
+      caller may never have imported and cannot catch through ``remote_store``'s
+      hierarchy — because they were the only methods on the class calling the
+      wire without ``_boto_errors`` around it (BUG-249).
+
+    Parametrising over all three lanes rather than testing the fixed one is the
+    point: the s3fs lanes are the control that says what the answer *is*.
     """
 
-    @pytest.mark.spec("BE-021")
-    @pytest.mark.parametrize("op_name", sorted(_BOTO3_LISTINGS))
-    def test_listing_raises_the_raw_botocore_error(self, httpserver: HTTPServer, op_name: str) -> None:
-        from botocore.exceptions import ClientError
-
+    @pytest.mark.spec("BE-004", "BE-005", "BE-021")
+    @pytest.mark.parametrize("dotted", _ABSENT_BUCKET_PARAMS)
+    @pytest.mark.parametrize("op_name", sorted(_PROBES))
+    def test_probe_answers_false(self, httpserver: HTTPServer, dotted: str, op_name: str) -> None:
+        """An absent bucket holds no path, so the probes answer ``False``, not ``NotFound``."""
         endpoint = _serve_missing_bucket_stub(httpserver)
-        with _backend_at(_S3B3, endpoint) as backend, pytest.raises(ClientError) as exc_info:
-            _BOTO3_LISTINGS[op_name](backend)
-        assert not isinstance(exc_info.value, RemoteStoreError), (
-            f"{op_name} now maps its error — BUG-249 is fixed, so delete this class"
-        )
+        with _backend_at(dotted, endpoint) as backend:
+            assert _PROBES[op_name](backend) is False
 
     @pytest.mark.spec("BE-021")
-    @pytest.mark.parametrize("dotted", [_S3, _S3PA], ids=["s3", "s3-pyarrow"])
-    def test_the_other_two_lanes_map_it(self, httpserver: HTTPServer, dotted: str) -> None:
-        """The s3fs-backed lanes map the same 404, which is what makes this a gap.
+    @pytest.mark.parametrize("dotted", _ABSENT_BUCKET_PARAMS)
+    @pytest.mark.parametrize("op_name", sorted(_BOTO3_LISTINGS))
+    def test_listing_comes_back_empty(self, httpserver: HTTPServer, dotted: str, op_name: str) -> None:
+        """An absent container holds nothing, and nothing native escapes on the way out.
 
-        Without this cell the divergence reads as "S3 listings do not map an
-        absent bucket", which would be a contract question. It is a
-        backend-local omission: the same wire response, the same operation, two
-        backends that answer correctly and one that does not.
+        Asserting the empty listing alone would pass on a backend that mapped the
+        404 to a ``NotFound`` it then swallowed somewhere else, so the guard that
+        matters is the one below it: no ``botocore`` type reaches the caller.
         """
         endpoint = _serve_missing_bucket_stub(httpserver)
         with _backend_at(dotted, endpoint) as backend:
-            assert list(backend.list_files("")) == []
+            assert _BOTO3_LISTINGS[op_name](backend) == []
+
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.parametrize("op_name", sorted(_BOTO3_LISTINGS))
+    def test_no_native_error_escapes_a_broken_listing(self, httpserver: HTTPServer, op_name: str) -> None:
+        """BE-021's never-leak invariant, on the lane that used to breach it.
+
+        A 403 is the case that still raises, so it is the one that shows *which*
+        type comes out. The absent-bucket cells above cannot: an empty listing
+        raises nothing, so they would stay green with the mapping removed.
+        """
+        from botocore.exceptions import ClientError
+
+        endpoint = _serve_s3_stub(httpserver, object_denied=True, listing_denied=True)
+        with _backend_at(_S3B3, endpoint) as backend:
+            with pytest.raises(RemoteStoreError) as exc_info:
+                _BOTO3_LISTINGS[op_name](backend)
+            assert not isinstance(exc_info.value, ClientError), f"{op_name} leaks its native error"
+            assert isinstance(exc_info.value, PermissionDenied), f"{op_name} misclassified a denial"
+
+
+_TRUNCATED_PAGE_ONE = (
+    b'<?xml version="1.0" encoding="UTF-8"?>'
+    b'<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
+    b"<Name>" + _BUCKET.encode() + b"</Name><Prefix></Prefix>"
+    b"<KeyCount>1</KeyCount><MaxKeys>1000</MaxKeys><IsTruncated>true</IsTruncated>"
+    b"<NextContinuationToken>tok</NextContinuationToken>"
+    b"<Contents><Key>folder/object.txt</Key><Size>3</Size>"
+    b"<LastModified>2026-01-01T00:00:00.000Z</LastModified>"
+    b"<ETag>&quot;abc&quot;</ETag></Contents>"
+    b"</ListBucketResult>"
+)
+
+
+# The mirror shape: a first page of common prefixes and no keys. Ordinary rather
+# than contrived — a bucket organised into folders returns exactly this — and the
+# shape on which an item-keyed bound fails for `list_files` and `glob`.
+_TRUNCATED_PAGE_ONE_PREFIXES_ONLY = (
+    b'<?xml version="1.0" encoding="UTF-8"?>'
+    b'<ListBucketResult xmlns="http://s3.amazonaws.com/doc/2006-03-01/">'
+    b"<Name>" + _BUCKET.encode() + b"</Name><Prefix></Prefix><Delimiter>/</Delimiter>"
+    b"<KeyCount>1</KeyCount><MaxKeys>1000</MaxKeys><IsTruncated>true</IsTruncated>"
+    b"<NextContinuationToken>tok</NextContinuationToken>"
+    b"<CommonPrefixes><Prefix>folder/</Prefix></CommonPrefixes>"
+    b"</ListBucketResult>"
+)
+
+
+def _serve_bucket_vanishing_on_page_two(httpserver: HTTPServer, *, page_one: bytes = _TRUNCATED_PAGE_ONE) -> str:
+    """One good page carrying a continuation token, then ``NoSuchBucket``."""
+    from werkzeug.wrappers import Response
+
+    state = {"gets": 0}
+
+    def handler(request: Any) -> Any:
+        if request.method == "HEAD":
+            return Response(b"", status=404, content_type="application/xml")
+        state["gets"] += 1
+        if state["gets"] == 1:
+            return Response(page_one, status=200, content_type="application/xml")
+        return Response(_NO_SUCH_BUCKET_XML, status=404, content_type="application/xml")
+
+    httpserver.expect_request(re.compile("^/.*$")).respond_with_handler(handler)
+    return httpserver.url_for("/").rstrip("/")
+
+
+# Each listing paired with the page-one shape that yields it nothing — the pairs
+# an item-keyed bound is blind on. `iter_children` yields both kinds, so it has
+# no blind shape and takes the key page as its control.
+_MID_SCAN_BLIND_SHAPES: dict[str, bytes] = {
+    "list_files": _TRUNCATED_PAGE_ONE_PREFIXES_ONLY,
+    "list_files-recursive": _TRUNCATED_PAGE_ONE_PREFIXES_ONLY,
+    "list_folders": _TRUNCATED_PAGE_ONE,
+    "iter_children": _TRUNCATED_PAGE_ONE,
+    "glob": _TRUNCATED_PAGE_ONE_PREFIXES_ONLY,
+}
+
+
+class TestTheAbsentBucketToleranceIsBoundedToTheFirstPage:
+    """ "An absent container holds nothing" is only sound until a page comes back.
+
+    Both halves are asserted because a fix for either alone is wrong: unbounded,
+    a mid-scan deletion is silent; bounded too tightly, an absent bucket raises
+    where the contract wants an empty listing.
+    """
+
+    @pytest.mark.spec("BE-021")
+    def test_absent_from_the_start_still_yields_nothing(self, httpserver: HTTPServer) -> None:
+        """The first-page half: unchanged by the bound."""
+        endpoint = _serve_missing_bucket_stub(httpserver)
+        with _backend_at(_S3B3, endpoint) as backend:
+            assert list(backend.list_files("", recursive=True)) == []
+
+    @pytest.mark.spec("BE-021")
+    def test_a_bucket_deleted_mid_scan_raises_rather_than_truncating(self, httpserver: HTTPServer) -> None:
+        """The second half, and the one that costs data if it regresses.
+
+        The listing must have produced something first, or the cell would pass
+        under an unbounded tolerance too — so the stub serves a real key on page
+        one before the bucket disappears.
+        """
+        endpoint = _serve_bucket_vanishing_on_page_two(httpserver)
+        with _backend_at(_S3B3, endpoint) as backend:
+            seen: list[Any] = []
+            with pytest.raises(NotFound):
+                # ``extend`` appends as it consumes, so the partial listing
+                # survives the raise and the assertion below can check it.
+                seen.extend(backend.list_files("", recursive=True))
+            assert seen, "the stub must yield before the bucket vanishes, or this cell proves nothing"
+
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.parametrize("op_name", sorted(_MID_SCAN_BLIND_SHAPES))
+    def test_every_listing_raises_on_its_own_blind_page_shape(self, httpserver: HTTPServer, op_name: str) -> None:
+        """The bound must key on the page, not on what this operation made of it.
+
+        Each listing meets the page shape that yields *it* nothing while the
+        bucket plainly answered — a folders-only page for ``list_files`` and
+        ``glob``, a keys-only page for ``list_folders``. Keyed on a yielded item,
+        every one of them swallowed the second page's 404.
+        """
+        endpoint = _serve_bucket_vanishing_on_page_two(httpserver, page_one=_MID_SCAN_BLIND_SHAPES[op_name])
+        with _backend_at(_S3B3, endpoint) as backend, pytest.raises(NotFound):
+            _BOTO3_LISTINGS[op_name](backend)
+
+    @pytest.mark.spec("BE-021")
+    @pytest.mark.parametrize("dotted", [_S3, _S3PA], ids=["s3", "s3-pyarrow"])
+    def test_the_s3fs_lanes_still_truncate(self, httpserver: HTTPServer, dotted: str) -> None:
+        """A stated bound, not an endorsement.
+
+        The two s3fs lanes truncated this way before this change and still do;
+        bringing them in line is a decision for the whole family and is tracked
+        separately. Pinned so the divergence is visible here rather than
+        discovered again.
+        """
+        endpoint = _serve_bucket_vanishing_on_page_two(httpserver)
+        with _backend_at(dotted, endpoint) as backend:
+            assert list(backend.list_files("", recursive=True)) == []

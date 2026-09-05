@@ -110,7 +110,19 @@ Full mapping via tenacity:
 | `jitter` | `+ wait_random(0, N)` |
 | `timeout` | `\| stop_after_delay(N)` |
 
-Retry scope: **connection only** (not per-operation).
+Retry scope: **the `SSHClient.connect()` call only** — not per-operation, and
+not the whole of connect. Nothing the backend does after that call returns is
+retried, including the SFTP session setup and any stall bounded by
+[`io_timeout`](backends/sftp.md#bounding-a-stalled-transfer). The distinction
+matters for a stalled transfer: retrying one would restart a stream the caller
+may already have read from, so it is deliberately not retried.
+
+Not retried is not the same as unreported: a stall that reaches the caller
+raises `BackendUnavailable`, and the backend drops the dead client so the next
+operation reconnects. A stall paramiko swallows inside its own machinery is
+neither — releasing a stalled handle that never failed costs the bound, reports
+nothing, and leaves the dead connection in place for the next operation. See
+[the SFTP guide](backends/sftp.md#bounding-a-stalled-transfer).
 
 ### S3
 

@@ -1,7 +1,7 @@
 """Check that every backend enumeration lists backends in the canonical order.
 
-``CONTRIBUTING.md`` (§ Adding a New Backend) pins one order for every
-place the backends are enumerated::
+``CONTRIBUTING.md`` (§ Adding a New Backend) *documents* one order for
+every place the backends are enumerated::
 
     local (Local, Memory)
       -> cloud (S3, S3-PyArrow, Azure, Graph)
@@ -60,6 +60,13 @@ Exit codes
 * ``0`` -- every enumeration is in canonical order.
 * ``1`` -- one or more enumerations are out of order (printed to stderr
   with ``file:line`` and the offending sequence).
+
+Drift-gate::
+
+    kind:       rule
+    rule: every backend enumeration in a scanned surface lists backends in the canonical order,
+        which this script's own _BACKENDS constant holds; CONTRIBUTING.md is scanned like any other
+    domain:     explanation
 """
 
 from __future__ import annotations
@@ -78,7 +85,9 @@ if TYPE_CHECKING:
 # The canonical order
 # --------------------------------------------------------------------------- #
 
-# Ordered: the taxonomy CONTRIBUTING pins. Index = rank.
+# Ordered: the canonical taxonomy, which CONTRIBUTING documents and this
+# constant governs -- CONTRIBUTING.md is itself scanned, so if the two ever
+# disagree it is CONTRIBUTING that fails. Index = rank.
 #
 # Aliases are the surface spellings a backend actually appears under.
 # They are matched case-sensitively: lowercase "local files" and "http"

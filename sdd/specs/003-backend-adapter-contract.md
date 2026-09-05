@@ -136,19 +136,48 @@ the bare prefix back as a zero-length object and *succeeds*. Root-ness is
 decidable from the string with no round trip, so neither outcome has to be
 risked to learn it.
 
+**The MAY above is narrower than "the root is an addressable node", and BUG-247
+is why.** Reading the verdict off the SDK is sound only while the node is
+*there*. A filesystem directory — the first example this clause offers — can be
+removed underneath a live backend, and then the OS answers ENOENT rather than
+`IsADirectoryError`: the verdict is not late, it is **wrong**, and every answer
+in the table above flips. `LocalBackend` took the MAY, satisfied this clause for
+years by observation, and breached it the moment its root was deleted. So the
+MAY holds for a node whose absence the backend has already ruled out, and a
+backend whose root can vanish under it decides root-ness from the key like any
+flat namespace. `SFTPBackend` was already there for the neighbouring reason: its
+`base_path` is created lazily, so the node is absent on an untouched store.
+
+**One operation must still observe the root**, or the definitional answers
+become unfalsifiable. If every probe answers from the key, nothing reports a
+root that exists but is the wrong *type* — a regular file where the store root
+belongs — and the store reports itself healthy while holding nothing. That
+observation belongs in the health probe, which is off BE-021's roster and free
+to make it: `LocalBackend.check_health` tests `is_dir()`, not mere existence,
+for exactly this reason.
+
 **Conformance pins the outcome, not the order** — and does not need to pin
 both: a backend that gets the order wrong is observable as exactly the wrong
 error class or a spurious success, which is what the cells below assert.
 
 **BE-020 outranks this check.** On a backend with `close_is_terminal = True`,
-a file-shaped call on the root *after* `close()` raises `BackendUnavailable`,
-not `InvalidPath`: BE-020 states its guarantee without exception, and a closed
-backend is the more fundamental error. A root pre-check is cheap and so
-naturally wants to run first — a backend that has one MUST still run the closed
-guard ahead of it, or the answer depends on which guard the implementer
-happened to write first. Pinned by
-`test_close_posture_outranks_root_rejection` in
-`tests/backends/conformance/test_close_posture.py` and its `aio/` sibling.
+a file-shaped **or write-shaped** call on the root *after* `close()` raises
+`BackendUnavailable`, not `InvalidPath`: BE-020 states its guarantee without
+exception, and a closed backend is the more fundamental error. A root pre-check
+is cheap and so naturally wants to run first — a backend that has one MUST still
+run the closed guard ahead of it, or the answer depends on which guard the
+implementer happened to write first.
+
+**Both pre-checks, and they need separate cells.** A backend that refuses the
+root on writes carries a second, differently-worded guard, and the read-shaped
+cell cannot reach it — `read_bytes` never touches a write guard. That is not
+hypothetical: `GraphBackend` ordered its write guard ahead of its closed check
+and answered a closed store with "cannot write to the drive root", which the read
+cell had passed for years. Pinned by
+`test_close_posture_outranks_root_rejection` (the file-shaped pre-check) and
+`test_close_posture_outranks_root_write_rejection` (the write-shaped one), both
+in `tests/backends/conformance/test_close_posture.py` and both with an `aio/`
+sibling.
 
 **One predicate, both spellings.** `remote_store._path.is_root` is the shared
 test; `strip_root` is its normalising form. A backend that asks `if path`
@@ -184,11 +213,104 @@ key: `to_key(native_path("."))` is `""`, not `"."`. The identity holds verbatim
 for every other key. This is forced, not a concession — an inverse cannot
 return two spellings from one input.
 
-**Out of scope:** `delete_folder("")` and writes *to* the root. `delete_folder`
-on the root is governed at the `Store` layer (STORE-002); backend behaviour for
-it is undefined by this clause. Writing to the root path is a malformed file
-path, rejected by path validation. Note `delete("")` is **not** out of scope —
-it is a file-shaped operation on a folder, and the row above governs it.
+**A write *to* the root is refused before anything is transferred.**
+`write`, `write_atomic` and `open_atomic` MUST raise `InvalidPath` naming the
+root, under **every spelling that addresses it**, in both overwrite modes, and
+**before** the request reaches the storage system. This clause used to place
+writes out of scope on the grounds that the root is a malformed file path
+"rejected by path validation" — true, and not sufficient. Validation downstream
+of the write still rejects it, *after* the bytes have gone: on the two
+hierarchical backends the write ran to completion against the container path
+itself, leaving the store's container a regular file while every probe above kept
+answering "folder" from the key. What the clause has to bind is therefore the
+*order*, not merely the outcome.
+
+**"Every spelling that addresses it" is wider than `is_root`, and this is the one
+clause where that matters.** `is_root` is the two canonical spellings, `""` and
+`"."` — the forms a backend key and a `RemotePath` use, and the right test
+everywhere the question is *addressing*. It is the wrong test here. A caller
+holding a `Backend` directly can pass `"./"`, which `RemotePath` normalises to the
+root and `is_root` does not recognise; measured against a `LocalBackend` whose
+root had been deleted, a guard written as `if is_root(path)` let `write("./")`
+leave the root a regular file and `open_atomic("./")` return cleanly having done
+it — the whole defect, one character from the spelling it caught. **So a backend
+implementing this clause as `if is_root(path)` is not conformant**, even though
+it passes the conformance cells below, which are parametrised over the two
+canonical spellings because they also assert `is_root` on the raised path.
+
+Decide it instead on the key's addressable segments: drop empty and `"."`
+segments, and refuse when nothing is left. That covers `""`, `"."`, `"./"`,
+`".//"`, `"./."` and `"/"`.
+`remote_store.backends._flat_ns._addressable_segments` is the shared
+implementation; `GraphBackend` reaches it through its own `_key_segments`.
+
+**The rule stops at the slash-and-dot spellings, and the bound is deliberate.**
+`RemotePath._normalize` folds `\` to `/` before dropping segments, so it calls
+`"\"` the root as well, and a draft of this clause required the same here. That
+was withdrawn on measurement. The shared predicate is also how `GraphBackend`
+builds every item address, so folding made `native_path("a\b")` address the same
+node as `native_path("a/b")`: two distinct keys collided onto one address, and
+`a\b` became unaddressable as itself.
+
+**The cost is the collision, not a BE-025 breach**, and the distinction is worth
+stating because the first version of this paragraph got it wrong. `\` is
+excluded from `WellFormedPath` by PATH-002, so a backslash key is not canonical
+and [BE-025](#be-025-native_path)'s round-trip identity never covered it —
+`LocalBackend.to_key` folds `\` to `/` today, for that reason, and is conformant.
+What the fold broke is the rule this clause is about: a predicate deciding
+*refusal* and a predicate deciding *addressing* were made one function, and
+widening it moved the addressing. The reach is narrower than "any POSIX key with
+a backslash" and the class of error is the one that matters here.
+
+So a backslash-only key is **not** refused by this clause. It is the milder
+failure of the two — on a POSIX namespace it lands a file named `\` inside the
+container rather than occupying it — and it is stated here rather than closed,
+because closing it costs the addressing contract. A backend wanting to refuse it
+must do so without widening the predicate its addressing depends on.
+
+**The obligation this leaves is a normative one: within a backend, whether a key
+names a node and *which* node it names are decided by one predicate.** Both ways
+of breaking that were measured on `GraphBackend` in the change that added this
+clause. Widening the shared predicate for the guard's sake moved its addressing,
+which is the withdrawal above. Narrowing it for addressing's sake is the same
+defect mirrored: its `move`/`copy` destination address split on a predicate that
+kept `"."`, so `"./x"` passed the destination guard and then named a folder
+literally called `.` while `write("./x")` wrote to the root. A backend free to
+split a key two ways will eventually accept a spelling at one predicate and
+misplace it at the other.
+
+`is_root` itself is deliberately **not** widened, and § "One predicate, both
+spellings" above still holds for every other use of it: it has call sites in
+`native_path` / `to_key`, where the addressing round-trip is defined in terms of
+the canonical pair, and in the prefix construction every flat-namespace listing
+uses. On the read side an unrecognised root spelling costs a wrong error class.
+Here it costs the container, and the asymmetry in the rule follows the asymmetry
+in the damage.
+
+The rejection is definitional, like the root's other answers, and for the same
+reason: an observational is-a-directory check answers `False` in exactly the
+state — an absent container — where the guard has to hold. Where the container
+cannot be occupied because the SDK refuses a zero-length key, the requirement
+still bites: reaching the SDK produced a retryable class for a permanent
+condition on one backend and a bare SDK message on another, both of which the
+clause's opening paragraphs already forbid.
+
+**The `move`/`copy` destination is covered too**, and the rule is the same one:
+a destination that is the root is a write to the root, refused before the
+transport. It is stated rather than left to follow, because the argument that it
+follows is exactly what failed. On the hierarchical backends the destination is
+*already* refused by observation — with the container present the destination
+probe reports a directory, with it absent the source check fails first — and
+that reasoning does not survive the move to a flat namespace, where nothing is
+observed: measured, `move(src, ".")` on the direct-boto3 lane **returned cleanly
+and deleted the source**, and the s3fs lane answered `AlreadyExists` for a
+destination that does not exist. A clause whose scope depends on a per-namespace
+reachability argument is a clause that is wrong on the namespace nobody checked.
+
+**Out of scope:** `delete_folder("")`, which is governed at the `Store` layer
+(STORE-002) — backend behaviour for it is undefined by this clause. Note
+`delete("")` is **not** out of scope — it is a file-shaped operation on a folder,
+and the row above governs it.
 
 **Conformance:** `tests/backends/conformance/test_io.py::TestBackendRootPath`
 and its async sibling in `test_async_extended.py`, both gated on
@@ -202,12 +324,28 @@ what they do reach is measured rather than assumed:
 | Backend | Reached by the conformance cells | Pinned only in its per-backend home | Pinned nowhere |
 |---------|----------------------------------|--------------------------------------|----------------|
 | `SQLQueryBackend` — fixture `sqlquery` | the query rows on the empty store (`exists` / `is_folder` / `is_file`, both spellings); addressing (`native_path` / `resolve` agreeing on both spellings, `to_key` returning the canonical root key); and the **read half** of the file-shaped-operation row — `read`, `read_bytes`, `read_seekable`, `get_file_info`, both spellings | the populated-store rows (`get_folder_info` aggregating a non-empty store), because the conformance fixture registers an empty query mapping and the suite seeds through `write` (ID-244) | — |
-| Graph — fixture `graph_replay` | addressing, under the fixture's `base_path`: `native_path` / `resolve` agreeing on both spellings, `to_key` returning the canonical root key | in `tests/backends/graph/aio/test_backend.py`: every root spelling refused by `_require_writable_key`, and the same addressing agreement with **no** `base_path` — the conformance fixture is always rooted under one, and the bare-root arm is where both defects this clause was written from lived | the query rows and the file-shaped-operation row |
+| Graph — fixture `graph_replay` | addressing, under the fixture's `base_path`: `native_path` / `resolve` agreeing on both spellings, `to_key` returning the canonical root key | in `tests/backends/graph/aio/test_backend.py`: every root spelling refused as a write target, as a `move`/`copy` destination and as a `move`/`copy` source, plus the closed-state ordering across both pre-checks, and the same addressing agreement with **no** `base_path` — the conformance fixture is always rooted under one, and the bare-root arm is where both defects this clause was written from lived | the query rows, and the five file-shaped operations other than the `move`/`copy` source. **Not** the write rows: those seed through `write`, so the conformance cells skip for want of a cassette, but the per-backend cells above pin the same guards — they refuse before a request exists, so they need no recording. The close-posture cell does not seed either, and the Graph lane executes it within conformance |
 
 The file-shaped-operation row is seven operations (`_ROOT_FILE_OPS`): the four
 reads above plus `delete`, `move` and `copy`. `SQLQueryBackend` declares no
 capability for those three, so they are gated out rather than missed — nothing
 to pin, which is why its "pinned nowhere" cell is empty rather than listing them.
+
+**The write row is a second roster and deliberately not folded into that one.**
+`_ROOT_WRITE_OPS` is `write`, `write_atomic` and `open_atomic` (two in the async
+mirror, which declares no `open_atomic`, as it declares no `read_seekable`), plus
+a companion roster for the `move`/`copy` **destination**. Separate because it is
+a separate *rule*, not because its members share a gate: like the seven above,
+each is paired with its own capability — `write` under `WRITE`, `write_atomic`
+and `open_atomic` under `ATOMIC_WRITE`, the destination pair under `MOVE` and
+`COPY`. What distinguishes the rows is what they owe. The type-mismatch row owes
+an error class; these owe an error class **and the absence of a side effect**.
+Their conformance cells seed a file and read it back afterwards, which is the
+strongest form the "before anything is transferred" clause takes from outside a
+backend — the container's own state is not observable through the `Backend` API,
+and the absent-container case no fixture arranges (BK-345). A backend whose
+container can go absent pins that half in its per-backend home. No roster here
+reaches `SQLQueryBackend`, which is read-only.
 
 A clause that binds every LIST-capable backend needs its coverage checked per
 backend, not per source site — both defects this clause was written from
@@ -240,12 +378,45 @@ cannot reach any cell that seeds through `write` (ID-244).
 **Raises:** `AlreadyExists` if the file exists and `overwrite=False`. `InvalidPath` if an ancestor of `path` exists as a regular file (file-as-directory-component — see ID-209). `CapabilityNotSupported` if a non-`None`, non-empty `metadata` mapping is passed and the backend lacks `USER_METADATA` (per WR-010 empty-mapping carve-out — `metadata=None` and `metadata={}` are both no-ops with respect to this gate).
 **See also:** [045-write-result.md](045-write-result.md) (WR-001 through WR-005, WR-010 through WR-012).
 **Precondition evaluation order:** Backends MUST evaluate preconditions in this
-order: (1) path validity — if `path` names an existing *directory* OR any
-slash-aligned ancestor of `path` is a regular file (file-as-directory-component,
-ID-209), raises `InvalidPath`; (2) overwrite conflict — if the file exists and
-`overwrite=False`, raises `AlreadyExists`; (3) I/O. No later check may mask an
-earlier one. This order applies to `write()`, `write_atomic()`, `move()`, and
-`copy()` wherever analogous preconditions exist.
+order: (0) the root — if `path` is the store root, raises `InvalidPath`, decided
+from the key and before any request is issued ([BE-029](#be-029-root-path));
+(1) path validity — if `path` names an
+existing *directory* OR any slash-aligned ancestor of `path` is a regular file
+(file-as-directory-component, ID-209), raises `InvalidPath`; (2) overwrite
+conflict — if the file exists and `overwrite=False`, raises `AlreadyExists`;
+(3) I/O. No later check may mask an earlier one. This order applies to `write()`,
+`write_atomic()`, `move()`, and `copy()` wherever analogous preconditions exist.
+For `move`/`copy`, step (0) binds **both** ends: the source as the file-shaped
+operation it is, and the destination as the write it is.
+Step (0) is numbered rather than folded into (1) because it is the one step no
+backend is exempt from: the flat-namespace exemption below releases (1), and a
+backend taking it still owes the root refusal, which needs no round trip and no
+namespace concept to decide.
+**The two ends owe different predicates, and the asymmetry is deliberate.** The
+write end — the three writers and the `move`/`copy` destination — must refuse
+**every spelling that addresses the root**, which is wider than `is_root`; see
+[BE-029](#be-029-root-path), which states why a guard written as
+`if is_root(path)` is not conformant there. The source end is required only to
+refuse `is_root`. Seven of the eleven `WRITE`-capable classes meet that through
+the shared `_reject_root_as_file`, which is exactly `is_root`; the other four —
+`GraphBackend`, `MemoryBackend`, `AsyncMemoryBackend`, `SQLBlobBackend` — refuse
+the source under the **wider** predicate as a by-product of their own key
+splitters, so `move("./", dst)` raises there and not on the seven. That
+divergence is permitted: the floor is `is_root` and a backend MAY exceed it.
+
+**What an unrecognised root spelling costs on the read side, stated rather than
+assumed.** The usual summary is "a wrong error class". That is not the whole of
+it, and the difference matters because this summary is the justification for
+leaving `is_root` unwidened. Measured over `exists` / `is_folder` /
+`list_files(recursive=True)` on a root holding two files: `LocalBackend` and
+`MemoryBackend` answer `True / True / 2` under all three of `""`, `"."` and
+`"./"`; `SQLBlobBackend` answers `True / True / 2` for the first two and
+**`True / True / 0`** for `"./"` — the probes agree the folder is there and the
+listing comes back empty. So the read side can cost a silently wrong *value*
+(BUG-260). It remains the milder failure — the write side cost a container — and
+the reason not to widen `is_root` here is its blast radius, not the harmlessness
+of the read side: it is also how addressing, `to_key` and every flat-namespace
+listing prefix decide the root.
 **Flat-namespace exemption:** Backends where the underlying storage has no
 native directory concept (e.g. S3, Azure non-HNS, SQL) are exempt from step
 (1): they cannot distinguish "path names a directory" from "path does not
@@ -592,18 +763,174 @@ container before this clause, and keeps it: `get_folder_info`, `read`,
 `NotFound` row; `list_files` and `list_folders` return an empty listing, since an
 absent container holds nothing; `exists()`, `is_file()` and `is_folder()` MUST
 answer `False`, which BE-004 / BE-005 and this section's own rule already forbid
-them from breaching. `write` is the one operation *on the roster* that no clause
-of this spec decides, and this one does not decide it either — which leaves it
-the one roster operation a backend spec may decide, as
+them from breaching. `write` is the one operation *on the roster* this clause
+does not decide, and the permission that leaves is now narrower than it was: a
+backend spec may decide what `write` does against an absent container, as
 [GR-031](044-graph-backend.md#gr-031-404-discrimination-item-vs-drive) does for
-`GraphBackend` ([ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md)).
-That is a gap being filled, not a divergence: a backend answering `write` its own
-way contradicts nothing here. Anything *off* the roster — a health probe, a
+`GraphBackend` ([ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md)),
+but **not what it does when the target is the root** — [BE-029](#be-029-root-path)
+decides that, for every backend, and decides it specifically for the
+absent-container state. So the sentence divides: a backend answering `write` its
+own way for a key *under* the container contradicts nothing here; one answering
+the root key its own way contradicts BE-029. Anything *off* the roster — a health probe, a
 credential or container-identity lookup — is not an operation this section
 reaches at all, so it needs no such permission and is not counted against this
 one. All of these obligations are pre-existing — this
 clause neither creates nor relaxes them, and that is why those operations are
 absent from the roster above rather than exempt from it.
+
+**The empty listing is an answer about a container that was absent when the
+listing began.** A listing that has already received a page has been told the
+container exists; a container 404 arriving on a *later* page therefore reports a
+deletion that happened underneath the scan, not an absence, and a backend MUST
+let it propagate rather than end the iteration. Returning early there hands the
+caller a short listing indistinguishable from a complete one — the caller most
+harmed being the one diffing a listing against local state and deleting the
+difference, which is a data-loss shape rather than an error-reporting one.
+
+The bound is on the **page**, not on what the operation yielded from it. Every
+listing discards part of a page — `list_files` drops common prefixes, directory
+markers and anything past `max_depth`; `list_folders` drops keys; `glob` drops
+non-matches — so a backend keying the bound on a yielded item goes blind exactly
+where a page's contents are all filtered away, and those are ordinary page
+shapes: a container organised into folders returns a first page of nothing but
+prefixes.
+
+Backends whose listing API exposes no page boundary may satisfy this by marking
+each item the service returned *before* its own filters run; the residue is a
+truncated page carrying no items at all, which MUST then be stated as a
+divergence rather than left implied.
+
+**The root is decided by BE-029, not here, and BE-029 wins.** This paragraph
+assigns answers per *operation*; it says nothing about the store root within
+them, and reading a root answer off it is a mistake this spec has already
+produced once. [BE-029](#be-029-root-path) states the root case directly and
+without qualifying it by whether the container exists: the root is a folder that
+always exists, so `exists("")` and `is_folder("")` answer `True`, and
+`get_folder_info("")` aggregates the whole store and never raises `NotFound` —
+an empty store rather than a missing path. Where that meets the `NotFound` row
+above, **BE-029 governs**: against an absent container the root of a compliant
+backend answers as it would for an empty one.
+
+That extends to the two operations this paragraph leaves to a backend or counts
+only as a source. **`write` on the root** is decided by BE-029 rather than left
+open, and the `move`/`copy` **destination** — which § Reach's roster counts only
+as a source — is decided there too: both raise `InvalidPath` from the key, before
+the request, whether or not the container exists. A backend spec may still decide
+what `write` does against an absent container for a key *under* it; the root key
+is not its to decide.
+
+Stated here because this is where a reader looking for per-operation answers
+lands, and following it alone yields the wrong answer for one path in every
+operation it names.
+
+**Five of the thirteen concrete backends do not meet the root row against an
+absent container, and the list below does not record it.** Conformance's
+`TestBackendRootPath` runs the row against every backend with the container
+*present*, and all of them pass; the breaches are all in the absent state,
+which no conformance fixture reaches (BK-345 owns that gap). § Known
+divergences holds two live bullets, and neither is root-specific: both are of
+the first-page bound.
+
+The root breaches are measured and tracked as **BUG-254**: `exists("")` and
+`is_folder("")` answer `False` on `S3Backend` and `S3PyArrowBackend`, and
+`get_folder_info("")` raises `NotFound` on `S3Boto3Backend`, `AzureBackend` and
+`AsyncAzureBackend` — five classes, seven class-cells (two operations on two
+classes, plus one on three), in two opposite directions. `SQLBlobBackend` is
+the one of the six flat-namespace classes BUG-254 measured that complies.
+
+`LocalBackend`'s breach was whole-backend and included all three root cells:
+once its root directory was gone it answered *every* operation with
+`InvalidPath`. It has left the list below (BUG-247) and now meets the row,
+deciding the root from the key rather than from a stat. That leaves
+`GraphBackend`, `ReadOnlyHttpBackend` and `SQLQueryBackend` unmeasured for the
+root, and `SFTPBackend`, `MemoryBackend` and `AsyncMemoryBackend` meeting it
+alongside Local and `SQLBlobBackend` — five breaching, five meeting, three
+unmeasured, of the thirteen classes that declare `CAPABILITIES`, excluding the
+two abstract bases and the sync adapter.
+
+These are absent from the list below because that list is organised by the
+absent-container *clause* and these are breaches of BE-029's root row; the
+pointer is here so a reader does not read that list as meaning the root is
+settled.
+
+**The write-to-root rule is a different count and every class now meets it.**
+Of the same thirteen, **two** have no `WRITE` capability and are not bound
+(`ReadOnlyHttpBackend`, `SQLQueryBackend`). The other eleven split by *which
+half* they already met, and the split differs between the two halves — which is
+itself the finding, since a class compliant on the writers was not thereby
+compliant on the destination:
+
+| | Refused it definitionally already | Refused it, but by observation | Did not refuse it |
+|---|---|---|---|
+| **The three writers** | `LocalBackend`, `MemoryBackend`, `AsyncMemoryBackend`, `SQLBlobBackend`, `GraphBackend` — 5 | — | `SFTPBackend`, `S3Backend`, `S3PyArrowBackend`, `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` — 6 |
+| **The `move`/`copy` destination** | `MemoryBackend`, `AsyncMemoryBackend`, `SQLBlobBackend` — 3 | `LocalBackend`, `SFTPBackend` — 2 | `S3Backend`, `S3PyArrowBackend`, `S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend`, `GraphBackend` — 6 |
+
+`LocalBackend`'s writers are in the first column because BUG-247 put them there;
+an earlier draft of this table had them under observation, which described the
+tree *before* that item rather than the one this clause ships in.
+
+The middle column is why the destination fix is not smaller. Those two classes
+answered correctly, and answered by looking — an is-a-directory probe on a
+container that was present. Neither of the two states this clause is about (an
+absent container; a flat namespace with nothing to observe) leaves that probe
+anything to see. All eleven now decide both halves from the key.
+
+Only two classes could destroy anything: `SFTPBackend` on the writers, and
+`S3Boto3Backend` on the destination — the latter answered a `move` to the root
+destination by returning cleanly and **deleting the source**. The rest reached
+their SDK and answered with the wrong class, which breaches the paragraphs at the
+head of this clause rather than this row.
+
+`GraphBackend` is the instructive row: it decided the writers definitionally,
+under more spellings than anything else here, and was still in the last column
+for the destination — and its root check ran ahead of its own closed-backend
+guard, so a closed store answered "cannot write to the drive root" instead of
+"backend is closed". Compliance on one half of a clause is not evidence about the
+other.
+
+Coverage is **not** uniform, and the shortfall is fixtures rather than rule. The
+cells this clause added collect **266** and execute **188**; the **78** skips are
+unrecorded replay cassettes (the Azure sync, Azure async and Graph lanes),
+backends that do not declare the capability under test, and the PyArrow lane,
+which needs the MinIO fixture on current PyArrow. The backends those skips cover
+were each measured directly instead — `S3PyArrowBackend` and `AzureBackend`
+against an unreachable endpoint, where an `InvalidPath` naming the root proves
+the guard ran before the transport; `AsyncAzureBackend` with the guard stubbed
+out, to establish what it did before; and `GraphBackend` against an unreachable
+endpoint for both halves.
+
+`GraphBackend` is the class where the two halves of that split are clearest, and
+the split is per-cell rather than per-backend. Its lane skips both new rosters,
+because those seed through `write` and so need a cassette — hence the cells
+fencing its source and destination guards live in `tests/backends/graph/aio/`,
+where they need no recording since those guards refuse before a request exists.
+Its **closed-guard ordering is pinned within conformance**, by the `aio/` twin of
+the close-posture cell: that one never seeds, so the Graph lane executes it, and
+it is the cell that caught the ordering breach in the first place. A cassette-less
+lane is not an unpinnable one; what it cannot host is a cell that seeds.
+
+**§ Reach's roster is twelve operations, and its siblings are not silently
+included.** The twelve are the two tolerant deletes plus the ten this paragraph
+names, counting the `move`/`copy` source as one. (The Graph paragraph below says
+GR-031 reached "eleven of the ones named above" and kept `write`; eleven plus
+`write` is the same twelve.)
+
+`read_bytes`, `read_seekable`, `iter_children` and `glob` are not among them.
+Each is a thin variant of one that is — `read`, `list_files`, `list_folders` —
+and a backend that answers a named operation one way and its variant another has
+a defect rather than a permission. But that is a *reading*, and it is the reading
+this section elsewhere makes explicit when it counts Graph's divergence as
+"eleven of the ones named above, plus `read_bytes` and `iter_children`". A
+backend spec relying on the reading should say so, as
+[SQL-BLOB-050](040-sql-blob-backend.md#sql-blob-050-exception-translation) does.
+
+**"Roster" is used twice in this section and the two sets differ.** The
+type-mismatch rows above have their own roster — the one their scope paragraph
+calls "the single roster for both halves", which *does* name `read_bytes` and
+`read_seekable`, and which the "`read_seekable` is in the list" paragraph is
+about. This paragraph is about § Reach's roster only. Neither is wrong; a reader
+meeting the word in one place and the membership claim from the other is.
 
 **Known divergences, stated rather than implied.** These are what ships today,
 recorded so a reader does not mistake an obligation for a description, and
@@ -613,40 +940,86 @@ operations keep obligations this clause did not write, and a divergence from one
 of *those* is no less real for having been written down elsewhere. Listing them
 here is what makes the container case answerable from one place.
 
-- `exists()` and `is_folder()` *raise* `NotFound` against an absent container on
-  `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend`, where the strict
-  prefix probe is reached after the tolerant HEAD comes back empty.
-  `S3Backend` and `S3PyArrowBackend` answer `False`.
-- `S3Boto3Backend`'s `list_files`, `list_folders` and `iter_children` raise a
-  raw `botocore.exceptions.ClientError` against an absent container, breaching
-  the never-leak invariant at the top of this section rather than the mapping
-  row. They are the only methods on that class whose wire call is not wrapped in
-  its error mapper; the two s3fs-backed lanes answer the identical response with
-  an empty listing.
-- On `SQLBlobBackend`, **every operation except the two deletes** answers an
-  absent table with `BackendUnavailable` (or the base error, by dialect) rather
-  than `NotFound`, because they map the driver's complaint without asking
-  whether the table is still there. That includes `exists()`, `is_file()` and
-  `is_folder()`, so this backend breaches the never-raise rule above as well as
-  the mapping row — the widest divergence in this list by operation count,
-  measured rather than inferred. The same split shows on a disposed in-memory
-  engine, where disposal destroys the database rather than releasing a
-  connection to it: the deletes return and everything else raises, so a caller
-  watching one call sees a store that is gone and a caller watching the next
-  sees a backend that is broken. That is one divergence with two ways in, not
-  two, and the reclassification deliberately does not try to tell them apart —
-  see [SQL-BLOB-050](040-sql-blob-backend.md#sql-blob-050-exception-translation).
-- `LocalBackend` answers **every** operation with
-  `InvalidPath("Path escapes root directory")` once its root directory is
-  deleted, including both tolerant deletes. The containment check walks up to
-  the deepest existing ancestor, which is above the root once the root is gone,
-  so absence is misreported as an escape. This is the furthest from the clause
-  any backend currently sits, and the only one where the error type actively
-  misleads.
+- `S3Backend` and `S3PyArrowBackend` breach the **first-page bound** rather than
+  the empty-listing answer: a bucket deleted between pages of a listing ends the
+  iteration cleanly, so a truncated listing reads as a complete one. They answer
+  the absent-from-the-start case correctly. Tracked as **BUG-255**, with the fix
+  shape already worked on the three lanes that meet the bound. `AzureBackend` and
+  `AsyncAzureBackend` meet it on both their flat and their HNS branches, each
+  executed against a wire stub.
 
-`GraphBackend` was the fifth bullet in this list — counting bullets, not backend
-classes, which is the frame `sdd/BACKLOG.md` § 1 uses when it calls Graph the
-sixth of six — and is no longer one; four bullets remain.
+- `GraphBackend` (and its sync adapter) breaches the **first-page bound** on a
+  recursive listing, in a different way: its bound is per *HTTP request*, and a
+  recursive walk issues one request per folder, so every subfolder listing
+  restarts it. A folder whose `/children` 404s part-way through the walk ends
+  that folder's listing cleanly, and the walk returns a short result as a
+  complete one. The single-page and top-level cases are correct. Tracked as
+  **BUG-257**. Contrast `S3Boto3Backend.list_files`, where one cursor wraps the
+  whole breadth-first walk and a 404 on any sub-prefix propagates — that is the
+  shape a fix takes.
+
+Four bullets have left this list and are recorded rather than deleted, because
+each was a *measured* divergence and the measurement is what a later reader
+needs in order to trust the entries that remain:
+
+- `LocalBackend` answered **every** operation with
+  `InvalidPath("Path escapes root directory")` once its root directory was
+  deleted, including both tolerant deletes: the containment check walked up to
+  the deepest existing ancestor, which is above the root once the root is gone,
+  so absence was misreported as an escape. It was the furthest from the clause
+  any backend sat, and the only one where the error type actively misled. The
+  walk now stops at the root, which brings the whole surface to the clause at
+  once — the tolerant deletes return, the strict ones and the reads raise
+  `NotFound`, the probes answer `False`, the listings are empty. The store root
+  itself is decided by BE-029 rather than by this clause, and now meets that
+  row too (BUG-247).
+- `exists()` and `is_folder()` raised `NotFound` against an absent container on
+  `S3Boto3Backend`, `AzureBackend` and `AsyncAzureBackend`, where the strict
+  prefix probe was reached after the tolerant HEAD came back empty. All three now
+  answer `False`, as `S3Backend` and `S3PyArrowBackend` already did (BUG-246).
+- `S3Boto3Backend`'s `list_files`, `list_folders` and `iter_children` raised a
+  raw `botocore.exceptions.ClientError`, breaching the never-leak invariant at
+  the top of this section rather than the mapping row: they were the only methods
+  on that class whose wire call was not wrapped in its error mapper, against
+  fifteen methods that do wrap. All three now return an empty listing, as the two s3fs-backed
+  lanes already did against the identical response (BUG-249).
+- On `SQLBlobBackend`, **every operation except the two deletes** answered an
+  absent table with `BackendUnavailable` (or the base error, by dialect), because
+  they mapped the driver's complaint without asking whether the table was still
+  there. It was the widest divergence this list ever held by operation count —
+  fourteen operations, measured against a dropped SQLite table, of which thirteen
+  owed a different answer — **counting `move` and `copy` separately here**, which
+  is the opposite of the roster paragraph's frame above and is why fourteen and
+  twelve can both be right about the same backend. Each of the thirteen now takes the answer § Reach
+  gives it or its named sibling: `exists`, `is_file` and `is_folder` answer
+  `False`; `read`, `read_bytes`, `get_file_info`, the `move`/`copy` source and
+  `get_folder_info` **below the root** raise `NotFound`, while the root
+  aggregates to an empty store under BE-029; `list_files`, `list_folders`,
+  `iter_children` and `glob` come back empty. Three of those thirteen —
+  `read_bytes`, `iter_children` and `glob` — are siblings § Reach does not name,
+  per the roster paragraph above. `read_seekable` is not among them: this backend
+  does not override it, so it is not a distinct operation here. The same split showed on a disposed in-memory engine, where disposal
+  destroys the database rather than releasing a connection to it — one divergence
+  with two ways in, closed by the same change, and the reclassification
+  deliberately does not try to tell them apart; see
+  [SQL-BLOB-050](040-sql-blob-backend.md#sql-blob-050-exception-translation).
+  **`write` keeps `BackendUnavailable`** and is not a residue: it is the one
+  roster operation § Reach declines to decide, so a backend answering it its own
+  way contradicts nothing here (BUG-246).
+
+`GraphBackend` was a bullet too, adjudicated by
+[ADR-0038](../adrs/0038-absent-container-outranks-drive-identity.md). Counting
+bullets rather than backend classes — one of the two frames `sdd/BACKLOG.md` § 1
+uses, and the one it counts this list in — **this list holds two live bullets
+today**, both of the first-page bound: `S3Backend`/`S3PyArrowBackend` and
+`GraphBackend`. Four are recorded above as having left, the most recent
+being `LocalBackend` (BUG-247) — first in that list by position, last by date,
+and the last of the original entries still standing. The two that remain are
+both *newer* than the list they joined: the
+first-page bound BUG-246 wrote into § Reach made them breaches of a clause they
+were outside of before. A list of divergences grows when its clause does, not
+only when a backend regresses — and this one has now turned over completely,
+every original entry closed and every live entry created by a clause that grew.
 [GR-031](044-graph-backend.md#gr-031-404-discrimination-item-vs-drive) mapped
 `404 resourceNotFound` to `BackendUnavailable` for every error-raising
 operation, deliberately, on the grounds that a deleted drive is a backend
@@ -679,12 +1052,14 @@ run, which is the argument for the rule being stated as an obligation rather
 than inferred from what backends happened to do.
 
 The first was that the hierarchical backends had already settled it, because on
-Local an absent store root is just an absent path. With its root deleted,
-`LocalBackend` raises `InvalidPath("Path escapes root directory")` from the
-containment check, before either delete's `missing_ok` branch is reached. It is
-a divergence from this clause, not evidence for it, and it went unnoticed
-because both deletes look correct in isolation — the guard that fires is two
-lines upstream in `_resolve`.
+Local an absent store root is just an absent path. It was not: with its root
+deleted, `LocalBackend` raised `InvalidPath("Path escapes root directory")` from
+the containment check, before either delete's `missing_ok` branch was reached. It
+was a divergence from this clause, not evidence for it, and it went unnoticed
+because both deletes look correct in isolation — the guard that fired was two
+lines upstream in `_resolve`. BUG-247 has since made the premise true, which does
+not make the reasoning sound: it was asserted from a reading, and what settled it
+either way was running it.
 
 The second was that the rule merely ratified what `delete` already did on every
 flat-namespace backend, correcting only its sibling. That holds for the S3 and
@@ -692,9 +1067,12 @@ Azure family, whose bodyless `HeadObject` 404 cannot name the bucket, and it is
 where the reported symptom came from. It does not hold for `SQLBlobBackend`,
 which is flat-namespace by this spec's own classification and whose `delete` was
 measured raising `BackendUnavailable` against a dropped table before this
-change, exactly as its sibling did. The rule therefore changes `delete` on one
-backend rather than ratifying it everywhere. Both divergences are listed above;
-the premise survived six review rounds because "the S3 family" and "the
+change, exactly as its sibling did — that is the state *before BUG-243*, which
+is the change this paragraph is about, and not the state the departed bullet
+above describes, which is after it. The rule therefore changes `delete` on one
+backend rather than ratifying it everywhere. Both are recorded above, among the
+four bullets that have left this list; the
+premise survived six review rounds because "the S3 family" and "the
 flat-namespace backends" were used interchangeably by a clause whose whole
 purpose is to bind the second set.
 
@@ -766,7 +1144,7 @@ raising `InvalidPath`. All other operations MUST raise appropriate errors.
 ### BE-025: native_path()
 
 **Invariant:** `native_path(path)` converts a backend-relative key to the backend-native path. The inverse of `to_key()`: `backend.to_key(backend.native_path(key)) == key`. The default implementation is the identity function — backends with a native root **must** override.
-**Root spellings:** `native_path("")` and `native_path(".")` return the same value, the bare backend root (BE-029). The round-trip identity therefore returns the canonical root key — `to_key(native_path("."))` is `""` — since one native path cannot invert to two spellings. Every non-root key round-trips verbatim. The identity-default implementation normalises both spellings for the same reason.
+**Root spellings:** `native_path("")` and `native_path(".")` return the same value, the bare backend root (BE-029). The round-trip identity therefore returns the canonical root key — `to_key(native_path("."))` is `""` — since one native path cannot invert to two spellings. Every non-root key **in canonical form** round-trips verbatim; a non-canonical one need not, and for the same reason — `native_path` normalises, and one address cannot invert to the several keys that produced it. Every lossy class is one `WellFormedPath` (PATH-002 through PATH-008) already excludes, though not every exclusion is lossy — `".."` segments and null bytes are excluded and do round-trip verbatim. The lossy ones are: a redundant `"."` segment, an empty segment (leading, trailing or doubled slash), and on backends that fold it, a backslash. Measured on `GraphBackend`, `native_path("a/./b")`, `native_path("dir/")`, `native_path("a//b")` and `native_path("/a")` each invert to the canonical key rather than the caller's spelling. So the identity is exact over the keys `to_key` produces and over every canonical key, and lossy over the wider set a caller holding a `Backend` directly may hand `native_path`. The identity-default implementation normalises both root spellings for the same reason.
 **Postconditions:** Pure, deterministic, total (never raises). The returned path is usable with the native handle from `unwrap()`.
 **Overrides:** `LocalBackend` (prepends root dir), `S3Backend` (prepends bucket), `S3PyArrowBackend` (prepends bucket), `SFTPBackend` (prepends base_path), `AzureBackend` (prepends container).
 **Example:** `S3PyArrowBackend(bucket="lake").native_path("data/file.parquet")` returns `"lake/data/file.parquet"`.

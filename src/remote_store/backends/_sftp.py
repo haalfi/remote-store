@@ -9,6 +9,7 @@ import logging
 import os
 import re
 import shutil
+import socket
 import stat
 import uuid
 from contextlib import contextmanager
@@ -257,7 +258,6 @@ class SFTPUtils:
             Path("host.keys").write_text(entry + "\\n")
             ```
         """
-        import socket
 
         import paramiko
 
@@ -349,7 +349,6 @@ class SFTPUtils:
             # widen via SFTPBackend(connect_kwargs={"disabled_algorithms": ...}).
             ```
         """
-        import socket
         import struct
 
         sock = socket.create_connection((host, port), timeout=timeout)
@@ -530,6 +529,30 @@ def _load_host_keys_from_string(ssh: Any, keys_content: str) -> None:
 
 # endregion
 
+# region: stream helpers
+
+
+def _sftp_handle_size(handle: Any) -> int:
+    """Size an open ``SFTPFile`` over the wire, letting a failure surface.
+
+    ``_ErrorMappingStream`` calls this to resolve ``SEEK_END`` instead of
+    delegating to paramiko's ``SFTPFile.seek``, whose ``_get_size()`` is
+    ``try: return self.stat().st_size`` under a bare ``except: return 0``.  The
+    swallow made a stalled seek answer ``0`` on a file of any size and raise
+    nothing, so the failure never reached the wrapper's mapper: the
+    dead-connection guard stayed unarmed, the close paid ``io_timeout`` a second
+    time, and the cached client was left in place.
+
+    ``SFTPFile.stat()`` issues ``CMD_FSTAT`` against the open handle rather than
+    ``CMD_STAT`` against a path, which is both what ``_get_size`` calls and the
+    answer a caller of *this* stream wants: a file replaced under the path while
+    the handle is open cannot substitute its size here.
+    """
+    return int(handle.stat().st_size)
+
+
+# endregion
+
 
 class SFTPBackend(Backend):
     """SFTP backend using pure paramiko.
@@ -560,7 +583,37 @@ class SFTPBackend(Backend):
         known_host_keys: Known hosts string (code-level override).
         host_keys_path: Path to known_hosts file (default: ``~/.ssh/known_hosts``).
         config: Optional config dict (may contain ``known_host_keys``).
-        timeout: SSH connection timeout in seconds.
+        timeout: SSH connection timeout in seconds. Bounds the *connect* phase
+            only — it is passed as paramiko's ``timeout`` / ``banner_timeout`` /
+            ``auth_timeout`` / ``channel_timeout``, the last of which bounds
+            channel *open*, not traffic on an opened channel.
+        io_timeout: Seconds a single blocking read or write on the open SFTP
+            channel may go without progress before it fails. Defaults to
+            ``120.0``; pass ``None`` for no bound. Applied with
+            ``Channel.settimeout()`` on
+            every connect *and every reconnect*, and armed before the SFTP
+            session setup, so a peer that completes the SSH handshake and then
+            falls silent is bounded there too. This is silence between bytes,
+            not a deadline for the whole transfer: a large file over a slow
+            link is unaffected however long it takes, while a peer that stops
+            sending mid-transfer raises ``BackendUnavailable`` instead of
+            blocking forever. That asymmetry is what picks the default: raising
+            it costs only detection latency, since a slow link is unaffected at
+            any value, while lowering it turns a healthy-but-quiet server — an
+            antivirus or dedup appliance scanning a large file on ``open()`` —
+            into intermittent ``BackendUnavailable``, which reads as network
+            flakiness and is harder to diagnose than the hang it replaces.
+            Must be positive when set; ``0`` is rejected
+            because paramiko reads it as non-blocking, so it is not the way to
+            ask for no bound — ``None`` is. A streamed ``read``
+            raises rather than returning short, so a truncated transfer is
+            never mistaken for a complete one. Seeking to the end of a stream
+            (``seek(0, SEEK_END)``) asks the server for the file size, so a
+            stall there raises like any other. Every stall *that surfaces* is
+            reported, and none is retried: the ``retry`` policy wraps the SSH
+            connect call alone, so a partially consumed stream is never
+            silently restarted — and a stall during session setup is reported
+            too, rather than retried as a connect failure would be.
         connect_kwargs: Extra kwargs passed to ``SSHClient.connect()``.
     """
 
@@ -580,11 +633,18 @@ class SFTPBackend(Backend):
         host_keys_path: str | None = None,
         config: dict[str, Any] | None = None,
         timeout: int = 10,
+        io_timeout: float | None = 120.0,
         connect_kwargs: dict[str, Any] | None = None,
         retry: RetryPolicy | None = None,
     ) -> None:
         if not host or not host.strip():
             raise ValueError("host must be a non-empty string")
+        if io_timeout is not None and io_timeout <= 0:
+            # paramiko reads 0 as non-blocking rather than as a bound, and every
+            # SFTP request waits on a reply, so every operation would fail at
+            # once. Reject it here instead of letting it surface as an
+            # unexplained storm of BackendUnavailable.
+            raise ValueError("io_timeout must be a positive number of seconds, or None")
         if isinstance(host_key_policy, str):
             host_key_policy = HostKeyPolicy(host_key_policy)
         self._host = host
@@ -596,6 +656,7 @@ class SFTPBackend(Backend):
         self._host_key_policy = host_key_policy
         self._host_keys_path = host_keys_path
         self._timeout = timeout
+        self._io_timeout = io_timeout
         self._connect_kwargs = connect_kwargs or {}
         self._retry = retry
         self._resolved_host_keys = self._resolve_host_keys(known_host_keys, config)
@@ -768,6 +829,11 @@ class SFTPBackend(Backend):
                 code = getattr(exc, "errno", None)
                 if code == errno.ENOENT:
                     raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
+                if self._is_connection_dead(exc):
+                    # See ``read_bytes``: the ancestor walk below would re-enter
+                    # the channel this exception says is dead, re-paying
+                    # ``io_timeout`` on each probe.
+                    raise
                 if code is None and self._has_file_ancestor(sftp_path):
                     # ID-209 round-3: paramiko surfaces SSH_FX_FAILURE as
                     # ``OSError("...", errno=None)`` for a wide range of
@@ -782,7 +848,19 @@ class SFTPBackend(Backend):
                     raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
                 raise
             try:
-                raw = _ErrorMappingStream(f, self._map_exception, path)
+                # ``is_fatal`` is ``_handle``'s guard, applied to the one handle
+                # ``_handle`` cannot reach: the wrapper owns this close, so a
+                # stall would otherwise pay ``io_timeout`` again on the way out
+                # (SIO-010, SFTP-030). ``size_probe`` is what gives that guard
+                # something to arm on a ``SEEK_END`` seek, whose failure
+                # paramiko would otherwise swallow (SIO-011).
+                raw = _ErrorMappingStream(
+                    f,
+                    self._map_exception,
+                    path,
+                    is_fatal=self._is_connection_dead,
+                    size_probe=_sftp_handle_size,
+                )
                 return io.BufferedReader(cast(io.RawIOBase, raw))  # noqa: TC006
             except Exception:
                 f.close()
@@ -815,13 +893,23 @@ class SFTPBackend(Backend):
         with self._errors(path):
             sftp_path = self._sftp_path(path)
             try:
-                with self._sftp.file(sftp_path, "r") as f:
+                with self._handle(self._sftp.file(sftp_path, "r")) as f:
                     f.prefetch()
                     return bytes(f.read())
             except OSError as exc:
                 code = getattr(exc, "errno", None)
                 if code == errno.ENOENT:
                     raise NotFound(f"Not found: {path}", path=path, backend=self.name) from None
+                if self._is_connection_dead(exc):
+                    # The classification below re-enters the channel this
+                    # exception says is unusable, and the cached client is still
+                    # set (``_map_exception`` clears it only once this raise
+                    # escapes), so each probe would pay the ``io_timeout`` bound
+                    # again — turning one bound into several for the caller.
+                    # Same reasoning as the ``connection_lost`` guard in
+                    # ``write_atomic`` / ``open_atomic``: classify no further,
+                    # let the drop be reported.
+                    raise
                 # BK-313: lazy is-dir classification — see ``read``.
                 self._raise_if_dir(sftp_path, path)
                 if code is None and self._has_file_ancestor(sftp_path):
@@ -842,10 +930,18 @@ class SFTPBackend(Backend):
         """Write *content* to *path*, streaming it over the SFTP channel.
 
         The bytes are streamed straight to the destination file (no
-        temp-and-rename), so a dropped connection mid-write can leave a partial
-        or truncated file there — use ``write_atomic`` when readers must never
-        see a half-written file. Missing parent directories are created first
-        (one ``stat`` per ancestor).
+        temp-and-rename), so a failed write may already have changed that path.
+        A ``BackendUnavailable`` means no reply came back, not that the server
+        never acted. **Any amount of the write may have happened, from none of it
+        to all of it**, and the error does not say which: the destination may be
+        untouched, emptied (the server truncated on open and the old content is
+        gone), holding an unpredictable prefix of *content*, or holding it in
+        full. Retry with ``overwrite=True`` (the path is usually still occupied)
+        and re-write from the start rather than appending to what is there — the
+        prefix length depends on buffering the caller cannot observe. Use
+        ``write_atomic`` when readers must never see a half-written file.
+        Missing parent directories are created first (one ``stat`` per ancestor)
+        and are **not** removed when the write fails.
 
         The returned ``WriteResult`` carries ``size`` (counted during upload)
         and ``source="native"``, but every rich field — ``last_modified``,
@@ -855,12 +951,13 @@ class SFTPBackend(Backend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or an ancestor of *path*
-                exists as a regular file.
+            InvalidPath: If *path* is the store root, or names a directory, or
+                an ancestor of *path* exists as a regular file.
             PermissionDenied: If the server denies access (``EACCES``).
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails mid-write.
         """
+        self._reject_root_as_write_target(path)
         with self._errors(path):
             sftp_path = self._sftp_path(path)
             if not overwrite:
@@ -877,7 +974,7 @@ class SFTPBackend(Backend):
                     self._classify_existing_target(st, path)
                     raise AlreadyExists(f"File already exists: {path}", path=path, backend=self.name)
             self._ensure_parent_dirs(sftp_path)
-            with self._open_write(sftp_path, path) as f:
+            with self._handle(self._open_write(sftp_path, path)) as f:
                 if isinstance(content, bytes):
                     f.write(content)
                     size = len(content)
@@ -910,7 +1007,25 @@ class SFTPBackend(Backend):
         temp file in the destination directory, then promoted with
         ``posix_rename`` (atomic on POSIX-compliant servers). Servers without
         ``posix_rename`` fall back to a plain ``rename`` (non-atomic overwrite:
-        the target is removed first), and the temp file is cleaned up on failure.
+        the target is removed first).
+
+        A failure *before* the promote leaves the destination untouched, and the
+        temp file is cleaned up **best-effort**: the cleanup is deliberately
+        skipped when the failure is itself a dropped connection, so a stall
+        leaves an orphan ``.~tmp.<name>.<uuid8>`` beside the target rather than
+        stalling again on an unlink the server cannot answer. A stall whose lost
+        reply is the **promote itself** is different: the rename was performed,
+        so the destination holds the new content and no temp remains, while the
+        caller is told ``BackendUnavailable``. What is guaranteed is that no
+        reader ever sees a half-written file — not that a reported failure means
+        the write did not happen.
+
+        The destination is also unprotected on the **rename-fallback** path,
+        which removes it before renaming onto it: a stall in that window leaves
+        the destination gone. That path is entered when ``posix_rename`` fails
+        for a reason ``_is_connection_dead`` does not recognise and the target
+        is not a directory, so it is not confined to servers lacking the
+        extension.
 
         As in ``write``, the returned ``WriteResult`` carries ``size`` and
         ``source="native"`` but leaves every rich field (``last_modified`` /
@@ -918,12 +1033,13 @@ class SFTPBackend(Backend):
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or an ancestor of *path*
-                exists as a regular file.
+            InvalidPath: If *path* is the store root, or names a directory, or
+                an ancestor of *path* exists as a regular file.
             PermissionDenied: If the server denies access (``EACCES``).
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails.
         """
+        self._reject_root_as_write_target(path)
         with self._errors(path):
             sftp_path = self._sftp_path(path)
             if not overwrite:
@@ -946,7 +1062,7 @@ class SFTPBackend(Backend):
             tmp_name = f".~tmp.{name}.{uuid.uuid4().hex[:8]}"
             tmp_path = f"{parent}/{tmp_name}"
             try:
-                with self._sftp.file(tmp_path, "w") as f:
+                with self._handle(self._sftp.file(tmp_path, "w")) as f:
                     if isinstance(content, bytes):
                         f.write(content)
                         size = len(content)
@@ -991,17 +1107,28 @@ class SFTPBackend(Backend):
 
         Writes stream to a hidden temp file in the destination directory; on
         clean exit it is promoted with ``posix_rename`` (atomic on POSIX
-        servers, falling back to ``rename``), and on any exception the temp file
-        is removed and *path* is left untouched.
+        servers, falling back to ``rename``). On an exception raised by the
+        caller's own code, the temp file is removed and *path* is left untouched.
+
+        **A dropped connection is the exception to both halves**, on the same
+        terms as ``write_atomic``, whose docstring carries the detail. The temp
+        cleanup is deliberately skipped when the failure is itself a
+        dropped-connection signal, so an orphan ``.~tmp.<name>.<uuid8>`` remains;
+        a stall whose lost reply is the promote leaves the rename *performed*, so
+        *path* holds the new content; and on the rename-fallback path *path* can
+        be removed with the payload stranded in the temp. No reader ever sees a
+        half-written file, which is what the atomicity buys — but a reported
+        failure means neither that nothing happened nor that *path* survived.
 
         Raises:
             AlreadyExists: If the file exists and ``overwrite`` is ``False``.
-            InvalidPath: If *path* names a directory, or an ancestor of *path*
-                exists as a regular file.
+            InvalidPath: If *path* is the store root, or names a directory, or
+                an ancestor of *path* exists as a regular file.
             PermissionDenied: If the server denies access (``EACCES``).
             BackendUnavailable: If the SSH/SFTP connection cannot be established
                 or fails.
         """
+        self._reject_root_as_write_target(path)
         # Setup phase: existence check + parent dirs (within error mapping)
         with self._errors(path):
             sftp_path = self._sftp_path(path)
@@ -1038,14 +1165,27 @@ class SFTPBackend(Backend):
         try:
             try:
                 yield handle
-            except BaseException:
+            except BaseException as exc:
                 # Abnormal exit (the caller's own exception, a backend death
                 # during their writes, GeneratorExit): close the handle
                 # best-effort and re-raise; the target is left untouched. The
                 # outer handler classifies a backend death; a caller exception
                 # falls through it unchanged.
-                with contextlib.suppress(Exception):
-                    handle.close()
+                #
+                # Skip the close when this exception already says the channel is
+                # dead: paramiko's ``SFTPFile.close()`` issues ``CMD_CLOSE`` and
+                # waits for a reply that will never come, so the caller pays a
+                # second ``io_timeout`` — and ``suppress`` makes it invisible,
+                # a wait with no error to explain it. Measured at a 2 s bound:
+                # 4.04 s before this guard, 2.04 s after. Same reasoning as the
+                # ``connection_lost`` skip on the temp cleanup below.
+                #
+                # This is ``_handle``'s guard, written out rather than reused:
+                # the clean-exit close below must happen *inside* ``_errors`` so
+                # a flush failure maps, and ``_handle`` closes outside it.
+                if not (isinstance(exc, Exception) and self._is_connection_dead(exc)):
+                    with contextlib.suppress(Exception):
+                        handle.close()
                 raise
             # Normal completion: the flush at close and the promote are backend
             # ops — wrap them in _errors() so a failure there maps like
@@ -1118,6 +1258,10 @@ class SFTPBackend(Backend):
                     if not missing_ok:
                         raise NotFound(f"File not found: {path}", path=path, backend=self.name) from None
                     return
+                if self._is_connection_dead(exc):
+                    # See ``read_bytes``: classifying past a dead channel re-enters
+                    # it and re-pays ``io_timeout`` on every probe.
+                    raise
                 # BK-313: lazy is-dir classification — see ``read``. Note this
                 # runs before ``missing_ok`` can swallow anything: a directory is
                 # a type mismatch, not a missing file.
@@ -1371,10 +1515,22 @@ class SFTPBackend(Backend):
         servers and ``ATOMIC_MOVE`` is not declared. ``src == dst`` is a no-op;
         missing parent directories of *dst* are created first.
 
+        A ``BackendUnavailable`` here means no reply came back, not that the
+        rename did not happen: if the stall swallowed the *reply* to
+        ``posix_rename``, the server performed the move and the caller is told it
+        failed. Re-check both paths before retrying — a blind retry of a move
+        that actually succeeded raises ``NotFound`` on a source that is gone.
+        There is a further state on the **rename-fallback** path, which removes
+        the destination before renaming onto it: a stall in that window leaves
+        the destination gone while the source survives. That path is entered
+        when ``posix_rename`` fails for a reason ``_is_connection_dead`` does
+        not recognise and the destination is not a directory, so it is not
+        confined to servers lacking ``posix-rename@openssh.com``.
+
         Raises:
             NotFound: If *src* does not exist.
-            InvalidPath: If *src* or *dst* names a directory, or an ancestor of
-                *dst* exists as a regular file.
+            InvalidPath: If *src* or *dst* is the store root, or names a
+                directory, or an ancestor of *dst* exists as a regular file.
             AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is
                 ``False``.
             PermissionDenied: If the server denies access (``EACCES``).
@@ -1382,6 +1538,7 @@ class SFTPBackend(Backend):
                 or fails.
         """
         self._reject_root_as_file(src)
+        self._reject_root_as_write_target(dst)
         with self._errors(src):
             src_sftp = self._sftp_path(src)
             dst_sftp = self._sftp_path(dst)
@@ -1416,30 +1573,33 @@ class SFTPBackend(Backend):
             # Try posix_rename (atomic), then rename, then copy+delete
             try:
                 self._sftp.posix_rename(src_sftp, dst_sftp)
-            except OSError:  # pragma: no cover -- fallback for servers without posix_rename
-                try:
-                    if overwrite:
-                        with contextlib.suppress(OSError):
-                            self._sftp.remove(dst_sftp)
-                    self._sftp.rename(src_sftp, dst_sftp)
-                except OSError:
-                    # Fallback: stream copy + delete
-                    with self._sftp.file(src_sftp, "r") as src_f, self._sftp.file(dst_sftp, "w") as dst_f:
-                        shutil.copyfileobj(src_f, dst_f, _CHUNK_SIZE)
-                    self._sftp.remove(src_sftp)
+            except OSError as exc:
+                if self._is_connection_dead(exc):
+                    # Same reasoning as ``_promote``, and reached on *every*
+                    # server rather than only those without the extension: a
+                    # stalled channel fails ``posix_rename`` too, and the
+                    # fallback below would then pay the bound on a suppressed
+                    # ``remove``, a ``rename``, and two file opens. Report the
+                    # drop (SFTP-030).
+                    raise
+                self._move_fallback(src_sftp, dst_sftp, overwrite=overwrite)
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         """Copy the file *src* to *dst* by streaming through the client.
 
         SFTP has no server-side copy, so the bytes round-trip through the client
-        (download then upload); this is not atomic — an interruption can leave a
-        partial file at *dst*. ``src == dst`` is a no-op; missing parent
-        directories of *dst* are created first.
+        (download then upload). The destination is opened and streamed to
+        directly, exactly as in ``write``, so this is not atomic: an interruption
+        may leave *dst* untouched, emptied, holding an unpredictable prefix of
+        *src*, or holding it in full, and retrying needs ``overwrite=True``.
+        *src* is untouched either way. ``src == dst`` is a no-op; missing parent
+        directories of *dst* are created first and are not removed when the copy
+        fails.
 
         Raises:
             NotFound: If *src* does not exist.
-            InvalidPath: If *src* or *dst* names a directory, or an ancestor of
-                *dst* exists as a regular file.
+            InvalidPath: If *src* or *dst* is the store root, or names a
+                directory, or an ancestor of *dst* exists as a regular file.
             AlreadyExists: If *dst* exists, ``src != dst``, and ``overwrite`` is
                 ``False``.
             PermissionDenied: If the server denies access (``EACCES``).
@@ -1447,6 +1607,7 @@ class SFTPBackend(Backend):
                 or fails.
         """
         self._reject_root_as_file(src)
+        self._reject_root_as_write_target(dst)
         with self._errors(src):
             src_sftp = self._sftp_path(src)
             dst_sftp = self._sftp_path(dst)
@@ -1478,8 +1639,13 @@ class SFTPBackend(Backend):
 
             self._ensure_parent_dirs(dst_sftp)
 
-            # Stream source to destination (no server-side copy in SFTP)
-            with self._sftp.file(src_sftp, "r") as src_f, self._sftp.file(dst_sftp, "w") as dst_f:
+            # Stream source to destination (no server-side copy in SFTP).
+            # Both handles go through ``_handle``: two of them, so an unguarded
+            # abnormal exit pays the bound twice over on top of the failure.
+            with (
+                self._handle(self._sftp.file(src_sftp, "r")) as src_f,
+                self._handle(self._sftp.file(dst_sftp, "w")) as dst_f,
+            ):
                 shutil.copyfileobj(src_f, dst_f, _CHUNK_SIZE)
 
     def close(self) -> None:
@@ -1630,8 +1796,62 @@ class SFTPBackend(Backend):
                 ssh.close()
             raise
         self._ssh_client = ssh
-        self._sftp_client = ssh.open_sftp()
+        self._sftp_client = self._open_sftp_bounded(ssh)
         log.info("SFTP connection established.", extra={"op": "connect", "backend": "sftp"})
+
+    def _open_sftp_bounded(self, ssh: Any) -> Any:
+        """Open the SFTP channel with ``io_timeout`` armed before any blocking read.
+
+        This inlines what ``ssh.open_sftp()`` does — ``open_session()``,
+        ``invoke_subsystem("sftp")``, then ``SFTPClient(chan)`` — for one reason:
+        to get a ``settimeout()`` in between. ``SFTPClient.__init__`` runs the
+        SFTP version exchange (``_send_version()``), which *blocks reading the
+        server's reply*, and ``Transport.open_session`` hands back a channel
+        whose ``Channel.timeout`` is still ``None``. Arming after
+        ``open_sftp()`` returns therefore leaves the version exchange itself
+        unbounded, and a peer that completes the SSH handshake and then falls
+        silent hangs there forever — the exact fault ``io_timeout`` exists to
+        bound, reached before the bound is set.
+
+        That window is not a connect-phase edge case. Every reconnect re-runs
+        ``_connect``, so a flaky peer that drops and comes back half-alive would
+        park the caller indefinitely *with* ``io_timeout`` set, which is the
+        guarantee this option is bought for. The connect ``RetryPolicy`` does
+        not reach it either, on two counts: the retried closure is the
+        ``ssh.connect()`` call above, not this method, and a hang raises nothing
+        for tenacity to retry in any case.
+
+        The four timeouts handed to ``ssh.connect()`` do not reach here. They
+        expire during the connect phase — ``channel_timeout`` included, which
+        paramiko documents as the wait for *opening* a channel, and which does
+        bound ``open_session`` below.
+
+        One window here stays unbounded: the ``subsystem`` request itself. See
+        the comment at the ``settimeout`` call.
+
+        Upstream to track: this is ``SFTPClient.from_transport``'s body, split
+        open. If a future paramiko adds a step there, this copy diverges
+        silently — ``TestSFTPParamikoVersionSurface`` guards the shape, reading
+        the upstream body as an AST so an *added* step fails it and not only a
+        removed or renamed one.
+        """
+        import paramiko
+
+        transport = ssh.get_transport()
+        chan = transport.open_session(timeout=self._timeout)
+        if chan is None:  # pragma: no cover — paramiko raises rather than returning None
+            raise BackendUnavailable("SSH transport refused an SFTP session channel", backend=self.name)
+        # Armed here because the next *recv* on this channel is the version
+        # exchange inside ``SFTPClient``. It is deliberately not claimed to
+        # bound ``invoke_subsystem``: that waits in ``Channel._wait_for_event``,
+        # a bare ``threading.Event.wait()`` with no timeout argument, which never
+        # reads ``Channel.timeout``. A peer that opens the channel and then never
+        # answers the subsystem request is therefore still unbounded — recorded
+        # as a stated exception in the spec, not silently assumed away.
+        if self._io_timeout is not None:
+            chan.settimeout(self._io_timeout)
+        chan.invoke_subsystem("sftp")
+        return paramiko.SFTPClient(chan)
 
     def _create_ssh_client(self) -> Any:
         """Create and configure an SSHClient with host key policy."""
@@ -1731,6 +1951,33 @@ class SFTPBackend(Backend):
 
         _reject_root_as_file(path, self.name)
 
+    def _reject_root_as_write_target(self, path: str) -> None:
+        """Reject the store root as a write destination, before the transport is touched.
+
+        SFTP's route into the shared guard, whose docstring carries the rule and
+        the reason it must be definitional. What defeats observation here needs
+        no mishap to arrange: ``base_path`` is created lazily by the first
+        write, so on an untouched store the target stat returns ENOENT,
+        ``_classify_existing_target`` has nothing to classify, and the write
+        runs to completion against the container path itself.
+
+        Five call sites: the three writers, plus the ``move``/``copy``
+        destination, whose source side is ``_reject_root_as_file``.
+
+        On the destination the guard's effect depends on whether ``base_path``
+        exists, and the interesting case is the one this module is about. With
+        it present the destination probe already reported a directory, so the
+        guard changes the message and not the verdict. With it **absent**
+        nothing exists beneath it, the source stat fired first, and
+        ``move(missing_src, "")`` answered ``NotFound`` — so there the guard
+        changes the class as well, and the precondition order inverts.
+        ``test_move_and_copy_destination_cannot_reach_the_corruption`` is that
+        inversion, and it used to assert ``NotFound``.
+        """
+        from remote_store.backends._flat_ns import _reject_root_as_write_target
+
+        _reject_root_as_write_target(path, self.name)
+
     def _sftp_path(self, path: str) -> str:
         """Convert a relative remote_store path to an absolute SFTP path.
 
@@ -1743,7 +1990,7 @@ class SFTPBackend(Backend):
             return f"/{path}"
         return f"{self._base_path}/{path}"
 
-    def _raise_if_dir(self, sftp_path: str, path: str) -> None:
+    def _raise_if_dir(self, sftp_path: str, path: str, *, cause: Exception | None = None) -> None:
         """Raise ``InvalidPath`` if *sftp_path* is a directory; return otherwise.
 
         This ``stat`` is what carries the file-vs-directory type-mismatch
@@ -1771,7 +2018,16 @@ class SFTPBackend(Backend):
         issues). ``open_atomic`` also rejects a directory up front for the same
         reason, but folds that check into its own single setup ``stat`` rather
         than calling this helper.
+
+        *cause* is the failure the caller is classifying, where it has one. When
+        that failure already concludes the connection is dead, this probe is
+        skipped: statting a channel that will not answer buys no classification
+        and pays another ``io_timeout``. Callers with no prior failure
+        — ``read``'s eager check — pass nothing, and are covered instead by the
+        dead-connection re-raise below.
         """
+        if cause is not None and self._is_connection_dead(cause):
+            return  # caller re-raises; do not re-enter a channel known to be dead
         try:
             st = self._sftp.stat(sftp_path)
         except OSError as exc:
@@ -1787,6 +2043,14 @@ class SFTPBackend(Backend):
             # file-ancestor ``NotFound`` path on a server whose classification stat
             # reports the failure with a different errno.
             if getattr(exc, "errno", None) in (errno.EACCES, errno.EPERM):
+                raise
+            if self._is_connection_dead(exc):
+                # A dead channel is not "cannot classify": swallowing it leaves
+                # the caller to re-enter the same channel and pay ``io_timeout``
+                # a second time, and the eager caller (``read``) has no original
+                # error for it to stand aside for. Report the drop instead —
+                # ``_map_exception`` maps it to ``BackendUnavailable`` and clears
+                # the client, so the next operation reconnects (SFTP-030).
                 raise
             return  # cannot classify — let the caller's original error stand
         if st is not None and st.st_mode is not None and stat.S_ISDIR(st.st_mode):
@@ -1827,6 +2091,63 @@ class SFTPBackend(Backend):
         if st is not None and (st.st_mode is None or stat.S_ISDIR(st.st_mode)):
             raise InvalidPath(f"Not a file: {path}", path=path, backend=self.name)
 
+    @contextmanager
+    def _handle(self, handle: Any) -> Iterator[Any]:
+        """Hold a paramiko file handle, skipping the close when the channel is dead.
+
+        A plain ``with sftp.file(...) as f`` closes on exit whatever happened,
+        and paramiko's ``SFTPFile.close()`` flushes and then issues a
+        synchronous ``CMD_CLOSE``. On a channel that has already stalled, that
+        reply never comes: the caller pays ``io_timeout`` a second time, and
+        pays it *silently*, because paramiko swallows the timeout raised inside
+        its own close. The bound the caller was promised becomes two.
+
+        So on the way out with a dead-connection error, the close is skipped —
+        the handle is unusable and the server reaps it when the channel goes.
+        Any other exception still closes best-effort (a caller error, a
+        permission failure), and a clean exit closes normally so a flush failure
+        still surfaces and maps.
+
+        What this does **not** claim is that the round-trip is never paid.
+        ``SFTPFile.__del__`` calls ``_close(async_=True)`` unconditionally, and
+        while the ``CMD_CLOSE`` there is fire-and-forget, the ``BufferedFile.close``
+        ahead of it — which flushes via ``_write_all`` — sits *outside*
+        ``_close``'s own ``try``. A write handle still holding buffered bytes
+        can therefore attempt one blocking write when it is collected, on
+        whatever thread runs the collection. A read handle cannot: its write
+        buffer is empty and ``_write_all`` returns without a round-trip.
+
+        The guarantee is narrower and is the one the caller is owed: the bound
+        is not paid a second time *inline*, inside the failing operation, on the
+        caller's thread. That is where it was measured, and where it turns one
+        bound into two.
+
+        This is the same guard ``open_atomic`` applies to its own handle;
+        centralising it is what stops the next streaming call site rediscovering
+        the doubling. Measured at a 2 s bound, per site rather than per class:
+        ``write`` and ``write_atomic``, each fed by a stream that goes quiet
+        mid-transfer, 4.00 s before the guard and 2.00 s after; and ``copy``,
+        which holds two handles, 6.9 s before and 2.0 s after. (``open_atomic``'s
+        own figure is 4.04 / 2.04, measured on its inline guard rather than on
+        this helper — kept separate because they are different code.)
+
+        Two of the five call sites are not measured, and are named rather than
+        counted as covered. ``read_bytes`` prefetches, so a stall inside its read
+        fails in paramiko's prefetch machinery rather than on the close of a
+        partly-read handle; ``_copy_and_delete`` is reached only when both
+        ``posix_rename`` and ``rename`` fail for non-dead reasons, and carries a
+        ``no cover`` pragma for that reason. Both rest on sharing this helper,
+        which is the weaker claim that let a site ship unrouted once already.
+        """
+        try:
+            yield handle
+        except BaseException as exc:
+            if not (isinstance(exc, Exception) and self._is_connection_dead(exc)):
+                with contextlib.suppress(Exception):
+                    handle.close()
+            raise
+        handle.close()
+
     def _open_write(self, sftp_path: str, path: str) -> BinaryIO:
         """Open *sftp_path* for writing, classifying a directory target lazily.
 
@@ -1836,8 +2157,8 @@ class SFTPBackend(Backend):
         """
         try:
             f: BinaryIO = self._sftp.file(sftp_path, "w")
-        except OSError:
-            self._raise_if_dir(sftp_path, path)
+        except OSError as exc:
+            self._raise_if_dir(sftp_path, path, cause=exc)
             raise
         return f
 
@@ -1858,24 +2179,84 @@ class SFTPBackend(Backend):
         atomic write even for a non-directory target — a round-trip this PR
         otherwise removes. It is kept ahead of the fallback deliberately: the
         alternative (fallback first, classify on its failure) would feed a
-        directory target to ``remove`` + ``rename``. The extra stat is bounded
-        to servers without the (near-universal) ``posix-rename@openssh.com``
-        extension, hence the fallback's ``# pragma: no cover``.
+        directory target to ``remove`` + ``rename``. The extra stat is paid
+        whenever ``posix_rename`` fails for a reason ``_is_connection_dead``
+        does not recognise — commonly a server without the (near-universal)
+        ``posix-rename@openssh.com`` extension, but not only that, which is the
+        bound the ``# pragma: no cover`` on ``_rename_fallback`` states.
         """
         try:
             self._sftp.posix_rename(tmp_path, sftp_path)
-        except OSError:
-            self._raise_if_dir(sftp_path, path)
+        except OSError as exc:
+            if self._is_connection_dead(exc):
+                # Neither the classification stat nor the fallback's remove +
+                # rename can succeed on a dead channel, and each would pay
+                # ``io_timeout`` again — up to three further bounds out of one
+                # failed promote. Report the drop (SFTP-030).
+                raise
+            self._raise_if_dir(sftp_path, path, cause=exc)
             self._rename_fallback(tmp_path, sftp_path, overwrite=overwrite)
 
-    def _rename_fallback(  # pragma: no cover -- fallback for servers without posix_rename
+    def _rename_fallback(  # pragma: no cover -- any non-dead posix_rename failure, not only a server lacking it
         self, tmp_path: str, sftp_path: str, *, overwrite: bool
     ) -> None:
-        """Promote *tmp_path* with a plain ``rename`` (non-atomic overwrite)."""
+        """Promote *tmp_path* with a plain ``rename`` (non-atomic overwrite).
+
+        Under *overwrite* the destination is removed **before** the rename, so a
+        failure between the two leaves neither the old file nor the new one at
+        *sftp_path* — the payload survives in *tmp_path* only if the cleanup
+        unlink is also skipped. Pre-existing behaviour, not something this
+        method's caller can avoid by ordering.
+        """
         if overwrite:
             with contextlib.suppress(OSError):
                 self._sftp.remove(sftp_path)
         self._sftp.rename(tmp_path, sftp_path)
+
+    def _move_fallback(self, src_sftp: str, dst_sftp: str, *, overwrite: bool) -> None:
+        """Move *src_sftp* onto *dst_sftp* by ``rename``, else stream copy + delete.
+
+        Split out of ``move`` so that method's dead-connection guard is not swept
+        under a ``no cover`` pragma. That guard is reachable on *any* server — a
+        stalled channel fails ``posix_rename`` like anything else — and keeping
+        them in one block made it look as narrow as the fallback, which is how it
+        came to be missing.
+
+        This method is not pragma'd either, for the same reason one level down:
+        ``posix_rename`` can fail for a non-dead reason on any server (a
+        permission error, say), so the ``rename`` below and its
+        own dead-connection guard are reachable without needing a server that
+        lacks ``posix-rename@openssh.com``. Only ``_copy_and_delete`` genuinely
+        requires one.
+        """
+        try:
+            if overwrite:
+                with contextlib.suppress(OSError):
+                    self._sftp.remove(dst_sftp)
+            self._sftp.rename(src_sftp, dst_sftp)
+        except OSError as exc:
+            if self._is_connection_dead(exc):
+                raise  # the copy below cannot succeed either, and pays two more bounds
+            self._copy_and_delete(src_sftp, dst_sftp)
+
+    def _copy_and_delete(  # pragma: no cover -- last-resort move for servers without rename
+        self, src_sftp: str, dst_sftp: str
+    ) -> None:
+        """Move by streaming the bytes through the client, then deleting the source.
+
+        The last resort, reached only when both ``posix_rename`` and ``rename``
+        fail for non-dead reasons. Its two handles route through ``_handle`` like
+        every other ``with``-held handle; unlike the others they are not measured
+        against a real stall, because getting here needs a server that refuses
+        both renames. Named as unmeasured in the spec rather than counted as
+        covered.
+        """
+        with (
+            self._handle(self._sftp.file(src_sftp, "r")) as src_f,
+            self._handle(self._sftp.file(dst_sftp, "w")) as dst_f,
+        ):
+            shutil.copyfileobj(src_f, dst_f, _CHUNK_SIZE)
+        self._sftp.remove(src_sftp)
 
     def _base_relative_ancestor_dirs(self, sftp_path: str) -> Iterator[str]:
         """Yield each ancestor directory of *sftp_path*, from ``self._base_path``
@@ -1941,6 +2322,16 @@ class SFTPBackend(Backend):
             except OSError as exc:
                 if getattr(exc, "errno", None) == errno.ENOENT:
                     return False  # ancestor missing, not a file
+                if self._is_connection_dead(exc):
+                    # A dead channel is not an opaque classification failure.
+                    # Swallowing it returns ``False``, the caller's original
+                    # (non-dead) error surfaces, and ``_map_exception`` maps that
+                    # to a generic ``RemoteStoreError`` — which does **not** clear
+                    # the cached client, so SFTP-010 tier 2 never fires on the
+                    # operation that actually surfaced the drop. Reachable when
+                    # the channel dies between the caller's failure and this walk.
+                    # Same reasoning as ``_raise_if_dir``.
+                    raise
                 # Opaque error walking the chain (below the base) — be
                 # conservative and let the caller's original failure
                 # surface as-is. BK-316 (L6) reconsidered widening this to
@@ -2023,8 +2414,7 @@ class SFTPBackend(Backend):
         ``EPIPE`` / ``ECONNABORTED`` / ``ETIMEDOUT`` / ``ESHUTDOWN`` /
         ``ENOTCONN`` / ``EBADF``); a ``socket.timeout`` / ``TimeoutError`` (an
         ``OSError`` whose half-open instance usually carries no matching errno,
-        so it is matched by type — the most realistic trigger, since a slow op
-        hits the channel timeout); and a ``paramiko.SFTPError`` (an SFTP-protocol
+        so it is matched by type); and a ``paramiko.SFTPError`` (an SFTP-protocol
         failure that subclasses neither ``OSError`` nor ``SSHException``). All
         are matched here so ``_map_exception`` maps them to ``BackendUnavailable``
         *and* invalidates the cached client so the next operation reconnects.
@@ -2036,6 +2426,17 @@ class SFTPBackend(Backend):
         enumeration is therefore not exhaustive by design — the invariant that a
         dead connection reconnects is upheld by ``_map_exception`` clearing the
         client on *every* ``BackendUnavailable`` it returns, not by this list.
+
+        On the ``TimeoutError`` arm: this docstring once called it "the most
+        realistic trigger, since a slow op hits the channel timeout", which
+        presumed a bound on the open channel that did not exist; it was then
+        corrected to make the arm's reachability a configuration question,
+        against an ``io_timeout`` defaulting to ``None``. That default is now
+        ``120.0``, so a silent peer reaches this arm on an ordinary store — the
+        original claim, true at last, and by construction rather than by
+        assumption. The arm still predates the option and still covers the other
+        shapes of half-open socket that surface as a timeout, so it is not the
+        only way in either.
         """
         import paramiko
 
@@ -2063,11 +2464,278 @@ class SFTPBackend(Backend):
                 return True
         return False
 
+    @staticmethod
+    def _is_unreachable(exc: Exception) -> bool:
+        """Return True if *exc* says the host was never reached at all.
+
+        The connect-time counterpart to ``_is_connection_dead``, and separate
+        from it because **the two answer different questions** — this one asks
+        whether the host was ever reached, that one whether a connection the
+        backend had is now unusable. ``_map_exception`` gives each its own arm,
+        and the two are disjoint over every shape measured against them.
+
+        **That is the whole of the reason, and no claim is made here about what
+        is reachable when.** Three successive rationales of that kind were
+        written and each was refuted: that no operation is in flight at connect
+        time (a connect that times out raises ``socket.timeout``, which the
+        other predicate already matches); that the ``is_fatal`` and re-entry
+        guards are never consulted on the connect path (they are — ``read``,
+        ``read_bytes`` and ``delete`` evaluate the lazy ``_sftp`` property
+        *inside* their own ``try``, so a failure raised by ``_connect`` reaches
+        them); and that the shapes partition by phase at all. What a caller
+        actually gets is enumerated instead, as the product of connect-time
+        shape and operation, in
+        ``TestSFTPConnectTimePredicateSpace`` — twelve cells, each asserting
+        ``BackendUnavailable`` with a non-empty message and one record. Read the
+        table there rather than reasoning from here. (Three guarantees, not
+        four: an earlier revision claimed a cleared client per cell too, and
+        review measured that assertion vacuous. The client-clearing invariant is
+        pinned by ``test_a_host_never_reached_maps_to_backend_unavailable``,
+        which seeds a sentinel first.)
+
+        Three shapes reach here, none of them matched by the errno dispatch in
+        ``_map_exception``:
+
+        - ``paramiko.NoValidConnectionsError`` — paramiko's wrapper for "every
+          address I tried refused me". A ``socket.error`` subclass whose ``errno``
+          is ``None``, which is why it survived the errno arms; the errno-less
+          branch of ``_is_connection_dead`` matches only the literal
+          ``"Socket is closed"``. This is what a refused port actually raises.
+        - ``socket.gaierror`` — name resolution failed. Its ``errno`` is an
+          ``EAI_*`` code (``-2`` for ``EAI_NONAME``), which shares a namespace
+          with nothing in the errno tuples below.
+        - An ``OSError`` carrying a connect-side errno (``ECONNREFUSED`` /
+          ``EHOSTUNREACH`` / ``ENETUNREACH`` / ``ENETDOWN`` / ``EHOSTDOWN``).
+          **Three of these five are the ordinary path, not a fallback**, so do
+          not trim them as hypothetical: ``SSHClient.connect`` captures only
+          ``ECONNREFUSED`` and ``EHOSTUNREACH`` into ``NoValidConnectionsError``
+          and re-raises every other ``socket.error`` unwrapped — its own
+          docstring says so ("if a socket error (other than connection-refused
+          or host-unreachable) occurred while connecting"), and driving each
+          errno through ``SSHClient.connect`` on paramiko 5.0.0 confirms
+          ``ENETUNREACH`` / ``ENETDOWN`` / ``EHOSTDOWN`` arrive here as a plain
+          ``OSError``.
+
+        Deliberately **not** matched: every other ``OSError`` the errno dispatch
+        declines. ``EIO`` and ``ENOSPC`` are faults of a connection that is
+        working, and answering them with ``BackendUnavailable`` would tell a
+        caller to retry a different host over a full disk.
+
+        **The two permission errnos are known exclusions, not oversights**, and
+        the reason is the same for both: this predicate sees only the exception,
+        so it cannot tell a connect-time one from a live-channel one. ``EACCES``
+        is the obvious case — on an operation it genuinely is a denied path.
+        ``EPERM`` looks safer and is not: ``_raise_if_dir``'s permission
+        re-raise deliberately passes **both** errnos back through the mapping
+        from a *working* channel, so claiming either here would answer a
+        server-reported denial with ``BackendUnavailable`` and discard a healthy
+        client. That was measured, after a revision of this docstring claimed
+        ``EPERM`` was free to take because the errno dispatch has no arm for it
+        — true of the dispatch, false of the module. Reaching these two needs
+        connect-time context the mapping does not have; both are tracked as
+        their own item rather than widened here.
+        """
+        import paramiko
+
+        if isinstance(exc, (paramiko.ssh_exception.NoValidConnectionsError, socket.gaierror)):
+            return True
+        return isinstance(exc, OSError) and getattr(exc, "errno", None) in (
+            errno.ECONNREFUSED,
+            errno.EHOSTUNREACH,
+            errno.ENETUNREACH,
+            errno.ENETDOWN,
+            errno.EHOSTDOWN,
+        )
+
+    def _unreachable_message(self, exc: Exception) -> str | None:
+        """Return the message for an unreachable-host signal, or ``None`` to keep the driver's.
+
+        ``None`` for a refused connect: ``NoValidConnectionsError`` renders as
+        ``"[Errno None] Unable to connect to port 2222 on 10.0.0.4"``, which
+        names an address and a port a reader can act on, and ``_unavailable``'s
+        rule is that a driver which explained itself is never overwritten.
+        **Note what that address is.** paramiko builds the text from the
+        addresses it actually tried, not from the hostname it was handed, so a
+        store configured as ``files.example.com`` reports an IP here. This
+        docstring said the driver "already names host and port" until a
+        whole-file pass caught it; it names *enough*, which is the narrower
+        claim that survives, and the difference is exactly why the branch below
+        does not defer to the driver.
+
+        A ``gaierror`` is the case that needs one. It renders as
+        ``"[Errno -2] Name or service not known"`` — true, and useless to a
+        reader running several stores, since it never says *which* name. So this
+        arm supplies one, the way the ``IncompatiblePeer`` arms supply their
+        remediation hint. **The port is not named**: resolution never reaches it,
+        and naming it would point a reader at the one thing that cannot be the
+        fault.
+
+        The blank-message handling keeps ``_unavailable``'s own fallback out of
+        this arm's way. That fallback reports a lost connection, which is the
+        wrong sentence for one that was never made, so a message-less connect
+        signal gets its own wording here rather than borrowing it. **Both** arms
+        need it, not just the second: a zero-argument ``gaierror`` would
+        otherwise render as ``Cannot resolve SFTP host 'x': `` with a dangling
+        colon, because the resolution branch is reached first and would have
+        interpolated an empty string. Neither blank shape is raised by anything
+        today — an ``OSError`` built with an errno renders as
+        ``[Errno n] strerror``, and the resolver always supplies text — so both
+        are guards rather than observed behaviour, and both are pinned so that
+        stays checkable.
+        """
+        detail = str(exc)
+        if isinstance(exc, socket.gaierror):
+            said = f": {detail}" if detail else f" ({type(exc).__name__} with no detail)"
+            return f"Cannot resolve SFTP host '{self._host}'{said}"
+        if not detail:
+            return f"Cannot reach SFTP host '{self._host}' ({type(exc).__name__} with no detail)"
+        return None
+
+    def _unavailable(self, exc: Exception, path: str, *, message: str | None = None) -> BackendUnavailable:
+        r"""Build a ``BackendUnavailable`` for a concluded backend failure, and log it.
+
+        **Every** ``BackendUnavailable`` ``_map_exception`` *constructs* ends
+        here, so what a caller is handed — and what lands in their log — is
+        described in one place rather than at each of the arms that reach it.
+        No count is given: this docstring said "the four arms" through the
+        addition of a fifth (the unreachable-host arm), and the number was never
+        what the sentence needed. ``rg -n 'self\._unavailable\(' `` on this file
+        is the derivation if you want one — and this docstring is raw so that
+        command is copy-pasteable from the source, which is where a maintainer
+        reads it, rather than only from ``__doc__``. Constructs,
+        not returns: the passthrough arm returns a ``RemoteStoreError`` it was
+        given unchanged, so a ``BackendUnavailable`` built elsewhere and fed
+        back in — the direct raise in ``_open_sftp_bounded`` is the only one
+        today, and it is unreachable in practice — leaves no record. Two kinds of
+        arm pass a *message* because they have something better to say than the
+        exception does: the ``IncompatiblePeer`` arms with their remediation
+        hint, and the unreachable-host arm with the name that failed to resolve
+        (``_unreachable_message``). Everything else lets this method decide.
+
+        **Why the driver's own message is not enough.** paramiko raises several
+        of these signals with no arguments, and ``BackendUnavailable(str(exc))``
+        then carries the empty string: measured on a real channel at
+        ``io_timeout=2.0`` with a relay silencing server→client mid-read,
+        ``e.args == ('',)`` and ``str(e)`` rendered as
+        ``" | path='delivery.csv' | backend='sftp'"``.
+
+        Four shapes reach the fallback below: ``TimeoutError`` (which
+        ``socket.timeout`` is), ``EOFError``, ``SFTPError`` and a bare
+        ``SSHException``. Signals carrying a real message keep it.
+
+        **The set those four are drawn from is not the one
+        ``_is_connection_dead`` matches**, and the difference is worth naming
+        because it is what makes the "every arm ends here" framing above the
+        right one to state the guarantee over. That predicate documents itself
+        as deliberately not matching the ``SSHException`` family, which has its
+        own arm here — and one of the four blank shapes is a bare
+        ``SSHException``, so its set would hold only three of the four.
+
+        No exact difference between the two sets is stated, because it is not
+        the tidy one it looks like. This paragraph read "they differ by exactly
+        the ``SSHException`` family" and that survived the addition of the
+        unreachable-host arm without being true of it: a refused connect gets
+        ``message=None`` from ``_unreachable_message`` whenever the driver
+        supplied text, so it *does* let this method decide, while sitting
+        outside ``_is_connection_dead``. What matters here is only which shapes
+        reach the fallback, and the unreachable ones never do —
+        ``_unreachable_message`` covers its own blank cases, because the
+        fallback's wording says the connection was *lost*, which is the wrong
+        sentence for one that was never made.
+
+        The stall is the case that matters most, because ``io_timeout``
+        defaults to a real bound: the first caller to meet it is one who
+        configured nothing, so a blank message is the shipped failure surface
+        rather than an expert's edge case. An error that is the right type and
+        says nothing is predictable to a checker matching on type and to nobody
+        reading a log, which the error model's meaningful-``str()`` invariant
+        forbids.
+
+        **The fallback never overwrites detail.** It fires only when
+        ``str(exc)`` is empty, so a driver that did explain itself reaches the
+        caller intact — the failure this replaces was silence, not noise.
+
+        **The bound is named only when armed.** A half-open socket surfaces as
+        ``TimeoutError`` with ``io_timeout=None`` too, and naming a limit the
+        caller never set would be a false statement about their configuration.
+        """
+        if message is None:
+            message = str(exc)
+        if not message:
+            # The stall literal below is mirrored more widely than either
+            # remediation hint further down. Enumerate before rewording it:
+            #     git grep -n 'SFTP channel stalled' -- . ':(exclude)site'
+            # Three of those sites are exact-equality assertions and fail loudly
+            # on a reword — ``test_a_stall_says_what_it_was_and_logs_it`` and
+            # ``test_stalled_upload_request_raises_backend_unavailable`` in
+            # ``test_io_timeout.py``, and ``test_a_probe_record_carries_no_path``
+            # in ``test_config.py``. The rest fail *silently*: published pages
+            # (``guides/backends/sftp.md``, ``guides/troubleshooting.md``,
+            # ``reference/migration.md``) quote it as what a reader greps for,
+            # and ``sdd/`` copies it too, SFTP-030 included. No count is given
+            # here on purpose — the grep is the derivation, and an earlier
+            # revision of this comment said "three published copies" while its
+            # own list named four and omitted the ``sdd/`` ones.
+            if isinstance(exc, TimeoutError):  # socket.timeout is TimeoutError (3.10+)
+                message = (
+                    f"SFTP channel stalled: no data within io_timeout={self._io_timeout}s"
+                    if self._io_timeout is not None
+                    else "SFTP channel stalled: the socket timed out with no io_timeout set"
+                )
+            else:
+                message = f"SFTP connection lost ({type(exc).__name__} with no detail)"
+        # WARNING, and here rather than at each raise site: this is the point at
+        # which the backend concludes the connection is unusable, and the
+        # cleanup and classification paths above re-enter the *mapping* without
+        # re-entering this conclusion, so one concluded mapping leaves one
+        # record. That is a claim about this method, not about the logger: a
+        # failing connect also emits tenacity's retry warnings (``_connect``
+        # builds ``before_sleep_log(log, logging.WARNING)`` on this same logger)
+        # and the AUTO_ADD policy warning, so "one failure, one line on
+        # ``remote_store.backends._sftp``" is false and is not claimed. No total
+        # is given either: it varies with the retry and host-key policies, and
+        # three review rounds each refuted a different one written as a constant.
+        # ``check_health`` maps through here only when the probe fails in a way
+        # this mapping concludes on. A refused connect and a DNS failure now do:
+        # BUG-265 gave them an arm, where they used to exit at the generic
+        # ``OSError`` arm as ``RemoteStoreError`` and reach this method zero
+        # times. That is a change in log volume as well as in type — a
+        # ``Store.ping()`` poll against a host that is simply not there leaves an
+        # ``op="error_mapping"`` record where it left none. Which observable
+        # failures reach which arm is still not enumerated here or in the spec —
+        # see BUG-266; four attempts to state it in a sentence were each refuted.
+        # The logger name already says which backend this is, so the line adds
+        # the path rather than repeating "SFTP" in front of a message that
+        # usually starts with it. An empty path is dropped from the record
+        # *and* the line, rather than carried as ``path=''``: a structured
+        # consumer reads ``record.path``, so emitting the key with an empty
+        # value would hand it a field that looks answered and is not. This
+        # follows ``_store.py``'s ``ping`` record, which omits the key outright.
+        # An empty path arrives from ``check_health`` and from any operation on
+        # the root key, and the connect-time arms reach it too: the lazy
+        # ``_sftp`` property runs ``_connect`` *inside* the caller's
+        # ``_errors(path)`` block, so a handshake or host-key failure carries
+        # whatever key that operation had — which for ``check_health`` is "".
+        # Measured: a bad banner, and both ``IncompatiblePeer`` variants, each
+        # logged one record with no ``path`` key.
+        record_extra: dict[str, Any] = {"op": "error_mapping", "backend": self.name}
+        if path:
+            record_extra["path"] = path
+            log.warning("%s (path=%r)", message, path, extra=record_extra)
+        else:
+            log.warning("%s", message, extra=record_extra)
+        return BackendUnavailable(message, path=path, backend=self.name)
+
     def _map_exception(self, exc: Exception, path: str) -> RemoteStoreError:
         """Classify an exception into a remote_store error.
 
         Single source of truth for SFTP error mapping, used by both the
         ``_errors()`` context manager and ``_ErrorMappingStream``.
+
+        Only the ``BackendUnavailable`` conclusions are logged, and only by
+        ``_unavailable``. A routine errno — a missing path, a denied one — is an
+        answer rather than a fault, and putting a record behind each would
+        drown the ones that matter.
         """
         import paramiko
 
@@ -2086,7 +2754,23 @@ class SFTPBackend(Backend):
             # ``_sftp`` access reconnects (SFTP-010) rather than reusing a dead
             # client forever. The op itself is reported as ``BackendUnavailable``.
             self._sftp_client = None
-            return BackendUnavailable(str(exc), path=path, backend=self.name)
+            return self._unavailable(exc, path)
+        if self._is_unreachable(exc):
+            # BUG-265: a host that was never reached is what ERR-007 calls a
+            # backend that "cannot be reached", and what fifteen docstrings in
+            # this module promise BackendUnavailable for. All three shapes are
+            # OSError subclasses the errno dispatch below declines, so before
+            # this arm existed they exited as the base RemoteStoreError and a
+            # caller following the health-check guide caught neither a refused
+            # port nor a DNS failure.
+            #
+            # The client is cleared like every other concluding arm. There is
+            # nothing to recover here — a connect that never succeeded left no
+            # client — but SFTP-023 states the invariant over *every*
+            # BackendUnavailable this mapping returns, and an arm that skipped it
+            # would make that clause need a carve-out.
+            self._sftp_client = None
+            return self._unavailable(exc, path, message=self._unreachable_message(exc))
         if isinstance(exc, OSError):
             code = getattr(exc, "errno", None)
             if code == errno.ENOENT:
@@ -2126,14 +2810,16 @@ class SFTPBackend(Backend):
             # TestSFTPIncompatiblePeerHint; rename the helper and this string
             # plus that test together.
             if "host key" in str(exc):
-                return BackendUnavailable(
-                    f"{exc} [hint: diagnose by printing "
-                    f"`paramiko.Transport._preferred_keys`. If ssh-rsa is "
-                    f"absent, call SFTPUtils.enable_ssh_rsa_compat() at "
-                    f"process startup. See "
-                    f"docs.remotestore.dev/guides/backends/sftp/#legacy-ssh-rsa]",
-                    path=path,
-                    backend=self.name,
+                return self._unavailable(
+                    exc,
+                    path,
+                    message=(
+                        f"{exc} [hint: diagnose by printing "
+                        f"`paramiko.Transport._preferred_keys`. If ssh-rsa is "
+                        f"absent, call SFTPUtils.enable_ssh_rsa_compat() at "
+                        f"process startup. See "
+                        f"docs.remotestore.dev/guides/backends/sftp/#legacy-ssh-rsa]"
+                    ),
                 )
             # KEX / cipher / MAC variants are not addressable by
             # enable_ssh_rsa_compat. Point users at scan_host_algorithms so
@@ -2142,14 +2828,16 @@ class SFTPBackend(Backend):
             # symbol "scan_host_algorithms" is asserted by
             # TestSFTPIncompatiblePeerHint::test_incompatible_peer_kex_hint;
             # rename the helper and this string plus that test together.
-            return BackendUnavailable(
-                f"{exc} [hint: run "
-                f"SFTPUtils.scan_host_algorithms(host, port) to see which "
-                f"algorithm list the server narrowed, then widen the "
-                f"corresponding list via "
-                f"SFTPBackend(connect_kwargs={{'disabled_algorithms': ...}}).]",
-                path=path,
-                backend=self.name,
+            return self._unavailable(
+                exc,
+                path,
+                message=(
+                    f"{exc} [hint: run "
+                    f"SFTPUtils.scan_host_algorithms(host, port) to see which "
+                    f"algorithm list the server narrowed, then widen the "
+                    f"corresponding list via "
+                    f"SFTPBackend(connect_kwargs={{'disabled_algorithms': ...}}).]"
+                ),
             )
         if isinstance(exc, paramiko.SSHException):
             # audit-020 H1: an SSHException reaching here on a live operation
@@ -2159,7 +2847,7 @@ class SFTPBackend(Backend):
             # SFTPError / socket-teardown / timeout signals clear via
             # ``_is_connection_dead`` above; this covers the SSHException family.
             self._sftp_client = None
-            return BackendUnavailable(str(exc), path=path, backend=self.name)
+            return self._unavailable(exc, path)
         return RemoteStoreError(str(exc), path=path, backend=self.name)  # pragma: no cover
 
     def _stat_to_fileinfo(self, path: str, attrs: Any) -> FileInfo:

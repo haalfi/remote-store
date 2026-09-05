@@ -104,6 +104,13 @@ is therefore a hard zero-tolerance check now — any new shipped ID without
 a mark or allowlist entry fails immediately.
 
 CI enforcement. Exit code 0 = ok; 1 = violations found.
+
+Drift-gate::
+
+    kind:       pair
+    compares: spec IDs declared in sdd/specs/ ↔ spec IDs cited by pytest.mark.spec markers under
+        tests/
+    domain:     intent ↔ verification
 """
 
 from __future__ import annotations

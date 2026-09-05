@@ -256,7 +256,11 @@ class AsyncStore:
         """Write binary content to *path* atomically.
 
         If the write fails or is interrupted, *path* is not left in a
-        partial state.
+        partial state. **That is not the same as unchanged.** A failure in
+        the backend's connection can leave *path* as it was, replaced (the
+        write landed and the acknowledgement was lost), or removed — none of
+        them partial, and the error does not say which. Re-check the path
+        rather than assuming a failed call changed nothing.
 
         Args:
             path: Store-relative file path.
@@ -305,10 +309,9 @@ class AsyncStore:
         """Delete a single file.
 
         A store whose backing container is gone — a deleted bucket, container or
-        table — holds no file either, so *missing_ok* tolerates that too on the
-        S3, Azure and SQL backends, and on Graph when its drive is gone. One does
-        not yet: a local store whose root directory was deleted raises
-        ``InvalidPath``.
+        table — holds no file either, so *missing_ok* tolerates that too: on the
+        S3, Azure and SQL backends, on Graph when its drive is gone, and on a
+        local store whose root directory was deleted.
 
         Args:
             path: Store-relative file path.
@@ -333,10 +336,9 @@ class AsyncStore:
         """Delete a folder.
 
         A store whose backing container is gone — a deleted bucket, container or
-        table — holds no folder either, so *missing_ok* tolerates that too on the
-        S3, Azure and SQL backends, and on Graph when its drive is gone. One does
-        not yet: a local store whose root directory was deleted raises
-        ``InvalidPath``.
+        table — holds no folder either, so *missing_ok* tolerates that too: on the
+        S3, Azure and SQL backends, on Graph when its drive is gone, and on a
+        local store whose root directory was deleted.
 
         Args:
             path: Store-relative folder path.  Must not be ``""``
@@ -805,7 +807,8 @@ class AsyncStore:
         Raises:
             PermissionDenied: If credentials are invalid.
             NotFound: If the bucket, container, or root path does not
-                exist.
+                hold the container it names — it is absent, or something
+                of another type occupies it.
             BackendUnavailable: If the backend cannot be reached.
         """
         _bk = self._backend.name

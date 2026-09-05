@@ -1,0 +1,378 @@
+id: BK-356
+title: "`io_timeout` should default to a real bound, not `None`"
+trigger: >-
+  BK-354 shipped SFTPBackend(io_timeout=...) defaulting to None, so the stall it
+  exists to bound stayed unbounded unless a caller opted in. The reporter's
+  objection to that default was recorded rather than answered, and two things in
+  the library already contradicted it: ReadOnlyHttpBackend defaults timeout=30.0
+  and that bound reaches reads, and SFTP's own recovery path was written
+  presuming a bound exists.
+source_items:
+  - BK-356
+  - BK-354
+  - BK-355
+  - BK-357
+audience:
+  - user.api
+  - user.api_docs
+  - user.site
+discovery_followups:
+  - BK-359
+  - BK-360
+# sdd/backlogid.json is deliberately absent: the ripple-check anticipates it
+# after a BACKLOG move, and `hatch run gen-backlogid` was run, but it produced
+# no change — the generator stores the max *done* ID per prefix and
+# BACKLOG-DONE.md already carried BK-357. The field records what was
+# mechanically touched, not what was anticipated, so an untouched file does not
+# belong here.
+expected_ripples:
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+
+# Derivation, per the review_rounds description in _schema.yml: on
+# `git log --oneline origin/master..HEAD`, a4feee9 implements and does not
+# count; ef3edad and b692e12 incorporate review round 1, fb6fbb3 incorporates
+# round 2, 422d119 incorporates round 3 (the closing panel), 1e265fd
+# incorporates round 4, 192996b incorporates round 5, e28d4c5 incorporates
+# round 6, and b1e3d9b incorporates round 7.
+# Value is 7 — rounds, not commits, which is why ef3edad and b692e12
+# count once between them, and why nothing that carries no review outcome counts:
+# neither a per-round bookkeeping commit — one that only names a SHA or appends
+# to the trace and the register, whatever its subject line — nor a merge of
+# master into the branch. Stated as a class rather than a list
+# because the branch grows one per round and a closed list cannot keep up:
+# round 5 caught the listed form two members short, and round 7 caught the first
+# attempt at the class two short again, because it quoted a commit subject that
+# had changed. The test is what the commit does, not what it is called. Each SHA is
+# written after the commit it names exists rather than predicted, which is why
+# the naming lags by a commit: the schema calls a plausible SHA that resolves
+# to nothing worse than no derivation at all.
+review_rounds: 7
+
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "BK-356 (item)"
+        read_type: gate
+        extract: "The value is decided in the item (120.0) with its rationale; the flip is breaking and ships with an opt-out"
+        outcome: ok
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-355, BK-354 (items)"
+        read_type: reference
+        extract: "Confirm both ordering blockers landed, so the flip ships neither a doubling nor a silently wrong size"
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Pre-work index"
+        read_type: gate
+        extract: "Triggered rows: Spec section, Public method signature, Bug fix, Backlog item touched, CHANGELOG entry, Tracker ID in published prose"
+        outcome: ok
+
+  - id: spec
+    name: Spec
+    steps:
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030, SFTP-005, SFTP-010, SFTP-001"
+        read_type: gate
+        extract: >-
+          Four sites assert the default, not one. SFTP-001's signature block and
+          SFTP-030's clause were the expected two; SFTP-010's tier-2 prose ("with
+          its default of None this path is unreachable for a merely silent
+          peer") and SFTP-005's rejection text were only found by reading the
+          whole file for the word "default"
+        outcome: ok
+      - file: sdd/specs/006-streaming-io.md
+        section: "SIO-010, SIO-011"
+        read_type: reference
+        extract: >-
+          Check whether the wrapper clauses depend on the default. They do not —
+          is_fatal and size_probe are SFTP-supplied and their measured figures
+          are stated at an explicit 2 s bound, so no figure moves
+        outcome: ok
+
+  - id: reproduce
+    name: Failing test first
+    steps:
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "_make_backend, test_default_leaves_channel_unbounded"
+        read_type: gate
+        extract: >-
+          The helper treated io_timeout=None as "omit the argument", which the
+          flip silently turns into 120.0. Two tests depended on that conflation,
+          and one of them is the positive control that keeps the bounded
+          version-exchange assertion non-vacuous — so the flip would have left it
+          asserting a failure it had merely put out of reach of its own 8 s
+          window
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Bug-fix protocol"
+        read_type: gate
+        extract: "Write the failing test, run it, see it fail before implementing — done: assert None == 120.0 ± 1.2e-04 against the unflipped default"
+        outcome: ok
+
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_sftp.py
+        section: "__init__ signature, Args docstring, _is_connection_dead docstring"
+        read_type: gate
+        extract: >-
+          One-line default flip, but three prose sites. The _is_connection_dead
+          docstring was the non-obvious one: it argued the TimeoutError arm's
+          reachability was "a configuration question — its default is None",
+          which the flip falsifies. Found by grepping io_timeout across the
+          module rather than by reading the constructor
+        outcome: ok
+
+  - id: docs
+    name: Docs
+    steps:
+      - file: docs-src/guides/backends/sftp.md
+        section: "Options table, Bounding a stalled transfer, Connection Behaviour"
+        read_type: gate
+        extract: >-
+          The whole section was written to sell an opt-in feature: the worked
+          example enabled the bound, and the Connection Behaviour bullet said
+          "off by default". Reframed to tuning and opting out
+        outcome: ok
+      - file: docs-src/guides/troubleshooting.md
+        section: "SFTP transfer hangs with no error"
+        read_type: gate
+        extract: >-
+          Structured as Symptom / Cause / Fix, where the Fix was "set
+          io_timeout". With the bound on by default the page's premise changes:
+          a reader who still hangs is opted out, on an older version, or meeting
+          the subsystem case. Its closing line ("Use None, the default, for no
+          bound") was false in two ways at once
+        outcome: ok
+      - file: docs-src/guides/retry.md
+        section: "Retry scope"
+        read_type: verify
+        extract: "Checked whether the retry-exclusion prose depends on the default; it does not — it scopes the retried closure, not what arms the bound"
+        outcome: ok
+      - file: docs-src/reference/migration.md
+        section: "v0.30.0 to v0.31.0"
+        read_type: gate
+        extract: "Section for the pair already exists (BK-357 wrote it); the flip gets a sibling subsection leading with the opt-out"
+        outcome: ok
+      - file: CONTRIBUTING.md
+        section: "Release / Phase 1"
+        read_type: gate
+        extract: >-
+          "[Unreleased] is complete — every completed item has a stub line";
+          stubs are expanded to prose at release time. Read only after the user
+          corrected a plan that proposed prose, and it settles a second question
+          too: a stub carries no claim, so BK-354's now-false "Default is None,
+          so no existing caller changes behaviour" needed no separate amendment
+        outcome: ok
+
+  - id: verify
+    name: Ripple-check
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check > Detailed checklist"
+        read_type: verify
+        extract: "Walk each triggered row against the completed diff"
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "[Unreleased]"
+        read_type: verify
+        extract: >-
+          Carried duplicate BK-354 and BK-355 entries from the #976/#977
+          rebases, whose two copies disagreed on how many exceptions SFTP-030
+          states. Not this item's defect, but in this item's artifact and about
+          this item's subject
+        outcome: misleading
+      - file: sdd/TESTING.md
+        section: "Rules"
+        read_type: verify
+        extract: >-
+          Qualitative half of the PR validation gates. Retrospectively: it
+          passed the changed tests, and could not have caught what round 1 did —
+          three of five findings were false sentences in docstrings and prose,
+          which no testing rule addresses
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "Module docstring, test_default_arms_the_bound_on_the_channel"
+        read_type: verify
+        extract: >-
+          Round 1's most useful finding, and it is my own miss rather than any
+          document's: I wrote a census ("most of this file's backends pass no
+          io_timeout at all") and a drift claim ("a drift between code and docs
+          is exactly what this must fail on") without running either. The census
+          was 3 of 21 call sites, and no gate compares an options table to a
+          signature. CLAUDE.md principle 9 names exactly this failure and I hit
+          it inside the commit that cites the principle
+        outcome: ok
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030 (Semantics)"
+        read_type: verify
+        extract: >-
+          Round 2 measured what round 1 read. The clause's load-bearing half —
+          the bound is on silence between bytes, not on transfer duration — was
+          asserted in four artifacts and pinned by no test: every existing test
+          makes the bytes stop, and no amount of stalling shows that a slow
+          transfer survives. The flip is what made it load-bearing, because it
+          is now the sentence telling every existing slow-link user to do
+          nothing. Closed with a throttling relay mode and a test; the claim
+          held. Reached by running, and a reading lens had already passed over
+          the same clause twice without seeing it
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "Module docstring (census, fault enumeration)"
+        read_type: verify
+        extract: >-
+          Round 3's whole-file lens, and the clearest evidence in this trace for
+          why that gate exists. Two defects the fix passes created, neither in a
+          `+` line of the commit that falsified it: the census round 1 corrected
+          went stale when round 2 added a call site beneath it, and the file's
+          three-way fault partition gained no bucket for the success test round
+          2 added. All three closing passes found the census independently. The
+          fix drops the count rather than correcting it — a tally invalidated by
+          adding a test is a figure that goes wrong between readers, and this
+          one had already done so once
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "[Unreleased] (BK-354, BK-355 stubs)"
+        read_type: verify
+        extract: >-
+          Collapsing the duplicated entries to stubs used the backlog titles,
+          which in this repo are problem statements — so the published line read
+          "SFTP has no way to bound a read that stalls on an open channel",
+          three lines below the entry saying the bound now defaults on. Reached
+          the built site. My own miss, and it survived two reading rounds
+          because the stub is the right *shape*; only the measuring pass, which
+          diffed the entries against their base-branch prose, caught the content
+        outcome: ok
+      - file: sdd/DRIFT-RULES.md
+        section: "Rule 5 (mandatory path), Rule 6 (tolerated divergence)"
+        read_type: verify
+        extract: >-
+          Round 3 asked why the prose restatements of the default are ungated,
+          and the answer was recorded in SFTP-030 rather than gated. Round 4
+          then caught the record itself twice: it cited "Rule 5" while linking
+          Rule 6's anchor, and it satisfied neither — Rule 5 wants the reason a
+          check is not gating, Rule 6 wants an owner and a rationale, and the
+          entry named no owner. Both are now cited correctly and separately,
+          with CONTENT-RULES Rule 5 named as the authority the duplication
+          actually diverges from. Tagged misleading against my own reading of
+          this file rather than against the file: the anchor and the number are
+          both plainly there, and I paired them wrong
+        outcome: misleading
+      - file: sdd/specs/009-sftp-backend.md
+        section: "SFTP-030 (tolerated-divergence register)"
+        read_type: verify
+        extract: >-
+          Round 4's sharpest structural finding, and the second time in two
+          rounds the same lesson had to be learned: the register's mitigation
+          was "every site is listed in this paragraph", and the list was five
+          sites short when written. A checklist a reader trusts and that is one
+          entry short is worse than no checklist, because it stops the search —
+          the same defect shape as the stale census, in the paragraph written to
+          record why that defect is tolerated. Replaced by a derivation, which
+          is what the census fix had already chosen one round earlier
+        outcome: ok
+      - file: .venv/lib/python3.11/site-packages/paramiko/buffered_pipe.py
+        section: "BufferedPipe.read"
+        read_type: verify
+        extract: >-
+          Round 5's two passes disagreed on fact — one wanted the source comment
+          brought into line with the spec's new settimeout(0) rationale, the
+          other said that rationale is false — so it was measured against
+          paramiko rather than argued. This half: PipeTimeout is raised only when
+          the read buffer is empty and the timeout is 0, so a recv with data
+          buffered returns it. My round-4 "correction" had replaced a narrow true
+          claim with a wide false one, and the source comment I corrected away
+          from was the better of the two. The lesson is the one this test file's
+          own docstring states: a paramiko-behaviour claim is got wrong by
+          reading rather than running
+        outcome: ok
+      - file: .venv/lib/python3.11/site-packages/paramiko/channel.py
+        section: "Channel._wait_for_send_window"
+        read_type: verify
+        extract: >-
+          The other half of the same measurement, in the other file — split into
+          its own step because round 7 caught the single step naming this symbol
+          while citing buffered_pipe.py, which does not contain it. socket.timeout
+          is raised only when the out-window is full and the timeout is 0, so a
+          send into an open window succeeds and never consults it. Together with
+          the step above: settimeout(0) is non-blocking mode, not "fails
+          immediately regardless of direction"
+        outcome: ok
+      - file: docs-src/guides/troubleshooting.md
+        section: "SFTP transfer stalls (Symptom, routing, causes)"
+        read_type: verify
+        extract: >-
+          Round 7's reader lens, run for the first time, and the only pass in the
+          loop to ask whether a reader can act rather than whether the text is
+          true. Four findings on one page, none reachable by a correctness lens:
+          the page told a reader to look for "an empty message" while
+          RemoteStoreError.__str__ appends path= and backend=, so the only string
+          a BK-359 sufferer can match on did not match; the reader whose call
+          correctly failed after two minutes matched none of the three causes,
+          all framed for the hang; "a current version" was never resolved to a
+          number, and the number sat inside the branch needed to choose it; and
+          the tuning snippet remedied neither of its section's stated causes.
+          The lens reaches `unclear`, never `misleading` — its own definition says
+          so — which is why it took until round 7 to run and why it found a class
+          six rounds of correctness review could not
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "[Unreleased] (BK-356 stub)"
+        read_type: verify
+        extract: >-
+          Round 7's external-premise lens found the false version premise round 6
+          removed from the migration guide still standing here, on the line
+          tagged Breaking, in the artifact that publishes to the docs site. Six
+          rounds had read past it because every artifact agreed with it. The
+          lesson is the lens, not the line: a premise uniformly false across a
+          diff is invisible to any pass that checks the diff against itself, and
+          nothing before round 7 was pointed outside it
+        outcome: ok
+      - file: CHANGELOG.md
+        section: "[Unreleased] vs [0.30.0]"
+        read_type: verify
+        extract: >-
+          Round 6's finding, and the loop's most serious: io_timeout has never
+          been released — added by e78e0ea in this same cycle, every mention
+          above the [0.30.0] heading — while the migration entry said v0.30.0
+          defaulted it to None and the troubleshooting page told such a reader
+          to pass it, which raises TypeError there. Five rounds missed it
+          because every round checked the PR against itself and the false
+          premise was uniform across the spec, both guides, the migration entry
+          and the backlog. Internal consistency is structurally blind to a
+          premise nothing in the diff contradicts; catching it needed git log
+          and the release headings, which no brief before round 6 asked for.
+          Recorded as a gap in how the loop was run, not in the artifact
+        outcome: ok
+      - file: .claude/skills/ship/SKILL.md
+        section: "Repeat-site check"
+        read_type: gate
+        extract: >-
+          Two claim classes were refuted in rounds 3, 4 and 5 — an enumeration of
+          the sites restating the default, and a universal about what this test
+          file's tests do. Each round narrowed the claim and each narrowing was
+          refuted by a case it had not considered. The check says a third reading
+          is not more likely to be exhaustive than the first two and prescribes
+          dropping the carve-out rather than re-scoping it. Applied in round 5:
+          both claim classes deleted rather than narrowed a fourth time. Read one
+          round later than it should have been — the condition for firing was
+          already met at round 4
+        outcome: ok
+      - file: tests/backends/sftp/test_io_timeout.py
+        section: "test_a_transfer_slower_than_the_bound_is_not_interrupted"
+        read_type: verify
+        extract: >-
+          Round 4's unprimed pass found the test carrying SFTP-030's
+          load-bearing claim passed with the bound unarmed: it asserted a
+          success and that the transfer outlived the bound, neither of which
+          observes a channel timeout. Deleting settimeout() from _connect left
+          it green. One line closes it, and the argument I had written against
+          it — that the rest of the file is the control — is the argument this
+          same file rejects in test_version_exchange_unbounded_when_opted_out, where the version-exchange control
+          was made to pass io_timeout=None explicitly rather than lean on a
+          neighbour. I applied the standard in round 1 and failed to apply it to
+          the test I wrote in round 2
+        outcome: ok

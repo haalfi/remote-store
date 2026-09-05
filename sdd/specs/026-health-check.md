@@ -28,6 +28,25 @@ def ping(self) -> None: ...
 - Not capability-gated (all backends support health checks).
 - Logs `DEBUG` on entry, `INFO` on success.
 
+**Known divergence: three backends do not raise for a missing container.**
+Measured against an absent container, `S3PyArrowBackend`, `SQLBlobBackend` and
+`SQLQueryBackend` return cleanly where the `NotFound` row above requires them to
+raise. Both SQL backends inherit the same `SELECT 1`, which verifies connectivity
+and never touches the table or the queried relation. `S3Backend`,
+`S3Boto3Backend`, `AzureBackend`, `AsyncAzureBackend` and `LocalBackend` raise
+`NotFound` as stated.
+
+Recorded here rather than left implicit because a caller reading this clause
+would use `ping()` to answer "is my store there?", and on those three it answers
+"yes" for a store that is not. Tracked as **BUG-256**, which also carries a
+fourth, narrower case this sentence deliberately excludes:
+`ReadOnlyHttpBackend` *does* raise, but `BackendUnavailable` rather than
+`NotFound` — a wrong type rather than a missing raise, which is why folding it
+into the headline above would make that headline false.
+
+The obligation itself is unchanged, and the surrounding prose and the
+health-check guide state it.
+
 ---
 
 ## Backend API
@@ -54,13 +73,21 @@ def check_health(self) -> None: ...
 
 ### PING-003: LocalBackend
 
-**Strategy:** Verify root directory exists and is readable.
+**Strategy:** Verify the root path holds a readable directory.
 ```python
-if not self._root.exists():
+if not self._root.is_dir():
     raise NotFound(...)
 if not os.access(self._root, os.R_OK):
     raise PermissionDenied(...)
 ```
+The type test is `is_dir()` rather than `exists()`, and the difference is
+load-bearing. Under
+[BE-029](003-backend-adapter-contract.md#be-029-root-path)
+`LocalBackend` answers `exists("")` and `is_folder("")` for the store root
+definitionally, without a stat, so `check_health` is the only operation on the
+backend that observes what actually occupies the root path. Testing mere
+existence would let a root replaced by a regular *file* report a healthy, empty
+store from every probe (BUG-247).
 
 ### PING-004: S3Backend
 

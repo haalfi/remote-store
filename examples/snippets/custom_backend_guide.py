@@ -136,6 +136,32 @@ class RedisBackend(Backend):
         prefix = f"{self._prefix}file:"
         return key.decode().removeprefix(prefix)
 
+    def _addressable_segments(self, path: str) -> list[str]:
+        """Return the segments of *path* that actually address something.
+
+        Empty and ``"."`` segments name nothing, so every spelling of the store
+        root -- ``""``, ``"."``, ``"./"``, ``".//"``, ``"./."``, ``"/"`` --
+        yields ``[]``. This is the predicate the backend contract requires for
+        deciding root-ness on a write, and it is deliberately wider than a
+        ``not path or path == "."`` test, which lets ``"./"`` through.
+        ``remote_store.backends._flat_ns._addressable_segments`` is the same
+        function; it is restated here so the tutorial stays dependency-free.
+
+        Use this one predicate everywhere you split a key, addressing included.
+        A backend that guards with it and addresses with something stricter
+        accepts ``"./x"`` at the guard and then writes it somewhere else.
+        """
+        return [s for s in path.split("/") if s and s != "."]
+
+    def _reject_root_as_write_target(self, path: str) -> None:
+        """Refuse the store root as a write target, decided from the key."""
+        if not self._addressable_segments(path):
+            raise InvalidPath(
+                f"Cannot write -- '{path}' is the store root, which is a folder",
+                path=path,
+                backend=self.name,
+            )
+
     # --8<-- [end:step4-helpers]
 
     # --8<-- [start:step4-error-mapping]
@@ -242,12 +268,9 @@ class RedisBackend(Backend):
         overwrite: bool = False,
         metadata: Mapping[str, str] | None = None,
     ) -> WriteResult:
-        if not path or path == ".":
-            raise InvalidPath(
-                "Path must not be empty for file operations",
-                path=path,
-                backend=self.name,
-            )
+        # Precondition (0): the root, from the key, before any request. Wider
+        # than ``not path or path == "."`` on purpose -- see _addressable_segments.
+        self._reject_root_as_write_target(path)
 
         raw = content if isinstance(content, bytes) else content.read()
 
@@ -477,10 +500,13 @@ class RedisBackend(Backend):
 
     # --8<-- [start:step11-move-copy]
     def move(self, src: str, dst: str, *, overwrite: bool = False) -> None:
+        # The source is a file-shaped operation on a folder; the destination is
+        # a write. Different messages, and the destination takes the wider
+        # predicate -- an unrecognised root spelling costs a read an error class
+        # and cost a write, on a shipped backend, its container.
         if not src or src == ".":
-            raise InvalidPath("Source path must not be empty", path=src, backend=self.name)
-        if not dst or dst == ".":
-            raise InvalidPath("Destination path must not be empty", path=dst, backend=self.name)
+            raise InvalidPath("Source path is a folder, not a file", path=src, backend=self.name)
+        self._reject_root_as_write_target(dst)
 
         try:
             # Read source
@@ -513,9 +539,8 @@ class RedisBackend(Backend):
 
     def copy(self, src: str, dst: str, *, overwrite: bool = False) -> None:
         if not src or src == ".":
-            raise InvalidPath("Source path must not be empty", path=src, backend=self.name)
-        if not dst or dst == ".":
-            raise InvalidPath("Destination path must not be empty", path=dst, backend=self.name)
+            raise InvalidPath("Source path is a folder, not a file", path=src, backend=self.name)
+        self._reject_root_as_write_target(dst)
 
         try:
             data = self._client.hgetall(self._key(src))

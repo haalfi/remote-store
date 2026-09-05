@@ -1,7 +1,7 @@
 # Research: Is the level of detail appropriate?
 
 **Date:** 2026-08-17
-**Backlog items:** ID-250, which shipped the authoring test in § 5.3.
+**Backlog items:** ID-256, which shipped the authoring test in § 5.3.
 **Status:** Advisory research, not a spec or ADR. A standing reference on one
 question — *is the level of detail appropriate?* — rather than a record of how it
 was investigated.
