@@ -552,22 +552,24 @@ class TestAzureErrorMapping:
     def test_a_detail_less_transport_signal_says_which_side_failed(self, wrapper_name: str, expected_side: str) -> None:
         """A driver signal carrying no text still names a cause (ERR-009, AZ-025).
 
-        Why an SDK error can arrive empty is in AZ-025's rationale paragraph,
-        which is its one home; this docstring covers only what *this test* does.
+        Why an SDK error can arrive empty is in AZ-025's *"Why the message
+        clause is here"* paragraph, which is its one home; this docstring covers
+        only what *this test* does.
 
-        **This backend runs on the requests transport, and that is where both
-        parametrised shapes come from.** ``requests.exceptions.ConnectTimeout``
-        becomes ``ServiceRequestTimeoutError`` and ``ReadTimeout`` becomes
-        ``ServiceResponseTimeoutError``, both spelled ``Error(err, error=err)``,
-        and both inputs stringify empty when constructed without arguments. The
-        sync side is therefore the reachable one for the request arm; the aiohttp
-        transport builds that class only from an error carrying the host.
+        **This backend runs on the requests transport**, which wraps
+        ``requests.exceptions.ConnectTimeout`` as ``ServiceRequestTimeoutError``
+        and ``ReadTimeout`` as ``ServiceResponseTimeoutError`` — the two classes
+        parametrised below.
 
-        Asserted at the classifier rather than through the transport. Driving it
-        end to end needs a different fault per parameter — a server that accepts
-        and then stalls for the read arm, an unroutable address for the connect
-        arm, since a stalling server accepts the connect. What is
-        version-sensitive here is the input's emptiness, asserted directly below.
+        **Asserted at the classifier, and deliberately not through the
+        transport**, because no shipped transport supplies the empty shape:
+        ``requests`` raises both of those only with the underlying ``urllib3``
+        error attached, and that error is always constructed with a formatted
+        message. The empty input is what a caller-supplied transport can deliver
+        and what a future SDK release could begin to; ERR-009 constrains what
+        this classifier does with it either way. That the classes stringify
+        empty when constructed argument-less is asserted directly below, so the
+        premise this test rests on is checked rather than assumed.
         """
         inner = TimeoutError()
         assert str(inner) == "", "premise: an argument-less timeout carries no text"

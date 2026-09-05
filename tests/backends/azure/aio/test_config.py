@@ -500,8 +500,9 @@ class TestAsyncAzureErrorMapping:
     ) -> None:
         """A driver signal carrying no text still names a cause (ERR-009, AZ-025).
 
-        Why an SDK error can arrive empty is in AZ-025's rationale paragraph,
-        which is its one home; this docstring covers only what *this test* does.
+        Why an SDK error can arrive empty is in AZ-025's *"Why the message
+        clause is here"* paragraph, which is its one home; this docstring covers
+        only what *this test* does.
 
         The inner exception is a *genuine* fired timeout rather than a
         constructed one, because that is what makes ``args == ()``.
@@ -511,13 +512,12 @@ class TestAsyncAzureErrorMapping:
         azure-core builds its own ``ClientTimeout(sock_connect=…, sock_read=…)``
         per request and never sets ``total``, so its bare-``asyncio.TimeoutError``
         arm has no source; and it builds ``ServiceRequestTimeoutError`` only from
-        aiohttp's ``ConnectionTimeoutError``, which always carries the host.
-        The *sync* transport supplies both shapes, from argument-less
-        ``requests.exceptions.ConnectTimeout`` and ``ReadTimeout``. Both are
-        asserted here anyway because the arm under test is typed on the base
-        classes and the classifier is shared by both twins — but a reader should
-        not take either as evidence about aiohttp. The loopback file drives what
-        aiohttp *does* produce, and it is never blank.
+        aiohttp's ``ConnectionTimeoutError``, which always carries the host. The
+        sync transport does not supply it either — see the twin of this test.
+        Both are asserted here because the arm under test is typed on the base
+        classes and the classifier is shared by both twins, and because ERR-009
+        constrains the output whatever the input's provenance. The loopback file
+        drives what aiohttp *does* produce, and it is never blank.
 
         ``asyncio.wait_for`` rather than ``asyncio.timeout``: the latter is 3.11+
         and broke the 3.10 CI leg. ``asyncio.TimeoutError`` rather than the

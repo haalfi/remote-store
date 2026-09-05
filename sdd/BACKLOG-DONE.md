@@ -245,30 +245,34 @@ if evidence changes; these are retired.
   `self.message = str(message)`, so a wrap of an argument-less driver exception
   stringifies empty and the arm returned `BackendUnavailable('')` rendering as
   `" | path='delivery.csv' | backend='azure'"` — character for character the SFTP
-  defect BK-359 fixed. Why both transports supply such an input is AZ-025's, in
-  the paragraph under its mapping table; it is not restated here.
+  defect BK-359 fixed. Why an SDK error can arrive empty is AZ-025's, in its
+  *"Why the message clause is here"* paragraph; it is not restated here.
 
-  **Two of the item's premises were refuted by measuring them**, and both had
-  been asserted more than once.
-
-  *First*, the blank shape is **not** reachable through the aiohttp transport at
-  all. azure-core builds its own `aiohttp.ClientTimeout(sock_connect=…,
-  sock_read=…)` per request and never sets `total`, so the
-  bare-`asyncio.TimeoutError` arm has no source there. Driving
+  **Neither shipped transport supplies that input through the backend's own
+  options**, which took three attempts to state correctly and is recorded so the
+  next reader does not re-derive it. The async transport builds its own
+  per-request `ClientTimeout(sock_connect=…, sock_read=…)` and never sets
+  `total`, so its bare-`asyncio.TimeoutError` arm has no source; driving
   `AsyncAzureBackend.check_health()` at a loopback socket returned a non-empty
-  message for every shape the backend's own options can produce — a port with
-  nothing listening, an accept-then-close and an accept-and-stall. Those three
-  now ship as controls in `tests/backends/azure/aio/test_error_detail.py`.
+  message for every shape the backend can produce — a port with nothing
+  listening, an accept-then-close and an accept-and-stall, all three now shipping
+  as controls in `tests/backends/azure/aio/test_error_detail.py`. The sync
+  transport wraps `requests.exceptions.ConnectTimeout` and `ReadTimeout`, and
+  `requests` raises both only with the underlying `urllib3` error attached, which
+  is always constructed with a formatted message.
 
-  *Second, and the opposite of what the item said*, **the sync side is the
-  reachable one.** The item called it "exposed the same way but not reproduced".
-  `_requests_basic.py` wraps `requests.exceptions.ConnectTimeout` as
-  `ServiceRequestTimeoutError` and `ReadTimeout` as
-  `ServiceResponseTimeoutError`, and both stringify empty argument-less —
-  measured, `str(ConnectTimeout())` is `''`.
+  **The item's own claim was half right and its correction was wrong**, which is
+  why this paragraph exists rather than a verdict. The item said the sync side
+  was "exposed the same way but not reproduced" — right about the sync side,
+  wrong that the async side was an end-to-end reproduction. The first correction
+  then inverted it and called the sync side the reachable one, on the strength of
+  `str(ConnectTimeout())` being `''` — a fact about the class, not about what
+  the transport constructs, which is the inference error this very item warns
+  about two paragraphs earlier.
 
-  **The fix is right either way**: ERR-009 is a claim about the classifier's
-  output, not about how often the input arrives.
+  **The fix is right regardless**: ERR-009 constrains the classifier's output,
+  not the frequency of its input. A caller-supplied transport or session can
+  deliver the empty shape, and a future SDK release can begin to.
 
   **The `BackendUnavailable` half is now closed library-wide**, which is the
   finding that justified the split. After this fix

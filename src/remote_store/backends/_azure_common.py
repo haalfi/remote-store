@@ -160,9 +160,11 @@ def _unavailable(exc: Exception, path: str, backend_name: str) -> BackendUnavail
     searches for.
 
     **Why an SDK error can arrive empty at all** is documented once, in the
-    error-mapping spec's rationale paragraph beneath its mapping table, and is
+    error-mapping spec's *"Why the message clause is here"* paragraph, and is
     not restated here: it is a fact about the SDK's transports rather than about
-    this function, and it moves between SDK releases.
+    this function, and it moves between SDK releases. (That spec section also has
+    a paragraph labelled ``Rationale:``, which is a different one and covers
+    structured classification.)
 
     **No log record**, where the SFTP helper of the same name emits one. A
     scoped decision about this backend, not a claim that the two should differ:
@@ -239,13 +241,11 @@ def classify_azure_error(exc: Exception, path: str, backend_name: str) -> Remote
         # generic base error rather than guessing a more specific type.
         return RemoteStoreError(str(exc), path=path, backend=backend_name)
     # Only *this* base-class arm can carry an empty message; the one above it
-    # cannot, and the difference is the exception class rather than the
-    # construction. HttpResponseError.__init__ substitutes "Operation returned an
-    # invalid status '<reason>'" for a falsy message, so the arm inside that
-    # isinstance never renders blank however it is spelled. This one takes any
-    # exception at all, including a bare RuntimeError, so it can — and it is the
-    # one outcome of this function that AZ-025's postcondition does not cover,
-    # which that clause says rather than leaving to be inferred from here.
+    # cannot, because it sits inside the HttpResponseError isinstance and that
+    # class substitutes for a falsy message. AZ-025 states both halves and says
+    # why; this arm takes any exception at all, including a bare RuntimeError.
+    # It is also the one outcome of this function AZ-025's postcondition does not
+    # cover, which that clause says rather than leaving it to be inferred here.
     # Left alone deliberately: whether a blank RemoteStoreError deserves the same
     # synthesised fallback or should be classified instead is an open decision
     # tracked as BUG-276. The same construction stands in several other modules —
