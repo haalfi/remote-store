@@ -1,5 +1,7 @@
 # Research: Documentation Content Longevity
 
+**Date:** 2026-07-28
+
 ## Context
 
 An analysis of the README revealed that several sections had drifted from the

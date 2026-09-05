@@ -56,6 +56,7 @@ yield no row for them at all.
 | `scripts/check_mock_spec.py` | every MagicMock or Mock call passes spec= or spec_set= (TESTING.md Rule 4) | verification | `all`, `check-test-quality`, `lint` | gating |
 | `scripts/check_no_tracker_refs.py` | no internal tracker ID appears in a surface that reaches users (CONTENT-RULES Rules 1 and 5) | explanation | `all`, `check-no-tracker-refs`, `docs-gate`, `lint` | gating |
 | `scripts/check_rst_roles.py` | no line of any Python file under src/, tests/, scripts/ or examples/ uses RST inline-role syntax, which is incompatible with this project's Google-style docstrings | explanation | `all`, `lint` | gating |
+| `scripts/check_sdd_index.py` | every generated sdd index table has the columns its kind declares, and every document of a dated kind carries a header date | explanation <-> realization | `all`, `check-sdd-index`, `docs-gate`, `lint` | gating |
 | `scripts/check_test_assertions.py` | every test function contains at least one assert or pytest.raises (TESTING.md Rule 1) | verification | `all`, `check-test-quality`, `lint` | gating |
 | `scripts/check_test_placement.py` | every test file sits in the subpackage TESTING.md and spec 048 place it in | verification | `all`, `check-test-placement`, `check-test-quality`, `lint` | gating |
 | `scripts/check_tla_no_emdash.py` | no TLA+ module under sdd/formal/tla/ contains an em dash, which TLC rejects | intent-formalized | `all`, `ci.yml:verify-tla`, `lint` | gating |

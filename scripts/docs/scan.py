@@ -42,6 +42,9 @@ if TYPE_CHECKING:
 _YAML_TAIL_RE = re.compile(r"\n---\n(see_also:.*?)\Z", re.DOTALL)
 _ACRONYMS = {"Sftp": "SFTP", "Http": "HTTP", "S3": "S3", "Otel": "OTel", "Io": "IO"}
 
+# Header metadata line: "**Date:** YYYY-MM-DD" (sdd/templates/research-template.md).
+_DATE_RE = re.compile(r"^\*\*Date:\*\*\s*(\d{4}-\d{2}-\d{2})")
+
 
 # ---------------------------------------------------------------------------
 # sdd/ kinds and entries
@@ -60,6 +63,7 @@ class SddKind:
     title_prefixes: tuple[str, ...] = ()  # stripped when parsing first heading
     status: str | None = None  # adds a status column when set
     numbered: bool = True  # False → use title in place of number
+    dated: bool = False  # adds a "Date (as of)" column, newest first
 
 
 def _load_sdd_kinds(rules_path: Path | None = None) -> tuple[SddKind, ...]:
@@ -100,6 +104,7 @@ def _load_sdd_kinds(rules_path: Path | None = None) -> tuple[SddKind, ...]:
             title_prefixes=tuple(item.get("title_prefixes", ())),
             status=item.get("status"),
             numbered=item.get("numbered", True),
+            dated=item.get("dated", False),
         )
         for item in items
     )
@@ -117,6 +122,23 @@ class SddEntry:
     title: str
     source: Path
     kind: SddKind
+    date: str | None = None  # ISO "YYYY-MM-DD" from the header, None when absent
+
+
+def _parse_header_date(text: str) -> str | None:
+    """Return the ISO date from a ``**Date:**`` header line, or None.
+
+    Only the header is searched — up to the first ``---`` rule, else the
+    first 15 lines — so a ``**Date:**`` inside the body (appendices carry
+    their own) cannot shadow the document's own date.
+    """
+    for line in text.splitlines()[:15]:
+        if line.strip() == "---":
+            return None
+        match = _DATE_RE.match(line)
+        if match:
+            return match.group(1)
+    return None
 
 
 def _scan_kind(repo_root: Path, kind: SddKind) -> list[SddEntry]:
@@ -132,14 +154,16 @@ def _scan_kind(repo_root: Path, kind: SddKind) -> list[SddEntry]:
             num = parts[1] if len(parts) > 1 else p.stem
         else:
             num = p.stem.split("-", 1)[0]
-        first_line = p.read_text(encoding="utf-8").split("\n", 1)[0]
+        text = p.read_text(encoding="utf-8")
+        first_line = text.split("\n", 1)[0]
         title = first_line.lstrip("# ").strip()
         for pattern in kind.title_prefixes:
             pfx = pattern.replace("{num}", num)
             if title.startswith(pfx):
                 title = title[len(pfx) :].strip()
                 break
-        entries.append(SddEntry(number=num, slug=p.stem, title=title, source=p, kind=kind))
+        date = _parse_header_date(text) if kind.dated else None
+        entries.append(SddEntry(number=num, slug=p.stem, title=title, source=p, kind=kind, date=date))
     return entries
 
 

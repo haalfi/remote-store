@@ -54,3 +54,6 @@ sdd_kinds:
     title_prefixes:
       - "Research: "
     numbered: false
+    # Research ages: a reader needs to know how current a survey is, so the
+    # index carries the header **Date:** and lists newest first.
+    dated: true
