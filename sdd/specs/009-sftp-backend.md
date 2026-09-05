@@ -559,11 +559,14 @@ handed away.
 **On that surface this clause is a goal rather than a description, and the
 difference is worth stating** now that the clause names it. Every other surface
 here runs inside `_errors()`, which catches `Exception` — the universal is what
-the code does. The streamed handle is bounded by a set the backend supplies, and
-SIO-012 says that set is "not closed by construction". A transport shape outside
-it is therefore a **breach of this clause**, to be closed by widening the
-supplied set, and not an exemption from it. BK-358 was exactly that breach; the
-clause is what makes the next one findable rather than arguable.
+the code does. The streamed handle is bounded instead by a set the backend
+supplies ([SIO-012](006-streaming-io.md#sio-012-the-set-of-exception-shapes-a-stream-maps)),
+and that set is only as wide as the shapes its transport has been *measured* to
+raise. A shape outside it is therefore a **breach of this clause**, to be closed
+by widening the supplied set, and not an exemption from it. BK-358 was exactly
+that breach; the clause is what makes the next one findable rather than
+arguable. SIO-010 states the same asymmetry from the other side, over the class
+of shapes that escape rather than over the set that catches them.
 
 ---
 

@@ -953,10 +953,17 @@ class TestSFTPConnection:
         ``SSHException`` — so before this test, deleting ``paramiko.SFTPError``
         from the construction site left the whole suite green while silently
         re-opening half the BE-021 / SFTP-024 breach: a malformed packet
-        mid-stream would leak ``SFTPError`` raw again. Measured: with that shape
-        removed from the construction site,
-        ``pytest tests/backends/sftp/ tests/test_stream.py`` passed 424 tests
-        and exited 0. That is the set the figure comes from, not the full suite.
+        mid-stream would leak ``SFTPError`` raw again.
+
+        **What to run to see that, and what it returns now.** Remove
+        ``paramiko.SFTPError`` from ``read()``'s ``also_catch`` and run
+        ``pytest tests/backends/sftp/ tests/test_stream.py``: this test's
+        ``sftperror`` parameter fails, which is the whole point of it existing.
+        Before it was written the same mutation passed that set outright — that
+        is what made the gap invisible — so the historical figure and the
+        current one are measured on different trees and neither reproduces the
+        other. Only the second is re-runnable here, so only it is stated as a
+        command.
 
         Driven the way the sibling above is, by wrapping ``_sftp_client.file``,
         because that is what makes ``read()`` construct the wrapper for real

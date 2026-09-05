@@ -16,19 +16,23 @@ audience:
   # the schema defines user.site as. Every sibling in this release that touched
   # that page declares it too (BUG-265, BK-356, BK-357, BK-359).
   - user.site
-# Counted from the commits on `git log --oneline origin/master..HEAD` that exist
-# because review feedback was incorporated. In order on the branch:
+# Counted from `git log --oneline 121258d..HEAD`, which returns eight commits.
+# The ones that exist because review feedback was incorporated, in branch order:
 #   518479e  implementation                       -- does not count
 #   8184c4b  self-found derivation fix (/pr gate) -- does not count
 #   99f2e46  round 1 fixes                        -- counts
 #   233acd0  round 2 fixes                        -- counts
 #   ebc0ccd  self-found docstring reflow          -- does not count
 #   ce0017b  round 3 fixes                        -- counts
-#   (this commit)  round 4 fixes                  -- counts
-# An earlier version of this comment labelled 8184c4b the implementation, which
-# it is not, and never named 518479e -- the SHA resolved, to the wrong commit,
-# which is the harder failure to catch and the reason the schema asks for the list.
-review_rounds: 4
+#   7d16f18  round 4 fixes                        -- counts
+#   bd8c670  round 5 fixes                        -- counts
+#   (this commit)  round 6 fixes                  -- counts
+# This field has now been wrong twice, in opposite directions, and both times
+# because a fix pass added narrative about a round without re-deriving the count
+# from git log: first labelling 8184c4b the implementation (a SHA that resolved,
+# to the wrong commit), then leaving the total at 4 while adding a round-5 step
+# below. Re-derive before editing this block; do not extend it from memory.
+review_rounds: 6
 expected_ripples:
   # sdd/backlogid.json is deliberately absent, against the schema's own example
   # ("after any BACKLOG/BACKLOG-DONE edit"), on the reasoning BUG-265's trace
@@ -271,7 +275,7 @@ phases:
         outcome: misleading
 
   - id: fix3
-    name: Review rounds 3 and 4 (closing panels)
+    name: Review rounds 3 to 6 (closing panels)
     steps:
       - file: sdd/specs/006-streaming-io.md
         section: "SIO-010 (Invariant)"
@@ -315,7 +319,7 @@ phases:
         section: "Principles 3, 4, 8, 9"
         read_type: gate
         extract: >-
-          The loop's own lesson, and the reason round 4 was the last. Rounds 3 and 4 each
+          The loop's own lesson, and why it ran to six rounds. Rounds 3 onward each
           found that most of the previous fix pass's *prose* was newly wrong while the code
           held: the measurement narrative was told in six artifacts and every pass edited
           some of them. `/ship`'s divergence check fired twice. The response was to cut
