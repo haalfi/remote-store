@@ -16,12 +16,14 @@ argues for.
 > subject. Of those three, only the last can be checked at the moment of writing,
 > which is why the practical rule is an author-side test and not a length budget.
 >
-> **Standing caveat: one source has been read in full, and only one.** Rozenblit
-> & Keil (2002) — the mechanism the authoring test rests on — was supplied by the
-> maintainer and verified against its own text (§ 5.2). Every other external claim
-> rests on an abstract, a metadata record or a search summary, because every
-> scholarly host returns 403 from this environment (Appendix B). Each carries a
-> tier: treat the rest as directional, and the repo figures as the reliable half.
+> **Standing caveat: two sources have been read in full, and only two.** Rozenblit
+> & Keil (2002), the mechanism the authoring test rests on (§ 5.2), and Sweller,
+> van Merriënboer & Paas (1998), which describes the expertise-reversal
+> experiments its own senior author ran (§ 3). Both were supplied by the
+> maintainer. Every other external claim rests on an abstract, a metadata record
+> or a search summary, because every scholarly host returns 403 from this
+> environment (Appendix B). Each carries a tier: treat the rest as directional,
+> and the repo figures as the reliable half.
 
 ---
 
@@ -66,14 +68,37 @@ justification-sufficiency test exists for exactly that reason and still applies.
 Four inputs, each with a source and a direction.
 
 **Reader expertise, and it reverses.** More explicit, more elaborated material
-helps low-knowledge readers and can *harm* high-knowledge ones. Two independent
-strands: the reverse cohesion effect (McNamara, Kintsch, Songer & Kintsch, 1996)
-found high-knowledge readers learning more from the less coherent text, and the
-expertise reversal effect (Kalyuga, Ayres, Chandler & Sweller, 2003; Kalyuga,
-Chandler & Sweller, 1998) found the best design shifting toward *eliminating*
-explanatory text as expertise rose. **[Search-summary; the 1996 study manipulated
-coherence rather than surplus detail, so it bounds the claim rather than proving
-it.]**
+helps low-knowledge readers and can *harm* high-knowledge ones.
+
+The sharpest case is Kalyuga, Chandler & Sweller (1998), described in detail by
+its own senior author in Sweller, van Merriënboer & Paas (1998), "Cognitive
+Architecture and Instructional Design", *Educational Psychology Review* 10(3),
+251–296. **[Verified against that review, read in full; the *Human Factors*
+primary is still unread.]** Novice electrical apprentices were given a wiring
+diagram plus a textual description that merely re-described it. For novices the
+text "was essential. They could not understand the diagram alone and required
+the text", and was best **integrated** with the diagram. "In contrast, once the
+learners gained additional experience … textual material re-describing a novel
+circuit was redundant and it was better to **fully eliminate** the textual
+material for expert learners rather than integrate it with the diagrams."
+
+**That answers the question this document previously left open.** Elimination is
+not confounded with integration: the expert comparison is *diagram alone* against
+*diagram plus integrated text*, so removal is its own condition and it wins.
+Mental-effort ratings ran the same way — higher load for experienced learners
+given the redundant version. The authors' own summary: "material that is
+redundant for some learners and so best eliminated, may be essential for less
+experienced learners and best integrated."
+
+**The two strands argue with each other, which is worth knowing before either is
+cited.** Sweller et al. read McNamara, Kintsch, Songer & Kintsch (1996) — the
+reverse cohesion effect, where added coherence helped low-knowledge and impeded
+high-knowledge readers — as a redundancy result rather than an active-processing
+one, and give a reason: if the additional material had worked by *reducing active
+processing*, mental-effort ratings should have fallen, and instead they rose.
+Two literatures, one prediction each, and the effort data is what separates them.
+**[Verified against the same review.]** The 1996 study still manipulated coherence
+rather than surplus detail, so it bounds the claim rather than proving it.
 
 **Reader purpose and the decision at stake.** What the reader must decide or do
 determines which units are load-bearing. A constraint, an exception or a
@@ -243,17 +268,32 @@ reach a length. Under-justification is the failure with the better evidence.
 
 ## 9. What would settle the open half
 
-1. **A study manipulating detail volume in non-instructional reference prose,
-   read non-linearly by domain experts.** None was found. Every anchor here uses
-   novice learners reading linearly for a retention test. If it does not exist,
-   the reader-side question can be argued but not evidenced.
-2. **Kalyuga, Chandler & Sweller (1998) in full**, to establish whether any
-   experiment isolates text elimination from the integration manipulation.
-3. **Langer, Schulz von Thun & Tausch (1974) in full**, for whether the
+1. **Reder & Anderson (1980, 1982), on summaries of physics texts.** The most
+   promising lead in this document, and the last one found: Sweller, van
+   Merriënboer & Paas report that they "ran many experiments indicating that the
+   contents of physics texts were learned more effectively if students were
+   merely presented with a summary rather than with the entire contents". That is
+   detail volume manipulated **in prose**, repeatedly — the study type § 2 says is
+   missing. It is cited here at one remove and has not been checked. If it holds,
+   it is the first direct evidence on the overshoot side and this document's § 2
+   asymmetry needs restating.
+2. **Yeung, Jin & Sweller (1998)**, reported as finding the same expertise
+   reversal using **text-comprehension** material rather than diagrams — a step
+   closer to prose than the wiring-diagram case.
+3. **A study manipulating detail volume in non-instructional reference prose,
+   read non-linearly by domain experts.** Still none found. Every anchor here
+   uses learners reading linearly for a retention test, Reder and Anderson
+   included.
+4. **Langer, Schulz von Thun & Tausch (1974) in full**, for whether the
    *Kürze/Prägnanz* optimum is the authors' claim and whether it was measured.
-4. **Locally and cheaply:** run the reader test against one page twice, whole and
+5. **Locally and cheaply:** run the reader test against one page twice, whole and
    condensed, and compare unanswerable counts. The one experiment available
    without external access, and it tests overshoot directly on this corpus.
+
+**Answered, and no longer worth chasing:** whether any Kalyuga experiment
+isolates text elimination from the integration manipulation. It does (§ 3). The
+*Human Factors* primary would add sample sizes and effect sizes, not a different
+answer.
 
 ---
 
@@ -273,7 +313,9 @@ record), **search-summary** (a search engine's synthesis of secondary sources),
 | 5 | Seductive detail covers interesting-and-irrelevant material only | Verified | Medium |
 | 6 | McNamara et al. (1996) manipulated coherence, not surplus detail | Verified | Medium |
 | 7 | Carroll et al. (1987) is a four-way bundle, not a brevity result | Verified | Medium |
-| 8 | Kalyuga et al. (1998): text elimination best for experts across three experiments | Search-summary | Low-medium |
+| 8 | Kalyuga et al. (1998): text essential and best integrated for novice apprentices, redundant and best **fully eliminated** for experienced ones; elimination is its own condition, not confounded with integration | Verified against the co-authored 1998 review, read in full | Medium-high |
+| 8a | The same review reads McNamara et al. (1996) as redundancy rather than active processing, because mental-effort ratings **rose** where the active-processing account predicts a fall | Verified against that review | Medium |
+| 8b | Reder & Anderson (1980, 1982): physics texts learned more effectively from a summary than from the entire contents — detail volume manipulated in prose | Cited at one remove in that review; unchecked | Low |
 | 9 | *Kürze/Prägnanz* is a mid-scale optimum | Search-summary | Low-medium |
 | 10 | Groeben's interactional turn; Göpferich keeps the Hamburg four, adds *Korrektheit* and *Perzipierbarkeit*, reframes on the communication situation | Search-summary | Low-medium |
 | 11 | Hamburg dimensions not independent; contrast pairs ad hoc | Search-summary | Low-medium |
@@ -319,8 +361,17 @@ and a negative finding obtained under blocked access is weak evidence of absence
 The repo-derived rows (19–22) carry no such limitation and are reproducible by
 the commands named.
 
-**The exception, and the route around the blockade.** Rozenblit & Keil (2002) was
-supplied directly by the maintainer as a PDF and read in full, which moved rows
-12 and 12a from search-summary to verified and sharpened § 5.2 from an assertion
-to a measured contrast. That is the working route for anything else in § 9: the
-environment cannot fetch, but it can read what is handed to it.
+**The exceptions, and the route around the blockade.** Two PDFs were supplied
+directly by the maintainer and read in full: Rozenblit & Keil (2002), which moved
+rows 12 and 12a from search-summary to verified and sharpened § 5.2 from an
+assertion to a measured contrast; and Sweller, van Merriënboer & Paas (1998),
+which settled the design question behind row 8 and produced two claims nothing
+else in this pass had reached (rows 8a and 8b). That is the working route for
+anything else in § 9: the environment cannot fetch, but it reads what it is
+handed.
+
+**Note on the second one.** It was supplied as Kalyuga, Chandler & Sweller (1998),
+*Human Factors* 40(1), and is a different paper — the CLT review in *Educational
+Psychology Review* 10(3), sharing one author. It happens to describe the target
+study in enough detail to answer the question, which is why row 8 moved; the
+target itself remains unread, and row 8's tier says so.
