@@ -412,28 +412,41 @@ compliant the day before.
   scope corrected by its round 3. BK-360 documents the resulting state in
   SFTP-030 and the SFTP guide; it does not fix it.
 
-- [ ] **BUG-276 — A mapped error still reaches the caller with an empty message through the base-class arms, on four backends**
+- [ ] **BUG-276 — A mapped error still reaches the caller with an empty message through five base-class arms, on four backends**
   spec: ERR-009 · effort: S · audience: user.api
   The remainder of BUG-264, which closed the `BackendUnavailable` half. ERR-009
   is a claim about `str()` on *any* error, and the same construction spelled
-  with the base class is at **7** sites in 5 files:
-  `rg -n 'RemoteStoreError\(str\(exc\)' src/` → `backends/_azure_common.py`
-  (two, the `HttpResponseError`-with-unmapped-status arm and the final
-  fall-through), `backends/_s3_boto3.py`, `backends/_s3_pyarrow.py`,
-  `_errors.py`, and **two in `backends/_sftp.py`** — the `OSError` and final
-  fall-through arms of `_map_exception`. Line numbers are deliberately omitted:
-  two successive revisions of BUG-264 cited numbers its own diff had already
-  shifted, and the `rg` above is the derivation. Those two SFTP arms are the
-  fall-throughs of the very `_map_exception` BK-359 rewrote, so SFTP is not
-  finished either — reading that item's title would suggest otherwise.
-  **Two are reachable and were driven through the real code:**
-  `_classify_by_message(OSError(''))` returns `RemoteStoreError('')`, and an
-  empty `OSError` through `S3PyArrowBackend._pyarrow_errors` does the same. Note
-  those same two sites are *unreachable* for `BackendUnavailable` — that branch
-  needs one of `endpoint`/`connect`/`timeout`/`dns`/`name or service` in the
-  message and `""` contains none — so reading the guard alone concludes "safe"
-  and running it finds the exit one line below. That is why this class was filed
-  in measured form.
+  with the base class is at **7** sites in 5 files —
+  `rg -n 'RemoteStoreError\(str\(exc\)' src/` — but **the construction is not
+  the defect and 7 is not the size of this item.** What decides whether a site
+  can render blank is the guard above it, so each was driven rather than read.
+  Line numbers are omitted deliberately: two successive revisions of BUG-264
+  cited numbers its own diff had already shifted, and the `rg` is the derivation.
+
+  **Five are blank-reachable, each observed returning `RemoteStoreError('')`
+  rendering as `" | path=… | backend=…"`:** `_azure_common`'s final
+  fall-through (driven with a bare `RuntimeError`); `_s3_pyarrow`'s `OSError`
+  arm (an argument-less `OSError` through `_pyarrow_errors`); `_errors.py`'s
+  `_classify_by_message` final arm; and **both `_sftp` arms** — the `OSError`
+  errno fall-through (driven with `EIO`) and the final one. Those two SFTP arms
+  are the fall-throughs of the very `_map_exception` BK-359 rewrote, so SFTP is
+  not finished either — reading that item's title would suggest otherwise.
+
+  **Two cannot, and are excluded from the work rather than left implicit.**
+  `_azure_common`'s other site sits inside `isinstance(exc, HttpResponseError)`,
+  and `HttpResponseError.__init__` substitutes `"Operation returned an invalid
+  status '<reason>'"` for a falsy message — a bare instance gives
+  `"Operation returned an invalid status 'None'"`. `_s3_boto3`'s sits inside
+  `isinstance(exc, ClientError)`, which always formats from a template. Both
+  were measured. **This distinction was missed when the item was first written
+  and found by BUG-264's round-1 review**, which is the reason the paragraph
+  above enumerates by guard instead of by `rg` hit.
+  Note the three keyword-guarded sites are the mirror image for
+  `BackendUnavailable` — that branch needs one of
+  `endpoint`/`connect`/`timeout`/`dns`/`name or service` in the message and `""`
+  contains none — so reading the guard alone concludes "safe" and running it
+  finds the exit one line below. That is why this class is filed in measured
+  form.
 
   **What BUG-264 established, so it is not re-derived here.** `rg -n
   'BackendUnavailable\(' src/` returns five `BackendUnavailable(str(exc))`
@@ -453,7 +466,10 @@ compliant the day before.
   dispatch that already failed to recognise the exception. The second is the
   more interesting answer and the more invasive one: an arm that cannot name the
   failure may be admitting the dispatch above it is incomplete. Decide once and
-  apply to all seven — a per-site answer is how this class got to seven sites.
+  apply to all **five** — a per-site answer is how this class spread across four
+  backends. The two unreachable sites want no change; touching them to make the
+  seven look uniform would add a fallback nothing can reach, which is the shape
+  the coverage gate cannot see and a reader later mistakes for a tested path.
   **Not a shared helper by default:** `_errors.py`'s site is the shared one and
   the other six are per-backend, so whatever is decided has to say which of the
   two it lives in. BUG-264 put Azure's in `_azure_common` because both twins

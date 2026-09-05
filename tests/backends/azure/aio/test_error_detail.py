@@ -24,12 +24,21 @@ from __future__ import annotations
 
 import socket
 import threading
-from typing import TYPE_CHECKING, Any
+import time
+from typing import TYPE_CHECKING
 
 import pytest
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+
+# These assertions are written to hold on every platform, so they are worth
+# nothing unless every platform runs them. CI's default test job is Linux-only;
+# the Windows and macOS legs select by this marker, not by directory. Without it
+# the module docstring's own claim — that a driver's wording for an unreachable
+# port differs by OS and only non-emptiness is portable — would never be
+# exercised anywhere it could fail.
+pytestmark = pytest.mark.os_sensitive
 
 pytest.importorskip("azure.storage.filedatalake", reason="azure-storage-file-datalake not installed")
 
@@ -77,6 +86,16 @@ class _LoopbackServer:
         self._accepted: list[socket.socket] = []
         self._thread = threading.Thread(target=self._serve, daemon=True)
         self._thread.start()
+
+    @property
+    def accepted(self) -> list[socket.socket]:
+        """Connections currently held open, so a caller can assert on them."""
+        return list(self._accepted)
+
+    @property
+    def listener_fileno(self) -> int:
+        """The listener's descriptor, or ``-1`` once it is closed."""
+        return self._listener.fileno()
 
     def _serve(self) -> None:
         while True:
@@ -193,27 +212,34 @@ async def test_a_stalled_response_keeps_the_drivers_own_words(stalling_server: _
     assert mapped.backend == "async-azure"
 
 
-def test_the_loopback_helper_binds_and_releases() -> None:
-    """The fixture's own contract: a port is handed out, and teardown releases it.
+def test_the_loopback_helper_closes_every_socket_it_opened() -> None:
+    """The fixture's own contract: teardown leaves no socket open.
 
-    A listener that outlived its fixture would leak a socket into the rest of
-    the session, and ``filterwarnings = error`` would attribute the resulting
-    ``ResourceWarning`` to whichever test the collector happened to be in.
+    A listener or an accepted connection that outlived its fixture would leak
+    into the rest of the session, and ``filterwarnings = error`` would attribute
+    the resulting ``ResourceWarning`` to whichever test the collector happened to
+    be in — a failure that reads as unrelated to this file.
+
+    Asserted on the descriptors rather than by rebinding the port. A rebind proves
+    nothing: ``SO_REUSEADDR`` lets Windows bind a port that is still in use, so
+    the rebind succeeds whether or not ``close()`` did anything, and comparing
+    ``getsockname()`` to the port just requested cannot fail at all.
     """
-    server = _LoopbackServer(close_immediately=True)
-    port = server.port
-    try:
-        probe = socket.socket()
-        probe.settimeout(2)
-        probe.connect(("127.0.0.1", port))
-        probe.close()
-    finally:
-        server.close()
+    server = _LoopbackServer(close_immediately=False)
+    probe = socket.socket()
+    probe.settimeout(5)
+    probe.connect(("127.0.0.1", server.port))
 
-    rebind: Any = socket.socket()
-    rebind.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    try:
-        rebind.bind(("127.0.0.1", port))
-        assert rebind.getsockname()[1] == port, "the released port did not come back"
-    finally:
-        rebind.close()
+    # Wait for the accept thread to record the connection, so the assertion
+    # covers a non-empty set rather than passing on a race.
+    deadline = time.monotonic() + 5
+    while not server.accepted and time.monotonic() < deadline:
+        time.sleep(0.01)
+    accepted = list(server.accepted)
+    assert accepted, "the server never accepted the probe connection"
+
+    probe.close()
+    server.close()
+
+    assert server.listener_fileno == -1, "the listener socket outlived close()"
+    assert [c.fileno() for c in accepted] == [-1] * len(accepted), "an accepted connection outlived close()"

@@ -241,11 +241,19 @@ if evidence changes; these are retired.
   — from letting `asyncio.timeout(0.001)` fire, not from constructing one —
   carries `args=()` and `str() == ''`. `AzureError.__init__` sets
   `self.message = str(message)`, and `azure/core/pipeline/transport/_aiohttp.py`
-  wraps that shape as `ServiceResponseTimeoutError(err, error=err)` /
-  `ServiceRequestTimeoutError(err, error=err)` at four raise sites, so the arm
+  wraps that shape as `ServiceResponseTimeoutError(err, error=err)` at its
+  `except asyncio.TimeoutError` arms, so the arm
   returned `BackendUnavailable('')` rendering as
   `" | path='delivery.csv' | backend='azure'"` — character for character the
   SFTP defect BK-359 fixed.
+  **A fourth timeout arm in that transport is not one of them**, and the item's
+  "four raise sites" said otherwise. It catches aiohttp's
+  `ConnectionTimeoutError`, which aiohttp raises at a single site with
+  `f"Connection timeout to host {req.url}"`, so it always arrives explained.
+  The loopback control for a dead port drives exactly that arm and observes
+  `BackendUnavailable("Connection timeout to host http://127.0.0.1:…")` — the
+  measurement was in this PR from the start and its consequence for the count
+  was missed until round 1 named it.
   **One premise of the item was refuted by measuring it**, and is recorded
   because the item asserted it twice. "Only the async timeout is an end-to-end
   reproduction" does not hold: azure-core builds its own

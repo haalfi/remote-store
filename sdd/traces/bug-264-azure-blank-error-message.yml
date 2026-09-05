@@ -11,6 +11,10 @@ source_items:
   - BK-359
 audience:
   - user.api
+discovery_followups:
+  # Born in this PR's split: BUG-264's base-class half needed an ID of its own,
+  # and BUG-276 did not exist when this trace was first written.
+  - BUG-276
 expected_ripples:
   # sdd/backlogid.json is deliberately absent: the split retired BUG-264 into
   # BACKLOG-DONE and minted BUG-276, and `hatch run gen-backlogid` left the file
@@ -20,7 +24,16 @@ expected_ripples:
   - CHANGELOG.md
   - sdd/BACKLOG.md
   - sdd/BACKLOG-DONE.md
-review_rounds: 0
+# Derived from `git log --format='%s' origin/master..HEAD --reverse`, naming the
+# commits by subject rather than by SHA — a rebase rewrites every hash, and
+# BK-359's trace went stale five times for exactly that reason:
+#   Say which side of the Azure exchange failed when the SDK says nothing
+#                                                   -> does not count (implements)
+#   Fix the 3.10 CI break, and the four claims round 1 refuted
+#                                                   -> counts (round 1, 7 findings:
+#            6 posted on the PR, 1 from CI going red on the 3.10 leg)
+# Value is 1.
+review_rounds: 1
 phases:
   - id: orient
     name: Orient

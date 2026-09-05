@@ -562,8 +562,11 @@ class TestAzureErrorMapping:
         inner = TimeoutError()
         assert str(inner) == "", "premise: an argument-less timeout carries no text"
 
-        # Mirrors azure/core/pipeline/transport/_aiohttp.py, whose four timeout
-        # arms all spell the wrap ``Error(err, error=err)``.
+        # Mirrors azure/core/pipeline/transport/_aiohttp.py, whose three
+        # ``except asyncio.TimeoutError`` arms all spell the wrap
+        # ``Error(err, error=err)``. Its fourth timeout arm catches aiohttp's
+        # ConnectionTimeoutError, which is always raised with text, so it never
+        # reaches the fallback — see the async twin's docstring.
         wrapper = getattr(__import__("azure.core.exceptions", fromlist=[wrapper_name]), wrapper_name)
         backend = _make_backend()
         mapped = backend._classify(wrapper(inner, error=inner), "delivery.csv")

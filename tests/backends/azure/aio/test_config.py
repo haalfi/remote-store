@@ -501,20 +501,33 @@ class TestAsyncAzureErrorMapping:
         """A driver signal carrying no text still names a cause (ERR-009).
 
         The inner exception is a *genuine* ``asyncio.TimeoutError`` — obtained by
-        letting ``asyncio.timeout`` fire rather than by constructing one, because
-        that is what makes ``args == ()``. The wrap mirrors
-        ``azure/core/pipeline/transport/_aiohttp.py``, whose four timeout arms
-        all spell it ``Error(err, error=err)``.
+        letting a real timeout fire rather than by constructing one, because that
+        is what makes ``args == ()``. The wrap mirrors
+        ``azure/core/pipeline/transport/_aiohttp.py``, whose three
+        ``except asyncio.TimeoutError`` arms all spell it
+        ``Error(err, error=err)``. Its fourth timeout arm is not one of them: it
+        catches aiohttp's ``ConnectionTimeoutError``, which aiohttp raises at a
+        single site with ``f"Connection timeout to host {req.url}"``, so that arm
+        always carries text and never reaches the fallback under test. The
+        loopback control in ``test_error_detail.py`` drives it and sees that
+        text.
+
+        ``asyncio.wait_for`` rather than ``asyncio.timeout``: the latter is 3.11+
+        and broke the 3.10 CI leg. ``asyncio.TimeoutError`` rather than the
+        builtin, because on 3.10 they are **not** the same class — measured
+        there, ``asyncio.TimeoutError is TimeoutError`` is ``False`` and
+        ``wait_for`` raises ``asyncio.exceptions.TimeoutError`` — and
+        ``asyncio.TimeoutError`` is the one azure-core's arms catch. The blank
+        shape itself is identical on both: ``args == ()``, ``str() == ""``.
         """
         try:
-            async with asyncio.timeout(0.001):
-                await asyncio.sleep(5)
-        except TimeoutError as timed_out:
+            await asyncio.wait_for(asyncio.sleep(5), 0.001)
+        except asyncio.TimeoutError as timed_out:
             inner: BaseException = timed_out
         else:  # pragma: no cover -- the sleep is 5000x the bound
-            pytest.fail("asyncio.timeout did not fire")
+            pytest.fail("the timeout did not fire")
 
-        assert inner.args == (), "premise: a fired asyncio.timeout carries no arguments"
+        assert inner.args == (), "premise: a fired timeout carries no arguments"
         assert str(inner) == ""
 
         mapped = classify_azure_error(wrapper(inner, error=inner), "delivery.csv", "async-azure")

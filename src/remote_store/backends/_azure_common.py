@@ -154,15 +154,28 @@ def _unavailable(exc: Exception, path: str, backend_name: str) -> BackendUnavail
     message from the status code and never reach this.
 
     **Why the driver's own message is not enough.** ``AzureError.__init__`` sets
-    ``self.message = str(message)``, and every timeout arm of the aiohttp
-    transport wraps a bare ``asyncio.TimeoutError`` as
-    ``ServiceResponseTimeoutError(err, error=err)``. A fired ``asyncio.timeout``
-    carries ``args == ()``, so that wrap stringifies empty and the caller reads
+    ``self.message = str(message)``, and the aiohttp transport's
+    ``except asyncio.TimeoutError`` arms wrap what they caught as
+    ``ServiceResponseTimeoutError(err, error=err)``. A fired timeout carries
+    ``args == ()``, so that wrap stringifies empty and the caller reads
     ``" | path='delivery.csv' | backend='azure'"`` — the right type saying
-    nothing, which the error model's meaningful-``str()`` invariant forbids. No
-    count of those arms is given: it is a third-party file's shape, it moves
-    between SDK releases, and two revisions of the item behind this fix cited
-    line numbers that had already shifted.
+    nothing, which the error model's meaningful-``str()`` invariant forbids.
+    **Not every timeout arm there is one of them**, and no count is given for
+    either group: it is a third-party file's shape, it moves between SDK
+    releases, and successive revisions of the item behind this fix cited line
+    numbers their own diffs had already shifted. One of those arms catches
+    aiohttp's ``ConnectionTimeoutError``, which aiohttp raises with the host it
+    could not reach, so it arrives explained and leaves here unchanged.
+
+    **No log record, which is where this diverges from the SFTP helper of the
+    same name.** That one emits a WARNING at the point the backend concludes a
+    connection is unusable. This one does not, and the divergence is deliberate
+    rather than an oversight: the sync backend's ``check_health`` classifies
+    through here, so a record would land one line under every liveness poll, and
+    the structured field SFTP tags such records with is not yet described in the
+    published logging guide. The consequence is that Azure failures are reported
+    only by the exception, and a reader comparing the two helpers should not
+    infer that one of them forgot.
 
     **The fallback never overwrites detail.** It fires only when ``str(exc)`` is
     empty, so a driver that did explain itself reaches the caller intact. That
@@ -238,14 +251,20 @@ def classify_azure_error(exc: Exception, path: str, backend_name: str) -> Remote
         # type and is not reachable through the public API; surface it as the
         # generic base error rather than guessing a more specific type.
         return RemoteStoreError(str(exc), path=path, backend=backend_name)
-    # These two base-class arms can carry an empty message the same way the
-    # transport arm above could, and are deliberately left alone: whether a
-    # blank RemoteStoreError deserves the same synthesised fallback or should be
-    # classified instead is an open decision tracked as BUG-276. The same
-    # construction stands in several other modules — enumerate them with
+    # Only *this* base-class arm can carry an empty message; the one above it
+    # cannot, and the difference is the exception class rather than the
+    # construction. HttpResponseError.__init__ substitutes "Operation returned an
+    # invalid status '<reason>'" for a falsy message, so the arm inside that
+    # isinstance never renders blank however it is spelled — which is why
+    # AZ-025's postcondition can say the other rows are non-empty by
+    # construction without contradicting this comment. This one takes any
+    # exception at all, including a bare RuntimeError, so it can.
+    # Left alone deliberately: whether a blank RemoteStoreError deserves the same
+    # synthesised fallback or should be classified instead is an open decision
+    # tracked as BUG-276. The same construction stands in several other modules —
     #     rg -n 'RemoteStoreError\(str\(exc\)' src/
-    # rather than trusting a count here. Answering the question at one of those
-    # sites answers it for all of them, by accident.
+    # enumerates them, and that item records which of them are blank-reachable,
+    # because the guard above each is what decides it and not the call.
     return RemoteStoreError(str(exc), path=path, backend=backend_name)
 
 
