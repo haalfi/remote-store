@@ -128,6 +128,27 @@ def test_r2_flags_template_without_a_table(gate, tree):
     assert "no table header row found" in errors[0]
 
 
+def test_messages_use_posix_paths(gate, tmp_path):
+    """Messages read the same on every platform.
+
+    The two rule tests above assert forward-slash paths, so a `Path` rendered
+    straight into a message fails them on Windows only — which is how this was
+    found, on CI rather than locally. This pins the helper directly.
+    """
+    assert gate._rel(tmp_path / "sdd" / "research" / "x.md", tmp_path) == "sdd/research/x.md"
+
+
+def test_messages_are_ascii(gate, tree):
+    """No em dash in a message: the gate prints to a cp1252 console on Windows."""
+    (tree / "sdd" / "research" / "research-undated.md").write_text("# R: U\n\nNo date.\n", encoding="utf-8")
+    tmpl = tree / "docs-src" / "explanation" / "design" / "research" / "_index.tmpl"
+    tmpl.write_text("| Topic | Document |\n|---|---|\n{{ research_rows }}\n", encoding="utf-8")
+    errors = gate.check(tree)
+    assert len(errors) == 2
+    for message in errors:
+        assert message.isascii(), message
+
+
 def test_expected_columns_counts_both_flags(gate):
     """The arity formula the docstring states: 2 + bool(status) + bool(dated)."""
     from docs.scan import SddKind

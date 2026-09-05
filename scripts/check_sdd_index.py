@@ -79,6 +79,11 @@ def _expected_columns(kind) -> int:  # noqa: ANN001 — SddKind, imported at run
     return 2 + bool(kind.status) + bool(kind.dated)
 
 
+def _rel(path: Path, repo_root: Path) -> str:
+    """Repo-relative path, posix-separated so a message reads the same on Windows."""
+    return path.relative_to(repo_root).as_posix()
+
+
 def _header_columns(tmpl: Path) -> int | None:
     """Column count of the template's table header, or None if it has no table."""
     for line in tmpl.read_text(encoding="utf-8").splitlines():
@@ -103,25 +108,26 @@ def check(repo_root: Path | None = None) -> list[str]:
         if kind.dated:
             for entry in entries_by_kind.get(kind.slug, []):
                 if entry.date is None:
-                    rel = entry.source.relative_to(repo_root)
+                    rel = _rel(entry.source, repo_root)
                     errors.append(
                         f"R1 {rel}: no parseable '**Date:** YYYY-MM-DD' in the header ({kind.slug} is a dated kind)"
                     )
 
         # R2: the template header declares as many columns as a row emits.
         tmpl = repo_root / "docs-src" / "explanation" / "design" / kind.slug / "_index.tmpl"
+        rel = _rel(tmpl, repo_root)
         if not tmpl.is_file():
-            errors.append(f"R2 {tmpl.relative_to(repo_root)}: missing index template for kind {kind.slug!r}")
+            errors.append(f"R2 {rel}: missing index template for kind {kind.slug!r}")
             continue
         found = _header_columns(tmpl)
         expected = _expected_columns(kind)
         if found is None:
-            errors.append(f"R2 {tmpl.relative_to(repo_root)}: no table header row found")
+            errors.append(f"R2 {rel}: no table header row found")
         elif found != expected:
             flags = ", ".join(f for f, on in (("status", kind.status), ("dated", kind.dated)) if on) or "none"
             errors.append(
-                f"R2 {tmpl.relative_to(repo_root)}: header has {found} column(s), "
-                f"rows emit {expected} (flags: {flags}) — the surplus cell is dropped silently"
+                f"R2 {rel}: header has {found} column(s), "
+                f"rows emit {expected} (flags: {flags}); the surplus cell is dropped silently"
             )
 
     return errors
