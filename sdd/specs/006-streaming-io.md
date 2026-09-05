@@ -117,24 +117,43 @@ dead connections with them.
 
 **The limit of the mechanism.** The guard is armed by an exception *reaching*
 `_fail`, so anything that stops one arriving defeats it — whether the transport
-discarded the failure, or raised something outside the `(OSError, EOFError)`
-tuple the mapping paths catch. Neither is a gap in a backend's predicate: what
-decides is the caught tuple, not the predicate. Where a failure does not arrive,
-the close re-enters the connection exactly as it would have without this clause,
-and whatever the mapper would have done — invalidating a cached client, marking a
+discarded the failure, or raised something outside the caught set the mapping
+paths intercept. Neither is a gap in a backend's predicate: what decides is the
+caught set, not the predicate. Where a failure does not arrive, the close
+re-enters the connection exactly as it would have without this clause, and
+whatever the mapper would have done — invalidating a cached client, marking a
 session dead — is left undone too.
 
-Both classes are non-empty on `SFTPBackend`, the only backend that has been
-measured. For the second: paramiko's `SSHException` / `SFTPError`, which
-additionally escape unmapped in breach of BE-021 (BK-358). For the first, a
-send-side `EOFError` that `BufferedFile.read` swallows into a short read before
-it reaches the wrapper at all. A `SEEK_END` seek was a third case, and the one
-that cost most — the swallowed size request answered `0` rather than merely
-losing a failure — until
+The first class is non-empty on `SFTPBackend`, the only backend that has been
+measured: a send-side `EOFError` that `BufferedFile.read` swallows into a short
+read before it reaches the wrapper at all. A `SEEK_END` seek was a second case,
+and the one that cost most — the swallowed size request answered `0` rather than
+merely losing a failure — until
 [SIO-011](#sio-011-sizing-a-stream-for-an-end-relative-seek) moved that request
 into the wrapper, where its failure has a mapping path to travel. That clause
 repairs one discarding call site; it does not empty the class, which is a
 property of the transport rather than of this one.
+
+The second class was non-empty on the same backend and is not any longer:
+paramiko's `SSHException` / `SFTPError` used to escape unmapped in breach of
+BE-021, and defeated this guard on the way past (BK-358). They are now inside
+that backend's caught set — [SIO-012](#sio-012-the-set-of-exception-shapes-a-stream-maps)
+owns that, and owns what the set holds for any other site. **The class is not
+closed by construction**, only empty where it has been looked at: a backend
+supplying a set that misses one of its transport's shapes puts the shape back
+into it, which is a defect of that supply and not of this clause.
+
+**A supplied shape reaches `_fail` but need not arm the guard, and on SFTP it
+does not.** `_is_connection_dead` deliberately excludes the `SSHException`
+family (`_map_exception` gives it its own arm), so a dropped connection is
+mapped, invalidates the cached client, and still closes the inner handle. That
+close is free: measured **0.00 s** on a hard drop and on a half-close alike,
+because paramiko's transport-reader thread tears the socket down on EOF before
+`SFTPFile.close()` can issue its `CMD_CLOSE`. There is therefore nothing here to
+buy, which is why `SFTPBackend.read` was left passing the predicate unchanged
+when its caught set widened. Derivation: the drop and half-close relays on
+BK-358's branch, paramiko 5.0.0. Contrast the stall this clause was written for,
+where the socket stays open and the close does wait.
 
 **See also:** SFTP-030 in [009-sftp-backend.md](009-sftp-backend.md), the bound
 this clause completes, and where that limit is measured.
@@ -209,10 +228,86 @@ would buy a round-trip per seek and nothing else — or, on the forward-only
 streams, a request against something that cannot seek. `SFTPBackend.read()` is
 the only site that supplies a probe.
 
-**The probe's own failure is bounded by the same caught tuple as every other
-path**, deliberately: a `paramiko.SFTPError` raised by the probe escapes
-unmapped exactly as one raised by a read does (BK-358). Widening the tuple for
-this path alone would make it better than the rest with no clause saying why.
+**The probe's own failure is bounded by the same caught set as every other
+path**, deliberately, and that has held through a change in what the set is. It
+was written when the set was `(OSError, EOFError)` everywhere, so a
+`paramiko.SFTPError` raised by the probe escaped unmapped exactly as one raised
+by a read did; widening for this path alone would have made it better than the
+rest with no clause saying why. [SIO-012](#sio-012-the-set-of-exception-shapes-a-stream-maps)
+answered that question per construction site instead, and the probe moved with
+its site rather than ahead of it (BK-358). The rule is the same either way: the
+probe neither leads the set nor lags it.
 
 **See also:** SFTP-030 in [009-sftp-backend.md](009-sftp-backend.md), where the
 `SEEK_END` case was a stated exception to the bound until this clause closed it.
+
+## SIO-012: The Set of Exception Shapes a Stream Maps
+
+**Invariant:** `_ErrorMappingStream` maps `(OSError, EOFError)` plus whatever
+additional exception types the constructing backend supplies, and a supplied type
+is mapped on **every** path the wrapper intercepts — `read`, `readinto`,
+`readline`, `seek` including its SIO-011 size probe, `tell`, and iteration —
+identically to a base-tuple type. A backend that supplies nothing is bounded by
+the base tuple alone, which is the behaviour every backend had before this clause.
+**Postconditions:** A supplied type raises the mapped `RemoteStoreError` with the
+original as `__cause__`, and arms SIO-010's guard exactly when the backend's
+`is_fatal` says so. A type outside the resulting set propagates unmapped, on
+every path, whether or not the site supplied anything.
+
+**What this is for.** The wrapper is what BE-021's never-leak rule rests on once
+a backend's `_errors()` context manager has exited, and the base tuple is not
+wide enough for every transport it serves. On paramiko the ordinary mid-read drop
+is outside it: `SFTPClient._read_response` catches the underlying `EOFError` and
+re-raises `SSHException("Server connection dropped: ...")`, and `_read_packet`
+raises `SFTPError` on a malformed one. Neither subclasses `OSError` or
+`EOFError`, so both reached callers raw — while the *same drop* on `read_bytes`,
+which fails inside `_errors()`, was mapped correctly. One connection, one fault,
+two answers depending on which method the caller used (BK-358).
+
+Measured on an in-process SFTP server behind a relay that closes the connection
+while a reply is outstanding, paramiko 5.0.0 / CPython 3.11:
+
+| Path | Before | After |
+|---|---|---|
+| `read_bytes()` | `BackendUnavailable`, client cleared | unchanged |
+| `read()` stream — `read` / `readinto` / `readline` | raw `paramiko.SSHException` | `BackendUnavailable`, client cleared |
+| `read()` stream — `seek(0, SEEK_END)` probe | raw `paramiko.SSHException` | `BackendUnavailable`, client cleared |
+
+**Why per construction site rather than a wider base.** The wrapper is shared by
+seven construction sites across six backends — `rg -n '_ErrorMappingStream\(' src`
+is the derivation, less the class statement itself — and the evidence for
+widening came from one of them. A base tuple grown to fit paramiko would change
+what S3 (fsspec, boto3 and PyArrow), Azure (both its sites) and HTTP map, on no
+measurement of any of them.
+Keeping the widening on the site that argued for it is what lets a backend answer
+for its own transport and nothing else — the same reasoning SIO-010 gives for
+deciding the futile close by predicate rather than by mapped error type.
+
+**Why not `Exception` with the mapper deciding.** It is the shortest fix and it
+would map the programming errors the wrapper deliberately lets propagate —
+`TypeError`, `AttributeError`, a bug in an inner stream — turning a defect into a
+`RemoteStoreError` that reads like a backend fault. It would also re-introduce
+the previous paragraph's problem in a stronger form, since it widens every site at
+once.
+
+**Why not convert at the source.** The HTTP transports take that route: their
+adapters re-raise `httpx` / `requests` stream errors as `OSError` so the base
+tuple catches them. It works there because those exceptions carry nothing the
+mapper dispatches on. It would not work for SFTP, where the type *is* the
+information: `SFTPError` reaches `BackendUnavailable` through
+`_is_connection_dead` and `SSHException` through its own arm, and both clear the
+cached client so the next operation reconnects (SFTP-010 tier 2). An
+`OSError(str(exc))` carries no errno, so it would land in the generic
+`RemoteStoreError` arm and lose the classification and the invalidation with it —
+strictly worse than the leak it replaced.
+
+**One backend supplies a set today.** `SFTPBackend.read()` supplies
+`(paramiko.SSHException, paramiko.SFTPError)`. No other site does, and none is
+expected to on principle: what belongs in a set is a shape that backend's
+transport was *measured* to raise outside the base, not one a reader thinks it
+might.
+
+**See also:** SFTP-024 in [009-sftp-backend.md](009-sftp-backend.md), the
+never-leak clause this mechanism carries for a caller-facing handle, and BE-021
+in [003-backend-adapter-contract.md](003-backend-adapter-contract.md), which it
+serves.

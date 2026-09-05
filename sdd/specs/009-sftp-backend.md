@@ -531,15 +531,30 @@ missing or denied path is an answer, not a fault.
 
 **Invariant:** No paramiko, socket, or OS exception raised *by the backend* — an
 operation's own I/O, including `open_atomic`'s temp-file open, the caller-facing
-handle's flush/close, and the promote — propagates to callers; all are mapped to
-`remote_store` error types per BE-021. The only non-mapped exceptions are those
-the **caller** raises inside an `open_atomic` yield block (their `with` body)
-that are not themselves dead-connection signals: those are not the backend's and
-propagate unchanged, leaving the target untouched. `open_atomic` distinguishes
-by scope — the temp open, flush, and promote run inside `_errors()`, while the
-yielded write does not; a dead-connection signal surfacing from that write is
-still mapped to `BackendUnavailable` (it is indistinguishable from a real drop).
+handle's flush/close, the promote, and **reads from the stream `read()` returns**
+— propagates to callers; all are mapped to `remote_store` error types per
+BE-021. The only non-mapped exceptions are those the **caller** raises inside an
+`open_atomic` yield block (their `with` body) that are not themselves
+dead-connection signals: those are not the backend's and propagate unchanged,
+leaving the target untouched. `open_atomic` distinguishes by scope — the temp
+open, flush, and promote run inside `_errors()`, while the yielded write does
+not; a dead-connection signal surfacing from that write is still mapped to
+`BackendUnavailable` (it is indistinguishable from a real drop).
 **Postconditions:** `backend` attribute is set to `"sftp"` on all mapped errors.
+
+**The streamed read is the clause's hardest half, and was its longest-standing
+breach.** A caller reads long after `_errors()` has exited, so nothing in this
+backend is on the stack: `_ErrorMappingStream` is the whole mechanism, and it is
+shared with five other backends. It caught `(OSError, EOFError)` only, which a
+dropped connection is outside — paramiko converts the underlying `EOFError` to
+`SSHException` before the wrapper sees it — so the ordinary mid-read drop
+reached callers as a raw paramiko exception while the same drop on `read_bytes`
+mapped correctly (BK-358, closed by
+[SIO-012](006-streaming-io.md#sio-012-the-set-of-exception-shapes-a-stream-maps),
+which is what `read()` supplies its paramiko shapes through). The general lesson
+is worth more than the instance: this invariant is stated over the backend, and
+the surface where it is hardest to hold is the one the backend has already
+handed away.
 
 ---
 
@@ -938,6 +953,21 @@ indistinguishable from a complete one. The bytes already delivered are a valid
 prefix and the handle is dead: the caller discards it rather than resuming.
 This is the premise the retry exclusion below is argued from, so it is stated
 here rather than left implied.
+
+**The same holds for a *drop*, and that was an open question rather than an
+assumption.** A stall and a drop reach the caller by different mechanisms — a
+stall is a receive timeout this bound produces, a drop is an EOF that raises at
+once and trips no bound — so the claim above did not carry over, and BK-358
+recorded the doubt: a send-side `EOFError` *is* swallowed by
+`BufferedFile.read` into a short read before the wrapper sees it, and whether the
+receive side did the same was unmeasured. It does not.
+`test_a_dropped_stream_raises_rather_than_truncating` drives a relay that closes
+the connection mid-transfer and asserts both halves — that the read raises, and
+that what arrived is a valid prefix of the payload rather than something
+reordered. A drop is otherwise outside this clause's subject, which is what
+`io_timeout` bounds; it is named here only because this one sentence is about
+truncation rather than about the bound, and truncation does not care which fault
+ended the transfer.
 
 **Excluded from retry:** `RetryPolicy` wraps the `ssh.connect()` call alone, not
 the whole of `_connect` (SFTP-009), so **no** stall bounded by `io_timeout` is

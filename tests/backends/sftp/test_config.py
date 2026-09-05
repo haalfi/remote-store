@@ -884,8 +884,12 @@ class TestSFTPConnection:
         call site: a real mid-read drop surfaces as ``SSHException`` because
         ``_read_response`` catches the ``EOFError`` and converts it, which is
         why this test bypasses ``_read_response`` and why it never caught the
-        gap BK-358 records. What it does pin is the wiring: ``read()`` wraps the
-        handle in ``_ErrorMappingStream``, so a caught shape must surface
+        gap BK-358 recorded. That gap is closed, and by a test that drives a real
+        dropped socket rather than a shape —
+        ``tests/backends/sftp/test_connection_drop.py``, which is where the
+        ``SSHException`` path is asserted. This one is kept because it pins
+        something that file does not: the *wiring*. ``read()`` wraps the handle
+        in ``_ErrorMappingStream``, so a caught shape must surface
         ``BackendUnavailable``, invalidate the client, and reconnect on the next
         read. The direct ``_ErrorMappingStream`` unit test (fake mapper, no
         ``BufferedReader``) pins none of that — dropping the wrap at ``read()``

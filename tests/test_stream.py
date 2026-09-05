@@ -405,6 +405,206 @@ class TestErrorMappingStreamErrors:
 
 
 # ---------------------------------------------------------------------------
+# Backend-supplied exception shapes (SIO-012, BK-358)
+# ---------------------------------------------------------------------------
+
+
+class _TransportError(Exception):
+    """Stands for ``paramiko.SSHException``: neither ``OSError`` nor ``EOFError``.
+
+    A local type rather than the real paramiko one. This module tests the shared
+    wrapper, which does not know paramiko exists and is imported by backends that
+    do not install it; reaching for the real class here would make a core unit
+    test depend on an optional extra to assert something that is not about
+    paramiko at all. The real shapes are driven end to end against a dropped
+    socket in ``tests/backends/sftp/test_connection_drop.py``.
+    """
+
+
+class _OtherTransportError(Exception):
+    """A second outside-the-base shape, used to prove a supplied set is not a blanket."""
+
+
+class _TransportErrorStream(io.RawIOBase):
+    """Raises *exc* on every mapping path.
+
+    ``_FailingStream`` hardcodes ``OSError`` on ``readline``/``seek``/``tell``,
+    so it cannot say whether the six ``except`` clauses agree with each other.
+    SIO-012's postcondition is that they do, which needs one shape raised from
+    all of them.
+    """
+
+    def __init__(self, exc: Exception) -> None:
+        super().__init__()
+        self._exc = exc
+
+    def readable(self) -> bool:
+        return True
+
+    def readinto(self, b: bytearray | memoryview) -> int:  # type: ignore[override]
+        raise self._exc
+
+    def read(self, size: int = -1) -> bytes:  # type: ignore[override]
+        raise self._exc
+
+    def readline(self, size: int = -1) -> bytes:  # type: ignore[override]
+        raise self._exc
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        raise self._exc
+
+    def tell(self) -> int:
+        raise self._exc
+
+
+_EVERY_MAPPING_PATH = [
+    pytest.param(lambda s: s.read(), id="read"),
+    pytest.param(lambda s: s.readinto(bytearray(10)), id="readinto"),
+    pytest.param(lambda s: s.readline(), id="readline"),
+    pytest.param(lambda s: s.seek(0), id="seek"),
+    pytest.param(lambda s: s.tell(), id="tell"),
+    pytest.param(lambda s: next(iter(s)), id="iteration"),
+]
+"""The six paths that map. Shared so a path added to the wrapper is added once here."""
+
+
+class TestBackendSuppliedShapes:
+    """The caught set is per-construction-site: base plus whatever the backend adds.
+
+    The base is ``(OSError, EOFError)`` and was the *whole* bound until BK-358,
+    which is why a dropped SFTP connection reached callers as a raw
+    ``paramiko.SSHException`` — that shape subclasses neither arm, and
+    ``SFTPClient._read_response`` produces it in place of the ``EOFError`` the
+    base would have caught.
+
+    **Both halves are pinned deliberately.** The widening is the fix; the
+    *default staying exactly as it was* is what keeps the fix from reaching the
+    five other construction sites the wrapper serves — S3 (fsspec, boto3,
+    PyArrow), Azure (twice) and HTTP — none of which was measured to need it.
+    """
+
+    @pytest.mark.spec("SIO-012")
+    @pytest.mark.parametrize("action", _EVERY_MAPPING_PATH)
+    def test_a_supplied_shape_maps_on_every_path(self, action) -> None:
+        """A supplied shape travels every mapping path, not only the reads.
+
+        Parametrised across all six because the clauses are separate ``except``
+        statements: a widening applied to ``read`` and ``readinto`` alone would
+        satisfy the SFTP drop tests, which never seek or tell on a dead channel,
+        while leaving ``seek``, ``tell`` and the probe still leaking.
+        """
+        stream = _ErrorMappingStream(
+            _TransportErrorStream(_TransportError("connection dropped")),
+            _test_mapper,
+            "f.txt",
+            also_catch=(_TransportError,),
+        )
+        with pytest.raises(NotFound, match="mapped"):
+            action(stream)
+
+    @pytest.mark.spec("SIO-012")
+    @pytest.mark.parametrize("action", _EVERY_MAPPING_PATH)
+    def test_without_a_supplied_set_the_same_shape_propagates(self, action) -> None:
+        """The default is unchanged, which is what protects every other backend.
+
+        The sibling above and this test differ in one argument. A regression that
+        widened the base tuple instead of the per-site set would pass that one and
+        fail this one, which is the only place that distinction is visible.
+        """
+        stream = _ErrorMappingStream(
+            _TransportErrorStream(_TransportError("connection dropped")),
+            _test_mapper,
+            "f.txt",
+        )
+        with pytest.raises(_TransportError, match="connection dropped"):
+            action(stream)
+
+    @pytest.mark.spec("SIO-012")
+    def test_a_supplied_set_is_not_a_blanket(self) -> None:
+        """Supplying one shape must not start mapping every shape.
+
+        The tempting fix for BK-358 was ``except Exception``, and the reason it
+        was refused is that the wrapper deliberately lets programming errors
+        through. This is the assertion that would catch that fix arriving by the
+        back door — through a set built from ``Exception`` rather than from the
+        types the backend named.
+        """
+        stream = _ErrorMappingStream(
+            _TransportErrorStream(_OtherTransportError("something else")),
+            _test_mapper,
+            "f.txt",
+            also_catch=(_TransportError,),
+        )
+        with pytest.raises(_OtherTransportError, match="something else"):
+            stream.read()
+
+    @pytest.mark.spec("SIO-012")
+    def test_a_supplied_shape_still_propagates_a_programming_error(self) -> None:
+        """Widening the set does not widen it to the errors that mean a bug.
+
+        Sibling of ``test_type_error_propagates``, run against a stream that
+        *does* supply a set — the clause it exercises is a different one, since a
+        widened site was where a blanket catch would land first.
+        """
+        stream = _ErrorMappingStream(
+            _TransportErrorStream(TypeError("bad argument")),
+            _test_mapper,
+            "f.txt",
+            also_catch=(_TransportError,),
+        )
+        with pytest.raises(TypeError, match="bad argument"):
+            stream.read()
+
+    @pytest.mark.spec("SIO-012")
+    def test_a_supplied_shape_preserves_the_exception_chain(self) -> None:
+        """``raise ... from exc``, so the transport's own error survives for a reader.
+
+        The mapped message is generic by construction; the ``__cause__`` is where
+        "which paramiko failure was this" lives, and a caller debugging a drop has
+        nothing else to read.
+        """
+        stream = _ErrorMappingStream(
+            _TransportErrorStream(_TransportError("connection dropped")),
+            _test_mapper,
+            "f.txt",
+            also_catch=(_TransportError,),
+        )
+        with pytest.raises(NotFound) as exc_info:
+            stream.read()
+        assert isinstance(exc_info.value.__cause__, _TransportError)
+
+    @pytest.mark.spec("SIO-012")
+    @pytest.mark.spec("SIO-010")
+    def test_a_supplied_shape_reaches_the_futile_close_guard(self) -> None:
+        """A supplied shape arms SIO-010's guard exactly as a base-tuple one does.
+
+        The two clauses meet here: SIO-010 arms on what ``_fail`` sees, and
+        SIO-012 decides what reaches ``_fail``. Before the widening the guard was
+        inert on the shape a dropped connection actually takes, because nothing
+        was mapped for it to be armed by.
+
+        The predicate is local rather than the module's ``_fatal``, which matches
+        ``_ChannelDeath`` — an ``OSError``, so the base set would have caught it
+        and the supplied set would have decided nothing.
+        """
+        inner = _CloseTrackingStream(_TransportError("connection dropped"))
+        stream = _ErrorMappingStream(
+            inner,
+            _test_mapper,
+            "f.txt",
+            is_fatal=lambda exc: isinstance(exc, _TransportError),
+            also_catch=(_TransportError,),
+        )
+
+        with pytest.raises(NotFound, match="mapped"):
+            stream.read()
+        stream.close()
+
+        assert inner.close_calls == 0, "a mapped fatal failure must skip the inner close"
+        assert stream.closed
+
+
+# ---------------------------------------------------------------------------
 # Futile-close guard (SIO-010, BK-355)
 # ---------------------------------------------------------------------------
 
@@ -688,29 +888,41 @@ class TestSeekEndSizeProbe:
         assert raw.closed
 
     @pytest.mark.spec("SIO-011")
-    def test_a_probe_failure_outside_the_caught_tuple_propagates_unmapped(self) -> None:
-        """The probe path is bounded by the same tuple as every other path, deliberately.
+    @pytest.mark.spec("SIO-012")
+    def test_a_probe_failure_is_bounded_by_the_same_set_as_every_other_path(self) -> None:
+        """The probe follows the site's caught set — it neither leads nor lags it.
 
-        ``_ErrorMappingStream`` catches ``(OSError, EOFError)`` and nothing
-        else, so a ``paramiko.SFTPError`` -- which subclasses neither -- escapes
-        the probe unmapped exactly as one escapes a read.  That is BK-358's
-        breach of BE-021, unchanged by this clause and not narrowed by it:
-        widening the tuple here alone would make the seek path better than the
-        read path with no clause saying why.  Pinned so the boundary is
-        asserted rather than assumed, and so BK-358 has a test to delete.
+        This pinned the opposite outcome until BK-358. SIO-011 bounded the probe
+        by the base ``(OSError, EOFError)`` on purpose, so a ``paramiko.SFTPError``
+        escaped the probe unmapped exactly as one escaped a read; widening for the
+        probe alone would have made one path better than the rest with no clause
+        saying why. SIO-012 answered the question a site at a time instead, and
+        the probe moved with it — which is the property worth pinning, because
+        it is the one a later edit could break in either direction.
+
+        Both directions are asserted for that reason: supplied maps, unsupplied
+        propagates, one stream shape and one argument between them.
         """
-
-        class _NotAnOSError(Exception):
-            """Stands for ``paramiko.SFTPError``: neither ``OSError`` nor ``EOFError``."""
-
-        inner = _ParamikoSeekEndStream(b"0123456789", stat_exc=_NotAnOSError("garbage packet"))
-        stream = _ErrorMappingStream(inner, _test_mapper, "f.txt", is_fatal=_fatal, size_probe=_stat_size_probe)
-
-        with pytest.raises(_NotAnOSError, match="garbage packet"):
+        supplied = _ParamikoSeekEndStream(b"0123456789", stat_exc=_TransportError("garbage packet"))
+        stream = _ErrorMappingStream(
+            supplied,
+            _test_mapper,
+            "f.txt",
+            is_fatal=lambda exc: isinstance(exc, _TransportError),
+            size_probe=_stat_size_probe,
+            also_catch=(_TransportError,),
+        )
+        with pytest.raises(NotFound, match="mapped"):
             stream.seek(0, io.SEEK_END)
-
         stream.close()
-        assert inner.close_calls == 1, "nothing was mapped, so the guard must stay unarmed"
+        assert supplied.close_calls == 0, "the mapped failure was fatal, so the close must be skipped"
+
+        unsupplied = _ParamikoSeekEndStream(b"0123456789", stat_exc=_TransportError("garbage packet"))
+        bare = _ErrorMappingStream(unsupplied, _test_mapper, "f.txt", is_fatal=_fatal, size_probe=_stat_size_probe)
+        with pytest.raises(_TransportError, match="garbage packet"):
+            bare.seek(0, io.SEEK_END)
+        bare.close()
+        assert unsupplied.close_calls == 1, "nothing was mapped, so the guard must stay unarmed"
 
 
 # ---------------------------------------------------------------------------

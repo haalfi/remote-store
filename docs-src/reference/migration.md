@@ -169,6 +169,50 @@ mapping sees only the exception, so it cannot tell a connect-time `EACCES` or
 described [in the v0.30.0 notes](#v0291-to-v0300) still answers exactly as it
 did. Other backends are unchanged.
 
+**A dropped SFTP connection now raises `BackendUnavailable` from a `read()`
+stream too:**
+
+In v0.30.0 the answer to a dropped connection depended on which read you had
+used. `read_bytes()` raised `BackendUnavailable` and dropped the dead client, as
+documented. A stream from `read()` raised paramiko's own
+`SSHException("Server connection dropped: ...")` straight through, because the
+backend's error mapping had already finished by the time you read from the
+stream and the wrapper that stands in for it did not recognise that shape. Same
+server, same fault, two answers.
+
+```python
+with store.read("delivery.csv") as stream:
+    # v0.30.0: paramiko.ssh_exception.SSHException('Server connection dropped: ')
+    # v0.31.0: BackendUnavailable('Server connection dropped: ')
+    data = stream.read()
+```
+
+**What to change.** If you catch paramiko exceptions around a streamed read —
+`except paramiko.SSHException`, or the `SFTPError` a malformed packet raises —
+that branch no longer runs, and you should catch
+[`BackendUnavailable`](api/errors.md) instead. If you already caught
+`RemoteStoreError` there, or caught nothing paramiko-specific, nothing changes
+for you except that the failure now has the type the docstrings promised.
+
+```python
+# Before: the only way to catch a mid-read drop
+except paramiko.SSHException:
+    ...
+
+# After
+except BackendUnavailable:
+    ...
+```
+
+**The dead client is dropped now, which it was not before.** The escape also
+skipped the mapping that invalidates the cached SFTP client, so the operation
+after a mid-read drop re-entered the same dead connection. It now reconnects, as
+it already did after a drop on any other method.
+
+**Scope:** SFTP only. The stream wrapper is shared with the S3, Azure and HTTP
+backends, and what those map is unchanged — the extra shapes are supplied by the
+SFTP backend for its own transport, not added for everyone.
+
 **Flat-namespace backends now raise `InvalidPath` for a wrong-typed path:**
 
 A backend that stores keys rather than nodes — the S3 family, Azure on a flat

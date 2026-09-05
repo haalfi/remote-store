@@ -220,6 +220,68 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BK-358 — Two paramiko exception shapes escape `_ErrorMappingStream` unmapped**
+  spec: BE-021, SIO-010, SIO-012, SFTP-024 · effort: M · audience: user.api
+  Reproduced before it was fixed and re-run after, against a real dropped socket:
+  an in-process SFTP server behind a TCP relay that closes the connection while a
+  reply is outstanding. Mid-read, `Backend.read()`'s stream raised
+  `paramiko.ssh_exception.SSHException("Server connection dropped: ")` — a raw
+  paramiko exception, in breach of BE-021 and SFTP-024 — while the *same drop* on
+  `read_bytes()`, which fails inside `_errors()`, raised `BackendUnavailable` and
+  cleared the cached client. One connection, one fault, two answers depending on
+  which method the caller used. Both now answer `BackendUnavailable`.
+  **The escape cost two things beyond the type**, both measured and both fixed by
+  the same change: the cached client was never invalidated, so SFTP-010 tier 2
+  did not fire on the operation that surfaced the drop; and `_connection_lost`
+  stayed `False`, leaving BK-355's futile-close guard inert on exactly the shape a
+  dropped connection takes.
+  **Fixed by a per-construction-site caught set** — a new `also_catch` parameter
+  on `_ErrorMappingStream`, which `SFTPBackend.read()` supplies
+  `(paramiko.SSHException, paramiko.SFTPError)` — rather than by the item's third
+  option, a base-`Exception` catch with the mapper deciding. That option would
+  map the programming errors the wrapper deliberately lets propagate, and would
+  change what the other six construction sites map on evidence from none of them
+  (`rg -n '_ErrorMappingStream\(' src` is the derivation for the count). Nor by
+  converting to `OSError` at an adapter, the route the HTTP transports take: the
+  type is the information here, since `_map_exception` reaches
+  `BackendUnavailable` for `SFTPError` through `_is_connection_dead` and for
+  `SSHException` through its own arm, and an errno-less `OSError` would land in
+  the generic `RemoteStoreError` arm and lose the classification and the client
+  invalidation with it. The new invariant is **SIO-012**.
+  **The item's open question is answered, and in the spec's favour.** It asked
+  whether SFTP-030's "a streamed read raises rather than returning short" survives
+  a real drop, because the `EOFError` arm has no reachable producer on that path
+  and a send-side `EOFError` is swallowed by `BufferedFile.read` into a short
+  read. The receive side does not do the same: the drop raised with a valid
+  prefix delivered, so no short-read defect sat underneath this one and widening
+  the caught set was sufficient. `test_a_dropped_stream_raises_rather_than_truncating`
+  pins both halves, and SFTP-030 now records the drop beside the stall.
+  **`is_fatal` was left unchanged, on a measurement rather than a judgement.**
+  Widening it to match the `SSHException` family — as the two write-side sites in
+  `_sftp.py` already spell — would buy nothing: the inner close after an
+  `SSHException` costs **0.00 s** on a hard drop and on a half-close alike,
+  because paramiko's transport-reader thread tears the socket down on EOF before
+  `SFTPFile.close()` can issue its `CMD_CLOSE`. Recorded in SIO-010 so the
+  question is not reopened from the asymmetry with those two sites.
+  **The staging is the part that would have been got wrong by reading.** A bare
+  socket close does not reliably reach this defect: it races paramiko's transport
+  thread, and when the transport wins, the next read raises
+  `OSError("Socket is closed")` — which the base tuple already caught, so the drop
+  maps and the defect is missed. Measured over 15 runs, **13 mapped that way and 2
+  reached `SSHException`**. The relay therefore silences server→client first and
+  closes on the reply the client will never see, which puts the client inside a
+  blocking `recv` when the socket dies: 15 of 15 on the streamed read, the
+  `SEEK_END` probe and the eager read alike. A test written against the obvious
+  staging would have passed before the fix two times in fifteen and been called
+  flaky.
+  **Why no existing test caught it.** `test_read_stream_eoferror_maps_and_reconnects`
+  injects `EOFError` from a fake handle, which bypasses
+  `SFTPClient._read_response` — the line that converts it to `SSHException`. An
+  injected shape cannot reach a defect whose cause is which shape paramiko
+  produces.
+  Found by BK-355's closing review, which described what the futile-close guard
+  reaches and so exposed what it does not.
+
 - [x] **BUG-265 — A refused SFTP connect raises `RemoteStoreError`, which contradicts fifteen docstrings and the health-check guide**
   spec: SFTP-023 · effort: S · audience: user.api, user.site
   Reproduced before it was fixed and re-run after, against a just-released
@@ -1182,8 +1244,9 @@ if evidence changes; these are retired.
   the *wrapper's* default rather than on what any of them passes, and by a
   conformance case that seeks to the end on every `SEEKABLE_READ` backend.
   **Scope kept off one adjacent thing, and pulled onto another.** The caught
-  tuple is unchanged, so a `paramiko.SFTPError` from the probe still escapes
-  unmapped exactly as one from a read does — BK-358, not narrowed here. But
+  tuple was left unchanged, so a `paramiko.SFTPError` from the probe still
+  escaped unmapped exactly as one from a read did — BK-358, not narrowed here,
+  and closed since by SIO-012, which widened both together. But
   deleting SFTP-030's `SEEK_END` exception also deleted the only test asserting
   the "that fails" qualifier on its Postconditions, leaving the silent close as
   the clause's one live instance with a figure in prose behind it and no gate.
