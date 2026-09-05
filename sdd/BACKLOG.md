@@ -412,7 +412,7 @@ compliant the day before.
   scope corrected by its round 3. BK-360 documents the resulting state in
   SFTP-030 and the SFTP guide; it does not fix it.
 
-- [ ] **BUG-276 — A mapped error still reaches the caller with an empty message through five base-class arms, on four backends**
+- [ ] **BUG-276 — A mapped error still reaches the caller with an empty message through five base-class arms, reaching four backends**
   spec: ERR-009 · effort: S · audience: user.api
   The remainder of BUG-264, which closed the `BackendUnavailable` half. ERR-009
   is a claim about `str()` on *any* error, and the same construction spelled
@@ -441,10 +441,12 @@ compliant the day before.
   were measured. **This distinction was missed when the item was first written
   and found by BUG-264's round-1 review**, which is the reason the paragraph
   above enumerates by guard instead of by `rg` hit.
-  Note the three keyword-guarded sites are the mirror image for
-  `BackendUnavailable` — that branch needs one of
+  Note that **two** of the five blank-reachable arms — `_errors.py`'s and
+  `_s3_pyarrow.py`'s, the two the keyword guard sits above
+  (`rg -n 'name or service' src/`) — are the mirror image for
+  `BackendUnavailable`: that branch needs one of
   `endpoint`/`connect`/`timeout`/`dns`/`name or service` in the message and `""`
-  contains none — so reading the guard alone concludes "safe" and running it
+  contains none, so reading the guard alone concludes "safe" and running it
   finds the exit one line below. That is why this class is filed in measured
   form.
 
@@ -456,8 +458,21 @@ compliant the day before.
   (Unknown) when calling the GetObject operation: Unknown"`, `str(BotoCoreError())`
   gives `"An unspecified error occurred"`). Every other backend — HTTP, SQL,
   Graph — prefixes literal text at every construction, so none can be blank.
-  **The base class is therefore the whole of what is left**, on Azure, both S3
-  backends, SFTP and the shared `_errors.py` helper.
+  **The base class is therefore the whole of what is left.**
+
+  **Arms and backends are different counts, and the title uses both.** The five
+  arms sit in **four files** — `_azure_common.py`, `_s3_pyarrow.py`, `_sftp.py`
+  (two) and `_errors.py` — which is three backends plus one shared helper. The
+  fourth backend is `S3Boto3Backend`, and it is reached **through that shared
+  helper rather than through its own site**: `_s3_boto3.py`'s own
+  `RemoteStoreError(str(exc))` is the unreachable `ClientError` one above, but
+  its `_classify_error` falls through to `_classify_by_message`, and
+  `S3Boto3Backend._classify_error(RuntimeError(), "delivery.csv")` returns
+  `RemoteStoreError('')` rendering as `" | path='delivery.csv' | backend='s3-boto3'"`.
+  `_s3_base.py` routes there too, so both S3 backends can meet it. Spelling this
+  out because the obvious reading of the exclusion above — that S3-boto3 is
+  fine — is wrong, and an implementer who fixes only the four files will leave
+  the shared arm's callers unaddressed or fix them without noticing.
 
   **Disposition — the decision is the work, which is why this is not mechanical.**
   Either a blank `RemoteStoreError` gets the same synthesised fallback Azure's
@@ -466,10 +481,13 @@ compliant the day before.
   dispatch that already failed to recognise the exception. The second is the
   more interesting answer and the more invasive one: an arm that cannot name the
   failure may be admitting the dispatch above it is incomplete. Decide once and
-  apply to all **five** — a per-site answer is how this class spread across four
-  backends. The two unreachable sites want no change; touching them to make the
-  seven look uniform would add a fallback nothing can reach, which is the shape
-  the coverage gate cannot see and a reader later mistakes for a tested path.
+  apply to all **five arms** — a per-site answer is how one construction came to
+  span four files. The two unreachable sites want no change; touching them to
+  make the seven look uniform would add a fallback nothing can reach, which is
+  the shape the coverage gate cannot see and a reader later mistakes for a
+  tested path. **Fixing `_errors.py`'s arm changes what two backends report**,
+  per the paragraph above, so whatever is decided there needs its own test on
+  the S3 side rather than only where the arm lives.
   **Not a shared helper by default:** `_errors.py`'s site is the shared one and
   the other six are per-backend, so whatever is decided has to say which of the
   two it lives in. BUG-264 put Azure's in `_azure_common` because both twins

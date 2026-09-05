@@ -514,11 +514,18 @@ class TestAsyncAzureErrorMapping:
 
         ``asyncio.wait_for`` rather than ``asyncio.timeout``: the latter is 3.11+
         and broke the 3.10 CI leg. ``asyncio.TimeoutError`` rather than the
-        builtin, because on 3.10 they are **not** the same class — measured
-        there, ``asyncio.TimeoutError is TimeoutError`` is ``False`` and
-        ``wait_for`` raises ``asyncio.exceptions.TimeoutError`` — and
-        ``asyncio.TimeoutError`` is the one azure-core's arms catch. The blank
-        shape itself is identical on both: ``args == ()``, ``str() == ""``.
+        builtin, because on 3.10 they are **not** the same class, and
+        ``asyncio.TimeoutError`` is the one azure-core's arms catch.
+
+        The 3.10 half of that is not observable from the interpreter this file
+        usually runs on, so here is the derivation rather than an assertion:
+        running ``asyncio.TimeoutError is TimeoutError`` gives ``False`` on
+        3.10.20 and ``True`` on 3.13.11, and ``wait_for`` raises
+        ``asyncio.exceptions.TimeoutError`` on the former, the builtin on the
+        latter. The blank shape is identical on both — ``args == ()``,
+        ``str() == ""`` — which is why the two assertions below hold everywhere
+        and are the ones this test makes. The 3.10 CI leg is what keeps the
+        claim honest.
         """
         try:
             await asyncio.wait_for(asyncio.sleep(5), 0.001)

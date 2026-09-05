@@ -14,10 +14,14 @@ Azurite's published emulator key, present only so the SharedKey signer accepts
 the request before it fails on the wire.
 
 Assertions are on *non-emptiness* rather than on exact text on purpose. The
-message is the driver's, and the driver's wording for an unreachable port
-differs by platform — a closed loopback port answers with a connect timeout on
-Windows and a connection refusal on Linux. What this file pins is the property
-the spec states, not one operating system's phrasing.
+message is the driver's, and the driver's wording is not this library's to
+promise: a closed loopback port was measured on Windows answering
+``"Connection timeout to host …"`` — a *timeout*, because nothing refused the
+connect — and the wording another platform's stack produces for the same
+situation is deliberately left unpinned rather than guessed at here. What this
+file pins is the property the spec states. That is also why the marker below
+matters: an assertion written to survive an unknown platform is only worth
+something once that platform runs it.
 """
 
 from __future__ import annotations

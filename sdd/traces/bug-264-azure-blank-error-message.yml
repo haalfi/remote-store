@@ -32,8 +32,13 @@ expected_ripples:
 #   Fix the 3.10 CI break, and the four claims round 1 refuted
 #                                                   -> counts (round 1, 7 findings:
 #            6 posted on the PR, 1 from CI going red on the 3.10 leg)
-# Value is 1.
-review_rounds: 1
+#   Give AZ-025's postcondition the right reason, and BUG-276 its real reach
+#                                                   -> counts (round 2, a scoped
+#            measuring pass: 2 posted findings, plus 2 more its sibling sweep
+#            found — a keyword-guard count the item contradicted two lines later,
+#            and an unmeasured claim about Linux wording, withdrawn)
+# Value is 2.
+review_rounds: 2
 phases:
   - id: orient
     name: Orient

@@ -214,7 +214,7 @@ AzureBackend(
 ### AZ-025: Structured Error Classification
 
 **Invariant:** Azure SDK exceptions are mapped to `remote_store` errors using structured attributes — the exception subtype (which the SDK derives from the HTTP status and `error_code`) and `status_code` — not string matching.
-**Postconditions:** The `BackendUnavailable` returned for the `ServiceRequestError` / `ServiceResponseError` row always carries a non-empty message, per [ERR-009](005-error-model.md). The driver's own text is kept whenever it has any; only a signal that carries none is given a synthesised message, naming which side of the exchange failed and the SDK exception class. The other rows compose their message from the status and are never empty by construction.
+**Postconditions:** The `BackendUnavailable` returned for the `ServiceRequestError` / `ServiceResponseError` row always carries a non-empty message, per [ERR-009](005-error-model.md). The driver's own text is kept whenever it has any; only a signal that carries none is given a synthesised message, naming which side of the exchange failed and the SDK exception class. **No other row can be empty either, but not all for the same reason**, and the distinction is worth keeping because only one of them is this classifier's doing: the first four rows are composed here, from the path and — for the throttle and gateway row — the status, so they cannot be empty whatever the SDK passes in. The last row passes `str(exc)` through unchanged and composes nothing; it is non-empty because `HttpResponseError.__init__` substitutes `Operation returned an invalid status '<reason>'` for a falsy message, which is a guarantee of the SDK's and not of this spec's.
 
 | Azure SDK exception / status | remote_store error |
 |---|---|
