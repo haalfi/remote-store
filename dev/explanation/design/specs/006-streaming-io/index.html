@@ -9436,6 +9436,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#sio-012-the-set-of-exception-shapes-a-stream-maps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIO-012: The Set of Exception Shapes a Stream Maps
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -10858,6 +10869,17 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#sio-012-the-set-of-exception-shapes-a-stream-maps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SIO-012: The Set of Exception Shapes a Stream Maps
+      
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -10927,18 +10949,31 @@ never receives the stream and therefore cannot close it.
 <h2 id="sio-010-releasing-a-stream-whose-failure-condemned-the-connection">SIO-010: Releasing a Stream Whose Failure Condemned the Connection<a class="headerlink" href="#sio-010-releasing-a-stream-whose-failure-condemned-the-connection" title="Permanent link">&para;</a></h2>
 <p><strong>Invariant:</strong> Where a backend supplies <code>_ErrorMappingStream</code> with an <code>is_fatal</code>
 predicate, releasing a stream returned by that backend's <code>Backend.read()</code> does
-not re-enter a connection the stream's own failure has already established is
-unusable. Backends that supply no predicate release unconditionally, and this
-clause makes no claim about them. Supplying one is optional by design, not an
-omission each backend is expected to correct: it is worth the parameter only
-where a close on a dead connection blocks, which is a property of the transport,
-not of every stream. <code>SFTPBackend</code> is the only backend that supplies one.
-<strong>Postconditions:</strong> A backend that can recognise such a failure supplies
-<code>_ErrorMappingStream</code> with an <code>is_fatal</code> predicate over the raised exception.
+not re-enter a connection <strong>that predicate has condemned</strong>. Backends that supply
+no predicate release unconditionally, and this clause makes no claim about them.
+Supplying one is optional by design, not an omission each backend is expected to
+correct: it is worth the parameter only where a close on a dead connection
+blocks, which is a property of the transport, not of every stream.
+<code>SFTPBackend</code> is the only backend that supplies one.
+<strong>Postconditions:</strong> A backend that can recognise <strong>a failure leaving its
+connection unusable</strong> supplies <code>_ErrorMappingStream</code> with an <code>is_fatal</code>
+predicate over the raised exception.
 Once it answers <code>True</code> for a mapped failure, the wrapper's <code>close()</code> skips the
 inner close and marks itself closed; the caller sees an ordinary <code>close()</code>. A
 backend that supplies no predicate closes unconditionally, which is the
 behaviour every backend had before this clause.</p>
+<p><strong>The predicate's verdict is the scope, and it is narrower than "unusable".</strong>
+The Invariant read "a connection the stream's own failure has already
+established is unusable", which this clause cannot deliver and, since
+<a href="#sio-012-the-set-of-exception-shapes-a-stream-maps">SIO-012</a>, does not: a
+dropped SFTP connection is now mapped to <code>BackendUnavailable</code> and clears the
+cached client — the library establishing it unusable — while
+<code>_is_connection_dead</code> declines to condemn that shape, so the close re-enters it.
+Scoping the headline to unusability made it false on the one backend it applies
+to, in that backend's commonest failure. Scoping it to the predicate makes it
+say what the mechanism does, which is what the Postconditions above have always
+said; the two sets differ on purpose, and the paragraph on supplied shapes below
+says why.</p>
 <p><strong>Why a predicate rather than the mapped error type.</strong> The wrapper is shared, so
 a rule derived from the classification would bind backends the symptom was never
 measured on: <code>ReadOnlyHttpBackend._map_stream_error</code> maps <em>every</em> stream exception
@@ -10964,23 +10999,66 @@ that costs the caller nothing, and a caller retaining closed streams retains the
 dead connections with them.</p>
 <p><strong>The limit of the mechanism.</strong> The guard is armed by an exception <em>reaching</em>
 <code>_fail</code>, so anything that stops one arriving defeats it — whether the transport
-discarded the failure, or raised something outside the <code>(OSError, EOFError)</code>
-tuple the mapping paths catch. Neither is a gap in a backend's predicate: what
-decides is the caught tuple, not the predicate. Where a failure does not arrive,
-the close re-enters the connection exactly as it would have without this clause,
-and whatever the mapper would have done — invalidating a cached client, marking a
+discarded the failure, or raised something outside the caught set the mapping
+paths intercept. Neither is a gap in a backend's predicate: what decides is the
+caught set, not the predicate. Where a failure does not arrive, the close
+re-enters the connection exactly as it would have without this clause, and
+whatever the mapper would have done — invalidating a cached client, marking a
 session dead — is left undone too.</p>
-<p>Both classes are non-empty on <code>SFTPBackend</code>, the only backend that has been
-measured. For the second: paramiko's <code>SSHException</code> / <code>SFTPError</code>, which
-additionally escape unmapped in breach of BE-021 (BK-358). For the first, a
-send-side <code>EOFError</code> that <code>BufferedFile.read</code> swallows into a short read before
-it reaches the wrapper at all. A <code>SEEK_END</code> seek was a third case, and the one
-that cost most — the swallowed size request answered <code>0</code> rather than merely
-losing a failure — until
+<p>The first class is non-empty on <code>SFTPBackend</code>, the only backend that has been
+measured: a send-side <code>EOFError</code> that <code>BufferedFile.read</code> swallows into a short
+read before it reaches the wrapper at all. A <code>SEEK_END</code> seek was a second case,
+and the one that cost most — the swallowed size request answered <code>0</code> rather than
+merely losing a failure — until
 <a href="#sio-011-sizing-a-stream-for-an-end-relative-seek">SIO-011</a> moved that request
 into the wrapper, where its failure has a mapping path to travel. That clause
 repairs one discarding call site; it does not empty the class, which is a
 property of the transport rather than of this one.</p>
+<p>The second class was non-empty on the same backend and is not any longer:
+paramiko's <code>SSHException</code> / <code>SFTPError</code> used to escape unmapped in breach of
+BE-021, and defeated this guard on the way past (BK-358). They are now inside
+that backend's caught set — <a href="#sio-012-the-set-of-exception-shapes-a-stream-maps">SIO-012</a>
+owns that, and owns what the set holds for any other site. <strong>The class is not
+closed by construction</strong>, only empty where it has been looked at: a backend
+supplying a set that misses one of its transport's shapes puts the shape back
+into it, which is a defect of that supply and not of this clause.</p>
+<p><strong>A supplied shape reaches <code>_fail</code> but need not arm the guard, and on SFTP one
+of the two does not.</strong> The predicate decides, independently of the caught set:
+<code>_is_connection_dead</code> matches <code>paramiko.SFTPError</code>, so that shape now arms the
+guard where before it never reached <code>_fail</code> at all; it deliberately excludes the
+<code>SSHException</code> family (<code>_map_exception</code> gives that its own arm), so that shape
+is mapped, invalidates the cached client, and still closes the inner handle.
+Measured through the wrapper with the backend's own mapper and predicate:
+<code>SSHException</code> maps with the guard unarmed and one inner close; <code>SFTPError</code>,
+<code>EOFError</code> and <code>OSError("Socket is closed")</code> map with it armed and no inner
+close. That last shape is named exactly rather than as "a socket-teardown
+<code>OSError</code>": <code>_is_connection_dead</code> matches the errno-less "Socket is closed"
+literal and a socket-teardown errno by two separate branches, and it is the
+literal that was measured. A plain errno-less <code>OSError</code> is matched by neither.</p>
+<p><strong>The unarmed half is a decision, not a residue.</strong> <code>SSHException</code> is the shape a
+dropped connection takes, so it is the one where the guard would matter — and
+the close there is free: <strong>under 0.001 s</strong>, because paramiko's transport-reader
+thread tears the socket down on EOF before <code>SFTPFile.close()</code> can issue its
+<code>CMD_CLOSE</code>. There is nothing to buy, which is why <code>SFTPBackend.read</code> was left
+passing the predicate unchanged when its caught set widened. Derivation: the
+drop relay in <code>tests/backends/sftp/test_connection_drop.py</code>, timed around the
+wrapper's <code>close()</code> after a mapped failure; paramiko 5.0.0.</p>
+<p><strong>Stated as a bound rather than a band, and that is a correction.</strong> This clause
+first gave 0.0001–0.0003 s from five samples. Re-running the same derivation
+over 25 drops returned a median of 0.00005 s with every sample below the band's
+floor, so the band excluded most of what the derivation actually produces — five
+samples cannot bound a quantity this small and this variable. The direction is
+benign, since it is faster than first stated and only strengthens "there is
+nothing to buy", but a bound is what the evidence supports and a band is not.
+<strong>No spread ratio is given</strong>, deliberately: a ratio over samples this close to
+timer resolution changes between runs, and stating one is what turned a correct
+figure into a wrong one here. A half-close (FIN server→client only) came in
+under a millisecond too, but its relay is not in the
+repo, so treat that as a cross-check rather than something a reader can re-run.
+Contrast the stall this clause was written for, where the socket stays open and
+the close does wait — and note the reason is paramiko's teardown rather than
+anything here, so a release that stopped closing the socket on EOF would put the
+cost back and this decision should be re-measured rather than assumed.</p>
 <p><strong>See also:</strong> SFTP-030 in <a href="../009-sftp-backend/">009-sftp-backend.md</a>, the bound
 this clause completes, and where that limit is measured.</p>
 <h2 id="sio-011-sizing-a-stream-for-an-end-relative-seek">SIO-011: Sizing a Stream for an End-Relative Seek<a class="headerlink" href="#sio-011-sizing-a-stream-for-an-end-relative-seek" title="Permanent link">&para;</a></h2>
@@ -11048,12 +11126,99 @@ non-SFTP sites reach <code>SEEK_END</code> by <strong>four</strong> routes:</p>
 would buy a round-trip per seek and nothing else — or, on the forward-only
 streams, a request against something that cannot seek. <code>SFTPBackend.read()</code> is
 the only site that supplies a probe.</p>
-<p><strong>The probe's own failure is bounded by the same caught tuple as every other
-path</strong>, deliberately: a <code>paramiko.SFTPError</code> raised by the probe escapes
-unmapped exactly as one raised by a read does (BK-358). Widening the tuple for
-this path alone would make it better than the rest with no clause saying why.</p>
+<p><strong>The probe's own failure is bounded by the same caught set as every other
+path</strong>, deliberately, and that has held through a change in what the set is. It
+was written when the set was <code>(OSError, EOFError)</code> everywhere, so a
+<code>paramiko.SFTPError</code> raised by the probe escaped unmapped exactly as one raised
+by a read did; widening for this path alone would have made it better than the
+rest with no clause saying why. <a href="#sio-012-the-set-of-exception-shapes-a-stream-maps">SIO-012</a>
+answered that question per construction site instead, and the probe moved with
+its site rather than ahead of it (BK-358). The rule is the same either way: the
+probe neither leads the set nor lags it.</p>
 <p><strong>See also:</strong> SFTP-030 in <a href="../009-sftp-backend/">009-sftp-backend.md</a>, where the
 <code>SEEK_END</code> case was a stated exception to the bound until this clause closed it.</p>
+<h2 id="sio-012-the-set-of-exception-shapes-a-stream-maps">SIO-012: The Set of Exception Shapes a Stream Maps<a class="headerlink" href="#sio-012-the-set-of-exception-shapes-a-stream-maps" title="Permanent link">&para;</a></h2>
+<p><strong>Invariant:</strong> <code>_ErrorMappingStream</code> maps <code>(OSError, EOFError)</code> plus whatever
+additional exception types the constructing backend supplies, and a supplied type
+is mapped on <strong>every</strong> path the wrapper intercepts — <code>read</code>, <code>readinto</code>,
+<code>readline</code>, <code>seek</code> including its SIO-011 size probe, <code>tell</code>, and iteration —
+identically to a base-tuple type. A backend that supplies nothing is bounded by
+the base tuple alone, which is the behaviour every backend had before this clause.
+<strong>Postconditions:</strong> A supplied type raises the mapped <code>RemoteStoreError</code> with the
+original as <code>__cause__</code>, and arms SIO-010's guard exactly when the backend's
+<code>is_fatal</code> says so. A type outside the resulting set propagates unmapped, on
+every path, whether or not the site supplied anything.</p>
+<p><strong>What this is for.</strong> The wrapper is what BE-021's never-leak rule rests on once
+a backend's <code>_errors()</code> context manager has exited, and the base tuple is not
+wide enough for every transport it serves. On paramiko the ordinary mid-read drop
+is outside it: <code>SFTPClient._read_response</code> catches the underlying <code>EOFError</code> and
+re-raises <code>SSHException("Server connection dropped: ...")</code>, and <code>_read_packet</code>
+raises <code>SFTPError</code> on a malformed one. Neither subclasses <code>OSError</code> or
+<code>EOFError</code>, so both reached callers raw — while the <em>same drop</em> on <code>read_bytes</code>,
+which fails inside <code>_errors()</code>, was mapped correctly. One connection, one fault,
+two answers depending on which method the caller used (BK-358).</p>
+<p>Measured on an in-process SFTP server behind a relay that closes the connection
+while a reply is outstanding, paramiko 5.0.0 / CPython 3.11:</p>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Before</th>
+<th>After</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>read_bytes()</code></td>
+<td><code>BackendUnavailable</code>, client cleared</td>
+<td>unchanged</td>
+</tr>
+<tr>
+<td><code>read()</code> stream — <code>read</code> / <code>readinto</code> / <code>readline</code></td>
+<td>raw <code>paramiko.SSHException</code></td>
+<td><code>BackendUnavailable</code>, client cleared</td>
+</tr>
+<tr>
+<td><code>read()</code> stream — <code>seek(0, SEEK_END)</code> probe</td>
+<td>raw <code>paramiko.SSHException</code></td>
+<td><code>BackendUnavailable</code>, client cleared</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Why per construction site rather than a wider base.</strong> The wrapper is shared by
+seven construction sites across six backends — <code>rg -n '_ErrorMappingStream\(' src</code>
+is the derivation, less the class statement itself — and the evidence for
+widening came from one of them. A base tuple grown to fit paramiko would change
+what S3 (fsspec, boto3 and PyArrow), Azure (both its sites) and HTTP map, on no
+measurement of any of them.
+Keeping the widening on the site that argued for it is what lets a backend answer
+for its own transport and nothing else — the same reasoning SIO-010 gives for
+deciding the futile close by predicate rather than by mapped error type.</p>
+<p><strong>Why not <code>Exception</code> with the mapper deciding.</strong> It is the shortest fix and it
+would map the programming errors the wrapper deliberately lets propagate —
+<code>TypeError</code>, <code>AttributeError</code>, a bug in an inner stream — turning a defect into a
+<code>RemoteStoreError</code> that reads like a backend fault. It would also re-introduce
+the previous paragraph's problem in a stronger form, since it widens every site at
+once.</p>
+<p><strong>Why not convert at the source.</strong> The HTTP transports take that route: their
+adapters re-raise <code>httpx</code> / <code>requests</code> stream errors as <code>OSError</code> so the base
+tuple catches them. It works there because those exceptions carry nothing the
+mapper dispatches on. It would not work for SFTP, where the type <em>is</em> the
+information: <code>SFTPError</code> reaches <code>BackendUnavailable</code> through
+<code>_is_connection_dead</code> and <code>SSHException</code> through its own arm, and both clear the
+cached client so the next operation reconnects (SFTP-010 tier 2). An
+<code>OSError(str(exc))</code> carries no errno, so it would land in the generic
+<code>RemoteStoreError</code> arm and lose the classification and the invalidation with it —
+strictly worse than the leak it replaced.</p>
+<p><strong>One backend supplies a set today.</strong> <code>SFTPBackend.read()</code> supplies
+<code>(paramiko.SSHException, paramiko.SFTPError)</code>. No other site does, and none is
+expected to on principle: what belongs in a set is a shape that backend's
+transport was <em>measured</em> to raise outside the base, not one a reader thinks it
+might.</p>
+<p><strong>See also:</strong> SFTP-024 in <a href="../009-sftp-backend/">009-sftp-backend.md</a>, the
+never-leak clause this mechanism carries for a caller-facing handle, and BE-021
+in <a href="../003-backend-adapter-contract/">003-backend-adapter-contract.md</a>, which it
+serves.</p>
 
 
 

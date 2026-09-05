@@ -11092,6 +11092,47 @@ mapping sees only the exception, so it cannot tell a connect-time <code>EACCES</
 <code>EPERM</code> from one a working server reported, and the classification stat
 described <a href="#v0291-to-v0300">in the v0.30.0 notes</a> still answers exactly as it
 did. Other backends are unchanged.</p>
+<p><strong>A dropped SFTP connection now raises <code>BackendUnavailable</code> from a <code>read()</code>
+stream too:</strong></p>
+<p>In v0.30.0 the answer to a dropped connection depended on which read you had
+used. <code>read_bytes()</code> raised <code>BackendUnavailable</code> and dropped the dead client, as
+documented. A stream from <code>read()</code> raised paramiko's own
+<code>SSHException("Server connection dropped: ...")</code> straight through, because the
+backend's error mapping had already finished by the time you read from the
+stream and the wrapper that stands in for it did not recognise that shape. Same
+server, same fault, two answers.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">"delivery.csv"</span><span class="p">)</span> <span class="k">as</span> <span class="n">stream</span><span class="p">:</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="c1"># v0.30.0: paramiko.ssh_exception.SSHException('Server connection dropped: ')</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="c1"># v0.31.0: BackendUnavailable('Server connection dropped: ')</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">data</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+</code></pre></div>
+<p><strong>What to change.</strong> If you catch paramiko exceptions around a streamed read —
+<code>except paramiko.SSHException</code>, or the <code>SFTPError</code> a malformed packet raises —
+that branch no longer runs, and you should catch
+<a href="../api/errors/"><code>BackendUnavailable</code></a> instead. If you already caught
+<code>RemoteStoreError</code> there, or caught nothing paramiko-specific, nothing changes
+for you except that the failure now has the type the docstrings promised.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Before (v0.30.0): the only way to catch a mid-read drop</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">"delivery.csv"</span><span class="p">)</span> <span class="k">as</span> <span class="n">stream</span><span class="p">:</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>        <span class="n">data</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="k">except</span> <span class="n">paramiko</span><span class="o">.</span><span class="n">SSHException</span><span class="p">:</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="o">...</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="c1"># After (v0.31.0)</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="k">with</span> <span class="n">store</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">"delivery.csv"</span><span class="p">)</span> <span class="k">as</span> <span class="n">stream</span><span class="p">:</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>        <span class="n">data</span> <span class="o">=</span> <span class="n">stream</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="k">except</span> <span class="n">BackendUnavailable</span><span class="p">:</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>    <span class="o">...</span>
+</code></pre></div>
+<p><strong>The dead client is dropped now, which it was not before.</strong> The escape also
+skipped the mapping that invalidates the cached SFTP client, so the operation
+after a mid-read drop re-entered the same dead connection. It now reconnects, as
+it already did after a drop on any other method.</p>
+<p><strong>Scope:</strong> SFTP only. The stream wrapper is shared with the S3, Azure and HTTP
+backends, and what those map is unchanged — the extra shapes are supplied by the
+SFTP backend for its own transport, not added for everyone.</p>
 <p><strong>Flat-namespace backends now raise <code>InvalidPath</code> for a wrong-typed path:</strong></p>
 <p>A backend that stores keys rather than nodes — the S3 family, Azure on a flat
 (non-hierarchical) account, and the SQL backends — cannot ask the store whether
@@ -11454,17 +11495,17 @@ unaffected.</p>
 SFTP's write response carries no timestamp, so the field is now <code>None</code> after an SFTP
 <code>write()</code> or <code>write_atomic()</code>. <code>WriteResult.size</code> (the uploaded byte count) is
 unaffected, and no other backend changes.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Before (v0.29.1): last_modified populated from a post-write stat</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">result</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"data.bin"</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>   <span class="c1"># SFTP backend</span>
-<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">result</span><span class="o">.</span><span class="n">last_modified</span>                          <span class="c1"># datetime(...)</span>
-<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
-<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="c1"># After (v0.30.0): last_modified is None on the SFTP write path</span>
-<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">result</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"data.bin"</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
-<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">result</span><span class="o">.</span><span class="n">last_modified</span>                          <span class="c1"># None</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Before (v0.29.1): last_modified populated from a post-write stat</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">result</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"data.bin"</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>   <span class="c1"># SFTP backend</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">result</span><span class="o">.</span><span class="n">last_modified</span>                          <span class="c1"># datetime(...)</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="c1"># After (v0.30.0): last_modified is None on the SFTP write path</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">result</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"data.bin"</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="n">result</span><span class="o">.</span><span class="n">last_modified</span>                          <span class="c1"># None</span>
 </code></pre></div>
 <p>If you need the timestamp after a write, read it back explicitly:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">info</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_file_info</span><span class="p">(</span><span class="s2">"data.bin"</span><span class="p">)</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">info</span><span class="o">.</span><span class="n">last_modified</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">info</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_file_info</span><span class="p">(</span><span class="s2">"data.bin"</span><span class="p">)</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">info</span><span class="o">.</span><span class="n">last_modified</span>
 </code></pre></div>
 <p><strong>Why:</strong> the timestamp cost a synchronous <code>stat</code> round trip per write that raw paramiko
 skips, about +100 ms at 100 ms RTT. <code>WR-001a</code> already permits <code>None</code> for a field a
@@ -11524,19 +11565,19 @@ unchanged.</p>
 Namespace (ADLS Gen2) by probing the account on first use. You must now declare
 the account's nature with the required <code>hns</code> argument. A backend constructed
 without <code>hns</code> raises <code>ValueError</code>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Before (v0.28.0): HNS auto-detected on first I/O</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">AzureBackend</span><span class="p">(</span><span class="n">container</span><span class="o">=</span><span class="s2">"data"</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">"acct"</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="s2">"..."</span><span class="p">)</span>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># After (v0.29.0): declare hns explicitly</span>
-<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">AzureBackend</span><span class="p">(</span><span class="n">container</span><span class="o">=</span><span class="s2">"data"</span><span class="p">,</span> <span class="n">hns</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">"acct"</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="s2">"..."</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Before (v0.28.0): HNS auto-detected on first I/O</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">AzureBackend</span><span class="p">(</span><span class="n">container</span><span class="o">=</span><span class="s2">"data"</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">"acct"</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="s2">"..."</span><span class="p">)</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># After (v0.29.0): declare hns explicitly</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">AzureBackend</span><span class="p">(</span><span class="n">container</span><span class="o">=</span><span class="s2">"data"</span><span class="p">,</span> <span class="n">hns</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">"acct"</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="s2">"..."</span><span class="p">)</span>
 </code></pre></div>
 <p>The same applies to config <code>options</code> (<code>"hns": true</code>) and to <code>AsyncAzureBackend</code>.</p>
 <p><strong>If you do not know an account's HNS status</strong>, discover it once with the new
 fail-loud helper and pass the result:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">AzureUtils</span>
-<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">is_hns</span> <span class="o">=</span> <span class="n">AzureUtils</span><span class="o">.</span><span class="n">detect_hns</span><span class="p">(</span><span class="n">account_name</span><span class="o">=</span><span class="s2">"acct"</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="s2">"..."</span><span class="p">)</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">AzureBackend</span><span class="p">(</span><span class="n">container</span><span class="o">=</span><span class="s2">"data"</span><span class="p">,</span> <span class="n">hns</span><span class="o">=</span><span class="n">is_hns</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">"acct"</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="s2">"..."</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">AzureUtils</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">is_hns</span> <span class="o">=</span> <span class="n">AzureUtils</span><span class="o">.</span><span class="n">detect_hns</span><span class="p">(</span><span class="n">account_name</span><span class="o">=</span><span class="s2">"acct"</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="s2">"..."</span><span class="p">)</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">AzureBackend</span><span class="p">(</span><span class="n">container</span><span class="o">=</span><span class="s2">"data"</span><span class="p">,</span> <span class="n">hns</span><span class="o">=</span><span class="n">is_hns</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">"acct"</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="s2">"..."</span><span class="p">)</span>
 </code></pre></div>
 <p><code>AzureUtils.adetect_hns(...)</code> is the async sibling. Both raise on a probe error
 rather than silently falling back to flat behavior.</p>
