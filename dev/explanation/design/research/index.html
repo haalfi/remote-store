@@ -10589,225 +10589,281 @@
 evaluate trade-offs, and prototype approaches. The resulting documents are
 presented here for readers who want to understand <em>why</em> a particular direction
 was chosen — or who face similar decisions in their own projects.</p>
+<p>Listed newest first; the date is the "as of" of the survey, not of the code it
+describes. Older entries can have been overtaken by later decisions.</p>
 <table>
 <thead>
 <tr>
 <th>Topic</th>
 <th>Document</th>
+<th>Date (as of)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Substrate for Data-Driven Improvement of Agent Workflows</td>
-<td><a href="research-agent-workflow-substrate/">Substrate for Data-Driven Improvement of Agent Workflows</a></td>
-</tr>
-<tr>
-<td>Is the level of detail appropriate?</td>
-<td><a href="research-appropriate-level-of-detail/">Is the level of detail appropriate?</a></td>
+<td>Code Abundance — Tao's ICM 2026 Argument Transposed to Coding Agents</td>
+<td><a href="research-code-abundance-goals-and-values/">Code Abundance — Tao's ICM 2026 Argument Transposed to Coding Agents</a></td>
+<td>2026-08-30</td>
 </tr>
 <tr>
 <td>arc42 as an architecture-level specification layer</td>
 <td><a href="research-arc42-evaluation/">arc42 as an architecture-level specification layer</a></td>
+<td>2026-08-28</td>
 </tr>
 <tr>
-<td>Research Round 2: Async Store API vs Current Feature Surface (ID-013)</td>
-<td><a href="research-async-store-api-round2/">Research Round 2: Async Store API vs Current Feature Surface (ID-013)</a></td>
-</tr>
-<tr>
-<td>Async Store / Backend API (ID-013)</td>
-<td><a href="research-async-store-api/">Async Store / Backend API (ID-013)</a></td>
-</tr>
-<tr>
-<td>Azure PyArrow Optimization</td>
-<td><a href="research-azure-pyarrow-optimization/">Azure PyArrow Optimization</a></td>
-</tr>
-<tr>
-<td>Backend Contract Completeness</td>
-<td><a href="research-backend-contract-completeness/">Backend Contract Completeness</a></td>
-</tr>
-<tr>
-<td>Backend Setup &amp; Configuration Guides Expansion</td>
-<td><a href="research-backend-setup-guides/">Backend Setup &amp; Configuration Guides Expansion</a></td>
-</tr>
-<tr>
-<td>Benchmark Suite v2 — User-Decision Framing</td>
-<td><a href="research-benchmark-suite-v2/">Benchmark Suite v2 — User-Decision Framing</a></td>
-</tr>
-<tr>
-<td>HTTP cassette/replay layer — mechanism PoC (BK-181)</td>
-<td><a href="research-bk-181-cassette-replay-poc/">HTTP cassette/replay layer — mechanism PoC (BK-181)</a></td>
-</tr>
-<tr>
-<td>BK-181 PR 2 — S3 cassette/replay infeasibility</td>
-<td><a href="research-bk-181-s3-cassette-infeasibility/">BK-181 PR 2 — S3 cassette/replay infeasibility</a></td>
-</tr>
-<tr>
-<td>paramiko <code>ssh-rsa</code> host-key compatibility — empirical findings (BK-198)</td>
-<td><a href="research-bk-198-paramiko-ssh-rsa-empirical/">paramiko <code>ssh-rsa</code> host-key compatibility — empirical findings (BK-198)</a></td>
-</tr>
-<tr>
-<td>Replay-backed example testing for live backends (BK-283)</td>
-<td><a href="research-bk-283-example-replay-design/">Replay-backed example testing for live backends (BK-283)</a></td>
-</tr>
-<tr>
-<td>Cross-Backend Concurrency Test Lane (BK-289)</td>
-<td><a href="research-bk-289-concurrency-test-lane/">Cross-Backend Concurrency Test Lane (BK-289)</a></td>
-</tr>
-<tr>
-<td>Bug Prevention Beyond Testing</td>
-<td><a href="research-bug-prevention-beyond-testing/">Bug Prevention Beyond Testing</a></td>
-</tr>
-<tr>
-<td>Code Abundance — Tao's ICM 2026 Argument Transposed to Coding Agents</td>
-<td><a href="research-code-abundance-goals-and-values/">Code Abundance — Tao's ICM 2026 Argument Transposed to Coding Agents</a></td>
-</tr>
-<tr>
-<td>Dagster Extension (<code>ext.dagster</code>, ID-075)</td>
-<td><a href="research-dagster-extension/">Dagster Extension (<code>ext.dagster</code>, ID-075)</a></td>
-</tr>
-<tr>
-<td>Depth-Limited Listing</td>
-<td><a href="research-depth-limited-listing/">Depth-Limited Listing</a></td>
-</tr>
-<tr>
-<td>Documentation Content Longevity</td>
-<td><a href="research-doc-content-longevity/">Documentation Content Longevity</a></td>
-</tr>
-<tr>
-<td>ID-090 — Docs Landing Page</td>
-<td><a href="research-docs-landing-page/">ID-090 — Docs Landing Page</a></td>
-</tr>
-<tr>
-<td>DuckLake on Azure for remote-store users</td>
-<td><a href="research-ducklake-azure/">DuckLake on Azure for remote-store users</a></td>
-</tr>
-<tr>
-<td>Example Testing Across Language Ecosystems</td>
-<td><a href="research-example-testing/">Example Testing Across Language Ecosystems</a></td>
-</tr>
-<tr>
-<td>User-Expectation-Driven Discovery of Source &amp; Doc Gaps</td>
-<td><a href="research-expectation-driven-review/">User-Expectation-Driven Discovery of Source &amp; Doc Gaps</a></td>
-</tr>
-<tr>
-<td>FastAPI Documentation &amp; CI/CD Patterns</td>
-<td><a href="research-fastapi-docs/">FastAPI Documentation &amp; CI/CD Patterns</a></td>
-</tr>
-<tr>
-<td>Feature Discoverability for Agents and Humans</td>
-<td><a href="research-feature-discoverability/">Feature Discoverability for Agents and Humans</a></td>
-</tr>
-<tr>
-<td>Google-Style Docstring Migration &amp; Zensical Evaluation</td>
-<td><a href="research-google-docstring-migration/">Google-Style Docstring Migration &amp; Zensical Evaluation</a></td>
-</tr>
-<tr>
-<td>Backend Health Check (<code>store.ping()</code> / <code>backend.check_health()</code>)</td>
-<td><a href="research-health-check/">Backend Health Check (<code>store.ping()</code> / <code>backend.check_health()</code>)</a></td>
-</tr>
-<tr>
-<td>OBS-003 Hand Decomposition (ID-147)</td>
-<td><a href="research-id-147-obs003-decomposition/">OBS-003 Hand Decomposition (ID-147)</a></td>
-</tr>
-<tr>
-<td>TLA+ Spec Augmentation (ID-147)</td>
-<td><a href="research-id-147-tla-augmentation/">TLA+ Spec Augmentation (ID-147)</a></td>
-</tr>
-<tr>
-<td>TLA+ PoC — WriteResult Spec Consistency (ID-147b)</td>
-<td><a href="research-id-147b-tla-poc/">TLA+ PoC — WriteResult Spec Consistency (ID-147b)</a></td>
-</tr>
-<tr>
-<td>ID-211 — HEAD pre-check for flat-namespace backends</td>
-<td><a href="research-id-211-flat-ns-file-ancestor-precheck/">ID-211 — HEAD pre-check for flat-namespace backends</a></td>
-</tr>
-<tr>
-<td>Benchmark Overhead Story — Reproducible Run of Record + User-Decides Framing (ID-230)</td>
-<td><a href="research-id-230-benchmark-overhead-story/">Benchmark Overhead Story — Reproducible Run of Record + User-Decides Framing (ID-230)</a></td>
-</tr>
-<tr>
-<td>Scope, abstraction, and the placement of detail in durable authoritative texts</td>
-<td><a href="research-id-232-detail-placement-durability/">Scope, abstraction, and the placement of detail in durable authoritative texts</a></td>
-</tr>
-<tr>
-<td>Detecting inconsistency among multiple descriptions of the same thing</td>
-<td><a href="research-inconsistency-detection-multi-artifact/">Detecting inconsistency among multiple descriptions of the same thing</a></td>
-</tr>
-<tr>
-<td><code>llms-full.txt</code> / Markdown-twin tooling for ID-220 (2026 refresh)</td>
-<td><a href="research-llms-full-txt-tooling/"><code>llms-full.txt</code> / Markdown-twin tooling for ID-220 (2026 refresh)</a></td>
-</tr>
-<tr>
-<td>Logging, Monitoring &amp; Tracing for remote-store</td>
-<td><a href="research-logging-monitoring-tracing/">Logging, Monitoring &amp; Tracing for remote-store</a></td>
-</tr>
-<tr>
-<td><code>lx</code> as Tooling for an <code>llms-full.txt</code> / Repo-Context Bundle</td>
-<td><a href="research-lx-llms-context-tooling/"><code>lx</code> as Tooling for an <code>llms-full.txt</code> / Repo-Context Bundle</a></td>
-</tr>
-<tr>
-<td>Architecture: Medallion + Dagster Showcase</td>
-<td><a href="research-medallion-dagster-showcase/">Architecture: Medallion + Dagster Showcase</a></td>
-</tr>
-<tr>
-<td>OpenRouter.ai Integration for Claude Code Workflow</td>
-<td><a href="research-openrouter-integration/">OpenRouter.ai Integration for Claude Code Workflow</a></td>
-</tr>
-<tr>
-<td>Read-Only HTTP Backend</td>
-<td><a href="research-readonly-http-backend/">Read-Only HTTP Backend</a></td>
-</tr>
-<tr>
-<td><code>resolve()</code> Specification Proposal</td>
-<td><a href="research-resolve-spec-proposal/"><code>resolve()</code> Specification Proposal</a></td>
-</tr>
-<tr>
-<td>Retry Policy Configuration (ID-010)</td>
-<td><a href="research-retry-policy/">Retry Policy Configuration (ID-010)</a></td>
-</tr>
-<tr>
-<td><code>s3-boto3</code> backend lane — PoC and disposition</td>
-<td><a href="research-s3-boto3-poc/"><code>s3-boto3</code> backend lane — PoC and disposition</a></td>
-</tr>
-<tr>
-<td>ID-200 — s3fs error-mapping fidelity in <code>_S3Base</code></td>
-<td><a href="research-s3-error-mapping-fidelity/">ID-200 — s3fs error-mapping fidelity in <code>_S3Base</code></a></td>
-</tr>
-<tr>
-<td>Seekable Read</td>
-<td><a href="research-seekable-read/">Seekable Read</a></td>
-</tr>
-<tr>
-<td>SFTPGo — Comparison and Design Insights</td>
-<td><a href="research-sftpgo-comparison/">SFTPGo — Comparison and Design Insights</a></td>
+<td>Is the level of detail appropriate?</td>
+<td><a href="research-appropriate-level-of-detail/">Is the level of detail appropriate?</a></td>
+<td>2026-08-17</td>
 </tr>
 <tr>
 <td>GitHub spec-kit compared against our SDD process (ID-238, BK-343)</td>
 <td><a href="research-spec-kit-comparison/">GitHub spec-kit compared against our SDD process (ID-238, BK-343)</a></td>
+<td>2026-08-07</td>
 </tr>
 <tr>
-<td>SQLAlchemy Backends &amp; Composite Store</td>
-<td><a href="research-sqlalchemy-backend/">SQLAlchemy Backends &amp; Composite Store</a></td>
+<td>Documentation Content Longevity</td>
+<td><a href="research-doc-content-longevity/">Documentation Content Longevity</a></td>
+<td>2026-07-28</td>
 </tr>
 <tr>
-<td>Store API Refinement</td>
-<td><a href="research-store-api-refinement/">Store API Refinement</a></td>
+<td>Detecting inconsistency among multiple descriptions of the same thing</td>
+<td><a href="research-inconsistency-detection-multi-artifact/">Detecting inconsistency among multiple descriptions of the same thing</a></td>
+<td>2026-07-27</td>
 </tr>
 <tr>
-<td>Configuration Loaders and Store Config Patterns</td>
-<td><a href="research-store-config/">Configuration Loaders and Store Config Patterns</a></td>
+<td>Scope, abstraction, and the placement of detail in durable authoritative texts</td>
+<td><a href="research-id-232-detail-placement-durability/">Scope, abstraction, and the placement of detail in durable authoritative texts</a></td>
+<td>2026-07-18</td>
 </tr>
 <tr>
-<td>Store Middleware Architecture</td>
-<td><a href="research-store-middleware-architecture/">Store Middleware Architecture</a></td>
+<td>Benchmark Overhead Story — Reproducible Run of Record + User-Decides Framing (ID-230)</td>
+<td><a href="research-id-230-benchmark-overhead-story/">Benchmark Overhead Story — Reproducible Run of Record + User-Decides Framing (ID-230)</a></td>
+<td>2026-07-16</td>
 </tr>
 <tr>
-<td>Testing Best Practices for Long-Term Package Quality</td>
-<td><a href="research-testing-best-practices/">Testing Best Practices for Long-Term Package Quality</a></td>
+<td><code>llms-full.txt</code> / Markdown-twin tooling for ID-220 (2026 refresh)</td>
+<td><a href="research-llms-full-txt-tooling/"><code>llms-full.txt</code> / Markdown-twin tooling for ID-220 (2026 refresh)</a></td>
+<td>2026-07-06</td>
+</tr>
+<tr>
+<td>DuckLake on Azure for remote-store users</td>
+<td><a href="research-ducklake-azure/">DuckLake on Azure for remote-store users</a></td>
+<td>2026-07-02</td>
+</tr>
+<tr>
+<td>Cross-Backend Concurrency Test Lane (BK-289)</td>
+<td><a href="research-bk-289-concurrency-test-lane/">Cross-Backend Concurrency Test Lane (BK-289)</a></td>
+<td>2026-06-14</td>
+</tr>
+<tr>
+<td>User-Expectation-Driven Discovery of Source &amp; Doc Gaps</td>
+<td><a href="research-expectation-driven-review/">User-Expectation-Driven Discovery of Source &amp; Doc Gaps</a></td>
+<td>2026-06-14</td>
+</tr>
+<tr>
+<td>Replay-backed example testing for live backends (BK-283)</td>
+<td><a href="research-bk-283-example-replay-design/">Replay-backed example testing for live backends (BK-283)</a></td>
+<td>2026-06-12</td>
+</tr>
+<tr>
+<td><code>s3-boto3</code> backend lane — PoC and disposition</td>
+<td><a href="research-s3-boto3-poc/"><code>s3-boto3</code> backend lane — PoC and disposition</a></td>
+<td>2026-06-01</td>
+</tr>
+<tr>
+<td>ID-200 — s3fs error-mapping fidelity in <code>_S3Base</code></td>
+<td><a href="research-s3-error-mapping-fidelity/">ID-200 — s3fs error-mapping fidelity in <code>_S3Base</code></a></td>
+<td>2026-05-31</td>
+</tr>
+<tr>
+<td><code>lx</code> as Tooling for an <code>llms-full.txt</code> / Repo-Context Bundle</td>
+<td><a href="research-lx-llms-context-tooling/"><code>lx</code> as Tooling for an <code>llms-full.txt</code> / Repo-Context Bundle</a></td>
+<td>2026-05-30</td>
+</tr>
+<tr>
+<td>ID-211 — HEAD pre-check for flat-namespace backends</td>
+<td><a href="research-id-211-flat-ns-file-ancestor-precheck/">ID-211 — HEAD pre-check for flat-namespace backends</a></td>
+<td>2026-05-26</td>
+</tr>
+<tr>
+<td>Backend Setup &amp; Configuration Guides Expansion</td>
+<td><a href="research-backend-setup-guides/">Backend Setup &amp; Configuration Guides Expansion</a></td>
+<td>2026-05-19</td>
+</tr>
+<tr>
+<td>BK-181 PR 2 — S3 cassette/replay infeasibility</td>
+<td><a href="research-bk-181-s3-cassette-infeasibility/">BK-181 PR 2 — S3 cassette/replay infeasibility</a></td>
+<td>2026-05-15</td>
+</tr>
+<tr>
+<td>HTTP cassette/replay layer — mechanism PoC (BK-181)</td>
+<td><a href="research-bk-181-cassette-replay-poc/">HTTP cassette/replay layer — mechanism PoC (BK-181)</a></td>
+<td>2026-05-14</td>
+</tr>
+<tr>
+<td>paramiko <code>ssh-rsa</code> host-key compatibility — empirical findings (BK-198)</td>
+<td><a href="research-bk-198-paramiko-ssh-rsa-empirical/">paramiko <code>ssh-rsa</code> host-key compatibility — empirical findings (BK-198)</a></td>
+<td>2026-05-12</td>
+</tr>
+<tr>
+<td>Substrate for Data-Driven Improvement of Agent Workflows</td>
+<td><a href="research-agent-workflow-substrate/">Substrate for Data-Driven Improvement of Agent Workflows</a></td>
+<td>2026-05-11</td>
+</tr>
+<tr>
+<td>SFTPGo — Comparison and Design Insights</td>
+<td><a href="research-sftpgo-comparison/">SFTPGo — Comparison and Design Insights</a></td>
+<td>2026-04-24</td>
+</tr>
+<tr>
+<td>OBS-003 Hand Decomposition (ID-147)</td>
+<td><a href="research-id-147-obs003-decomposition/">OBS-003 Hand Decomposition (ID-147)</a></td>
+<td>2026-04-19</td>
+</tr>
+<tr>
+<td>TLA+ PoC — WriteResult Spec Consistency (ID-147b)</td>
+<td><a href="research-id-147b-tla-poc/">TLA+ PoC — WriteResult Spec Consistency (ID-147b)</a></td>
+<td>2026-04-18</td>
+</tr>
+<tr>
+<td>TLA+ Spec Augmentation (ID-147)</td>
+<td><a href="research-id-147-tla-augmentation/">TLA+ Spec Augmentation (ID-147)</a></td>
+<td>2026-04-17</td>
 </tr>
 <tr>
 <td>v1.0 Communication &amp; Announcement Plan</td>
 <td><a href="research-v1-communication-plan/">v1.0 Communication &amp; Announcement Plan</a></td>
+<td>2026-04-13</td>
+</tr>
+<tr>
+<td>Backend Contract Completeness</td>
+<td><a href="research-backend-contract-completeness/">Backend Contract Completeness</a></td>
+<td>2026-04-05</td>
+</tr>
+<tr>
+<td>Bug Prevention Beyond Testing</td>
+<td><a href="research-bug-prevention-beyond-testing/">Bug Prevention Beyond Testing</a></td>
+<td>2026-04-03</td>
+</tr>
+<tr>
+<td>OpenRouter.ai Integration for Claude Code Workflow</td>
+<td><a href="research-openrouter-integration/">OpenRouter.ai Integration for Claude Code Workflow</a></td>
+<td>2026-04-02</td>
+</tr>
+<tr>
+<td>Feature Discoverability for Agents and Humans</td>
+<td><a href="research-feature-discoverability/">Feature Discoverability for Agents and Humans</a></td>
+<td>2026-03-30</td>
+</tr>
+<tr>
+<td>Research Round 2: Async Store API vs Current Feature Surface (ID-013)</td>
+<td><a href="research-async-store-api-round2/">Research Round 2: Async Store API vs Current Feature Surface (ID-013)</a></td>
+<td>2026-03-30</td>
+</tr>
+<tr>
+<td><code>resolve()</code> Specification Proposal</td>
+<td><a href="research-resolve-spec-proposal/"><code>resolve()</code> Specification Proposal</a></td>
+<td>2026-03-29</td>
+</tr>
+<tr>
+<td>Testing Best Practices for Long-Term Package Quality</td>
+<td><a href="research-testing-best-practices/">Testing Best Practices for Long-Term Package Quality</a></td>
+<td>2026-03-28</td>
+</tr>
+<tr>
+<td>Depth-Limited Listing</td>
+<td><a href="research-depth-limited-listing/">Depth-Limited Listing</a></td>
+<td>2026-03-26</td>
+</tr>
+<tr>
+<td>SQLAlchemy Backends &amp; Composite Store</td>
+<td><a href="research-sqlalchemy-backend/">SQLAlchemy Backends &amp; Composite Store</a></td>
+<td>2026-03-26</td>
+</tr>
+<tr>
+<td>Azure PyArrow Optimization</td>
+<td><a href="research-azure-pyarrow-optimization/">Azure PyArrow Optimization</a></td>
+<td>2026-03-24</td>
+</tr>
+<tr>
+<td>Benchmark Suite v2 — User-Decision Framing</td>
+<td><a href="research-benchmark-suite-v2/">Benchmark Suite v2 — User-Decision Framing</a></td>
+<td>2026-03-24</td>
+</tr>
+<tr>
+<td>Seekable Read</td>
+<td><a href="research-seekable-read/">Seekable Read</a></td>
+<td>2026-03-24</td>
+</tr>
+<tr>
+<td>Store Middleware Architecture</td>
+<td><a href="research-store-middleware-architecture/">Store Middleware Architecture</a></td>
+<td>2026-03-17</td>
+</tr>
+<tr>
+<td>ID-090 — Docs Landing Page</td>
+<td><a href="research-docs-landing-page/">ID-090 — Docs Landing Page</a></td>
+<td>2026-03-16</td>
+</tr>
+<tr>
+<td>Architecture: Medallion + Dagster Showcase</td>
+<td><a href="research-medallion-dagster-showcase/">Architecture: Medallion + Dagster Showcase</a></td>
+<td>2026-03-15</td>
+</tr>
+<tr>
+<td>Read-Only HTTP Backend</td>
+<td><a href="research-readonly-http-backend/">Read-Only HTTP Backend</a></td>
+<td>2026-03-15</td>
+</tr>
+<tr>
+<td>Dagster Extension (<code>ext.dagster</code>, ID-075)</td>
+<td><a href="research-dagster-extension/">Dagster Extension (<code>ext.dagster</code>, ID-075)</a></td>
+<td>2026-03-13</td>
+</tr>
+<tr>
+<td>Google-Style Docstring Migration &amp; Zensical Evaluation</td>
+<td><a href="research-google-docstring-migration/">Google-Style Docstring Migration &amp; Zensical Evaluation</a></td>
+<td>2026-03-13</td>
+</tr>
+<tr>
+<td>Store API Refinement</td>
+<td><a href="research-store-api-refinement/">Store API Refinement</a></td>
+<td>2026-03-12</td>
+</tr>
+<tr>
+<td>FastAPI Documentation &amp; CI/CD Patterns</td>
+<td><a href="research-fastapi-docs/">FastAPI Documentation &amp; CI/CD Patterns</a></td>
+<td>2026-03-10</td>
+</tr>
+<tr>
+<td>Backend Health Check (<code>store.ping()</code> / <code>backend.check_health()</code>)</td>
+<td><a href="research-health-check/">Backend Health Check (<code>store.ping()</code> / <code>backend.check_health()</code>)</a></td>
+<td>2026-03-09</td>
+</tr>
+<tr>
+<td>Example Testing Across Language Ecosystems</td>
+<td><a href="research-example-testing/">Example Testing Across Language Ecosystems</a></td>
+<td>2026-03-06</td>
+</tr>
+<tr>
+<td>Retry Policy Configuration (ID-010)</td>
+<td><a href="research-retry-policy/">Retry Policy Configuration (ID-010)</a></td>
+<td>2026-03-05</td>
+</tr>
+<tr>
+<td>Async Store / Backend API (ID-013)</td>
+<td><a href="research-async-store-api/">Async Store / Backend API (ID-013)</a></td>
+<td>2026-03-03</td>
+</tr>
+<tr>
+<td>Configuration Loaders and Store Config Patterns</td>
+<td><a href="research-store-config/">Configuration Loaders and Store Config Patterns</a></td>
+<td>2026-03-02</td>
+</tr>
+<tr>
+<td>Logging, Monitoring &amp; Tracing for remote-store</td>
+<td><a href="research-logging-monitoring-tracing/">Logging, Monitoring &amp; Tracing for remote-store</a></td>
+<td>2026-03-02</td>
 </tr>
 </tbody>
 </table>
