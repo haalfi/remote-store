@@ -135,7 +135,7 @@ class _ErrorMappingStream(io.RawIOBase):
             ``SSHException`` before this wrapper sees it.  It widens **this
             stream only**, which is the point: the wrapper is shared, and a
             widening argued from one backend's transport must not change what
-            five others map.  The types are handed to ``except``, so they must
+            the other five backends map.  The types are handed to ``except``, so they must
             be exception classes and are best kept to the transport's own
             hierarchy -- naming ``Exception`` here would catch the programming
             errors the paragraph above says propagate.

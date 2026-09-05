@@ -230,11 +230,17 @@ if evidence changes; these are retired.
   `read_bytes()`, which fails inside `_errors()`, raised `BackendUnavailable` and
   cleared the cached client. One connection, one fault, two answers depending on
   which method the caller used. Both now answer `BackendUnavailable`.
-  **The escape cost two things beyond the type**, both measured and both fixed by
-  the same change: the cached client was never invalidated, so SFTP-010 tier 2
-  did not fire on the operation that surfaced the drop; and `_connection_lost`
-  stayed `False`, leaving BK-355's futile-close guard inert on exactly the shape a
-  dropped connection takes.
+  **The escape cost two things beyond the type, and they are not both fixed.**
+  The cached client was never invalidated, so SFTP-010 tier 2 did not fire on the
+  operation that surfaced the drop; that is fixed for both supplied shapes. And
+  `_connection_lost` stayed `False`, leaving BK-355's futile-close guard inert;
+  that is fixed for `SFTPError` only. `SSHException` now reaches `_fail` but
+  `_is_connection_dead` does not match it, so the guard stays unarmed on **exactly
+  the shape a dropped connection takes** — deliberately, per the 0.00 s
+  measurement below, and not as a residue. Measured per shape through the wrapper
+  with the backend's own mapper and predicate: `SSHException` maps with
+  `_connection_lost=False` and one inner close; `SFTPError`, `EOFError` and
+  `OSError` map with `_connection_lost=True` and none.
   **Fixed by a per-construction-site caught set** — a new `also_catch` parameter
   on `_ErrorMappingStream`, which `SFTPBackend.read()` supplies
   `(paramiko.SSHException, paramiko.SFTPError)` — rather than by the item's third

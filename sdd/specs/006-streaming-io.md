@@ -143,22 +143,31 @@ closed by construction**, only empty where it has been looked at: a backend
 supplying a set that misses one of its transport's shapes puts the shape back
 into it, which is a defect of that supply and not of this clause.
 
-**A supplied shape reaches `_fail` but need not arm the guard, and on SFTP it
-does not.** `_is_connection_dead` deliberately excludes the `SSHException`
-family (`_map_exception` gives it its own arm), so a dropped connection is
-mapped, invalidates the cached client, and still closes the inner handle. That
-close is free: measured **0.00 s** on a hard drop and on a half-close alike,
-because paramiko's transport-reader thread tears the socket down on EOF before
-`SFTPFile.close()` can issue its `CMD_CLOSE`. There is therefore nothing here to
-buy, which is why `SFTPBackend.read` was left passing the predicate unchanged
-when its caught set widened. Derivation: the drop relay in
+**A supplied shape reaches `_fail` but need not arm the guard, and on SFTP one
+of the two does not.** The predicate decides, independently of the caught set:
+`_is_connection_dead` matches `paramiko.SFTPError`, so that shape now arms the
+guard where before it never reached `_fail` at all; it deliberately excludes the
+`SSHException` family (`_map_exception` gives that its own arm), so that shape
+is mapped, invalidates the cached client, and still closes the inner handle.
+Measured through the wrapper with the backend's own mapper and predicate:
+`SSHException` maps with the guard unarmed and one inner close; `SFTPError`,
+`EOFError` and a socket-teardown `OSError` map with it armed and no inner close.
+
+**The unarmed half is a decision, not a residue.** `SSHException` is the shape a
+dropped connection takes, so it is the one where the guard would matter — and
+the close there is free: measured **0.00 s**, because paramiko's
+transport-reader thread tears the socket down on EOF before `SFTPFile.close()`
+can issue its `CMD_CLOSE`. There is nothing to buy, which is why
+`SFTPBackend.read` was left passing the predicate unchanged when its caught set
+widened. Derivation: the drop relay in
 `tests/backends/sftp/test_connection_drop.py`, timed around the wrapper's
-`close()` after a mapped failure, and the same measurement against a relay
-FINning server→client only; paramiko 5.0.0. Contrast the stall this clause was
-written for, where the socket stays open and the close does wait — and note that
-the reason is paramiko's teardown rather than anything here, so a release that
-stopped closing the socket on EOF would put the cost back and this decision
-should be re-measured rather than assumed.
+`close()` after a mapped failure; paramiko 5.0.0. A half-close (FIN
+server→client only) was measured at 0.00 s too, but its relay is not in the
+repo, so treat that as a cross-check rather than something a reader can re-run.
+Contrast the stall this clause was written for, where the socket stays open and
+the close does wait — and note the reason is paramiko's teardown rather than
+anything here, so a release that stopped closing the socket on EOF would put the
+cost back and this decision should be re-measured rather than assumed.
 
 **See also:** SFTP-030 in [009-sftp-backend.md](009-sftp-backend.md), the bound
 this clause completes, and where that limit is measured.

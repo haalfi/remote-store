@@ -155,6 +155,59 @@ phases:
           gains the drop beside the stall on its no-short-read claim
         outcome: ok
 
+  - id: fix
+    name: Review round 1
+    steps:
+      - file: sdd/BACKLOG-DONE.md
+        section: "BK-358 (entry)"
+        read_type: gate
+        extract: >-
+          Round 1 (unprimed, solo) returned 3 findings, all Consistency, all prose
+          contradicting a sibling artifact in the same diff. This one was the sharpest: "both
+          measured and both fixed by the same change" is false of the second consequence, and
+          the same entry says so three lines later. Retrospectively, I wrote a summary
+          sentence over two facts I had measured separately and never re-checked that the
+          summary held over both
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_is_connection_dead (measurement, not a read)"
+        read_type: verify
+        extract: >-
+          Measured the guard per supplied shape before writing the correction, rather than
+          accepting the finding as stated: `SSHException` maps with the guard unarmed and one
+          inner close; `SFTPError`, `EOFError` and a socket-teardown `OSError` map with it
+          armed and none. So the finding understated it — the guard *is* newly armed for
+          `SFTPError`, where the exception previously never reached `_fail`. Pinned by
+          `TestSFTPStreamCaughtSetMeetsTheGuard`, positive-controlled by flipping one
+          expectation and seeing it fail
+        outcome: ok
+      - file: sdd/specs/006-streaming-io.md
+        section: "SIO-010"
+        read_type: verify
+        extract: >-
+          Found by the sibling sweep rather than by the review: SIO-010's new headline ("on
+          SFTP it does not [arm]") is too broad against that measurement, since `SFTPError`
+          does arm it. Split into the two halves
+        outcome: ok
+      - file: tests/test_stream.py
+        section: "TestBackendSuppliedShapes (docstring)"
+        read_type: gate
+        extract: >-
+          "five other construction sites" then enumerating six. Swept every site count in the
+          diff: `_stream.py` said "five others" of an ambiguous unit (disambiguated to
+          backends), and SIO-012, BACKLOG-DONE, the trace and the PR body were all correct.
+          One wrong instance, and it was the one conflating sites with backends
+        outcome: ok
+      - file: sdd/TESTING.md
+        section: "Rules (3)"
+        read_type: gate
+        extract: >-
+          Own finding, from the qualitative gate rather than the review: two
+          `backend._sftp_client` assertions need the `# internal: no public observable`
+          marker and its reason, since the reconnect is the public guarantee and only the
+          private pair says the invalidation happened on the operation that surfaced the drop
+        outcome: ok
+
   - id: verify
     name: Ripple-check
     steps:

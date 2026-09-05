@@ -112,8 +112,11 @@ class _DropRelay:
     fires: 15 of 15, on the streamed read, the ``SEEK_END`` probe and the eager
     read alike. Both figures are 15 runs of the drop staged each way against
     this module's own relay on paramiko 5.0.0 / CPython 3.11, classifying the
-    exception that escaped; to re-derive the first, replace the ``_armed`` check
-    in ``_pump`` with an unconditional ``_tear_down()`` and loop a test.
+    exception that escaped; to re-derive the first, make ``arm()`` call
+    ``_tear_down()`` directly — that *is* the bare close — and loop a test.
+    (Not by tearing down inside ``_pump`` unconditionally: that fires on the
+    first byte either way, so the handshake never completes and nothing is
+    measured.)
 
     **``arm()`` is one-shot.** The teardown re-opens the gate, so the listener
     keeps serving and the next connection is pumped normally — which is what lets
@@ -269,6 +272,11 @@ def test_a_mid_read_drop_invalidates_the_client_and_the_next_read_reconnects(
     stream = backend.read(name)
     try:
         assert stream.read(64 * 1024), "expected the stream to deliver bytes before the drop"
+        # internal: no public observable — the reconnect below is the guarantee
+        # and says the client was replaced by the time the next operation ran.
+        # Only these two say it happened on the operation that surfaced the drop
+        # rather than lazily afterwards, which is what SFTP-010 tier 2 is about
+        # and what the escape actually cost.
         assert backend._sftp_client is not None, "precondition: a live client is cached"
         drop_relay.arm()
         with pytest.raises(BackendUnavailable):

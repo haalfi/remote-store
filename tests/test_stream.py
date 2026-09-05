@@ -479,8 +479,10 @@ class TestBackendSuppliedShapes:
 
     **Both halves are pinned deliberately.** The widening is the fix; the
     *default staying exactly as it was* is what keeps the fix from reaching the
-    five other construction sites the wrapper serves — S3 (fsspec, boto3,
+    six other construction sites the wrapper serves — S3 (fsspec, boto3,
     PyArrow), Azure (twice) and HTTP — none of which was measured to need it.
+    Six sites across five backends, because Azure builds the wrapper twice; count
+    sites here rather than backends, since it is a site that supplies a set.
     """
 
     @pytest.mark.spec("SIO-012")
