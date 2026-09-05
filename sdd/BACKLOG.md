@@ -1904,10 +1904,14 @@ stand-down's stated reason matches what actually switches the rules off
 the ripple-check's six measured blind spots are answered (BK-346); the
 hand-maintained inventories ID-245 names are generated — four bullets, of which
 the checker inventory has shipped; `check_formal_trace` proves
-assertion rather than citation (ID-207); and both open revisit pins have fired
-and named successors (ID-150, ID-249).
-**Bounded to those eleven deliberately.** "No artifact asserts what no mechanism
-can check" is the promise and cannot be a closing condition: this section's own
+assertion rather than citation (ID-207); both open revisit pins have fired
+and named successors (ID-150, ID-249); the two backlog files are readable by the
+person they are for, or the decision that their length is the right price is
+recorded (BK-365); and the repo can say whether its own quality promise is
+holding rather than only asserting it (BK-366).
+**Bounded to those thirteen deliberately** — count derived by enumerating the
+semicolon-separated clauses above, not carried forward. "No artifact asserts what
+no mechanism can check" is the promise and cannot be a closing condition: this section's own
 preamble records that detecting the remaining class needs semantic comparison of
 prose, which research § 1 marks as having no general oracle. Nor is "no figure
 was counted by hand" the rule — [principle 9](../CLAUDE.md#principles) requires a
@@ -2462,3 +2466,62 @@ the commit that writes it lands, so cite the generator instead.
   negative tags, `sdd/BACKLOG.md` top-ranked at 22 over 236 reads (9.3%).
   **Exit criteria:** decision logged here, then the successor ticket opened and
   its ID named in this item's close note.
+
+- [ ] **BK-365 — Both backlog files grew past what a maintainer can read, and nothing measures it**
+  spec: — · effort: M · audience: contributor.process
+  **`sdd/BACKLOG.md` is 20,041 words.** That is the file a maintainer reads to
+  decide what to work on, and it is now roughly eighty pages of prose. Two
+  independent multipliers got it there over seven weeks (2026-07-18 → 2026-09-05):
+  the item count doubled, 28 → 56, and the median words per item doubled too,
+  145 → 292. Total 4,823 → 20,041 words — 4.2× against 12.7% growth in `src/`
+  over the same window. `BACKLOG-DONE.md` shows the same shape at 103,446 words
+  over 650 items, and its per-release medians run from **10 words per completed
+  item at v0.3.0 to 646 under `Unreleased`** — 65×, of which 2.8× arrived in the
+  current cycle alone (v0.30.0 sat at 234).
+  **Measured, not felt.** Derivation: for each entry, the words between its
+  `- [x] **ID-NNN` header and the next header or heading, over
+  `git show <sha>:sdd/BACKLOG.md` across the file's history; per-release figures
+  from `BACKLOG-DONE.md`'s own `## vX.Y.Z` sections. Both were run before this
+  entry was written.
+  **Why this is not simply Rule 7's job.**
+  [`CONTENT-RULES.md` Rule 7](CONTENT-RULES.md#kernsatz) binds `sdd/`, so it
+  formally reaches both files, but it tests whether a *section* opens with its
+  core claim and a backlog entry is not a section. Nothing tests whether an entry
+  has outgrown its next reader, and the release step
+  ([`CONTRIBUTING.md` § Release](../CONTRIBUTING.md#release)) renames
+  `## Unreleased` to `## vX.Y.Z` without condensing, so nothing shortens an entry
+  after it is written.
+  **The question to answer before any rule is written:** is a 292-word median a
+  defect, or the correct price of the derivations
+  [principle 9](../CLAUDE.md#principles) requires? The research record
+  ([research](research/research-appropriate-level-of-detail.md) § 9.2) supplies
+  the test that would decide it — rationale a reader can reconstruct from what
+  survives may be cut, rationale carrying a fact from elsewhere may not — and its
+  § 4 supplies the reason a word budget is the wrong instrument. Run that test
+  against a sample of entries and report before proposing anything.
+  **Exit criteria:** a recorded decision on whether entry length is a defect;
+  if it is, a mechanism named with its bound stated per
+  [`DRIFT-RULES.md`](DRIFT-RULES.md#rules).
+
+- [ ] **BK-366 — Bug share of shipped work rose 3% → 35% across five releases, undiagnosed**
+  spec: — · effort: M · audience: contributor.process
+  Counting `BUG-` against all items in each `BACKLOG-DONE.md` release section:
+  **v0.27.0 3%, v0.28.0 12%, v0.29.0 21%, v0.29.1 23%, v0.30.0 35%**, with
+  `Unreleased` at 33% (16 of 49). Over the same window open `BUG-` items in
+  `BACKLOG.md` went 1 → 22 while `src/` grew 12.7%, so a larger codebase does not
+  explain it and the queue is growing rather than being worked down.
+  **Two readings fit these numbers and they need opposite responses.** Detection
+  improved — this repo added gates steadily, and a gate finds defects that
+  previously shipped silently, which would make the trend good news. Or quality
+  degraded. Nothing measured here distinguishes them, and that is the finding:
+  **the repo cannot currently tell whether its central promise is holding.**
+  **What would separate them**, none of it needing new tooling: whether each open
+  `BUG-` escaped to a released version or was caught pre-merge; which gate or
+  review caught it; and whether the classes cluster on the surfaces that grew. A
+  rise concentrated in pre-merge catches on new code is detection working; a rise
+  in escapes to released behaviour is not.
+  **Derivation:** `BUG-` versus total entry headers per `## vX.Y.Z` section of
+  `BACKLOG-DONE.md`; open counts and `src/` line totals from `git show <sha>:`
+  across the same window. Run before this entry was written.
+  **Exit criteria:** each open `BUG-` classified escaped/caught with the catching
+  mechanism named, and a recorded answer to which reading the data supports.
