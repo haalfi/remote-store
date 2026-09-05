@@ -58,12 +58,17 @@ framework](../CLAUDE.md#documentation-framework)): placement →
    its core claim in at most three sentences, defining any term it coins or uses
    in a sense the reader cannot be assumed to hold. If those sentences will not
    come, the section is not yet understood well enough to write: return to the
-   source instead of writing around the gap. What follows the Kernsatz is detail
-   the Kernsatz earned; prose standing *instead* of it is what this rule catches —
-   **absence of the claim, not a claim placed late**.
-   **What triggers it.** A *section* is a heading-delimited unit of Markdown prose;
-   a list item, a table and a YAML block are not sections. *Substantially
-   rewritten* means the section's claim changed, not its wording.
+   source — the material the section is about — instead of writing around the gap.
+   What follows the Kernsatz is detail the Kernsatz earned. **A claim that is absent
+   and a claim that arrives in paragraph four both fail this rule**; the first is
+   the one it exists to catch, and the second is the one it is easiest to fix.
+   **What triggers it.** A *section* is a heading-delimited unit of Markdown
+   prose at any heading level; a list item, a table and a YAML block are not
+   sections, and a section whose body is mostly a table still opens with the
+   claim the table serves. *Substantially rewritten* means the section's claim
+   changed, not its wording — **and a section that stated no claim before is
+   substantially rewritten by definition**, since there was nothing for the
+   rewrite to preserve.
    **Why the scope is narrow.** Rules 1–6 govern accuracy over time and apply
    everywhere; this one governs comprehension at writing time and is deliberately
    confined to the repo's own reasoning surfaces, where the author and reader are
