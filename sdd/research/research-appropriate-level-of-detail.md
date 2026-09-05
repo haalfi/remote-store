@@ -16,10 +16,11 @@ argues for.
 > subject. Of those three, only the last can be checked at the moment of writing,
 > which is why the practical rule is an author-side test and not a length budget.
 >
-> **Standing caveat: two sources have been read in full, and only two.** Rozenblit
-> & Keil (2002), the mechanism the authoring test rests on (§ 5.2), and Sweller,
-> van Merriënboer & Paas (1998), which describes the expertise-reversal
-> experiments its own senior author ran (§ 3). Both were supplied by the
+> **Standing caveat: four sources have been read in full, and one of them is a
+> primary.** Rozenblit & Keil (2002), the mechanism the authoring test rests on
+> (§ 5.2); Sweller, van Merriënboer & Paas (1998), which describes the
+> expertise-reversal experiments its own senior author ran (§ 3); and two
+> secondary accounts of the Hamburg model (§ 4). All were supplied by the
 > maintainer. Every other external claim rests on an abstract, a metadata record
 > or a search summary, because every scholarly host returns 403 from this
 > environment (Appendix B). Each carries a tier: treat the rest as directional,
@@ -112,19 +113,60 @@ guide and a chat reply, because the text's function differs
 the expertise input is unknown, which is why expertise-conditioned rules work
 inside `sdd/` and fail on `docs-src/`.
 
-## 4. The one dimension with a stated optimum
+## 4. The dimension with an unconditional mid-scale optimum
 
-The Hamburg model's *Kürze/Prägnanz* [brevity/conciseness] is the only dimension
-in that framework whose optimum sits **mid-scale**: terse, compressed texts
-hinder comprehension as much as verbose ones (Langer, Schulz von Thun & Tausch,
-1974, *Sich verständlich ausdrücken* [*Expressing Yourself Comprehensibly*]).
-**[Search-summary.]**
+The Hamburg model (Langer, Schulz von Thun & Tausch, 1974, *Sich verständlich
+ausdrücken* [*Expressing Yourself Comprehensibly*]) rates a text on four
+dimensions, each on a five-point bipolar scale from `−−` to `++`. *Einfachheit*
+[simplicity] and *Gliederung/Ordnung* [structure/order] have their optimum at
+`++`. **The optimum for *Kürze/Prägnanz* [brevity/conciseness] sits mid-scale,
+between `0` and `+`: extremely terse, compressed texts impede comprehension just
+as verbose ones do.** **[Two secondary sources read in full and in agreement; the
+book itself remains unread.]**
 
-That is the closest external formulation of the question this document answers,
-and it is 52 years old. Two cautions travel with it: the four dimensions are
-criticised as not precisely operationalised and **not independent of one
-another**, and the contrast pairs behind the factor analyses were compiled ad hoc.
-So the optimum is usable as a *frame* and not as a measurement.
+**Correction to an earlier claim of this document.** It is not the *only*
+mid-scale dimension. *Anregende Zusätze* [stimulating additions] typically also
+sits between `0` and `+` — but its optimum is **conditional**: `−` or `−−` when
+structure is weak, `0`/`+` or occasionally `++` when simplicity and structure are
+strong. Brevity's mid-scale optimum is the only **unconditional** one, which is a
+narrower and more useful claim than the one it replaces.
+
+**The definition worth borrowing** is a ratio rather than a length: the text's
+length matches the amount of information it means to communicate. That is the
+same shape as § 1's relational finding, arrived at from the other side.
+
+**The empirical base is stronger than "expert ratings", and weaker than the
+optimum needs.** Four studies used *konzeptorientiertes Rating*: trained raters,
+five to ten per text, judging blind, with inter-rater agreement required before
+averaging. **28 texts in two versions each, over 1,100 readers** — roughly 600
+pupils and 500 adults — read them and answered comprehension and retention
+tasks, and the improved versions helped: effects classed "large" for about half
+the texts, small or medium for a quarter, and **no effect for the remaining
+quarter**. The corpus was not only instructional: schoolbooks, but also legal
+codes, encyclopaedia entries, insurance conditions, a tax leaflet, a purchase
+contract and scientific studies.
+
+**What that does not establish is the optimum itself.** Those studies validate
+the four dimensions against reader performance. No study varied length alone and
+measured the resulting curve, so the mid-scale optimum is the authors'
+recommendation derived from their model, not a measured dose-response. Usable as
+a frame; not as a measurement.
+
+**Three cautions travel with it.** The dimensions are not independent, and the
+dependency runs straight through this question: **simple texts are somewhat
+longer, and stimulating additions lengthen them too**, so brevity trades against
+the two dimensions the model rates most valuable. Schulz von Thun's counter is
+that roughly 75% of each dimension's variance is independent. The 18 contrast
+pairs behind the original factor analyses were compiled ad hoc, with the counter
+that the final model no longer rests strictly on them. And the studies do not
+separate understanding from remembering, so some of the measured gain may be
+retention rather than comprehension.
+
+**One difference from this repo's practice, stated because it is inconvenient.**
+The Hamburg authors deliberately declined to give concrete action instructions,
+judging that such rules would have to be too numerous to stay practical, and
+relied on model texts instead. Rule 7 (§ 5.3) is exactly the kind of instruction
+they declined to write.
 
 ## 5. The author-side test
 
@@ -281,11 +323,15 @@ reach a length. Under-justification is the failure with the better evidence.
    reversal using **text-comprehension** material rather than diagrams — a step
    closer to prose than the wiring-diagram case.
 3. **A study manipulating detail volume in non-instructional reference prose,
-   read non-linearly by domain experts.** Still none found. Every anchor here
-   uses learners reading linearly for a retention test, Reder and Anderson
-   included.
-4. **Langer, Schulz von Thun & Tausch (1974) in full**, for whether the
-   *Kürze/Prägnanz* optimum is the authors' claim and whether it was measured.
+   read non-linearly by domain experts.** Still none found, though the Hamburg
+   corpus comes closer than this document previously allowed: legal codes,
+   insurance conditions and a purchase contract, read by adults (§ 4). What is
+   still missing is the *non-linear* reader — someone looking something up rather
+   than reading through and being tested.
+4. **Langer, Schulz von Thun & Tausch (1974) in full** — now a smaller question
+   than it was. Two secondary sources agree on the optimum and on the validation
+   studies (§ 4); what the book would add is whether the authors argue the
+   mid-scale optimum from their own data or assert it from the model.
 5. **Locally and cheaply:** run the reader test against one page twice, whole and
    condensed, and compare unanswerable counts. The one experiment available
    without external access, and it tests overshoot directly on this corpus.
@@ -316,9 +362,13 @@ record), **search-summary** (a search engine's synthesis of secondary sources),
 | 8 | Kalyuga et al. (1998): text essential and best integrated for novice apprentices, redundant and best **fully eliminated** for experienced ones; elimination is its own condition, not confounded with integration | Verified against the co-authored 1998 review, read in full | Medium-high |
 | 8a | The same review reads McNamara et al. (1996) as redundancy rather than active processing, because mental-effort ratings **rose** where the active-processing account predicts a fall | Verified against that review | Medium |
 | 8b | Reder & Anderson (1980, 1982): physics texts learned more effectively from a summary than from the entire contents — detail volume manipulated in prose | Cited at one remove in that review; unchecked | Low |
-| 9 | *Kürze/Prägnanz* is a mid-scale optimum | Search-summary | Low-medium |
+| 9 | *Kürze/Prägnanz*'s optimum sits between `0` and `+`; both extremes impede comprehension | Two secondary sources read in full, in agreement; book unread | Medium-high |
+| 9a | It is the only **unconditional** mid-scale optimum; *anregende Zusätze* is mid-scale but conditional on the other dimensions | Same | Medium |
+| 9b | The four dimensions were validated against reader performance — 28 texts in two versions, 1,100+ readers, no effect for about a quarter of texts — but no study varied length alone, so the optimum is a recommendation, not a measured curve | Same | Medium |
+| 9c | The dependency runs through this question: simple texts are somewhat longer, and stimulating additions lengthen them too | Same | Medium |
 | 10 | Groeben's interactional turn; Göpferich keeps the Hamburg four, adds *Korrektheit* and *Perzipierbarkeit*, reframes on the communication situation | Search-summary | Low-medium |
-| 11 | Hamburg dimensions not independent; contrast pairs ad hoc | Search-summary | Low-medium |
+| 11 | Hamburg dimensions not independent (Schulz von Thun: ~75% of each dimension's variance is); contrast pairs ad hoc; understanding not separated from retention | Secondary, read in full | Medium |
+| 11a | The Hamburg authors deliberately gave no concrete action instructions, relying on model texts — the opposite of Rule 7's approach | Secondary, read in full | Medium |
 | 12 | Rozenblit & Keil: the explanation attempt lowers self-rated understanding across 12 studies, and moves it to where independent raters already scored it | **Verified, read in full** | High |
 | 12a | The same: **no** drop for procedures or narratives, a significantly smaller drop for facts, so the effect is specific to explanatory knowledge | **Verified, read in full** | High |
 | 13 | Bereiter & Scardamalia: knowledge-telling versus knowledge-transforming | Search-summary | Low-medium |
@@ -375,3 +425,14 @@ handed.
 Psychology Review* 10(3), sharing one author. It happens to describe the target
 study in enough detail to answer the question, which is why row 8 moved; the
 target itself remains unread, and row 8's tier says so.
+
+**The German strand went the same way.** Two secondary sources were supplied in
+place of Langer, Schulz von Thun & Tausch (1974) — the German Wikipedia article
+on the Hamburg model, and Kroop, Mangler, Hutterer & Swertz's paper on
+comprehensibility training at the University of Vienna. Both were read in full,
+they agree on the optimum and on the scale, and between them they carry the
+validation studies and the standing criticisms. That moved § 4 from one
+search-summary sentence to the best-evidenced section after § 5.2, and it
+corrected a claim this document had been making. An encyclopaedia article is a
+lead rather than an authority by this document's own method, so § 4's rows are
+tiered as secondary, and the book stays on the § 9 list for one narrower question.
