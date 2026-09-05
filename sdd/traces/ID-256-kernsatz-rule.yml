@@ -4,8 +4,9 @@ trigger: >-
   Repo prose was observed to overshoot its appropriate detail level almost
   always. The evidence was the /ship round split: code and tests stabilise in
   roughly two to four rounds, and the remaining rounds carry prose findings only.
-  Principle 8 could rule out the wrong cut (BK-351) but stated no positive test,
-  so nothing fired before the prose was written.
+  Principle 8 sets a test for cutting - consolidation and tightening are
+  legitimate, deleting a load-bearing reason is not - but no test for writing, so
+  nothing fired before the prose existed.
 source_items:
   - ID-256
 audience:
@@ -19,11 +20,13 @@ expected_ripples:
   - sdd/backlogid.json
 surprising_ripples: []
 co_shipped_items: []
-# One PR, no review round yet at authoring time: the implementing commit does not
-# count, per the schema's rule. Derivation: `git log --oneline origin/master..HEAD`
-# on this branch shows the research commits plus this item's implementation, and
-# no round-driven fix commit.
-review_rounds: 0
+# Two commits exist specifically because review feedback was incorporated: the
+# maintainer's three findings plus an external validation pass (f7eb5b7), and the
+# PR's eleven inline threads plus its review body (this commit). The Tao-shape
+# restructure is not counted -- it answered a request for a different structure,
+# not a review finding. Derivation: `git log --oneline origin/master..HEAD` read
+# against what each commit body says it responded to.
+review_rounds: 2
 phases:
   - id: orient
     name: Orient
@@ -45,12 +48,16 @@ phases:
         section: "BK-351, BK-353"
         read_type: gate
         extract: >-
-          BK-351 declined a length budget for /ship citing principle 8, recording
-          that it forbids one kind of condensing while setting no positive test.
+          BK-351 declined a 5,000-word budget for /ship on the ground that
+          principle 8 forbids trading a load-bearing reason for a length target.
           BK-353 then condensed the file and its first cut deleted two
-          load-bearing clauses while claiming nothing was removed. Together they
-          are the repo's own record that the missing half is an authoring test,
-          not a review bound.
+          load-bearing clauses while claiming nothing was removed. Its trace
+          (bk-353-condense-ship-skill.yml:53-61) reads principle 8 as setting a
+          positive test for cutting - "consolidation and tightening are
+          legitimate, deleting reasons is not" - which is the sentence that
+          locates the gap precisely: the repo had a test for the cut and none for
+          the draft. That is why the missing half is an authoring test, not a
+          review bound.
         outcome: ok
       - file: sdd/BACKLOG-DONE.md
         section: "BUG-248 (entry and commit subjects)"
@@ -109,6 +116,36 @@ phases:
           renumbered cross-references. Derivation: `python
           tmp/restructure/claim_diff.py` against a pre-restructure copy. This is
           the check BK-353 wishes it had run.
+        outcome: ok
+      - file: sdd/traces/bk-353-condense-ship-skill.yml
+        section: "orient / BK-351 step (lines 53-61)"
+        read_type: verify
+        outcome: misleading
+        extract: >-
+          Re-read after a PR review found this item had quoted it wrongly. The
+          phrase "forbids one *kind* of condensing" lives here, not in BK-351, and
+          the clause immediately after it - "and sets the test the work has to
+          pass: consolidation and tightening are legitimate, deleting reasons is
+          not" - says principle 8 *does* set a test. This trace's own trigger and
+          orient step had truncated the quote at "condensing" and attributed it to
+          BK-351, inverting it into "setting no positive test". Both are corrected.
+          Tagged misleading against my own reading, not against the source: the
+          source sentence is clear and complete, and the error was quoting half of
+          it from memory of the wrong record. The item's conclusion survives -
+          principle 8 sets a test for cutting and none for drafting, which is the
+          gap Rule 7 fills - but it now rests on the sentence as written.
+      - file: sdd/traces
+        section: "review_rounds and outcome corpus, re-derived at f7eb5b7"
+        read_type: verify
+        extract: >-
+          The same review found every repo figure in the research doc stated in the
+          present tense against a base that had moved. Re-derived at HEAD rather
+          than re-quoted: 296 traces, 4531 steps, 267 negative tags (227
+          misleading, 40 unclear) from `hatch run report-trace-outcomes`; 232 of
+          296 carrying review_rounds, median 2, mean 2.48, max 13, 36 at >=5. All
+          40 unclear extracts re-read: every one names a missing unit, none an
+          answer that was present but buried, so the section's reading holds at the
+          larger corpus. Both figures now carry a commit pin and say why.
         outcome: ok
   - id: verify
     name: Verify

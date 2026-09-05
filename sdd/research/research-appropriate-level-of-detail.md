@@ -389,21 +389,29 @@ the first row's blind spot.
 
 ### 6.2 What the trace corpus actually shows
 
-`hatch run report-trace-outcomes` at `2bbb802`: 279 traces, 4052 steps, 1826
-carrying an explicit outcome (45.1%), **223 negative tags (191 `misleading`, 32
-`unclear`)**. Reading the `unclear` extracts, the dominant failure is a **missing**
-unit, not a buried one — "the row did not ask the question that mattered", "no row
-covers a change to a skill's frontmatter". **The repo's most direct measurement of
-reader failure evidences undershoot, not overshoot.**
+`hatch run report-trace-outcomes` at `f7eb5b7`: 296 traces, 4531 steps, 2272
+carrying an explicit outcome (50.1%), **267 negative tags (227 `misleading`, 40
+`unclear`)**. Reading all 40 `unclear` extracts, the dominant failure is a
+**missing** unit, not a buried one — "the row did not ask the question that
+mattered", "no row covers a change to a skill's frontmatter", "says nothing about
+placement", "does not ask about inbound references". None describes an answer that
+was present but hard to find. **The repo's most direct measurement of reader
+failure evidences undershoot, not overshoot.**
+
+*The figures are pinned to a commit because the corpus grows with every trace, so
+re-derive rather than quote.* Totals: the command above. The reading behind them:
+load each `sdd/traces/[!_]*.yml`, collect every step whose `outcome` is `unclear`,
+and read its `extract`.
 
 ### 6.3 What the round data shows, and its two limits
 
 A script over `sdd/traces/[!_]*.yml` reading each file's first `review_rounds:`
-line: 219 traces carry the field, **median 2, mean 2.15, maximum 10**, with **24
-traces (11.0%) at five or more**. The long-round tail is where prose rounds
-accumulate — BUG-248 at 8, whose first three to four rounds changed behaviour and
-whose remainder moved ADR wording, docstrings, pointers and counts (derivation:
-its commit subjects read against each round's body).
+line, at `f7eb5b7`: 232 of 296 traces carry the field, **median 2, mean 2.48,
+maximum 13**, with **36 traces (15.5%) at five or more**. Pinned for the same
+reason as § 6.2. The long-round tail is where prose rounds accumulate — BUG-248 at
+8, whose first three to four rounds changed behaviour and whose remainder moved
+ADR wording, docstrings, pointers and counts (derivation: its commit subjects read
+against each round's body).
 
 **Limits.** `review_rounds` counts rounds and never their content, so the
 code-versus-prose split is not derivable from the corpus; it was read by hand for
@@ -423,20 +431,46 @@ electrical apprentices reading wiring diagrams can be well-evidenced and transfe
 poorly (row 8); a repo-derived row can be weak evidence about texts in general and
 apply directly here (row 22c).
 
-Tiers: **verified** (adversarial vote against a retrieved abstract or metadata
-record, or a source read in full where the row says so), **search-summary** (a
-search engine's synthesis of secondary sources), **local** (derived from this
-repo, reproducible by the named command), **inference** (this document's
-reasoning, never a source's claim). Only rows 8, 8a–8e, 9–9c, 11–11a and 12–12a
-rest on a document read in full; everything else external comes from an abstract
-or a summary.
+**Tier** — how the claim was obtained: **verified** (adversarial vote against a
+retrieved abstract or metadata record, or a source read in full where the row says
+so), **secondary** (a non-primary account of a primary, read in full),
+**search-summary** (a search engine's synthesis of secondary sources), **local**
+(derived from this repo, reproducible by the named command), **inference** (this
+document's reasoning, never a source's claim). Only rows 8, 8a–8e, 9–9c, 11–11a
+and 12–12a rest on a document read in full; everything else external comes from an
+abstract or a summary.
+
+**Transfers here** — how far the claim reaches this repo's prose. *High*: the
+claim is about readers doing what this repo's readers do. *Medium*: the mechanism
+plausibly carries but the material or task differs. *Low*: the finding is real and
+the setting is far enough away that it is a lead, not a warrant.
+
+**Confidence** — how likely the claim is *true*, which is independent of whether it
+applies here. Row 8 is Medium-high confidence and Low transfer: the apprentices
+result is solid and the setting is remote. The tier sets the ceiling, and a row
+goes above it only for a reason the table names:
+
+| Tier | Ceiling | Raised to | When |
+|---|---|---|---|
+| Source read in full | High | — | — |
+| Verified against an abstract or record | Medium-high | High | The retrieved text *is* the claim — a quoted maxim, a stated thesis (rows 1, 2) |
+| Secondary read in full | Medium | Medium-high | Two independent secondaries agree (rows 9–9c) |
+| Search summary | Low-medium | Medium | The row carries the authors' own criteria rather than a summariser's gloss (row 13) |
+| Local, reproducible by the named command | High | — | — |
+| Local, read by hand | Medium | — | — |
+| Local, a single observation | Low | — | — |
+| Inference | no value | — | — |
+
+**One row goes the other way.** Row 4 is verified and sits at Medium, not
+Medium-high: it is a *negative* finding, and § 8.2's blocked access makes absence
+of evidence weak evidence of absence.
 
 | # | Claim | Tier | Transfers here | Confidence |
 |---|---|---|---|---|
 | 1 | Adequacy is indexed to purpose and stage (Grice) | Verified | High | High |
 | 2 | Adequacy is indexed to addressee knowledge (Nickerson) | Verified | High | High |
 | 3 | Curse of knowledge predicts under-specification | Verified | Medium | Medium |
-| 4 | No direct evidence that surplus on-topic detail conceals a claim in prose | Verified | Medium | High |
+| 4 | No direct evidence that surplus on-topic detail conceals a claim in prose | Verified | Medium | Medium |
 | 5 | Seductive detail covers interesting-and-irrelevant material only | Verified | Medium | Medium |
 | 6 | McNamara et al. (1996) manipulated coherence, not surplus detail | Verified | Low | Medium |
 | 7 | Carroll et al. (1987) is a four-way bundle, not a brevity result | Verified | Medium | Medium |
@@ -462,10 +496,10 @@ or a summary.
 | 16 | Relevance is comparative, not a quotient | Search-summary | Low | Low-medium |
 | 17 | Macrorules are comprehension rules, not an editing procedure | Search-summary | Low | Low |
 | 18 | Verbosity bias is a property of raters, not evidence of reader harm | Search-summary | Low | Low |
-| 19 | Repo: 223 negative trace tags, dominated by missing units | Local | High | High |
-| 20 | Repo: 219 traces carry `review_rounds`; median 2, mean 2.15, max 10; 24 at ≥5 | Local | High | High |
+| 19 | Repo at `f7eb5b7`: 267 negative trace tags, and all 40 `unclear` extracts name a missing unit rather than a buried one | Local | High | High |
+| 20 | Repo at `f7eb5b7`: 232 of 296 traces carry `review_rounds`; median 2, mean 2.48, max 13; 36 (15.5%) at ≥5 | Local | High | High |
 | 21 | Repo: BUG-248's eight rounds split roughly three-to-four behavioural, rest prose | Local, one item | Medium | Medium |
-| 22 | Repo: two density disputes resolved ad hoc, one cut silently lossy (BK-351, BK-353) | Local | High | High |
+| 22 | Repo: **four** volume decisions taken with no authoring rule to cite — two litigated at backlog level (BK-351 declining a 5,000-word budget; BK-353 condensing `/ship`, its first cut silently deleting two load-bearing clauses) and two made in review (`bk-313-sftp-roundtrips.yml:176`, a CHANGELOG entry "grown into a verbose paragraph"; `BK-280-ci-build-improvements.yml:92,96`, an entry "too chatty" and comments "too long"). Derivation: `git grep -il` for each ID over `sdd/`, then reading the four extracts | Local | High | High |
 | 22a | Repo experiment: whole against condensed ripple-check, 12 agent readers, 120 answers — obligations tied 42–42 after a 66% cut; rationale lost 12–0; zero invented answers on either page | Local, pre-registered | Medium | High for the tally, low for its reach |
 | 22b | The extra material was misused only by readers who had both the whole page and advance knowledge of the question (2 of 3) | Local, discovered in data | Low | Low — hypothesis for a dedicated run |
 | 22c | Rationale explaining what the reader can see is recoverable after cutting; rationale carrying an outside fact is not | Local | Medium | Medium |
@@ -644,7 +678,7 @@ Kernsatz (§ 5.3); if it will not come, stop writing and return to the source;
 then place what remains by `research-id-232`'s three-condition gate; then
 classify each surviving unit as **keep / shorten / move / remove**, with 9.2, 9.3
 and 9.5 deciding the last two. *Move* is the outcome that ties this question back
-to placement, and it is how both of this repo's real density disputes were
+to placement, and it is how this repo's two litigated density disputes were
 resolved (§ 7 row 22). **When placement and length conflict, § 2 decides: never
 delete a load-bearing reason to reach a length.** Under-justification is the
 failure with the better evidence.
