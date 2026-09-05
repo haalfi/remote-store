@@ -220,6 +220,44 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **ID-257 — The standing answer on appropriate detail was unreadable at the length it shipped**
+  spec: — · effort: S · audience: contributor.process
+  **The diagnosis.** `research-appropriate-level-of-detail.md` is the repo's
+  standing answer to a question asked on nearly every review, and it is 959 lines
+  at `ee1d16b` (`wc -l`, run before this entry was written). It opened with two
+  summary blocks and neither carried the argument: § Recommendations lists five
+  rules with no warrant, and § TL;DR is seven one-line links naming the sections
+  that argue them. A reader deciding whether a "this could be tighter" finding is
+  legitimate had a choice between rules without evidence and pointers without
+  content — the record could not answer its own question in under a screen.
+  That is the record's § 9.4 harm class, named against itself: a decision the
+  reader would get wrong.
+  **What shipped.** A `## Digest` section at the head of the record: the Kernsatz,
+  a seven-row evidence table pairing each finding with what it settles, the
+  five-step authoring sequence, and what the record does not establish. Every
+  existing section is byte-identical — verified by `git diff` on the branch, whose
+  only hunks in that file are the insertion, the `Backlog items:` line and the
+  closure carve-out.
+  **The bound, and why it is the interesting half.** The digest is a presentation,
+  not a second authority: it carries no claim the record does not, and every figure
+  in it is quoted from the section its row cites, where the derivation lives. So a
+  reader who wants to check a number still goes to the section. That is what keeps
+  this from being the copy [principle 4](../CLAUDE.md#principles) forbids, and it is
+  the condition any later edit has to preserve — a digest that starts arguing
+  becomes a second source of truth for the same subject.
+  **Why the record's own closure did not block it.** The header closes the record
+  to *prose passes* because § 6.3 measures seventeen commits touching it and none
+  reducing it, each pass introducing a defect the next caught. An additive section
+  that rewrites nothing is not that failure mode; the carve-out is recorded in the
+  header rather than left to be inferred.
+  **Considered and rejected:** a standalone brief in `sdd/research/` (two files
+  arguing one subject, the drift principle 4 warns about); a section in
+  `CONTENT-RULES.md` (barred — [`CONTRIBUTING.md` § Authoritative Document
+  Format](../CONTRIBUTING.md#authoritative-document-format) Exclusions keep
+  rationale out of authoritative docs, and Rule 7 already carries the binding half);
+  a `docs-src/explanation/` page (the record's own § 9.5 argues those readers need
+  more context, not a compressed argument about an internal authoring rule).
+
 - [x] **BUG-264 — A mapped error can still reach the caller with an empty message on Azure**
   spec: ERR-009, AZ-025 · effort: M · audience: user.api
   **Split, not finished.** This closed the `BackendUnavailable` half; the
