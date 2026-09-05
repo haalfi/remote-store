@@ -2041,10 +2041,9 @@ class TestSFTPStreamCaughtSetMeetsTheGuard:
     So a dropped connection — an ``SSHException`` — is mapped and clears the
     cached client while leaving the futile-close guard unarmed, and that is a
     decision rather than a residue: the close it would skip costs under a
-    millisecond, because
-    paramiko's transport thread has already torn the socket down. The end-to-end
-    drop tests cannot see this split, because staging a real ``SFTPError``
-    needs a server that emits a malformed packet.
+    millisecond, because paramiko's transport thread has already torn the socket
+    down. The end-to-end drop tests cannot see this split, because staging a real
+    ``SFTPError`` needs a server that emits a malformed packet.
 
     **Pinned because two prose artifacts now assert it and nothing else checks
     them.** A per-shape claim resting on prose is one paramiko release away from
