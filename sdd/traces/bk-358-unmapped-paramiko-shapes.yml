@@ -16,8 +16,9 @@ audience:
   # the schema defines user.site as. Every sibling in this release that touched
   # that page declares it too (BUG-265, BK-356, BK-357, BK-359).
   - user.site
-# Counted from `git log --oneline 121258d..HEAD`, which returns eight commits.
-# The ones that exist because review feedback was incorporated, in branch order:
+# The rule: a commit counts if it exists because review feedback was
+# incorporated. Enumerated from `git log --oneline 121258d..HEAD`, in branch
+# order, with each label checkable against that commit's own message:
 #   518479e  implementation                       -- does not count
 #   8184c4b  self-found derivation fix (/pr gate) -- does not count
 #   99f2e46  round 1 fixes                        -- counts
@@ -26,13 +27,14 @@ audience:
 #   ce0017b  round 3 fixes                        -- counts
 #   7d16f18  round 4 fixes                        -- counts
 #   bd8c670  round 5 fixes                        -- counts
-#   (this commit)  round 6 fixes                  -- counts
-# This field has now been wrong twice, in opposite directions, and both times
-# because a fix pass added narrative about a round without re-deriving the count
-# from git log: first labelling 8184c4b the implementation (a SHA that resolved,
-# to the wrong commit), then leaving the total at 4 while adding a round-5 step
-# below. Re-derive before editing this block; do not extend it from memory.
-review_rounds: 6
+#   5d08976  round 6 fixes                        -- counts
+#   (this commit)  round 7 fixes                  -- counts
+# **No branch length is stated here, deliberately.** A count of commits on the
+# branch is invalidated by the commit that states it, which is how the previous
+# two versions of this block went wrong: one said "eight" beside nine rows. The
+# enumeration is the derivation and the rule above decides it; add a row when
+# you add a commit, and re-read the rule rather than extending from memory.
+review_rounds: 7
 expected_ripples:
   # sdd/backlogid.json is deliberately absent, against the schema's own example
   # ("after any BACKLOG/BACKLOG-DONE edit"), on the reasoning BUG-265's trace
@@ -294,9 +296,11 @@ phases:
         extract: >-
           Round 4's unprimed member found `paramiko.SFTPError` had no coverage through the
           real construction site: the guard test builds its own wrapper with a hardcoded
-          copy of the tuple. Confirmed by mutation — deleting it left 424 tests passing,
-          so half the fix could be reverted silently. Closed by a test that drives `read()`
-          itself, parametrised over both supplied shapes
+          copy of the tuple. Confirmed by mutation on the tree of the day: deleting the shape
+          left that whole test selection green, so half the fix could be reverted silently.
+          No count is given, because the tree it was measured on no longer exists here and a
+          re-run returns a different number — what reproduces now is that the same mutation
+          fails the test added to close it, parametrised over both supplied shapes
         outcome: ok
       - file: tests/backends/sftp/test_connection_drop.py
         section: "_assert_reached_by_the_eof_path, _drain"
