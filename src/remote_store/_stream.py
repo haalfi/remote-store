@@ -66,11 +66,15 @@ class _ErrorMappingStream(io.RawIOBase):
     silence.
 
     **Releasing a stream whose failure condemned the connection.**
-    ``close`` closes *inner* under ``contextlib.suppress``, and on a connection
-    the failure already killed that close is not free: paramiko's
-    ``SFTPFile.close()`` issues a synchronous ``CMD_CLOSE`` and waits for a reply
-    that never comes, so the caller pays ``io_timeout`` a second time with
-    nothing to explain the wait.  A backend that can recognise such a failure
+    ``close`` closes *inner* under ``contextlib.suppress``, and on a channel that
+    has already *stalled* that close is not free: paramiko's ``SFTPFile.close()``
+    issues a synchronous ``CMD_CLOSE`` and waits for a reply that never comes, so
+    the caller pays ``io_timeout`` a second time with nothing to explain the
+    wait.  The qualifier matters, and a *dropped* connection is the counterexample
+    rather than another instance: there the socket is already torn down, so the
+    same close returns immediately and costs nothing (the spec carries the
+    measurement).  What this guard buys is a bounded wait, not a skipped
+    round-trip.  A backend that can recognise such a failure
     passes *is_fatal*; once it returns ``True`` for a mapped exception, the inner
     close is skipped.  The handle is then released by the peer's own teardown, or
     at collection **of this wrapper** -- ``close`` does not drop ``_inner``, so

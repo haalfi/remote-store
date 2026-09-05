@@ -935,6 +935,62 @@ class TestSFTPConnection:
         assert sftp_backend._sftp_client is None, "a read-path channel death must invalidate the client"
         assert sftp_backend.read_bytes("r.txt") == b"payload", "the next read must reconnect, not wedge"
 
+    @pytest.mark.spec("SIO-012")
+    @pytest.mark.spec("SFTP-024")
+    @pytest.mark.parametrize(
+        "exc_factory",
+        [
+            pytest.param(lambda: paramiko.SSHException("Server connection dropped: "), id="sshexception"),
+            pytest.param(lambda: paramiko.SFTPError("Garbage packet received"), id="sftperror"),
+        ],
+    )
+    def test_read_maps_every_shape_it_supplies_to_the_wrapper(self, sftp_backend: Backend, exc_factory: Any) -> None:
+        """Both shapes ``read()`` puts in ``also_catch`` must map, driven through ``read()`` itself.
+
+        **This pins the argument, where the other tests pin the mechanism.**
+        ``TestSFTPStreamCaughtSetMeetsTheGuard`` builds its own wrapper with a
+        *copy* of the tuple, and the drop-relay module only ever reaches
+        ``SSHException`` — so before this test, deleting ``paramiko.SFTPError``
+        from the construction site left the whole suite green while silently
+        re-opening half the BE-021 / SFTP-024 breach: a malformed packet
+        mid-stream would leak ``SFTPError`` raw again. Measured, that mutation
+        passed 424 tests.
+
+        Driven the way the sibling above is, by wrapping ``_sftp_client.file``,
+        because that is what makes ``read()`` construct the wrapper for real
+        rather than the test constructing one that resembles it.
+        """
+        assert isinstance(sftp_backend, SFTPBackend)
+        sftp_backend.write("shapes.txt", b"payload")
+        real_file = sftp_backend._sftp_client.file
+        raised = exc_factory()
+
+        class _RaisingReadHandle:
+            def __init__(self, inner: Any) -> None:
+                self._inner = inner
+
+            def readinto(self, _b: Any) -> int:
+                raise raised
+
+            def read(self, _size: int = -1) -> bytes:
+                raise raised
+
+            def __getattr__(self, name: str) -> Any:
+                return getattr(self._inner, name)
+
+        def _wrap(remote_path: str, mode: str = "r", *a: Any, **k: Any) -> Any:
+            if "r" in mode:
+                return _RaisingReadHandle(real_file(remote_path, mode, *a, **k))
+            return real_file(remote_path, mode, *a, **k)
+
+        sftp_backend._sftp_client.file = _wrap  # type: ignore[method-assign]
+        stream = sftp_backend.read("shapes.txt")
+        with pytest.raises(BackendUnavailable) as mapped:
+            stream.read()
+
+        assert mapped.value.__cause__ is raised, "the wrapper must map this shape, not let it escape"
+        assert sftp_backend._sftp_client is None, "every concluded BackendUnavailable clears the client"
+
     @pytest.mark.spec("SFTP-003")
     @pytest.mark.parametrize("op", ["write", "write_atomic"])
     def test_overwrite_true_issues_no_pre_write_stat(self, sftp_backend: Backend, op: str) -> None:

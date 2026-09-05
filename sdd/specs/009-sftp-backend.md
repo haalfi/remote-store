@@ -963,8 +963,8 @@ recorded the doubt: a send-side `EOFError` *is* swallowed by
 receive side did the same was unmeasured. It does not.
 `test_a_dropped_stream_raises_rather_than_truncating` drives a relay that closes
 the connection mid-transfer and asserts both halves — that the read raises, and
-that what arrived is a valid prefix of the payload rather than something
-reordered. A drop is otherwise outside this clause's subject, which is what
+that everything delivered, across the drop and not merely before it, is a valid
+prefix of the payload rather than something reordered or truncated silently. A drop is otherwise outside this clause's subject, which is what
 `io_timeout` bounds; it is named here only because this one sentence is about
 truncation rather than about the bound, and truncation does not care which fault
 ended the transfer.

@@ -82,8 +82,9 @@ Supplying one is optional by design, not an omission each backend is expected to
 correct: it is worth the parameter only where a close on a dead connection
 blocks, which is a property of the transport, not of every stream.
 `SFTPBackend` is the only backend that supplies one.
-**Postconditions:** A backend that can recognise such a failure supplies
-`_ErrorMappingStream` with an `is_fatal` predicate over the raised exception.
+**Postconditions:** A backend that can recognise **a failure leaving its
+connection unusable** supplies `_ErrorMappingStream` with an `is_fatal`
+predicate over the raised exception.
 Once it answers `True` for a mapped failure, the wrapper's `close()` skips the
 inner close and marks itself closed; the caller sees an ordinary `close()`. A
 backend that supplies no predicate closes unconditionally, which is the
@@ -172,21 +173,24 @@ literal that was measured. A plain errno-less `OSError` is matched by neither.
 
 **The unarmed half is a decision, not a residue.** `SSHException` is the shape a
 dropped connection takes, so it is the one where the guard would matter — and
-the close there is free: **under 0.001 s**, stated as an upper bound rather
-than a band because the phenomenon is faster and more spread than a band can
-honestly carry — re-running the derivation below over 25 real drops returned a
-median of 0.00005 s and a maximum of 0.0003 s, against 0.0001–0.0003 s from an
-earlier five-sample run. Five samples cannot bound something whose observed
-spread is eightfold, and the earlier figure excluded most of what a re-run
-returns. The direction is benign — it is faster than first stated, which only
-strengthens "there is nothing to buy" — but a bound is what the evidence
-supports. Under a millisecond, because paramiko's transport-reader thread tears the socket down on EOF
-before `SFTPFile.close()` can issue its `CMD_CLOSE`. There is nothing to buy, which is why
-`SFTPBackend.read` was left passing the predicate unchanged when its caught set
-widened. Derivation: the drop relay in
-`tests/backends/sftp/test_connection_drop.py`, timed around the wrapper's
-`close()` after a mapped failure; paramiko 5.0.0. A half-close (FIN
-server→client only) came in under a millisecond too, but its relay is not in the
+the close there is free: **under 0.001 s**, because paramiko's transport-reader
+thread tears the socket down on EOF before `SFTPFile.close()` can issue its
+`CMD_CLOSE`. There is nothing to buy, which is why `SFTPBackend.read` was left
+passing the predicate unchanged when its caught set widened. Derivation: the
+drop relay in `tests/backends/sftp/test_connection_drop.py`, timed around the
+wrapper's `close()` after a mapped failure; paramiko 5.0.0.
+
+**Stated as a bound rather than a band, and that is a correction.** This clause
+first gave 0.0001–0.0003 s from five samples. Re-running the same derivation
+over 25 drops returned a median of 0.00005 s with every sample below the band's
+floor, so the band excluded most of what the derivation actually produces — five
+samples cannot bound a quantity this small and this variable. The direction is
+benign, since it is faster than first stated and only strengthens "there is
+nothing to buy", but a bound is what the evidence supports and a band is not.
+**No spread ratio is given**, deliberately: a ratio over samples this close to
+timer resolution changes between runs, and stating one is what turned a correct
+figure into a wrong one here. A half-close (FIN server→client only) came in
+under a millisecond too, but its relay is not in the
 repo, so treat that as a cross-check rather than something a reader can re-run.
 Contrast the stall this clause was written for, where the socket stays open and
 the close does wait — and note the reason is paramiko's teardown rather than

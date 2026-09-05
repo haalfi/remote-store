@@ -12,12 +12,19 @@ source_items:
   - BK-357
 audience:
   - user.api
-# Counted from the commits that exist because review feedback was incorporated,
-# on `git log --oneline 8184c4b..HEAD`: 99f2e46 (round 1), 233acd0 (round 2) and
-# the round-3 fix commit that carries this line. 8184c4b is the implementation
-# and does not count; ebc0ccd is a docstring reflow I found myself while writing
-# a brief, not review feedback, so it does not either.
-review_rounds: 3
+# Counted from the commits on `git log --oneline origin/master..HEAD` that exist
+# because review feedback was incorporated. In order on the branch:
+#   518479e  implementation                       -- does not count
+#   8184c4b  self-found derivation fix (/pr gate) -- does not count
+#   99f2e46  round 1 fixes                        -- counts
+#   233acd0  round 2 fixes                        -- counts
+#   ebc0ccd  self-found docstring reflow          -- does not count
+#   ce0017b  round 3 fixes                        -- counts
+#   (this commit)  round 4 fixes                  -- counts
+# An earlier version of this comment labelled 8184c4b the implementation, which
+# it is not, and never named 518479e -- the SHA resolved, to the wrong commit,
+# which is the harder failure to catch and the reason the schema asks for the list.
+review_rounds: 4
 expected_ripples:
   # sdd/backlogid.json is deliberately absent, against the schema's own example
   # ("after any BACKLOG/BACKLOG-DONE edit"), on the reasoning BUG-265's trace
@@ -251,8 +258,62 @@ phases:
         read_type: verify
         extract: >-
           Round 2 measured the close at 0.0001-0.0003 s over five real drops where the spec
-          said 0.00 s. Consistent, but stated as the range so it is not read as an exact
-          zero
+          said 0.00 s, and I tightened the spec to that band. Round 3 then re-ran the same
+          derivation over 25 drops and found every sample below the band's floor, so the
+          band was withdrawn for an upper bound. Recorded as misleading against my own
+          reading rather than against round 2: five samples were never enough to state a
+          band from, and tightening a figure in response to a finding is how a correct
+          number became a wrong one
+        outcome: misleading
+
+  - id: fix3
+    name: Review rounds 3 and 4 (closing panels)
+    steps:
+      - file: sdd/specs/006-streaming-io.md
+        section: "SIO-010 (Invariant)"
+        read_type: gate
+        extract: >-
+          Round 3's unprimed and whole-file members independently found that the fix had
+          falsified SIO-010's Invariant from sixty lines away: a drop is now mapped and
+          clears the client, establishing unusability, while `_is_connection_dead` declines
+          to condemn that shape, so the close re-enters. It held *vacuously* before, because
+          the shape never reached `_fail`. Three diff-anchored rounds could not have seen it —
+          the falsified sentence has no `+` line, which is the whole-file gate's argument
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "read() (also_catch)"
+        read_type: verify
+        extract: >-
+          Round 4's unprimed member found `paramiko.SFTPError` had no coverage through the
+          real construction site: the guard test builds its own wrapper with a hardcoded
+          copy of the tuple. Confirmed by mutation — deleting it left 424 tests passing,
+          so half the fix could be reverted silently. Closed by a test that drives `read()`
+          itself, parametrised over both supplied shapes
+        outcome: ok
+      - file: tests/backends/sftp/test_connection_drop.py
+        section: "_assert_reached_by_the_eof_path, _drain"
+        read_type: gate
+        extract: >-
+          Round 3 showed the suite could not distinguish the two race outcomes (both map to
+          `BackendUnavailable`), so four of five tests passed under the staging the module
+          exists to avoid; fixed with a cause-chain assertion rather than by rewording, and
+          positive-controlled. Round 4 then found two assertions inside that fix that could
+          not fail — an unreachable `SFTPError` guard, and a prefix check over bytes read
+          before the drop was armed. Writing an assertion is not the same as writing one
+          that can fail, and I did the first twice
+        outcome: ok
+      - file: CLAUDE.md
+        section: "Principles 3, 4, 8, 9"
+        read_type: gate
+        extract: >-
+          The loop's own lesson, and the reason round 4 was the last. Rounds 3 and 4 each
+          found that most of the previous fix pass's *prose* was newly wrong while the code
+          held: the measurement narrative was told in six artifacts and every pass edited
+          some of them. `/ship`'s divergence check fired twice. The response was to cut
+          rather than patch — one home for the staging samples (`_DropRelay`), one for the
+          close cost (SIO-010), everything else states the decision and defers, per
+          principle 4. Restating a moving figure across artifacts is the defect generator,
+          not any individual sentence
         outcome: ok
 
   - id: verify

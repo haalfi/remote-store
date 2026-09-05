@@ -145,6 +145,11 @@ class _DropRelay:
         self._listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self._listener.bind(("127.0.0.1", 0))
         self._listener.listen(8)
+        # Bounded so ``_accept_loop`` re-checks ``_stop`` without needing to be
+        # woken: closing a listener from another thread does not interrupt a
+        # thread already blocked in ``accept()`` on Linux, and a self-connect to
+        # wake it gets proxied upstream where it fails the SSH banner handshake.
+        self._listener.settimeout(0.25)
         self._lock = threading.Lock()
         self._live: list[socket.socket] = []
 
@@ -176,6 +181,8 @@ class _DropRelay:
         while not self._stop.is_set():
             try:
                 client, _ = self._listener.accept()
+            except TimeoutError:
+                continue
             except OSError:
                 return
             try:
@@ -236,10 +243,20 @@ def _written(backend: Any, prefix: str) -> tuple[str, bytes]:
     return name, payload
 
 
-def _drain(stream: Any) -> None:
-    """Read *stream* to exhaustion, discarding what it yields."""
-    while stream.read(64 * 1024):
-        pass
+def _drain(stream: Any, into: bytearray | None = None) -> None:
+    """Read *stream* to exhaustion, optionally accumulating into *into*.
+
+    The accumulator is what lets a caller assert over the bytes delivered
+    *around* the drop. Discarding them, as this helper first did, left the
+    prefix assertion below checking only the read taken before the relay was
+    armed — which no staging can falsify.
+    """
+    while True:
+        chunk = stream.read(64 * 1024)
+        if not chunk:
+            return
+        if into is not None:
+            into.extend(chunk)
 
 
 def _assert_reached_by_the_eof_path(exc: BackendUnavailable) -> None:
@@ -265,14 +282,14 @@ def _assert_reached_by_the_eof_path(exc: BackendUnavailable) -> None:
     import paramiko
 
     cause = exc.__cause__
+    # One assertion, not two: ``SFTPError`` subclasses neither ``SSHException``
+    # nor ``OSError`` (measured on paramiko 5.0.0), so a second guard excluding
+    # it could never fire, and would imply a subtype relation that does not exist.
     assert isinstance(cause, paramiko.SSHException), (
         f"expected the drop to arrive by the EOF path as SSHException, got {cause!r}. "
         "An OSError here means the transport tore the socket down first — the relay "
         "staged a bare close rather than silencing server->client, so this test is no "
         "longer exercising the shape BK-358 was about."
-    )
-    assert not isinstance(cause, paramiko.SFTPError), (
-        "SFTPError is a different supplied shape with a different is_fatal verdict; a drop must not arrive as one"
     )
 
 
@@ -356,17 +373,25 @@ def test_a_dropped_stream_raises_rather_than_truncating(drop_relay: _DropRelay) 
     backend = _make_backend(drop_relay.port)
     name, payload = _written(backend, "prefix")
 
+    received = bytearray()
     with backend.read(name) as stream:
         first = stream.read(64 * 1024)
         assert first, "expected the stream to deliver bytes before the drop"
+        received.extend(first)
         drop_relay.arm()
 
         with pytest.raises(BackendUnavailable) as raised:
-            _drain(stream)
+            _drain(stream, received)
         _assert_reached_by_the_eof_path(raised.value)
 
-    assert len(first) < len(payload), "the drop must land mid-transfer, not after the last byte"
-    assert payload.startswith(first), "what arrived before the drop must be a valid prefix"
+    # Over everything delivered, not just the read taken before the relay was
+    # armed: the bytes that arrive *around* the drop are the ones a truncation
+    # or a reordering would corrupt, and asserting over `first` alone checks an
+    # ordinary undisturbed read that no staging can falsify.
+    assert len(received) < len(payload), (
+        f"the drop must land mid-transfer: got all {len(received)} bytes, so nothing was interrupted"
+    )
+    assert payload.startswith(received), "what arrived before the drop must be a valid prefix of the payload"
 
 
 @pytest.mark.spec("SIO-012")
