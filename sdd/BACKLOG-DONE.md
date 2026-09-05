@@ -250,17 +250,20 @@ if evidence changes; these are retired.
   mechanism that cannot decide.
   **What the research does and does not support.** The literature pass
   ([research](research/research-appropriate-level-of-detail.md)) found **both**
-  failure directions evidenced, and the same text reversing its verdict with the
-  reader's purpose: task-directed readers did better without elaborations,
-  goal-less readers far worse without them, and the goal-less readers took the
-  larger penalty (Charney, Reder & Wells 1988). So no rule that only cuts is
-  supported. This rule instead rests on the local round split above and on a
-  metacognitive reading of the illusion of explanatory depth (Rozenblit & Keil
-  2002): the author's sense of understanding outruns their ability to state it,
-  and the attempt to state it plainly is what exposes the gap. That is an
-  inference and the research doc says so. The doc has since been restructured to
-  argue its position rather than present options, and its § 9 carries five
-  proposals beyond this rule — none of them implemented here.
+  failure directions evidenced, and the same text moving with the reader's
+  purpose. Reading the source table rather than its authors' summary: the cut
+  cost the task-directed reader almost nothing (same tasks correct, 1.6 fewer
+  commands, 2.6 minutes slower) and cost the goal-less reader a great deal on
+  every measure (Reder, Charney & Morgan 1986, reported in Charney, Reder & Wells
+  1988). **So no rule that only cuts is supported**, and the licence to cut rests
+  on its being cheap where the reader has a goal rather than beneficial. This
+  rule instead rests on the local round split above and on a metacognitive
+  reading of the illusion of explanatory depth (Rozenblit & Keil 2002): the
+  author's sense of understanding outruns their ability to state it, and the
+  attempt to state it plainly is what exposes the gap. That is an inference and
+  the research doc says so. The doc has since been restructured to argue its
+  position, and its § 9 carries five proposals beyond this rule — none of them
+  implemented here.
   No CHANGELOG — internal authoring rule, audience contributor and maintainer.
   Trace: `sdd/traces/ID-256-kernsatz-rule.yml`.
 - [x] **BUG-265 — A refused SFTP connect raises `RemoteStoreError`, which contradicts fifteen docstrings and the health-check guide**
