@@ -18,16 +18,25 @@ co_shipped_items:
 expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:
-  # Neither is in the ripple-check table: both are prose asserting behaviour the
-  # fix changed, in files the diff had no other reason to open.
+  # None is in the ripple-check table. The first two are prose asserting
+  # behaviour the fix changed, in files the diff had no other reason to open.
   - sdd/specs/009-sftp-backend.md  # the SFTP-030 pragma paragraph, 300 lines from the residue section that owns the claim
   - sdd/BACKLOG.md                 # section 1's "Closes when" clause naming the two items as open
-# Counted from `git log --oneline origin/master..HEAD`, which returns exactly
-# two commits: 8ed1dc7 implements and does not count; the commit carrying this
-# line incorporates round 1's six findings and is the one review-driven commit.
-# Its own SHA cannot appear here, which is why the list is named by the query
-# rather than transcribed. Value is 1.
-review_rounds: 1
+  # The third is the sharper class: a test whose *meaning* the diff changed
+  # without changing the test. Hoisting the displace above _move_fallback's try
+  # made that method's dead-connection guard unreachable in the only test
+  # written for it, and the test kept passing for a new reason. No ripple row
+  # covers "a call-order change silently re-aims an existing test", and nothing
+  # mechanical would: the suite was green throughout. Found by round 2's
+  # neglected-surface pass, which was aimed at the untouched files rather than
+  # at this one.
+  - tests/backends/sftp/test_config.py
+# Counted from `git log --oneline origin/master..HEAD`, which returns three
+# commits: 8ed1dc7 implements and does not count; d7c4818 incorporates round 1's
+# six findings; the commit carrying this line incorporates round 2's five. Its
+# own SHA cannot appear here, which is why the last entry is named by the query
+# rather than transcribed. Value is 2.
+review_rounds: 2
 phases:
   - id: orient
     name: Orient

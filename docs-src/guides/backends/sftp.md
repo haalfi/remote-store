@@ -367,7 +367,11 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
     onto a path that is occupied: it moves the old file aside first and moves it
     back if the rename fails. Over a dropped connection it cannot move anything
     back, which is the state above — **nothing is lost, but the path you wrote to
-    is empty and both copies are sitting beside it under generated names.** The
+    is empty.** Your previous file is beside it as `.~bak.<name>.<uuid>`. The
+    second copy depends on the operation: for `write_atomic()` / `open_atomic()`
+    it is the `.~tmp.<name>.<uuid>` next to it, and for `move()` it is your
+    source file, untouched at its own path — which may be in another directory
+    entirely. `move()` never writes a temp. The
     fallback is not confined to old servers: any rename that *fails* for a reason
     the backend cannot attribute to a dropped connection takes that path. It also
     needs `overwrite=True`: with the default the call raises `AlreadyExists`
@@ -387,16 +391,19 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
       buffering you cannot see, so appending to it corrupts the file. Discard
       and re-write from the start.
 
-    - **Look for `.~bak.` and `.~tmp.` files beside the target** before you
-      re-create anything. On the fallback path they are your previous file and
-      your payload, left where a failed call could not put them back.
+    - **Look for a `.~bak.` file beside the target** before you re-create
+      anything. On the fallback path it is your previous file, left where a
+      failed call could not put it back. Your payload is in the `.~tmp.` beside
+      it for `write_atomic()` / `open_atomic()`, and still at `src` for `move()`.
 
     **`write_atomic()` is still the right choice when readers must never see a
     half-written file** (see the caveat above, and
     [atomicity semantics](../../explanation/concurrency.md)): no reader ever
     observes a partial file at the destination. What it does not promise is that
-    a reported failure means nothing happened, nor that your existing file is
-    still at its path — only that it still exists.
+    a reported failure means nothing happened, nor that your existing file
+    survives one: a stall that loses the reply to a *successful* rename has
+    replaced it, and nothing was kept. The fallback path is the one that keeps a
+    copy, because it is the one that moved your file aside to begin with.
 
     Parent directories created for a write remain behind in every case — a
     failed write is not a rollback.

@@ -3713,13 +3713,15 @@ class TestSFTPLowSeverityCorrectnessEdges:
         The twin above covers ``write_atomic`` / ``open_atomic``, which promote
         through ``_promote``. ``move`` does its own ``posix_rename`` and had no
         such guard, so a timed-out rename fell into a fallback chain that
-        re-enters the dead channel four more times: a suppressed ``remove``
-        (silent), a ``rename``, then the copy fallback's two file opens.
+        re-enters the dead channel four more times: the displace, a ``rename``,
+        then the copy fallback's two file opens.
 
-        The fallback carries ``# pragma: no cover -- fallback for servers
+        The fallback used to carry ``# pragma: no cover -- fallback for servers
         without posix_rename``, which is what hid this: the pragma described the
-        *fallback*, and the guard now sits outside it because a stalled channel
-        fails ``posix_rename`` on any server, extension or not.
+        *fallback*, and the guard sits outside it because a stalled channel
+        fails ``posix_rename`` on any server, extension or not. The pragma is
+        gone now that the suite reaches the fallback on a live connection; the
+        guard it hid is still this test's subject.
 
         Asserts on round-trips, not elapsed time — these are mocks, and the
         count is what the guard changes.
@@ -3736,8 +3738,8 @@ class TestSFTPLowSeverityCorrectnessEdges:
         ):
             sftp_backend.move("mv_src.txt", "mv_dst.txt", overwrite=True)
         # internal: the skipped round-trips have no public observable (Rule 3).
-        remove_spy.assert_not_called()  # fallback's suppressed remove
-        rename_spy.assert_not_called()  # fallback's rename
+        remove_spy.assert_not_called()  # the fallback's release / restore
+        rename_spy.assert_not_called()  # the fallback's displace and its rename
         file_spy.assert_not_called()  # copy fallback's two opens
         assert sftp_backend._sftp_client is None
 
@@ -3755,15 +3757,28 @@ class TestSFTPLowSeverityCorrectnessEdges:
         Worth its own test rather than trusting the outer one, because the two
         guards have different reachability: the outer needs only a stalled
         channel, while this one needs a ``posix_rename`` that failed for some
-        *other* reason first. That is also why neither this method nor its guard
-        carries the ``no cover`` pragma that the stream-copy tail does.
+        *other* reason first.
+
+        **The rename mock discriminates by destination, and has to.** The
+        fallback's first ``rename`` is its displace, whose destination is the
+        backup name; a mock that fails every rename kills the channel there
+        instead, ``_displace`` re-raises, and the inner guard this test exists
+        for is never reached — the assertion below then holds for the wrong
+        reason and the guard could be deleted without failing anything. Staged
+        here as a real absent destination would answer (``ENOENT``, so nothing is
+        displaced), with the stall on the promote that follows it.
         """
         assert isinstance(sftp_backend, SFTPBackend)
         sftp_backend.write("mvf_src.txt", b"payload")
 
+        def rename(_src: str, dst: str, *_args: object) -> None:
+            if dst.rsplit("/", 1)[-1] == "mvf_dst.txt":
+                raise TimeoutError("timed out")
+            raise OSError(errno.ENOENT, "No such file")  # the displace, on an absent destination
+
         with (
             patch.object(sftp_backend._sftp_client, "posix_rename", side_effect=OSError("Failure")),
-            patch.object(sftp_backend._sftp_client, "rename", side_effect=TimeoutError("timed out")),
+            patch.object(sftp_backend._sftp_client, "rename", side_effect=rename),
             patch.object(sftp_backend._sftp_client, "file") as file_spy,
         ):
             # Keeps a *failing* run finite: with the guard removed the copy is

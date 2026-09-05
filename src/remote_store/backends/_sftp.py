@@ -2163,10 +2163,10 @@ class SFTPBackend(Backend):
         Two of the five call sites are not measured, and are named rather than
         counted as covered. ``read_bytes`` prefetches, so a stall inside its read
         fails in paramiko's prefetch machinery rather than on the close of a
-        partly-read handle; ``_copy_and_delete`` is reached only when both
-        ``posix_rename`` and ``rename`` fail for non-dead reasons, and carries a
-        ``no cover`` pragma for that reason. Both rest on sharing this helper,
-        which is the weaker claim that let a site ship unrouted once already.
+        partly-read handle; ``_copy_and_delete`` runs in the suite, but never
+        against a stall, because a dead channel stops the fallback ladder a rung
+        above it. Both rest on sharing this helper, which is the weaker claim
+        that let a site ship unrouted once already.
         """
         try:
             yield handle
@@ -2336,18 +2336,17 @@ class SFTPBackend(Backend):
     def _move_fallback(self, src_sftp: str, dst_sftp: str, *, overwrite: bool) -> None:
         """Move *src_sftp* onto *dst_sftp* by ``rename``, else stream copy + delete.
 
-        Split out of ``move`` so that method's dead-connection guard is not swept
-        under a ``no cover`` pragma. That guard is reachable on *any* server — a
-        stalled channel fails ``posix_rename`` like anything else — and keeping
-        them in one block made it look as narrow as the fallback, which is how it
-        came to be missing.
-
-        This method is not pragma'd either, for the same reason one level down:
+        Split out of ``move`` so that method's dead-connection guard was not
+        swept under the ``no cover`` pragma this fallback used to carry. That
+        guard is reachable on *any* server — a stalled channel fails
+        ``posix_rename`` like anything else — and keeping them in one block made
+        it look as narrow as the fallback, which is how it came to be missing.
+        The pragma is gone now that the suite stages the refusal client-side, but
+        the split is what the reachability argument turns on and it stands:
         ``posix_rename`` can fail for a non-dead reason on any server (a
-        permission error, say), so the ``rename`` below and its
-        own dead-connection guard are reachable without needing a server that
-        lacks ``posix-rename@openssh.com``. Only ``_copy_and_delete`` genuinely
-        requires one.
+        permission error, say), so the ``rename`` below, its own dead-connection
+        guard, and the copy rung under it are all reachable without a server that
+        lacks ``posix-rename@openssh.com``.
 
         The destination is displaced and restored as in ``_rename_fallback``,
         with the backup held across **both** rungs: the copy writes the

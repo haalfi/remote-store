@@ -19,19 +19,29 @@ Atomic writes ensure that a file is either fully written or not written at all. 
 
 **Invariant:** If `overwrite=False` and the target file exists, `AlreadyExists` is raised *before* writing the temporary file.
 **Postconditions:** If `overwrite=True`, the atomic rename replaces the existing
-file. **On failure the existing file is not destroyed**: it is either still at
-its path, or — where a backend simulates the overwrite by displacing it and
-cannot undo that — recoverable under a name in the same directory.
+file. **A failure that did not perform the promote does not destroy it**: it is
+either still at its path, or — where a backend simulates the overwrite by
+displacing it and cannot undo that — recoverable under a name in the same
+directory.
 
-**The second clause is what a caller cannot reconstruct.** A backend whose
-overwrite is not a single server-side operation has to clear the target before
-it can put the new file there, and the caller's file is that backend's to hand
-back. `SFTPBackend`'s `rename` fallback is the one such window in the library:
-it renames the destination to `.~bak.<name>.<uuid8>` and renames it back if the
-promote fails, so a reported failure costs the caller nothing (BUG-272) — except
-over a dropped connection, where nothing can be renamed back and the backup
-itself is the recovery. See [009-sftp-backend.md](009-sftp-backend.md) SFTP-014
-and SFTP-030 for that residue. Backends whose overwrite is one operation
+**The antecedent is the whole of the clause, and it is narrower than "on
+failure".** A reported failure can mean the promote *was* performed and only its
+answer was lost, and there the existing file is replaced and gone: no backup, no
+temp, nothing to recover. That is not a defect of this clause — the write
+succeeded — but a postcondition reading "on failure the existing file is not
+destroyed" would be false there, and `test_a_lost_reply_can_complete_the_operation_it_reports_as_failed`
+measures it. AW-004's own standard applies: an unqualified invariant a shipped
+test contradicts is a spec defect however narrow the divergence.
+
+**Within that antecedent, the second arm is what a caller cannot reconstruct.** A
+backend whose overwrite is not a single server-side operation has to clear the
+target before it can put the new file there, and the caller's file is that
+backend's to hand back. `SFTPBackend`'s `rename` fallback is the one such window
+in the library: it renames the destination to `.~bak.<name>.<uuid8>` and renames
+it back if the promote fails, so a promote that failed costs the caller nothing —
+except over a dropped connection, where nothing can be renamed back and the
+backup itself is the recovery. See [009-sftp-backend.md](009-sftp-backend.md)
+SFTP-014 and SFTP-030 for that residue. Backends whose overwrite is one operation
 (`os.replace`, a PUT, a DFS rename) have no window and nothing to add here.
 
 ## AW-004: Cleanup on Failure
