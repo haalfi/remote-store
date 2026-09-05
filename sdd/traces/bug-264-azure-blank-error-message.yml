@@ -37,15 +37,21 @@ expected_ripples:
 #            measuring pass: 2 posted findings, plus 2 more its sibling sweep
 #            found — a keyword-guard count the item contradicted two lines later,
 #            and an unmeasured claim about Linux wording, withdrawn)
-#   Stop restating one SDK derivation in four places, and correct what the
-#   restatements disagreed about
+#   Stop restating one SDK derivation in four places, and fix what they
+#   disagreed about
 #                                                   -> counts (round 3, a
 #            three-member panel — unprimed, whole-file, measuring — returning 20
 #            raw findings that merged to 13. The volume tripped the divergence
 #            check: two were defects the round-2 fix pass had itself created, so
 #            this round re-planned the prose rather than patching each sentence)
-# Value is 3.
-review_rounds: 3
+#   Cut the narrative that kept going stale, and fix what it had made false
+#                                                   -> counts (round 4, same
+#            three-member composition, 21 raw findings merging to 14 — all prose,
+#            all in artifacts the round-3 pass had rewritten. The user's call was
+#            to cut the explanatory narrative rather than keep patching it, so
+#            BUG-276 and the register entry lost their meta-commentary)
+# Value is 4.
+review_rounds: 4
 phases:
   - id: orient
     name: Orient

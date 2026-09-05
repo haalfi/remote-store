@@ -224,81 +224,67 @@ if evidence changes; these are retired.
   spec: ERR-009, AZ-025 · effort: M · audience: user.api
   **Split, not finished.** This closed the `BackendUnavailable` half; the
   base-class half is **BUG-276**, filed with the same measurements and the same
-  open decision. The original title also named the base-class arms, and this
+  open decision. The original title also named the base-class arms and this
   entry's does not — read the two together.
+
   **What shipped:** `classify_azure_error`'s
-  `ServiceRequestError | ServiceResponseError` arm builds its error through a
-  new `_unavailable` helper, which synthesises a message **only** when
-  `str(exc)` is empty, naming which side of the exchange failed and the SDK
-  exception class. A driver that explained itself is untouched — the failure
-  replaced was silence, not noise. The helper is in `_azure_common`, so both
-  twins get it from one place; no log record was added, unlike SFTP's
-  `_unavailable`, because `op="error_mapping"` is undocumented in
-  `docs-src/guides/observe.md` (BUG-269) and `AzureBackend.check_health` maps
-  through this classifier, so a record here would put one line under every
-  `ping()` poll.
-  **The reproduction, driven rather than read.** A genuine `asyncio.TimeoutError`
-  — from letting `asyncio.timeout(0.001)` fire, not from constructing one —
-  carries `args=()` and `str() == ''`. `AzureError.__init__` sets
-  `self.message = str(message)`, and `azure/core/pipeline/transport/_aiohttp.py`
-  wraps that shape as `ServiceResponseTimeoutError(err, error=err)` at its
-  `except asyncio.TimeoutError` arms, so the arm
-  returned `BackendUnavailable('')` rendering as
-  `" | path='delivery.csv' | backend='azure'"` — character for character the
-  SFTP defect BK-359 fixed.
-  **A fourth timeout arm in that transport is not one of them**, and the item's
-  "four raise sites" said otherwise. It catches aiohttp's
-  `ConnectionTimeoutError`, which aiohttp raises at a single site with
-  `f"Connection timeout to host {req.url}"`, so it always arrives explained.
-  **On Windows** the loopback control for a dead port drives that arm and
-  observes `BackendUnavailable("Connection timeout to host http://127.0.0.1:…")`;
-  the platform qualifier is load-bearing, because a closed loopback port refuses
-  rather than times out on some stacks and would then take a different arm. The
-  measurement was in this PR from the start and its consequence for the count
-  was missed until round 1 named it.
-  **Two premises of the item were refuted by measuring them**, and are recorded
-  because the item asserted both more than once.
+  `ServiceRequestError | ServiceResponseError` arm builds its error through a new
+  `_unavailable` helper, which synthesises a message **only** when `str(exc)` is
+  empty, naming which side of the exchange failed and the SDK exception class. A
+  driver that explained itself is untouched. The helper lives in `_azure_common`,
+  so both twins get it from one place. **No log record**, where SFTP's helper of
+  the same name emits one: a scoped decision about this backend, not a claim the
+  two should differ, and pinned by a `caplog` control rather than by prose. The
+  reasons available for it — `AzureBackend.check_health` classifies through here,
+  so a record lands under every `ping()` poll, and SFTP's structured field is
+  undocumented in the observe guide — apply to SFTP too, which made the opposite
+  call and published the per-poll consequence. Making them agree is a question
+  about the logging surface and is not settled here; no item tracks it yet.
 
-  *First*, "only the async timeout is an end-to-end reproduction" does not hold
-  for the async side in the way the item meant: azure-core builds its own
-  `aiohttp.ClientTimeout(sock_connect=…, sock_read=…)` per request, overriding
-  any session `total`, and aiohttp answers those with `ServerTimeoutError`,
-  which carries text. Driving `AsyncAzureBackend.check_health()` at a loopback
-  socket returned a non-empty message for **every** shape the backend's own
-  options can produce — a port with nothing listening, an accept-then-close, and
-  an accept-and-stall.
+  **The defect, measured.** `AzureError.__init__` sets
+  `self.message = str(message)`, so a wrap of an argument-less driver exception
+  stringifies empty and the arm returned `BackendUnavailable('')` rendering as
+  `" | path='delivery.csv' | backend='azure'"` — character for character the SFTP
+  defect BK-359 fixed. Why both transports supply such an input is AZ-025's, in
+  the paragraph under its mapping table; it is not restated here.
 
-  *Second, and the opposite of what the item said*, **the sync side is the more
-  reachable of the two.** The item called it "exposed the same way but not
-  reproduced". It is reproduced: `azure/core/pipeline/transport/_requests_basic.py`
-  wraps `requests.exceptions.ConnectTimeout` as `ServiceRequestTimeoutError` and
-  `ReadTimeout` as `ServiceResponseTimeoutError`, and both of those stringify
-  empty when constructed without arguments — measured, `str(ConnectTimeout())`
-  is `''`. The async transport, by contrast, builds
-  `ServiceRequestTimeoutError` only from aiohttp's `ConnectionTimeoutError`,
-  which always carries the host, so a blank *request*-side timeout is a
-  sync-transport shape and not an async one. Found by two of round 3's three
-  panel members independently, both of whom also caught that the sync test cited
-  the async transport file.
+  **Two of the item's premises were refuted by measuring them**, and both had
+  been asserted more than once.
 
-  **The fix is right either way** — ERR-009 is a claim about the classifier's
-  output, not about how often the input arrives — and the socket shapes now ship
-  as controls in `tests/backends/azure/aio/test_error_detail.py`, which is what
-  stops the fallback from ever overwriting a real explanation.
+  *First*, the blank shape is **not** reachable through the aiohttp transport at
+  all. azure-core builds its own `aiohttp.ClientTimeout(sock_connect=…,
+  sock_read=…)` per request and never sets `total`, so the
+  bare-`asyncio.TimeoutError` arm has no source there. Driving
+  `AsyncAzureBackend.check_health()` at a loopback socket returned a non-empty
+  message for every shape the backend's own options can produce — a port with
+  nothing listening, an accept-then-close and an accept-and-stall. Those three
+  now ship as controls in `tests/backends/azure/aio/test_error_detail.py`.
+
+  *Second, and the opposite of what the item said*, **the sync side is the
+  reachable one.** The item called it "exposed the same way but not reproduced".
+  `_requests_basic.py` wraps `requests.exceptions.ConnectTimeout` as
+  `ServiceRequestTimeoutError` and `ReadTimeout` as
+  `ServiceResponseTimeoutError`, and both stringify empty argument-less —
+  measured, `str(ConnectTimeout())` is `''`.
+
+  **The fix is right either way**: ERR-009 is a claim about the classifier's
+  output, not about how often the input arrives.
+
   **The `BackendUnavailable` half is now closed library-wide**, which is the
-  finding that justified the split. `rg -n 'BackendUnavailable\(' src/` returns
-  five `BackendUnavailable(str(exc))` sites; the four this did not touch cannot
-  render blank — `_errors.py`'s and `_s3_pyarrow.py`'s sit behind a
+  finding that justified the split. After this fix
+  `rg -n 'BackendUnavailable\(str\(exc\)' src/` returns **four** call sites and
+  one docstring mention; none of the four can render blank — `_errors.py`'s and
+  `_s3_pyarrow.py`'s sit behind an
   `endpoint`/`connect`/`timeout`/`dns`/`name or service` keyword guard that `""`
   cannot satisfy, and both botocore arms are fed by classes that always format
   (`str(ClientError({}, "GetObject"))` and `str(BotoCoreError())` both run
   non-empty). Every other backend — HTTP, SQL, Graph — prefixes literal text at
   every construction site.
-  **One stale pointer swept with it:** ASYNC-079's See-also cited "AZ-013
-  through AZ-016", which are `is_file()`, atomic write and the two
-  `delete_folder` clauses. A reader arriving from the async twin landed on the
-  wrong sections and would have missed the message postcondition this item adds
-  to AZ-025; corrected to AZ-025 through AZ-028.
+
+  **One stale pointer swept with it:** ASYNC-079's See-also cited "AZ-013 through
+  AZ-016", which are `is_file()`, atomic write and the two `delete_folder`
+  clauses, so a reader arriving from the async twin would have missed the message
+  postcondition this item adds to AZ-025. Corrected to AZ-025 through AZ-028.
   **Filed by BK-359's `/ship` run**, whose round-1 reviewer found the base-class
   half; the Azure half was measured after the item was challenged for asserting
   rather than checking.

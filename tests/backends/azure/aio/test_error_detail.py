@@ -1,19 +1,26 @@
 """The Azure transport arm's message, asserted against real sockets (ERR-009, AZ-025).
 
-The classifier's blank-message fallback is unit-tested in ``test_config.py``.
-These are its *controls*: every Azure connection failure a caller can actually
-provoke arrives with the driver's own explanation, so the fallback must not fire
-on any of them. Without these, a fallback that overwrote real detail — the
-failure mode SFTP's ``_unavailable`` docstring warns about — would pass the unit
-tests unchanged.
+Three kinds of test live here.
 
-Each socket case drives ``AsyncAzureBackend.check_health()``, whose
-``_errors()`` calls ``classify_azure_error`` directly — the async twin has no
-``_classify`` indirection; that is the sync backend's method, which this file
-never exercises. The last test in the file drives no backend at all: it is the
-fixture's own contract. No Azurite, no network, no credentials: the account key
-is Azurite's published emulator key, present only so the SharedKey signer
-accepts the request before it fails on the wire.
+**The socket controls** are the majority: every Azure connection failure a
+caller can actually provoke arrives with the driver's own explanation, so the
+fallback must not fire on any of them. Without these, a fallback that overwrote
+real detail — the failure mode SFTP's ``_unavailable`` docstring warns about —
+would pass the classifier unit tests in ``test_config.py`` unchanged. Each drives
+``AsyncAzureBackend.check_health()``, whose ``_errors()`` calls
+``classify_azure_error`` directly; the async twin has no ``_classify``
+indirection, which is the sync backend's method and is not exercised here.
+
+**One log control** drives the classifier directly and asserts the helper emits
+no record. It is the only test here that makes the fallback *fire*, because the
+decision it pins is about the branch that synthesises.
+
+**One fixture-contract test** drives no backend at all: it asserts the loopback
+server closes every socket it opened.
+
+No Azurite, no network, no credentials: the account key is Azurite's published
+emulator key, present only so the SharedKey signer accepts the request before it
+fails on the wire.
 
 Assertions are on *non-emptiness* rather than on exact text on purpose. The
 message is the driver's, and the driver's wording is not this library's to
@@ -81,10 +88,11 @@ def _backend(port: int) -> AsyncAzureBackend:
 class _LoopbackServer:
     """A loopback listener that accepts connections and then misbehaves.
 
-    ``on_accept`` decides how: closing the connection immediately (a server
-    disconnect) or holding it open and sending nothing (a stall). Held
-    connections are closed on teardown so ``filterwarnings = error`` does not
-    turn a leaked socket into a failure elsewhere in the session.
+    ``close_immediately`` decides how: ``True`` closes each connection as soon
+    as it is accepted (a server disconnect), ``False`` holds it open and sends
+    nothing (a stall). Held connections are closed on teardown so
+    ``filterwarnings = error`` does not turn a leaked socket into a failure
+    elsewhere in the session.
     """
 
     def __init__(self, *, close_immediately: bool) -> None:

@@ -160,20 +160,20 @@ def _unavailable(exc: Exception, path: str, backend_name: str) -> BackendUnavail
     searches for.
 
     **Why an SDK error can arrive empty at all** is documented once, in the
-    error-mapping spec's postcondition for this row, and is not restated here:
-    it is a fact about the SDK's transports rather than about this function, it
-    moves between SDK releases, and the version that had it in four places
-    falsified three of them within one change.
+    error-mapping spec's rationale paragraph beneath its mapping table, and is
+    not restated here: it is a fact about the SDK's transports rather than about
+    this function, and it moves between SDK releases.
 
-    **No log record**, where the SFTP helper of the same name emits one. That is
-    a scoped decision about this backend, not a claim that the two should
-    differ — the reasons available for it apply to SFTP as well, and SFTP made
-    the opposite call and published the consequence in its migration notes.
-    Recorded so a reader comparing the helpers sees a decision rather than an
-    omission; making them agree is a question about the logging surface, and it
-    is tracked as its own item rather than settled here. The control that keeps
-    this honest is in the async error-detail tests, which assert no record is
-    emitted.
+    **No log record**, where the SFTP helper of the same name emits one. A
+    scoped decision about this backend, not a claim that the two should differ:
+    the reasons available for it — the sync backend's ``check_health``
+    classifies through here, so a record lands under every liveness poll — apply
+    to SFTP as well, and SFTP made the opposite call and published the
+    consequence in its migration notes. Recorded so a reader comparing the
+    helpers sees a decision rather than an omission. Making them agree is a
+    question about the logging surface and no item tracks it yet. The control
+    that keeps this honest is in the async error-detail tests, which assert no
+    record is emitted.
     """
     message = str(exc)
     if not message:

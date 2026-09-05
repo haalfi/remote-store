@@ -225,8 +225,8 @@ render blank. The remaining `BackendUnavailable(str(exc))` sites cannot: two sit
 behind a keyword guard the empty string cannot satisfy, and the two botocore
 arms are fed by classes that always format. What is left of the clause is the
 **base class**, at five blank-reachable arms in four files — including two in the
-very `_map_exception` BK-359 rewrote, and one shared helper that puts three S3
-backends behind it — which is BUG-276, whose disposition is the open question.
+very `_map_exception` BK-359 rewrote, and one shared helper that puts all three
+S3 backends behind it — which is BUG-276, whose disposition is the open question.
 (Seven sites carry the construction; the item partitions them, because the guard
 above each decides whether it can render blank and two of them cannot.) A promise clause honoured on one arm of one backend was the shape this
 section exists to catch; that the count of arms outlived two items is why
@@ -414,100 +414,78 @@ compliant the day before.
   scope corrected by its round 3. BK-360 documents the resulting state in
   SFTP-030 and the SFTP guide; it does not fix it.
 
-- [ ] **BUG-276 — A mapped error still reaches the caller with an empty message through five base-class arms, reaching five backends**
+- [ ] **BUG-276 — A mapped error still reaches the caller with an empty message through five base-class arms**
   spec: ERR-009 · effort: S · audience: user.api
   The remainder of BUG-264, which closed the `BackendUnavailable` half. ERR-009
-  is a claim about `str()` on *any* error, and the same construction spelled
-  with the base class is at **7** sites in 5 files —
-  `rg -n 'RemoteStoreError\(str\(exc\)' src/` — but **the construction is not
-  the defect and 7 is not the size of this item.** What decides whether a site
-  can render blank is the guard above it, so each was driven rather than read.
-  Line numbers are omitted deliberately: two successive revisions of BUG-264
-  cited numbers its own diff had already shifted, and the `rg` is the derivation.
+  is a claim about `str()` on *any* error, and the same construction spelled with
+  the base class stands at **7 sites in 5 files**:
+  `rg -n 'RemoteStoreError\(str\(exc\)' src/`. Line numbers are omitted; the
+  `rg` is the derivation.
 
-  **Five are blank-reachable, each observed returning `RemoteStoreError('')`
-  rendering as `" | path=… | backend=…"`:** `_azure_common`'s final
-  fall-through (driven with a bare `RuntimeError`); `_s3_pyarrow`'s `OSError`
-  arm (an argument-less `OSError` through `_pyarrow_errors`); `_errors.py`'s
-  `_classify_by_message` final arm; and **both `_sftp` arms** — the `OSError`
-  errno fall-through and the final one. **The SFTP driver is an `OSError` with
-  no arguments and no errno**, not one carrying an errno: `OSError(EIO, "")`
-  formats as `"[Errno 5] "` and is *not* blank, so an implementer testing that
-  arm with an errno will wrongly conclude it is already fine. A bare `OSError()`
-  reaches the same line, because the errno dispatch above it reads
-  `getattr(exc, "errno", None)` as `None`. Those two SFTP arms
-  are the fall-throughs of the very `_map_exception` BK-359 rewrote, so SFTP is
-  not finished either — reading that item's title would suggest otherwise.
+  **The construction is not the defect — the guard above each site is.** Five
+  sites can render blank and two cannot, each driven rather than read:
 
-  **Two cannot, and are excluded from the work rather than left implicit.**
-  `_azure_common`'s other site sits inside `isinstance(exc, HttpResponseError)`,
-  and `HttpResponseError.__init__` substitutes `"Operation returned an invalid
-  status '<reason>'"` for a falsy message — a bare instance gives
-  `"Operation returned an invalid status 'None'"`. `_s3_boto3`'s sits inside
-  `isinstance(exc, ClientError)`, which always formats from a template. Both
-  were measured. **This distinction was missed when the item was first written
-  and found by BUG-264's round-1 review**, which is the reason the paragraph
-  above enumerates by guard instead of by `rg` hit.
-  Note that **two** of the five blank-reachable arms — `_errors.py`'s and
-  `_s3_pyarrow.py`'s, the two the keyword guard sits above
+  | Site | Driver | Result |
+  |---|---|---|
+  | `_azure_common` final fall-through | `RuntimeError()` | `RemoteStoreError('')` |
+  | `_s3_pyarrow` `OSError` arm | `OSError()` via `_pyarrow_errors` | `RemoteStoreError('')` |
+  | `_errors._classify_by_message` final arm | `RuntimeError()` | `RemoteStoreError('')` |
+  | `_sftp` errno fall-through | `OSError()` — **no args, no errno** | `RemoteStoreError('')` |
+  | `_sftp` final arm | `RuntimeError()` — non-`OSError`, non-paramiko | `RemoteStoreError('')` |
+  | `_azure_common` `HttpResponseError` arm | — | `"Operation returned an invalid status 'None'"` |
+  | `_s3_boto3` `ClientError` arm | — | `"An error occurred (Unknown) when calling…"` |
+
+  **The two SFTP arms need different drivers**, which is easy to miss: a bare
+  `OSError()` stops at the errno fall-through and never reaches the final arm,
+  and the final arm sits after the `paramiko.SSHException` check and carries
+  `# pragma: no cover`. **An errno-carrying `OSError` is not blank** —
+  `OSError(EIO, "")` formats `"[Errno 5] "` — so testing that arm with an errno
+  wrongly concludes it is already fine.
+
+  The last two rows are excluded from the work: `HttpResponseError.__init__`
+  substitutes for a falsy message, and `ClientError` always formats from a
+  template. Note that two of the five blank-reachable arms — `_errors.py`'s and
+  `_s3_pyarrow.py`'s, the pair the keyword guard sits above
   (`rg -n 'name or service' src/`) — are the mirror image for
   `BackendUnavailable`: that branch needs one of
-  `endpoint`/`connect`/`timeout`/`dns`/`name or service` in the message and `""`
-  contains none, so reading the guard alone concludes "safe" and running it
-  finds the exit one line below. That is why this class is filed in measured
-  form.
+  `endpoint`/`connect`/`timeout`/`dns`/`name or service` and `""` has none, so
+  reading the guard concludes "safe" and running it finds the exit one line
+  below.
 
-  **What BUG-264 established, so it is not re-derived here.** `rg -n
-  'BackendUnavailable\(' src/` returns five `BackendUnavailable(str(exc))`
-  sites; after BUG-264 the remaining four cannot render blank — two sit behind
-  the keyword guard above, and the two botocore arms are fed by classes that
-  always format (`str(ClientError({}, "GetObject"))` gives `"An error occurred
-  (Unknown) when calling the GetObject operation: Unknown"`, `str(BotoCoreError())`
-  gives `"An unspecified error occurred"`). Every other backend — HTTP, SQL,
-  Graph — prefixes literal text at every construction, so none can be blank.
-  **The base class is therefore the whole of what is left.**
+  **What BUG-264 established, so it is not re-derived here.** Every
+  `BackendUnavailable` the library now constructs carries text: after that fix
+  `rg -n 'BackendUnavailable\(str\(exc\)' src/` returns **four** call sites
+  plus one docstring mention, and none of the four can render blank — two sit
+  behind the keyword guard above, and the two botocore arms are fed by classes
+  that always format. Every other backend prefixes literal text at every
+  construction. **The base class is the whole of what is left.**
 
-  **Arms and backends are different counts, and the title uses both.** The five
-  arms sit in **four files** — `_azure_common.py`, `_s3_pyarrow.py`, `_sftp.py`
-  (two) and `_errors.py`. Two of those are backend modules; `_errors.py` is the
-  shared helper, and **every S3 backend reaches it**, which is where the other
-  three come from. Driving `_classify_error(RuntimeError(), "delivery.csv")` on
-  each:
+  **Which backends a caller meets it on**, counting observable `backend=` values
+  rather than modules, since that is what an `except` clause sees:
+  `azure`, `async-azure` (the twins share `classify_azure_error`), `sftp`, and
+  all three S3 backends. Driving `_classify_error(RuntimeError(), "delivery.csv")`:
+  `S3Backend` → `backend='s3'` and `S3PyArrowBackend` → `backend='s3-pyarrow'`
+  both inherit `_S3Base._classify_error`; `S3Boto3Backend` → `backend='s3-boto3'`
+  defines its own, whose final line calls the same helper. So `_s3_boto3`'s *own*
+  site is the unreachable `ClientError` one above and the backend still reaches a
+  blank, through `_errors.py`. **Six backend names, five arms, four files** —
+  the three counts differ and the item uses all three.
 
-  | Backend | Own `_classify_error`? | Result |
-  |---|---|---|
-  | `S3Backend` (registered `s3`) | — | `RemoteStoreError('')`, `backend='s3'` |
-  | `S3PyArrowBackend` | — | `RemoteStoreError('')`, `backend='s3-pyarrow'` |
-  | `S3Boto3Backend` | Yes | `RemoteStoreError('')`, `backend='s3-boto3'` |
-
-  The first two inherit `_S3Base._classify_error`, which calls
-  `_classify_by_message`; the third defines its own, whose final line calls the
-  same helper. So `_s3_boto3.py`'s *own* `RemoteStoreError(str(exc))` is the
-  unreachable `ClientError` one excluded above, and the backend still reaches a
-  blank — through the shared arm. **Five backends can hand a caller a blank base
-  class**: those three plus `azure` and `sftp`. Spelling this out because the
-  obvious reading of the exclusion above — that S3-boto3 is fine — is wrong, and
-  because an earlier revision of this paragraph said "both S3 backends" and
-  missed `S3Backend`, the one the registry actually serves under `s3`.
-
-  **Disposition — the decision is the work, which is why this is not mechanical.**
-  Either a blank `RemoteStoreError` gets the same synthesised fallback Azure's
-  and SFTP's `BackendUnavailable` arms now carry, or these fall-throughs should
-  be *classified* rather than passed through, since each sits at the end of a
-  dispatch that already failed to recognise the exception. The second is the
-  more interesting answer and the more invasive one: an arm that cannot name the
-  failure may be admitting the dispatch above it is incomplete. Decide once and
-  apply to all **five arms** — a per-site answer is how one construction came to
-  span four files. The two unreachable sites want no change; touching them to
-  make the seven look uniform would add a fallback nothing can reach, which is
-  the shape the coverage gate cannot see and a reader later mistakes for a
-  tested path. **Fixing `_errors.py`'s arm changes what two backends report**,
-  per the paragraph above, so whatever is decided there needs its own test on
-  the S3 side rather than only where the arm lives.
-  **Not a shared helper by default:** `_errors.py`'s site is the shared one and
-  the other six are per-backend, so whatever is decided has to say which of the
-  two it lives in. BUG-264 put Azure's in `_azure_common` because both twins
-  classify through it; that is a precedent for the shape, not for the placement.
+  **Disposition — the decision is the work.** Either a blank `RemoteStoreError`
+  gets the synthesised fallback Azure's and SFTP's `BackendUnavailable` arms now
+  carry, or these fall-throughs are *classified* rather than passed through,
+  since each sits at the end of a dispatch that already failed to recognise the
+  exception. The second is the more invasive and the more interesting: an arm
+  that cannot name the failure may be admitting the dispatch above it is
+  incomplete. Decide once and apply to all five arms. The two unreachable sites
+  want no change — adding a fallback nothing can reach is invisible to the
+  coverage gate and reads later as a tested path.
+  **Fixing `_errors.py`'s arm changes what all three S3 backends report**, so it
+  needs its own test on the S3 side and not only where the arm lives.
+  **Placement is part of the decision:** `_errors.py`'s site is shared and the
+  other six are per-backend. BUG-264 put Azure's in `_azure_common` because both
+  twins classify through it; that is a precedent for the shape, not the
+  placement.
 
 - [ ] **BUG-273 — A locally-rejected SFTP connect answers the wrong type, and neither permission errno can be claimed without connect-time context**
   spec: SFTP-021, SFTP-023 · effort: S · audience: user.api

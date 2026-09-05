@@ -500,23 +500,24 @@ class TestAsyncAzureErrorMapping:
     ) -> None:
         """A driver signal carrying no text still names a cause (ERR-009, AZ-025).
 
-        Why an SDK error can arrive empty is in AZ-025's postcondition, which is
-        its one home; this docstring covers only what *this test* does.
+        Why an SDK error can arrive empty is in AZ-025's rationale paragraph,
+        which is its one home; this docstring covers only what *this test* does.
 
         The inner exception is a *genuine* fired timeout rather than a
         constructed one, because that is what makes ``args == ()``.
 
-        **The two parameters do not come from the same transport, and the async
-        one is the weaker case.** A blank ``ServiceResponseTimeoutError`` is
-        reachable through the aiohttp transport this backend actually runs on.
-        A blank ``ServiceRequestTimeoutError`` is not: that transport builds the
-        class only from aiohttp's ``ConnectionTimeoutError``, which always
-        carries the host it could not reach. It is the *sync* transport that
-        supplies that shape, from an argument-less
-        ``requests.exceptions.ConnectTimeout``. The parameter is kept here
-        anyway — the arm under test is typed on the base classes, so both belong
-        to it, and the sync twin asserts the same pair — but a reader should not
-        take it as evidence about aiohttp.
+        **Neither parameter is reachable through the aiohttp transport this
+        backend runs on**, and the test is a classifier test for that reason.
+        azure-core builds its own ``ClientTimeout(sock_connect=…, sock_read=…)``
+        per request and never sets ``total``, so its bare-``asyncio.TimeoutError``
+        arm has no source; and it builds ``ServiceRequestTimeoutError`` only from
+        aiohttp's ``ConnectionTimeoutError``, which always carries the host.
+        The *sync* transport supplies both shapes, from argument-less
+        ``requests.exceptions.ConnectTimeout`` and ``ReadTimeout``. Both are
+        asserted here anyway because the arm under test is typed on the base
+        classes and the classifier is shared by both twins — but a reader should
+        not take either as evidence about aiohttp. The loopback file drives what
+        aiohttp *does* produce, and it is never blank.
 
         ``asyncio.wait_for`` rather than ``asyncio.timeout``: the latter is 3.11+
         and broke the 3.10 CI leg. ``asyncio.TimeoutError`` rather than the

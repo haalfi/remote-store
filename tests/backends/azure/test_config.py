@@ -552,23 +552,22 @@ class TestAzureErrorMapping:
     def test_a_detail_less_transport_signal_says_which_side_failed(self, wrapper_name: str, expected_side: str) -> None:
         """A driver signal carrying no text still names a cause (ERR-009, AZ-025).
 
-        Why an SDK error can arrive empty is in AZ-025's postcondition, which is
-        its one home; this docstring covers only what *this test* does.
+        Why an SDK error can arrive empty is in AZ-025's rationale paragraph,
+        which is its one home; this docstring covers only what *this test* does.
 
         **This backend runs on the requests transport, and that is where both
-        parametrised shapes come from** — not from the aiohttp one an earlier
-        revision of this comment cited. ``requests.exceptions.ConnectTimeout``
+        parametrised shapes come from.** ``requests.exceptions.ConnectTimeout``
         becomes ``ServiceRequestTimeoutError`` and ``ReadTimeout`` becomes
         ``ServiceResponseTimeoutError``, both spelled ``Error(err, error=err)``,
-        and both inputs stringify empty when constructed without arguments. So
-        the sync side is the *stronger* of the two twins for the request arm,
-        which is the opposite of what this file used to say.
+        and both inputs stringify empty when constructed without arguments. The
+        sync side is therefore the reachable one for the request arm; the aiohttp
+        transport builds that class only from an error carrying the host.
 
-        Asserted at the classifier rather than through the transport: driving it
-        end to end would need a server that accepts and then stalls past a
-        configured read timeout, which the async twin's loopback file already
-        does for the response arm. What is version-sensitive here is the input's
-        emptiness, and that is asserted directly below.
+        Asserted at the classifier rather than through the transport. Driving it
+        end to end needs a different fault per parameter — a server that accepts
+        and then stalls for the read arm, an unroutable address for the connect
+        arm, since a stalling server accepts the connect. What is
+        version-sensitive here is the input's emptiness, asserted directly below.
         """
         inner = TimeoutError()
         assert str(inner) == "", "premise: an argument-less timeout carries no text"
