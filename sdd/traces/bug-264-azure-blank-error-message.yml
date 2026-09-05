@@ -15,6 +15,23 @@ discovery_followups:
   # Born in this PR's split: BUG-264's base-class half needed an ID of its own,
   # and BUG-276 did not exist when this trace was first written.
   - BUG-276
+surprising_ripples:
+  # Not reachable from the ripple-check's Error-type row, which names the error
+  # model, the backend mappings, their tests and the troubleshooting guide.
+  #
+  # CONTENT-RULES.md is here because of *when* it arrived: a rebase mid-review
+  # brought a new review-enforced authority governing sdd/ prose, and nothing in
+  # the ripple table routes from "the branch was rebased" to "an authority that
+  # governs your changed files may have changed under you". The table
+  # anticipates ripples from what the author edits, not from what upstream
+  # edits beneath them.
+  #
+  # tests/backends/sftp/_helpers.py is a ripple met by *reading*, not editing:
+  # it holds the accept-loop pattern this work's loopback server should have
+  # used from the start, and no row routes from "this test opens a socket" to
+  # "the repo already solved that".
+  - sdd/CONTENT-RULES.md
+  - tests/backends/sftp/_helpers.py
 expected_ripples:
   # sdd/backlogid.json is deliberately absent: the split retired BUG-264 into
   # BACKLOG-DONE and minted BUG-276, and `hatch run gen-backlogid` left the file
@@ -58,10 +75,22 @@ expected_ripples:
 #            findings merging to 10. Its measuring member drove both transports
 #            against four fault shapes each, tried to break the reachability
 #            claim and could not, and refuted one of its own hypotheses en route)
-# Value is 6. Re-derived from the command above rather than incremented — the
-# revision that incremented it was one commit behind, because the round-5 fix
-# was the first that did not touch this file.
-review_rounds: 6
+#   Make the loopback server stop on POSIX, and sweep the one-home claim properly
+#                                                    -> counts (round 7, the
+#            closing panel: 17 raw findings merging to 10 fixed and 1 refuted.
+#            The first round since the opener to find real code defects rather
+#            than prose)
+#   Keep ASYNC-079's See-also list contiguous        -> does not count (a nit the
+#            round declined to file; fixed because it was this PR's own sentence)
+#   Lead AZ-025 with the claim the section actually establishes
+#                                                    -> counts (a single-lens
+#            pass on CONTENT-RULES Rule 7, which landed on master mid-review and
+#            is review-enforced with no gate. The author's own check of the same
+#            rule had passed the section)
+# Value is 8. Re-derived from the command above rather than incremented — an
+# earlier revision that incremented it was one commit behind, because the
+# round-5 fix was the first that did not touch this file.
+review_rounds: 8
 phases:
   - id: orient
     name: Orient
@@ -265,4 +294,21 @@ phases:
           HNS mode, and no published page shows an Azure blank-message
           traceback, so the Error-type row's troubleshooting ripple is met by
           reading it
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 7 (Kernsatz)"
+        read_type: gate
+        extract: >-
+          Arrived on master mid-review, in the rebase that brought ID-256, and
+          governs sdd/ prose — which is most of what this work wrote. It is
+          review-enforced with no gate, so a reviewer applying it is the whole
+          mechanism.
+          Retrospective, and mine rather than the document's: my own reading of
+          it passed AZ-025, because I checked whether the opening was three
+          sentences and not whether those sentences claimed what the section
+          establishes. A dedicated pass found the section correcting its own
+          Kernsatz twice, which is the rule's named failure. The rule's scope
+          test also cleared BACKLOG § 1 on a derivation I had not run — its
+          Promise is byte-identical to master, so only its running status
+          changed
         outcome: ok
