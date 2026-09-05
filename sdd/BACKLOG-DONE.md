@@ -281,9 +281,10 @@ if evidence changes; these are retired.
   `test_the_rename_fallback_destroys_the_destination_when_the_promote_stalls`,
   which no longer exists under that name or that verdict.
   **The three rows now carry one scope, not three.** Each was written for a
-  caller exception and each fails only over a dropped connection, so the marks
-  are gone and the prose under the table states the bound once, deferring to
-  AW-004 for the general form. SAW-004 keeps its no-partial-file clause
+  caller exception and each fails where the backend cannot fully act — a dropped
+  connection, and on the SFTP fallback also a live server that refuses a step of
+  the undo — so the marks are gone and the prose under the table states the scope
+  once, deferring to AW-004 for the general form. SAW-004 keeps its no-partial-file clause
   unqualified — that half was always true; what the drop changes is whether the
   target is still occupied. SAW-009's per-backend paragraph describes the
   displace-and-restore rather than "on failure, `sftp.remove()` cleans up".

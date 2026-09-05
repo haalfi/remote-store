@@ -1043,9 +1043,10 @@ class SFTPBackend(Backend):
 
         The **rename-fallback** path cannot rename onto an occupied path, so it
         displaces the destination first and puts it back if the promote fails.
-        A dropped connection is the one failure that stops the restore: the old
-        content then stays beside the target as ``.~bak.<name>.<uuid8>`` and the
-        path itself is empty. That path is entered when ``posix_rename`` fails
+        The restore is best-effort: a dropped connection stops it being attempted
+        at all, and a server can refuse one of its two steps. Either way the old
+        content stays beside the target as ``.~bak.<name>.<uuid8>`` rather than
+        at its own path. That path is entered when ``posix_rename`` fails
         for a reason ``_is_connection_dead`` does not recognise and the target
         is not a directory, so it is not confined to servers lacking the
         extension.
@@ -1547,8 +1548,8 @@ class SFTPBackend(Backend):
         There is a further state on the **rename-fallback** path, which displaces
         the destination before renaming onto it: a stall in that window leaves
         the destination path empty, its old content under
-        ``.~bak.<name>.<uuid8>`` and the source still there, because a dropped
-        connection is the one failure the restore cannot run over. That path is
+        ``.~bak.<name>.<uuid8>`` and the source still there, because the restore
+        is best-effort and a dropped connection stops it being attempted. That path is
         entered when ``posix_rename`` fails for a reason ``_is_connection_dead``
         does not recognise and the destination is not a directory, so it is not
         confined to servers lacking ``posix-rename@openssh.com``.
@@ -1604,11 +1605,11 @@ class SFTPBackend(Backend):
                     # Same reasoning as ``_promote``, and reached on *every*
                     # server rather than only those without the extension: a
                     # stalled channel fails ``posix_rename`` too, and the
-                    # fallback below would then pay the bound on its displace, a
-                    # ``rename``, and the copy rung's two file opens. The
-                    # displace re-raises rather than suppressing, so entering the
-                    # fallback costs one bound and not two — but not entering it
-                    # at all is still cheaper by the rest. Report the drop
+                    # fallback below would then pay the bound on its displace.
+                    # One bound, not the four this comment used to enumerate:
+                    # the displace re-raises rather than suppressing, so the
+                    # ``rename`` behind it and the copy rung's two file opens are
+                    # never reached on a dead channel. Report the drop
                     # (SFTP-030).
                     raise
                 self._move_fallback(src_sftp, dst_sftp, overwrite=overwrite)
@@ -2220,10 +2221,14 @@ class SFTPBackend(Backend):
             self._sftp.posix_rename(tmp_path, sftp_path)
         except OSError as exc:
             if self._is_connection_dead(exc):
-                # Neither the classification stat nor the fallback's displace +
-                # rename can succeed on a dead channel, and each would pay
-                # ``io_timeout`` again — up to three further bounds out of one
-                # failed promote. Report the drop (SFTP-030).
+                # Nothing below can succeed on a dead channel. What this guard
+                # actually saves is **one** further bound: ``_raise_if_dir``
+                # returns without probing when the cause it is handed is already
+                # a drop (mechanism 1), and the fallback's ``rename`` is never
+                # reached because its displace re-raises first — so the displace
+                # is the one round-trip that would otherwise be paid. It read as
+                # three before those two guards existed. Report the drop
+                # (SFTP-030).
                 raise
             self._raise_if_dir(sftp_path, path, cause=exc)
             self._rename_fallback(tmp_path, sftp_path, overwrite=overwrite)
@@ -2242,8 +2247,14 @@ class SFTPBackend(Backend):
 
         ``None`` means nothing was displaced and there is nothing to restore:
         either the destination was absent (``ENOENT`` — the ordinary
-        ``overwrite=True`` create) or the server refused to move it, in which
-        case it is still there and the promote will fail on its own terms.
+        ``overwrite=True`` create) or the server refused to move it, in which case
+        it is still there and the promote fails against it. **What the caller is
+        told in that second case is not what they should be told**: on a server
+        that also refuses a rename onto an occupied path, the promote fails
+        ``EEXIST`` and surfaces as ``AlreadyExists`` from a call that passed
+        ``overwrite=True``. Measured, pre-existing (the removal this replaced
+        reached the same ``EEXIST``), and tracked as its own item rather than
+        widened into this one.
         A dead connection is re-raised instead: the promote cannot succeed over
         it either and would pay a second ``io_timeout`` bound doing so. The
         ``SSHException`` shape of a drop needs no arm here — it is not an

@@ -71,10 +71,19 @@ inherent limitation of simulated atomicity over a network.
 **A second artifact class on the SFTP fallback path, and it is not litter.**
 The `.~bak.<name>.<uuid8>` AW-003 describes is released as soon as the promote
 succeeds and renamed back as soon as it fails, so it outlives the call only when
-the connection dropped — the same condition that strands the temp, and there it
-holds the caller's previous file. Cleaning it up unasked is the one thing that
-would make this clause's guarantee false, so it is left where a caller can find
-it.
+the restore did not complete — over a dropped connection, where it is never
+attempted, and on a live one where the server refuses a step of it. Both leave
+it holding the caller's previous file. Cleaning it up unasked is the one thing
+that would make this clause's guarantee false, so it is left where a caller can
+find it.
+
+**A drop is not the only way the restore fails, and stating it as one would be
+the same over-claim AW-003 was just scoped against.** The restore is
+best-effort: two suppressed calls against a server that may refuse either. What
+the guarantee rests on is not that it succeeds — it is that the backup exists
+whether or not it does, which is why the backup is taken instead of a delete.
+`test_a_restore_the_server_refuses_leaves_the_old_content_findable` measures the
+live-connection case.
 
 **"Renamed back" is a claim about a path that may not be free**, which is the
 part of it that had to be built rather than assumed: `move`'s copy rung opens the

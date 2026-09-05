@@ -365,9 +365,11 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
 
     The empty-destination cases come from a rename fallback, which cannot rename
     onto a path that is occupied: it moves the old file aside first and moves it
-    back if the rename fails. Over a dropped connection it cannot move anything
-    back, which is the state above — **nothing is lost, but the path you wrote to
-    is empty.** Your previous file is beside it as `.~bak.<name>.<uuid>`. The
+    back if the rename fails. Moving it back is best-effort: over a dropped
+    connection it is not attempted at all, and on a live one the server can
+    refuse it. Either way you get the state above — **nothing is lost, but the
+    path you wrote to is not the file you had.** Your previous file is beside it
+    as `.~bak.<name>.<uuid>`. The
     second copy depends on the operation: for `write_atomic()` / `open_atomic()`
     it is the `.~tmp.<name>.<uuid>` next to it, and for `move()` it is your
     source file, untouched at its own path — which may be in another directory

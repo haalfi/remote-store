@@ -4,8 +4,11 @@
 
 `open_atomic()` on `Backend` and `Store` returns a context manager that yields
 a writable file object. Data is written to a temporary location; on successful
-exit the file is atomically promoted to its final path. On failure the temporary
-artifact is cleaned up and the target path is never modified.
+exit the file is atomically promoted to its final path. A failure the backend can
+still act on cleans the temporary artifact up and leaves the target path
+unmodified; a failure that takes the connection with it can do neither, which
+SAW-004 and SAW-005 scope and [007-atomic-writes.md](007-atomic-writes.md) AW-004
+owns cross-backend. No reader ever sees a partial file either way.
 
 This eliminates the memory-buffering requirement of `write_atomic()` for
 multi-GB workloads (Parquet exports, log rotation, report generation).
@@ -19,7 +22,7 @@ RFC: `sdd/rfcs/rfc-0004-streaming-atomic-writes.md`
 | SAW-001 | `Backend.open_atomic()` is abstract, returns context manager yielding `BinaryIO` | Done |
 | SAW-002 | `Store.open_atomic()` gates on `Capability.ATOMIC_WRITE` | Done |
 | SAW-003 | On successful exit, file is atomically visible at target path | Done |
-| SAW-004 | On exception, the target path never holds a partial file; it is unchanged unless the connection dropped | Done |
+| SAW-004 | On exception, the target path never holds a partial file; it is unchanged unless the promote ran or a simulated overwrite could not be undone | Done |
 | SAW-005 | Temp artifact is cleaned up on both success and failure, where the backend can still act | Done |
 | SAW-006 | `AlreadyExists` raised if file exists and `overwrite=False` | Done |
 | SAW-007 | `InvalidPath` raised if path is empty | Done |
@@ -32,21 +35,21 @@ RFC: `sdd/rfcs/rfc-0004-streaming-atomic-writes.md`
 | SAW-014 | `ext.observe` fires `on_write` hook after successful promotion | Done |
 | SAW-015 | `ext.otel` emits a span covering the full open-write-promote lifecycle | Done |
 
-**Three rows carry a dropped-connection scope (BUG-271), and it is one bound, not
-three.** Each was written for a caller exception, which is the failure
-`open_atomic` was designed around: the promote has not run, so the target is
-untouched and the temp is removed. A connection that dies *during* the promote is
-the case none of them survived unqualified, and the scoping is the same sentence
-in all three — a backend cannot undo, clean up, or complete over a channel it
-cannot reach. The authority for the general form is
-[007-atomic-writes.md](007-atomic-writes.md) AW-004; these rows carry only what is
-specific to streaming.
+**Three rows carry a scope (BUG-271), and it is one idea, not three.** Each was
+written for a caller exception, which is the failure `open_atomic` was designed
+around: the promote has not run, so the target is untouched and the temp is
+removed. What none of them survived unqualified is a failure the backend cannot
+fully act on — usually a connection that dies *during* the promote, and on the
+SFTP fallback also a live server that refuses a step of the undo. The authority
+for the general form is [007-atomic-writes.md](007-atomic-writes.md) AW-004;
+these rows carry only what is specific to streaming.
 
 - **SAW-004** — no reader ever sees a partial file, which holds without
-  qualification. What the drop can change is *whether the target is still
-  occupied*: a lost promote reply leaves the rename performed, and the SFTP
-  fallback's displace can leave the path empty with the old content beside it
-  (AW-003, and SFTP-030 for the residue). Neither is a partial file.
+  qualification. What the exception can change is *what occupies the target*: a
+  lost promote reply leaves the rename performed, and the SFTP fallback's
+  displace can leave the path empty with the old content beside it when the
+  restore cannot complete (AW-003, and SFTP-030 for the residue). Neither is a
+  partial file.
 - **SAW-005** — `SFTPBackend` deliberately skips the cleanup unlink on a
   dead-connection signal, so an orphan `.~tmp.*` survives by design rather than
   by omission.
@@ -110,7 +113,7 @@ via the existing `around` context-manager pattern (SAW-015).
 ## Test coverage
 
 - Success path: multi-chunk write, content verification (all backends)
-- Exception path: no partial file, temp artifact cleaned up
+- Exception path: no partial file; temp artifact cleaned up where the backend can still act (SAW-005)
 - `AlreadyExists` guard: `overwrite=False` raises, `overwrite=True` replaces
 - `InvalidPath`: empty path raises
 - Capability gating: `ATOMIC_WRITE` required

@@ -3681,9 +3681,14 @@ class TestSFTPLowSeverityCorrectnessEdges:
         it routes *around* the ``io_timeout`` guard rather than through it. A
         ``TimeoutError`` is an ``OSError``, so it enters that arm and exercises
         the branch: without the guard, ``_raise_if_dir``'s stat and then the
-        fallback's ``remove`` + ``rename`` would each re-enter the dead channel
-        and re-pay the bound — the "up to three further bounds out of one failed
-        promote" SFTP-030 quotes, and the largest multiple in that clause.
+        fallback's displace would re-enter the dead channel and re-pay the bound.
+
+        The spies below still assert all three round-trips, and that is
+        deliberate rather than stale: two of them are now unreachable for
+        *further* reasons — ``_raise_if_dir`` declines to probe when the cause it
+        is handed is already a drop, and the displace re-raises before the
+        promote ``rename`` — so what this test pins is that no layer of that
+        defence has been removed, not that this guard is the only one.
 
         Asserts on the round-trips rather than on elapsed time: these are mocks,
         so there is no real stall to measure, and the count is the thing the
@@ -3702,8 +3707,8 @@ class TestSFTPLowSeverityCorrectnessEdges:
             sftp_backend.write_atomic("wa_timeout.txt", b"payload", overwrite=True)
         # internal: the skipped round-trips have no public observable (Rule 3).
         stat_spy.assert_not_called()  # _raise_if_dir classification
-        remove_spy.assert_not_called()  # fallback + temp cleanup
-        rename_spy.assert_not_called()  # fallback
+        remove_spy.assert_not_called()  # the temp cleanup, and the fallback's release / restore
+        rename_spy.assert_not_called()  # the fallback's displace and its promote
         assert sftp_backend._sftp_client is None
 
     @pytest.mark.spec("SFTP-030")

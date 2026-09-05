@@ -271,9 +271,12 @@ if the target already exists. With `overwrite=True`, the existing file is replac
 **On success.** A failure can leave it replaced, unchanged, or displaced to
 `.~bak.<name>.<uuid8>` with the destination path empty — see
 [SFTP-030 § What a stalled operation leaves behind](#stalled-write-destination).
-The displaced case is the one this invariant reads as excluding, and it is
-reached only over a dropped connection: what it never does is leave the caller
-without the file, which is the guarantee AW-003 states cross-backend.
+The displaced case is the one this invariant reads as excluding. It is reached
+whenever the restore does not complete — over a dropped connection, where it is
+never attempted, and on a live one where the server refuses a step of it. What it
+never does is leave the caller without the file, which is the guarantee AW-003
+states cross-backend and the reason the displace takes a backup rather than
+deleting.
 
 ### SFTP-016: delete_folder Recursive
 
@@ -876,9 +879,12 @@ re-entries differently:
    generic `RemoteStoreError` — which does *not* clear the cached client, so
    SFTP-010 tier 2 never fired on the operation that surfaced the drop.
 3. **Skipped teardown.** Every promote-or-rename path skips what follows a dead
-   rename: `_promote` skips the fallback, whose displace + `rename` would each
-   pay the bound again, and `move` skips its own fallback chain — a displace, a
-   `rename`, and the copy fallback's two file opens. `write_atomic` and
+   rename: `_promote` skips the fallback and `move` skips its own fallback chain.
+   **Each saves one bound, not the chain's length** — the displace re-raises a
+   dead-connection failure, so the `rename` behind it and the copy fallback's two
+   file opens are unreachable anyway; the displace is the round-trip that would
+   otherwise be paid. Before that re-raise existed the chains were reachable and
+   these guards were worth three and four. `write_atomic` and
    `open_atomic` skip their temp cleanup, and `_restore` skips putting a
    displaced destination back — on the temp cleanup's own predicate, the one
    that adds `SSHException` to this list's first clause — which is why that

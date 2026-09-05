@@ -15,6 +15,10 @@ audience:
 co_shipped_items:
   - BUG-270
   - BUG-271
+discovery_followups:
+  # Born in round 3's measuring pass: it staged the two server refusals together
+  # and found the arm surfacing AlreadyExists from an overwrite=True call.
+  - BUG-277
 expected_ripples:
   - sdd/backlogid.json
 surprising_ripples:
@@ -31,12 +35,18 @@ surprising_ripples:
   # neglected-surface pass, which was aimed at the untouched files rather than
   # at this one.
   - tests/backends/sftp/test_config.py
-# Counted from `git log --oneline origin/master..HEAD`, which returns three
-# commits: 8ed1dc7 implements and does not count; d7c4818 incorporates round 1's
-# six findings; the commit carrying this line incorporates round 2's five. Its
-# own SHA cannot appear here, which is why the last entry is named by the query
-# rather than transcribed. Value is 2.
-review_rounds: 2
+# The schema counts review-driven *commits*, not rounds, and the two differ here:
+# round 2 produced two (its fix pass, then a CHANGELOG line its own review reply
+# had claimed and not made). Counted from `git log --oneline origin/master..HEAD`,
+# oldest first: 8ed1dc7 implements and does not count; d7c4818 (round 1),
+# 0a0e934 and 8e7c37b (round 2), and the commit carrying this line (round 3) are
+# review-driven. Value is 4 over 3 rounds.
+#
+# The rule, since the list has gone stale twice: every commit after the first is
+# review-driven, so the value is that query's count minus one. An enumeration
+# written inside the branch it enumerates can never include the commit carrying
+# it, which is why the rule is stated alongside the list rather than instead of it.
+review_rounds: 4
 phases:
   - id: orient
     name: Orient

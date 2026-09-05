@@ -148,12 +148,16 @@ def _deny_removing(backend: Any, target: str, code: int) -> None:
 
 
 def _litter(backend: Any) -> list[str]:
-    """Names of the fallback's own artifacts left in the store root."""
-    return [
-        str(entry).rsplit("/", 1)[-1]
-        for entry in backend.list_files("")
-        if str(entry).rsplit("/", 1)[-1].startswith((".~tmp.", ".~bak."))
-    ]
+    """Names of the fallback's own artifacts left in the store root.
+
+    Reads ``entry.name``, not ``str(entry)``. ``list_files`` yields ``FileInfo``,
+    which has no ``__str__``, so stringifying one gives the dataclass repr —
+    ``FileInfo(path=RemotePath('.~bak.…'), …)`` — which starts with ``FileInfo(``
+    and matches no prefix. That spelling made every caller of this helper assert
+    nothing, and nothing else in the suite pinned that a successful fallback
+    releases its backup.
+    """
+    return [entry.name for entry in backend.list_files("") if entry.name.startswith((".~tmp.", ".~bak."))]
 
 
 @pytest.mark.spec("AW-003")
@@ -287,6 +291,48 @@ def test_a_failed_copy_rung_still_gives_the_destination_back(sftp_backend: SFTPB
     )
     assert backend.read_bytes(src) == new, "a failed move leaves its source in place"
     assert _litter(backend) == []
+
+
+@pytest.mark.spec("AW-004")
+@pytest.mark.spec("SFTP-015")
+def test_a_restore_the_server_refuses_leaves_the_old_content_findable(sftp_backend: SFTPBackend) -> None:
+    """The restore is best-effort, and this is what "best-effort" costs.
+
+    Deny the unlink the restore needs and it cannot clear the target, so on a
+    strict-``rename`` server it cannot put the backup back either — on a
+    connection that never dropped. What the caller is left with is the residue
+    the specs name: their old content under a ``.~bak.`` name beside the target,
+    which is the guarantee AW-003 actually makes, rather than the destination
+    they had.
+
+    Pinned because three artifacts read the unrecovered residue as implying a
+    dropped connection. It does not: a drop is the case where the restore never
+    runs, not the only case where it fails to complete.
+    """
+    backend: Any = sftp_backend
+    tag = uuid.uuid4().hex[:8]
+    src, dst = f"src_{tag}.bin", f"dst_{tag}.bin"
+    old, new = b"OLD" * 100, b"NEW" * 100
+
+    backend.write(src, new)
+    backend.write(dst, old)
+
+    _break_posix_rename(backend)
+    _strict_rename(backend)
+    _deny_promote_onto(backend, dst, errno.EACCES)
+    _deny_removing(backend, src, errno.EACCES)  # ends the copy rung
+    _deny_removing(backend, dst, errno.EACCES)  # and the restore cannot clear the target
+
+    with pytest.raises(PermissionDenied):
+        backend.move(src, dst, overwrite=True)
+
+    backups = [name for name in _litter(backend) if name.startswith(f".~bak.{dst}.")]
+    assert len(backups) == 1, (
+        "the restore could not complete, so the caller's old content must still be findable "
+        "under the backup name — that is the arm of AW-003 that holds here"
+    )
+    assert backend.read_bytes(backups[0]) == old
+    assert backend.read_bytes(src) == new, "a failed move leaves its source in place"
 
 
 @pytest.mark.spec("AW-003")

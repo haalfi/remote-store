@@ -314,6 +314,27 @@ error: it meets the rows it was brought to and misses the bound that arrived
 after, which is what a clause growing a new sentence does to a backend that was
 compliant the day before.
 
+- [ ] **BUG-277 — An `overwrite=True` atomic write can raise `AlreadyExists` when the SFTP fallback cannot clear the destination**
+  spec: AW-003, SFTP-015 · effort: S · audience: user.api
+  `_displace` returns `None` when the server refuses to rename the destination
+  aside for a non-dead, non-`ENOENT` reason (`EPERM`, say). The destination is
+  then still occupied, and on a server that also follows the SFTP v3 rule that
+  `rename` will not replace an occupied path — the same server class the fallback
+  exists for — the promote fails `EEXIST` and `_map_exception` turns it into
+  `AlreadyExists`. That is the error AW-003 reserves for `overwrite=False`, so a
+  caller who passed `overwrite=True` is told their file exists, which they knew.
+  **Measured** against a staged server refusing both operations: the destination
+  is intact and nothing is littered, so no data is at risk — the defect is the
+  error type, and the message with it.
+  **Pre-existing, not introduced by BUG-272**: the `remove(dst)` that displacing
+  replaced reached the same `EEXIST` when it was refused. What BUG-272 added is
+  the docstring premise that the promote "fails on its own terms", which is what
+  made the wrong type visible as a claim rather than as an unstated behaviour.
+  Both routes need the same fix: classify a promote failure against a
+  destination the fallback could not clear, rather than mapping its errno.
+  **Found by BUG-272's review round 3, by a measuring pass**, which staged the
+  two refusals together rather than reading the arm.
+
 - [ ] **BUG-276 — A mapped error still reaches the caller with an empty message through five base-class arms**
   spec: ERR-009, AZ-025 · effort: M · audience: user.api
   **M, not S**, for the reason BUG-264 gave before the split: the arms need a
