@@ -330,6 +330,45 @@ unit, not a buried one — "the row did not ask the question that mattered", "no
 covers a change to a skill's frontmatter". **The repo's most direct measurement of
 reader failure evidences undershoot, not overshoot.**
 
+### 6.2a The one experiment this corpus could run
+
+§ 9 records that no study in the literature tests a reader **looking something
+up** rather than reading through and being examined. That reader was tested here,
+on the ripple-check itself: two versions of the same page (3,255 words against
+1,121, every trigger and obligation preserved), crossed with whether the reader
+knew the questions before reading. Twelve agent readers, ten questions, 120
+answers, graded against a key written before anyone ran.
+
+**On what the page exists to answer, the two versions tied exactly** — 42 of 42
+each, after setting aside one defective question that ten of twelve readers
+identified as unanswerable in almost identical words. A 66% cut cost nothing.
+
+**On the rationale the cut removed, the loss was total** — 12 answers against 0.
+And **no reader on either page invented an answer**: the `misleading` class this
+document keeps saying the reader test cannot reach did not occur, on either side.
+
+Two findings the tally hides, both worth more than it:
+
+**The extra material was misused exactly once, in one cell.** Two of three
+readers who had the whole page *and* knew the question in advance answered it by
+lifting a spec ID from a neighbouring row. Every goal-less reader of the same page
+refused, saying it would conflate rows; so did every reader of the condensed page,
+which carries both rows too. The information is identical; what differs is that
+elaboration makes the row boundary less visible to a reader hunting for something.
+That is Reder & Anderson's mechanism (§ 2) occurring locally — on a sample of
+three, on one question, found in the data rather than predicted. A hypothesis for
+a dedicated run, not a result.
+
+**Cut rationale divides into two kinds.** Three condensed-page readers rebuilt
+half of one probe from the command it described: the command searches two
+phrasings, so a single phrase would obviously miss the other. None could rebuild
+the half that depends on a `.gitignore` fact the page never shows. **Rationale
+explaining what the reader can already see is cheap to cut; rationale carrying a
+fact from elsewhere is not.** Rule 7 does not currently make that distinction.
+
+**Bounds:** three readers per cell, LLM readers rather than humans, a grader not
+blind to condition, and both cells open-book so no memory effect is in view.
+
 ### 6.3 What the round data shows, and its two limits
 
 A script over `sdd/traces/[!_]*.yml` reading each file's first `review_rounds:`
@@ -379,13 +418,13 @@ reach a length. Under-justification is the failure with the better evidence.
 
 ## 9. What would settle the open half
 
-1. **The non-linear reader.** This is now the only substantial hole. Every study
-   in this document tests someone reading through and then being examined, or
-   working a task immediately after. Nobody has been observed *looking something
-   up* in dense reference prose — which is how maintainers and API users actually
-   read. The Hamburg corpus came closest with legal codes, insurance conditions
-   and a purchase contract (§ 4), but those readers still read linearly and were
-   tested.
+1. **The non-linear reader, for humans.** No study in the literature tests
+   someone *looking something up* in dense reference prose, which is how
+   maintainers and API users actually read; the Hamburg corpus came closest with
+   legal codes and insurance conditions (§ 4), but those readers still read
+   linearly and were examined. § 6.2a closes this for **agent** readers on one
+   page of this corpus, and its result — a tie on obligations, total loss on
+   rationale — is what a human run would have to confirm or break.
 2. **Reder & Anderson (1980, 1982) in the original.** Their findings are now
    carried by an author's own later chapter (§ 2), so what the primaries would add
    is sample sizes, effect sizes and the exact time-equating design — not a
@@ -449,6 +488,9 @@ record), **search-summary** (a search engine's synthesis of secondary sources),
 | 20 | Repo: 219 traces carry `review_rounds`; median 2, mean 2.15, max 10; 24 at ≥5 | Local | High |
 | 21 | Repo: BUG-248's eight rounds split roughly three-to-four behavioural, rest prose | Local, one item | Medium |
 | 22 | Repo: two density disputes resolved ad hoc, one cut silently lossy (BK-351, BK-353) | Local | High |
+| 22a | Repo experiment: whole against condensed ripple-check, 12 agent readers, 120 answers — obligations tied 42–42 after a 66% cut; rationale lost 12–0; zero invented answers on either page | Local, pre-registered | High for the tally, low for its reach |
+| 22b | The extra material was misused only by readers who had both the whole page and advance knowledge of the question (2 of 3) | Local, discovered in data | Low — hypothesis for a dedicated run |
+| 22c | Rationale explaining what the reader can see is recoverable after cutting; rationale carrying an outside fact is not | Local | Medium |
 | 23 | Knowledge-telling describes this repo's overshooting prose | Inference | — |
 | 24 | The illusion of explanatory depth applies to authors of explanatory prose | Inference | — |
 
