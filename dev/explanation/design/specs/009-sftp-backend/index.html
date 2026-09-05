@@ -11871,7 +11871,67 @@ connection signals that are <em>not</em> <code>SSHException</code> subclasses: <
 <code>EBADF</code>, <code>socket.timeout</code> / <code>TimeoutError</code> (matched by type, since a half-open
 instance often carries no matching <code>errno</code>), and <code>paramiko.SFTPError</code> (an
 SFTP-protocol failure that subclasses neither <code>OSError</code> nor <code>SSHException</code>).
-<strong>Every</strong> <code>BackendUnavailable</code> this mapping returns — the <code>SSHException</code> family
+So, finally, are the signals that say the host was <strong>never reached</strong>:
+<code>paramiko.NoValidConnectionsError</code> (an <code>OSError</code> whose <code>errno</code> is <code>None</code>, which
+is what a refused port actually raises), <code>socket.gaierror</code> (name resolution), and
+an <code>OSError</code> carrying a connect-side errno (<code>ECONNREFUSED</code> / <code>EHOSTUNREACH</code> /
+<code>ENETUNREACH</code> / <code>ENETDOWN</code> / <code>EHOSTDOWN</code>). Three of those five are the ordinary
+path rather than a fallback: <code>SSHClient.connect</code> captures only <code>ECONNREFUSED</code>
+and <code>EHOSTUNREACH</code> into <code>NoValidConnectionsError</code> and re-raises every other
+<code>socket.error</code> unwrapped, so <code>ENETUNREACH</code> / <code>ENETDOWN</code> / <code>EHOSTDOWN</code> arrive as
+a plain <code>OSError</code>.</p>
+<p>These are a <em>connect-time</em> set and sit in their own arm rather than joining the
+dropped-connection set above, <strong>because the two predicates answer different
+questions</strong> — was the host ever reached, versus is a connection the backend had
+now unusable.</p>
+<p><strong>No claim is made about what is reachable when, and the omission is the
+clause.</strong> Three rationales of that kind were written for this split and each was
+refuted by a state it had not considered: that no operation is in flight at
+connect time (a connect that times out raises <code>socket.timeout</code>, which the
+dropped-connection predicate already matches); that the <code>is_fatal</code> and re-entry
+guards are never consulted on the connect path (they are — <code>read</code>, <code>read_bytes</code>
+and <code>delete</code> evaluate the lazy <code>_sftp</code> property inside their own <code>try</code>, so a
+failure raised by <code>_connect</code> reaches them); and that the shapes partition by
+phase at all. A fourth reading is not more likely to be exhaustive than the
+first three, so the condition's space is enumerated instead of argued:
+<code>TestSFTPConnectTimePredicateSpace</code> generates the product of connect-time shape
+and operation and asserts, per cell, that the caller gets <code>BackendUnavailable</code>
+with a non-empty message and one <code>op="error_mapping"</code> record. Which predicate
+claims a shape is therefore an implementation detail, which is the only footing
+on which this split has survived review. The client-clearing invariant below is
+pinned separately, by <code>test_a_host_never_reached_maps_to_backend_unavailable</code>,
+which seeds a sentinel first — a per-cell assertion could not reach it, since
+the client is <code>None</code> on entry to every cell.</p>
+<p>Every other <code>OSError</code> the errno dispatch declines keeps the base
+<code>RemoteStoreError</code> — <code>EIO</code> and <code>ENOSPC</code> are faults of a connection that is
+working.</p>
+<p><strong>The two permission errnos are known exclusions rather than oversights</strong>, and
+one reason covers both: this mapping sees only the exception, so it cannot tell
+a connect-time errno from a live-channel one. paramiko re-raises <code>EACCES</code> and
+<code>EPERM</code> unwrapped like <code>ENETUNREACH</code> / <code>ENETDOWN</code> / <code>EHOSTDOWN</code>, and what each
+then reaches differs:</p>
+<ul>
+<li><code>EACCES</code> takes the <code>EACCES</code> arm and is answered <code>PermissionDenied</code> — naming
+  the caller's key on a keyed operation, and a bare <code>Permission denied:</code> on
+  <code>check_health</code>. <strong>Whether any connect produces it is unestablished</strong>; BUG-273
+  records the trigger as unknown, so this is what would happen and not a
+  behaviour a reader can currently observe.</li>
+<li><code>EPERM</code> has no arm at all and falls to the generic one as the base
+  <code>RemoteStoreError</code>. This is the local rejection that <em>is</em> reproducible — a
+  netfilter <code>REJECT</code> on the <code>OUTPUT</code> chain yields it — so it is the shape a
+  reader meets, and it is BUG-265's own defect surviving in the errno the
+  connect-time set does not claim. <strong>BUG-273 carries this half</strong> — a fix needs
+  the connect-time context, which only <code>_connect</code> has. BUG-275 carries the
+  absent <code>EPERM</code> arm itself, an older live-channel defect and the reason the
+  fall-through lands where it does; it would change this shape's answer from
+  the base class to <code>PermissionDenied</code>, which is still not the promised type.</li>
+</ul>
+<p>Neither is claimed here because <code>_raise_if_dir</code>'s permission re-raise
+deliberately passes <strong>both</strong> back through this mapping from a working channel,
+so claiming either would answer a server-reported denial with
+<code>BackendUnavailable</code> and discard a healthy client. BUG-273 carries that
+exclusion for both.</p>
+<p><strong>Every</strong> <code>BackendUnavailable</code> this mapping returns — the <code>SSHException</code> family
 included — invalidates the cached SFTP client so the next operation reconnects
 (see SFTP-010, tier 2). The list is not the guarantee: recovery is anchored to
 the <code>BackendUnavailable</code> <em>conclusion</em>, so a dead-connection signal the list has
@@ -11906,8 +11966,10 @@ different cell written as a total here: "one WARNING on the logger", then
 <code>STRICT</code>), then "two per poll" (which assumes the default <code>max_attempts</code>).
 Derive it for a configuration if you need it; do not restate it as a constant.</p>
 <p>The message is the driver's own whenever the driver has one. Four of the signals
-above reach the mapping with no arguments — <code>TimeoutError</code> (which <code>socket.timeout</code>
-is), <code>EOFError</code>, <code>SFTPError</code> and a bare <code>SSHException</code> — and for those
+above — counting the <code>SSHException</code> family and the dropped-connection set, not
+the unreachable-host set the paragraph after this one carves out — reach the
+mapping with no arguments: <code>TimeoutError</code> (which <code>socket.timeout</code>
+is), <code>EOFError</code>, <code>SFTPError</code> and a bare <code>SSHException</code>. For those
 <code>BackendUnavailable(str(exc))</code> carried the empty string, which
 <a href="../005-error-model/">ERR-009</a> forbids and which no reader can act on. <strong>"The
 signals above" is this clause's own list</strong>, which opens with the <code>SSHException</code>
@@ -11918,6 +11980,59 @@ bound when <code>io_timeout is None</code>, since a half-open socket reaches thi
 the option off and claiming a limit the caller never set would be false. The
 others name the signal's own class. A signal that <em>did</em> explain itself is never
 overwritten: this is a fallback for silence, not a house style for messages.</p>
+<p>Two kinds of arm depart from "the driver's own message whenever it has one" —
+the <code>IncompatiblePeer</code> arms, which append a remediation hint, and the
+unreachable-host arm, which supplies a message where the driver's answers the
+wrong question.</p>
+<p><strong>What each connect failure actually names, since no arm makes it uniform:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Failure</th>
+<th>Message</th>
+<th>Names</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Refused / unreachable via <code>NoValidConnectionsError</code></td>
+<td>paramiko's own text</td>
+<td>the <strong>resolved address</strong> and port</td>
+</tr>
+<tr>
+<td>DNS</td>
+<td>supplied by this arm</td>
+<td>the configured host</td>
+</tr>
+<tr>
+<td><code>ENETUNREACH</code> / <code>ENETDOWN</code> / <code>EHOSTDOWN</code></td>
+<td>the driver's <code>[Errno n] strerror</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Connect timeout</td>
+<td><code>_is_connection_dead</code>'s arm, <code>"timed out"</code></td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Note the first row's subject.</strong> <code>NoValidConnectionsError</code> builds its text from
+the addresses it tried, not from the hostname it was given, so a store
+configured as <code>files.example.com</code> reports <code>Unable to connect to port 22 on
+10.0.0.4</code>. It does <strong>not</strong> name the configured host, which is why the DNS arm
+supplies its own message rather than deferring to the driver the way the refused
+arm does: the driver names <em>enough</em> there — an address and a port a reader can
+act on — where a <code>gaierror</code> names nothing at all.</p>
+<p>The bottom two rows name neither host nor port. That is stated rather than
+fixed, because narrowing it would mean re-partitioning the predicates, which is
+the thing this section declines to do.</p>
+<p>The arm also covers its own blank cases — <strong>both</strong> of them, the
+resolution branch and the errno branch — rather than falling through, because
+the generic fallback reports a connection <em>lost</em>, which is the wrong sentence
+for one that was never made. Neither blank shape is raised by anything today:
+an <code>OSError</code> built with an errno renders as <code>[Errno n] strerror</code>, and the
+resolver always supplies text. They are guards, stated here because they are
+pinned by tests and so remain checkable, not because a caller will observe them.</p>
 <p>The record is emitted where the <em>conclusion</em> is reached rather than at each raise
 site, so the cleanup and classification paths that re-enter the mapping do not
 multiply one failure into several lines. That is asserted where the
@@ -11929,12 +12044,16 @@ Both are pinned against the live stall relay
 <code>test_stall_during_streamed_write_costs_one_bound</code>); a read, which classifies
 once and stops, cannot show it.</p>
 <p><code>check_health</code> maps through here, so a probe that fails <strong>in a way this mapping
-concludes on</strong> logs one record and a <code>Store.ping()</code> poll repeats it. That is
-narrower than "a poll against a down server": a refused connect and a DNS
-failure raise the base <code>RemoteStoreError</code> from the generic <code>OSError</code> arm without
-reaching <code>_unavailable</code> at all, so they log nothing from the mapping. BUG-265
-tracks that divergence — <code>check_health</code>'s own docstring promises
-<code>BackendUnavailable</code> for a connection that cannot be established.</p>
+concludes on</strong> logs one record and a <code>Store.ping()</code> poll repeats it. That now
+includes the canonical down-server cases: until BUG-265 a refused connect and a
+DNS failure raised the base <code>RemoteStoreError</code> from the generic <code>OSError</code> arm
+without reaching <code>_unavailable</code> at all, contradicting <code>check_health</code>'s own
+docstring, and they logged nothing from the mapping. Both now conclude here, so
+a poll against a host that is not there leaves an <code>op="error_mapping"</code> record
+where it left none — a change in log volume as well as in exception type. It is
+still narrower than "a poll against a down server": a probe that fails at the
+errno arms (a base path that is missing or denied on a server that answered)
+logs nothing, because that is an answer rather than a fault.</p>
 <p><strong>Which real-world failures land on which arm is not enumerated here</strong>, and the
 omission is deliberate. The arms are stated above by exception <em>type</em>, which is
 what this mapping actually dispatches on and what the tests pin; the map from a

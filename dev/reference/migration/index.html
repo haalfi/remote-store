@@ -10961,8 +10961,13 @@ your server's longest legitimate pause.</p>
 <p><strong>To remove the bound entirely, pass <code>None</code>:</strong></p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">SFTPBackend</span><span class="p">(</span><span class="n">host</span><span class="o">=</span><span class="s2">"files.example.com"</span><span class="p">,</span> <span class="n">username</span><span class="o">=</span><span class="s2">"deploy"</span><span class="p">,</span> <span class="n">io_timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
-<p>That restores the unbounded channel, and only that — the other v0.31.0 change on
-this backend, in the next section, applies whatever you pass here. Note <code>0</code> is
+<p>That restores the unbounded channel, and only that. The other v0.31.0 changes
+that reach this backend — described in the sections below — apply whatever you
+pass here; among them a failed seek-to-end now raises rather than answering <code>0</code>,
+and a host that cannot be reached now raises <code>BackendUnavailable</code>. No count is
+given, deliberately: several sections below are backend-agnostic and reach SFTP
+without saying so in their heading, so a number here goes stale the next time one
+is added. Note <code>0</code> is
 <strong>not</strong> the opt-out — it raises <code>ValueError</code>, because paramiko reads it as
 non-blocking rather than as a bound, and every SFTP operation waits on a reply,
 so all of them would fail at once.</p>
@@ -11046,6 +11051,47 @@ a request that can fail, and their streams are byte-for-byte unchanged. The
 failure also arrives one <code>io_timeout</code> sooner than before on a stalled
 connection, because the release of a condemned stream no longer pays the bound a
 second time.</p>
+<p><strong>An SFTP host that cannot be reached now raises <code>BackendUnavailable</code>:</strong></p>
+<p>In v0.30.0, <code>SFTPBackend</code> promised <code>BackendUnavailable</code> for a connection that
+cannot be established — on <code>check_health</code> and fourteen other methods — and did
+not deliver it for the two most ordinary ways a connect fails. A refused port
+and a DNS failure both raised the base <code>RemoteStoreError</code> instead. A caller who
+followed the <a href="../../guides/health-check/">health-check guide</a>, which shows exactly
+that <code>except BackendUnavailable</code>, caught neither.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># v0.30.0: RemoteStoreError('[Errno None] Unable to connect to port 22 on 10.0.0.4')</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># v0.31.0: BackendUnavailable, same text</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">store</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1"># v0.30.0: RemoteStoreError('[Errno -2] Name or service not known')</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="c1"># v0.31.0: BackendUnavailable("Cannot resolve SFTP host 'files.example.com': [Errno -2] Name or service not known")</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">store</span><span class="o">.</span><span class="n">ping</span><span class="p">()</span>
+</code></pre></div>
+<p>The first example's message names the address paramiko <strong>tried</strong>, not the host
+you configured — so a store pointed at <code>files.example.com</code> reports an IP there.
+That is why the DNS case gets a message naming the host instead of keeping the
+driver's.</p>
+<p><strong>Nothing stops catching.</strong> <a href="../api/errors/"><code>BackendUnavailable</code></a> subclasses
+<code>RemoteStoreError</code>, so an <code>except RemoteStoreError</code> handler is unaffected. What
+changes is which branch runs when you list both: a handler ordering
+<code>except BackendUnavailable</code> before <code>except RemoteStoreError</code> now takes the first
+branch for these two failures where it took the second.</p>
+<p><strong>The error mapping now logs it.</strong> Reaching the mapping means one <code>WARNING</code> on
+<code>remote_store.backends._sftp</code> carrying <code>op="error_mapping"</code>, where a refused
+connect previously left nothing from the mapping at all. That is one record
+more, not the first one: this logger already carried the connect retry's own
+<code>WARNING</code> per sleep and one more under the <code>AUTO_ADD</code> host-key policy, so
+neither the failure nor the logger is new — the mapping's record is. Filter on
+<code>op="error_mapping"</code> to see just this one. A <code>ping()</code> on a liveness probe
+against a host that is down repeats it per poll, which is worth knowing before
+you point one at a store you expect to be unreachable for a while.</p>
+<p><strong>Scope:</strong> SFTP only, and only the shapes a connect actually produces. An
+<code>OSError</code> from a connection that is working — a full disk, a device error —
+still raises the base <code>RemoteStoreError</code> and still logs nothing. <strong>Permission
+errnos are deliberately untouched</strong>, which is what keeps that sentence true: the
+mapping sees only the exception, so it cannot tell a connect-time <code>EACCES</code> or
+<code>EPERM</code> from one a working server reported, and the classification stat
+described <a href="#v0291-to-v0300">in the v0.30.0 notes</a> still answers exactly as it
+did. Other backends are unchanged.</p>
 <p><strong>Flat-namespace backends now raise <code>InvalidPath</code> for a wrong-typed path:</strong></p>
 <p>A backend that stores keys rather than nodes — the S3 family, Azure on a flat
 (non-hierarchical) account, and the SQL backends — cannot ask the store whether
@@ -11408,17 +11454,17 @@ unaffected.</p>
 SFTP's write response carries no timestamp, so the field is now <code>None</code> after an SFTP
 <code>write()</code> or <code>write_atomic()</code>. <code>WriteResult.size</code> (the uploaded byte count) is
 unaffected, and no other backend changes.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Before (v0.29.1): last_modified populated from a post-write stat</span>
-<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">result</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"data.bin"</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>   <span class="c1"># SFTP backend</span>
-<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">result</span><span class="o">.</span><span class="n">last_modified</span>                          <span class="c1"># datetime(...)</span>
-<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
-<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1"># After (v0.30.0): last_modified is None on the SFTP write path</span>
-<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">result</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"data.bin"</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
-<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">result</span><span class="o">.</span><span class="n">last_modified</span>                          <span class="c1"># None</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Before (v0.29.1): last_modified populated from a post-write stat</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">result</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"data.bin"</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>   <span class="c1"># SFTP backend</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">result</span><span class="o">.</span><span class="n">last_modified</span>                          <span class="c1"># datetime(...)</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="c1"># After (v0.30.0): last_modified is None on the SFTP write path</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">result</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">"data.bin"</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">result</span><span class="o">.</span><span class="n">last_modified</span>                          <span class="c1"># None</span>
 </code></pre></div>
 <p>If you need the timestamp after a write, read it back explicitly:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">info</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_file_info</span><span class="p">(</span><span class="s2">"data.bin"</span><span class="p">)</span>
-<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">info</span><span class="o">.</span><span class="n">last_modified</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">info</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">get_file_info</span><span class="p">(</span><span class="s2">"data.bin"</span><span class="p">)</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">info</span><span class="o">.</span><span class="n">last_modified</span>
 </code></pre></div>
 <p><strong>Why:</strong> the timestamp cost a synchronous <code>stat</code> round trip per write that raw paramiko
 skips, about +100 ms at 100 ms RTT. <code>WR-001a</code> already permits <code>None</code> for a field a
@@ -11437,7 +11483,7 @@ whose error shapes differ from OpenSSH now raise the canonical type:</p>
 </thead>
 <tbody>
 <tr>
-<td>Permission-denied classification stat (<code>EACCES</code>/<code>EPERM</code>)</td>
+<td>Permission-denied classification stat (<code>EACCES</code> only — see below)</td>
 <td><code>RemoteStoreError</code></td>
 <td><code>PermissionDenied</code></td>
 </tr>
@@ -11453,6 +11499,15 @@ whose error shapes differ from OpenSSH now raise the canonical type:</p>
 </tr>
 </tbody>
 </table>
+<div class="admonition warning">
+<p class="admonition-title">The first row was published as <code>EACCES</code>/<code>EPERM</code> and holds only for <code>EACCES</code></p>
+<p>The classification-stat re-raise names both permission errnos, but the error
+mapping has an <code>EACCES</code> arm and none for <code>EPERM</code>, so an <code>EPERM</code> stat still
+reaches you as the base <code>RemoteStoreError</code> — the same answer it gave before
+v0.30.0. Corrected here rather than left standing; the fix is tracked and
+may change the type or narrow the promise, so do not rely on either
+outcome for <code>EPERM</code> yet.</p>
+</div>
 <p>One accepted consequence of the defensive mode-less policy: a mode-less <em>regular file</em>
 written under <code>overwrite=False</code> now surfaces <code>InvalidPath</code> rather than <code>AlreadyExists</code>.
 The <code>delete</code> recheck honours <code>missing_ok=True</code> exactly as the ENOENT path already did.</p>
@@ -11469,19 +11524,19 @@ unchanged.</p>
 Namespace (ADLS Gen2) by probing the account on first use. You must now declare
 the account's nature with the required <code>hns</code> argument. A backend constructed
 without <code>hns</code> raises <code>ValueError</code>.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Before (v0.28.0): HNS auto-detected on first I/O</span>
-<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">AzureBackend</span><span class="p">(</span><span class="n">container</span><span class="o">=</span><span class="s2">"data"</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">"acct"</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="s2">"..."</span><span class="p">)</span>
-<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
-<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># After (v0.29.0): declare hns explicitly</span>
-<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">AzureBackend</span><span class="p">(</span><span class="n">container</span><span class="o">=</span><span class="s2">"data"</span><span class="p">,</span> <span class="n">hns</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">"acct"</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="s2">"..."</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Before (v0.28.0): HNS auto-detected on first I/O</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">AzureBackend</span><span class="p">(</span><span class="n">container</span><span class="o">=</span><span class="s2">"data"</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">"acct"</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="s2">"..."</span><span class="p">)</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="c1"># After (v0.29.0): declare hns explicitly</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">AzureBackend</span><span class="p">(</span><span class="n">container</span><span class="o">=</span><span class="s2">"data"</span><span class="p">,</span> <span class="n">hns</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">"acct"</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="s2">"..."</span><span class="p">)</span>
 </code></pre></div>
 <p>The same applies to config <code>options</code> (<code>"hns": true</code>) and to <code>AsyncAzureBackend</code>.</p>
 <p><strong>If you do not know an account's HNS status</strong>, discover it once with the new
 fail-loud helper and pass the result:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">AzureUtils</span>
-<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
-<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">is_hns</span> <span class="o">=</span> <span class="n">AzureUtils</span><span class="o">.</span><span class="n">detect_hns</span><span class="p">(</span><span class="n">account_name</span><span class="o">=</span><span class="s2">"acct"</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="s2">"..."</span><span class="p">)</span>
-<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">AzureBackend</span><span class="p">(</span><span class="n">container</span><span class="o">=</span><span class="s2">"data"</span><span class="p">,</span> <span class="n">hns</span><span class="o">=</span><span class="n">is_hns</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">"acct"</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="s2">"..."</span><span class="p">)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">remote_store.backends</span><span class="w"> </span><span class="kn">import</span> <span class="n">AzureUtils</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">is_hns</span> <span class="o">=</span> <span class="n">AzureUtils</span><span class="o">.</span><span class="n">detect_hns</span><span class="p">(</span><span class="n">account_name</span><span class="o">=</span><span class="s2">"acct"</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="s2">"..."</span><span class="p">)</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">backend</span> <span class="o">=</span> <span class="n">AzureBackend</span><span class="p">(</span><span class="n">container</span><span class="o">=</span><span class="s2">"data"</span><span class="p">,</span> <span class="n">hns</span><span class="o">=</span><span class="n">is_hns</span><span class="p">,</span> <span class="n">account_name</span><span class="o">=</span><span class="s2">"acct"</span><span class="p">,</span> <span class="n">account_key</span><span class="o">=</span><span class="s2">"..."</span><span class="p">)</span>
 </code></pre></div>
 <p><code>AzureUtils.adetect_hns(...)</code> is the async sibling. Both raise on a probe error
 rather than silently falling back to flat behavior.</p>

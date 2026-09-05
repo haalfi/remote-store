@@ -2358,7 +2358,7 @@
       "file": "src/remote_store/backends/_sftp.py",
       "id": "cls:remote_store.backends._sftp.SFTPBackend",
       "kind": "class",
-      "line": 558,
+      "line": 557,
       "role": "backend",
       "runtime": "sync",
       "spec": "sdd/specs/009-sftp-backend.md",

@@ -14426,6 +14426,7 @@
 <p>This project follows <a href="https://semver.org/">Semantic Versioning</a>. Pre-1.0, minor bumps may contain breaking changes.</p>
 <h2 id="unreleased">[Unreleased]<a class="headerlink" href="#unreleased" title="Permanent link">&para;</a></h2>
 <ul>
+<li>BUG-265: <strong>Fix</strong> — a refused SFTP connect and a DNS failure raise <code>BackendUnavailable</code>, the type fifteen docstrings and the health-check guide promise, instead of the base <code>RemoteStoreError</code>. Upgrade path in the <a href="https://docs.remotestore.dev/stable/reference/migration/#v0300-to-v0310">migration guide</a>.</li>
 <li>ID-253: Write down the release CHANGELOG expansion step and give the released section order its first home in <code>CONTRIBUTING.md</code></li>
 <li>BK-360: Document what a stalled SFTP operation leaves behind: a timeout reports one round-trip's lost reply, so any amount of the operation may have happened — from nothing to all of it — and a reported failure is neither a rollback nor proof the write did not land</li>
 <li>BUG-268: <strong>Docs</strong> — the SFTP stall section of the troubleshooting guide shows the message the raise now carries and the log record that accompanies it, instead of the pre-fix blank traceback</li>
