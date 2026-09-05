@@ -14,7 +14,13 @@ answers the neighbouring question, *where does this detail belong?*;
 [`../CONTENT-RULES.md`](../CONTENT-RULES.md) carries the rules this document
 argues for.
 
-## Decision
+## Recommendations
+
+*This record recommends; it does not rule.* Item 1 alone is binding, and not from
+here: it ships as [`CONTENT-RULES.md` Rule 7](../CONTENT-RULES.md#kernsatz), which
+is its authoritative home (principle 4). Items 2–5 are this record's advice and no
+gate enforces them; § 9 argues each and marks it **Adopt** where the evidence
+supports acting now, **Pilot** where it rests on one page or one run.
 
 **Set no word count, no readability target and no general "be concise" rule.**
 Appropriateness is a relation between the text, the reader's purpose and
@@ -34,17 +40,17 @@ For a new or substantially rewritten section:
    keep conceptual material that fixes scope, applicability, constraints or a
    choice between alternatives.
 4. **Do not cut rationale the surviving section cannot recover. Move it.**
+   (Pilot — the evidence is three readers and one page; § 9.2 gives the test.)
 5. **A prose review finding names the reader harm it prevents**, or it is a
    preference.
 
 Apply 2–4 the more cautiously the less you can observe the reader's purpose: the
 licence is strongest in task-oriented internal material and weakest in public
-documentation and onboarding. § 9 carries the reasoning behind each, and marks
-which are adopted and which are still pilots.
+documentation and onboarding.
 
 ## TL;DR
 
-The Decision rests on this chain, and every section below argues one link of it:
+The recommendations rest on this chain, and every section below argues one link:
 
 1. No text-level instrument — word budget, readability index, density metric —
    decides the question by itself, because none of them sees the reader (§ 1).
@@ -276,6 +282,16 @@ they declined to write.
 
 ## 5. The author-side test
 
+**The attempt to state a thing plainly is a test the author can fail, and failing
+it is informative about the author.** That is the whole of what this section
+carries into a rule: not that short prose is better, but that an author who
+cannot state a section's claim has found out something about their own grasp of
+it. Rozenblit & Keil (2002) measured exactly that failure and § 5.2 reports the
+measurement.
+
+The rest of the section is why the test sits on the author rather than the reader
+(5.1), what the mechanism is (5.2), and what shipped (5.3).
+
 ### 5.1 Why the author is the only checkable party at writing time
 
 The reader is absent when the text is written. The author's grasp is present.
@@ -357,9 +373,9 @@ closely to knowledge-telling" — no one is a knowledge-teller.
 learning research — the self-explanation effect (Bisra, Liu, Nesbit, Salimi &
 Winne, 2018, g = .55 over 69 effect sizes from 64 reports), the Feynman
 technique, Bloom's taxonomy, the protégé effect. Its outcome measures are
-learning gains in students. Only the metacognitive core transfers: **the attempt
-to state a thing plainly is a test the author can fail, and failing it is
-informative about the author.** Nothing pedagogical is carried into any repo rule.
+learning gains in students, and none of that is claimed here. Only the
+metacognitive core transfers — the sentence this section opens with — and nothing
+pedagogical is carried into any repo rule.
 
 ### 5.3 The test, as it ships
 
