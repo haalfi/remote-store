@@ -7,6 +7,7 @@ for async operations.
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import logging
 import re
@@ -27,7 +28,9 @@ from azure.core.exceptions import (  # noqa: E402
     ResourceExistsError,
     ResourceNotFoundError,
     ServiceRequestError,
+    ServiceRequestTimeoutError,
     ServiceResponseError,
+    ServiceResponseTimeoutError,
 )
 from azure.storage.blob import (  # noqa: E402
     BlobProperties,
@@ -474,6 +477,86 @@ class TestAsyncAzureErrorMapping:
         with pytest.raises(NotFound):
             async with backend._errors("test"):
                 raise ResourceNotFoundError("not found")
+
+    @pytest.mark.spec("ASYNC-079")
+    @pytest.mark.spec("AZ-025")
+    @pytest.mark.parametrize(
+        ("wrapper", "expected_side"),
+        [
+            pytest.param(
+                ServiceResponseTimeoutError,
+                "The Azure service did not complete its response",
+                id="response-timeout",
+            ),
+            pytest.param(
+                ServiceRequestTimeoutError,
+                "The request never reached the Azure service",
+                id="request-timeout",
+            ),
+        ],
+    )
+    async def test_a_detail_less_transport_signal_says_which_side_failed(
+        self, wrapper: type, expected_side: str
+    ) -> None:
+        """A driver signal carrying no text still names a cause (ERR-009, AZ-025).
+
+        Why an SDK error can arrive empty is in AZ-025's *"Why the message
+        clause is here"* paragraph; this docstring covers only what *this test*
+        does.
+
+        The inner exception is a *genuine* fired timeout rather than a
+        constructed one, because that is what makes ``args == ()``.
+
+        **Neither parameter is reachable through the aiohttp transport this
+        backend runs on**, and the test is a classifier test for that reason.
+        azure-core builds its own ``ClientTimeout(sock_connect=…, sock_read=…)``
+        per request and never sets ``total``, so its bare-``asyncio.TimeoutError``
+        arm has no source; and it builds ``ServiceRequestTimeoutError`` only from
+        aiohttp's ``ConnectionTimeoutError``, which always carries the host. The
+        sync transport does not supply it either — see the twin of this test.
+        Both are asserted here because the arm under test is typed on the base
+        classes and the classifier is shared by both twins, and because ERR-009
+        constrains the output whatever the input's provenance. The loopback file
+        drives what aiohttp *does* produce, and it is never blank.
+
+        ``asyncio.wait_for`` rather than ``asyncio.timeout``: the latter is 3.11+
+        and broke the 3.10 CI leg. ``asyncio.TimeoutError`` rather than the
+        builtin, because on 3.10 they are **not** the same class, and
+        ``asyncio.TimeoutError`` is the one azure-core's arms catch. That half is
+        not observable from the interpreter this file usually runs on, so here is
+        the derivation: ``asyncio.TimeoutError is TimeoutError`` gives ``False``
+        on 3.10.20 and ``True`` on 3.13.11, and ``wait_for`` raises
+        ``asyncio.exceptions.TimeoutError`` on the former, the builtin on the
+        latter. The blank shape is identical on both — ``args == ()``,
+        ``str() == ""`` — which is why the assertions below hold everywhere. The
+        3.10 CI leg is what keeps the claim honest.
+        """
+        try:
+            await asyncio.wait_for(asyncio.sleep(5), 0.001)
+        except asyncio.TimeoutError as timed_out:
+            inner: BaseException = timed_out
+        else:  # pragma: no cover -- the sleep is 5000x the bound
+            pytest.fail("the timeout did not fire")
+
+        assert inner.args == (), "premise: a fired timeout carries no arguments"
+        assert str(inner) == ""
+
+        mapped = classify_azure_error(wrapper(inner, error=inner), "delivery.csv", "async-azure")
+
+        assert isinstance(mapped, BackendUnavailable)
+        assert expected_side in str(mapped)
+        assert wrapper.__name__ in str(mapped)
+        assert not str(mapped).startswith(" | "), "the message must not be empty"
+
+    @pytest.mark.spec("ASYNC-079")
+    @pytest.mark.spec("AZ-025")
+    def test_a_transport_signal_with_detail_keeps_its_own_words(self) -> None:
+        """The fallback replaces silence, never the driver's own explanation."""
+        mapped = classify_azure_error(ServiceResponseError("Server disconnected"), "delivery.csv", "async-azure")
+
+        assert isinstance(mapped, BackendUnavailable)
+        assert "Server disconnected" in str(mapped)
+        assert "with no detail" not in str(mapped)
 
 
 # =============================================================================

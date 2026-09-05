@@ -534,6 +534,86 @@ class TestAzureErrorMapping:
         assert type(mapped) is RemoteStoreError
 
     @pytest.mark.spec("AZ-025")
+    @pytest.mark.parametrize(
+        ("wrapper_name", "expected_side"),
+        [
+            pytest.param(
+                "ServiceResponseTimeoutError",
+                "The Azure service did not complete its response",
+                id="response-timeout",
+            ),
+            pytest.param(
+                "ServiceRequestTimeoutError",
+                "The request never reached the Azure service",
+                id="request-timeout",
+            ),
+        ],
+    )
+    def test_a_detail_less_transport_signal_says_which_side_failed(self, wrapper_name: str, expected_side: str) -> None:
+        """A driver signal carrying no text still names a cause (ERR-009, AZ-025).
+
+        Why an SDK error can arrive empty is in AZ-025's *"Why the message
+        clause is here"* paragraph; this docstring covers only what *this test*
+        does.
+
+        **This backend runs on the requests transport**, which wraps
+        ``requests.exceptions.ConnectTimeout`` as ``ServiceRequestTimeoutError``
+        and ``ReadTimeout`` as ``ServiceResponseTimeoutError`` — the two classes
+        parametrised below.
+
+        **Asserted at the classifier, and deliberately not through the
+        transport**, because no shipped transport supplies the empty shape:
+        ``requests`` raises both of those only with the underlying ``urllib3``
+        error attached, and that error is always constructed with a formatted
+        message. The empty input is what a caller-supplied transport can deliver
+        and what a future SDK release could begin to; ERR-009 constrains what
+        this classifier does with it either way. That the classes stringify
+        empty when constructed argument-less is asserted directly below, so the
+        premise this test rests on is checked rather than assumed.
+        """
+        inner = TimeoutError()
+        assert str(inner) == "", "premise: an argument-less timeout carries no text"
+
+        wrapper = getattr(__import__("azure.core.exceptions", fromlist=[wrapper_name]), wrapper_name)
+        backend = _make_backend()
+        mapped = backend._classify(wrapper(inner, error=inner), "delivery.csv")
+
+        assert isinstance(mapped, BackendUnavailable)
+        assert expected_side in str(mapped)
+        assert wrapper_name in str(mapped)
+        assert not str(mapped).startswith(" | "), "the message must not be empty"
+
+    @pytest.mark.spec("AZ-025")
+    def test_an_unmapped_exception_still_reaches_the_caller_blank(self) -> None:
+        """The one classifier outcome AZ-025's guarantee deliberately excludes.
+
+        An exception matching no row falls through to the base `RemoteStoreError`,
+        which passes `str(exc)` through — so a bare `RuntimeError` renders with
+        nothing before the context. AZ-025 states that rendering; without this,
+        nothing asserted it, because the neighbouring `unknown-exception` param
+        passes `RuntimeError("unexpected")`, which carries text.
+
+        Pinned rather than left to the spec because it is the behaviour the
+        base-class remainder item will deliberately change: when that lands, this
+        fails, at exactly the moment someone should be re-reading the clause.
+        """
+        backend = _make_backend()
+        mapped = backend._classify(RuntimeError(), "delivery.csv")
+
+        assert type(mapped) is RemoteStoreError
+        assert str(mapped) == " | path='delivery.csv' | backend='azure'"
+
+    @pytest.mark.spec("AZ-025")
+    def test_a_transport_signal_with_detail_keeps_its_own_words(self) -> None:
+        """The fallback replaces silence, never the driver's own explanation."""
+        backend = _make_backend()
+        mapped = backend._classify(_azure_exc("ServiceResponseError", "Server disconnected"), "delivery.csv")
+
+        assert isinstance(mapped, BackendUnavailable)
+        assert "Server disconnected" in str(mapped)
+        assert "with no detail" not in str(mapped)
+
+    @pytest.mark.spec("AZ-025")
     @pytest.mark.spec("SEEK-006")
     def test_classify_unwraps_oserror_cause(self) -> None:
         """_classify unwraps OSError.__cause__ to match Azure exceptions from _AzureRangeReader."""

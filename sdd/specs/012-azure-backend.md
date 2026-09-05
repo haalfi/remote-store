@@ -213,7 +213,12 @@ AzureBackend(
 
 ### AZ-025: Structured Error Classification
 
-**Invariant:** Azure SDK exceptions are mapped to `remote_store` errors using structured attributes — the exception subtype (which the SDK derives from the HTTP status and `error_code`) and `status_code` — not string matching.
+**Invariant:** Azure SDK exceptions are mapped to `remote_store` errors by structured attributes — the exception subtype (which the SDK derives from the HTTP status and `error_code`) and `status_code` — never by message text.
+**Postconditions:** Every error the six table rows produce carries a non-empty message, per [ERR-009](005-error-model.md); the `ServiceRequestError` / `ServiceResponseError` row is the one the classifier must synthesise for, keeping the driver's own text whenever it has any. An exception matching no row falls through to the base `RemoteStoreError` and **can** render blank — deliberate scope, decided once for every backend sharing that construction rather than here.
+
+**The six rows reach non-emptiness three different ways**, and only one of them is this spec's to promise. The first four are composed here, from the path and — for the throttle and gateway row — the status, so they cannot be empty whatever the SDK passes in. The `ServiceRequestError` / `ServiceResponseError` row is composed here too, but only when it has to: the synthesised message names which side of the exchange failed and the SDK exception class, and fires only when the driver said nothing. The last row composes nothing at all — it passes `str(exc)` through, and is non-empty because `HttpResponseError.__init__` substitutes `Operation returned an invalid status '<reason>'` for a falsy message, which is a guarantee of the SDK's rather than of this spec's.
+
+**What the uncovered fall-through looks like.** An exception matching none of the rows — not an `HttpResponseError` and not one of the typed subclasses — reaches the base `RemoteStoreError`, and a bare `RuntimeError` renders as `" | path='delivery.csv' | backend='azure'"`. It is the same construction the base class carries on four other backends; whether to synthesise or to classify is answered once for all of them, and the backlog item holding that decision is named in the register entry that closed this clause's own defect.
 
 | Azure SDK exception / status | remote_store error |
 |---|---|
@@ -225,6 +230,14 @@ AzureBackend(
 | Any other `HttpResponseError` status (e.g. `412` precondition) | `RemoteStoreError` (base) |
 
 **Rationale:** The Azure SDK provides `HttpResponseError` with a `status_code` attribute and raises typed subclasses (`ResourceNotFoundError`, `ResourceExistsError`, `ClientAuthenticationError`) that it derives from the response status and `error_code`. Classification keys on those structured attributes — never on the error *message* — a significant improvement over the S3 backends' fragile string-matching pattern (`"404" in msg.lower()`). Throttling (`429`, and server-side `503` ServerBusy) and `5xx` map to `BackendUnavailable` so a caller backing off on it catches a throttle, matching the Graph backend (GR-033/GR-034). `412` (precondition failed) has no dedicated `remote_store` error type and is not reachable through the public API (no `if_match` parameter is exposed), so it stays the generic base error.
+
+**Why the message clause is here and not only in the error model:** `AzureError.__init__` sets `self.message = str(message)`, so a wrap of a driver exception that carries no text stringifies empty, and `BackendUnavailable(str(exc))` on that input renders as `" | path='delivery.csv' | backend='azure'"` — the promised type, saying nothing.
+
+**Neither shipped transport supplies such an input through this backend's own options.** The async (aiohttp) transport builds its own per-request `ClientTimeout(sock_connect=…, sock_read=…)` and never sets `total`, so what its `except asyncio.TimeoutError` arms catch is aiohttp's `ServerTimeoutError`, which carries text; and it builds `ServiceRequestTimeoutError` only from an aiohttp error naming the host it could not reach. The sync (requests) transport wraps `requests.exceptions.ConnectTimeout` and `ReadTimeout`, and `requests` raises both only with the underlying `urllib3` error attached, which is itself always constructed with a formatted message. That those classes stringify empty when constructed *without arguments* is a fact about the classes, not about what the transports supply — the distinction this spec elsewhere insists on, and the one both earlier revisions elided.
+
+**What can supply it:** a caller's own transport, a caller-supplied session whose middleware raises a bare timeout, and — in principle — a future SDK release. None of that is required for the postcondition to be worth stating, because ERR-009 constrains what this classifier produces rather than how often the input arrives; a mapping that answers correctly only for the inputs someone happened to enumerate is the weaker contract.
+
+No transport is quoted by line number and no count of arms is given: this is third-party shape that moves between releases, and an earlier revision that pinned line numbers had them shift under its own diff.
 
 **Note:** the classifier does not read `error_code` directly: the SDK has already consumed it to choose the exception subtype, and `status_code` distinguishes the remaining HTTP-shaped cases. The one place `error_code` is read explicitly is the inline `DirectoryIsNotEmpty` check in `delete()` (which has no distinct exception subtype). The earlier enumeration of per-status `error_code` strings has been dropped from this table as redundant.
 

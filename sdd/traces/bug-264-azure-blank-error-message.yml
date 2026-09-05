@@ -1,0 +1,314 @@
+id: BUG-264
+title: "A mapped Azure error can still reach the caller with an empty message"
+trigger: >-
+  BK-359 fixed the SFTP BackendUnavailable arms and left the same construction
+  standing on Azure: classify_azure_error returned BackendUnavailable(str(exc))
+  for the ServiceRequestError | ServiceResponseError arm, so an argument-less
+  driver exception rendered as " | path='delivery.csv' | backend='azure'" —
+  character for character the SFTP defect, reached from 13 call sites.
+source_items:
+  - BUG-264
+  - BK-359
+audience:
+  - user.api
+discovery_followups:
+  # Born in this PR's split: BUG-264's base-class half needed an ID of its own,
+  # and BUG-276 did not exist when this trace was first written.
+  - BUG-276
+surprising_ripples:
+  # Not reachable from the ripple-check's Error-type row, which names the error
+  # model, the backend mappings, their tests and the troubleshooting guide.
+  #
+  # CONTENT-RULES.md is here because of *when* it arrived: a rebase mid-review
+  # brought a new review-enforced authority governing sdd/ prose, and nothing in
+  # the ripple table routes from "the branch was rebased" to "an authority that
+  # governs your changed files may have changed under you". The table
+  # anticipates ripples from what the author edits, not from what upstream
+  # edits beneath them.
+  #
+  # tests/backends/sftp/_helpers.py is a ripple met by *reading*, not editing:
+  # it holds the accept-loop pattern this work's loopback server should have
+  # used from the start, and no row routes from "this test opens a socket" to
+  # "the repo already solved that".
+  - sdd/CONTENT-RULES.md
+  - tests/backends/sftp/_helpers.py
+expected_ripples:
+  # sdd/backlogid.json is deliberately absent: the split retired BUG-264 into
+  # BACKLOG-DONE and minted BUG-276, and `hatch run gen-backlogid` left the file
+  # byte-identical because it records the DONE-max per prefix (BUG=268) and 264
+  # is below it. Listing it because the ripple-check row names it would report a
+  # touch that `git diff` refutes.
+  - CHANGELOG.md
+  - sdd/BACKLOG.md
+  - sdd/BACKLOG-DONE.md
+# Derived from `git log --format='%s' origin/master..HEAD --reverse`, naming the
+# commits by subject rather than by SHA — a rebase rewrites every hash, and
+# BK-359's trace went stale five times for exactly that reason:
+#   Say which side of the Azure exchange failed when the SDK says nothing
+#                                                   -> does not count (implements)
+#   Fix the 3.10 CI break, and the four claims round 1 refuted
+#                                                   -> counts (round 1, 7 findings:
+#            6 posted on the PR, 1 from CI going red on the 3.10 leg)
+#   Give AZ-025's postcondition the right reason, and BUG-276 its real reach
+#                                                   -> counts (round 2, a scoped
+#            measuring pass: 2 posted findings, plus 2 more its sibling sweep
+#            found — a keyword-guard count the item contradicted two lines later,
+#            and an unmeasured claim about Linux wording, withdrawn)
+#   Stop restating one SDK derivation in four places, and fix what they
+#   disagreed about
+#                                                   -> counts (round 3, a
+#            three-member panel — unprimed, whole-file, measuring — returning 20
+#            raw findings that merged to 13. The volume tripped the divergence
+#            check: two were defects the round-2 fix pass had itself created, so
+#            this round re-planned the prose rather than patching each sentence)
+#   Cut the narrative that kept going stale, and fix what it had made false
+#                                                   -> counts (round 4, same
+#            three-member composition, 21 raw findings merging to 14 — all prose,
+#            all in artifacts the round-3 pass had rewritten. The user's call was
+#            to cut the explanatory narrative rather than keep patching it, so
+#            BUG-276 and the register entry lost their meta-commentary)
+#   Fix the paragraph every other artifact defers to -> counts (round 5, whose
+#            panel lost its measuring member to a rebase and was re-run. The
+#            defect: the previous pass corrected four pointers and never touched
+#            the paragraph they all point at)
+#   Stop asserting where the prose lives             -> counts (round 6, 13 raw
+#            findings merging to 10. Its measuring member drove both transports
+#            against four fault shapes each, tried to break the reachability
+#            claim and could not, and refuted one of its own hypotheses en route)
+#   Make the loopback server stop on POSIX, and sweep the one-home claim properly
+#                                                    -> counts (round 7, the
+#            closing panel: 17 raw findings merging to 10 fixed and 1 refuted.
+#            The first round since the opener to find real code defects rather
+#            than prose)
+#   Keep ASYNC-079's See-also list contiguous        -> does not count (a nit the
+#            round declined to file; fixed because it was this PR's own sentence)
+#   Lead AZ-025 with the claim the section actually establishes
+#                                                    -> counts (a single-lens
+#            pass on CONTENT-RULES Rule 7, which landed on master mid-review and
+#            is review-enforced with no gate. The author's own check of the same
+#            rule had passed the section)
+# Value is 8. Re-derived from the command above rather than incremented — an
+# earlier revision that incremented it was one commit behind, because the
+# round-5 fix was the first that did not touch this file.
+review_rounds: 8
+phases:
+  - id: orient
+    name: Orient
+    steps:
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-264"
+        read_type: gate
+        extract: >-
+          The 13 call sites and the Disposition naming SFTP's _unavailable as
+          the shape to copy — those held. Two of the item's figures did not:
+          "four raise sites" is three (the fourth arm catches an aiohttp error
+          that always carries the host), and its reachability claim was wrong,
+          though not in the way I first thought.
+          Retrospective, in three steps because it took three. The item said
+          only the async timeout was an end-to-end reproduction. I refuted that
+          and asserted the sync side was the reachable one, on the strength of
+          str(ConnectTimeout()) being '' — a fact about the class, not about
+          what requests constructs. A later round refuted *that*, and driving
+          both transports against four fault shapes each established the answer:
+          neither supplies the blank input through the backend's own options.
+          The through-line is mine rather than the document's — I re-derived the
+          call-site counts, which were cheap to check, and took the transport
+          claims on trust twice over
+        outcome: misleading
+      - file: sdd/BACKLOG.md
+        section: "1. Failures are predictable"
+        read_type: gate
+        extract: >-
+          The Promise's third clause — the failure a caller catches says which
+          failure it was — and the Closes-when sentence naming BUG-264, which
+          has to move to the remainder item when the Azure half closes
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "How this file works (Completing work, Item authority)"
+        read_type: gate
+        extract: >-
+          The partially-done split: done half to BACKLOG-DONE under its original
+          ID, new ID here for the remainder, both linked — and that an item's
+          prescription is advisory and presumed stale, which is what licensed
+          re-measuring the reproduction rather than repeating it
+        outcome: ok
+      - file: sdd/specs/005-error-model.md
+        section: "ERR-009"
+        read_type: reference
+        extract: >-
+          "str() and repr() produce meaningful messages" — the general clause
+          this defect breaches. Needed no amendment; the clause was already right
+          and the Azure mapping was wrong
+        outcome: ok
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Pre-work index"
+        read_type: gate
+        extract: >-
+          Triggered rows: Error type (error model, every backend's mapping and
+          tests, troubleshooting guide), Bug fix, Backlog item touched, CHANGELOG
+          entry, New test file, Spec section
+        outcome: ok
+  - id: reproduce
+    name: Reproduce
+    steps:
+      - file: src/remote_store/backends/_azure_common.py
+        section: "classify_azure_error"
+        read_type: gate
+        extract: >-
+          Drove the reproduction rather than reading it: a genuine TimeoutError
+          from asyncio.timeout(0.001) around a sleep carries args=() and
+          str()=='', ServiceResponseTimeoutError(err, error=err) and
+          ServiceRequestTimeoutError(err, error=err) both give message='', and
+          the arm returns BackendUnavailable rendering
+          " | path='delivery.csv' | backend='azure'"
+        outcome: ok
+      - file: sdd/BACKLOG.md
+        section: "(item) BUG-264 — end-to-end reproduction claim"
+        read_type: verify
+        extract: >-
+          The item's "only the async timeout is an end-to-end reproduction" did
+          not hold. azure-core's aiohttp transport builds its own
+          ClientTimeout(sock_connect=, sock_read=) per request, overriding a
+          session total, so aiohttp answers ServerTimeoutError with text.
+          Driving AsyncAzureBackend.check_health() at a loopback socket returned
+          a non-empty message for every shape the backend's own options can
+          produce. The blank shape is a bare TimeoutError, which aiohttp raises
+          for ClientTimeout(total=) — reachable for a caller supplying their own
+          transport, not through the backend. Item body corrected in the same
+          commit
+        outcome: misleading
+      - file: src/remote_store/_errors.py
+        section: "_classify_by_message"
+        read_type: reference
+        extract: >-
+          Enumerated the whole class rather than trusting the item's scope:
+          rg -n 'BackendUnavailable\(str\(exc\)' src/ returned five sites at the
+          time (four after this fix replaced Azure's with _unavailable). The
+          broader rg -n 'BackendUnavailable\(' src/ is a different query and
+          returns about fifty; an earlier revision of this step named that one
+          for this figure, which is the derivation-does-not-reproduce shape the
+          work kept finding elsewhere.
+          Two are keyword-guarded (endpoint/connect/timeout/dns/
+          name or service), which "" cannot satisfy, and the two boto arms are
+          fed by classes that always format — str(ClientError({}, "GetObject"))
+          and str(BotoCoreError()) both run non-empty. So this arm was the last
+          reachable one
+        outcome: ok
+      - file: src/remote_store/backends/_sftp.py
+        section: "_unavailable"
+        read_type: reference
+        extract: >-
+          The rule to copy: synthesise only when str(exc) is empty, so a driver
+          that explained itself reaches the caller intact. Not copied: the
+          WARNING record, which would put a per-poll line under ping() and pull
+          two guides into a bug fix
+        outcome: ok
+  - id: tests
+    name: Failing tests first
+    steps:
+      - file: sdd/000-process.md
+        section: "Rule 6 (bug-fix pipeline)"
+        read_type: gate
+        extract: "BACKLOG → CHANGELOG → failing test → fix, in one commit"
+        outcome: ok
+      - file: tests/backends/azure/aio/test_config.py
+        section: "TestAsyncAzureErrorMapping"
+        read_type: reference
+        extract: >-
+          The existing home of classify_azure_error unit tests. Added the blank
+          shape and its do-not-overwrite counterpart; observed failing first
+        outcome: ok
+      - file: tests/backends/azure/test_config.py
+        section: "TestAzureErrorMapping"
+        read_type: reference
+        extract: >-
+          The sync twin's home, asserted through AzureBackend._classify. Neither
+          transport supplies the blank input through the backend's own options,
+          so both twins pin the guarantee at the classifier. Later rounds added
+          the case AZ-025 pins and nothing asserted: a bare RuntimeError through
+          the unmapped fall-through, which BUG-276 will deliberately turn red
+        outcome: ok
+      - file: tests/backends/azure/aio/test_error_detail.py
+        section: "(new file) loopback controls, log control, fixture contract"
+        read_type: reference
+        extract: >-
+          The PR's largest new artifact, and the one three review rounds were
+          spent getting right. Loopback sockets drive check_health() against a
+          dead port, an accept-then-close and a stall, asserting each keeps the
+          driver's own words — the controls that stop the fallback overwriting a
+          real explanation, which no classifier unit test can catch. A caplog
+          control pins the deliberate no-log decision, and a fixture-contract
+          test pins that every socket is closed.
+          Retrospective, and mine rather than the document's: the accept loop
+          first relied on close() to interrupt a blocked accept(), which works
+          on the Windows box this was written on and not on POSIX, so CI's Linux
+          leg would have paid a five-second join timeout per server. The repo
+          already had the settimeout-plus-stop-event pattern in
+          tests/backends/sftp/_helpers.py; a review round found it and named
+          that precedent
+        outcome: ok
+  - id: implement
+    name: Implement
+    steps:
+      - file: src/remote_store/backends/_azure_common.py
+        section: "_unavailable, classify_azure_error"
+        read_type: reference
+        extract: >-
+          One module-level helper for the arm, shared by both twins because the
+          classifier already is. The two branches are the two base classes the
+          arm tests, and the exception class name is the payload a reader greps
+        outcome: ok
+  - id: docs
+    name: Specs
+    steps:
+      - file: sdd/specs/012-azure-backend.md
+        section: "AZ-025"
+        read_type: reference
+        extract: >-
+          The mapping table's ServiceRequestError/ServiceResponseError row gains
+          the message guarantee as a Postcondition, rather than a new spec ID:
+          it is the same invariant acquiring a clause
+        outcome: ok
+      - file: sdd/specs/029-async-store-backend-api.md
+        section: "ASYNC-079"
+        read_type: verify
+        extract: >-
+          Its See-also cited "AZ-013 through AZ-016", which are is_file(),
+          atomic write and the two delete_folder clauses — not the error
+          mapping. A reader arriving from the async twin landed on the wrong
+          sections and would have missed the clause this PR adds. Corrected
+        outcome: misleading
+  - id: verify
+    name: Verify
+    steps:
+      - file: sdd/CLAUDE-REFERENCE.md
+        section: "Ripple-check / Detailed checklist"
+        read_type: verify
+        extract: "Error type, Bug fix, Backlog item touched, CHANGELOG entry, New test file rows"
+        outcome: ok
+      - file: docs-src/guides/troubleshooting.md
+        section: "Azure: HNS vs flat namespace"
+        read_type: verify
+        extract: >-
+          Checked rather than changed: the guide's only Azure section is about
+          HNS mode, and no published page shows an Azure blank-message
+          traceback, so the Error-type row's troubleshooting ripple is met by
+          reading it
+        outcome: ok
+      - file: sdd/CONTENT-RULES.md
+        section: "Rule 7 (Kernsatz)"
+        read_type: gate
+        extract: >-
+          Arrived on master mid-review, in the rebase that brought ID-256, and
+          governs sdd/ prose — which is most of what this work wrote. It is
+          review-enforced with no gate, so a reviewer applying it is the whole
+          mechanism.
+          Retrospective, and mine rather than the document's: my own reading of
+          it passed AZ-025, because I checked whether the opening was three
+          sentences and not whether those sentences claimed what the section
+          establishes. A dedicated pass found the section correcting its own
+          Kernsatz twice, which is the rule's named failure. The rule's scope
+          test also cleared BACKLOG § 1 on a derivation I had not run — its
+          Promise is byte-identical to master, so only its running status
+          changed
+        outcome: ok

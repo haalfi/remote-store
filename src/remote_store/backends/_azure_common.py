@@ -144,6 +144,51 @@ def azure_path(path: str) -> str:
     return re.sub(r"/+", "/", path).lstrip("/")
 
 
+def _unavailable(exc: Exception, path: str, backend_name: str) -> BackendUnavailable:
+    """Build the ``BackendUnavailable`` for a transport-level Azure failure.
+
+    Every ``BackendUnavailable`` the ``ServiceRequestError`` /
+    ``ServiceResponseError`` arm returns is built here, so one place decides what
+    a caller reads. The other ``BackendUnavailable`` arms compose their own
+    message and never reach this.
+
+    **The rule.** Synthesise only when ``str(exc)`` is empty. A driver that
+    explained itself reaches the caller intact — the failure being replaced is
+    silence, not noise. The synthesised text names which side of the exchange
+    failed, which is exactly what the two base classes this arm tests
+    distinguish, plus the SDK exception class, which is the part a reader
+    searches for.
+
+    **Why an SDK error can arrive empty at all** is a fact about the SDK's
+    transports rather than about this function, and it moves between SDK
+    releases, so it is not repeated here. The error-mapping spec's *"Why the
+    message clause is here"* paragraph carries it, and the one after that one
+    carries the per-transport detail. (That section also has a paragraph
+    labelled ``Rationale:`` — a different one, covering structured
+    classification.)
+
+    **No log record**, where the SFTP helper of the same name emits one. A
+    scoped decision about this backend, not a claim that the two should differ:
+    the reasons available for it — the sync backend's ``check_health``
+    classifies through here, so a record lands under every liveness poll — apply
+    to SFTP as well, and SFTP made the opposite call and published the
+    consequence in its migration notes. Recorded so a reader comparing the
+    helpers sees a decision rather than an omission. Making them agree is a
+    question about the logging surface and no item tracks it yet. The control
+    that keeps this honest is in the async error-detail tests, which assert no
+    record is emitted.
+    """
+    message = str(exc)
+    if not message:
+        side = (
+            "The request never reached the Azure service"
+            if isinstance(exc, ServiceRequestError)
+            else "The Azure service did not complete its response"
+        )
+        message = f"{side} ({type(exc).__name__} with no detail)"
+    return BackendUnavailable(message, path=path, backend=backend_name)
+
+
 def classify_azure_error(exc: Exception, path: str, backend_name: str) -> RemoteStoreError:
     """Classify an Azure SDK exception into a remote_store error type.
 
@@ -170,7 +215,7 @@ def classify_azure_error(exc: Exception, path: str, backend_name: str) -> Remote
     if isinstance(exc, ClientAuthenticationError):
         return PermissionDenied(f"Authentication failed: {path}", path=path, backend=backend_name)
     if isinstance(exc, ServiceRequestError | ServiceResponseError):
-        return BackendUnavailable(str(exc), path=path, backend=backend_name)
+        return _unavailable(exc, path, backend_name)
     if isinstance(exc, HttpResponseError):
         status = getattr(exc, "status_code", None)
         if status == 404:
@@ -196,6 +241,18 @@ def classify_azure_error(exc: Exception, path: str, backend_name: str) -> Remote
         # type and is not reachable through the public API; surface it as the
         # generic base error rather than guessing a more specific type.
         return RemoteStoreError(str(exc), path=path, backend=backend_name)
+    # Only *this* base-class arm can carry an empty message; the one above it
+    # cannot, because it sits inside the HttpResponseError isinstance and that
+    # class substitutes for a falsy message. AZ-025 states both halves and says
+    # why; this arm takes any exception at all, including a bare RuntimeError.
+    # It is also the one outcome of this function AZ-025's postcondition does not
+    # cover, which that clause says rather than leaving it to be inferred here.
+    # Left alone deliberately: whether a blank RemoteStoreError deserves the same
+    # synthesised fallback or should be classified instead is an open decision
+    # tracked as BUG-276. The same construction stands in several other modules —
+    #     rg -n 'RemoteStoreError\(str\(exc\)' src/
+    # enumerates them, and that item records which of them are blank-reachable,
+    # because the guard above each is what decides it and not the call.
     return RemoteStoreError(str(exc), path=path, backend=backend_name)
 
 
