@@ -258,11 +258,12 @@ connect is rejected locally — `PermissionDenied` blaming the caller's key on t
 so it is the promised-type defect again; the qualifier is load-bearing, because
 the reproducible half is the one that answers the base class.
 **The what-it-leaves-behind clause is met and has left the list**, closed by
-BUG-272 with BUG-270: the one place in the library where a reported failure
-could destroy the caller's file was SFTP's rename fallback, which removed the
-destination before renaming onto it. It now displaces and restores, so the
-failure costs the caller nothing on a live connection and leaves both copies
-under known names when the connection is what failed. The clause was added to
+BUG-272 with BUG-270 and BUG-277: the one place in the library where a reported
+failure could destroy the caller's file was SFTP's rename fallback, which removed
+the destination before renaming onto it. It now displaces and restores, so the
+file the caller had is either back at its path or findable beside it under a
+`.~bak.` name — which is the guarantee, since putting it back is best-effort and
+a dead channel or a refusing server can stop it. The clause was added to
 this section by BK-360's measurements and closed by the two items those
 measurements filed, which is the shortest a clause has been open here.
 **One cross-section dependency remains**, per
@@ -313,27 +314,6 @@ backend. Graph is on both sides of this paragraph and that is not a bookkeeping
 error: it meets the rows it was brought to and misses the bound that arrived
 after, which is what a clause growing a new sentence does to a backend that was
 compliant the day before.
-
-- [ ] **BUG-277 — An `overwrite=True` atomic write can raise `AlreadyExists` when the SFTP fallback cannot clear the destination**
-  spec: AW-003, SFTP-015 · effort: S · audience: user.api
-  `_displace` returns `None` when the server refuses to rename the destination
-  aside for a non-dead, non-`ENOENT` reason (`EPERM`, say). The destination is
-  then still occupied, and on a server that also follows the SFTP v3 rule that
-  `rename` will not replace an occupied path — the same server class the fallback
-  exists for — the promote fails `EEXIST` and `_map_exception` turns it into
-  `AlreadyExists`. That is the error AW-003 reserves for `overwrite=False`, so a
-  caller who passed `overwrite=True` is told their file exists, which they knew.
-  **Measured** against a staged server refusing both operations: the destination
-  is intact and nothing is littered, so no data is at risk — the defect is the
-  error type, and the message with it.
-  **Pre-existing, not introduced by BUG-272**: the `remove(dst)` that displacing
-  replaced reached the same `EEXIST` when it was refused. What BUG-272 added is
-  the docstring premise that the promote "fails on its own terms", which is what
-  made the wrong type visible as a claim rather than as an unstated behaviour.
-  Both routes need the same fix: classify a promote failure against a
-  destination the fallback could not clear, rather than mapping its errno.
-  **Found by BUG-272's review round 3, by a measuring pass**, which staged the
-  two refusals together rather than reading the arm.
 
 - [ ] **BUG-276 — A mapped error still reaches the caller with an empty message through five base-class arms**
   spec: ERR-009, AZ-025 · effort: M · audience: user.api

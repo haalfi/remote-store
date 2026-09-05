@@ -4,11 +4,13 @@
 
 `open_atomic()` on `Backend` and `Store` returns a context manager that yields
 a writable file object. Data is written to a temporary location; on successful
-exit the file is atomically promoted to its final path. A failure the backend can
-still act on cleans the temporary artifact up and leaves the target path
-unmodified; a failure that takes the connection with it can do neither, which
-SAW-004 and SAW-005 scope and [007-atomic-writes.md](007-atomic-writes.md) AW-004
-owns cross-backend. No reader ever sees a partial file either way.
+exit the file is atomically promoted to its final path. On failure the temporary
+artifact is cleaned up and the target path is left unmodified — **where the
+backend can carry that out**, which is what SAW-004 and SAW-005 scope and
+[007-atomic-writes.md](007-atomic-writes.md) AW-004 owns cross-backend. A
+connection that dies mid-promote is the usual case it cannot, and on the SFTP
+fallback so is a live server that refuses a step of the undo. No reader ever sees
+a partial file either way.
 
 This eliminates the memory-buffering requirement of `write_atomic()` for
 multi-GB workloads (Parquet exports, log rotation, report generation).

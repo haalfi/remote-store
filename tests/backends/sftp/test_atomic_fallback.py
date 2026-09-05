@@ -24,7 +24,7 @@ import pytest
 # Guard: skip entire module if dependencies are missing
 pytest.importorskip("paramiko", reason="paramiko not installed")
 
-from remote_store._errors import PermissionDenied, RemoteStoreError  # noqa: E402
+from remote_store._errors import AlreadyExists, PermissionDenied, RemoteStoreError  # noqa: E402
 from tests.backends.fixtures._state import INFRA  # noqa: E402
 
 if TYPE_CHECKING:
@@ -145,6 +145,27 @@ def _deny_removing(backend: Any, target: str, code: int) -> None:
         return original(path, *args, **kwargs)
 
     client.remove = denied
+
+
+def _deny_displacing(backend: Any, target: str, code: int) -> None:
+    """Fail the rename that moves *target* aside, leaving every other rename alone.
+
+    The branch no other staging in this file reaches: ``_deny_promote_onto``
+    lets the displace through by design, and ``_strict_rename`` only refuses an
+    *occupied* destination, which a fresh ``.~bak.`` name never is. Apply after
+    ``_strict_rename`` so this wrapper sits outside it.
+    """
+    import paramiko
+
+    client = backend.unwrap(paramiko.SFTPClient)
+    original = client.rename
+
+    def denied(src: str, dst: str, *args: Any, **kwargs: Any) -> Any:
+        if src.rsplit("/", 1)[-1] == target and dst.rsplit("/", 1)[-1].startswith(".~bak."):
+            raise OSError(code, "staged displace failure")
+        return original(src, dst, *args, **kwargs)
+
+    client.rename = denied
 
 
 def _litter(backend: Any) -> list[str]:
@@ -293,8 +314,66 @@ def test_a_failed_copy_rung_still_gives_the_destination_back(sftp_backend: SFTPB
     assert _litter(backend) == []
 
 
+@pytest.mark.spec("AW-003")
+@pytest.mark.spec("SFTP-018")
+@pytest.mark.parametrize("op", ["write_atomic", "open_atomic", "move"])
+def test_a_refused_displace_reports_rather_than_writing_the_destination(sftp_backend: SFTPBackend, op: str) -> None:
+    """A destination the fallback could not clear is not a destination it may write.
+
+    ``_displace`` used to answer "the server refused to move it" the same way it
+    answers "there was nothing there" — with ``None``. For ``write_atomic`` and
+    ``open_atomic`` that only cost the caller the wrong error: the promote fails
+    against the file still sitting there, and a v3-strict server calls that
+    ``EEXIST``, so an ``overwrite=True`` call was told ``AlreadyExists``.
+
+    For ``move`` it cost the file. Its fallback answers a failed promote by
+    copying, and the copy opens the destination ``"w"`` — so the caller's file was
+    truncated with no backup taken, on the server class the fallback exists for.
+    That is the state this whole change exists to remove, reached through the one
+    arm that reported nothing to restore.
+
+    Both are now the refusal itself, raised where it happened.
+    """
+    backend: Any = sftp_backend
+    tag = uuid.uuid4().hex[:8]
+    src, dst = f"src_{tag}.bin", f"dst_{tag}.bin"
+    old, new = b"OLD" * 100, b"NEW" * 100
+
+    if op == "move":
+        backend.write(src, new)
+    backend.write(dst, old)
+
+    _break_posix_rename(backend)
+    _strict_rename(backend)
+    _deny_displacing(backend, dst, errno.EPERM)
+
+    def _run() -> None:
+        if op == "move":
+            backend.move(src, dst, overwrite=True)
+        elif op == "open_atomic":
+            with backend.open_atomic(dst, overwrite=True) as handle:
+                handle.write(new)
+        else:
+            backend.write_atomic(dst, new, overwrite=True)
+
+    with pytest.raises(RemoteStoreError) as caught:
+        _run()
+
+    assert not isinstance(caught.value, AlreadyExists), (
+        "the caller passed overwrite=True, so being told the file already exists answers a "
+        "question they did not ask — the displace refusal is the reason and belongs in the error"
+    )
+    assert backend.read_bytes(dst) == old, (
+        "a destination the fallback could not clear must be left as it was: move's copy rung "
+        "opens it for writing, so reporting nothing to restore is what truncated it"
+    )
+    assert _litter(backend) == []
+    if op == "move":
+        assert backend.read_bytes(src) == new, "a failed move leaves its source in place"
+
+
 @pytest.mark.spec("AW-004")
-@pytest.mark.spec("SFTP-015")
+@pytest.mark.spec("SFTP-018")
 def test_a_restore_the_server_refuses_leaves_the_old_content_findable(sftp_backend: SFTPBackend) -> None:
     """The restore is best-effort, and this is what "best-effort" costs.
 

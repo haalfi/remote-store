@@ -1702,7 +1702,7 @@ def test_a_stalled_promote_in_the_fallback_leaves_the_old_content_in_a_backup(
     if op == "move":
         assert observer.read_bytes(src) == new, "move's source survives, so the payload is not lost either"
     else:
-        orphans = [entry for entry in observer.list_files("") if f".~tmp.{dst}." in str(entry)]
+        orphans = [entry.name for entry in observer.list_files("") if entry.name.startswith(f".~tmp.{dst}.")]
         assert orphans, "the payload survives in the orphan temp, on the same dead-channel reasoning"
 
 

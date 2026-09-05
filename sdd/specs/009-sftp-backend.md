@@ -240,9 +240,11 @@ the `_rename_fallback` path — entered when `posix_rename` raises an `OSError`
 that `_is_connection_dead` does not recognise and `_raise_if_dir` has not
 rejected the target, so not only on servers lacking the extension — cannot rename
 onto an occupied path, so it displaces the destination to
-`.~bak.<name>.<uuid8>` first and renames it back if the promote fails. A stall in
-that window is the case the restore cannot run over: the destination path is
-left empty with its old content in the backup and the payload in the temp.
+`.~bak.<name>.<uuid8>` first and renames it back if the promote fails. Renaming
+it back is best-effort, so a stall in that window — where it is not attempted at
+all — leaves the destination path empty with its old content in the backup and
+the payload in the temp; a live server that refuses a step of the restore reaches
+the same residue without any drop.
 So "atomic" here guarantees no reader sees a half-written file; it guarantees
 neither that a reported failure means the write did not happen, nor that the
 destination path is still occupied — only that what occupied it is still
@@ -302,9 +304,13 @@ a reported failure may mean the move was performed, and over a dropped
 connection the fallback path can leave the destination path empty with its old
 content displaced to `.~bak.<name>.<uuid8>`. On a live connection a failed
 `rename` is not reported at all — the copy rung answers it, which is the third
-rung of this invariant — and a failure of *that* rung gives the destination back:
-it opens the destination before it can fail, so the restore clears the path
-before renaming the backup onto it rather than assuming it free.
+rung of this invariant — and a failure of *that* rung has a destination to give
+back: the copy opens it before it can fail, so the restore clears the path before
+renaming the backup onto it rather than assuming it free. Whether the caller gets
+it back is the restore's own best-effort question, above. A destination the
+fallback could not clear at all is never written: the displace propagates its
+refusal instead of reporting nothing to restore, which is what kept the copy rung
+from truncating a file it had no backup for.
 
 ### SFTP-019: Copy Via Read + Write
 
@@ -883,8 +889,13 @@ re-entries differently:
    **Each saves one bound, not the chain's length** — the displace re-raises a
    dead-connection failure, so the `rename` behind it and the copy fallback's two
    file opens are unreachable anyway; the displace is the round-trip that would
-   otherwise be paid. Before that re-raise existed the chains were reachable and
-   these guards were worth three and four. `write_atomic` and
+   otherwise be paid. **The chains were never worth their length**, and the
+   figures are measured on both sides rather than inferred from the code shape:
+   removing each guard costs 1 further round-trip at this head, and 2 against the
+   base implementations (`remove` + `rename`) — never the 3 and 4 an earlier
+   revision of this clause and its two source comments claimed, because
+   `_raise_if_dir`'s cause-skip predates this change and `_move_fallback`'s own
+   inner guard already stopped the copy rung. `write_atomic` and
    `open_atomic` skip their temp cleanup, and `_restore` skips putting a
    displaced destination back — on the temp cleanup's own predicate, the one
    that adds `SSHException` to this list's first clause — which is why that
@@ -1113,7 +1124,7 @@ never affected and is omitted.
 | `move` | **untouched** · **absent** · **the move completed** (source gone) · **the destination path empty, its old content in a `.~bak.<name>.<uuid8>`, the source still there** — fallback path only |
 | `write_atomic` / `open_atomic` | **untouched** or **absent**, usually with an orphan temp · **the write completed**, no temp · **the destination path empty, its old content in a `.~bak.<name>.<uuid8>` and the payload in the temp** — fallback path only |
 
-Six consequences follow, and each is why the closure and its illustrations are
+Seven consequences follow, and each is why the closure and its illustrations are
 here rather than left to a reader's inference.
 
 **Reported failure does not mean unchanged, and does not mean incomplete.**
@@ -1133,9 +1144,9 @@ the body — not against a lost promote reply, and not on the fallback path.
 `_move_fallback`: those displace the destination and then rename onto it, so a
 silence beginning at the promote `rename` leaves the destination path empty. What
 is at stake there is which copies survive, not whether the path is occupied: the
-displace is a rename, and the restore that undoes it is the one recovery a dead
-channel blocks, so this state keeps the old content under
-`.~bak.<name>.<uuid8>` beside the target. Before BUG-272 the displace was a
+displace is a rename, and the restore that undoes it is best-effort — not
+attempted over a dead channel, refusable by a live server — so this state keeps
+the old content under `.~bak.<name>.<uuid8>` beside the target. Before BUG-272 the displace was a
 `remove` and this residue had no old content in it at all — on a *non-dead*
 failure the same window also ran the temp cleanup, and neither copy remained.
 **It is not confined to servers lacking `posix-rename@openssh.com`.**

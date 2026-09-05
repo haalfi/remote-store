@@ -3683,12 +3683,14 @@ class TestSFTPLowSeverityCorrectnessEdges:
         the branch: without the guard, ``_raise_if_dir``'s stat and then the
         fallback's displace would re-enter the dead channel and re-pay the bound.
 
-        The spies below still assert all three round-trips, and that is
-        deliberate rather than stale: two of them are now unreachable for
+        **What it pins is this guard, and only this one.** The spies below still
+        assert all three round-trips, but two of them are unreachable for
         *further* reasons — ``_raise_if_dir`` declines to probe when the cause it
-        is handed is already a drop, and the displace re-raises before the
-        promote ``rename`` — so what this test pins is that no layer of that
-        defence has been removed, not that this guard is the only one.
+        is handed is already a drop, and the displace re-raises before the promote
+        ``rename`` — so removing either of those layers leaves this test green.
+        Measured. The displace re-raise is held by
+        ``test_the_fallback_pays_one_bound_not_two``; the cause-skip is held by
+        nothing in this tree, which is worth knowing before trusting it.
 
         Asserts on the round-trips rather than on elapsed time: these are mocks,
         so there is no real stall to measure, and the count is the thing the
@@ -3717,9 +3719,11 @@ class TestSFTPLowSeverityCorrectnessEdges:
 
         The twin above covers ``write_atomic`` / ``open_atomic``, which promote
         through ``_promote``. ``move`` does its own ``posix_rename`` and had no
-        such guard, so a timed-out rename fell into a fallback chain that
-        re-enters the dead channel four more times: the displace, a ``rename``,
-        then the copy fallback's two file opens.
+        such guard, so a timed-out rename fell into a fallback chain and paid the
+        bound again. Measured at this head: entering ``_move_fallback`` on a dead
+        channel costs **one** further round-trip, its displace, because the
+        displace re-raises and the copy rung sits behind the inner guard the test
+        below covers.
 
         The fallback used to carry ``# pragma: no cover -- fallback for servers
         without posix_rename``, which is what hid this: the pragma described the

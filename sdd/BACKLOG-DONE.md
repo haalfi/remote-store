@@ -220,6 +220,31 @@ if evidence changes; these are retired.
 
 ## Unreleased
 
+- [x] **BUG-277 — An `overwrite=True` atomic write can raise `AlreadyExists` when the SFTP fallback cannot clear the destination**
+  spec: AW-003, SFTP-018 · effort: S · audience: user.api
+  **Filed and closed inside BUG-272's own review**, which is why it has no
+  standalone history: round 3's measuring pass found the wrong error type and it
+  was filed as out-of-scope; round 4's unprimed pass found that the same arm
+  destroys a `move` destination, and the two share one fix of two lines.
+  **The arm.** `_displace` answered "the server refused to move the destination
+  aside" with the same `None` it uses for "there was nothing there". The
+  destination is then still occupied, and the caller is told nothing needs
+  restoring — so `_rename_fallback`'s promote fails against the file still
+  sitting there (`EEXIST` on a v3-strict server, surfacing as `AlreadyExists`
+  from a call that passed `overwrite=True`), and `_move_fallback` runs its copy
+  rung, which opens the destination `"w"` and **truncates the caller's file with
+  no backup taken** — the very state BUG-272 exists to remove, reached through
+  the one arm that reported nothing to restore.
+  **Fixed** by returning `None` only for `ENOENT` and propagating every other
+  refusal, so the caller gets the reason where it happened. Measured in both
+  directions by `test_a_refused_displace_reports_rather_than_writing_the_destination`:
+  against the pre-fix arm the two atomic ops raise `AlreadyExists` and `move`
+  does not raise **at all**, having completed over the truncated destination.
+  **The `move` half was not pre-existing in the same shape.** Before BUG-272 the
+  fallback opened with a suppressed `remove`, which on the same server reached
+  the same truncation — so the data loss is old. What was new for one commit was
+  a spec clause (AW-003) asserting it could not happen.
+
 - [x] **BUG-272 — A non-dead rename failure in the atomic fallback removes the destination *and* the temp, losing both copies**
   spec: SFTP-014, AW-003 · effort: M · audience: user.api
   **What shipped:** the fallback no longer removes the destination. `_displace`
@@ -674,16 +699,18 @@ if evidence changes; these are retired.
   a blind retry of a `move` that landed meets `NotFound` on a source already
   gone. SFTP-014 turned out never to have stated the untouched-destination half a
   reader decides on, so it now states it *and* bounds it. And the
-  `_rename_fallback` / `_move_fallback` remove-then-rename window destroys the
+  `_rename_fallback` / `_move_fallback` remove-then-rename window destroyed the
   destination outright — reachable on any server, not only those lacking the
-  extension, whenever `posix_rename` fails for a reason `_is_connection_dead`
-  does not recognise and the operation's own directory guard has not already
+  extension, whenever `posix_rename` failed for a reason `_is_connection_dead`
+  did not recognise and the operation's own directory guard had not already
   rejected the target. Review corrected that scope twice: first from "fallback
   servers only", then again when three named example triggers turned out to
   include two unreachable ones, after which the examples were deleted rather
   than corrected a third time. Documented here and tracked for fixing as
   **BUG-270**, along with the second `io_timeout` bound `move`'s fallback costs
-  and, as **BUG-272**, a non-dead failure that removes the temp as well.
+  and, as **BUG-272**, a non-dead failure that removes the temp as well. **Both
+  are closed** — the window displaces and restores rather than removing; the
+  past tense above is this entry describing the state it found, not the code.
   **Two cross-artifact contradictions were absorbed** rather than left to a
   follow-up, both being clauses a shipped test now refutes: AW-004's unqualified
   "no orphaned temporary files are left behind" gained its named SFTP divergence,

@@ -365,21 +365,17 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
 
     The empty-destination cases come from a rename fallback, which cannot rename
     onto a path that is occupied: it moves the old file aside first and moves it
-    back if the rename fails. Moving it back is best-effort: over a dropped
-    connection it is not attempted at all, and on a live one the server can
-    refuse it. Either way you get the state above — **nothing is lost, but the
-    path you wrote to is not the file you had.** Your previous file is beside it
-    as `.~bak.<name>.<uuid>`. The
-    second copy depends on the operation: for `write_atomic()` / `open_atomic()`
-    it is the `.~tmp.<name>.<uuid>` next to it, and for `move()` it is your
-    source file, untouched at its own path — which may be in another directory
-    entirely. `move()` never writes a temp. The
-    fallback is not confined to old servers: any rename that *fails* for a reason
-    the backend cannot attribute to a dropped connection takes that path. It also
-    needs `overwrite=True`: with the default the call raises `AlreadyExists`
-    before the fallback is reached. No example failure is given: which ones reach
-    it depends on guards that differ per operation, and every attempt to name one
-    here has been wrong.
+    back if the rename fails. Over a dropped connection it cannot move anything
+    back — **nothing is lost, but the path you wrote to is not the file you
+    had.** Your previous file is beside it as `.~bak.<name>.<uuid>`, and your
+    payload is in the `.~tmp.<name>.<uuid>` for `write_atomic()` /
+    `open_atomic()`, or still at `src` for `move()`, which never writes a temp.
+    The fallback is not confined to old servers: any rename that *fails* for a
+    reason the backend cannot attribute to a dropped connection takes that path.
+    It also needs `overwrite=True`: with the default the call raises
+    `AlreadyExists` before the fallback is reached. No example failure is given:
+    which ones reach it depends on guards that differ per operation, and every
+    attempt to name one here has been wrong.
 
     So:
 
@@ -394,9 +390,9 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
       and re-write from the start.
 
     - **Look for a `.~bak.` file beside the target** before you re-create
-      anything. On the fallback path it is your previous file, left where a
-      failed call could not put it back. Your payload is in the `.~tmp.` beside
-      it for `write_atomic()` / `open_atomic()`, and still at `src` for `move()`.
+      anything. On the fallback path it is your previous file, left where the
+      call could not put it back. Your payload is in the `.~tmp.` beside it for
+      `write_atomic()` / `open_atomic()`, and still at `src` for `move()`.
 
     **`write_atomic()` is still the right choice when readers must never see a
     half-written file** (see the caveat above, and
@@ -409,6 +405,20 @@ See the [capabilities matrix](../../reference/capabilities-matrix.md) for full d
 
     Parent directories created for a write remain behind in every case — a
     failed write is not a rollback.
+
+!!! warning "A `.~bak.` file can outlive a failure that was **not** a stall"
+    The note above is about `BackendUnavailable`. The rename fallback can also
+    leave a `.~bak.<name>.<uuid>` behind on a connection that never dropped: it
+    moves your file aside, and if the server then refuses to move it back you
+    get `PermissionDenied` (or another mapped error) with your previous file
+    under that name instead of at its path. Nothing is lost, and the recovery is
+    the same — read the target, then the `.~bak.` beside it.
+
+    **Read the target before restoring a backup.** A `.~bak.` also outlives a
+    call that *succeeded*, when the connection drops between the rename and the
+    tidy-up. There the target already holds your new content, and copying the
+    backup over it would undo the write. The file's name does not say which case
+    you are in; the target's contents do.
 
 !!! note "Move fallback"
     `move()` tries `posix_rename` (atomic), then standard `rename()`, then

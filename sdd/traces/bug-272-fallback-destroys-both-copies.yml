@@ -15,9 +15,11 @@ audience:
 co_shipped_items:
   - BUG-270
   - BUG-271
-discovery_followups:
-  # Born in round 3's measuring pass: it staged the two server refusals together
-  # and found the arm surfacing AlreadyExists from an overwrite=True call.
+  # Born in round 3's measuring pass (the wrong error type, filed as
+  # out-of-scope) and closed in round 4, when the unprimed pass found the same
+  # arm destroys a move destination. One fix of two lines answers both, so it
+  # ships here rather than outliving the PR that found it — which is why it is
+  # co-shipped rather than a discovery_followup.
   - BUG-277
 expected_ripples:
   - sdd/backlogid.json

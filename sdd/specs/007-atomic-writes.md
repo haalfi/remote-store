@@ -38,11 +38,15 @@ backend whose overwrite is not a single server-side operation has to clear the
 target before it can put the new file there, and the caller's file is that
 backend's to hand back. `SFTPBackend`'s `rename` fallback is the one such window
 in the library: it renames the destination to `.~bak.<name>.<uuid8>` and renames
-it back if the promote fails, so a promote that failed costs the caller nothing —
-except over a dropped connection, where nothing can be renamed back and the
-backup itself is the recovery. See [009-sftp-backend.md](009-sftp-backend.md)
-SFTP-014 and SFTP-030 for that residue. Backends whose overwrite is one operation
-(`os.replace`, a PUT, a DFS rename) have no window and nothing to add here.
+it back if the promote fails. **Putting it back is best-effort, so the clause
+promises the copy and not the path**: a dropped connection stops the restore
+being attempted and a live server can refuse a step of it, and in both the
+caller's file is under the backup name rather than at its own. That is the second
+arm, and it is the whole reason a backup is taken instead of a delete. See
+[009-sftp-backend.md](009-sftp-backend.md) SFTP-014 and SFTP-030 for the residue,
+and AW-004 below for the backup's own lifetime. Backends whose overwrite is one
+operation (`os.replace`, a PUT, a DFS rename) have no window and nothing to add
+here.
 
 ## AW-004: Cleanup on Failure
 
@@ -69,21 +73,21 @@ fail, which [012-azure-backend.md](012-azure-backend.md) already records as an
 inherent limitation of simulated atomicity over a network.
 
 **A second artifact class on the SFTP fallback path, and it is not litter.**
-The `.~bak.<name>.<uuid8>` AW-003 describes is released as soon as the promote
-succeeds and renamed back as soon as it fails, so it outlives the call only when
-the restore did not complete — over a dropped connection, where it is never
-attempted, and on a live one where the server refuses a step of it. Both leave
-it holding the caller's previous file. Cleaning it up unasked is the one thing
-that would make this clause's guarantee false, so it is left where a caller can
-find it.
+The `.~bak.<name>.<uuid8>` AW-003 describes is released once the promote
+succeeds and renamed back once it fails, and both of those are best-effort — so
+it outlives the call in three ways, not one: the restore was never attempted (a
+dropped connection), the restore was refused (a live server), or the *release*
+did not run after a promote that succeeded. Cleaning it up unasked is the one
+thing that would make AW-003's second arm false, so it is left where a caller
+can find it.
 
-**A drop is not the only way the restore fails, and stating it as one would be
-the same over-claim AW-003 was just scoped against.** The restore is
-best-effort: two suppressed calls against a server that may refuse either. What
-the guarantee rests on is not that it succeeds — it is that the backup exists
-whether or not it does, which is why the backup is taken instead of a delete.
-`test_a_restore_the_server_refuses_leaves_the_old_content_findable` measures the
-live-connection case.
+**Which of the three a caller met is not written on the backup**, and that is
+worth knowing before acting on one: after a failed call it holds the file that
+should be at the target, while after a successful one the target already holds
+the newer content and restoring the backup over it would lose the write. The
+target is the thing to read, not the backup. `test_a_restore_the_server_refuses_leaves_the_old_content_findable`
+measures the live-refusal case; the third is the same skipped-teardown class as
+the orphan temp above.
 
 **"Renamed back" is a claim about a path that may not be free**, which is the
 part of it that had to be built rather than assumed: `move`'s copy rung opens the
