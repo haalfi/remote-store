@@ -7,7 +7,7 @@ This project follows [Semantic Versioning](https://semver.org/). Pre-1.0, minor 
 
 ## [Unreleased]
 
-- BUG-272: **Fix** — a failed SFTP atomic overwrite no longer destroys the file it was replacing: the rename fallback moves the destination aside and puts it back, where it removed the destination and then cleaned up the temp as well, leaving no copy of either
+- BUG-272: **Fix** — an SFTP atomic overwrite that fails in the rename fallback no longer destroys the file it was replacing: the fallback moves the destination aside and puts it back, where it removed the destination and then cleaned up the temp as well, leaving no copy of either
 - BUG-270: **Fix** — the same fallback reports a stall on its own first round-trip instead of swallowing it and paying the `io_timeout` bound a second time, and a drop mid-promote leaves the old content in a `.~bak.<name>.<uuid>` file rather than nowhere
 - BUG-271: Scope the three `022-streaming-atomic-writes.md` invariants that shipped tests refuted to the dropped-connection failure they were never written for
 - BUG-264: **Fix** — an Azure connection or timeout failure that the SDK reports without any text now says which side of the exchange failed, instead of raising `BackendUnavailable` with an empty message
