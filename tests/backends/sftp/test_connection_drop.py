@@ -110,8 +110,10 @@ class _DropRelay:
     ``SSHException``**. Silencing first puts the client inside a blocking
     ``recv`` at the moment the socket dies, so the EOF path is the one that
     fires: 15 of 15, on the streamed read, the ``SEEK_END`` probe and the eager
-    read alike. Derivation: `tmp/measure_race.py` and `tmp/measure_race2.py` on
-    the branch that added this file, paramiko 5.0.0 / CPython 3.11.
+    read alike. Both figures are 15 runs of the drop staged each way against
+    this module's own relay on paramiko 5.0.0 / CPython 3.11, classifying the
+    exception that escaped; to re-derive the first, replace the ``_armed`` check
+    in ``_pump`` with an unconditional ``_tear_down()`` and loop a test.
 
     **``arm()`` is one-shot.** The teardown re-opens the gate, so the listener
     keeps serving and the next connection is pumped normally — which is what lets

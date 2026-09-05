@@ -151,9 +151,14 @@ close is free: measured **0.00 s** on a hard drop and on a half-close alike,
 because paramiko's transport-reader thread tears the socket down on EOF before
 `SFTPFile.close()` can issue its `CMD_CLOSE`. There is therefore nothing here to
 buy, which is why `SFTPBackend.read` was left passing the predicate unchanged
-when its caught set widened. Derivation: the drop and half-close relays on
-BK-358's branch, paramiko 5.0.0. Contrast the stall this clause was written for,
-where the socket stays open and the close does wait.
+when its caught set widened. Derivation: the drop relay in
+`tests/backends/sftp/test_connection_drop.py`, timed around the wrapper's
+`close()` after a mapped failure, and the same measurement against a relay
+FINning server→client only; paramiko 5.0.0. Contrast the stall this clause was
+written for, where the socket stays open and the close does wait — and note that
+the reason is paramiko's teardown rather than anything here, so a release that
+stopped closing the socket on EOF would put the cost back and this decision
+should be re-measured rather than assumed.
 
 **See also:** SFTP-030 in [009-sftp-backend.md](009-sftp-backend.md), the bound
 this clause completes, and where that limit is measured.
