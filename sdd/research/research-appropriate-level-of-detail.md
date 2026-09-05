@@ -16,10 +16,12 @@ argues for.
 > subject. Of those three, only the last can be checked at the moment of writing,
 > which is why the practical rule is an author-side test and not a length budget.
 >
-> **Standing caveat: no source cited here was read in full.** Every scholarly
-> host returns 403 from this environment (Appendix B). Claims rest on abstracts,
-> metadata records and search summaries; each carries a tier. Treat every
-> external claim as directional, and every repo figure as the reliable half.
+> **Standing caveat: one source has been read in full, and only one.** Rozenblit
+> & Keil (2002) — the mechanism the authoring test rests on — was supplied by the
+> maintainer and verified against its own text (§ 5.2). Every other external claim
+> rests on an abstract, a metadata record or a search summary, because every
+> scholarly host returns 403 from this environment (Appendix B). Each carries a
+> tier: treat the rest as directional, and the repo figures as the reliable half.
 
 ---
 
@@ -109,16 +111,43 @@ That is the whole argument for putting the test on the author.
 ### 5.2 The mechanism: the explanation attempt exposes the gap
 
 Rozenblit & Keil (2002), "The misunderstood limits of folk science: an illusion
-of explanatory depth", *Cognitive Science* 26(5), 521–562: people rate their
-understanding high, attempt a step-by-step causal explanation, and re-rate it
-markedly lower. **This is metacognition research, not learning research** — it
-describes a self-assessment failure that holds for anyone explaining anything,
-authors included.
+of explanatory depth", *Cognitive Science* 26(5), 521–562. **[Verified, read in
+full — the one source in this document that was.]** Twelve studies: 1–4 document
+the illusion for devices across populations, 5–6 test its robustness, 7–10 track
+it across knowledge domains, 11–12 examine what drives it.
 
-**The qualification is what makes it bite here:** the illusion is far stronger
-for **explanatory** knowledge than for facts, procedures or narratives. ADR
-rationale, spec reasoning and research argument are explanatory prose, and are
-what this repo writes most. **[Search-summary; primary and all mirrors blocked.]**
+**The design is the test this document proposes, run as an experiment.**
+Participants rate their understanding of an item on a 7-point scale (T1), write a
+detailed step-by-step causal explanation, and re-rate (T2); T3 follows a
+diagnostic question, T4 a re-rating after reading an expert explanation, T5 a
+manipulation check. Ratings fall: Study 1 (16 Yale graduate students)
+F(4, 56) = 16.195, p < .001, η² = .536; Study 2 (33 undergraduates)
+F(4, 124) = 38.9, p < .001, η² = .555; combined F(4, 188) = 44.11, p < .001, with
+no interaction between studies. In Study 5 the means run T1 3.89 → T2 3.10 →
+T3 2.49.
+
+**The drop is a correction, not a loss of nerve.** Independent raters scored the
+participants' own T2 explanations, and their scores were significantly *lower*
+than the participants' self-ratings at T1 and T2 but **not different from T3 and
+T4**. The explanation attempt moves the author's self-assessment to where a
+disinterested reader already was.
+
+**This is metacognition research, not learning research** — a self-assessment
+failure that holds for anyone explaining anything, authors included.
+
+**The qualification is what makes it bite here, and it is measured rather than
+asserted.** From the abstract: "The illusion is far stronger for explanatory
+knowledge than many other kinds of knowledge, such as that for facts, procedures
+or narratives." Studies 7–10 supply the contrast: **no decrease in knowledge
+ratings for procedures or narratives, and a significantly smaller drop for
+facts.** ADR rationale, spec reasoning and research argument are explanatory
+prose, and are what this repo writes most.
+
+**One of their four proposed mechanisms is the repo's situation exactly.** The
+authors name *rarity of production*: "we rarely give explanations and therefore
+have little information on past successes and failures", against facts and
+procedures where past performance is easy to inspect. An author who states a
+section's core claim is manufacturing precisely the missing feedback.
 
 **The shape undigested writing takes** is described independently: Bereiter &
 Scardamalia (1987), *The Psychology of Written Composition*, separate
@@ -248,7 +277,8 @@ record), **search-summary** (a search engine's synthesis of secondary sources),
 | 9 | *Kürze/Prägnanz* is a mid-scale optimum | Search-summary | Low-medium |
 | 10 | Groeben's interactional turn; Göpferich keeps the Hamburg four, adds *Korrektheit* and *Perzipierbarkeit*, reframes on the communication situation | Search-summary | Low-medium |
 | 11 | Hamburg dimensions not independent; contrast pairs ad hoc | Search-summary | Low-medium |
-| 12 | Rozenblit & Keil: explanation attempt lowers self-rated understanding, strongest for explanatory knowledge | Search-summary | Low-medium |
+| 12 | Rozenblit & Keil: the explanation attempt lowers self-rated understanding across 12 studies, and moves it to where independent raters already scored it | **Verified, read in full** | High |
+| 12a | The same: **no** drop for procedures or narratives, a significantly smaller drop for facts, so the effect is specific to explanatory knowledge | **Verified, read in full** | High |
 | 13 | Bereiter & Scardamalia: knowledge-telling versus knowledge-transforming | Search-summary | Low-medium |
 | 14 | Bisra et al. (2018): self-explanation g = .55, 69 effect sizes from 64 reports | Search-summary | Low-medium |
 | 15 | RST-DT agreement 86.8 / 80.7 / 72 percent over six taggers | Search-summary | Low |
@@ -283,7 +313,14 @@ is session-local, so the literal URL is not reproducible), plus direct retests.
 The proxy's README classifies 403 as an organization policy denial to be reported
 rather than worked around.
 
-**What that costs this document.** No source was read in full, so no figure taken
-from an external source should be quoted as established, and a negative finding
-obtained under blocked access is weak evidence of absence. The repo-derived rows
-(19–22) carry no such limitation and are reproducible by the commands named.
+**What that costs this document.** With one exception, no source was read in
+full, so no figure taken from an external source should be quoted as established,
+and a negative finding obtained under blocked access is weak evidence of absence.
+The repo-derived rows (19–22) carry no such limitation and are reproducible by
+the commands named.
+
+**The exception, and the route around the blockade.** Rozenblit & Keil (2002) was
+supplied directly by the maintainer as a PDF and read in full, which moved rows
+12 and 12a from search-summary to verified and sharpened § 5.2 from an assertion
+to a measured contrast. That is the working route for anything else in § 9: the
+environment cannot fetch, but it can read what is handed to it.
