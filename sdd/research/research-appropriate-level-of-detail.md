@@ -366,6 +366,15 @@ the half that depends on a `.gitignore` fact the page never shows. **Rationale
 explaining what the reader can already see is cheap to cut; rationale carrying a
 fact from elsewhere is not.** Rule 7 does not currently make that distinction.
 
+**One human reader also took the condensed page**, an expert already familiar
+with it. He recovered **less** than any naïve agent reader did — twice marking
+unanswerable a question the page answers — and produced **the only wrong answer
+in the study**, confidently and unhedged, where 120 agent answers had produced
+none. The mechanism is not comprehension but engagement: an expert answers from
+recall rather than reading, and recall is where the illusion of explanatory depth
+(§ 5.2) does its work. n = 1, unblinded, and not a fair contest, since the agents
+were compelled to read the page and the human was not.
+
 **Bounds:** three readers per cell, LLM readers rather than humans, a grader not
 blind to condition, and both cells open-book so no memory effect is in view.
 
@@ -491,6 +500,7 @@ record), **search-summary** (a search engine's synthesis of secondary sources),
 | 22a | Repo experiment: whole against condensed ripple-check, 12 agent readers, 120 answers — obligations tied 42–42 after a 66% cut; rationale lost 12–0; zero invented answers on either page | Local, pre-registered | High for the tally, low for its reach |
 | 22b | The extra material was misused only by readers who had both the whole page and advance knowledge of the question (2 of 3) | Local, discovered in data | Low — hypothesis for a dedicated run |
 | 22c | Rationale explaining what the reader can see is recoverable after cutting; rationale carrying an outside fact is not | Local | Medium |
+| 22d | One expert human reader of the condensed page recovered less than any naïve agent reader and produced the study's only wrong answer | Local, n = 1, unblinded | Low as evidence; high as a caution about who a reader test measures |
 | 23 | Knowledge-telling describes this repo's overshooting prose | Inference | — |
 | 24 | The illusion of explanatory depth applies to authors of explanatory prose | Inference | — |
 
