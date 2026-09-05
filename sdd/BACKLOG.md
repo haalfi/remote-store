@@ -224,9 +224,11 @@ default failure surface, and BUG-264 closed Azure, the one other arm that could
 render blank. The remaining `BackendUnavailable(str(exc))` sites cannot: two sit
 behind a keyword guard the empty string cannot satisfy, and the two botocore
 arms are fed by classes that always format. What is left of the clause is the
-**base class**, at seven sites in five files including two in the very
-`_map_exception` BK-359 rewrote — BUG-276, whose disposition is the open
-question. A promise clause honoured on one arm of one backend was the shape this
+**base class**, at five blank-reachable arms in four files — including two in the
+very `_map_exception` BK-359 rewrote, and one shared helper that puts three S3
+backends behind it — which is BUG-276, whose disposition is the open question.
+(Seven sites carry the construction; the item partitions them, because the guard
+above each decides whether it can render blank and two of them cannot.) A promise clause honoured on one arm of one backend was the shape this
 section exists to catch; that the count of arms outlived two items is why
 BUG-276 is not the tidy one-line follow-up its ancestor was first filed as.
 The spec contradiction is adjudicated — BUG-248, closed by
@@ -412,7 +414,7 @@ compliant the day before.
   scope corrected by its round 3. BK-360 documents the resulting state in
   SFTP-030 and the SFTP guide; it does not fix it.
 
-- [ ] **BUG-276 — A mapped error still reaches the caller with an empty message through five base-class arms, reaching four backends**
+- [ ] **BUG-276 — A mapped error still reaches the caller with an empty message through five base-class arms, reaching five backends**
   spec: ERR-009 · effort: S · audience: user.api
   The remainder of BUG-264, which closed the `BackendUnavailable` half. ERR-009
   is a claim about `str()` on *any* error, and the same construction spelled
@@ -428,7 +430,12 @@ compliant the day before.
   fall-through (driven with a bare `RuntimeError`); `_s3_pyarrow`'s `OSError`
   arm (an argument-less `OSError` through `_pyarrow_errors`); `_errors.py`'s
   `_classify_by_message` final arm; and **both `_sftp` arms** — the `OSError`
-  errno fall-through (driven with `EIO`) and the final one. Those two SFTP arms
+  errno fall-through and the final one. **The SFTP driver is an `OSError` with
+  no arguments and no errno**, not one carrying an errno: `OSError(EIO, "")`
+  formats as `"[Errno 5] "` and is *not* blank, so an implementer testing that
+  arm with an errno will wrongly conclude it is already fine. A bare `OSError()`
+  reaches the same line, because the errno dispatch above it reads
+  `getattr(exc, "errno", None)` as `None`. Those two SFTP arms
   are the fall-throughs of the very `_map_exception` BK-359 rewrote, so SFTP is
   not finished either — reading that item's title would suggest otherwise.
 
@@ -462,17 +469,26 @@ compliant the day before.
 
   **Arms and backends are different counts, and the title uses both.** The five
   arms sit in **four files** — `_azure_common.py`, `_s3_pyarrow.py`, `_sftp.py`
-  (two) and `_errors.py` — which is three backends plus one shared helper. The
-  fourth backend is `S3Boto3Backend`, and it is reached **through that shared
-  helper rather than through its own site**: `_s3_boto3.py`'s own
-  `RemoteStoreError(str(exc))` is the unreachable `ClientError` one above, but
-  its `_classify_error` falls through to `_classify_by_message`, and
-  `S3Boto3Backend._classify_error(RuntimeError(), "delivery.csv")` returns
-  `RemoteStoreError('')` rendering as `" | path='delivery.csv' | backend='s3-boto3'"`.
-  `_s3_base.py` routes there too, so both S3 backends can meet it. Spelling this
-  out because the obvious reading of the exclusion above — that S3-boto3 is
-  fine — is wrong, and an implementer who fixes only the four files will leave
-  the shared arm's callers unaddressed or fix them without noticing.
+  (two) and `_errors.py`. Two of those are backend modules; `_errors.py` is the
+  shared helper, and **every S3 backend reaches it**, which is where the other
+  three come from. Driving `_classify_error(RuntimeError(), "delivery.csv")` on
+  each:
+
+  | Backend | Own `_classify_error`? | Result |
+  |---|---|---|
+  | `S3Backend` (registered `s3`) | — | `RemoteStoreError('')`, `backend='s3'` |
+  | `S3PyArrowBackend` | — | `RemoteStoreError('')`, `backend='s3-pyarrow'` |
+  | `S3Boto3Backend` | Yes | `RemoteStoreError('')`, `backend='s3-boto3'` |
+
+  The first two inherit `_S3Base._classify_error`, which calls
+  `_classify_by_message`; the third defines its own, whose final line calls the
+  same helper. So `_s3_boto3.py`'s *own* `RemoteStoreError(str(exc))` is the
+  unreachable `ClientError` one excluded above, and the backend still reaches a
+  blank — through the shared arm. **Five backends can hand a caller a blank base
+  class**: those three plus `azure` and `sftp`. Spelling this out because the
+  obvious reading of the exclusion above — that S3-boto3 is fine — is wrong, and
+  because an earlier revision of this paragraph said "both S3 backends" and
+  missed `S3Backend`, the one the registry actually serves under `s3`.
 
   **Disposition — the decision is the work, which is why this is not mechanical.**
   Either a blank `RemoteStoreError` gets the same synthesised fallback Azure's

@@ -37,8 +37,15 @@ expected_ripples:
 #            measuring pass: 2 posted findings, plus 2 more its sibling sweep
 #            found — a keyword-guard count the item contradicted two lines later,
 #            and an unmeasured claim about Linux wording, withdrawn)
-# Value is 2.
-review_rounds: 2
+#   Stop restating one SDK derivation in four places, and correct what the
+#   restatements disagreed about
+#                                                   -> counts (round 3, a
+#            three-member panel — unprimed, whole-file, measuring — returning 20
+#            raw findings that merged to 13. The volume tripped the divergence
+#            check: two were defects the round-2 fix pass had itself created, so
+#            this round re-planned the prose rather than patching each sentence)
+# Value is 3.
+review_rounds: 3
 phases:
   - id: orient
     name: Orient
@@ -47,10 +54,18 @@ phases:
         section: "(item) BUG-264"
         read_type: gate
         extract: >-
-          The measured Azure reproduction, the four aiohttp wrap sites, the 13
-          call sites, and the Disposition naming SFTP's _unavailable as the
-          shape to copy
-        outcome: ok
+          The measured Azure reproduction, the 13 call sites, and the
+          Disposition naming SFTP's _unavailable as the shape to copy — those
+          held. Two of the item's figures did not, and both were taken on trust
+          from a body that presented itself as measured: "four raise sites" is
+          three (the fourth arm catches an aiohttp error that always carries the
+          host), and "the sync side is not reproduced" is backwards — the
+          requests transport supplies a blank ServiceRequestTimeoutError that
+          the aiohttp one cannot. Retrospective, and mine rather than the
+          document's: the item said its figures were measured, and I re-derived
+          the call-site counts while accepting the transport claims, so the
+          reads I checked were the ones already easiest to check
+        outcome: misleading
       - file: sdd/BACKLOG.md
         section: "1. Failures are predictable"
         read_type: gate

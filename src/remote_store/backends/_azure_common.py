@@ -148,45 +148,32 @@ def _unavailable(exc: Exception, path: str, backend_name: str) -> BackendUnavail
     """Build the ``BackendUnavailable`` for a transport-level Azure failure.
 
     Every ``BackendUnavailable`` the ``ServiceRequestError`` /
-    ``ServiceResponseError`` arm returns is built here, so what a caller reads —
-    and what they can grep a log for — is described in one place. The other
-    ``BackendUnavailable`` arms of ``classify_azure_error`` compose their own
-    message from the status code and never reach this.
+    ``ServiceResponseError`` arm returns is built here, so one place decides what
+    a caller reads. The other ``BackendUnavailable`` arms compose their own
+    message and never reach this.
 
-    **Why the driver's own message is not enough.** ``AzureError.__init__`` sets
-    ``self.message = str(message)``, and the aiohttp transport's
-    ``except asyncio.TimeoutError`` arms wrap what they caught as
-    ``ServiceResponseTimeoutError(err, error=err)``. A fired timeout carries
-    ``args == ()``, so that wrap stringifies empty and the caller reads
-    ``" | path='delivery.csv' | backend='azure'"`` — the right type saying
-    nothing, which the error model's meaningful-``str()`` invariant forbids.
-    **Not every timeout arm there is one of them**, and no count is given for
-    either group: it is a third-party file's shape, it moves between SDK
-    releases, and successive revisions of the item behind this fix cited line
-    numbers their own diffs had already shifted. One of those arms catches
-    aiohttp's ``ConnectionTimeoutError``, which aiohttp raises with the host it
-    could not reach, so it arrives explained and leaves here unchanged.
+    **The rule.** Synthesise only when ``str(exc)`` is empty. A driver that
+    explained itself reaches the caller intact — the failure being replaced is
+    silence, not noise. The synthesised text names which side of the exchange
+    failed, which is exactly what the two base classes this arm tests
+    distinguish, plus the SDK exception class, which is the part a reader
+    searches for.
 
-    **No log record, which is where this diverges from the SFTP helper of the
-    same name.** That one emits a WARNING at the point the backend concludes a
-    connection is unusable. This one does not, and the divergence is deliberate
-    rather than an oversight: the sync backend's ``check_health`` classifies
-    through here, so a record would land one line under every liveness poll, and
-    the structured field SFTP tags such records with is not yet described in the
-    published logging guide. The consequence is that Azure failures are reported
-    only by the exception, and a reader comparing the two helpers should not
-    infer that one of them forgot.
+    **Why an SDK error can arrive empty at all** is documented once, in the
+    error-mapping spec's postcondition for this row, and is not restated here:
+    it is a fact about the SDK's transports rather than about this function, it
+    moves between SDK releases, and the version that had it in four places
+    falsified three of them within one change.
 
-    **The fallback never overwrites detail.** It fires only when ``str(exc)`` is
-    empty, so a driver that did explain itself reaches the caller intact. That
-    is the whole of the rule: the failure being replaced is silence, not noise,
-    and every Azure connection failure reachable through this backend's own
-    options does explain itself (a refused port, a server disconnect and a read
-    timeout are asserted as controls in the async error-detail tests).
-
-    **What the synthesised message says** is which side of the exchange failed —
-    the two base classes this arm tests are exactly that distinction — plus the
-    exception class, which is the part a reader searches the SDK for.
+    **No log record**, where the SFTP helper of the same name emits one. That is
+    a scoped decision about this backend, not a claim that the two should
+    differ — the reasons available for it apply to SFTP as well, and SFTP made
+    the opposite call and published the consequence in its migration notes.
+    Recorded so a reader comparing the helpers sees a decision rather than an
+    omission; making them agree is a question about the logging surface, and it
+    is tracked as its own item rather than settled here. The control that keeps
+    this honest is in the async error-detail tests, which assert no record is
+    emitted.
     """
     message = str(exc)
     if not message:
@@ -255,10 +242,10 @@ def classify_azure_error(exc: Exception, path: str, backend_name: str) -> Remote
     # cannot, and the difference is the exception class rather than the
     # construction. HttpResponseError.__init__ substitutes "Operation returned an
     # invalid status '<reason>'" for a falsy message, so the arm inside that
-    # isinstance never renders blank however it is spelled — which is why
-    # AZ-025's postcondition can say the other rows are non-empty by
-    # construction without contradicting this comment. This one takes any
-    # exception at all, including a bare RuntimeError, so it can.
+    # isinstance never renders blank however it is spelled. This one takes any
+    # exception at all, including a bare RuntimeError, so it can — and it is the
+    # one outcome of this function that AZ-025's postcondition does not cover,
+    # which that clause says rather than leaving to be inferred from here.
     # Left alone deliberately: whether a blank RemoteStoreError deserves the same
     # synthesised fallback or should be classified instead is an open decision
     # tracked as BUG-276. The same construction stands in several other modules —

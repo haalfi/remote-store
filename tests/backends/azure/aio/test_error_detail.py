@@ -7,11 +7,13 @@ on any of them. Without these, a fallback that overwrote real detail — the
 failure mode SFTP's ``_unavailable`` docstring warns about — would pass the unit
 tests unchanged.
 
-Each case drives ``AsyncAzureBackend.check_health()``, which maps through
-``_errors()`` → ``_classify`` → ``classify_azure_error``, against a loopback
-socket. No Azurite, no network, no credentials: the account key below is
-Azurite's published emulator key, present only so the SharedKey signer accepts
-the request before it fails on the wire.
+Each socket case drives ``AsyncAzureBackend.check_health()``, whose
+``_errors()`` calls ``classify_azure_error`` directly — the async twin has no
+``_classify`` indirection; that is the sync backend's method, which this file
+never exercises. The last test in the file drives no backend at all: it is the
+fixture's own contract. No Azurite, no network, no credentials: the account key
+is Azurite's published emulator key, present only so the SharedKey signer
+accepts the request before it fails on the wire.
 
 Assertions are on *non-emptiness* rather than on exact text on purpose. The
 message is the driver's, and the driver's wording is not this library's to
@@ -26,6 +28,7 @@ something once that platform runs it.
 
 from __future__ import annotations
 
+import logging
 import socket
 import threading
 import time
@@ -46,9 +49,12 @@ pytestmark = pytest.mark.os_sensitive
 
 pytest.importorskip("azure.storage.filedatalake", reason="azure-storage-file-datalake not installed")
 
+from azure.core.exceptions import ServiceResponseTimeoutError  # noqa: E402
+
 from remote_store._errors import BackendUnavailable  # noqa: E402
 from remote_store.aio.backends._azure import AsyncAzureBackend  # noqa: E402
-from tests.backends.fixtures._cassettes_azure import AZURITE_EMULATOR_KEY  # noqa: E402
+from remote_store.backends._azure_common import classify_azure_error  # noqa: E402
+from tests.backends.azure._helpers import ACCOUNT_KEY  # noqa: E402
 
 # One second is long enough for a loopback round trip that is never coming and
 # short enough that three cases stay under five seconds. ``retry_total=0`` keeps
@@ -62,7 +68,7 @@ def _backend(port: int) -> AsyncAzureBackend:
         container="c",
         account_name="devstoreaccount1",
         account_url=f"http://127.0.0.1:{port}/devstoreaccount1",
-        credential=AZURITE_EMULATOR_KEY,
+        credential=ACCOUNT_KEY,
         hns=False,
         client_options={
             "connection_timeout": _TIMEOUT_SECONDS,
@@ -166,6 +172,31 @@ _EMPTY_MESSAGE_PREFIX = " | "
 
 _FALLBACK_MARKER = "with no detail"
 """The tail of ``_azure_common._unavailable``'s synthesised message."""
+
+
+@pytest.mark.spec("AZ-025")
+def test_the_azure_helper_emits_no_log_record(caplog: pytest.LogCaptureFixture) -> None:
+    """The other deliberate decision this helper makes, pinned.
+
+    ``_azure_common._unavailable`` synthesises a message and, unlike the SFTP
+    helper of the same name, emits no record. Nothing but a docstring said so,
+    which means a later refactor adding a ``log.warning`` here — putting one
+    line under every ``ping()`` poll, the outcome the decision exists to
+    avoid — would pass the whole suite green.
+
+    Driven on the blank shape, which is the one path that reaches the fallback
+    at all, so the assertion covers the branch a record would most plausibly be
+    added to.
+    """
+    inner = TimeoutError()
+    assert str(inner) == "", "premise: the fallback branch needs a detail-less input"
+
+    with caplog.at_level(logging.DEBUG, logger="remote_store.backends._azure_common"):
+        mapped = classify_azure_error(ServiceResponseTimeoutError(inner, error=inner), "delivery.csv", "async-azure")
+
+    assert isinstance(mapped, BackendUnavailable)
+    assert _FALLBACK_MARKER in str(mapped), "premise: the fallback fired"
+    assert caplog.records == [], "the Azure helper is not supposed to log; see its docstring"
 
 
 @pytest.mark.spec("AZ-025")

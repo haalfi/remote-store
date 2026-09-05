@@ -550,23 +550,29 @@ class TestAzureErrorMapping:
         ],
     )
     def test_a_detail_less_transport_signal_says_which_side_failed(self, wrapper_name: str, expected_side: str) -> None:
-        """A driver signal carrying no text still names a cause (ERR-009).
+        """A driver signal carrying no text still names a cause (ERR-009, AZ-025).
 
-        The sync transport is exposed on exactly the same arm as the async one —
-        ``requests``' ``ConnectionError``, ``ReadTimeout``, ``ConnectTimeout``
-        and ``ChunkedEncodingError`` all stringify empty when argument-less —
-        but ``requests`` normally supplies urllib3 text, so there is no
-        end-to-end reproduction to drive. The guarantee is asserted where it is
-        made: at the classifier.
+        Why an SDK error can arrive empty is in AZ-025's postcondition, which is
+        its one home; this docstring covers only what *this test* does.
+
+        **This backend runs on the requests transport, and that is where both
+        parametrised shapes come from** — not from the aiohttp one an earlier
+        revision of this comment cited. ``requests.exceptions.ConnectTimeout``
+        becomes ``ServiceRequestTimeoutError`` and ``ReadTimeout`` becomes
+        ``ServiceResponseTimeoutError``, both spelled ``Error(err, error=err)``,
+        and both inputs stringify empty when constructed without arguments. So
+        the sync side is the *stronger* of the two twins for the request arm,
+        which is the opposite of what this file used to say.
+
+        Asserted at the classifier rather than through the transport: driving it
+        end to end would need a server that accepts and then stalls past a
+        configured read timeout, which the async twin's loopback file already
+        does for the response arm. What is version-sensitive here is the input's
+        emptiness, and that is asserted directly below.
         """
         inner = TimeoutError()
         assert str(inner) == "", "premise: an argument-less timeout carries no text"
 
-        # Mirrors azure/core/pipeline/transport/_aiohttp.py, whose three
-        # ``except asyncio.TimeoutError`` arms all spell the wrap
-        # ``Error(err, error=err)``. Its fourth timeout arm catches aiohttp's
-        # ConnectionTimeoutError, which is always raised with text, so it never
-        # reaches the fallback — see the async twin's docstring.
         wrapper = getattr(__import__("azure.core.exceptions", fromlist=[wrapper_name]), wrapper_name)
         backend = _make_backend()
         mapped = backend._classify(wrapper(inner, error=inner), "delivery.csv")

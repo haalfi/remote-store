@@ -250,26 +250,41 @@ if evidence changes; these are retired.
   "four raise sites" said otherwise. It catches aiohttp's
   `ConnectionTimeoutError`, which aiohttp raises at a single site with
   `f"Connection timeout to host {req.url}"`, so it always arrives explained.
-  The loopback control for a dead port drives exactly that arm and observes
-  `BackendUnavailable("Connection timeout to host http://127.0.0.1:…")` — the
+  **On Windows** the loopback control for a dead port drives that arm and
+  observes `BackendUnavailable("Connection timeout to host http://127.0.0.1:…")`;
+  the platform qualifier is load-bearing, because a closed loopback port refuses
+  rather than times out on some stacks and would then take a different arm. The
   measurement was in this PR from the start and its consequence for the count
   was missed until round 1 named it.
-  **One premise of the item was refuted by measuring it**, and is recorded
-  because the item asserted it twice. "Only the async timeout is an end-to-end
-  reproduction" does not hold: azure-core builds its own
+  **Two premises of the item were refuted by measuring them**, and are recorded
+  because the item asserted both more than once.
+
+  *First*, "only the async timeout is an end-to-end reproduction" does not hold
+  for the async side in the way the item meant: azure-core builds its own
   `aiohttp.ClientTimeout(sock_connect=…, sock_read=…)` per request, overriding
   any session `total`, and aiohttp answers those with `ServerTimeoutError`,
   which carries text. Driving `AsyncAzureBackend.check_health()` at a loopback
   socket returned a non-empty message for **every** shape the backend's own
   options can produce — a port with nothing listening, an accept-then-close, and
-  an accept-and-stall. The blank shape needs a bare `asyncio.TimeoutError`,
-  which aiohttp raises for `ClientTimeout(total=…)`; that is reachable for a
-  caller supplying their own transport or session, not through the backend's
-  options. **The fix is right either way** — ERR-009 is a claim about the
-  classifier's output, not about how often the input arrives — and the three
-  socket shapes now ship as controls in
-  `tests/backends/azure/aio/test_error_detail.py`, which is what stops the
-  fallback from ever overwriting a real explanation.
+  an accept-and-stall.
+
+  *Second, and the opposite of what the item said*, **the sync side is the more
+  reachable of the two.** The item called it "exposed the same way but not
+  reproduced". It is reproduced: `azure/core/pipeline/transport/_requests_basic.py`
+  wraps `requests.exceptions.ConnectTimeout` as `ServiceRequestTimeoutError` and
+  `ReadTimeout` as `ServiceResponseTimeoutError`, and both of those stringify
+  empty when constructed without arguments — measured, `str(ConnectTimeout())`
+  is `''`. The async transport, by contrast, builds
+  `ServiceRequestTimeoutError` only from aiohttp's `ConnectionTimeoutError`,
+  which always carries the host, so a blank *request*-side timeout is a
+  sync-transport shape and not an async one. Found by two of round 3's three
+  panel members independently, both of whom also caught that the sync test cited
+  the async transport file.
+
+  **The fix is right either way** — ERR-009 is a claim about the classifier's
+  output, not about how often the input arrives — and the socket shapes now ship
+  as controls in `tests/backends/azure/aio/test_error_detail.py`, which is what
+  stops the fallback from ever overwriting a real explanation.
   **The `BackendUnavailable` half is now closed library-wide**, which is the
   finding that justified the split. `rg -n 'BackendUnavailable\(' src/` returns
   five `BackendUnavailable(str(exc))` sites; the four this did not touch cannot

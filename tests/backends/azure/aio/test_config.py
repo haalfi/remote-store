@@ -498,34 +498,37 @@ class TestAsyncAzureErrorMapping:
     async def test_a_detail_less_transport_signal_says_which_side_failed(
         self, wrapper: type, expected_side: str
     ) -> None:
-        """A driver signal carrying no text still names a cause (ERR-009).
+        """A driver signal carrying no text still names a cause (ERR-009, AZ-025).
 
-        The inner exception is a *genuine* ``asyncio.TimeoutError`` — obtained by
-        letting a real timeout fire rather than by constructing one, because that
-        is what makes ``args == ()``. The wrap mirrors
-        ``azure/core/pipeline/transport/_aiohttp.py``, whose three
-        ``except asyncio.TimeoutError`` arms all spell it
-        ``Error(err, error=err)``. Its fourth timeout arm is not one of them: it
-        catches aiohttp's ``ConnectionTimeoutError``, which aiohttp raises at a
-        single site with ``f"Connection timeout to host {req.url}"``, so that arm
-        always carries text and never reaches the fallback under test. The
-        loopback control in ``test_error_detail.py`` drives it and sees that
-        text.
+        Why an SDK error can arrive empty is in AZ-025's postcondition, which is
+        its one home; this docstring covers only what *this test* does.
+
+        The inner exception is a *genuine* fired timeout rather than a
+        constructed one, because that is what makes ``args == ()``.
+
+        **The two parameters do not come from the same transport, and the async
+        one is the weaker case.** A blank ``ServiceResponseTimeoutError`` is
+        reachable through the aiohttp transport this backend actually runs on.
+        A blank ``ServiceRequestTimeoutError`` is not: that transport builds the
+        class only from aiohttp's ``ConnectionTimeoutError``, which always
+        carries the host it could not reach. It is the *sync* transport that
+        supplies that shape, from an argument-less
+        ``requests.exceptions.ConnectTimeout``. The parameter is kept here
+        anyway — the arm under test is typed on the base classes, so both belong
+        to it, and the sync twin asserts the same pair — but a reader should not
+        take it as evidence about aiohttp.
 
         ``asyncio.wait_for`` rather than ``asyncio.timeout``: the latter is 3.11+
         and broke the 3.10 CI leg. ``asyncio.TimeoutError`` rather than the
         builtin, because on 3.10 they are **not** the same class, and
-        ``asyncio.TimeoutError`` is the one azure-core's arms catch.
-
-        The 3.10 half of that is not observable from the interpreter this file
-        usually runs on, so here is the derivation rather than an assertion:
-        running ``asyncio.TimeoutError is TimeoutError`` gives ``False`` on
-        3.10.20 and ``True`` on 3.13.11, and ``wait_for`` raises
+        ``asyncio.TimeoutError`` is the one azure-core's arms catch. That half is
+        not observable from the interpreter this file usually runs on, so here is
+        the derivation: ``asyncio.TimeoutError is TimeoutError`` gives ``False``
+        on 3.10.20 and ``True`` on 3.13.11, and ``wait_for`` raises
         ``asyncio.exceptions.TimeoutError`` on the former, the builtin on the
         latter. The blank shape is identical on both — ``args == ()``,
-        ``str() == ""`` — which is why the two assertions below hold everywhere
-        and are the ones this test makes. The 3.10 CI leg is what keeps the
-        claim honest.
+        ``str() == ""`` — which is why the assertions below hold everywhere. The
+        3.10 CI leg is what keeps the claim honest.
         """
         try:
             await asyncio.wait_for(asyncio.sleep(5), 0.001)
